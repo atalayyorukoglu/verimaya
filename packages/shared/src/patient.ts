@@ -1,0 +1,49 @@
+import { z } from 'zod';
+import { isoDateTime, uuid } from './common.js';
+
+/**
+ * Patient (legacy: Case). Lead/hasta kaydı — sağlık turizmi operasyonunun çekirdeği.
+ * Status pipeline is a first draft; refine after legacy notes.md is filled.
+ */
+export const patientStatusSchema = z.enum([
+	'lead',
+	'contacted',
+	'qualified',
+	'scheduled',
+	'arrived',
+	'treated',
+	'follow_up',
+	'closed_won',
+	'closed_lost'
+]);
+
+export type PatientStatus = z.infer<typeof patientStatusSchema>;
+
+export const patientSchema = z.object({
+	id: uuid,
+	tenant_id: uuid,
+	full_name: z.string().min(1).max(255),
+	phone: z.string().max(64).nullable(),
+	email: z.string().email().max(255).nullable(),
+	status: patientStatusSchema.default('lead'),
+	source: z.string().max(128).nullable(),
+	notes: z.string().max(8000).nullable(),
+	assigned_user_id: uuid.nullable(),
+	created_at: isoDateTime,
+	updated_at: isoDateTime
+});
+
+export type Patient = z.infer<typeof patientSchema>;
+
+export const patientCreateSchema = patientSchema.omit({
+	id: true,
+	tenant_id: true,
+	created_at: true,
+	updated_at: true
+});
+
+export type PatientCreate = z.infer<typeof patientCreateSchema>;
+
+export const patientUpdateSchema = patientCreateSchema.partial();
+
+export type PatientUpdate = z.infer<typeof patientUpdateSchema>;

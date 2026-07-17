@@ -4,12 +4,12 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 
 ## Faz 0a — Sözleşme + demo frontend (2-3 hafta, zaman kutulu) 🔜
 
-- [ ] Monorepo iskeleti: pnpm workspaces + Turborepo
-- [ ] `packages/shared`: zod şemaları (Patient, Appointment, Transaction, Conversation, Tenant, User) + endpoint sözleşmesi
-- [ ] `apps/web`: SvelteKit (Svelte 5, adapter-static SPA) + TanStack Query + Tailwind + shadcn-svelte
+- [x] Monorepo iskeleti: pnpm workspaces + Turborepo
+- [x] `packages/shared`: zod şemaları (Patient, Appointment, Transaction, Conversation, Tenant, User) + endpoint sözleşmesi
+- [x] `apps/web`: SvelteKit (Svelte 5, adapter-static SPA) + TanStack Query + Tailwind + shadcn-svelte
 - [ ] MSW mock API (gerçek `/v1` path'leri, faker ile şemadan demo veri; boş liste / uzun isim / 500 kayıt uç durumları dahil)
-- [ ] Tasarım sistemi temeli: koyu tema token'ları (`docs/TASARIM.md`), Inter, Tailwind config
-- [ ] AppShell: CF-dashboard deseni — sol gruplu menü, üst bar (⌘K arama, yenilikler zili)
+- [x] Tasarım sistemi temeli: koyu tema token'ları (`docs/TASARIM.md`), Inter, Tailwind config
+- [x] AppShell: CF-dashboard deseni — sol gruplu menü, üst bar (⌘K arama, yenilikler zili)
 - [ ] Çekirdek ekranlar: hasta listesi/detay, randevu takvimi, finans, WhatsApp inbox, dashboard ("kaldığın yerden devam" deseni)
 - [ ] `/ozellikler` sayfası (`packages/shared/src/features.ts`'ten render) + `/yenilikler` iskeleti (`changelog.ts`)
 - [ ] Rol değiştirici ile RBAC görünürlük provası
