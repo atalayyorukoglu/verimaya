@@ -129,6 +129,6 @@
 	}
 
 	body {
-		@apply bg-bg text-text min-h-dvh font-sans text-[15px] leading-normal;
+		@apply bg-bg text-text min-h-dvh overflow-x-hidden font-sans text-[15px] leading-normal;
 	}
 }

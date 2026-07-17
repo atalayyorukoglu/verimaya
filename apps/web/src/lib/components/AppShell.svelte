@@ -47,7 +47,7 @@
 	}
 </script>
 
-<div class="bg-bg text-text flex min-h-dvh">
+<div class="bg-bg text-text flex min-h-dvh w-full overflow-x-hidden">
 	<!-- Desktop sidebar -->
 	<aside
 		class="border-border bg-surface sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r md:flex"
@@ -250,7 +250,7 @@
 			</div>
 		</header>
 
-		<main class="flex-1 p-4 sm:p-6">
+		<main class="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">
 			{@render children()}
 		</main>
 	</div>

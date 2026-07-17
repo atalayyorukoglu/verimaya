@@ -14,9 +14,9 @@
 
 <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 	<div class="min-w-0">
-		<h1 class="text-text text-xl font-semibold tracking-tight">{title}</h1>
+		<h1 class="text-text text-xl font-semibold tracking-tight break-words">{title}</h1>
 		{#if description}
-			<p class="text-text-muted mt-1 text-sm">{description}</p>
+			<p class="text-text-muted mt-1 text-sm break-words">{description}</p>
 		{/if}
 	</div>
 	{#if actions}

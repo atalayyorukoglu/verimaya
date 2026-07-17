@@ -38,7 +38,7 @@
 </script>
 
 <div
-	class="border-border bg-surface-2/80 text-text-muted fixed right-3 bottom-3 z-50 flex flex-wrap items-center gap-2 rounded-[8px] border px-2.5 py-2 text-xs shadow-lg backdrop-blur"
+	class="border-border bg-surface-2/80 text-text-muted fixed right-3 bottom-3 left-3 z-50 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center gap-2 rounded-[8px] border px-2.5 py-2 text-xs shadow-lg backdrop-blur sm:left-auto sm:max-w-none"
 >
 	<label class="flex items-center gap-1.5">
 		<span class="text-text-faint">MSW</span>

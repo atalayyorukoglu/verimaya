@@ -42,7 +42,7 @@
 	<title>Panel · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto max-w-6xl">
+<div class="mx-auto min-w-0 max-w-6xl">
 	<PageHeader
 		title="Kaldığın yerden devam et"
 		description={tenantQuery.data
@@ -50,8 +50,8 @@
 			: 'Bugünkü operasyona hızlı bakış'}
 	/>
 
-	<div class="mb-8 grid gap-4 lg:grid-cols-3">
-		<section class="border-border bg-surface rounded-lg border p-4">
+	<div class="mb-8 grid min-w-0 gap-4 lg:grid-cols-3">
+		<section class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-text text-sm font-semibold">Son hastalar</h2>
 				<a href="/hastalar" class="text-info text-xs hover:underline">Tümü</a>
@@ -61,14 +61,14 @@
 			{:else if recentPatients.length === 0}
 				<p class="text-text-faint text-sm">Henüz hasta yok.</p>
 			{:else}
-				<ul class="divide-border divide-y">
+				<ul class="divide-border min-w-0 divide-y">
 					{#each recentPatients as patient (patient.id)}
-						<li>
+						<li class="min-w-0">
 							<a
 								href={`/hastalar/${patient.id}`}
-								class="hover:bg-surface-2 -mx-2 flex items-center gap-3 rounded-[6px] px-2 py-2.5 transition-colors"
+								class="hover:bg-surface-2 flex min-w-0 items-center gap-2 rounded-[6px] px-1 py-2.5 transition-colors sm:gap-3 sm:px-2"
 							>
-								<div class="min-w-0 flex-1">
+								<div class="min-w-0 flex-1 overflow-hidden">
 									<p class="text-text truncate text-sm font-medium">{patient.full_name}</p>
 									<p class="text-text-faint truncate text-xs">
 										{patient.source ?? 'Kaynak yok'} · {formatDateTime(patient.updated_at)}
@@ -85,7 +85,7 @@
 			{/if}
 		</section>
 
-		<section class="border-border bg-surface rounded-lg border p-4">
+		<section class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-text text-sm font-semibold">Bugünün randevuları</h2>
 				<a href="/randevular" class="text-info text-xs hover:underline">Tümü</a>
@@ -95,13 +95,13 @@
 			{:else if todayAppointments.length === 0}
 				<p class="text-text-faint text-sm">Bugün randevu yok.</p>
 			{:else}
-				<ul class="divide-border divide-y">
+				<ul class="divide-border min-w-0 divide-y">
 					{#each todayAppointments as appt (appt.id)}
-						<li class="flex items-start gap-3 py-2.5">
-							<span class="text-brand w-12 shrink-0 pt-0.5 text-sm font-medium tabular-nums">
+						<li class="flex min-w-0 items-start gap-2 py-2.5 sm:gap-3">
+							<span class="text-brand w-10 shrink-0 pt-0.5 text-sm font-medium tabular-nums sm:w-12">
 								{formatTime(appt.starts_at)}
 							</span>
-							<div class="min-w-0">
+							<div class="min-w-0 flex-1 overflow-hidden">
 								<p class="text-text truncate text-sm font-medium">{appt.patient_display_name}</p>
 								<p class="text-text-faint truncate text-xs">
 									{appt.title ?? appt.appointment_type ?? 'Randevu'}
@@ -113,7 +113,7 @@
 			{/if}
 		</section>
 
-		<section class="border-border bg-surface rounded-lg border p-4">
+		<section class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-text text-sm font-semibold">Son mesajlar</h2>
 				<a href="/inbox" class="text-info text-xs hover:underline">Inbox</a>
@@ -123,20 +123,20 @@
 			{:else if recentMessages.length === 0}
 				<p class="text-text-faint text-sm">Henüz mesaj yok.</p>
 			{:else}
-				<ul class="divide-border divide-y">
+				<ul class="divide-border min-w-0 divide-y">
 					{#each recentMessages as conv (conv.id)}
-						<li>
+						<li class="min-w-0">
 							<a
 								href="/inbox"
-								class="hover:bg-surface-2 -mx-2 block rounded-[6px] px-2 py-2.5 transition-colors"
+								class="hover:bg-surface-2 block min-w-0 rounded-[6px] px-1 py-2.5 transition-colors sm:px-2"
 							>
-								<div class="flex items-center justify-between gap-2">
-									<p class="text-text truncate text-sm font-medium">
+								<div class="flex min-w-0 items-center gap-2">
+									<p class="text-text min-w-0 flex-1 truncate text-sm font-medium">
 										{conv.contact_name ?? conv.patient_display_name ?? 'Bilinmeyen'}
 									</p>
 									{#if conv.unread_count > 0}
 										<span
-											class="bg-brand text-primary-foreground rounded-full px-1.5 text-[10px] font-semibold"
+											class="bg-brand text-primary-foreground shrink-0 rounded-full px-1.5 text-[10px] font-semibold"
 										>
 											{conv.unread_count}
 										</span>
