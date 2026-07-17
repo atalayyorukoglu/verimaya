@@ -1,0 +1,21 @@
+# Legacy Referans — Fixrav Tracker
+
+Eski sistemin (FastAPI + PostgreSQL + React) veri modeli ve iş kuralları buraya **referans** olarak çıkarılır. Kod taşınmaz; şema bilgisi ve alan kararları yeni Drizzle şeması yazılırken kaynak olur.
+
+## Doldurulacaklar
+
+- [ ] `schema.sql` — eski veritabanı şeması:
+
+```bash
+# fixrav-tracker docker compose ayaktayken:
+docker compose -f ~/Projects/fixrav-web/_projects/fixrav-tracker/docker-compose.yml \
+  exec db pg_dump -U postgres --schema-only fixrav > schema.sql
+```
+
+- [ ] `routes.md` — eski API rota listesi (FastAPI `/docs` OpenAPI çıktısından veya `backend/app/routers/` taramasından)
+- [ ] `roller-erisim.md` — `docs/referans/KULLANICI_ROLLERI_VE_ERISIM.md` kopyası (RBAC matrisi)
+- [ ] `notlar.md` — ilk sürümde pişman olunan modelleme kararları ve yeni şemada yapılacak düzeltmeler
+
+## Kullanım kuralı
+
+Yeni bir domain tablosu tasarlanırken önce buradaki karşılığına bakılır: hangi alanlar vardı, hangileri kullanılmadı, hangi kısıtlar eksikti. "Yeniden keşfetme, düzelterek taşı."

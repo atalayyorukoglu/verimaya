@@ -1,0 +1,29 @@
+---
+description: Dış servis entegrasyonu desenleri (queue-first, idempotency, adaptörler)
+globs: apps/api/src/integrations/**/*.ts,apps/api/src/workers/**/*.ts,apps/api/src/api/webhooks/**/*.ts
+alwaysApply: false
+---
+
+# Entegrasyon Desenleri
+
+## Queue-first webhook
+
+Webhook endpoint'i yalnızca şunları yapar: imza/API key doğrula → ham payload'ı `integration_events`e yaz (provider, tenant_id, external_event_id, payload_hash, received_at) → BullMQ job'u kuyruğa at → `202` dön. Parse, eşleme, DB yazımı worker'dadır.
+
+## Idempotency
+
+- Gelen event: `UNIQUE (provider, external_event_id)`; provider ID vermiyorsa `UNIQUE (provider, tenant_id, payload_hash)`. Duplicate sessizce atlanır (log'lanır).
+- Public mutasyon endpoint'leri `Idempotency-Key` header'ını destekler.
+
+## Dış API çağrıları
+
+- Domain kodu asla doğrudan HTTP çağırmaz; her provider'ın `client.ts` + `mapper.ts` + `sync_service.ts` adaptörü vardır. Provider payload'ı adaptörde internal DTO'ya dönüştürülür.
+- Tüm dış çağrılar worker'dan yapılır; 429/5xx'te exponential backoff + jitter, sonra dead-letter.
+- Rate limit anahtarı: `rate:{provider}:{tenantId}:{accountId}` (Redis token-bucket).
+- OAuth token'ları DB'de AES-GCM şifreli; refresh lock'lu job ile. Refresh kalıcı başarısızsa sonsuz retry değil, bağlantı "yeniden yetkilendirilmeli" durumuna çekilir.
+
+## Senkron kuralları
+
+- GHL çift yönlü senkronda alan bazlı sahiplik: lead kaynağı/reklam bilgisi GHL'den, operasyon notu/finans platformdan. "Son yazan kazanır" yasak.
+- Reklam metrikleri `ad_metrics_daily` tablosuna yazılır; dashboard asla canlı provider API'si çağırmaz.
+- Giden webhook'lar (n8n vb.) outbox tablosu üzerinden, HMAC SHA-256 imzalı gönderilir.

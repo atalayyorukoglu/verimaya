@@ -1,0 +1,26 @@
+---
+description: Multi-tenant veri izolasyonu kuralları (tenant_id + RLS)
+globs: apps/api/**/*.ts
+alwaysApply: false
+---
+
+# Multi-Tenant İzolasyon
+
+- Her yeni iş tablosunda `tenant_id NOT NULL` ve RLS policy zorunlu; migrasyonda tablo + policy birlikte oluşturulur.
+- Request başında transaction içinde `SET LOCAL app.current_tenant_id = $1` çalıştırılır; günlük API trafiği RLS bypass edemeyen `app_user` rolüyle bağlanır.
+- Aktif tenant her zaman session/JWT'den çözülür; body/query'den gelen tenant_id asla yetki kaynağı değildir.
+- Dış kimlik eşlemeleri: `UNIQUE (tenant_id, provider, external_id)`.
+- Liste sorgu indeksleri sorgu desenine göre: `(tenant_id, created_at DESC)`, `(tenant_id, status, updated_at DESC)`.
+
+```typescript
+// ❌ BAD — tenant filtresi query'ye elle eklenmiş, RLS yok sayılmış
+const rows = await db.select().from(patients).where(eq(patients.tenantId, req.body.tenantId));
+
+// ✅ GOOD — tenant context transaction'da set edilir, RLS son savunma hattıdır
+await db.transaction(async (tx) => {
+  await tx.execute(sql`SET LOCAL app.current_tenant_id = ${ctx.tenantId}`);
+  return tx.select().from(patients).where(...);
+});
+```
+
+- Her tenant'lı endpoint için negatif test yazılır: Tenant A token'ı ile Tenant B kaydına GET/PATCH/DELETE → 404/403.

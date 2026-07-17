@@ -1,0 +1,43 @@
+---
+description: Frontend (apps/web) desenleri — SvelteKit SPA, Svelte 5 runes, MSW, shared sözleşme
+globs: apps/web/**/*.svelte,apps/web/**/*.ts
+alwaysApply: false
+---
+
+# Frontend Desenleri (SvelteKit)
+
+## Svelte 5 — runes zorunlu
+
+```svelte
+<!-- ❌ BAD — Svelte 4 sözdizimi -->
+<script lang="ts">
+  export let patient: Patient;
+  $: fullName = `${patient.firstName} ${patient.lastName}`;
+</script>
+
+<!-- ✅ GOOD — Svelte 5 runes -->
+<script lang="ts">
+  let { patient }: { patient: Patient } = $props();
+  const fullName = $derived(`${patient.firstName} ${patient.lastName}`);
+</script>
+```
+
+- State: `$state`, türetme: `$derived`, yan etki: `$effect`, props: `$props`. `export let` ve `$:` asla kullanılmaz.
+- Event: `onclick={handler}` (Svelte 5); `on:click` kullanılmaz.
+
+## Mimari
+
+- Saf SPA (`adapter-static`, fallback `index.html`): `+page.server.ts`, form actions ve SvelteKit API routes **kullanılmaz**; iş mantığı ve yetki kararı NestJS API'dedir. UI, RBAC bayraklarına göre yalnız görünürlüğü kırpar.
+- Veri erişimi `@tanstack/svelte-query` üzerinden; bileşen içinde doğrudan fetch yok. Query key deseni: `[resource, params]`.
+- Tipler ve şemalar `packages/shared`'dan import edilir; frontend'de API tipi elle tanımlanmaz.
+- Faz 0a: tüm API çağrıları MSW ile mock'lanır; handler'lar gerçek `/v1/...` path'lerini kullanır ve shared zod şemalarından faker ile veri üretir. Backend gelince yalnız MSW kapatılır.
+
+## UI ve tasarım
+
+- Tasarım sistemi: `docs/TASARIM.md` — Cloudflare-esinli, **yalnız koyu tema** (tema değiştirici yok), **yalnız Türkçe** (i18n altyapısı kurulmaz, metinler doğrudan Türkçe yazılır).
+- Renkler daima token üzerinden (`--brand`, `--surface`, `--border`…); bileşende ham hex yasak. Turuncu yalnız vurgudur (buton, aktif durum); gövde metni asla turuncu olmaz.
+- Bileşenler: shadcn-svelte (bits-ui tabanlı) öncelikli; özel bileşen ancak karşılamıyorsa yazılır.
+- Panel düzeni: CF dashboard deseni — sol gruplu menü + üst bar (⌘K arama, yenilikler zili); detay `docs/TASARIM.md`.
+- Responsive zorunlu: her yeni ekran mobil (375px) ve desktop'ta kontrol edilir; tablolar mobilde kart görünümüne düşer.
+- Tarihler kullanıcıya lokal saatte gösterilir, API'ye ISO-8601 UTC gider. Para, minor unit integer'dan formatlanarak gösterilir.
+- `/ozellikler` ve `/yenilikler` sayfaları elle HTML ile değil, `packages/shared`'daki `features.ts` / `changelog.ts` veri dosyalarından render edilir (kurallar: `docs/CHANGELOG-KURALLARI.md`).
