@@ -3,4 +3,8 @@
 </script>
 
 <svelte:head><title>GHL · Verimaya</title></svelte:head>
-<PlaceholderPage title="GoHighLevel" description="Webhook-first senkron ve alan sahipliği." />
+<PlaceholderPage
+	title="GoHighLevel"
+	description="Webhook-first senkron ve alan sahipliği."
+	hint="Bağlantı durumu, son senkron zamanı ve alan sahiplik kuralları burada yönetilecek."
+/>

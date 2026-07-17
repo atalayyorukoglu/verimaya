@@ -30,7 +30,7 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 - Tarihler ISO-8601 UTC; para birimleri minor unit (kuruş/cent) integer.
 - API: `/v1` prefix, cursor sayfalama (`?cursor=&limit=`), standart hata gövdesi (`error.code`, `error.message`, `request_id`).
 - Dokümantasyon ve commit mesajları Türkçe; kod, tanımlayıcılar ve log mesajları İngilizce.
-- UI tek dil **Türkçe** (i18n altyapısı yok) ve tek tema **koyu** (tema değiştirici yok). Tasarım dili Cloudflare-esinli: `docs/TASARIM.md`. Changelog/özellik sayfası kuralları: `docs/CHANGELOG-KURALLARI.md`.
+- UI tek dil **Türkçe** (i18n altyapısı yok). Tema: **açık (varsayılan) + koyu**, üst bardan değiştirilir. Tasarım dili Cloudflare-esinli: `docs/TASARIM.md`. Changelog/özellik sayfası kuralları: `docs/CHANGELOG-KURALLARI.md`.
 - Test: her tenant'lı endpoint için negatif izolasyon testi ("Tenant A, Tenant B verisini göremez") zorunludur.
 
 ## Süreç

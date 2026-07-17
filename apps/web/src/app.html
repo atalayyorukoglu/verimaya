@@ -1,9 +1,23 @@
 <!doctype html>
-<html lang="tr" class="dark">
+<html lang="tr">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			(function () {
+				try {
+					var t = localStorage.getItem('verimaya:theme');
+					if (t === 'dark') {
+						document.documentElement.classList.add('dark');
+						document.documentElement.style.colorScheme = 'dark';
+					} else {
+						document.documentElement.classList.remove('dark');
+						document.documentElement.style.colorScheme = 'light';
+					}
+				} catch (_) {}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

@@ -3,12 +3,13 @@
 	import { cn } from '$lib/utils';
 	import { navGroups } from '$lib/navigation';
 	import { canSeeNav, getDemoRole } from '$lib/rbac';
-	import Search from '@lucide/svelte/icons/search';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
 	import { changelog } from '@verimaya/shared';
+	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -47,74 +48,74 @@
 	}
 </script>
 
-<div class="bg-bg text-text flex min-h-dvh w-full overflow-x-hidden">
-	<!-- Desktop sidebar -->
-	<aside
-		class="border-border bg-surface sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r md:flex"
-	>
-		<div class="border-border flex h-14 items-center gap-2.5 border-b px-4">
-			<span
-				class="bg-brand text-primary-foreground flex size-7 items-center justify-center rounded-[6px] text-sm font-semibold"
-				aria-hidden="true"
-			>
-				V
-			</span>
-			<div class="min-w-0">
-				<p class="truncate text-sm font-semibold tracking-tight">Verimaya</p>
-				<p class="text-text-muted truncate text-xs">Demo Klinik</p>
-			</div>
-		</div>
-
-		<nav class="flex-1 overflow-y-auto px-2 py-3" aria-label="Ana menü">
-			{#each visibleGroups as group (group.label)}
-				<div class="mb-4">
-					<p
-						class="text-text-faint px-2.5 pb-1.5 text-[11px] font-semibold tracking-wider uppercase"
-					>
-						{group.label}
-					</p>
-					<ul class="space-y-0.5">
-						{#each group.items as item (item.href)}
-							{@const active = isActive(item.href)}
-							{@const Icon = item.icon}
-							<li>
-								<a
-									href={item.href}
-									class={cn(
-										'relative flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
-										active
-											? 'bg-brand-subtle text-brand font-medium'
-											: 'text-text-muted hover:bg-surface-2 hover:text-text'
-									)}
-									aria-current={active ? 'page' : undefined}
-								>
-									{#if active}
-										<span
-											class="bg-brand absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r"
-											aria-hidden="true"
-										></span>
-									{/if}
-									<Icon class="size-4 shrink-0" aria-hidden="true" />
-									<span class="truncate">{item.label}</span>
-								</a>
-							</li>
-						{/each}
-					</ul>
+<div class="bg-bg text-text flex min-h-dvh w-full">
+	<!-- Desktop sidebar: outer stretches with page; inner sticky fills viewport -->
+	<aside class="border-border bg-surface hidden w-60 shrink-0 border-r md:block">
+		<div class="sticky top-0 flex h-dvh flex-col">
+			<div class="border-border flex h-14 shrink-0 items-center gap-2.5 border-b px-4">
+				<span
+					class="bg-brand text-primary-foreground flex size-7 items-center justify-center rounded-[6px] text-sm font-semibold"
+					aria-hidden="true"
+				>
+					V
+				</span>
+				<div class="min-w-0">
+					<p class="truncate text-sm font-semibold tracking-tight">Verimaya</p>
+					<p class="text-text-muted truncate text-xs">Demo Klinik</p>
 				</div>
-			{/each}
-		</nav>
-		<div class="border-border border-t px-2 py-2">
-			<a
-				href="/ozellikler"
-				class={cn(
-					'flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
-					isActive('/ozellikler')
-						? 'bg-brand-subtle text-brand font-medium'
-						: 'text-text-muted hover:bg-surface-2 hover:text-text'
-				)}
-			>
-				Özellikler
-			</a>
+			</div>
+
+			<nav class="min-h-0 flex-1 overflow-y-auto px-2 py-3" aria-label="Ana menü">
+				{#each visibleGroups as group (group.label)}
+					<div class="mb-4">
+						<p
+							class="text-text-faint px-2.5 pb-1.5 text-[11px] font-semibold tracking-wider uppercase"
+						>
+							{group.label}
+						</p>
+						<ul class="space-y-0.5">
+							{#each group.items as item (item.href)}
+								{@const active = isActive(item.href)}
+								{@const Icon = item.icon}
+								<li>
+									<a
+										href={item.href}
+										class={cn(
+											'relative flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
+											active
+												? 'bg-brand-subtle text-brand font-medium'
+												: 'text-text-muted hover:bg-surface-2 hover:text-text'
+										)}
+										aria-current={active ? 'page' : undefined}
+									>
+										{#if active}
+											<span
+												class="bg-brand absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r"
+												aria-hidden="true"
+											></span>
+										{/if}
+										<Icon class="size-4 shrink-0" aria-hidden="true" />
+										<span class="truncate">{item.label}</span>
+									</a>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/each}
+			</nav>
+			<div class="border-border shrink-0 border-t px-2 py-2">
+				<a
+					href="/ozellikler"
+					class={cn(
+						'flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
+						isActive('/ozellikler')
+							? 'bg-brand-subtle text-brand font-medium'
+							: 'text-text-muted hover:bg-surface-2 hover:text-text'
+					)}
+				>
+					Özellikler
+				</a>
+			</div>
 		</div>
 	</aside>
 
@@ -203,21 +204,10 @@
 				<Menu class="size-5" />
 			</button>
 
-			<button
-				type="button"
-				class="border-border bg-surface text-text-faint hover:border-text-faint hover:text-text-muted flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] border px-3 text-left text-sm transition-colors md:max-w-xl"
-				aria-label="Ara"
-			>
-				<Search class="size-4 shrink-0" aria-hidden="true" />
-				<span class="truncate">Hasta, randevu veya işlem ara…</span>
-				<kbd
-					class="border-border bg-surface-2 text-text-faint ml-auto hidden items-center rounded border px-1.5 py-0.5 font-mono text-[11px] sm:inline-flex"
-				>
-					⌘K
-				</kbd>
-			</button>
+			<CommandPalette />
 
 			<div class="ml-auto flex shrink-0 items-center gap-1">
+				<ThemeToggle />
 				<a
 					href="/yenilikler"
 					class="text-text-muted hover:bg-surface-2 hover:text-text relative rounded-[6px] p-2 transition-colors"

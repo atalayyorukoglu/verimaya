@@ -7,31 +7,32 @@
 /*
   Verimaya design tokens — docs/TASARIM.md
   Components use tokens only; no raw hex in UI code.
+  Default: light. .dark on <html> switches to dark.
 */
-:root,
-.dark {
+
+:root {
 	/* Brand */
 	--brand: #f6821f;
-	--brand-hover: #ff9e42;
+	--brand-hover: #e06b0d;
 	--brand-subtle: rgba(246, 130, 31, 0.12);
 	--gradient-hero: linear-gradient(135deg, #f6821f, #fbad41);
 
-	/* Surfaces */
-	--bg: #0b0d0f;
-	--surface: #14171a;
-	--surface-2: #1c2024;
-	--border: #2c3136;
+	/* Surfaces — light */
+	--bg: #f6f7f8;
+	--surface: #ffffff;
+	--surface-2: #eef0f2;
+	--border: #d8dde2;
 
-	/* Text */
-	--text: #edeff2;
-	--text-muted: #9ba3ab;
-	--text-faint: #6b7280;
+	/* Text — light */
+	--text: #1b1f23;
+	--text-muted: #5b6570;
+	--text-faint: #8b949e;
 
 	/* Status */
-	--success: #3fb950;
-	--warning: #d29922;
-	--danger: #f85149;
-	--info: #58a6ff;
+	--success: #1a7f37;
+	--warning: #9a6700;
+	--danger: #cf222e;
+	--info: #0969da;
 
 	/* Radius — TASARIM: card 8px, control 6px */
 	--radius: 0.5rem;
@@ -42,10 +43,10 @@
 	--foreground: var(--text);
 	--card: var(--surface);
 	--card-foreground: var(--text);
-	--popover: var(--surface-2);
+	--popover: var(--surface);
 	--popover-foreground: var(--text);
 	--primary: var(--brand);
-	--primary-foreground: #0b0d0f;
+	--primary-foreground: #ffffff;
 	--secondary: var(--surface-2);
 	--secondary-foreground: var(--text);
 	--muted: var(--surface-2);
@@ -58,11 +59,36 @@
 	--sidebar: var(--surface);
 	--sidebar-foreground: var(--text);
 	--sidebar-primary: var(--brand);
-	--sidebar-primary-foreground: #0b0d0f;
+	--sidebar-primary-foreground: #ffffff;
 	--sidebar-accent: var(--brand-subtle);
 	--sidebar-accent-foreground: var(--brand);
 	--sidebar-border: var(--border);
 	--sidebar-ring: var(--brand);
+}
+
+.dark {
+	--brand: #f6821f;
+	--brand-hover: #ff9e42;
+	--brand-subtle: rgba(246, 130, 31, 0.12);
+	--gradient-hero: linear-gradient(135deg, #f6821f, #fbad41);
+
+	--bg: #0b0d0f;
+	--surface: #14171a;
+	--surface-2: #1c2024;
+	--border: #2c3136;
+
+	--text: #edeff2;
+	--text-muted: #9ba3ab;
+	--text-faint: #6b7280;
+
+	--success: #3fb950;
+	--warning: #d29922;
+	--danger: #f85149;
+	--info: #58a6ff;
+
+	--primary-foreground: #0b0d0f;
+	--popover: var(--surface-2);
+	--sidebar-primary-foreground: #0b0d0f;
 }
 
 @theme inline {
@@ -73,7 +99,6 @@
 	--radius-lg: calc(var(--radius) + 2px);
 	--radius-xl: calc(var(--radius) + 4px);
 
-	/* Verimaya tokens as utilities: bg-brand, text-muted, border-border, … */
 	--color-brand: var(--brand);
 	--color-brand-hover: var(--brand-hover);
 	--color-brand-subtle: var(--brand-subtle);
@@ -89,7 +114,6 @@
 	--color-danger: var(--danger);
 	--color-info: var(--info);
 
-	/* shadcn color bridge */
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -125,10 +149,31 @@
 	html {
 		@apply antialiased;
 		font-family: var(--font-sans);
+		color-scheme: light;
+	}
+
+	html.dark {
 		color-scheme: dark;
 	}
 
 	body {
 		@apply bg-bg text-text min-h-dvh overflow-x-hidden font-sans text-[15px] leading-normal;
+	}
+
+	a,
+	button,
+	[role='button'],
+	summary,
+	input[type='button'],
+	input[type='submit'],
+	input[type='reset'],
+	label[for],
+	select {
+		cursor: pointer;
+	}
+
+	button:disabled,
+	[aria-disabled='true'] {
+		cursor: not-allowed;
 	}
 }

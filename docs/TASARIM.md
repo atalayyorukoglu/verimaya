@@ -1,13 +1,13 @@
 # Verimaya — Tasarım Sistemi
 
-**Karar (2026-07-17):** Arayüz Cloudflare tasarım dilinden esinlenir; **yalnız koyu tema**, **yalnız Türkçe**. Referans ekran görüntüleri: `docs/tasarim-referans/` (cloudflare-marketing.png, cloudflare-dashboard.png).
+**Karar (2026-07-17, güncellendi):** Arayüz Cloudflare tasarım dilinden esinlenir; **açık + koyu tema** (varsayılan açık), **yalnız Türkçe**. Referans ekran görüntüleri: `docs/tasarim-referans/` (cloudflare-marketing.png, cloudflare-dashboard.png).
 
 ## İki yüz, tek dil
 
 1. **Vitrin (login öncesi):** cloudflare.com tarzı — turuncu gradient hero, bol beyaz alanın koyu karşılığı, büyük başlıklar, bölüm bölüm akan tek sayfa.
 2. **Panel (login sonrası):** Cloudflare dashboard tarzı — sol gruplu menü, üstte hızlı arama (⌘K), kart tabanlı içerik, metrik kartlı ana sayfa. (tickport'taki panel hissiyle uyumlu.)
 
-Tema değiştirici YOK — tek tema koyu. Dil değiştirici YOK — tek dil Türkçe. Bu iki sadeleştirme bilinçli: solo geliştirmede yüzey alanını küçültür.
+Tema değiştirici üst barda (ay/güneş). Varsayılan: **açık**. Tercih `localStorage` (`verimaya:theme`) ile saklanır. Dil değiştirici YOK — tek dil Türkçe.
 
 ## Renk token'ları (koyu tema)
 
@@ -31,7 +31,25 @@ Tailwind config + CSS custom properties olarak tanımlanır; bileşenlerde ham h
 | `--danger` | `#F85149` | Hata, silme |
 | `--info` | `#58A6FF` | Bilgi, bağlantılar (panel içi linkler CF'deki gibi mavi) |
 
-Kontrast kuralı: turuncu, koyu zeminde büyük alanlarda değil **vurgu olarak** kullanılır (buton, aktif durum, hero). Gövde metni asla turuncu olmaz.
+Kontrast kuralı: turuncu, büyük alanlarda değil **vurgu olarak** kullanılır (buton, aktif durum, hero). Gövde metni asla turuncu olmaz.
+
+## Renk token'ları (açık tema)
+
+| Token | Değer |
+|---|---|
+| `--bg` | `#F6F7F8` |
+| `--surface` | `#FFFFFF` |
+| `--surface-2` | `#EEF0F2` |
+| `--border` | `#D8DDE2` |
+| `--text` | `#1B1F23` |
+| `--text-muted` | `#5B6570` |
+| `--text-faint` | `#8B949E` |
+| `--success` | `#1A7F37` |
+| `--warning` | `#9A6700` |
+| `--danger` | `#CF222E` |
+| `--info` | `#0969DA` |
+
+Brand token'ları her iki temada aynı (`--brand` / `--brand-hover` / `--brand-subtle`).
 
 ## Tipografi ve ölçüler
 

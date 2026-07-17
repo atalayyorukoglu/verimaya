@@ -13,7 +13,7 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] Çekirdek ekranlar: hasta listesi/detay, randevu takvimi, finans, WhatsApp inbox, dashboard ("kaldığın yerden devam" deseni)
 - [x] `/ozellikler` sayfası (`packages/shared/src/features.ts`'ten render) + `/yenilikler` iskeleti (`changelog.ts`)
 - [x] Rol değiştirici ile RBAC görünürlük provası
-- [ ] Desktop + mobil responsive (gerçek cihazda `--host` testi)
+- [x] Desktop + mobil responsive (gerçek cihazda `--host` testi)
 
 ## Faz 0b — Gerçek temel (1 hafta)
 

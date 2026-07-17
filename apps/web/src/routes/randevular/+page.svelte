@@ -1,95 +1,254 @@
 <script lang="ts">
-	import { createQuery } from '@tanstack/svelte-query';
-	import type { Appointment } from '@verimaya/shared';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import type {
+		Appointment,
+		AppointmentCreate,
+		AppointmentUpdate,
+		Patient
+	} from '@verimaya/shared';
 	import { appointmentStatusLabels } from '@verimaya/shared';
-	import { apiGet, listUrl } from '$lib/api';
-	import { formatDateTime, formatTime, isSameLocalDay } from '$lib/format';
+	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { formatDate, formatTime } from '$lib/format';
 	import { appointmentStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
 	type Page = { items: Appointment[]; next_cursor: string | null };
+	type PatientsPage = { items: Patient[]; next_cursor: string | null };
+	type ViewMode = 'day' | 'week';
+
+	const queryClient = useQueryClient();
+
+	let view = $state<ViewMode>('week');
+	let anchor = $state(startOfDay(new Date()));
+	let formOpen = $state(false);
+	let editing = $state<Appointment | null>(null);
+	let saving = $state(false);
+	let formError = $state<string | null>(null);
+
+	function startOfDay(d: Date) {
+		const x = new Date(d);
+		x.setHours(0, 0, 0, 0);
+		return x;
+	}
+
+	function addDays(d: Date, n: number) {
+		const x = new Date(d);
+		x.setDate(x.getDate() + n);
+		return x;
+	}
+
+	function startOfWeek(d: Date) {
+		const x = startOfDay(d);
+		const day = x.getDay();
+		const diff = day === 0 ? -6 : 1 - day; // Monday start
+		return addDays(x, diff);
+	}
+
+	const rangeStart = $derived(view === 'day' ? startOfDay(anchor) : startOfWeek(anchor));
+	const rangeEnd = $derived(
+		view === 'day' ? addDays(rangeStart, 1) : addDays(rangeStart, 7)
+	);
+
+	const days = $derived(
+		view === 'day'
+			? [rangeStart]
+			: Array.from({ length: 7 }, (_, i) => addDays(rangeStart, i))
+	);
 
 	const appointmentsQuery = createQuery(() => ({
-		queryKey: ['appointments', { limit: 100 }],
-		queryFn: () => apiGet<Page>(listUrl('appointments', { limit: 100 }))
+		queryKey: ['appointments', { from: rangeStart.toISOString(), to: rangeEnd.toISOString() }],
+		queryFn: () =>
+			apiGet<Page>(
+				listUrl('appointments', {
+					limit: 100,
+					from: rangeStart.toISOString(),
+					to: rangeEnd.toISOString()
+				})
+			)
 	}));
 
-	const today = $derived(
-		(appointmentsQuery.data?.items ?? []).filter((a) => isSameLocalDay(a.starts_at))
+	const patientsQuery = createQuery(() => ({
+		queryKey: ['patients', { limit: 100, for: 'picker' }],
+		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 }))
+	}));
+
+	const byDay = $derived.by(() => {
+		const map = new Map<string, Appointment[]>();
+		for (const day of days) {
+			map.set(day.toISOString().slice(0, 10), []);
+		}
+		for (const appt of appointmentsQuery.data?.items ?? []) {
+			const key = new Date(appt.starts_at).toISOString().slice(0, 10);
+			const list = map.get(key);
+			if (list) list.push(appt);
+		}
+		for (const list of map.values()) {
+			list.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+		}
+		return map;
+	});
+
+	const rangeLabel = $derived(
+		view === 'day'
+			? formatDate(rangeStart.toISOString())
+			: `${formatDate(rangeStart.toISOString())} – ${formatDate(addDays(rangeStart, 6).toISOString())}`
 	);
-	const upcoming = $derived(
-		(appointmentsQuery.data?.items ?? []).filter((a) => !isSameLocalDay(a.starts_at)).slice(0, 30)
-	);
+
+	function openCreate() {
+		editing = null;
+		formOpen = true;
+	}
+
+	function openEdit(appt: Appointment) {
+		editing = appt;
+		formOpen = true;
+	}
+
+	async function saveAppointment(data: AppointmentCreate | AppointmentUpdate) {
+		saving = true;
+		formError = null;
+		try {
+			if (editing) {
+				await apiSend(`/v1/appointments/${editing.id}`, 'PATCH', data);
+			} else {
+				await apiSend('/v1/appointments', 'POST', data);
+			}
+			await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+			formOpen = false;
+			editing = null;
+		} catch (err) {
+			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+		} finally {
+			saving = false;
+		}
+	}
+
+	function shift(dir: -1 | 1) {
+		anchor = addDays(anchor, view === 'day' ? dir : dir * 7);
+	}
 </script>
 
 <svelte:head>
 	<title>Randevular · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto max-w-6xl">
-	<PageHeader
-		title="Randevular"
-		description="Takvim görünümü sonraki iterasyonda; şimdilik gün + liste."
-	/>
+<div class="mx-auto min-w-0 max-w-6xl">
+	<PageHeader title="Randevular" description="Gün ve hafta takvim görünümü.">
+		{#snippet actions()}
+			<div class="flex flex-wrap items-center gap-2">
+				<div class="border-border bg-surface flex rounded-[6px] border p-0.5">
+					<button
+						type="button"
+						class="rounded-[4px] px-2.5 py-1 text-xs font-medium {view === 'day'
+							? 'bg-brand-subtle text-brand'
+							: 'text-text-muted'}"
+						onclick={() => (view = 'day')}
+					>
+						Gün
+					</button>
+					<button
+						type="button"
+						class="rounded-[4px] px-2.5 py-1 text-xs font-medium {view === 'week'
+							? 'bg-brand-subtle text-brand'
+							: 'text-text-muted'}"
+						onclick={() => (view = 'week')}
+					>
+						Hafta
+					</button>
+				</div>
+				<div class="flex items-center gap-1">
+					<Button variant="ghost" size="icon" type="button" aria-label="Önceki" onclick={() => shift(-1)}>
+						<ChevronLeft class="size-4" />
+					</Button>
+					<span class="text-text min-w-0 text-sm font-medium">{rangeLabel}</span>
+					<Button variant="ghost" size="icon" type="button" aria-label="Sonraki" onclick={() => shift(1)}>
+						<ChevronRight class="size-4" />
+					</Button>
+					<Button
+						variant="secondary"
+						type="button"
+						onclick={() => {
+							anchor = startOfDay(new Date());
+						}}
+					>
+						Bugün
+					</Button>
+				</div>
+				<Button type="button" onclick={openCreate}>Yeni randevu</Button>
+			</div>
+		{/snippet}
+	</PageHeader>
 
 	{#if appointmentsQuery.isPending}
 		<p class="text-text-muted text-sm">Yükleniyor…</p>
 	{:else if appointmentsQuery.isError}
 		<p class="text-danger text-sm">Randevular yüklenemedi.</p>
-	{:else if (appointmentsQuery.data?.items.length ?? 0) === 0}
-		<div class="border-border bg-surface rounded-lg border p-8 text-center">
-			<p class="text-text-muted text-sm">Randevu yok.</p>
-		</div>
 	{:else}
-		<section class="mb-8">
-			<h2 class="text-text mb-3 text-sm font-semibold">Bugün</h2>
-			{#if today.length === 0}
-				<p class="text-text-faint text-sm">Bugün randevu yok.</p>
-			{:else}
-				<ul class="space-y-2">
-					{#each today as appt (appt.id)}
-						<li class="border-border bg-surface flex flex-col gap-2 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
-							<div class="flex min-w-0 items-start gap-3">
-								<span class="text-brand w-14 shrink-0 text-sm font-semibold tabular-nums">
-									{formatTime(appt.starts_at)}
-								</span>
-								<div class="min-w-0">
-									<p class="text-text truncate text-sm font-medium">{appt.patient_display_name}</p>
-									<p class="text-text-muted truncate text-xs">
-										{appt.title ?? appt.appointment_type ?? 'Randevu'}
-										{#if appt.clinic_name}
-											· {appt.clinic_name}
-										{/if}
-									</p>
-								</div>
-							</div>
-							<StatusBadge
-								label={appointmentStatusLabels[appt.status]}
-								tone={appointmentStatusTone(appt.status)}
-							/>
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		</section>
-
-		<section>
-			<h2 class="text-text mb-3 text-sm font-semibold">Yaklaşan</h2>
-			<ul class="border-border bg-surface divide-border divide-y overflow-hidden rounded-lg border">
-				{#each upcoming as appt (appt.id)}
-					<li class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-						<div class="min-w-0">
-							<p class="text-text truncate text-sm font-medium">{appt.patient_display_name}</p>
-							<p class="text-text-faint text-xs">{formatDateTime(appt.starts_at)}</p>
-						</div>
-						<StatusBadge
-							label={appointmentStatusLabels[appt.status]}
-							tone={appointmentStatusTone(appt.status)}
-						/>
-					</li>
-				{/each}
-			</ul>
-		</section>
+		<div
+			class="grid min-w-0 gap-3 {view === 'week'
+				? 'md:grid-cols-7'
+				: 'grid-cols-1'}"
+		>
+			{#each days as day (day.toISOString())}
+				{@const key = day.toISOString().slice(0, 10)}
+				{@const items = byDay.get(key) ?? []}
+				{@const isToday = key === new Date().toISOString().slice(0, 10)}
+				<section
+					class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border {isToday
+						? 'ring-brand/40 ring-1'
+						: ''}"
+				>
+					<header class="border-border bg-surface-2/40 border-b px-3 py-2">
+						<p class="text-text-muted text-[11px] font-semibold tracking-wider uppercase">
+							{day.toLocaleDateString('tr-TR', { weekday: 'short' })}
+						</p>
+						<p class="text-text text-sm font-semibold">{day.getDate()}</p>
+					</header>
+					<ul class="min-h-24 space-y-1.5 p-2">
+						{#if items.length === 0}
+							<li class="text-text-faint px-1 py-3 text-center text-xs">Boş</li>
+						{:else}
+							{#each items as appt (appt.id)}
+								<li>
+									<button
+										type="button"
+										class="hover:bg-surface-2 w-full min-w-0 rounded-[6px] border border-transparent px-2 py-1.5 text-left transition-colors"
+										onclick={() => openEdit(appt)}
+									>
+										<p class="text-brand text-xs font-medium tabular-nums">
+											{formatTime(appt.starts_at)}
+										</p>
+										<p class="text-text truncate text-xs font-medium">{appt.patient_display_name}</p>
+										<p class="text-text-faint truncate text-[11px]">
+											{appt.title ?? appt.appointment_type ?? 'Randevu'}
+										</p>
+										<div class="mt-1">
+											<StatusBadge
+												label={appointmentStatusLabels[appt.status]}
+												tone={appointmentStatusTone(appt.status)}
+											/>
+										</div>
+									</button>
+								</li>
+							{/each}
+						{/if}
+					</ul>
+				</section>
+			{/each}
+		</div>
 	{/if}
 </div>
+
+<AppointmentFormDialog
+	bind:open={formOpen}
+	appointment={editing}
+	patients={patientsQuery.data?.items ?? []}
+	{saving}
+	error={formError}
+	onsubmit={saveAppointment}
+/>

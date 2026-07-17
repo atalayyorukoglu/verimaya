@@ -1,20 +1,41 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { createQuery } from '@tanstack/svelte-query';
-	import type { Patient } from '@verimaya/shared';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import type { Patient, PatientUpdate } from '@verimaya/shared';
 	import { patientStatusLabels } from '@verimaya/shared';
-	import { apiGet } from '$lib/api';
+	import { apiGet, apiSend } from '$lib/api';
 	import { formatDateTime } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import PatientFormDialog from '$lib/components/PatientFormDialog.svelte';
+	import { Button } from '$lib/components/ui/button';
 
+	const queryClient = useQueryClient();
 	const id = $derived(page.params.id!);
+
+	let formOpen = $state(false);
+	let saving = $state(false);
+	let formError = $state<string | null>(null);
 
 	const patientQuery = createQuery(() => ({
 		queryKey: ['patients', id],
 		queryFn: () => apiGet<Patient>(`/v1/patients/${id}`)
 	}));
+
+	async function updatePatient(data: PatientUpdate) {
+		saving = true;
+		formError = null;
+		try {
+			await apiSend<Patient>(`/v1/patients/${id}`, 'PATCH', data);
+			await queryClient.invalidateQueries({ queryKey: ['patients'] });
+			formOpen = false;
+		} catch (err) {
+			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -23,7 +44,7 @@
 	</title>
 </svelte:head>
 
-<div class="mx-auto max-w-3xl">
+<div class="mx-auto min-w-0 max-w-3xl">
 	<a href="/hastalar" class="text-info mb-4 inline-block text-sm hover:underline">← Hastalar</a>
 
 	{#if patientQuery.isPending}
@@ -40,13 +61,14 @@
 					label={patientStatusLabels[patient.status]}
 					tone={patientStatusTone(patient.status)}
 				/>
+				<Button type="button" variant="secondary" onclick={() => (formOpen = true)}>Düzenle</Button>
 			{/snippet}
 		</PageHeader>
 
-		<dl class="border-border bg-surface divide-border divide-y rounded-lg border">
+		<dl class="border-border bg-surface divide-border divide-y overflow-hidden rounded-lg border">
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
 				<dt class="text-text-muted text-xs font-medium">Telefon</dt>
-				<dd class="text-text text-sm tabular-nums">{patient.phone ?? '—'}</dd>
+				<dd class="text-text text-sm break-all tabular-nums">{patient.phone ?? '—'}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
 				<dt class="text-text-muted text-xs font-medium">E-posta</dt>
@@ -54,7 +76,7 @@
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
 				<dt class="text-text-muted text-xs font-medium">Kaynak</dt>
-				<dd class="text-text text-sm">{patient.source ?? '—'}</dd>
+				<dd class="text-text text-sm break-words">{patient.source ?? '—'}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
 				<dt class="text-text-muted text-xs font-medium">Oluşturulma</dt>
@@ -62,8 +84,16 @@
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
 				<dt class="text-text-muted text-xs font-medium">Notlar</dt>
-				<dd class="text-text text-sm whitespace-pre-wrap">{patient.notes ?? '—'}</dd>
+				<dd class="text-text text-sm break-words whitespace-pre-wrap">{patient.notes ?? '—'}</dd>
 			</div>
 		</dl>
+
+		<PatientFormDialog
+			bind:open={formOpen}
+			{patient}
+			{saving}
+			error={formError}
+			onsubmit={updatePatient}
+		/>
 	{/if}
 </div>

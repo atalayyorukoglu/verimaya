@@ -34,7 +34,7 @@ alwaysApply: false
 
 ## UI ve tasarım
 
-- Tasarım sistemi: `docs/TASARIM.md` — Cloudflare-esinli, **yalnız koyu tema** (tema değiştirici yok), **yalnız Türkçe** (i18n altyapısı kurulmaz, metinler doğrudan Türkçe yazılır).
+- Tasarım sistemi: `docs/TASARIM.md` — Cloudflare-esinli, **açık + koyu tema** (varsayılan açık, üst barda değiştirici), **yalnız Türkçe** (i18n altyapısı kurulmaz, metinler doğrudan Türkçe yazılır).
 - Renkler daima token üzerinden (`--brand`, `--surface`, `--border`…); bileşende ham hex yasak. Turuncu yalnız vurgudur (buton, aktif durum); gövde metni asla turuncu olmaz.
 - Bileşenler: shadcn-svelte (bits-ui tabanlı) öncelikli; özel bileşen ancak karşılamıyorsa yazılır.
 - Panel düzeni: CF dashboard deseni — sol gruplu menü + üst bar (⌘K arama, yenilikler zili); detay `docs/TASARIM.md`.

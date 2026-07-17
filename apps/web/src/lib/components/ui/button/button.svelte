@@ -5,7 +5,7 @@
 	import type { Snippet } from 'svelte';
 
 	const buttonVariants = tv({
-		base: 'inline-flex items-center justify-center gap-2 rounded-[6px] text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+		base: 'inline-flex items-center justify-center gap-2 rounded-[6px] text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
 		variants: {
 			variant: {
 				default: 'bg-brand text-primary-foreground hover:bg-brand-hover',

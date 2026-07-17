@@ -20,6 +20,16 @@ function mockHeaders(): HeadersInit {
 	return scenario ? { 'x-mock-scenario': scenario } : {};
 }
 
+async function parseError(res: Response): Promise<never> {
+	let body: ApiError | null = null;
+	try {
+		body = (await res.json()) as ApiError;
+	} catch {
+		/* ignore */
+	}
+	throw new ApiRequestError(res.status, body);
+}
+
 export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(path, {
 		...init,
@@ -30,26 +40,56 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
 		}
 	});
 
-	if (!res.ok) {
-		let body: ApiError | null = null;
-		try {
-			body = (await res.json()) as ApiError;
-		} catch {
-			/* ignore */
-		}
-		throw new ApiRequestError(res.status, body);
-	}
+	if (!res.ok) await parseError(res);
+	return res.json() as Promise<T>;
+}
 
+export async function apiSend<T>(
+	path: string,
+	method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+	body?: unknown,
+	init?: RequestInit
+): Promise<T> {
+	const res = await fetch(path, {
+		...init,
+		method,
+		headers: {
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
+			...mockHeaders(),
+			...init?.headers
+		},
+		body: body === undefined ? undefined : JSON.stringify(body)
+	});
+
+	if (!res.ok) await parseError(res);
+	if (res.status === 204) return undefined as T;
 	return res.json() as Promise<T>;
 }
 
 export function listUrl(
 	resource: string,
-	params?: { cursor?: string | null; limit?: number; q?: string }
+	params?: {
+		cursor?: string | null;
+		limit?: number;
+		q?: string;
+		from?: string;
+		to?: string;
+	}
 ): string {
 	const url = new URL(`/v1/${resource}`, 'http://local');
 	if (params?.cursor) url.searchParams.set('cursor', params.cursor);
 	if (params?.limit) url.searchParams.set('limit', String(params.limit));
 	if (params?.q) url.searchParams.set('q', params.q);
+	if (params?.from) url.searchParams.set('from', params.from);
+	if (params?.to) url.searchParams.set('to', params.to);
 	return `${url.pathname}${url.search}`;
 }
+
+export const fieldClass =
+	'border-border bg-surface text-text placeholder:text-text-faint h-9 w-full rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40';
+
+export const textareaClass =
+	'border-border bg-surface text-text placeholder:text-text-faint min-h-24 w-full rounded-[6px] border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/40';
+
+export const labelClass = 'text-text-muted mb-1 block text-xs font-medium';

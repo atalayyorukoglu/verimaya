@@ -39,7 +39,7 @@
 	<title>WhatsApp Inbox · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto max-w-6xl">
+<div class="mx-auto min-w-0 max-w-6xl">
 	<PageHeader
 		title="WhatsApp Inbox"
 		description="Provider-agnostic konuşma listesi — AI onay akışı sonra eklenecek."
@@ -55,25 +55,27 @@
 		</div>
 	{:else}
 		<div
-			class="border-border bg-surface grid min-h-[420px] overflow-hidden rounded-lg border lg:grid-cols-[280px_1fr]"
+			class="border-border bg-surface grid min-h-[420px] min-w-0 overflow-hidden rounded-lg border lg:grid-cols-[280px_1fr]"
 		>
-			<aside class="border-border divide-border max-h-[70vh] divide-y overflow-y-auto border-b lg:border-r lg:border-b-0">
+			<aside
+				class="border-border divide-border max-h-[40vh] min-w-0 divide-y overflow-y-auto border-b lg:max-h-[70vh] lg:border-r lg:border-b-0"
+			>
 				{#each conversationsQuery.data?.items ?? [] as conv (conv.id)}
 					<button
 						type="button"
-						class="hover:bg-surface-2 w-full px-3 py-3 text-left transition-colors {selectedId ===
+						class="hover:bg-surface-2 w-full min-w-0 px-3 py-3 text-left transition-colors {selectedId ===
 						conv.id
 							? 'bg-brand-subtle'
 							: ''}"
 						onclick={() => (selectedId = conv.id)}
 					>
-						<div class="flex items-center justify-between gap-2">
-							<p class="text-text truncate text-sm font-medium">
+						<div class="flex min-w-0 items-center gap-2">
+							<p class="text-text min-w-0 flex-1 truncate text-sm font-medium">
 								{conv.contact_name ?? 'Bilinmeyen'}
 							</p>
 							{#if conv.unread_count > 0}
 								<span
-									class="bg-brand text-primary-foreground rounded-full px-1.5 text-[10px] font-semibold"
+									class="bg-brand text-primary-foreground shrink-0 rounded-full px-1.5 text-[10px] font-semibold"
 								>
 									{conv.unread_count}
 								</span>
@@ -84,16 +86,16 @@
 				{/each}
 			</aside>
 
-			<div class="flex min-h-[320px] flex-col">
+			<div class="flex min-h-[320px] min-w-0 flex-col overflow-hidden">
 				{#if selected}
-					<div class="border-border flex items-center justify-between gap-2 border-b px-4 py-3">
-						<div class="min-w-0">
+					<div class="border-border flex min-w-0 items-center justify-between gap-2 border-b px-4 py-3">
+						<div class="min-w-0 flex-1 overflow-hidden">
 							<p class="text-text truncate text-sm font-semibold">{selected.contact_name}</p>
-							<p class="text-text-faint text-xs">{selected.contact_phone}</p>
+							<p class="text-text-faint truncate text-xs">{selected.contact_phone}</p>
 						</div>
 						<StatusBadge label={conversationStatusLabels[selected.status]} tone="info" />
 					</div>
-					<div class="flex-1 space-y-3 overflow-y-auto p-4">
+					<div class="min-w-0 flex-1 space-y-3 overflow-y-auto p-4">
 						{#if messagesQuery.isPending}
 							<p class="text-text-faint text-sm">Mesajlar yükleniyor…</p>
 						{:else}
@@ -102,7 +104,7 @@
 									class="flex {msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}"
 								>
 									<div
-										class="max-w-[80%] rounded-[8px] px-3 py-2 text-sm {msg.direction ===
+										class="max-w-[min(80%,24rem)] break-words rounded-[8px] px-3 py-2 text-sm {msg.direction ===
 										'outbound'
 											? 'bg-brand-subtle text-text'
 											: 'bg-surface-2 text-text'}"
