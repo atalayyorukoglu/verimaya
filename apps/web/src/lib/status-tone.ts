@@ -1,4 +1,9 @@
-import type { PatientStatus, AppointmentStatus, TransactionStatus, FeatureStatus } from '@verimaya/shared';
+import type {
+	PatientStatus,
+	AppointmentStatus,
+	TransactionStatus,
+	FeatureStatus
+} from '@verimaya/shared';
 
 type Tone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'info';
 

@@ -19,3 +19,8 @@ export const tenantCreateSchema = tenantSchema.omit({
 });
 
 export type TenantCreate = z.infer<typeof tenantCreateSchema>;
+
+/** Slug is immutable after creation. */
+export const tenantUpdateSchema = tenantCreateSchema.omit({ slug: true }).partial();
+
+export type TenantUpdate = z.infer<typeof tenantUpdateSchema>;

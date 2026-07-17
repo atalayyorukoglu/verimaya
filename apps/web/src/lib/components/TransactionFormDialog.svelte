@@ -147,14 +147,17 @@
 		</div>
 		<div>
 			<label class={labelClass} for="tx-desc">Açıklama</label>
-			<textarea id="tx-desc" class={textareaClass} bind:value={description} maxlength={8000}></textarea>
+			<textarea id="tx-desc" class={textareaClass} bind:value={description} maxlength={8000}
+			></textarea>
 		</div>
 		{#if error}
-			<p class="text-danger text-sm">{error}</p>
+			<p class="text-sm text-danger">{error}</p>
 		{/if}
 	</form>
 	{#snippet footer()}
-		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}>İptal</Button>
+		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
+			>İptal</Button
+		>
 		<Button type="submit" form="tx-form" disabled={saving || !title.trim() || !amountMajor}>
 			{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
 		</Button>

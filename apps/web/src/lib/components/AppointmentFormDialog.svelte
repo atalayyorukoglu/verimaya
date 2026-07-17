@@ -125,7 +125,13 @@
 		<div class="grid gap-3 sm:grid-cols-2">
 			<div>
 				<label class={labelClass} for="appt-start">Başlangıç</label>
-				<input id="appt-start" class={fieldClass} type="datetime-local" bind:value={startsLocal} required />
+				<input
+					id="appt-start"
+					class={fieldClass}
+					type="datetime-local"
+					bind:value={startsLocal}
+					required
+				/>
 			</div>
 			<div>
 				<label class={labelClass} for="appt-end">Bitiş</label>
@@ -138,14 +144,17 @@
 		</div>
 		<div>
 			<label class={labelClass} for="appt-notes">Notlar</label>
-			<textarea id="appt-notes" class={textareaClass} bind:value={notes} maxlength={8000}></textarea>
+			<textarea id="appt-notes" class={textareaClass} bind:value={notes} maxlength={8000}
+			></textarea>
 		</div>
 		{#if error}
-			<p class="text-danger text-sm">{error}</p>
+			<p class="text-sm text-danger">{error}</p>
 		{/if}
 	</form>
 	{#snippet footer()}
-		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}>İptal</Button>
+		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
+			>İptal</Button
+		>
 		<Button type="submit" form="appointment-form" disabled={saving || !patient_id || !startsLocal}>
 			{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
 		</Button>

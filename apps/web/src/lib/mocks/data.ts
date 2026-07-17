@@ -1,13 +1,15 @@
 import { faker } from '@faker-js/faker/locale/en';
 import type {
 	Appointment,
+	AuditLog,
 	Conversation,
 	Message,
 	Patient,
 	PatientStatus,
 	Tenant,
 	Transaction,
-	MembershipUser
+	MembershipUser,
+	UserRole
 } from '@verimaya/shared';
 
 export type MockScenario = 'default' | 'empty' | 'large';
@@ -47,8 +49,7 @@ const STATUSES: PatientStatus[] = [
 
 const SOURCES = ['Meta Ads', 'Google Ads', 'WhatsApp', 'Referans', 'GHL', 'Website'];
 
-const LONG_NAME =
-	'Aleksandra-Maria Katarzyna von Habsburg-Lorraine-Wojciechowski-Papadopoulos';
+const LONG_NAME = 'Aleksandra-Maria Katarzyna von Habsburg-Lorraine-Wojciechowski-Papadopoulos';
 
 function seedFaker(scenario: MockScenario) {
 	faker.seed(scenario === 'large' ? 42_001 : 42);
@@ -66,12 +67,14 @@ function makePatient(overrides: Partial<Patient> = {}): Patient {
 		id: faker.string.uuid(),
 		tenant_id: DEMO_TENANT_ID,
 		full_name: `${first} ${last}`,
-		phone: faker.helpers.maybe(() => `+90${faker.string.numeric(10)}`, {
-			probability: 0.85
-		}) ?? null,
-		email: faker.helpers.maybe(() => faker.internet.email({ firstName: first, lastName: last }), {
-			probability: 0.7
-		}) ?? null,
+		phone:
+			faker.helpers.maybe(() => `+90${faker.string.numeric(10)}`, {
+				probability: 0.85
+			}) ?? null,
+		email:
+			faker.helpers.maybe(() => faker.internet.email({ firstName: first, lastName: last }), {
+				probability: 0.7
+			}) ?? null,
 		status: faker.helpers.arrayElement(STATUSES),
 		source: faker.helpers.arrayElement(SOURCES),
 		notes: faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.4 }) ?? null,
@@ -96,18 +99,8 @@ function makeAppointment(patient: Patient, overrides: Partial<Appointment> = {})
 			'Kontrol randevusu',
 			'Tedavi günü'
 		]),
-		appointment_type: faker.helpers.arrayElement([
-			'Konsültasyon',
-			'Tedavi',
-			'Kontrol',
-			'Transfer'
-		]),
-		status: faker.helpers.arrayElement([
-			'scheduled',
-			'confirmed',
-			'completed',
-			'cancelled'
-		]),
+		appointment_type: faker.helpers.arrayElement(['Konsültasyon', 'Tedavi', 'Kontrol', 'Transfer']),
+		status: faker.helpers.arrayElement(['scheduled', 'confirmed', 'completed', 'cancelled']),
 		starts_at: iso(starts),
 		ends_at: iso(ends),
 		clinic_name: faker.helpers.maybe(() => 'İstanbul Klinik', { probability: 0.7 }) ?? null,
@@ -120,7 +113,10 @@ function makeAppointment(patient: Patient, overrides: Partial<Appointment> = {})
 	};
 }
 
-function makeTransaction(patient: Patient | null, overrides: Partial<Transaction> = {}): Transaction {
+function makeTransaction(
+	patient: Patient | null,
+	overrides: Partial<Transaction> = {}
+): Transaction {
 	const kind = faker.helpers.arrayElement(['income', 'expense'] as const);
 	const amount = faker.number.int({ min: 5_000_00, max: 250_000_00 });
 	const status = faker.helpers.arrayElement(['paid', 'partial', 'unpaid'] as const);
@@ -139,8 +135,7 @@ function makeTransaction(patient: Patient | null, overrides: Partial<Transaction
 		invoice_status: faker.helpers.arrayElement(['none', 'issued', 'not_issued'] as const),
 		payment_method: faker.helpers.arrayElement(['Havale', 'Nakit', 'Kart', null]),
 		amount,
-		paid_amount:
-			status === 'paid' ? amount : status === 'partial' ? Math.floor(amount / 2) : null,
+		paid_amount: status === 'paid' ? amount : status === 'partial' ? Math.floor(amount / 2) : null,
 		currency: 'TRY',
 		patient_id: patient?.id ?? null,
 		patient_display_name: patient?.full_name ?? null,
@@ -152,7 +147,10 @@ function makeTransaction(patient: Patient | null, overrides: Partial<Transaction
 	};
 }
 
-function makeConversation(patient: Patient | null, overrides: Partial<Conversation> = {}): Conversation {
+function makeConversation(
+	patient: Patient | null,
+	overrides: Partial<Conversation> = {}
+): Conversation {
 	const lastAt = faker.date.recent({ days: 7 });
 	return {
 		id: faker.string.uuid(),
@@ -174,12 +172,84 @@ function makeConversation(patient: Patient | null, overrides: Partial<Conversati
 	};
 }
 
+const TEAM: { name: string; role: UserRole }[] = [
+	{ name: 'Demo Kullanıcı', role: 'owner' },
+	{ name: 'Elif Yılmaz', role: 'admin' },
+	{ name: 'Mert Kaya', role: 'manager' },
+	{ name: 'Zeynep Demir', role: 'agent' },
+	{ name: 'Can Aksoy', role: 'agent' },
+	{ name: 'Selin Arslan', role: 'finance' }
+];
+
+function makeMembers(): MembershipUser[] {
+	return TEAM.map((m, i) => ({
+		id: i === 0 ? DEMO_USER_ID : faker.string.uuid(),
+		email:
+			i === 0
+				? 'demo@verimaya.app'
+				: `${m.name.toLowerCase().replace(/[^a-z]+/g, '.')}@verimaya.app`,
+		display_name: m.name,
+		created_at: iso(faker.date.past({ years: 1 })),
+		tenant_id: DEMO_TENANT_ID,
+		role: m.role
+	}));
+}
+
+function makeAuditLogs(
+	members: MembershipUser[],
+	patients: Patient[],
+	transactions: Transaction[]
+): AuditLog[] {
+	const logs: AuditLog[] = [];
+	const n = 60;
+	for (let i = 0; i < n; i++) {
+		const actor = faker.helpers.arrayElement(members);
+		const roll = faker.number.int({ min: 0, max: 9 });
+		let entity_type: AuditLog['entity_type'];
+		let entity_label: string | null;
+		let action: AuditLog['action'];
+
+		if (roll < 4 && patients.length > 0) {
+			entity_type = 'patient';
+			entity_label = faker.helpers.arrayElement(patients).full_name;
+			action = faker.helpers.arrayElement(['create', 'update'] as const);
+		} else if (roll < 7 && transactions.length > 0) {
+			entity_type = 'transaction';
+			entity_label = faker.helpers.arrayElement(transactions).title;
+			action = faker.helpers.arrayElement(['create', 'update', 'delete'] as const);
+		} else if (roll < 9) {
+			entity_type = 'appointment';
+			entity_label = patients.length > 0 ? faker.helpers.arrayElement(patients).full_name : null;
+			action = faker.helpers.arrayElement(['create', 'update'] as const);
+		} else {
+			entity_type = 'user';
+			entity_label = actor.display_name;
+			action = 'login';
+		}
+
+		logs.push({
+			id: faker.string.uuid(),
+			tenant_id: DEMO_TENANT_ID,
+			actor_id: actor.id,
+			actor_display_name: actor.display_name,
+			action,
+			entity_type,
+			entity_label,
+			created_at: iso(faker.date.recent({ days: 21 }))
+		});
+	}
+	return logs.sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
 export type DemoStore = {
+	tenant: Tenant;
 	patients: Patient[];
 	appointments: Appointment[];
 	transactions: Transaction[];
 	conversations: Conversation[];
 	messages: Message[];
+	members: MembershipUser[];
+	auditLogs: AuditLog[];
 };
 
 function buildStore(scenario: MockScenario): DemoStore {
@@ -187,11 +257,14 @@ function buildStore(scenario: MockScenario): DemoStore {
 
 	if (scenario === 'empty') {
 		return {
+			tenant: { ...demoTenant },
 			patients: [],
 			appointments: [],
 			transactions: [],
 			conversations: [],
-			messages: []
+			messages: [],
+			members: [{ ...demoUser }],
+			auditLogs: []
 		};
 	}
 
@@ -222,13 +295,13 @@ function buildStore(scenario: MockScenario): DemoStore {
 		return [appt];
 	});
 
-	const transactions = patients.slice(0, Math.min(60, patients.length)).map((p, i) =>
-		makeTransaction(i % 5 === 0 ? null : p)
-	);
+	const transactions = patients
+		.slice(0, Math.min(60, patients.length))
+		.map((p, i) => makeTransaction(i % 5 === 0 ? null : p));
 
-	const conversations = patients.slice(0, Math.min(24, patients.length)).map((p) =>
-		makeConversation(p)
-	);
+	const conversations = patients
+		.slice(0, Math.min(24, patients.length))
+		.map((p) => makeConversation(p));
 
 	const messages: Message[] = conversations.flatMap((c) => {
 		const n = faker.number.int({ min: 2, max: 6 });
@@ -250,7 +323,19 @@ function buildStore(scenario: MockScenario): DemoStore {
 		});
 	});
 
-	return { patients, appointments, transactions, conversations, messages };
+	const members = makeMembers();
+	const auditLogs = makeAuditLogs(members, patients, transactions);
+
+	return {
+		tenant: { ...demoTenant },
+		patients,
+		appointments,
+		transactions,
+		conversations,
+		messages,
+		members,
+		auditLogs
+	};
 }
 
 const cache = new Map<MockScenario, DemoStore>();

@@ -157,7 +157,7 @@
 	}
 
 	body {
-		@apply bg-bg text-text min-h-dvh overflow-x-hidden font-sans text-[15px] leading-normal;
+		@apply min-h-dvh overflow-x-hidden bg-bg font-sans text-[15px] leading-normal text-text;
 	}
 
 	a,

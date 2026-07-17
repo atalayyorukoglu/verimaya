@@ -36,7 +36,7 @@
 		{/if}
 	</QueryClientProvider>
 {:else}
-	<div class="bg-bg text-text-muted flex min-h-dvh items-center justify-center text-sm">
+	<div class="flex min-h-dvh items-center justify-center bg-bg text-sm text-text-muted">
 		Yükleniyor…
 	</div>
 {/if}

@@ -38,12 +38,12 @@
 </script>
 
 <div
-	class="border-border bg-surface-2/80 text-text-muted fixed right-3 bottom-3 left-3 z-50 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center gap-2 rounded-[8px] border px-2.5 py-2 text-xs shadow-lg backdrop-blur sm:left-auto sm:max-w-none"
+	class="fixed right-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] left-3 z-50 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center gap-2 rounded-[8px] border border-border bg-surface-2/80 px-2.5 py-2 text-xs text-text-muted shadow-lg backdrop-blur sm:left-auto sm:max-w-none md:bottom-3"
 >
 	<label class="flex items-center gap-1.5">
 		<span class="text-text-faint">MSW</span>
 		<select
-			class="border-border bg-surface text-text rounded-[6px] border px-1.5 py-1"
+			class="rounded-[6px] border border-border bg-surface px-1.5 py-1 text-text"
 			value={scenario}
 			onchange={onScenarioChange}
 		>
@@ -52,11 +52,11 @@
 			{/each}
 		</select>
 	</label>
-	<span class="bg-border h-4 w-px" aria-hidden="true"></span>
+	<span class="h-4 w-px bg-border" aria-hidden="true"></span>
 	<label class="flex items-center gap-1.5">
 		<span class="text-text-faint">Rol</span>
 		<select
-			class="border-border bg-surface text-text rounded-[6px] border px-1.5 py-1"
+			class="rounded-[6px] border border-border bg-surface px-1.5 py-1 text-text"
 			value={role}
 			onchange={onRoleChange}
 		>

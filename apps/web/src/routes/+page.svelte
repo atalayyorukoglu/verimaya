@@ -42,7 +42,7 @@
 	<title>Panel · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto min-w-0 max-w-6xl">
+<div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader
 		title="Kaldığın yerden devam et"
 		description={tenantQuery.data
@@ -51,26 +51,26 @@
 	/>
 
 	<div class="mb-8 grid min-w-0 gap-4 lg:grid-cols-3">
-		<section class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border p-4">
+		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 class="text-text text-sm font-semibold">Son hastalar</h2>
-				<a href="/hastalar" class="text-info text-xs hover:underline">Tümü</a>
+				<h2 class="text-sm font-semibold text-text">Son hastalar</h2>
+				<a href="/hastalar" class="text-xs text-info hover:underline">Tümü</a>
 			</div>
 			{#if patientsQuery.isPending}
-				<p class="text-text-faint text-sm">Yükleniyor…</p>
+				<p class="text-sm text-text-faint">Yükleniyor…</p>
 			{:else if recentPatients.length === 0}
-				<p class="text-text-faint text-sm">Henüz hasta yok.</p>
+				<p class="text-sm text-text-faint">Henüz hasta yok.</p>
 			{:else}
-				<ul class="divide-border min-w-0 divide-y">
+				<ul class="min-w-0 divide-y divide-border">
 					{#each recentPatients as patient (patient.id)}
 						<li class="min-w-0">
 							<a
 								href={`/hastalar/${patient.id}`}
-								class="hover:bg-surface-2 flex min-w-0 items-center gap-2 rounded-[6px] px-1 py-2.5 transition-colors sm:gap-3 sm:px-2"
+								class="flex min-w-0 items-center gap-2 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:gap-3 sm:px-2"
 							>
 								<div class="min-w-0 flex-1 overflow-hidden">
-									<p class="text-text truncate text-sm font-medium">{patient.full_name}</p>
-									<p class="text-text-faint truncate text-xs">
+									<p class="truncate text-sm font-medium text-text">{patient.full_name}</p>
+									<p class="truncate text-xs text-text-faint">
 										{patient.source ?? 'Kaynak yok'} · {formatDateTime(patient.updated_at)}
 									</p>
 								</div>
@@ -85,25 +85,27 @@
 			{/if}
 		</section>
 
-		<section class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border p-4">
+		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 class="text-text text-sm font-semibold">Bugünün randevuları</h2>
-				<a href="/randevular" class="text-info text-xs hover:underline">Tümü</a>
+				<h2 class="text-sm font-semibold text-text">Bugünün randevuları</h2>
+				<a href="/randevular" class="text-xs text-info hover:underline">Tümü</a>
 			</div>
 			{#if appointmentsQuery.isPending}
-				<p class="text-text-faint text-sm">Yükleniyor…</p>
+				<p class="text-sm text-text-faint">Yükleniyor…</p>
 			{:else if todayAppointments.length === 0}
-				<p class="text-text-faint text-sm">Bugün randevu yok.</p>
+				<p class="text-sm text-text-faint">Bugün randevu yok.</p>
 			{:else}
-				<ul class="divide-border min-w-0 divide-y">
+				<ul class="min-w-0 divide-y divide-border">
 					{#each todayAppointments as appt (appt.id)}
 						<li class="flex min-w-0 items-start gap-2 py-2.5 sm:gap-3">
-							<span class="text-brand w-10 shrink-0 pt-0.5 text-sm font-medium tabular-nums sm:w-12">
+							<span
+								class="w-10 shrink-0 pt-0.5 text-sm font-medium text-brand tabular-nums sm:w-12"
+							>
 								{formatTime(appt.starts_at)}
 							</span>
 							<div class="min-w-0 flex-1 overflow-hidden">
-								<p class="text-text truncate text-sm font-medium">{appt.patient_display_name}</p>
-								<p class="text-text-faint truncate text-xs">
+								<p class="truncate text-sm font-medium text-text">{appt.patient_display_name}</p>
+								<p class="truncate text-xs text-text-faint">
 									{appt.title ?? appt.appointment_type ?? 'Randevu'}
 								</p>
 							</div>
@@ -113,36 +115,36 @@
 			{/if}
 		</section>
 
-		<section class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border p-4">
+		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 class="text-text text-sm font-semibold">Son mesajlar</h2>
-				<a href="/inbox" class="text-info text-xs hover:underline">Inbox</a>
+				<h2 class="text-sm font-semibold text-text">Son mesajlar</h2>
+				<a href="/inbox" class="text-xs text-info hover:underline">Inbox</a>
 			</div>
 			{#if conversationsQuery.isPending}
-				<p class="text-text-faint text-sm">Yükleniyor…</p>
+				<p class="text-sm text-text-faint">Yükleniyor…</p>
 			{:else if recentMessages.length === 0}
-				<p class="text-text-faint text-sm">Henüz mesaj yok.</p>
+				<p class="text-sm text-text-faint">Henüz mesaj yok.</p>
 			{:else}
-				<ul class="divide-border min-w-0 divide-y">
+				<ul class="min-w-0 divide-y divide-border">
 					{#each recentMessages as conv (conv.id)}
 						<li class="min-w-0">
 							<a
 								href="/inbox"
-								class="hover:bg-surface-2 block min-w-0 rounded-[6px] px-1 py-2.5 transition-colors sm:px-2"
+								class="block min-w-0 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:px-2"
 							>
 								<div class="flex min-w-0 items-center gap-2">
-									<p class="text-text min-w-0 flex-1 truncate text-sm font-medium">
+									<p class="min-w-0 flex-1 truncate text-sm font-medium text-text">
 										{conv.contact_name ?? conv.patient_display_name ?? 'Bilinmeyen'}
 									</p>
 									{#if conv.unread_count > 0}
 										<span
-											class="bg-brand text-primary-foreground shrink-0 rounded-full px-1.5 text-[10px] font-semibold"
+											class="shrink-0 rounded-full bg-brand px-1.5 text-[10px] font-semibold text-primary-foreground"
 										>
 											{conv.unread_count}
 										</span>
 									{/if}
 								</div>
-								<p class="text-text-faint mt-0.5 truncate text-xs">
+								<p class="mt-0.5 truncate text-xs text-text-faint">
 									{conv.last_message_preview}
 								</p>
 							</a>
@@ -154,18 +156,13 @@
 	</div>
 
 	<section>
-		<h2 class="text-text mb-3 text-sm font-semibold">Özet metrikler</h2>
+		<h2 class="mb-3 text-sm font-semibold text-text">Özet metrikler</h2>
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [
-				{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' },
-				{ label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' },
-				{ label: 'Okunmamış', value: String(recentMessages.reduce((s, c) => s + c.unread_count, 0)), hint: 'Inbox' },
-				{ label: 'Aktif tenant', value: tenantQuery.data?.base_currency ?? '—', hint: 'Para birimi' }
-			] as card (card.label)}
-				<div class="border-border bg-surface rounded-lg border p-4">
-					<p class="text-text-muted text-xs">{card.label}</p>
-					<p class="text-text mt-1 text-2xl font-semibold tracking-tight">{card.value}</p>
-					<p class="text-text-faint mt-1 text-xs">{card.hint}</p>
+			{#each [{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'Okunmamış', value: String(recentMessages.reduce((s, c) => s + c.unread_count, 0)), hint: 'Inbox' }, { label: 'Aktif tenant', value: tenantQuery.data?.base_currency ?? '—', hint: 'Para birimi' }] as card (card.label)}
+				<div class="rounded-lg border border-border bg-surface p-4">
+					<p class="text-xs text-text-muted">{card.label}</p>
+					<p class="mt-1 text-2xl font-semibold tracking-tight text-text">{card.value}</p>
+					<p class="mt-1 text-xs text-text-faint">{card.hint}</p>
 				</div>
 			{/each}
 		</div>

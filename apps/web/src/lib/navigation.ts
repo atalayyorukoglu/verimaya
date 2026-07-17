@@ -61,3 +61,11 @@ export const navGroups: NavGroup[] = [
 		]
 	}
 ];
+
+/** Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar */
+export const mobileTabItems: NavItem[] = [
+	{ label: 'Panel', href: '/', icon: LayoutDashboard },
+	{ label: 'Hastalar', href: '/hastalar', icon: Users },
+	{ label: 'Randevular', href: '/randevular', icon: Calendar },
+	{ label: 'İşlemler', href: '/finans', icon: Wallet }
+];

@@ -6,13 +6,14 @@ import {
 	appointmentUpdateSchema,
 	transactionCreateSchema,
 	transactionUpdateSchema,
+	tenantUpdateSchema,
 	type Appointment,
 	type Patient,
+	type Tenant,
 	type Transaction
 } from '@verimaya/shared';
 import {
 	DEMO_TENANT_ID,
-	demoTenant,
 	demoUser,
 	getStore,
 	paginate,
@@ -65,7 +66,36 @@ function nowIso() {
 
 export const handlers = [
 	http.get('/v1/me', () => HttpResponse.json(demoUser)),
-	http.get('/v1/tenants/current', () => HttpResponse.json(demoTenant)),
+
+	http.get('/v1/tenants/current', ({ request }) =>
+		HttpResponse.json(getStore(scenarioFrom(request)).tenant)
+	),
+
+	http.patch('/v1/tenants/current', async ({ request }) => {
+		const body = await request.json();
+		const parsed = tenantUpdateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz tenant verisi', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const updated: Tenant = { ...store.tenant, ...parsed.data };
+		store.tenant = updated;
+		return HttpResponse.json(updated);
+	}),
+
+	http.get('/v1/members', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(
+			paginate(store.members, url.searchParams.get('cursor'), limitFrom(url))
+		);
+	}),
+
+	http.get('/v1/audit-logs', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(
+			paginate(store.auditLogs, url.searchParams.get('cursor'), limitFrom(url))
+		);
+	}),
 
 	http.get('/v1/search', ({ request }) => {
 		const url = new URL(request.url);
@@ -269,9 +299,7 @@ export const handlers = [
 			parsed.data.patient_id !== undefined
 				? parsed.data.patient_id
 				: store.transactions[idx].patient_id;
-		const patient = nextPatientId
-			? store.patients.find((p) => p.id === nextPatientId)
-			: null;
+		const patient = nextPatientId ? store.patients.find((p) => p.id === nextPatientId) : null;
 		const updated: Transaction = {
 			...store.transactions[idx],
 			...parsed.data,

@@ -50,14 +50,10 @@
 	}
 
 	const rangeStart = $derived(view === 'day' ? startOfDay(anchor) : startOfWeek(anchor));
-	const rangeEnd = $derived(
-		view === 'day' ? addDays(rangeStart, 1) : addDays(rangeStart, 7)
-	);
+	const rangeEnd = $derived(view === 'day' ? addDays(rangeStart, 1) : addDays(rangeStart, 7));
 
 	const days = $derived(
-		view === 'day'
-			? [rangeStart]
-			: Array.from({ length: 7 }, (_, i) => addDays(rangeStart, i))
+		view === 'day' ? [rangeStart] : Array.from({ length: 7 }, (_, i) => addDays(rangeStart, i))
 	);
 
 	const appointmentsQuery = createQuery(() => ({
@@ -137,11 +133,11 @@
 	<title>Randevular · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto min-w-0 max-w-6xl">
+<div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader title="Randevular" description="Gün ve hafta takvim görünümü.">
 		{#snippet actions()}
 			<div class="flex flex-wrap items-center gap-2">
-				<div class="border-border bg-surface flex rounded-[6px] border p-0.5">
+				<div class="flex rounded-[6px] border border-border bg-surface p-0.5">
 					<button
 						type="button"
 						class="rounded-[4px] px-2.5 py-1 text-xs font-medium {view === 'day'
@@ -162,11 +158,23 @@
 					</button>
 				</div>
 				<div class="flex items-center gap-1">
-					<Button variant="ghost" size="icon" type="button" aria-label="Önceki" onclick={() => shift(-1)}>
+					<Button
+						variant="ghost"
+						size="icon"
+						type="button"
+						aria-label="Önceki"
+						onclick={() => shift(-1)}
+					>
 						<ChevronLeft class="size-4" />
 					</Button>
-					<span class="text-text min-w-0 text-sm font-medium">{rangeLabel}</span>
-					<Button variant="ghost" size="icon" type="button" aria-label="Sonraki" onclick={() => shift(1)}>
+					<span class="min-w-0 text-sm font-medium text-text">{rangeLabel}</span>
+					<Button
+						variant="ghost"
+						size="icon"
+						type="button"
+						aria-label="Sonraki"
+						onclick={() => shift(1)}
+					>
 						<ChevronRight class="size-4" />
 					</Button>
 					<Button
@@ -185,46 +193,44 @@
 	</PageHeader>
 
 	{#if appointmentsQuery.isPending}
-		<p class="text-text-muted text-sm">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">Yükleniyor…</p>
 	{:else if appointmentsQuery.isError}
-		<p class="text-danger text-sm">Randevular yüklenemedi.</p>
+		<p class="text-sm text-danger">Randevular yüklenemedi.</p>
 	{:else}
-		<div
-			class="grid min-w-0 gap-3 {view === 'week'
-				? 'md:grid-cols-7'
-				: 'grid-cols-1'}"
-		>
+		<div class="grid min-w-0 gap-3 {view === 'week' ? 'md:grid-cols-7' : 'grid-cols-1'}">
 			{#each days as day (day.toISOString())}
 				{@const key = day.toISOString().slice(0, 10)}
 				{@const items = byDay.get(key) ?? []}
 				{@const isToday = key === new Date().toISOString().slice(0, 10)}
 				<section
-					class="border-border bg-surface min-w-0 overflow-hidden rounded-lg border {isToday
-						? 'ring-brand/40 ring-1'
+					class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface {isToday
+						? 'ring-1 ring-brand/40'
 						: ''}"
 				>
-					<header class="border-border bg-surface-2/40 border-b px-3 py-2">
-						<p class="text-text-muted text-[11px] font-semibold tracking-wider uppercase">
+					<header class="border-b border-border bg-surface-2/40 px-3 py-2">
+						<p class="text-[11px] font-semibold tracking-wider text-text-muted uppercase">
 							{day.toLocaleDateString('tr-TR', { weekday: 'short' })}
 						</p>
-						<p class="text-text text-sm font-semibold">{day.getDate()}</p>
+						<p class="text-sm font-semibold text-text">{day.getDate()}</p>
 					</header>
 					<ul class="min-h-24 space-y-1.5 p-2">
 						{#if items.length === 0}
-							<li class="text-text-faint px-1 py-3 text-center text-xs">Boş</li>
+							<li class="px-1 py-3 text-center text-xs text-text-faint">Boş</li>
 						{:else}
 							{#each items as appt (appt.id)}
 								<li>
 									<button
 										type="button"
-										class="hover:bg-surface-2 w-full min-w-0 rounded-[6px] border border-transparent px-2 py-1.5 text-left transition-colors"
+										class="w-full min-w-0 rounded-[6px] border border-transparent px-2 py-1.5 text-left transition-colors hover:bg-surface-2"
 										onclick={() => openEdit(appt)}
 									>
-										<p class="text-brand text-xs font-medium tabular-nums">
+										<p class="text-xs font-medium text-brand tabular-nums">
 											{formatTime(appt.starts_at)}
 										</p>
-										<p class="text-text truncate text-xs font-medium">{appt.patient_display_name}</p>
-										<p class="text-text-faint truncate text-[11px]">
+										<p class="truncate text-xs font-medium text-text">
+											{appt.patient_display_name}
+										</p>
+										<p class="truncate text-[11px] text-text-faint">
 											{appt.title ?? appt.appointment_type ?? 'Randevu'}
 										</p>
 										<div class="mt-1">

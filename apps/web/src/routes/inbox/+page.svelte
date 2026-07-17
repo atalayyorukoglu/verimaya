@@ -39,78 +39,78 @@
 	<title>WhatsApp Inbox · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto min-w-0 max-w-6xl">
+<div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader
 		title="WhatsApp Inbox"
 		description="Provider-agnostic konuşma listesi — AI onay akışı sonra eklenecek."
 	/>
 
 	{#if conversationsQuery.isPending}
-		<p class="text-text-muted text-sm">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">Yükleniyor…</p>
 	{:else if conversationsQuery.isError}
-		<p class="text-danger text-sm">Konuşmalar yüklenemedi.</p>
+		<p class="text-sm text-danger">Konuşmalar yüklenemedi.</p>
 	{:else if (conversationsQuery.data?.items.length ?? 0) === 0}
-		<div class="border-border bg-surface rounded-lg border p-8 text-center">
-			<p class="text-text-muted text-sm">Konuşma yok.</p>
+		<div class="rounded-lg border border-border bg-surface p-8 text-center">
+			<p class="text-sm text-text-muted">Konuşma yok.</p>
 		</div>
 	{:else}
 		<div
-			class="border-border bg-surface grid min-h-[420px] min-w-0 overflow-hidden rounded-lg border lg:grid-cols-[280px_1fr]"
+			class="grid min-h-[420px] min-w-0 overflow-hidden rounded-lg border border-border bg-surface lg:grid-cols-[280px_1fr]"
 		>
 			<aside
-				class="border-border divide-border max-h-[40vh] min-w-0 divide-y overflow-y-auto border-b lg:max-h-[70vh] lg:border-r lg:border-b-0"
+				class="max-h-[40vh] min-w-0 divide-y divide-border overflow-y-auto border-b border-border lg:max-h-[70vh] lg:border-r lg:border-b-0"
 			>
 				{#each conversationsQuery.data?.items ?? [] as conv (conv.id)}
 					<button
 						type="button"
-						class="hover:bg-surface-2 w-full min-w-0 px-3 py-3 text-left transition-colors {selectedId ===
+						class="w-full min-w-0 px-3 py-3 text-left transition-colors hover:bg-surface-2 {selectedId ===
 						conv.id
 							? 'bg-brand-subtle'
 							: ''}"
 						onclick={() => (selectedId = conv.id)}
 					>
 						<div class="flex min-w-0 items-center gap-2">
-							<p class="text-text min-w-0 flex-1 truncate text-sm font-medium">
+							<p class="min-w-0 flex-1 truncate text-sm font-medium text-text">
 								{conv.contact_name ?? 'Bilinmeyen'}
 							</p>
 							{#if conv.unread_count > 0}
 								<span
-									class="bg-brand text-primary-foreground shrink-0 rounded-full px-1.5 text-[10px] font-semibold"
+									class="shrink-0 rounded-full bg-brand px-1.5 text-[10px] font-semibold text-primary-foreground"
 								>
 									{conv.unread_count}
 								</span>
 							{/if}
 						</div>
-						<p class="text-text-faint mt-0.5 truncate text-xs">{conv.last_message_preview}</p>
+						<p class="mt-0.5 truncate text-xs text-text-faint">{conv.last_message_preview}</p>
 					</button>
 				{/each}
 			</aside>
 
 			<div class="flex min-h-[320px] min-w-0 flex-col overflow-hidden">
 				{#if selected}
-					<div class="border-border flex min-w-0 items-center justify-between gap-2 border-b px-4 py-3">
+					<div
+						class="flex min-w-0 items-center justify-between gap-2 border-b border-border px-4 py-3"
+					>
 						<div class="min-w-0 flex-1 overflow-hidden">
-							<p class="text-text truncate text-sm font-semibold">{selected.contact_name}</p>
-							<p class="text-text-faint truncate text-xs">{selected.contact_phone}</p>
+							<p class="truncate text-sm font-semibold text-text">{selected.contact_name}</p>
+							<p class="truncate text-xs text-text-faint">{selected.contact_phone}</p>
 						</div>
 						<StatusBadge label={conversationStatusLabels[selected.status]} tone="info" />
 					</div>
 					<div class="min-w-0 flex-1 space-y-3 overflow-y-auto p-4">
 						{#if messagesQuery.isPending}
-							<p class="text-text-faint text-sm">Mesajlar yükleniyor…</p>
+							<p class="text-sm text-text-faint">Mesajlar yükleniyor…</p>
 						{:else}
 							{#each messagesQuery.data?.items ?? [] as msg (msg.id)}
-								<div
-									class="flex {msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}"
-								>
+								<div class="flex {msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}">
 									<div
-										class="max-w-[min(80%,24rem)] break-words rounded-[8px] px-3 py-2 text-sm {msg.direction ===
+										class="max-w-[min(80%,24rem)] rounded-[8px] px-3 py-2 text-sm break-words {msg.direction ===
 										'outbound'
 											? 'bg-brand-subtle text-text'
 											: 'bg-surface-2 text-text'}"
 									>
 										<p>{msg.body}</p>
-										<p class="text-text-faint mt-1 text-[10px]">{formatDateTime(msg.sent_at)}</p>
+										<p class="mt-1 text-[10px] text-text-faint">{formatDateTime(msg.sent_at)}</p>
 									</div>
 								</div>
 							{/each}

@@ -48,7 +48,7 @@
 		>
 			Tümü
 		</button>
-		{#each (['yayinda', 'gelistiriliyor', 'planlandi'] as const) as status (status)}
+		{#each ['yayinda', 'gelistiriliyor', 'planlandi'] as const as status (status)}
 			<button
 				type="button"
 				class="rounded-[6px] border px-3 py-1.5 text-xs font-medium transition-colors {statusFilter ===
@@ -65,20 +65,20 @@
 	<div class="space-y-8">
 		{#each grouped as group (group.module)}
 			<section>
-				<h2 class="text-text mb-3 text-sm font-semibold tracking-tight">{group.module}</h2>
+				<h2 class="mb-3 text-sm font-semibold tracking-tight text-text">{group.module}</h2>
 				<ul class="space-y-3">
 					{#each group.items as feature (feature.id)}
-						<li class="border-border bg-surface rounded-lg border p-4">
+						<li class="rounded-lg border border-border bg-surface p-4">
 							<div class="flex flex-wrap items-start justify-between gap-2">
-								<h3 class="text-text text-sm font-semibold">{feature.title}</h3>
+								<h3 class="text-sm font-semibold text-text">{feature.title}</h3>
 								<StatusBadge
 									label={featureStatusLabels[feature.status]}
 									tone={featureStatusTone(feature.status)}
 								/>
 							</div>
-							<p class="text-text-muted mt-2 text-sm leading-relaxed">{feature.description}</p>
+							<p class="mt-2 text-sm leading-relaxed text-text-muted">{feature.description}</p>
 							{#if feature.status === 'yayinda' && feature.version}
-								<a href="/yenilikler" class="text-info mt-2 inline-block text-xs hover:underline">
+								<a href="/yenilikler" class="mt-2 inline-block text-xs text-info hover:underline">
 									Sürüm {feature.version} yenilikleri
 								</a>
 							{/if}

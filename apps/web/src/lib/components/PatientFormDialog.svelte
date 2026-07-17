@@ -55,7 +55,11 @@
 	}
 </script>
 
-<Dialog bind:open title={isEdit ? 'Hastayı düzenle' : 'Yeni hasta'} description="MSW üzerinden kaydedilir.">
+<Dialog
+	bind:open
+	title={isEdit ? 'Hastayı düzenle' : 'Yeni hasta'}
+	description="MSW üzerinden kaydedilir."
+>
 	<form id="patient-form" class="space-y-3" onsubmit={handleSubmit}>
 		<div>
 			<label class={labelClass} for="patient-name">Ad soyad</label>
@@ -68,7 +72,13 @@
 			</div>
 			<div>
 				<label class={labelClass} for="patient-email">E-posta</label>
-				<input id="patient-email" class={fieldClass} type="email" bind:value={email} maxlength={255} />
+				<input
+					id="patient-email"
+					class={fieldClass}
+					type="email"
+					bind:value={email}
+					maxlength={255}
+				/>
 			</div>
 		</div>
 		<div class="grid gap-3 sm:grid-cols-2">
@@ -87,14 +97,17 @@
 		</div>
 		<div>
 			<label class={labelClass} for="patient-notes">Notlar</label>
-			<textarea id="patient-notes" class={textareaClass} bind:value={notes} maxlength={8000}></textarea>
+			<textarea id="patient-notes" class={textareaClass} bind:value={notes} maxlength={8000}
+			></textarea>
 		</div>
 		{#if error}
-			<p class="text-danger text-sm">{error}</p>
+			<p class="text-sm text-danger">{error}</p>
 		{/if}
 	</form>
 	{#snippet footer()}
-		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}>İptal</Button>
+		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
+			>İptal</Button
+		>
 		<Button type="submit" form="patient-form" disabled={saving || !full_name.trim()}>
 			{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
 		</Button>

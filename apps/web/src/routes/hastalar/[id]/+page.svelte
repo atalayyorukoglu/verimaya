@@ -44,14 +44,14 @@
 	</title>
 </svelte:head>
 
-<div class="mx-auto min-w-0 max-w-3xl">
-	<a href="/hastalar" class="text-info mb-4 inline-block text-sm hover:underline">← Hastalar</a>
+<div class="mx-auto max-w-3xl min-w-0">
+	<a href="/hastalar" class="mb-4 inline-block text-sm text-info hover:underline">← Hastalar</a>
 
 	{#if patientQuery.isPending}
-		<p class="text-text-muted text-sm">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">Yükleniyor…</p>
 	{:else if patientQuery.isError}
-		<div class="border-border bg-surface rounded-lg border p-6">
-			<p class="text-danger text-sm">Hasta bulunamadı veya yüklenemedi.</p>
+		<div class="rounded-lg border border-border bg-surface p-6">
+			<p class="text-sm text-danger">Hasta bulunamadı veya yüklenemedi.</p>
 		</div>
 	{:else if patientQuery.data}
 		{@const patient = patientQuery.data}
@@ -65,26 +65,26 @@
 			{/snippet}
 		</PageHeader>
 
-		<dl class="border-border bg-surface divide-border divide-y overflow-hidden rounded-lg border">
+		<dl class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-text-muted text-xs font-medium">Telefon</dt>
-				<dd class="text-text text-sm break-all tabular-nums">{patient.phone ?? '—'}</dd>
+				<dt class="text-xs font-medium text-text-muted">Telefon</dt>
+				<dd class="text-sm break-all text-text tabular-nums">{patient.phone ?? '—'}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-text-muted text-xs font-medium">E-posta</dt>
-				<dd class="text-text text-sm break-all">{patient.email ?? '—'}</dd>
+				<dt class="text-xs font-medium text-text-muted">E-posta</dt>
+				<dd class="text-sm break-all text-text">{patient.email ?? '—'}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-text-muted text-xs font-medium">Kaynak</dt>
-				<dd class="text-text text-sm break-words">{patient.source ?? '—'}</dd>
+				<dt class="text-xs font-medium text-text-muted">Kaynak</dt>
+				<dd class="text-sm break-words text-text">{patient.source ?? '—'}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-text-muted text-xs font-medium">Oluşturulma</dt>
-				<dd class="text-text text-sm">{formatDateTime(patient.created_at)}</dd>
+				<dt class="text-xs font-medium text-text-muted">Oluşturulma</dt>
+				<dd class="text-sm text-text">{formatDateTime(patient.created_at)}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
-				<dt class="text-text-muted text-xs font-medium">Notlar</dt>
-				<dd class="text-text text-sm break-words whitespace-pre-wrap">{patient.notes ?? '—'}</dd>
+				<dt class="text-xs font-medium text-text-muted">Notlar</dt>
+				<dd class="text-sm break-words whitespace-pre-wrap text-text">{patient.notes ?? '—'}</dd>
 			</div>
 		</dl>
 

@@ -74,7 +74,7 @@
 	<title>İşlemler · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto min-w-0 max-w-6xl">
+<div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader title="İşlemler" description="Gelir ve gider kayıtları (tutarlar minor unit).">
 		{#snippet actions()}
 			<Button type="button" onclick={openCreate}>Yeni işlem</Button>
@@ -82,18 +82,18 @@
 	</PageHeader>
 
 	{#if txQuery.isPending}
-		<p class="text-text-muted text-sm">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">Yükleniyor…</p>
 	{:else if txQuery.isError}
-		<p class="text-danger text-sm">İşlemler yüklenemedi.</p>
+		<p class="text-sm text-danger">İşlemler yüklenemedi.</p>
 	{:else if items.length === 0}
-		<div class="border-border bg-surface rounded-lg border p-8 text-center">
-			<p class="text-text-muted text-sm">İşlem yok.</p>
+		<div class="rounded-lg border border-border bg-surface p-8 text-center">
+			<p class="text-sm text-text-muted">İşlem yok.</p>
 			<Button class="mt-4" type="button" onclick={openCreate}>Yeni işlem</Button>
 		</div>
 	{:else}
-		<div class="border-border bg-surface hidden min-w-0 overflow-hidden rounded-lg border md:block">
+		<div class="hidden min-w-0 overflow-hidden rounded-lg border border-border bg-surface md:block">
 			<table class="w-full table-fixed text-left text-sm">
-				<thead class="border-border bg-surface-2/50 text-text-muted border-b text-xs">
+				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
 						<th class="w-[14%] px-4 py-3 font-medium">Tarih</th>
 						<th class="w-[36%] px-4 py-3 font-medium">Başlık</th>
@@ -102,20 +102,22 @@
 						<th class="w-[22%] px-4 py-3 text-right font-medium">Tutar</th>
 					</tr>
 				</thead>
-				<tbody class="divide-border divide-y">
+				<tbody class="divide-y divide-border">
 					{#each items as tx (tx.id)}
 						<tr
-							class="hover:bg-surface-2/60 cursor-pointer transition-colors"
+							class="cursor-pointer transition-colors hover:bg-surface-2/60"
 							onclick={() => openEdit(tx)}
 						>
-							<td class="text-text-muted px-4 py-3 whitespace-nowrap">{formatDate(tx.occurred_on)}</td>
+							<td class="px-4 py-3 whitespace-nowrap text-text-muted"
+								>{formatDate(tx.occurred_on)}</td
+							>
 							<td class="min-w-0 px-4 py-3">
-								<p class="text-text truncate font-medium">{tx.title}</p>
-								<p class="text-text-faint truncate text-xs">
+								<p class="truncate font-medium text-text">{tx.title}</p>
+								<p class="truncate text-xs text-text-faint">
 									{tx.patient_display_name ?? tx.subtitle ?? '—'}
 								</p>
 							</td>
-							<td class="text-text-muted px-4 py-3">{transactionKindLabels[tx.kind]}</td>
+							<td class="px-4 py-3 text-text-muted">{transactionKindLabels[tx.kind]}</td>
 							<td class="px-4 py-3">
 								<StatusBadge
 									label={transactionStatusLabels[tx.status]}
@@ -140,13 +142,13 @@
 				<li class="min-w-0">
 					<button
 						type="button"
-						class="border-border bg-surface w-full min-w-0 overflow-hidden rounded-lg border p-4 text-left"
+						class="w-full min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4 text-left"
 						onclick={() => openEdit(tx)}
 					>
 						<div class="flex min-w-0 items-start justify-between gap-2">
 							<div class="min-w-0 flex-1 overflow-hidden">
-								<p class="text-text truncate text-sm font-medium">{tx.title}</p>
-								<p class="text-text-faint text-xs">{formatDate(tx.occurred_on)}</p>
+								<p class="truncate text-sm font-medium text-text">{tx.title}</p>
+								<p class="text-xs text-text-faint">{formatDate(tx.occurred_on)}</p>
 							</div>
 							<p
 								class="shrink-0 text-sm font-semibold tabular-nums {tx.kind === 'income'

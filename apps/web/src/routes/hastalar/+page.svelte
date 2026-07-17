@@ -56,7 +56,7 @@
 	<title>Hastalar · Verimaya</title>
 </svelte:head>
 
-<div class="mx-auto min-w-0 max-w-6xl">
+<div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader title="Hastalar" description="Lead ve hasta kayıtları.">
 		{#snippet actions()}
 			<form class="flex min-w-0 flex-wrap gap-2" onsubmit={submitSearch}>
@@ -64,7 +64,7 @@
 					bind:value={q}
 					type="search"
 					placeholder="Ad, e-posta veya telefon…"
-					class="border-border bg-surface text-text placeholder:text-text-faint h-9 w-full min-w-0 rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40 sm:w-56"
+					class="h-9 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:w-56"
 				/>
 				<Button type="submit" variant="secondary">Ara</Button>
 				<Button type="button" onclick={() => (formOpen = true)}>Yeni hasta</Button>
@@ -73,19 +73,21 @@
 	</PageHeader>
 
 	{#if patientsQuery.isPending}
-		<p class="text-text-muted text-sm">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">Yükleniyor…</p>
 	{:else if patientsQuery.isError}
-		<p class="text-danger text-sm">Hasta listesi yüklenemedi.</p>
+		<p class="text-sm text-danger">Hasta listesi yüklenemedi.</p>
 	{:else if patients.length === 0}
-		<div class="border-border bg-surface rounded-lg border p-8 text-center">
-			<p class="text-text text-sm font-medium">Hasta bulunamadı</p>
-			<p class="text-text-muted mt-1 text-sm">Yeni hasta ekleyin veya MSW senaryosunu değiştirin.</p>
+		<div class="rounded-lg border border-border bg-surface p-8 text-center">
+			<p class="text-sm font-medium text-text">Hasta bulunamadı</p>
+			<p class="mt-1 text-sm text-text-muted">
+				Yeni hasta ekleyin veya MSW senaryosunu değiştirin.
+			</p>
 			<Button class="mt-4" type="button" onclick={() => (formOpen = true)}>Yeni hasta</Button>
 		</div>
 	{:else}
-		<div class="border-border bg-surface hidden min-w-0 overflow-hidden rounded-lg border md:block">
+		<div class="hidden min-w-0 overflow-hidden rounded-lg border border-border bg-surface md:block">
 			<table class="w-full table-fixed text-left text-sm">
-				<thead class="border-border bg-surface-2/50 text-text-muted border-b text-xs">
+				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
 						<th class="w-[32%] px-4 py-3 font-medium">Ad</th>
 						<th class="w-[18%] px-4 py-3 font-medium">Durum</th>
@@ -94,11 +96,11 @@
 						<th class="w-[16%] px-4 py-3 font-medium">Güncelleme</th>
 					</tr>
 				</thead>
-				<tbody class="divide-border divide-y">
+				<tbody class="divide-y divide-border">
 					{#each patients as patient (patient.id)}
-						<tr class="hover:bg-surface-2/60 transition-colors">
+						<tr class="transition-colors hover:bg-surface-2/60">
 							<td class="px-4 py-3">
-								<a href={`/hastalar/${patient.id}`} class="text-text font-medium hover:underline">
+								<a href={`/hastalar/${patient.id}`} class="font-medium text-text hover:underline">
 									<span class="line-clamp-2 break-all">{patient.full_name}</span>
 								</a>
 							</td>
@@ -108,9 +110,10 @@
 									tone={patientStatusTone(patient.status)}
 								/>
 							</td>
-							<td class="text-text-muted truncate px-4 py-3">{patient.source ?? '—'}</td>
-							<td class="text-text-muted truncate px-4 py-3 tabular-nums">{patient.phone ?? '—'}</td>
-							<td class="text-text-faint px-4 py-3 whitespace-nowrap">
+							<td class="truncate px-4 py-3 text-text-muted">{patient.source ?? '—'}</td>
+							<td class="truncate px-4 py-3 text-text-muted tabular-nums">{patient.phone ?? '—'}</td
+							>
+							<td class="px-4 py-3 whitespace-nowrap text-text-faint">
 								{formatDateTime(patient.updated_at)}
 							</td>
 						</tr>
@@ -124,16 +127,18 @@
 				<li class="min-w-0">
 					<a
 						href={`/hastalar/${patient.id}`}
-						class="border-border bg-surface hover:bg-surface-2 block min-w-0 overflow-hidden rounded-lg border p-4 transition-colors"
+						class="block min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4 transition-colors hover:bg-surface-2"
 					>
 						<div class="flex min-w-0 items-start gap-2">
-							<p class="text-text min-w-0 flex-1 text-sm font-medium break-all">{patient.full_name}</p>
+							<p class="min-w-0 flex-1 text-sm font-medium break-all text-text">
+								{patient.full_name}
+							</p>
 							<StatusBadge
 								label={patientStatusLabels[patient.status]}
 								tone={patientStatusTone(patient.status)}
 							/>
 						</div>
-						<p class="text-text-muted mt-2 truncate text-xs">
+						<p class="mt-2 truncate text-xs text-text-muted">
 							{patient.source ?? 'Kaynak yok'} · {patient.phone ?? 'Telefon yok'}
 						</p>
 					</a>

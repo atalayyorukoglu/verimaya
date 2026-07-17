@@ -1,4 +1,4 @@
-import { type UserRole, userRoleSchema } from '@verimaya/shared';
+import { type UserRole, userRoleLabels, userRoleSchema } from '@verimaya/shared';
 
 const STORAGE_KEY = 'verimaya:demo-role';
 
@@ -18,14 +18,7 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/yonetim/denetim': ['owner', 'admin']
 };
 
-export const roleLabels: Record<UserRole, string> = {
-	owner: 'Sahip',
-	admin: 'Yönetici',
-	manager: 'Müdür',
-	agent: 'Danışman',
-	finance: 'Finans',
-	readonly: 'Salt okunur'
-};
+export const roleLabels = userRoleLabels;
 
 export function getDemoRole(): UserRole {
 	if (typeof sessionStorage === 'undefined') return 'owner';

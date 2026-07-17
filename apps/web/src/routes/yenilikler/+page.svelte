@@ -38,27 +38,27 @@
 	/>
 
 	{#if changelog.length === 0}
-		<p class="text-text-muted text-sm">Henüz kayıt yok.</p>
+		<p class="text-sm text-text-muted">Henüz kayıt yok.</p>
 	{:else}
 		<ol class="space-y-8">
 			{#each changelog as entry (entry.version)}
 				<li>
 					<div class="mb-3 flex flex-wrap items-baseline gap-2">
-						<h2 class="text-text text-base font-semibold">
+						<h2 class="text-base font-semibold text-text">
 							{entry.title ?? `Sürüm ${entry.version}`}
 						</h2>
-						<span class="text-text-faint text-xs">{entry.version}</span>
-						<span class="text-text-faint text-xs">· {formatDate(entry.date)}</span>
+						<span class="text-xs text-text-faint">{entry.version}</span>
+						<span class="text-xs text-text-faint">· {formatDate(entry.date)}</span>
 					</div>
-					<ul class="border-border bg-surface space-y-3 rounded-lg border p-4">
+					<ul class="space-y-3 rounded-lg border border-border bg-surface p-4">
 						{#each entry.changes as change, i (`${entry.version}-${i}`)}
 							<li class="flex gap-3 text-sm">
 								<span class="w-20 shrink-0 text-xs font-medium {typeTone[change.type]}">
 									{typeLabels[change.type]}
 								</span>
 								<div>
-									<p class="text-text-muted text-xs">{change.module}</p>
-									<p class="text-text mt-0.5 leading-relaxed">{change.text}</p>
+									<p class="text-xs text-text-muted">{change.module}</p>
+									<p class="mt-0.5 leading-relaxed text-text">{change.text}</p>
 								</div>
 							</li>
 						{/each}

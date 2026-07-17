@@ -36,18 +36,18 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="dialog-title"
-			class="border-border bg-surface relative z-10 flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[12px] border sm:max-w-lg sm:rounded-[8px]"
+			class="relative z-10 flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[12px] border border-border bg-surface sm:max-w-lg sm:rounded-[8px]"
 		>
-			<div class="border-border flex items-start justify-between gap-3 border-b px-4 py-3">
+			<div class="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
 				<div class="min-w-0">
-					<h2 id="dialog-title" class="text-text text-base font-semibold">{title}</h2>
+					<h2 id="dialog-title" class="text-base font-semibold text-text">{title}</h2>
 					{#if description}
-						<p class="text-text-muted mt-0.5 text-xs">{description}</p>
+						<p class="mt-0.5 text-xs text-text-muted">{description}</p>
 					{/if}
 				</div>
 				<button
 					type="button"
-					class="text-text-muted hover:bg-surface-2 hover:text-text shrink-0 rounded-[6px] p-1.5"
+					class="shrink-0 rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
 					aria-label="Kapat"
 					onclick={() => (open = false)}
 				>
@@ -58,7 +58,7 @@
 				{@render children()}
 			</div>
 			{#if footer}
-				<div class="border-border flex justify-end gap-2 border-t px-4 py-3">
+				<div class="flex justify-end gap-2 border-t border-border px-4 py-3">
 					{@render footer()}
 				</div>
 			{/if}

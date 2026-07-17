@@ -6,6 +6,7 @@ import { transactionSchema } from './transaction.js';
 import { conversationSchema, messageSchema } from './conversation.js';
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema } from './user.js';
+import { auditLogSchema } from './audit.js';
 
 /**
  * API contract sketch for /v1 routes.
@@ -44,6 +45,12 @@ export const apiContract = {
 	},
 	'GET /v1/conversations/:id/messages': {
 		response: cursorPageSchema(messageSchema)
+	},
+	'GET /v1/members': {
+		response: cursorPageSchema(membershipUserSchema)
+	},
+	'GET /v1/audit-logs': {
+		response: cursorPageSchema(auditLogSchema)
 	}
 } as const;
 

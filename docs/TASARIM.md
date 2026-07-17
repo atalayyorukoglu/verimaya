@@ -64,7 +64,7 @@ Cloudflare dashboard düzeni birebir referans:
 - **Sol menü (240px, `--surface`):** üstte tenant/logo, altında gruplu navigasyon. Gruplar: *Ana* (Panel, Hastalar, Randevular), *İletişim* (WhatsApp Inbox), *Finans* (İşlemler, Raporlar), *Bağlantılar* (GHL, Reklamlar, n8n/API), *Yönetim* (Ekip, Ayarlar, Denetim Kaydı). Aktif öğe: `--brand-subtle` zemin + sol turuncu çubuk.
 - **Üst bar:** ortada/solda hızlı arama (⌘K — hasta/randevu/işlem arar), sağda "Yenilikler" zili, destek, hesap menüsü.
 - **Ana sayfa (login sonrası):** CF'deki "Pick up where you left off" deseni — üstte arama, altta üç kolon hızlı erişim (Son hastalar / Bugünün randevuları / Son mesajlar), en altta metrik kartları (yeni lead, dönüşüm, tahsilat, mesaj hacmi).
-- Mobil: sidebar alt sekme çubuğuna veya hamburgera düşer; tablolar kart görünümüne geçer.
+- Mobil: alt sekme çubuğu (Panel, Hastalar, Randevular, İşlemler, Menü); Menü tam navigasyon çekmecesini açar. Tablolar kart görünümüne geçer.
 
 ## Vitrin sayfası düzeni
 
