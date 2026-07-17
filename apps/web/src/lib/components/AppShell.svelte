@@ -2,18 +2,40 @@
 	import { page } from '$app/state';
 	import { cn } from '$lib/utils';
 	import { navGroups } from '$lib/navigation';
+	import { canSeeNav, getDemoRole } from '$lib/rbac';
 	import Search from '@lucide/svelte/icons/search';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
+	import { changelog } from '@verimaya/shared';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
 
 	let mobileOpen = $state(false);
+	let role = $state(getDemoRole());
+	let hasUnreadChangelog = $state(false);
 
 	const pathname = $derived(page.url.pathname);
+
+	const visibleGroups = $derived(
+		navGroups
+			.map((group) => ({
+				...group,
+				items: group.items.filter((item) => canSeeNav(item.href, role))
+			}))
+			.filter((group) => group.items.length > 0)
+	);
+
+	$effect(() => {
+		const latest = changelog[0]?.version;
+		if (!latest) {
+			hasUnreadChangelog = false;
+			return;
+		}
+		hasUnreadChangelog = localStorage.getItem('verimaya:last-seen-version') !== latest;
+	});
 
 	function isActive(href: string): boolean {
 		if (href === '/') return pathname === '/';
@@ -44,7 +66,7 @@
 		</div>
 
 		<nav class="flex-1 overflow-y-auto px-2 py-3" aria-label="Ana menü">
-			{#each navGroups as group (group.label)}
+			{#each visibleGroups as group (group.label)}
 				<div class="mb-4">
 					<p
 						class="text-text-faint px-2.5 pb-1.5 text-[11px] font-semibold tracking-wider uppercase"
@@ -81,6 +103,19 @@
 				</div>
 			{/each}
 		</nav>
+		<div class="border-border border-t px-2 py-2">
+			<a
+				href="/ozellikler"
+				class={cn(
+					'flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
+					isActive('/ozellikler')
+						? 'bg-brand-subtle text-brand font-medium'
+						: 'text-text-muted hover:bg-surface-2 hover:text-text'
+				)}
+			>
+				Özellikler
+			</a>
+		</div>
 	</aside>
 
 	<!-- Mobile drawer -->
@@ -114,7 +149,7 @@
 				</button>
 			</div>
 			<nav class="flex-1 overflow-y-auto px-2 py-3" aria-label="Ana menü">
-				{#each navGroups as group (group.label)}
+				{#each visibleGroups as group (group.label)}
 					<div class="mb-4">
 						<p
 							class="text-text-faint px-2.5 pb-1.5 text-[11px] font-semibold tracking-wider uppercase"
@@ -190,6 +225,12 @@
 					title="Yenilikler"
 				>
 					<Bell class="size-5" />
+					{#if hasUnreadChangelog}
+						<span
+							class="bg-brand absolute top-1.5 right-1.5 size-2 rounded-full"
+							aria-hidden="true"
+						></span>
+					{/if}
 				</a>
 				<button
 					type="button"

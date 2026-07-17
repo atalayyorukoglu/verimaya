@@ -6,3 +6,6 @@ export * from './appointment.js';
 export * from './transaction.js';
 export * from './conversation.js';
 export * from './api.js';
+export * from './features.js';
+export * from './changelog.js';
+export * from './labels.js';

@@ -3,11 +3,22 @@ import { handlers } from './handlers';
 
 export const worker = setupWorker(...handlers);
 
-export async function startMockWorker() {
-	if (typeof window === 'undefined') return;
+let starting: Promise<void> | null = null;
 
-	await worker.start({
-		onUnhandledRequest: 'bypass',
-		quiet: true
-	});
+export function startMockWorker() {
+	if (typeof window === 'undefined') return Promise.resolve();
+
+	if (!starting) {
+		starting = worker
+			.start({
+				onUnhandledRequest: 'bypass',
+				quiet: true,
+				serviceWorker: {
+					url: '/mockServiceWorker.js'
+				}
+			})
+			.then(() => undefined);
+	}
+
+	return starting;
 }

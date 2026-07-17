@@ -5,6 +5,7 @@
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { createQueryClient } from '$lib/query-client';
 	import AppShell from '$lib/components/AppShell.svelte';
+	import DevToolbar from '$lib/components/DevToolbar.svelte';
 
 	let { children } = $props();
 
@@ -30,6 +31,9 @@
 		<AppShell>
 			{@render children()}
 		</AppShell>
+		{#if import.meta.env.DEV}
+			<DevToolbar />
+		{/if}
 	</QueryClientProvider>
 {:else}
 	<div class="bg-bg text-text-muted flex min-h-dvh items-center justify-center text-sm">
