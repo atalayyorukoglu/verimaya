@@ -3,7 +3,7 @@ CREATE SCHEMA IF NOT EXISTS app;
 CREATE OR REPLACE FUNCTION app.current_tenant_id()
 RETURNS uuid
 LANGUAGE sql
-STABLE
+VOLATILE
 AS $$
   SELECT nullif(current_setting('app.current_tenant_id', true), '')::uuid;
 $$;

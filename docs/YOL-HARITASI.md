@@ -16,15 +16,15 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] Desktop + mobil responsive (gerçek cihazda `--host` testi)
 - [x] Demo: kişi/hasta çift kayıt tarama + birleştirme (`/kisiler/cift-kayit`, `/hastalar/cift-kayit`)
 
-## Faz 0b — Gerçek temel (1 hafta) 🔜
+## Faz 0b — Gerçek temel (1 hafta) ✅
 
 - [x] Docker Compose: PostgreSQL 16 + Redis
 - [x] `apps/api`: NestJS (Fastify) + Drizzle + ilk migrasyonlar
-- [ ] better-auth: e-posta/şifre + organization + üyelik + roller; admin TOTP 2FA
-- [ ] RLS + `SET LOCAL app.current_tenant_id` + CI negatif tenant testleri
-- [ ] CI (lint/typecheck/test) + Coolify ilk deploy
+- [x] better-auth: e-posta/şifre + organization + üyelik + roller; admin TOTP 2FA
+- [x] RLS + `SET LOCAL app.current_tenant_id` + CI negatif tenant testleri
+- [x] CI (lint/typecheck/test) + Coolify ilk deploy
 
-## Faz 1 — Çekirdek domain (2-3 hafta)
+## Faz 1 — Çekirdek domain (2-3 hafta) 🔜
 
 - [ ] Patients, appointments, transactions, audit log (legacy şemadan düzeltilmiş port)
 - [ ] Unique/indeks standartları + cursor sayfalama + arama (`pg_trgm`)

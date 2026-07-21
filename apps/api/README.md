@@ -1,6 +1,6 @@
 # @verimaya/api
 
-NestJS (Fastify) + Drizzle. Faz 0b iskeleti: health check, `tenants` tablosu, `app.current_tenant_id()` yardımcısı.
+NestJS (Fastify) + Drizzle + better-auth.
 
 ## Yerel
 
@@ -10,7 +10,16 @@ pnpm db:up
 cp apps/api/.env.example apps/api/.env
 pnpm db:migrate
 pnpm --filter @verimaya/api dev
-# GET http://localhost:3000/v1/health
 ```
 
-Yerel Postgres host portu **5433** (5432 çakışmalarını önlemek için).
+- Health: `GET http://localhost:3000/v1/health`
+- Auth: `http://localhost:3000/v1/auth/*` (better-auth)
+- Session: `GET http://localhost:3000/v1/me` (cookie)
+
+Yerel Postgres host portu **5433**. Runtime kullanıcı: `verimaya_app` (RLS). Migrasyon: `verimaya` (owner). Organization oluşturulunca aynı id ile `tenants` satırı yazılır. Admin TOTP: better-auth `twoFactor` (`/v1/auth/two-factor/*`).
+
+## Test
+
+```bash
+pnpm --filter @verimaya/api test   # RLS negatif izolasyon
+```

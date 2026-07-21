@@ -7,7 +7,7 @@ alwaysApply: false
 # Multi-Tenant İzolasyon
 
 - Her yeni iş tablosunda `tenant_id NOT NULL` ve RLS policy zorunlu; migrasyonda tablo + policy birlikte oluşturulur.
-- Request başında transaction içinde `SET LOCAL app.current_tenant_id = $1` çalıştırılır; günlük API trafiği RLS bypass edemeyen `app_user` rolüyle bağlanır.
+- Request başında transaction içinde `SET LOCAL app.current_tenant_id = $1` çalıştırılır; günlük API trafiği RLS bypass edemeyen `verimaya_app` rolüyle bağlanır (`DATABASE_URL_APP`). `app.current_tenant_id()` **VOLATILE** olmalı (postgres.js prepared statement + STABLE GUC helper RLS'i kırar).
 - Aktif tenant her zaman session/JWT'den çözülür; body/query'den gelen tenant_id asla yetki kaynağı değildir.
 - Dış kimlik eşlemeleri: `UNIQUE (tenant_id, provider, external_id)`.
 - Liste sorgu indeksleri sorgu desenine göre: `(tenant_id, created_at DESC)`, `(tenant_id, status, updated_at DESC)`.

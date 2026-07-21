@@ -1,0 +1,21 @@
+-- App role must NOT be superuser / BYPASSRLS (Docker POSTGRES_USER is superuser).
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'verimaya_app') THEN
+    CREATE ROLE verimaya_app LOGIN PASSWORD 'verimaya' NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+  END IF;
+END
+$$;
+
+GRANT CONNECT ON DATABASE verimaya TO verimaya_app;
+GRANT USAGE ON SCHEMA public TO verimaya_app;
+GRANT USAGE ON SCHEMA app TO verimaya_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO verimaya_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO verimaya_app;
+GRANT EXECUTE ON FUNCTION app.current_tenant_id() TO verimaya_app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO verimaya_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT USAGE, SELECT ON SEQUENCES TO verimaya_app;

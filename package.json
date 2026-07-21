@@ -12,7 +12,8 @@
 		"format": "turbo run format",
 		"db:up": "docker compose up -d",
 		"db:down": "docker compose down",
-		"db:migrate": "pnpm --filter @verimaya/api db:migrate"
+		"db:migrate": "pnpm --filter @verimaya/api db:migrate",
+		"test": "turbo run test --filter=@verimaya/api"
 	},
 	"devDependencies": {
 		"turbo": "^2.5.4"

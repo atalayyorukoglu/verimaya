@@ -8,17 +8,22 @@
 		"start": "node dist/main.js",
 		"check": "tsc --noEmit",
 		"lint": "tsc --noEmit",
+		"test": "vitest run",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
+		"@better-auth/drizzle-adapter": "^1.6.23",
 		"@nestjs/common": "^11.1.6",
 		"@nestjs/config": "^4.0.2",
 		"@nestjs/core": "^11.1.6",
 		"@nestjs/platform-fastify": "^11.1.6",
 		"@verimaya/shared": "workspace:*",
+		"better-auth": "^1.6.23",
+		"dotenv": "^17.4.2",
 		"drizzle-orm": "^0.44.4",
+		"fastify": "^5.10.0",
 		"postgres": "^3.4.7",
 		"reflect-metadata": "^0.2.2",
 		"rxjs": "^7.8.2"
@@ -26,8 +31,9 @@
 	"devDependencies": {
 		"@nestjs/cli": "^11.0.10",
 		"@nestjs/schematics": "^11.0.7",
-		"@types/node": "^24",
+		"@types/node": "^24.13.3",
 		"drizzle-kit": "^0.31.4",
-		"typescript": "^5.9.2"
+		"typescript": "^5.9.2",
+		"vitest": "^4.1.10"
 	}
 }

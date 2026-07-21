@@ -8,6 +8,27 @@
 			"when": 1753100000000,
 			"tag": "0000_tenants_and_app_context",
 			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1753101000000,
+			"tag": "0001_auth_rls",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1753102000000,
+			"tag": "0002_tenant_fn_volatile",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1753103000000,
+			"tag": "0003_app_role",
+			"breakpoints": true
 		}
 	]
 }
