@@ -15,3 +15,4 @@ export * from './tenant-credentials';
 export * from './ad-metrics-daily';
 export * from './api-keys';
 export * from './inbound-messages';
+export * from './webhook-subscriptions';

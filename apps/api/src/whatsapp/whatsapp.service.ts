@@ -1,11 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
+import type {
+	InboundMessageActionResponse,
+	InboundMessageProcessResponse,
+	InboundMessageStatus,
+	TransactionDraft
+} from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
-import { inboundMessages } from '../db/schema/inbound-messages';
+import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
 import { PatientsService } from '../patients/patients.service';
-import { TenantContextService } from '../tenant/tenant-context.service';
+import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { heuristicParseWhatsappMessage } from './heuristic-parse';
-import { toInboundMessage } from './inbound-mapper';
+import { asRecord, extractInboundDisplayFields, mergeParsedPayload, toInboundMessage } from './inbound-mapper';
+
+const PARSE_ERROR_NO_TEXT = 'Medya mesajı — metin yok';
+const PARSE_ERROR_NO_MATCH = 'Ayrıştırılamadı';
 
 @Injectable()
 export class WhatsappService {
@@ -45,17 +54,108 @@ export class WhatsappService {
 
 	async getInboxItem(tenantId: string, id: string) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const [row] = await db
-				.select()
-				.from(inboundMessages)
-				.where(eq(inboundMessages.id, id))
-				.limit(1);
-
-			if (!row) {
-				throw new NotFoundException('Inbound message not found');
-			}
-
+			const row = await this.findRow(db, id);
 			return toInboundMessage(row);
 		});
+	}
+
+	/** Heuristic parse of a single inbox item; stashes drafts (or an error) into `payload`. */
+	async parseInboxItem(tenantId: string, id: string): Promise<{ records: TransactionDraft[] }> {
+		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
+
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const row = await this.findRow(db, id);
+			const payload = asRecord(row.payload) ?? {};
+			const display = extractInboundDisplayFields(payload);
+
+			if (!display.body?.trim()) {
+				await this.savePayload(db, id, payload, { parsed_records: null, parse_error: PARSE_ERROR_NO_TEXT });
+				return { records: [] };
+			}
+
+			const records = heuristicParseWhatsappMessage(display.body, patients);
+			await this.savePayload(db, id, payload, {
+				parsed_records: records.length > 0 ? records : null,
+				parse_error: records.length === 0 ? PARSE_ERROR_NO_MATCH : null
+			});
+			return { records };
+		});
+	}
+
+	/** Heuristic parse of every `new` message with text; skips media-only messages. */
+	async processInbox(tenantId: string): Promise<InboundMessageProcessResponse> {
+		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
+
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await db
+				.select()
+				.from(inboundMessages)
+				.where(eq(inboundMessages.status, 'new'));
+
+			let processed = 0;
+			let parsed = 0;
+			let error = 0;
+
+			for (const row of rows) {
+				const payload = asRecord(row.payload) ?? {};
+				const display = extractInboundDisplayFields(payload);
+				if (!display.body?.trim()) continue;
+
+				processed++;
+				const records = heuristicParseWhatsappMessage(display.body, patients);
+				const isError = records.length === 0;
+				if (isError) error++;
+				else parsed++;
+
+				await this.savePayload(db, row.id, payload, {
+					parsed_records: isError ? null : records,
+					parse_error: isError ? PARSE_ERROR_NO_MATCH : null
+				});
+			}
+
+			return { processed, parsed, error };
+		});
+	}
+
+	async approveInboxItem(tenantId: string, id: string): Promise<InboundMessageActionResponse> {
+		return this.setStatus(tenantId, id, 'approved');
+	}
+
+	async ignoreInboxItem(tenantId: string, id: string): Promise<InboundMessageActionResponse> {
+		return this.setStatus(tenantId, id, 'ignored');
+	}
+
+	private async setStatus(
+		tenantId: string,
+		id: string,
+		status: InboundMessageStatus
+	): Promise<InboundMessageActionResponse> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await this.findRow(db, id);
+			await db.update(inboundMessages).set({ status }).where(eq(inboundMessages.id, id));
+			return { success: true, id, status };
+		});
+	}
+
+	private async savePayload(
+		db: TenantDb,
+		id: string,
+		payload: Record<string, unknown>,
+		patch: { parsed_records: TransactionDraft[] | null; parse_error: string | null }
+	) {
+		await db
+			.update(inboundMessages)
+			.set({ status: 'parsed', payload: mergeParsedPayload(payload, patch) })
+			.where(eq(inboundMessages.id, id));
+	}
+
+	private async findRow(db: TenantDb, id: string): Promise<InboundMessageRow> {
+		const [row] = await db.select().from(inboundMessages).where(eq(inboundMessages.id, id)).limit(1);
+
+		if (!row) {
+			throw new NotFoundException('Inbound message not found');
+		}
+
+		return row;
 	}
 }

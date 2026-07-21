@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker/locale/en';
 import type {
+	ApiKey,
 	Appointment,
 	AppointmentTypeSetting,
 	AuditLog,
@@ -361,6 +362,7 @@ export type DemoStore = {
 	appointmentTypes: AppointmentTypeSetting[];
 	members: MembershipUser[];
 	auditLogs: AuditLog[];
+	apiKeys: ApiKey[];
 };
 
 function slugify(name: string): string {
@@ -611,6 +613,20 @@ function makeAppointmentTypes(): AppointmentTypeSetting[] {
 		name,
 		sort_order: i
 	}));
+}
+
+function makeApiKeys(): ApiKey[] {
+	return [
+		{
+			id: faker.string.uuid(),
+			tenant_id: DEMO_TENANT_ID,
+			name: 'n8n entegrasyonu',
+			key_prefix: 'vk_demo123',
+			scopes: ['read', 'write'],
+			created_at: iso(faker.date.recent({ days: 30 })),
+			revoked_at: null
+		}
+	];
 }
 
 function daysAgo(days: number, hour = 10): Date {
@@ -920,7 +936,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 			financeCategories: [],
 			appointmentTypes: [],
 			members: [{ ...demoUser }],
-			auditLogs: []
+			auditLogs: [],
+			apiKeys: []
 		};
 	}
 
@@ -1211,7 +1228,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 		financeCategories: makeFinanceCategories(),
 		appointmentTypes: makeAppointmentTypes(),
 		members,
-		auditLogs
+		auditLogs,
+		apiKeys: makeApiKeys()
 	};
 }
 

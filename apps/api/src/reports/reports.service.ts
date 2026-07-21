@@ -1,26 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { and, eq, gte, lte } from 'drizzle-orm';
-import type { ReportByCategory, ReportPeriodParams, ReportSummary } from '@verimaya/shared';
+import type {
+	ReportByCategory,
+	ReportMonthly,
+	ReportPeriodParams,
+	ReportSummary
+} from '@verimaya/shared';
+import { resolveBaseAmount } from '../common/finance-base';
 import { tenants, transactions } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 type TxRow = {
 	kind: string;
 	category: string | null;
+	occurredOn: string;
 	amount: number;
 	amountBase: number | null;
+	paidAmount: number | null;
 	currency: string;
 };
-
-function resolveBaseAmount(row: TxRow, tenantBase: string): number | null {
-	if (row.currency === tenantBase) {
-		return row.amountBase ?? row.amount;
-	}
-	if (row.amountBase != null) {
-		return row.amountBase;
-	}
-	return null;
-}
 
 function categoryLabel(category: string | null): string {
 	const trimmed = (category ?? '').trim();
@@ -100,6 +98,50 @@ export class ReportsService {
 		});
 	}
 
+	async monthly(tenantId: string, params: ReportPeriodParams): Promise<ReportMonthly> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const tenantBase = await this.getTenantBase(db, tenantId);
+			const rows = await this.fetchTransactions(db, params);
+
+			const map = new Map<
+				string,
+				{ income_base: number; expense_base: number; transaction_count: number }
+			>();
+
+			for (const row of rows) {
+				const month = row.occurredOn.slice(0, 7);
+				const cur = map.get(month) ?? {
+					income_base: 0,
+					expense_base: 0,
+					transaction_count: 0
+				};
+				cur.transaction_count += 1;
+
+				const base = resolveBaseAmount(row, tenantBase);
+				if (base != null) {
+					if (row.kind === 'income') cur.income_base += base;
+					else cur.expense_base += base;
+				}
+				map.set(month, cur);
+			}
+
+			const items = [...map.entries()]
+				.map(([month, v]) => ({
+					month,
+					income_base: v.income_base,
+					expense_base: v.expense_base,
+					net_base: v.income_base - v.expense_base,
+					transaction_count: v.transaction_count
+				}))
+				.sort((a, b) => a.month.localeCompare(b.month));
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				items
+			};
+		});
+	}
+
 	private async getTenantBase(
 		db: Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'],
 		tenantId: string
@@ -128,8 +170,10 @@ export class ReportsService {
 			.select({
 				kind: transactions.kind,
 				category: transactions.category,
+				occurredOn: transactions.occurredOn,
 				amount: transactions.amount,
 				amountBase: transactions.amountBase,
+				paidAmount: transactions.paidAmount,
 				currency: transactions.currency
 			})
 			.from(transactions)

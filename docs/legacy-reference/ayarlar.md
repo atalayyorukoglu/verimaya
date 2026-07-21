@@ -1,5 +1,7 @@
 # Legacy notlar — Ayarlar (Settings hub)
 
+> **Durum (Verimaya):** Hub + Kategoriler + Randevu tipleri + Contact türleri gerçek API'ye bağlı (`GET/POST/PATCH/DELETE /v1/settings/*`). API anahtarları kartı (`/ayarlar/baglantilar/api`) artık gerçek `GET/POST/DELETE /v1/api-keys` CRUD'una bağlı. GHL / Reklamlar entegrasyon kartları hâlâ yer tutucu (Faz 4/5). Veri kalitesi ve import/export kartları henüz yok.
+
 Kaynak: Fixrav Tracker `/settings` (`SettingsHub` + alt sayfalar).
 
 ## Ne idi?

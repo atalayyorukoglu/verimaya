@@ -1,5 +1,7 @@
 # Legacy notlar — Case Expenses / Hasta finansı
 
+> **Durum (Verimaya):** Hasta finans özeti sunucuda (`GET /v1/patients/:id/finance-summary`, `finance-base.ts` ile kur çevrimi) ve tenant izolasyon testiyle (`finance-summary.isolation.spec.ts`) kapalı. Kategori dağılımı `GET /v1/reports/by-category` üzerinden geliyor. Dosyalar hâlâ metadata-stub (`dosyalar.md`); Contact modeli ve `case_finance_detail` benzeri RBAC ileride.
+
 Kaynak: Fixrav Tracker (`/case-expenses` = yeniden adlandırılmış Cases/Patients).
 
 ## Ne idi?

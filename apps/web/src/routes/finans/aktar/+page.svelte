@@ -7,9 +7,8 @@
 		TransactionCreate,
 		TransactionDraft
 	} from '@verimaya/shared';
-	import { inboundMessageStatusLabels } from '@verimaya/shared';
+	import { apiPaths, inboundMessageStatusLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
-	import { USE_MSW } from '$lib/env';
 	import { formatDateTime } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -38,8 +37,7 @@
 
 	const inboxQuery = createQuery(() => ({
 		queryKey: ['whatsapp', 'inbox'],
-		enabled: USE_MSW,
-		queryFn: () => apiGet<{ messages: InboundMessage[] }>('/v1/whatsapp/inbox')
+		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox)
 	}));
 
 	const patientsQuery = createQuery(() => ({
@@ -75,7 +73,7 @@
 		parsing = true;
 		parseError = null;
 		try {
-			const res = await apiSend<{ records: TransactionDraft[] }>('/v1/whatsapp/parse', 'POST', {
+			const res = await apiSend<{ records: TransactionDraft[] }>(apiPaths.whatsappParse, 'POST', {
 				message: text
 			});
 			drafts = initDrafts(res.records);
@@ -105,7 +103,7 @@
 		parseError = null;
 		try {
 			const res = await apiSend<{ records: TransactionDraft[] }>(
-				`/v1/whatsapp/inbox/${item.id}/parse`,
+				apiPaths.whatsappInboxParse(item.id),
 				'POST'
 			);
 			drafts = initDrafts(res.records);
@@ -124,7 +122,7 @@
 	async function processNewMessages() {
 		processing = true;
 		try {
-			await apiSend('/v1/whatsapp/inbox/process', 'POST');
+			await apiSend(apiPaths.whatsappInboxProcess, 'POST');
 			await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'inbox'] });
 		} finally {
 			processing = false;
@@ -132,7 +130,7 @@
 	}
 
 	async function ignoreInbox(id: string) {
-		await apiSend(`/v1/whatsapp/inbox/${id}/ignore`, 'POST');
+		await apiSend(apiPaths.whatsappInboxIgnore(id), 'POST');
 		if (activeInboxId === id) {
 			activeInboxId = null;
 			message = '';
@@ -142,7 +140,7 @@
 	}
 
 	async function approveInbox(id: string) {
-		await apiSend(`/v1/whatsapp/inbox/${id}/approve`, 'POST');
+		await apiSend(apiPaths.whatsappInboxApprove(id), 'POST');
 		activeInboxId = null;
 		message = '';
 		drafts = [];
@@ -279,8 +277,7 @@
 		</div>
 	</section>
 
-	<!-- Bekleyenler (MSW demo — gerçek API'de inbox Faz 3'te) -->
-	{#if USE_MSW}
+	<!-- Bekleyenler -->
 	<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 		<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 			<h2 class="text-sm font-semibold text-text">
@@ -358,7 +355,6 @@
 			</ul>
 		{/if}
 	</section>
-	{/if}
 
 	<!-- Taslaklar -->
 	{#if drafts.length > 0}
@@ -393,12 +389,8 @@
 			{/each}
 
 			<p class="text-xs text-text-faint">
-				AI çıktısı taslaktır; kaydetmeden önce alanları kontrol edin.
-				{#if USE_MSW}
-					Demo parser sezgisel çalışır — gerçek LLM Faz 3'te devreye girecek.
-				{:else}
-					Backend sezgisel parser kullanıyor (LLM henüz yok).
-				{/if}
+				AI çıktısı taslaktır; kaydetmeden önce alanları kontrol edin. Backend sezgisel parser
+				kullanıyor (LLM henüz yok).
 			</p>
 		</section>
 	{/if}

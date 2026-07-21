@@ -131,6 +131,11 @@ components:
       description: Period aggregate (income, expense, net — minor units)
       additionalProperties: true
 
+    ReportMonthly:
+      type: object
+      description: Monthly income/expense/net buckets (`YYYY-MM`, minor units), aligned with finance-base FX resolution
+      additionalProperties: true
+
   parameters:
     Cursor:
       name: cursor
@@ -403,6 +408,89 @@ paths:
         '404':
           description: Not found (or other tenant)
 
+  /whatsapp/inbox/process:
+    post:
+      tags: [WhatsApp]
+      summary: Heuristic parse of every `new` inbox message with text
+      description: |
+        Skips media-only messages (no text body). Sets each processed message's status to
+        `parsed` and stashes `parsed_records` (or `parse_error`) in `payload`.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Batch result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed: { type: integer }
+                  parsed: { type: integer }
+                  error: { type: integer }
+
+  /whatsapp/inbox/{id}/parse:
+    post:
+      tags: [WhatsApp]
+      summary: Heuristic parse of a single inbox message
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Parsed transaction drafts (also stashed in the message payload)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items: { type: object }
+        '404':
+          description: Not found (or other tenant)
+
+  /whatsapp/inbox/{id}/approve:
+    post:
+      tags: [WhatsApp]
+      summary: Mark inbox message as approved
+      description: |
+        Does **not** create a transaction — the human confirms via `POST /v1/transactions`
+        on the AI aktarım screen; this only records the inbox item's disposition.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated status
+        '404':
+          description: Not found (or other tenant)
+
+  /whatsapp/inbox/{id}/ignore:
+    post:
+      tags: [WhatsApp]
+      summary: Mark inbox message as ignored
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated status
+        '404':
+          description: Not found (or other tenant)
+
   /whatsapp/parse:
     post:
       tags: [WhatsApp]
@@ -462,6 +550,28 @@ paths:
       responses:
         '200':
           description: Category breakdown
+
+  /reports/monthly:
+    get:
+      tags: [Reports]
+      summary: Monthly income/expense/net buckets
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Monthly aggregates
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportMonthly' }
 
   /api-keys:
     get:

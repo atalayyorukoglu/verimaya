@@ -17,6 +17,9 @@ import {
 	financeCategoryUpdateSchema,
 	mergeRecordsSchema,
 	userRoleSchema,
+	apiKeyCreateSchema,
+	type ApiKey,
+	type ApiKeyCreated,
 	type Appointment,
 	type AppointmentTypeSetting,
 	type Contact,
@@ -1116,6 +1119,39 @@ export const handlers = [
 		if (idx < 0) return notFound('Tip bulunamadı');
 		store.appointmentTypes.splice(idx, 1);
 		return new HttpResponse(null, { status: 204 });
+	}),
+
+	http.get('/v1/api-keys', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const items = store.apiKeys.filter((k) => k.revoked_at == null);
+		return HttpResponse.json({ items });
+	}),
+
+	http.post('/v1/api-keys', async ({ request }) => {
+		const body = await request.json();
+		const parsed = apiKeyCreateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz anahtar', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const item: ApiKey = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			name: parsed.data.name,
+			key_prefix: `vk_${crypto.randomUUID().slice(0, 8)}`,
+			scopes: parsed.data.scopes,
+			created_at: nowIso(),
+			revoked_at: null
+		};
+		store.apiKeys.push(item);
+		const created: ApiKeyCreated = { ...item, key: `${item.key_prefix}_${crypto.randomUUID()}` };
+		return HttpResponse.json(created, { status: 201 });
+	}),
+
+	http.delete('/v1/api-keys/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const item = store.apiKeys.find((k) => k.id === params.id && k.revoked_at == null);
+		if (!item) return notFound('Anahtar bulunamadı');
+		item.revoked_at = nowIso();
+		return HttpResponse.json(item);
 	}),
 
 	http.get('/v1/dev/tenants', ({ request }) => {

@@ -1,21 +1,36 @@
+import { NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
+import { PatientsService } from '../patients/patients.service';
+import type { TenantContextService } from '../tenant/tenant-context.service';
+import { WhatsappService } from './whatsapp.service';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
+async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
+	const { sql } = getDb(databaseUrl);
+	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
+	try {
+		return await fn();
+	} finally {
+		await sql`select set_config('app.current_tenant_id', '', false)`;
+	}
+}
+
 describe('inbound_messages RLS isolation', () => {
 	const tenantA = randomUUID();
 	const tenantB = randomUUID();
 	let messageA: string;
 	let messageB: string;
+	let whatsappService: WhatsappService;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
-		const { sql } = getDb(databaseUrl);
+		const { db, sql } = getDb(databaseUrl);
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -61,6 +76,15 @@ describe('inbound_messages RLS isolation', () => {
 			`;
 			return row!.id as string;
 		});
+
+		const tenantContext = {
+			withTenant: async <T>(
+				tenantId: string,
+				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
+			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
+		} as TenantContextService;
+
+		whatsappService = new WhatsappService(new PatientsService(tenantContext), tenantContext);
 	});
 
 	afterAll(async () => {
@@ -111,5 +135,36 @@ describe('inbound_messages RLS isolation', () => {
 		});
 
 		expect(rows).toHaveLength(0);
+	});
+
+	it('Tenant A cannot approve Tenant B inbound message', async () => {
+		await expect(whatsappService.approveInboxItem(tenantA, messageB)).rejects.toBeInstanceOf(
+			NotFoundException
+		);
+
+		const status = await withTenantSession(tenantB, async () => {
+			const { sql } = getDb(databaseUrl);
+			const [row] = await sql`select status from inbound_messages where id = ${messageB}`;
+			return row!.status as string;
+		});
+		expect(status).toBe('new');
+	});
+
+	it('Tenant A cannot ignore Tenant B inbound message', async () => {
+		await expect(whatsappService.ignoreInboxItem(tenantA, messageB)).rejects.toBeInstanceOf(
+			NotFoundException
+		);
+
+		const status = await withTenantSession(tenantB, async () => {
+			const { sql } = getDb(databaseUrl);
+			const [row] = await sql`select status from inbound_messages where id = ${messageB}`;
+			return row!.status as string;
+		});
+		expect(status).toBe('new');
+	});
+
+	it('Tenant B can approve its own inbound message', async () => {
+		const result = await whatsappService.approveInboxItem(tenantB, messageB);
+		expect(result).toEqual({ success: true, id: messageB, status: 'approved' });
 	});
 });

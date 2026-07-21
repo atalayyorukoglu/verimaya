@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { DbService } from '../db/db.service';
-import { hashApiKey, isApiKeyToken } from './api-key-crypto';
+import { extractBearerToken, hashApiKey, isApiKeyToken } from './api-key-crypto';
 
 export type ApiKeyAuth = {
 	tenantId: string;
@@ -21,8 +21,9 @@ declare module 'fastify' {
 }
 
 /**
- * Optional guard for machine-to-machine access via `Authorization: Bearer vk_...`.
- * Not wired globally yet — apply per-route when external API endpoints ship (Faz 6).
+ * Guard for machine-to-machine access via `Authorization: Bearer vk_...`.
+ * Used directly on api-key-only routes, or via `AuthOrApiKeyGuard` on domain
+ * controllers that accept either a session or an API key (Faz 6).
  */
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
@@ -57,13 +58,4 @@ export class ApiKeyGuard implements CanActivate {
 		};
 		return true;
 	}
-}
-
-function extractBearerToken(header: string | string[] | undefined): string | undefined {
-	const raw = Array.isArray(header) ? header[0] : header;
-	if (!raw?.startsWith('Bearer ')) {
-		return undefined;
-	}
-	const token = raw.slice('Bearer '.length).trim();
-	return token || undefined;
 }

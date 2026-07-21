@@ -10,7 +10,9 @@ import type {
 	FinanceCategory,
 	Patient,
 	PatientFile,
-	Transaction
+	Tenant,
+	Transaction,
+	WebhookSubscription
 } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
 import type { ApiKeyRow } from '../db/schema/api-keys';
@@ -21,7 +23,9 @@ import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
 import type { FinanceCategoryRow } from '../db/schema/finance-categories';
 import type { PatientRow } from '../db/schema/patients';
+import type { TenantRow } from '../db/schema/tenants';
 import type { TransactionRow } from '../db/schema/transactions';
+import type { WebhookSubscriptionRow } from '../db/schema/webhook-subscriptions';
 import { toIsoDateTime } from './pagination';
 
 type ParseSchema<T> = {
@@ -190,6 +194,28 @@ export function toApiKey(row: ApiKeyRow): ApiKey {
 		scopes: row.scopes as ApiKey['scopes'],
 		created_at: toIsoDateTime(row.createdAt),
 		revoked_at: row.revokedAt ? toIsoDateTime(row.revokedAt) : null
+	};
+}
+
+export function toTenant(row: TenantRow): Tenant {
+	return {
+		id: row.id,
+		name: row.name,
+		slug: row.slug,
+		base_currency: row.baseCurrency as Tenant['base_currency'],
+		patients_section_label: row.patientsSectionLabel,
+		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toWebhookSubscription(row: WebhookSubscriptionRow): WebhookSubscription {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		url: row.url,
+		event_types: row.eventTypes,
+		active: row.active,
+		created_at: toIsoDateTime(row.createdAt)
 	};
 }
 

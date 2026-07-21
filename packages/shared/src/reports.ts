@@ -37,9 +37,27 @@ export const reportByCategorySchema = z.object({
 });
 export type ReportByCategory = z.infer<typeof reportByCategorySchema>;
 
+/** `YYYY-MM` bucket key. */
+export const reportMonthKey = z.string().regex(/^\d{4}-\d{2}$/);
+
+export const reportMonthRowSchema = z.object({
+	month: reportMonthKey,
+	income_base: moneyMinor,
+	expense_base: moneyMinor,
+	net_base: moneyMinor,
+	transaction_count: z.number().int().nonnegative()
+});
+export type ReportMonthRow = z.infer<typeof reportMonthRowSchema>;
+
+export const reportMonthlySchema = z.object({
+	period: reportPeriodSchema,
+	items: z.array(reportMonthRowSchema)
+});
+export type ReportMonthly = z.infer<typeof reportMonthlySchema>;
+
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(
-	path: 'summary' | 'by-category',
+	path: 'summary' | 'by-category' | 'monthly',
 	params?: { from?: string | null; to?: string | null }
 ): string {
 	const url = new URL(`/v1/reports/${path}`, 'http://local');

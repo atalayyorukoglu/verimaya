@@ -1,12 +1,12 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { reportPeriodParams } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
-import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
+import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { ReportsService } from './reports.service';
 
 @Controller('reports')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class ReportsController {
 	constructor(private readonly reportsService: ReportsService) {}
 
@@ -28,5 +28,15 @@ export class ReportsController {
 	) {
 		const params = reportPeriodParams.parse({ from, to });
 		return this.reportsService.byCategory(getActiveOrgId(req), params);
+	}
+
+	@Get('monthly')
+	monthly(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		return this.reportsService.monthly(getActiveOrgId(req), params);
 	}
 }

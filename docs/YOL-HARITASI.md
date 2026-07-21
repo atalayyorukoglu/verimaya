@@ -30,13 +30,14 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] `audit_logs` tablosu + `GET /v1/audit-logs` (cursor sayfalama; yazma şimdilik merge'de)
 - [x] Cursor sayfalama + tenant indeksleri; `pg_trgm` GIN indeksleri (patients, contacts)
 - [x] `?q=` arama API'si (patients + contacts list; `ILIKE` + trgm indeksleri)
-- [~] Hasta detayı: finans aggregate sunucu tarafı (sonra); dosya metadata stub var, object storage/S3 yok
+- [~] Hasta detayı: finans aggregate `GET /v1/patients/:id/finance-summary` ✓; dosya metadata stub var, object storage/S3 yok
 - [~] **Hasta dosyaları (metadata stub):** `GET/POST /v1/patients/:id/files` — `storage_key='local://pending'`; binary/S3 sonra
 - [x] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit) — NestJS API + izolasyon testi
 - [x] Soft-delete (patients `deleted_at`) + `Idempotency-Key` (mutasyon endpoint'leri)
-- [x] Finans kategori + contact type + randevu tip ayarları (`GET /v1/settings/*`; boş tenant'ta seed, randevu tipleri statik)
-- [ ] MSW tam kapatma: `PUBLIC_USE_MSW=false` + `resolveApiUrl` altyapısı hazır; çoğu ekran hâlâ MSW'ye bağlı (tenants, settings, merge, inbox, dosyalar…)
-- [ ] Legacy notlar: `docs/legacy-reference/case-expenses.md`, `dosyalar.md`, `ayarlar.md`
+- [x] Finans kategori + contact type + randevu tip ayarları (`GET/POST/PATCH/DELETE /v1/settings/*`; boş tenant'ta seed, randevu tipleri statik/okuma)
+- [x] `GET/PATCH /v1/tenants/current` + `GET /v1/members` (organizasyon / ekip ekranları)
+- [~] MSW: `PUBLIC_USE_MSW=false` + `resolveApiUrl` ile çekirdek ekranlar gerçek API'ye bağlı; demo varsayılanı hâlâ MSW (`PUBLIC_USE_MSW=true`)
+- [x] Legacy notlar: `docs/legacy-reference/case-expenses.md`, `dosyalar.md`, `ayarlar.md` — "Durum (Verimaya)" notu eklendi
 
 ## Faz 2 — Entegrasyon platformu (1-2 hafta) 🚧
 
@@ -51,9 +52,9 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 ## Faz 3 — WhatsApp finans aktarımı (2 hafta) 🚧
 
 - [x] WAHA webhook → `inbound_messages` kuyruğu (`POST /v1/webhooks/waha`; `inbound_messages` tablosu + RLS; BullMQ `inbound_message.process` noop stub)
-- [x] `POST /v1/whatsapp/parse` — sezgisel stub (SessionGuard + ActiveOrgGuard); **gerçek LLM henüz yok**
-- [~] Inbox API: `GET /v1/whatsapp/inbox` (cursor) + `GET /v1/whatsapp/inbox/:id` gerçek API; process/approve/ignore/parse henüz yok (MSW demo)
-- [ ] Manuel yapıştır + kuyruk tek ekranda (`/finans/aktar` — yapıştır gerçek API'ye bağlı; kuyruk MSW'de)
+- [x] `POST /v1/whatsapp/parse` — sezgisel stub; **gerçek LLM henüz yok**
+- [x] Inbox API: list/get + `process` / `:id/parse` / `approve` / `ignore` (heuristic; approve işlem oluşturmaz)
+- [x] Manuel yapıştır + kuyruk tek ekranda (`/finans/aktar` gerçek API'ye bağlı)
 - [ ] AI correction kaydı (öğrenme için)
 
 ## Faz 4 — GHL senkronu (1-2 hafta) 🚧
@@ -71,17 +72,18 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 ## Faz 6 — Dış API + n8n (1 hafta) 🚧
 
 - [x] `api_keys` tablosu + CRUD (create/list/revoke; hash listede yok)
-- [x] `ApiKeyGuard` stub (`Bearer vk_...`; global'e bağlı değil)
+- [x] `ApiKeyGuard` + `AuthOrApiKeyGuard` (`Bearer vk_...` OR session); `patients`, `contacts`, `appointments`, `transactions`, `reports`, `whatsapp` dual-auth kabul ediyor; scope kontrolü (`read`/`write`, metoda göre); `api-keys` CRUD ve `settings` (credentials + webhook-subscriptions) session-only kaldı
+- [x] Ayarlar > Bağlantılar > API: anahtar liste/oluştur/iptal ekranı gerçek CRUD'a bağlı
 - [x] `Idempotency-Key` (mutasyon endpoint'lerinde; Faz 1'den)
-- [~] OpenAPI spec — statik [`apps/api/openapi.yaml`](./apps/api/openapi.yaml) (auth, patients, contacts, webhooks, WhatsApp inbox, reports, api-keys); runtime Swagger UI yok
-- [ ] `webhook_subscriptions` + HMAC imzalı giden event'ler
+- [~] OpenAPI spec — statik [`apps/api/openapi.yaml`](./apps/api/openapi.yaml) (auth, patients, contacts, webhooks, WhatsApp inbox, reports, api-keys); runtime Swagger UI yok; yeni `webhook-subscriptions` endpoint'leri spec'e henüz eklenmedi
+- [~] `webhook_subscriptions` tablosu (RLS) + CRUD (`GET/POST/DELETE /v1/webhook-subscriptions`, session-only) + `enqueueOutbound` → `outbox_events`; BullMQ `outbox.deliver` worker gerçek `fetch` ile `X-Verimaya-Signature: sha256=<hmac>` gönderiyor, hata durumunda `outbox_events.status=failed` + retry (BullMQ backoff); tek domain hook olarak `transaction.created` bağlandı — diğer event tipleri (`patient.created`, `appointment.created`) şema/enum'da var ama henüz hiçbir yerden tetiklenmiyor; web tarafında ayarlar ekranı yok
 
 ## Faz 7 — Rapor, dashboard, PWA, vitrin (1-2 hafta)
 
 - [x] Dönemsel özetler (sunucu aggregate): `GET /v1/reports/summary`, `GET /v1/reports/by-category`; web raporlar sayfası MSW kapalıyken bu endpoint'lere bağlı
-- [ ] Grafikler (aylık bar), kategori alt-kırılım drill-down sunucuda; dashboard cache
-- [x] PWA manifest (`apps/web/static/manifest.webmanifest`); service worker sonra
-- [ ] Legacy notlar: `docs/legacy-reference/raporlar.md` (referans; güncelleme gerekmez)
+- [~] Grafikler: aylık bar sunucu aggregate'e bağlı (`GET /v1/reports/monthly`); kategori alt-kırılım (subtitle) drill-down hâlâ istemcide; dashboard cache yok
+- [~] PWA: manifest (`apps/web/static/manifest.webmanifest`) + minimal service worker (`apps/web/static/sw.js`; shell cache-first, `/v1` network-first; MSW açıkken kayıt edilmez); offline fallback sayfası / install prompt UX yok
+- [x] Legacy notlar: `docs/legacy-reference/raporlar.md` — "Durum (Verimaya)" notu eklendi
 - [~] Vitrin sayfası (`/vitrin`): minimal hero + tek CTA → `/giris` (AppShell dışı); tam CF-marketing vitrin sonra
 
 ## Faz 8 — Veri göçü ve geçiş (1 hafta)

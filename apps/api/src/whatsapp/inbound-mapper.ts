@@ -1,6 +1,6 @@
 import type { InboundMessage, TransactionDraft } from '@verimaya/shared';
 
-function asRecord(value: unknown): Record<string, unknown> | null {
+export function asRecord(value: unknown): Record<string, unknown> | null {
 	if (value && typeof value === 'object' && !Array.isArray(value)) {
 		return value as Record<string, unknown>;
 	}
@@ -77,6 +77,14 @@ export function extractParsedRecords(payload: Record<string, unknown>): Transact
 export function extractParseError(payload: Record<string, unknown>): string | null {
 	const value = payload.parse_error;
 	return typeof value === 'string' ? value : null;
+}
+
+/** Merges parse results into the stored payload without touching the raw provider fields. */
+export function mergeParsedPayload(
+	payload: Record<string, unknown>,
+	patch: { parsed_records: TransactionDraft[] | null; parse_error: string | null }
+): Record<string, unknown> {
+	return { ...payload, parsed_records: patch.parsed_records, parse_error: patch.parse_error };
 }
 
 export function toInboundMessage(row: {

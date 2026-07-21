@@ -2,7 +2,8 @@ import {
 	BadRequestException,
 	CanActivate,
 	ExecutionContext,
-	Injectable
+	Injectable,
+	UnauthorizedException
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
@@ -10,22 +11,17 @@ import type { FastifyRequest } from 'fastify';
 export class ActiveOrgGuard implements CanActivate {
 	canActivate(context: ExecutionContext): boolean {
 		const req = context.switchToHttp().getRequest<FastifyRequest>();
-		const orgId = req.authSession?.session.activeOrganizationId;
-		if (!orgId) {
-			throw new BadRequestException({
-				error: {
-					code: 'active_organization_required',
-					message: 'Active organization is required'
-				},
-				request_id: req.id
-			});
-		}
+		getActiveOrgId(req);
 		return true;
 	}
 }
 
+/**
+ * Resolves the active tenant from either a session (activeOrganizationId) or
+ * an API key (Faz 6 dual-auth). Never trust a tenant id supplied by the client.
+ */
 export function getActiveOrgId(req: FastifyRequest): string {
-	const orgId = req.authSession?.session.activeOrganizationId;
+	const orgId = req.authSession?.session.activeOrganizationId ?? req.apiKeyAuth?.tenantId;
 	if (!orgId) {
 		throw new BadRequestException({
 			error: {
@@ -42,11 +38,25 @@ export function getActorFromRequest(req: FastifyRequest): {
 	actorId: string;
 	actorDisplayName: string;
 } {
-	const user = req.authSession!.user;
-	return {
-		actorId: user.id,
-		actorDisplayName: user.name?.trim() || user.email
-	};
+	if (req.authSession) {
+		const user = req.authSession.user;
+		return {
+			actorId: user.id,
+			actorDisplayName: user.name?.trim() || user.email
+		};
+	}
+
+	if (req.apiKeyAuth) {
+		return {
+			actorId: `api_key:${req.apiKeyAuth.apiKeyId}`,
+			actorDisplayName: 'API Key'
+		};
+	}
+
+	throw new UnauthorizedException({
+		error: { code: 'unauthorized', message: 'Authentication required' },
+		request_id: req.id
+	});
 }
 
 export function getIdempotencyKey(req: FastifyRequest): string | undefined {

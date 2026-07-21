@@ -8,6 +8,7 @@ export const API_V1_PREFIX = '/v1';
 export const apiPaths = {
 	me: `${API_V1_PREFIX}/me`,
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
+	members: `${API_V1_PREFIX}/members`,
 	patients: `${API_V1_PREFIX}/patients`,
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
 	patientFinanceSummary: (id: string) => `${API_V1_PREFIX}/patients/${id}/finance-summary`,
@@ -29,12 +30,19 @@ export const apiPaths = {
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
 	settingsCredential: (provider: string) => `${API_V1_PREFIX}/settings/credentials/${provider}`,
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
+	whatsappParse: `${API_V1_PREFIX}/whatsapp/parse`,
 	whatsappInbox: `${API_V1_PREFIX}/whatsapp/inbox`,
+	whatsappInboxItem: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}`,
+	whatsappInboxProcess: `${API_V1_PREFIX}/whatsapp/inbox/process`,
+	whatsappInboxParse: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/parse`,
+	whatsappInboxApprove: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/approve`,
+	whatsappInboxIgnore: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/ignore`,
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
 	apiKeys: `${API_V1_PREFIX}/api-keys`,
 	apiKey: (id: string) => `${API_V1_PREFIX}/api-keys/${id}`,
 	reportsSummary: `${API_V1_PREFIX}/reports/summary`,
-	reportsByCategory: `${API_V1_PREFIX}/reports/by-category`
+	reportsByCategory: `${API_V1_PREFIX}/reports/by-category`,
+	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`
 } as const;
 
 export type ListQueryParams = {
@@ -64,7 +72,12 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 import { patientSchema, patientFinanceSummarySchema } from './patient.js';
 import { appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
-import { inboundMessageSchema, transactionDraftSchema } from './inbound-message.js';
+import {
+	inboundMessageActionResponseSchema,
+	inboundMessageProcessResponseSchema,
+	inboundMessageSchema,
+	transactionDraftSchema
+} from './inbound-message.js';
 import { patientFileCreateSchema, patientFileSchema } from './file.js';
 import { patientCaseNoteSchema } from './case-note.js';
 import { contactSchema, contactTypeSchema } from './contact.js';
@@ -79,7 +92,7 @@ import { membershipUserSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
 import { adMetricSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
-import { reportByCategorySchema, reportSummarySchema } from './reports.js';
+import { reportByCategorySchema, reportMonthlySchema, reportSummarySchema } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 
 /**
@@ -162,6 +175,18 @@ export const apiContract = {
 	'GET /v1/whatsapp/inbox/:id': {
 		response: inboundMessageSchema
 	},
+	'POST /v1/whatsapp/inbox/process': {
+		response: inboundMessageProcessResponseSchema
+	},
+	'POST /v1/whatsapp/inbox/:id/parse': {
+		response: z.object({ records: z.array(transactionDraftSchema) })
+	},
+	'POST /v1/whatsapp/inbox/:id/approve': {
+		response: inboundMessageActionResponseSchema
+	},
+	'POST /v1/whatsapp/inbox/:id/ignore': {
+		response: inboundMessageActionResponseSchema
+	},
 	'GET /v1/members': {
 		response: cursorPageSchema(membershipUserSchema)
 	},
@@ -199,6 +224,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/by-category': {
 		response: reportByCategorySchema
+	},
+	'GET /v1/reports/monthly': {
+		response: reportMonthlySchema
 	}
 } as const;
 

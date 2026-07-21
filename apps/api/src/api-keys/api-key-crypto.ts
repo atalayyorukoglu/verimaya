@@ -20,3 +20,12 @@ export function hashApiKey(plaintext: string): string {
 export function isApiKeyToken(value: string): boolean {
 	return value.startsWith(API_KEY_PREFIX);
 }
+
+export function extractBearerToken(header: string | string[] | undefined): string | undefined {
+	const raw = Array.isArray(header) ? header[0] : header;
+	if (!raw?.startsWith('Bearer ')) {
+		return undefined;
+	}
+	const token = raw.slice('Bearer '.length).trim();
+	return token || undefined;
+}

@@ -16,18 +16,20 @@ import {
 	transactionUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { TransactionsService } from './transactions.service';
 
 @Controller('transactions')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class TransactionsController {
 	constructor(
 		private readonly transactionsService: TransactionsService,
-		private readonly idempotency: IdempotencyService
+		private readonly idempotency: IdempotencyService,
+		private readonly webhookSubscriptions: WebhookSubscriptionsService
 	) {}
 
 	@Get()
@@ -58,6 +60,14 @@ export class TransactionsController {
 				body: await this.transactionsService.createWithDb(db, tenantId, input)
 			})
 		);
+		if (!result.replayed) {
+			// Domain hook: fan out to tenant-configured outbound webhooks (Faz 6, best-effort).
+			await this.webhookSubscriptions.enqueueOutbound(
+				tenantId,
+				'transaction.created',
+				result.body as unknown as Record<string, unknown>
+			);
+		}
 		reply.status(result.statusCode);
 		return result.body;
 	}

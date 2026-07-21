@@ -16,14 +16,14 @@ import {
 	cursorPageParams
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { AppointmentsService } from './appointments.service';
 
 @Controller('appointments')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class AppointmentsController {
 	constructor(
 		private readonly appointmentsService: AppointmentsService,

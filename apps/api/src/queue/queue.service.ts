@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { Job, Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { IntegrationEventProcessor } from './integration-event.processor';
-import { DEFAULT_QUEUE_JOB_OPTIONS } from './queue.constants';
+import { OutboxProcessor } from './outbox.processor';
+import { DEFAULT_QUEUE_JOB_OPTIONS, OUTBOX_DELIVER_JOB_TYPE } from './queue.constants';
 
 export const DEFAULT_QUEUE_NAME = 'default';
 
@@ -22,7 +23,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
 	constructor(
 		private readonly config: ConfigService,
-		private readonly integrationEventProcessor: IntegrationEventProcessor
+		private readonly integrationEventProcessor: IntegrationEventProcessor,
+		private readonly outboxProcessor: OutboxProcessor
 	) {}
 
 	onModuleInit() {
@@ -48,6 +50,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 					this.logger.debug(
 						`Ad metrics sync noop for tenant ${job.data.tenantId}; job ${job.id}`
 					);
+					return { ok: true };
+				}
+				if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {
+					await this.outboxProcessor.deliver(job.data.jobId, job.data.tenantId);
 					return { ok: true };
 				}
 				this.logger.debug(`Noop worker handled job ${job.id} (${job.data.jobType})`);
@@ -103,6 +109,11 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	private async handleExhaustedJob(job: Job<DefaultQueueJobData>, err: Error): Promise<void> {
+		if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {
+			// OutboxProcessor already persists status='failed' on every attempt.
+			this.logger.error(`Outbox delivery ${job.data.jobId} exhausted retries: ${err.message}`);
+			return;
+		}
 		await this.integrationEventProcessor.markFailed(
 			job.data.jobId,
 			job.data.tenantId,

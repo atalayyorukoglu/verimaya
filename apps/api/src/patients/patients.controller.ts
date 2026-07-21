@@ -20,13 +20,13 @@ import {
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
+import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
-import { SessionGuard } from '../auth/session.guard';
 import { PatientsService } from './patients.service';
 
 @Controller('patients')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class PatientsController {
 	constructor(
 		private readonly patientsService: PatientsService,

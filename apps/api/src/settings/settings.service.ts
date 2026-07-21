@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { asc, eq } from 'drizzle-orm';
-import type { CredentialUpsert } from '@verimaya/shared';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { asc, desc, eq } from 'drizzle-orm';
+import type {
+	ContactTypeCreate,
+	CredentialUpsert,
+	FinanceCategoryCreate,
+	FinanceCategoryUpdate
+} from '@verimaya/shared';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS
 } from '@verimaya/shared';
-import { contactTypes, financeCategories, tenantCredentials } from '../db/schema';
+import { contactTypes, contacts, financeCategories, tenantCredentials } from '../db/schema';
 import { toContactType, toFinanceCategory } from '../common/mappers';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
-import { TenantContextService } from '../tenant/tenant-context.service';
+import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { buildDefaultAppointmentTypes } from './appointment-type-defaults';
 
 @Injectable()
@@ -67,6 +72,109 @@ export class SettingsService {
 			}
 
 			return { items: rows.map(toContactType) };
+		});
+	}
+
+	async createFinanceCategory(tenantId: string, input: FinanceCategoryCreate) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [maxRow] = await db
+				.select({ sortOrder: financeCategories.sortOrder })
+				.from(financeCategories)
+				.orderBy(desc(financeCategories.sortOrder))
+				.limit(1);
+
+			const [row] = await db
+				.insert(financeCategories)
+				.values({
+					tenantId,
+					kind: input.kind,
+					name: input.name,
+					sortOrder: (maxRow?.sortOrder ?? -1) + 1,
+					subcategories: input.subcategories ?? []
+				})
+				.returning();
+
+			return toFinanceCategory(row!);
+		});
+	}
+
+	async updateFinanceCategory(tenantId: string, id: string, input: FinanceCategoryUpdate) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const existing = await this.findFinanceCategoryRow(db, id);
+
+			const [row] = await db
+				.update(financeCategories)
+				.set({
+					kind: input.kind ?? existing.kind,
+					name: input.name ?? existing.name,
+					sortOrder: input.sort_order ?? existing.sortOrder,
+					subcategories: input.subcategories ?? existing.subcategories,
+					updatedAt: new Date()
+				})
+				.where(eq(financeCategories.id, id))
+				.returning();
+
+			return toFinanceCategory(row!);
+		});
+	}
+
+	async deleteFinanceCategory(tenantId: string, id: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await this.findFinanceCategoryRow(db, id);
+			await db.delete(financeCategories).where(eq(financeCategories.id, id));
+		});
+	}
+
+	async createContactType(tenantId: string, input: ContactTypeCreate) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const name = input.name.trim();
+
+			const existingRows = await db.select({ name: contactTypes.name }).from(contactTypes);
+			if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+				throw new BadRequestException({
+					error: { code: 'validation_error', message: 'Bu tür zaten var' }
+				});
+			}
+
+			const [maxRow] = await db
+				.select({ sortOrder: contactTypes.sortOrder })
+				.from(contactTypes)
+				.orderBy(desc(contactTypes.sortOrder))
+				.limit(1);
+
+			const [row] = await db
+				.insert(contactTypes)
+				.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
+				.returning();
+
+			return toContactType(row!);
+		});
+	}
+
+	async deleteContactType(tenantId: string, id: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db.select().from(contactTypes).where(eq(contactTypes.id, id)).limit(1);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact type not found' }
+				});
+			}
+
+			const [inUse] = await db
+				.select({ id: contacts.id })
+				.from(contacts)
+				.where(eq(contacts.contactTypeId, id))
+				.limit(1);
+			if (inUse) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: 'Tür kullanımda — önce kişileri taşıyın'
+					}
+				});
+			}
+
+			await db.delete(contactTypes).where(eq(contactTypes.id, id));
 		});
 	}
 
@@ -137,5 +245,19 @@ export class SettingsService {
 
 			return this.crypto.decrypt(row.ciphertext);
 		});
+	}
+
+	private async findFinanceCategoryRow(db: TenantDb, id: string) {
+		const [row] = await db
+			.select()
+			.from(financeCategories)
+			.where(eq(financeCategories.id, id))
+			.limit(1);
+		if (!row) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Finance category not found' }
+			});
+		}
+		return row;
 	}
 }

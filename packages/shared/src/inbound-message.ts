@@ -56,3 +56,19 @@ export const whatsappParseResponseSchema = z.object({
 });
 
 export type WhatsappParseResponse = z.infer<typeof whatsappParseResponseSchema>;
+
+export const inboundMessageProcessResponseSchema = z.object({
+	processed: z.number().int().nonnegative(),
+	parsed: z.number().int().nonnegative(),
+	error: z.number().int().nonnegative()
+});
+
+export type InboundMessageProcessResponse = z.infer<typeof inboundMessageProcessResponseSchema>;
+
+export const inboundMessageActionResponseSchema = z.object({
+	success: z.literal(true),
+	id: uuid,
+	status: inboundMessageStatusSchema
+});
+
+export type InboundMessageActionResponse = z.infer<typeof inboundMessageActionResponseSchema>;

@@ -17,14 +17,14 @@ import {
 	searchableListParams
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
+import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { ContactsService } from './contacts.service';
 
 @Controller('contacts')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class ContactsController {
 	constructor(
 		private readonly contactsService: ContactsService,

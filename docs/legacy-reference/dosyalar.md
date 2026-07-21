@@ -1,5 +1,7 @@
 # Legacy notlar — Case / Appointment dosyaları
 
+> **Durum (Verimaya):** `GET/POST /v1/patients/:id/files` gerçek API (Nest + Drizzle + RLS); `files` tablosu bu dokümandaki modele uygun (`tenant_id`, `patient_id` zorunlu, `appointment_id` nullable). Web'de `PatientFilesPanel.svelte` liste + metadata yükleme yapıyor. Hâlâ eksik: gerçek object storage/imzalı URL (`storage_key='local://pending'`), silme endpoint'i, audit kaydı — bkz. "İleri (Faz 1)".
+
 Kaynak: Fixrav Tracker (`CaseFile`, `/cases/:id/files`, `/appointments/:id/files`).
 
 ## Ne idi?

@@ -1,5 +1,7 @@
 # Legacy notlar — Raporlar
 
+> **Durum (Verimaya):** Sunucu aggregate üç endpoint: `GET /v1/reports/summary`, `by-category`, `monthly` (hepsi `?from=&to=`, `finance-base.ts` ile kur çevrimi, tenant izolasyon testleri var). Web raporlar sayfası MSW kapalıyken bu üçüne bağlı; aylık bar grafiği artık `reports/monthly`'den geliyor. Kategori → alt kategori (subtitle) drill-down hâlâ istemcide (işlem listesi üzerinden); sunucu tarafına taşınmadı.
+
 Kaynak: Fixrav Tracker `/reports` (`?tab=summary` | `?tab=category`).
 
 ## Ne idi?

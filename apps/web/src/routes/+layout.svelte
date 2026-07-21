@@ -21,6 +21,9 @@
 		if (USE_MSW && import.meta.env.DEV) {
 			const { startMockWorker } = await import('$lib/mocks/browser');
 			await startMockWorker();
+		} else if ('serviceWorker' in navigator) {
+			// MSW installs its own worker at the same scope — never register both.
+			void navigator.serviceWorker.register('/sw.js');
 		}
 		appReady = true;
 	});

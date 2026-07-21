@@ -5,6 +5,7 @@
 	import type {
 		Patient,
 		ReportByCategory,
+		ReportMonthly,
 		ReportSummary,
 		SupportedCurrency,
 		Tenant,
@@ -139,6 +140,19 @@
 		enabled: !USE_MSW
 	}));
 
+	const monthlyRange = $derived.by(() => {
+		const now = new Date();
+		const from = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+		return { from: isoDay(from), to: isoDay(now) };
+	});
+
+	const monthlyQuery = createQuery(() => ({
+		queryKey: ['reports', 'monthly', monthlyRange],
+		queryFn: () =>
+			apiGet<ReportMonthly>(reportUrl('monthly', monthlyRange)),
+		enabled: !USE_MSW
+	}));
+
 	const tenantQuery = createQuery(() => ({
 		queryKey: ['tenants', 'current'],
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
@@ -194,7 +208,7 @@
 
 	type MonthBucket = { key: string; label: string; income: number; expense: number };
 
-	const monthly = $derived.by(() => {
+	function emptyMonthBuckets(): Map<string, MonthBucket> {
 		const buckets = new Map<string, MonthBucket>();
 		const now = new Date();
 		for (let i = 5; i >= 0; i--) {
@@ -207,14 +221,30 @@
 				expense: 0
 			});
 		}
-		for (const t of transactions) {
-			const bucket = buckets.get(t.occurred_on.slice(0, 7));
-			if (!bucket) continue;
-			const base = amountInBase(t, baseCurrency);
-			if (base == null) continue;
-			if (t.kind === 'income') bucket.income += base;
-			else bucket.expense += base;
+		return buckets;
+	}
+
+	const monthly = $derived.by(() => {
+		const buckets = emptyMonthBuckets();
+
+		if (!USE_MSW && monthlyQuery.data) {
+			for (const row of monthlyQuery.data.items) {
+				const bucket = buckets.get(row.month);
+				if (!bucket) continue;
+				bucket.income = row.income_base;
+				bucket.expense = row.expense_base;
+			}
+		} else {
+			for (const t of transactions) {
+				const bucket = buckets.get(t.occurred_on.slice(0, 7));
+				if (!bucket) continue;
+				const base = amountInBase(t, baseCurrency);
+				if (base == null) continue;
+				if (t.kind === 'income') bucket.income += base;
+				else bucket.expense += base;
+			}
 		}
+
 		const list = [...buckets.values()];
 		const max = Math.max(1, ...list.map((b) => Math.max(b.income, b.expense)));
 		return { list, max };
@@ -399,12 +429,12 @@
 	const loading = $derived(
 		txQuery.isPending ||
 			patientsQuery.isPending ||
-			(!USE_MSW && (summaryQuery.isPending || byCategoryQuery.isPending))
+			(!USE_MSW && (summaryQuery.isPending || byCategoryQuery.isPending || monthlyQuery.isPending))
 	);
 	const failed = $derived(
 		txQuery.isError ||
 			patientsQuery.isError ||
-			(!USE_MSW && (summaryQuery.isError || byCategoryQuery.isError))
+			(!USE_MSW && (summaryQuery.isError || byCategoryQuery.isError || monthlyQuery.isError))
 	);
 
 	function setTab(next: TabKey) {

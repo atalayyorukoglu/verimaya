@@ -101,4 +101,32 @@ describe('reports summary tenant isolation', () => {
 		expect(summary.net_base).toBe(50000);
 		expect(summary.transaction_count).toBe(1);
 	});
+
+	it('Tenant A monthly report excludes Tenant B transactions', async () => {
+		const monthly = await reportsService.monthly(tenantA, period);
+
+		expect(monthly.items).toEqual([
+			{
+				month: '2026-01',
+				income_base: 10000,
+				expense_base: 3000,
+				net_base: 7000,
+				transaction_count: 2
+			}
+		]);
+	});
+
+	it('Tenant B monthly report excludes Tenant A transactions', async () => {
+		const monthly = await reportsService.monthly(tenantB, period);
+
+		expect(monthly.items).toEqual([
+			{
+				month: '2026-01',
+				income_base: 50000,
+				expense_base: 0,
+				net_base: 50000,
+				transaction_count: 1
+			}
+		]);
+	});
 });

@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { cursorPageParams, whatsappParseRequestSchema } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
-import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
+import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { parseBody } from '../common/mappers';
 import { WhatsappService } from './whatsapp.service';
 
 @Controller('whatsapp')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class WhatsappController {
 	constructor(private readonly whatsappService: WhatsappService) {}
 
@@ -31,5 +31,25 @@ export class WhatsappController {
 	@Get('inbox/:id')
 	getInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.getInboxItem(getActiveOrgId(req), id);
+	}
+
+	@Post('inbox/process')
+	processInbox(@Req() req: FastifyRequest) {
+		return this.whatsappService.processInbox(getActiveOrgId(req));
+	}
+
+	@Post('inbox/:id/parse')
+	parseInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.whatsappService.parseInboxItem(getActiveOrgId(req), id);
+	}
+
+	@Post('inbox/:id/approve')
+	approveInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.whatsappService.approveInboxItem(getActiveOrgId(req), id);
+	}
+
+	@Post('inbox/:id/ignore')
+	ignoreInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.whatsappService.ignoreInboxItem(getActiveOrgId(req), id);
 	}
 }
