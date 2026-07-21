@@ -121,6 +121,33 @@
 		if (!el) return;
 		return bindSidebarScroll(el);
 	});
+
+	/** TickPort: lock document scroll on desktop so only main panes scroll */
+	$effect(() => {
+		const html = document.documentElement;
+		const body = document.body;
+		const prevHtml = html.style.overflow;
+		const prevBody = body.style.overflow;
+		const mq = window.matchMedia('(min-width: 768px)');
+
+		function apply() {
+			if (mq.matches) {
+				html.style.overflow = 'hidden';
+				body.style.overflow = 'hidden';
+			} else {
+				html.style.overflow = '';
+				body.style.overflow = '';
+			}
+		}
+
+		apply();
+		mq.addEventListener('change', apply);
+		return () => {
+			mq.removeEventListener('change', apply);
+			html.style.overflow = prevHtml;
+			body.style.overflow = prevBody;
+		};
+	});
 </script>
 
 <svelte:window
@@ -129,9 +156,13 @@
 	}}
 />
 
-<div class="flex min-h-dvh w-full bg-bg text-text">
-	<!-- Desktop sidebar — TickPort header/footer spacing (w-[220px]) -->
-	<aside class="hidden h-dvh w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex">
+<div
+	class="flex min-h-dvh w-full flex-col bg-bg text-text md:h-dvh md:max-h-dvh md:min-h-0 md:flex-row md:overflow-hidden"
+>
+	<!-- Desktop sidebar — TickPort: full viewport height, footer pinned -->
+	<aside
+		class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex"
+	>
 		<div class="flex h-14 shrink-0 items-center border-b border-border bg-bg px-4">
 			<a href="/" class="block min-w-0 rounded-md">
 				<SiteLogo description={tenantName} />
@@ -267,9 +298,9 @@
 		</aside>
 	{/if}
 
-	<div class="flex min-w-0 flex-1 flex-col">
+	<div class="flex min-w-0 flex-1 flex-col md:h-full md:min-h-0 md:overflow-hidden">
 		<header
-			class="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-bg/95 px-3 backdrop-blur sm:px-4"
+			class="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-bg/95 px-3 backdrop-blur sm:px-4 md:static"
 		>
 			<CommandPalette />
 
@@ -354,7 +385,7 @@
 		</header>
 
 		<main
-			class="min-w-0 flex-1 overflow-x-hidden p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-6 md:pb-6"
+			class="min-w-0 flex-1 overflow-x-hidden p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-6 md:min-h-0 md:overflow-y-auto md:pb-6"
 		>
 			{@render children()}
 		</main>

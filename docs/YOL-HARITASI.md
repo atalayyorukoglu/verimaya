@@ -2,7 +2,7 @@
 
 Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2 bitmeden domain özelliklerine derinlemesine girilmez. Günlük takip Obsidian'da; bu dosya repo içi referanstır ve faz bitişlerinde işaretlenir.
 
-## Faz 0a — Sözleşme + demo frontend (2-3 hafta, zaman kutulu) 🔜
+## Faz 0a — Sözleşme + demo frontend (2-3 hafta, zaman kutulu) ✅
 
 - [x] Monorepo iskeleti: pnpm workspaces + Turborepo
 - [x] `packages/shared`: zod şemaları (Patient, Appointment, Transaction, InboundMessage, Tenant, User) + endpoint sözleşmesi
@@ -16,7 +16,7 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] Desktop + mobil responsive (gerçek cihazda `--host` testi)
 - [x] Demo: kişi/hasta çift kayıt tarama + birleştirme (`/kisiler/cift-kayit`, `/hastalar/cift-kayit`)
 
-## Faz 0b — Gerçek temel (1 hafta)
+## Faz 0b — Gerçek temel (1 hafta) 🔜
 
 - [ ] Docker Compose: PostgreSQL 16 + Redis
 - [ ] `apps/api`: NestJS (Fastify) + Drizzle + ilk migrasyonlar
