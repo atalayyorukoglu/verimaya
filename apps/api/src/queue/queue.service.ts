@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { Job, Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
+import { IntegrationEventProcessor } from './integration-event.processor';
 
 export const DEFAULT_QUEUE_NAME = 'default';
 
@@ -18,7 +19,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 	private defaultQueue: Queue<DefaultQueueJobData> | null = null;
 	private defaultWorker: Worker<DefaultQueueJobData> | null = null;
 
-	constructor(private readonly config: ConfigService) {}
+	constructor(
+		private readonly config: ConfigService,
+		private readonly integrationEventProcessor: IntegrationEventProcessor
+	) {}
 
 	onModuleInit() {
 		const url = this.config.getOrThrow<string>('REDIS_URL');
@@ -33,6 +37,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		this.defaultWorker = new Worker<DefaultQueueJobData>(
 			DEFAULT_QUEUE_NAME,
 			async (job: Job<DefaultQueueJobData>) => {
+				if (job.data.jobType === 'integration_event.process') {
+					await this.integrationEventProcessor.process(job.data.jobId, job.data.tenantId);
+					return { ok: true };
+				}
 				this.logger.debug(`Noop worker handled job ${job.id} (${job.data.jobType})`);
 				return { ok: true };
 			},

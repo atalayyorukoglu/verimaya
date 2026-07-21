@@ -66,6 +66,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
 
 export const auditEntityLabels: Record<AuditEntity, string> = {
 	patient: 'Hasta',
+	contact: 'Kişi',
 	appointment: 'Randevu',
 	transaction: 'İşlem',
 	inbound_message: 'WhatsApp mesajı',

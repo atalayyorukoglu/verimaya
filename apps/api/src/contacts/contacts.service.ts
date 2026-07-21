@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
-import type { ContactCreate, ContactUpdate } from '@verimaya/shared';
-import { contactTypes, contacts } from '../db/schema';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { desc, eq, inArray } from 'drizzle-orm';
+import type { ContactCreate, ContactUpdate, MergeRecords } from '@verimaya/shared';
+import { findContactDuplicateGroups } from '@verimaya/shared';
+import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
+import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toContact } from '../common/mappers';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -93,6 +95,96 @@ export class ContactsService {
 			.returning();
 
 		return toContact(row!);
+	}
+
+	async duplicateGroups(tenantId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await db.select().from(contacts);
+			return { items: findContactDuplicateGroups(rows.map(toContact)) };
+		});
+	}
+
+	async mergeWithDb(
+		db: TenantDb,
+		tenantId: string,
+		input: MergeRecords,
+		actor: AuditActor
+	) {
+		const { keep_id, merge_ids } = input;
+		if (merge_ids.includes(keep_id)) {
+			throw new BadRequestException({
+				error: { code: 'validation_error', message: 'keep_id cannot be in merge_ids' }
+			});
+		}
+
+		const keep = await this.findRow(db, keep_id);
+		if (!keep) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+
+		const sources = [];
+		for (const id of merge_ids) {
+			const row = await this.findRow(db, id);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact not found' }
+				});
+			}
+			sources.push(row);
+		}
+
+		let phone = keep.phone;
+		let email = keep.email;
+		let notes = keep.notes;
+		let isInternal = keep.isInternal;
+		for (const src of sources) {
+			if (!phone && src.phone) phone = src.phone;
+			if (!email && src.email) email = src.email;
+			if (!notes && src.notes) notes = src.notes;
+			if (!isInternal && src.isInternal) isInternal = true;
+		}
+
+		const [updatedKeep] = await db
+			.update(contacts)
+			.set({ phone, email, notes, isInternal, updatedAt: new Date() })
+			.where(eq(contacts.id, keep_id))
+			.returning();
+
+		const dropIds = merge_ids;
+		const keepName = updatedKeep!.displayName;
+
+		await db
+			.update(transactions)
+			.set({ contactId: keep_id, contactLabel: keepName, updatedAt: new Date() })
+			.where(inArray(transactions.contactId, dropIds));
+
+		await db
+			.update(appointments)
+			.set({ clinicContactId: keep_id, clinicName: keepName, updatedAt: new Date() })
+			.where(inArray(appointments.clinicContactId, dropIds));
+
+		await db
+			.update(appointments)
+			.set({ hotelContactId: keep_id, hotelName: keepName, updatedAt: new Date() })
+			.where(inArray(appointments.hotelContactId, dropIds));
+
+		await db
+			.update(appointments)
+			.set({ transferContactId: keep_id, updatedAt: new Date() })
+			.where(inArray(appointments.transferContactId, dropIds));
+
+		await db
+			.update(patients)
+			.set({ contactId: keep_id, updatedAt: new Date() })
+			.where(inArray(patients.contactId, dropIds));
+
+		await db.delete(contacts).where(inArray(contacts.id, dropIds));
+
+		await writeAuditLog(db, tenantId, actor, 'update', 'contact', keepName);
+
+		return toContact(updatedKeep!);
 	}
 
 	private async findRow(db: TenantDb, id: string) {

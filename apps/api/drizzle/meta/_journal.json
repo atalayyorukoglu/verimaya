@@ -50,6 +50,20 @@
 			"when": 1753106000000,
 			"tag": "0006_queue_platform",
 			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "7",
+			"when": 1753107000000,
+			"tag": "0007_audit_contact_entity",
+			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1753108000000,
+			"tag": "0008_tenant_credentials",
+			"breakpoints": true
 		}
 	]
 }

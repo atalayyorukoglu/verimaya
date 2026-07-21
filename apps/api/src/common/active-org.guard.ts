@@ -38,6 +38,17 @@ export function getActiveOrgId(req: FastifyRequest): string {
 	return orgId;
 }
 
+export function getActorFromRequest(req: FastifyRequest): {
+	actorId: string;
+	actorDisplayName: string;
+} {
+	const user = req.authSession!.user;
+	return {
+		actorId: user.id,
+		actorDisplayName: user.name?.trim() || user.email
+	};
+}
+
 export function getIdempotencyKey(req: FastifyRequest): string | undefined {
 	const raw = req.headers['idempotency-key'];
 	if (Array.isArray(raw)) return raw[0]?.trim() || undefined;

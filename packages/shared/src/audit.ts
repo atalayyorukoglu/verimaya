@@ -6,6 +6,7 @@ export type AuditAction = z.infer<typeof auditActionSchema>;
 
 export const auditEntitySchema = z.enum([
 	'patient',
+	'contact',
 	'appointment',
 	'transaction',
 	'inbound_message',

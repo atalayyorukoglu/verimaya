@@ -11,3 +11,4 @@ export * from './audit';
 export * from './files';
 export * from './finance-categories';
 export * from './case-notes';
+export * from './tenant-credentials';

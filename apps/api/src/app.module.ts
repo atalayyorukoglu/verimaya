@@ -10,6 +10,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { PatientsModule } from './patients/patients.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
 	imports: [
@@ -26,7 +27,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 		ContactsModule,
 		AppointmentsModule,
 		TransactionsModule,
-		WebhooksModule
+		WebhooksModule,
+		WhatsappModule
 	]
 })
 export class AppModule {}

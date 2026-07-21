@@ -24,28 +24,35 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] RLS + `SET LOCAL app.current_tenant_id` + CI negatif tenant testleri
 - [x] CI (lint/typecheck/test) + Coolify ilk deploy
 
-## Faz 1 — Çekirdek domain (2-3 hafta) 🔜
+## Faz 1 — Çekirdek domain (2-3 hafta) 🚧
 
-- [ ] Patients, appointments, transactions, audit log (legacy şemadan düzeltilmiş port)
-- [ ] Unique/indeks standartları + cursor sayfalama + arama (`pg_trgm`)
-- [ ] Hasta detayı: finans aggregate sunucu tarafı; dosya yükleme (`files` + object storage); Contact modeli
-- [ ] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit); soft-delete / tombstone; tenant RLS
-- [ ] Finans kategori sözlüğü + randevu tip/durum ayarları
-- [ ] MSW kapatılır, web gerçek API'ye bağlanır
+- [x] Patients, appointments, transactions CRUD (NestJS + Drizzle + RLS); contacts + contact_types
+- [x] `audit_logs` tablosu (migration); henüz listeleme API'si yok
+- [x] Cursor sayfalama + tenant indeksleri; `pg_trgm` GIN indeksleri (patients, contacts)
+- [ ] `?q=` arama API'si (`pg_trgm` sorguları henüz bağlanmadı)
+- [ ] Hasta detayı: finans aggregate sunucu tarafı; dosya yükleme (`files` tablosu var, object storage + upload API yok)
+- [ ] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit) — yalnız MSW demo
+- [x] Soft-delete (patients `deleted_at`) + `Idempotency-Key` (mutasyon endpoint'leri)
+- [ ] Finans kategori sözlüğü + randevu tip/durum ayarları (tablolar var, `/v1/settings/*` API yok)
+- [ ] MSW tam kapatma: `PUBLIC_USE_MSW=false` + `resolveApiUrl` altyapısı hazır; çoğu ekran hâlâ MSW'ye bağlı (tenants, settings, merge, inbox, dosyalar…)
 - [ ] Legacy notlar: `docs/legacy-reference/case-expenses.md`, `dosyalar.md`, `ayarlar.md`
 
-## Faz 2 — Entegrasyon platformu (1-2 hafta)
+## Faz 2 — Entegrasyon platformu (1-2 hafta) 🚧
 
-- [ ] BullMQ worker'ları + Bull Board
-- [ ] `integration_events`, `outbox_events`, `jobs` tabloları
+- [x] BullMQ `default` kuyruk + noop worker
+- [x] `integration_events`, `outbox_events`, `jobs` tabloları (RLS + grant)
+- [x] Queue-first webhook stub (`POST /v1/webhooks/:provider` → 202, idempotency)
+- [ ] Bull Board
 - [ ] Şifreli tenant credential tablosu
-- [ ] Queue-first webhook + backoff + dead-letter; Sentry + pino + request_id
+- [ ] Backoff + dead-letter (tam iş akışı)
+- [ ] Sentry + pino + request_id (yapılandırma eksik)
 
-## Faz 3 — WhatsApp finans aktarımı (2 hafta)
+## Faz 3 — WhatsApp finans aktarımı (2 hafta) 🚧
 
-- [ ] WAHA webhook → `inbound_messages` kuyruğu
-- [ ] `POST /v1/whatsapp/parse` — gerçek LLM ayrıştırma (taslak/onay akışı)
-- [ ] Manuel yapıştır + kuyruk tek ekranda (`/finans/aktar`)
+- [ ] WAHA webhook → `inbound_messages` kuyruğu (`inbound_messages` tablosu henüz yok)
+- [x] `POST /v1/whatsapp/parse` — sezgisel stub (SessionGuard + ActiveOrgGuard); **gerçek LLM henüz yok**
+- [ ] Inbox API (`GET /v1/whatsapp/inbox`, process/approve/ignore) — MSW demo
+- [ ] Manuel yapıştır + kuyruk tek ekranda (`/finans/aktar` — yapıştır gerçek API'ye bağlı; kuyruk MSW'de)
 - [ ] AI correction kaydı (öğrenme için)
 
 ## Faz 4 — GHL senkronu (1-2 hafta)

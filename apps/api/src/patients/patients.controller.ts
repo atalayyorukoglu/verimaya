@@ -13,11 +13,12 @@ import {
 } from '@nestjs/common';
 import {
 	cursorPageParams,
+	mergeRecordsSchema,
 	patientCreateSchema,
 	patientUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { SessionGuard } from '../auth/session.guard';
@@ -39,6 +40,34 @@ export class PatientsController {
 	) {
 		const params = cursorPageParams.parse({ cursor, limit });
 		return this.patientsService.list(getActiveOrgId(req), params);
+	}
+
+	@Get('duplicate-groups')
+	duplicateGroups(@Req() req: FastifyRequest) {
+		return this.patientsService.duplicateGroups(getActiveOrgId(req));
+	}
+
+	@Post('merge')
+	async merge(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(mergeRecordsSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/patients/merge',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.patientsService.mergeWithDb(db, tenantId, input, actor)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
 	}
 
 	@Get(':id')
