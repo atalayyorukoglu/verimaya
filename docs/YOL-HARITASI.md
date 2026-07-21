@@ -84,5 +84,6 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 
 ## Faz 8 — Veri göçü ve geçiş (1 hafta)
 
-- [ ] Fixrav Tracker → Verimaya ETL; kendi firmamız ilk tenant; eski sistem salt-okunur
+- [x] ETL plan stub: `apps/api/scripts/etl-stub.md`; CLI stub `pnpm --filter @verimaya/api etl:dry-run`
+- [ ] Fixrav Tracker → Verimaya ETL implementasyonu; kendi firmamız ilk tenant; eski sistem salt-okunur
 - [ ] 2-4 hafta dahili pilot → dış satış
