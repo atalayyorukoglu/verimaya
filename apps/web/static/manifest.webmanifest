@@ -1,0 +1,10 @@
+{
+	"name": "Verimaya",
+	"short_name": "Verimaya",
+	"description": "Sağlık turizmi operasyon platformu",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#faf8f6",
+	"theme_color": "#D97757",
+	"lang": "tr"
+}

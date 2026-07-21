@@ -15,6 +15,7 @@ import { SettingsModule } from './settings/settings.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { AdMetricsModule } from './ad-metrics/ad-metrics.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
 	imports: [
@@ -36,7 +37,8 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
 		SettingsModule,
 		AuditLogsModule,
 		AdMetricsModule,
-		ApiKeysModule
+		ApiKeysModule,
+		ReportsModule
 	]
 })
 export class AppModule {}

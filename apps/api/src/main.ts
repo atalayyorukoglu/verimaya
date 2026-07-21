@@ -5,6 +5,7 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { getAuth } from './auth/auth';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/http-exception.filter';
 
 loadEnv({ path: '.env' });
 
@@ -68,8 +69,15 @@ async function mountBetterAuth(app: NestFastifyApplication) {
 async function bootstrap() {
 	const app = await NestFactory.create<NestFastifyApplication>(
 		AppModule,
-		new FastifyAdapter({ logger: true })
+		new FastifyAdapter({
+			logger: {
+				level: process.env.LOG_LEVEL ?? 'info'
+			}
+		}),
+		{ logger: false }
 	);
+
+	app.useGlobalFilters(new HttpExceptionFilter());
 
 	app.enableCors({
 		origin: (process.env.TRUSTED_ORIGINS ?? 'http://localhost:5173')

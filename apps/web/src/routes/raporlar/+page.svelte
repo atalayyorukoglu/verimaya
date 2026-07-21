@@ -4,6 +4,8 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		Patient,
+		ReportByCategory,
+		ReportSummary,
 		SupportedCurrency,
 		Tenant,
 		Transaction,
@@ -12,10 +14,12 @@
 	} from '@verimaya/shared';
 	import {
 		patientStatusLabels,
+		reportUrl,
 		transactionKindLabels,
 		transactionStatusLabels
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { amountInBase, isFxMissing, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
@@ -117,6 +121,24 @@
 			)
 	}));
 
+	const summaryQuery = createQuery(() => ({
+		queryKey: ['reports', 'summary', { from: dateRange.from, to: dateRange.to }],
+		queryFn: () =>
+			apiGet<ReportSummary>(
+				reportUrl('summary', { from: dateRange.from, to: dateRange.to })
+			),
+		enabled: !USE_MSW
+	}));
+
+	const byCategoryQuery = createQuery(() => ({
+		queryKey: ['reports', 'by-category', { from: dateRange.from, to: dateRange.to }],
+		queryFn: () =>
+			apiGet<ReportByCategory>(
+				reportUrl('by-category', { from: dateRange.from, to: dateRange.to })
+			),
+		enabled: !USE_MSW
+	}));
+
 	const tenantQuery = createQuery(() => ({
 		queryKey: ['tenants', 'current'],
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
@@ -139,7 +161,7 @@
 
 	const fxSkipped = $derived(filteredTx.filter((t) => isFxMissing(t, baseCurrency)).length);
 
-	const totals = $derived.by(() => {
+	const clientTotals = $derived.by(() => {
 		let income = 0;
 		let expense = 0;
 		let pending = 0;
@@ -155,6 +177,19 @@
 			}
 		}
 		return { income, expense, net: income - expense, pending, count: filteredTx.length };
+	});
+
+	const totals = $derived.by(() => {
+		if (!USE_MSW && summaryQuery.data) {
+			return {
+				income: summaryQuery.data.income_base,
+				expense: summaryQuery.data.expense_base,
+				net: summaryQuery.data.net_base,
+				pending: clientTotals.pending,
+				count: summaryQuery.data.transaction_count
+			};
+		}
+		return clientTotals;
 	});
 
 	type MonthBucket = { key: string; label: string; income: number; expense: number };
@@ -268,7 +303,7 @@
 		return issues.slice(0, 12);
 	});
 
-	const byCategory = $derived.by(() => {
+	const clientByCategory = $derived.by(() => {
 		const map = new Map<string, { income: number; expense: number; count: number }>();
 		for (const t of filteredTx) {
 			const base = amountInBase(t, baseCurrency);
@@ -283,6 +318,19 @@
 		return [...map.entries()]
 			.map(([label, v]) => ({ label, ...v, net: v.income - v.expense }))
 			.sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+	});
+
+	const byCategory = $derived.by(() => {
+		if (!USE_MSW && byCategoryQuery.data) {
+			return byCategoryQuery.data.items.map((row) => ({
+				label: row.category_name,
+				income: row.income_base,
+				expense: row.expense_base,
+				net: row.net_base,
+				count: row.transaction_count
+			}));
+		}
+		return clientByCategory;
 	});
 
 	const categoryRows = $derived.by(() => {
@@ -348,8 +396,16 @@
 		return { income, expense, net: income - expense, count: subcategoryRows.length };
 	});
 
-	const loading = $derived(txQuery.isPending || patientsQuery.isPending);
-	const failed = $derived(txQuery.isError || patientsQuery.isError);
+	const loading = $derived(
+		txQuery.isPending ||
+			patientsQuery.isPending ||
+			(!USE_MSW && (summaryQuery.isPending || byCategoryQuery.isPending))
+	);
+	const failed = $derived(
+		txQuery.isError ||
+			patientsQuery.isError ||
+			(!USE_MSW && (summaryQuery.isError || byCategoryQuery.isError))
+	);
 
 	function setTab(next: TabKey) {
 		drill = null;
@@ -382,6 +438,7 @@
 		try {
 			await apiSend(`/v1/transactions/${editingTx.id}`, 'PATCH', data);
 			await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+			await queryClient.invalidateQueries({ queryKey: ['reports'] });
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {
@@ -875,7 +932,12 @@
 	{/if}
 
 	<p class="mt-4 text-xs text-text-faint">
-		Demo: dönem filtresi MSW üzerinden; gerçek aggregate Faz 7'de sunucuda yapılacak.
+		{#if USE_MSW}
+			Demo: dönem filtresi MSW üzerinden; özet ve kategori toplamları istemcide hesaplanır.
+		{:else}
+			Özet ve kategori toplamları sunucu aggregate endpoint'lerinden gelir; grafik ve drill-down için
+			işlem listesi ayrıca yüklenir.
+		{/if}
 	</p>
 </div>
 

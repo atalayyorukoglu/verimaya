@@ -73,6 +73,12 @@ curl -s -X POST http://localhost:3000/v1/whatsapp/parse \
 - `ApiKeyGuard`: `Authorization: Bearer vk_...` → hash doğrulama; **henüz global middleware'e bağlı değil** — route bazında `@UseGuards(ApiKeyGuard)` ile kullanılacak.
 - OpenAPI, `webhook_subscriptions`, HMAC giden event'ler henüz yok.
 
+## Gözlemlenebilirlik (Faz 2)
+
+- **Log:** Fastify yerleşik pino (`LOG_LEVEL`, varsayılan `info`); istek kimliği `req.id`.
+- **Hata gövdesi:** tüm HTTP hataları `{ error: { code, message }, request_id }` (`packages/shared` `apiErrorSchema`). Global `HttpExceptionFilter` Nest/string/object yanıtlarını bu forma çevirir; `request_id` her zaman Fastify `req.id` (veya exception gövdesindeki değer).
+- **Sentry:** henüz yok (Faz 2 devam).
+
 ## Test
 
 ```bash

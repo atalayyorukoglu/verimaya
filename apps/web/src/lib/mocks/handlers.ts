@@ -122,6 +122,85 @@ function normalizeTxFx(
 	};
 }
 
+function amountInBaseMock(tx: Transaction, tenantBase: string): number | null {
+	if (tx.currency === tenantBase) {
+		return tx.amount_base ?? tx.amount;
+	}
+	if (tx.amount_base != null) {
+		return tx.amount_base;
+	}
+	return null;
+}
+
+function filterTransactionsByPeriod(
+	items: Transaction[],
+	from: string | null,
+	to: string | null
+): Transaction[] {
+	let filtered = items;
+	if (from) filtered = filtered.filter((t) => t.occurred_on >= from);
+	if (to) filtered = filtered.filter((t) => t.occurred_on <= to);
+	return filtered;
+}
+
+function buildReportSummary(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+) {
+	const base = store.tenant.base_currency;
+	const rows = filterTransactionsByPeriod(store.transactions, from, to);
+	let incomeBase = 0;
+	let expenseBase = 0;
+	for (const t of rows) {
+		const amount = amountInBaseMock(t, base);
+		if (amount == null) continue;
+		if (t.kind === 'income') incomeBase += amount;
+		else expenseBase += amount;
+	}
+	return {
+		period: { from, to },
+		income_base: incomeBase,
+		expense_base: expenseBase,
+		net_base: incomeBase - expenseBase,
+		transaction_count: rows.length
+	};
+}
+
+function buildReportByCategory(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+) {
+	const base = store.tenant.base_currency;
+	const rows = filterTransactionsByPeriod(store.transactions, from, to);
+	const map = new Map<
+		string,
+		{ income_base: number; expense_base: number; transaction_count: number }
+	>();
+	for (const t of rows) {
+		const label = (t.category || 'Kategorisiz').trim() || 'Kategorisiz';
+		const cur = map.get(label) ?? { income_base: 0, expense_base: 0, transaction_count: 0 };
+		cur.transaction_count += 1;
+		const amount = amountInBaseMock(t, base);
+		if (amount != null) {
+			if (t.kind === 'income') cur.income_base += amount;
+			else cur.expense_base += amount;
+		}
+		map.set(label, cur);
+	}
+	const items = [...map.entries()]
+		.map(([category_name, v]) => ({
+			category_name,
+			income_base: v.income_base,
+			expense_base: v.expense_base,
+			net_base: v.income_base - v.expense_base,
+			transaction_count: v.transaction_count
+		}))
+		.sort((a, b) => Math.abs(b.net_base) - Math.abs(a.net_base));
+	return { period: { from, to }, items };
+}
+
 function scenarioFrom(request: Request): MockScenario {
 	const url = new URL(request.url);
 	const fromQuery = url.searchParams.get('scenario');
@@ -424,6 +503,22 @@ export const handlers = [
 		const item = store.transactions.find((t) => t.id === params.id);
 		if (!item) return notFound('İşlem bulunamadı');
 		return HttpResponse.json(item);
+	}),
+
+	http.get('/v1/reports/summary', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildReportSummary(store, from, to));
+	}),
+
+	http.get('/v1/reports/by-category', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildReportByCategory(store, from, to));
 	}),
 
 	http.post('/v1/transactions', async ({ request }) => {

@@ -45,7 +45,7 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [ ] Bull Board
 - [ ] Şifreli tenant credential tablosu
 - [ ] Backoff + dead-letter (tam iş akışı)
-- [ ] Sentry + pino + request_id (yapılandırma eksik)
+- [~] Sentry + pino + request_id (kısmen: Fastify/pino + `request_id` yanıt gövdesi ✓; Sentry sonra)
 
 ## Faz 3 — WhatsApp finans aktarımı (2 hafta) 🚧
 
@@ -76,8 +76,10 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 
 ## Faz 7 — Rapor, dashboard, PWA, vitrin (1-2 hafta)
 
-- [ ] Grafikler, dönemsel özetler (sunucu aggregate), kategori drill-down; dashboard cache; PWA manifest
-- [ ] Legacy notlar: `docs/legacy-reference/raporlar.md`
+- [x] Dönemsel özetler (sunucu aggregate): `GET /v1/reports/summary`, `GET /v1/reports/by-category`; web raporlar sayfası MSW kapalıyken bu endpoint'lere bağlı
+- [ ] Grafikler (aylık bar), kategori alt-kırılım drill-down sunucuda; dashboard cache
+- [x] PWA manifest (`apps/web/static/manifest.webmanifest`); service worker sonra
+- [ ] Legacy notlar: `docs/legacy-reference/raporlar.md` (referans; güncelleme gerekmez)
 - [ ] Vitrin sayfası (CF-marketing tarzı: gradient hero, özellik blokları, entegrasyon logoları, demo CTA)
 
 ## Faz 8 — Veri göçü ve geçiş (1 hafta)

@@ -24,7 +24,9 @@ export const apiPaths = {
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
 	apiKeys: `${API_V1_PREFIX}/api-keys`,
-	apiKey: (id: string) => `${API_V1_PREFIX}/api-keys/${id}`
+	apiKey: (id: string) => `${API_V1_PREFIX}/api-keys/${id}`,
+	reportsSummary: `${API_V1_PREFIX}/reports/summary`,
+	reportsByCategory: `${API_V1_PREFIX}/reports/by-category`
 } as const;
 
 export type ListQueryParams = {
@@ -69,6 +71,7 @@ import { membershipUserSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
 import { adMetricSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
+import { reportByCategorySchema, reportSummarySchema } from './reports.js';
 
 /**
  * API contract sketch for /v1 routes.
@@ -164,6 +167,12 @@ export const apiContract = {
 	},
 	'DELETE /v1/api-keys/:id': {
 		response: apiKeySchema
+	},
+	'GET /v1/reports/summary': {
+		response: reportSummarySchema
+	},
+	'GET /v1/reports/by-category': {
+		response: reportByCategorySchema
 	}
 } as const;
 
