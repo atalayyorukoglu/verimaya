@@ -18,8 +18,8 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 
 ## Faz 0b — Gerçek temel (1 hafta) 🔜
 
-- [ ] Docker Compose: PostgreSQL 16 + Redis
-- [ ] `apps/api`: NestJS (Fastify) + Drizzle + ilk migrasyonlar
+- [x] Docker Compose: PostgreSQL 16 + Redis
+- [x] `apps/api`: NestJS (Fastify) + Drizzle + ilk migrasyonlar
 - [ ] better-auth: e-posta/şifre + organization + üyelik + roller; admin TOTP 2FA
 - [ ] RLS + `SET LOCAL app.current_tenant_id` + CI negatif tenant testleri
 - [ ] CI (lint/typecheck/test) + Coolify ilk deploy

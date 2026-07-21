@@ -4,7 +4,7 @@ Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (m
 
 ## Durum
 
-**Faz 0a** — sözleşme + demo frontend. Yol haritası: [`docs/YOL-HARITASI.md`](./docs/YOL-HARITASI.md) — mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md).
+**Faz 0a** tamamlandı (sözleşme + demo frontend). **Faz 0b** — Docker + NestJS API + Drizzle + auth/RLS. Yol haritası: [`docs/YOL-HARITASI.md`](./docs/YOL-HARITASI.md) — mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md).
 
 Proje takibi Obsidian'da: `SecondBrain-Remote/03-Areas/Verimaya`.
 
@@ -13,10 +13,10 @@ Proje takibi Obsidian'da: `SecondBrain-Remote/03-Areas/Verimaya`.
 | Katman | Teknoloji |
 |---|---|
 | Monorepo | pnpm workspaces + Turborepo |
-| Backend | NestJS (Fastify adapter) + Drizzle ORM *(Faz 0b)* |
+| Backend | NestJS (Fastify adapter) + Drizzle ORM |
 | Veritabanı | PostgreSQL 16 (RLS ile multi-tenant) |
 | Kuyruk / cache | BullMQ + Redis |
-| Auth | better-auth (organization eklentisi) |
+| Auth | better-auth (organization eklentisi) *(Faz 0b)* |
 | Frontend | SvelteKit (Svelte 5, SPA) + TanStack Query + Tailwind v4 + shadcn-svelte |
 | Gözlem | Sentry + pino |
 | Hosting | Hetzner (Almanya) + Coolify, önde Cloudflare |
@@ -26,11 +26,12 @@ Proje takibi Obsidian'da: `SecondBrain-Remote/03-Areas/Verimaya`.
 ```
 verimaya/
 ├── apps/
-│   ├── api/          # NestJS backend (Faz 0b — şimdilik boş)
+│   ├── api/          # NestJS + Drizzle
 │   └── web/          # SvelteKit SPA + MSW mock
 ├── packages/
 │   └── shared/       # zod şemaları, API sözleşmesi
 ├── docs/
+├── docker-compose.yml
 └── .cursor/rules/
 ```
 
@@ -38,7 +39,10 @@ verimaya/
 
 ```bash
 pnpm install
-pnpm dev   # http://localhost:5173 — AppShell + MSW
+docker compose up -d          # Postgres 16 (:5433) + Redis (:6379)
+pnpm --filter @verimaya/api db:migrate
+pnpm dev                      # web http://localhost:5173
+pnpm --filter @verimaya/api dev   # api http://localhost:3000
 ```
 
 Diğer komutlar: `pnpm check`, `pnpm build`, `pnpm lint`.

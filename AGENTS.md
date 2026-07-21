@@ -37,4 +37,4 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 
 - Yol haritası `docs/YOL-HARITASI.md`; fazların dışına çıkan işlere başlamadan kullanıcıya sor.
 - Önemli mimari kararlar `docs/MIMARI.md`'ye işlenir; proje takibi Obsidian'dadır (`SecondBrain-Remote/03-Areas/Verimaya`), oturum sonunda kullanıcıya log'a düşülecek 1-2 satır özet ver.
-- Faz 0a'da backend yazılmaz: frontend MSW mock ile, `packages/shared` sözleşmesi üzerinden geliştirilir.
+- Faz 0a tamamlandı (MSW demo). Faz 0b'de `apps/api` gerçek Postgres/Redis üzerine kurulur; web MSW kapanana kadar paralel kalır.
