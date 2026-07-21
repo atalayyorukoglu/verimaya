@@ -21,18 +21,55 @@ export type ChangelogEntry = {
 export const changelog: ChangelogEntry[] = [
 	{
 		version: '0.1.0',
-		date: '2026-07-17',
-		title: 'Faz 0a iskeleti',
+		date: '2026-07-20',
+		title: 'Faz 0a demo arayüzü',
 		changes: [
 			{
 				type: 'eklendi',
 				module: 'Platform',
-				text: 'Panel iskeleti açıldı: sol menü, hızlı arama çubuğu ve koyu tema ile demo ortamı hazır.'
+				text: 'Panel iskeleti: sol menü, hızlı arama, açık/koyu tema ve rol bazlı menü.',
+				featureId: 'multi-tenant'
 			},
 			{
 				type: 'eklendi',
 				module: 'Hastalar',
-				text: 'Hasta listesi ve detay ekranlarının ilk taslağı demo veriyle denenebilir.'
+				text: 'Hasta listesi, detay, dosya paneli ve finans özeti demo veriyle kullanılabilir.',
+				featureId: 'patients-list'
+			},
+			{
+				type: 'eklendi',
+				module: 'Randevu',
+				text: 'Gün/hafta takvim görünümü; otel ve transfer notları formda.',
+				featureId: 'appointments-calendar'
+			},
+			{
+				type: 'eklendi',
+				module: 'Finans',
+				text: 'İşlem defteri, P2P bakiyeler ve kategori/alt kategori alanları.',
+				featureId: 'finance-ledger'
+			},
+			{
+				type: 'eklendi',
+				module: 'Finans',
+				text: 'AI ile WhatsApp işlem aktarımı: yapıştır veya kuyruktan seç, onayla.',
+				featureId: 'whatsapp-import'
+			},
+			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'Özet ve kategori drill-down raporları dönem filtresiyle.',
+				featureId: 'reports-dashboard'
+			},
+			{
+				type: 'eklendi',
+				module: 'Hastalar',
+				text: 'Kişi ve hasta listelerinden çift kayıt tarama; şüpheli grupları birleştirme.',
+				featureId: 'duplicate-scan'
+			},
+			{
+				type: 'degisti',
+				module: 'Platform',
+				text: 'Açık/koyu tema renkleri TickPort sıcak nötr paletine geçti (terracotta vurgu).'
 			}
 		]
 	}

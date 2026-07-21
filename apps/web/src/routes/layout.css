@@ -6,33 +6,34 @@
 
 /*
   Verimaya design tokens — docs/TASARIM.md
+  Palette source: TickPort / fixrav warm neutrals (poc-sveltekit/src/app.css).
   Components use tokens only; no raw hex in UI code.
   Default: light. .dark on <html> switches to dark.
 */
 
 :root {
-	/* Brand */
-	--brand: #f6821f;
-	--brand-hover: #e06b0d;
-	--brand-subtle: rgba(246, 130, 31, 0.12);
-	--gradient-hero: linear-gradient(135deg, #f6821f, #fbad41);
+	/* Brand — terracotta (TickPort --palette-brand) */
+	--brand: #d97757;
+	--brand-hover: #c46648;
+	--brand-subtle: rgba(217, 119, 87, 0.14);
+	--gradient-hero: linear-gradient(135deg, #d97757, #e8a08a);
 
-	/* Surfaces — light */
-	--bg: #f6f7f8;
+	/* Surfaces — light (TickPort --palette-*) */
+	--bg: #f9f9f8;
 	--surface: #ffffff;
-	--surface-2: #eef0f2;
-	--border: #d8dde2;
+	--surface-2: #f4f4f3;
+	--border: #e5e5e3;
 
 	/* Text — light */
-	--text: #1b1f23;
-	--text-muted: #5b6570;
-	--text-faint: #8b949e;
+	--text: #1a1a19;
+	--text-muted: #6b6b68;
+	--text-faint: #9a9a96;
 
-	/* Status */
-	--success: #1a7f37;
+	/* Status — TickPort positive/negative + Verimaya warning/info */
+	--success: #2e7d32;
 	--warning: #9a6700;
-	--danger: #cf222e;
-	--info: #0969da;
+	--danger: #c62828;
+	--info: #5a6e8a;
 
 	/* Radius — TASARIM: card 8px, control 6px */
 	--radius: 0.5rem;
@@ -67,28 +68,28 @@
 }
 
 .dark {
-	--brand: #f6821f;
-	--brand-hover: #ff9e42;
-	--brand-subtle: rgba(246, 130, 31, 0.12);
-	--gradient-hero: linear-gradient(135deg, #f6821f, #fbad41);
+	--brand: #d97757;
+	--brand-hover: #e89274;
+	--brand-subtle: rgba(217, 119, 87, 0.18);
+	--gradient-hero: linear-gradient(135deg, #d97757, #e8a08a);
 
-	--bg: #0b0d0f;
-	--surface: #14171a;
-	--surface-2: #1c2024;
-	--border: #2c3136;
+	--bg: #1a1a19;
+	--surface: #242423;
+	--surface-2: #2e2e2d;
+	--border: #333332;
 
-	--text: #edeff2;
-	--text-muted: #9ba3ab;
-	--text-faint: #6b7280;
+	--text: #ededec;
+	--text-muted: #8a8a87;
+	--text-faint: #6e6e6b;
 
-	--success: #3fb950;
-	--warning: #d29922;
-	--danger: #f85149;
-	--info: #58a6ff;
+	--success: #4caf50;
+	--warning: #d4a017;
+	--danger: #ef5350;
+	--info: #8a9bb5;
 
-	--primary-foreground: #0b0d0f;
+	--primary-foreground: #ffffff;
 	--popover: var(--surface-2);
-	--sidebar-primary-foreground: #0b0d0f;
+	--sidebar-primary-foreground: #ffffff;
 }
 
 @theme inline {
@@ -175,5 +176,36 @@
 	button:disabled,
 	[aria-disabled='true'] {
 		cursor: not-allowed;
+	}
+}
+
+/* TickPort sidebar nav scrollbar — thin, appear on scroll/hover */
+@layer utilities {
+	.sidebar-nav-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: transparent transparent;
+	}
+
+	.sidebar-nav-scroll:hover,
+	.sidebar-nav-scroll.sidebar-nav-scroll--active {
+		scrollbar-color: color-mix(in srgb, var(--border) 85%, transparent) transparent;
+	}
+
+	.sidebar-nav-scroll::-webkit-scrollbar {
+		width: 3px;
+	}
+
+	.sidebar-nav-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.sidebar-nav-scroll::-webkit-scrollbar-thumb {
+		background-color: transparent;
+		border-radius: 9999px;
+	}
+
+	.sidebar-nav-scroll:hover::-webkit-scrollbar-thumb,
+	.sidebar-nav-scroll.sidebar-nav-scroll--active::-webkit-scrollbar-thumb {
+		background-color: color-mix(in srgb, var(--border) 85%, transparent);
 	}
 }

@@ -31,7 +31,9 @@ export const features: Feature[] = [
 		title: 'Hasta listesi ve detay',
 		description:
 			'Lead ve hasta kayıtlarını listeleyin, durumlarını takip edin, not ve iletişim bilgilerine tek ekrandan ulaşın.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-17',
+		version: '0.1.0'
 	},
 	{
 		id: 'appointments-calendar',
@@ -39,7 +41,9 @@ export const features: Feature[] = [
 		title: 'Randevu takvimi',
 		description:
 			'Klinik, otel ve transfer notlarıyla birlikte randevuları gün/hafta görünümünde yönetin.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-17',
+		version: '0.1.0'
 	},
 	{
 		id: 'finance-ledger',
@@ -47,15 +51,19 @@ export const features: Feature[] = [
 		title: 'Gelir-gider işlemleri',
 		description:
 			'Tahsilat ve ödemeleri hasta bağlantısı, ödeme durumu ve fatura bilgisiyle kaydedin.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-17',
+		version: '0.1.0'
 	},
 	{
-		id: 'whatsapp-inbox',
-		module: 'WhatsApp',
-		title: 'WhatsApp Inbox',
+		id: 'whatsapp-import',
+		module: 'Finans',
+		title: 'AI ile WhatsApp işlem aktarımı',
 		description:
-			'Gelen mesajları tek panelde okuyun; AI çıkarımları onayınız olmadan kayda yazılmaz.',
-		status: 'planlandi'
+			'Grup mesajını yapıştırın veya WAHA kuyruğundan seçin; AI işlemleri ayrıştırır, onay sonrası kayıt açılır.',
+		status: 'yayinda',
+		released_at: '2026-07-20',
+		version: '0.1.0'
 	},
 	{
 		id: 'ghl-sync',
@@ -87,7 +95,19 @@ export const features: Feature[] = [
 		title: 'Özet raporlar ve dashboard',
 		description:
 			'Lead, dönüşüm, tahsilat ve mesaj hacmini dönemsel kartlarda görün.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-20',
+		version: '0.1.0'
+	},
+	{
+		id: 'duplicate-scan',
+		module: 'Hasta Takibi',
+		title: 'Kişi ve hasta çift kayıt',
+		description:
+			'Telefon, e-posta veya ada göre mükerrerleri tarayın; kayıtları birleştirin.',
+		status: 'yayinda',
+		released_at: '2026-07-20',
+		version: '0.1.0'
 	},
 	{
 		id: 'multi-tenant',
@@ -95,6 +115,6 @@ export const features: Feature[] = [
 		title: 'Çok kiracılı organizasyon',
 		description:
 			'Her klinik/acente kendi verisini görür; ekip rolleriyle erişim sınırlanır.',
-		status: 'planlandi'
+		status: 'gelistiriliyor'
 	}
 ];

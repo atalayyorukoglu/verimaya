@@ -26,7 +26,7 @@ NestJS API (Fastify)
 - **Uçtan uca TypeScript:** solo + AI geliştirmede tek dil, `packages/shared` üzerinden paylaşılan tip zinciri (API → web → mobil). Tip güvenliği solo geliştiricinin QA'idir.
 - **NestJS:** katı konvansiyonlar AI ile üretimde tutarlılık sağlar; modül yapısı entegrasyon adaptör katmanına oturur.
 - **Drizzle:** SQL'e yakın; RLS/`SET LOCAL` gibi ham kontrol gerekiyor.
-- **SvelteKit SPA (2026-07-17'de React yerine seçildi):** geliştirici tercihi + tickport'taki SvelteKit deneyimi. `adapter-static` ile saf SPA olarak kullanılır; SSR/form actions/sunucu route'ları kapalıdır, tüm iş mantığı API'de kalır. Bilinen ödünler: React Native bilgi paylaşımı yok (mobil planı zaten PWA-first; gerekirse Capacitor) ve AI kod üretiminde React'e göre daha ince ekosistem (Svelte 5 runes kuralı `.cursor/rules/frontend.mdc` ile sabitlendi).
+- **SvelteKit SPA (2026-07-17'de React yerine seçildi):** geliştirici tercihi + tickport'taki SvelteKit deneyimi. `adapter-static` ile saf SPA olarak kullanılır; SSR/form actions/sunucu route'ları kapalıdır, tüm iş mantığı API'de kalır. **UI renkleri (2026-07-20):** TickPort warm neutrals paleti — `docs/TASARIM.md`. Bilinen ödünler: React Native bilgi paylaşımı yok (mobil planı zaten PWA-first; gerekirse Capacitor) ve AI kod üretiminde React'e göre daha ince ekosistem (Svelte 5 runes kuralı `.cursor/rules/frontend.mdc` ile sabitlendi).
 - **BullMQ + Redis:** rate-limit'li dış API çağrıları, retry/backoff, hazır dashboard (Bull Board).
 - **Hetzner + Coolify + Cloudflare:** AB veri lokasyonu (KVKK/GDPR), düşük maliyet, düşük DevOps yükü.
 

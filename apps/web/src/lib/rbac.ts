@@ -2,20 +2,20 @@ import { type UserRole, userRoleLabels, userRoleSchema } from '@verimaya/shared'
 
 const STORAGE_KEY = 'verimaya:demo-role';
 
-/** Nav href → minimum roles that can see it (owner/admin see all). */
+/** Nav href → roles that can see it. */
 const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/hastalar': ['owner', 'admin', 'manager', 'agent', 'readonly'],
+	'/kisiler': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/randevular': ['owner', 'admin', 'manager', 'agent', 'readonly'],
-	'/inbox': ['owner', 'admin', 'manager', 'agent'],
 	'/finans': ['owner', 'admin', 'manager', 'finance'],
+	'/finans/aktar': ['owner', 'admin', 'manager', 'finance'],
+	'/finans/bakiyeler': ['owner', 'admin', 'manager', 'finance'],
 	'/raporlar': ['owner', 'admin', 'manager', 'finance', 'readonly'],
-	'/baglantilar/ghl': ['owner', 'admin'],
-	'/baglantilar/reklamlar': ['owner', 'admin', 'manager'],
-	'/baglantilar/api': ['owner', 'admin'],
-	'/yonetim/ekip': ['owner', 'admin'],
-	'/yonetim/ayarlar': ['owner', 'admin'],
-	'/yonetim/denetim': ['owner', 'admin']
+	'/ayarlar': ['owner', 'admin'],
+	'/ozellikler': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/yenilikler': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/dev': ['owner', 'admin']
 };
 
 export const roleLabels = userRoleLabels;
@@ -32,7 +32,16 @@ export function setDemoRole(role: UserRole) {
 }
 
 export function canSeeNav(href: string, role: UserRole): boolean {
-	const allowed = NAV_ACCESS[href];
-	if (!allowed) return true;
-	return allowed.includes(role);
+	return canAccessPath(href, role);
+}
+
+/** Longest-prefix match against NAV_ACCESS. Unknown paths allowed. */
+export function canAccessPath(pathname: string, role: UserRole): boolean {
+	const keys = Object.keys(NAV_ACCESS).sort((a, b) => b.length - a.length);
+	for (const key of keys) {
+		if (pathname === key || pathname.startsWith(`${key}/`)) {
+			return NAV_ACCESS[key]!.includes(role);
+		}
+	}
+	return true;
 }

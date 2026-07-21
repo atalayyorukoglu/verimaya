@@ -75,6 +75,9 @@ export function listUrl(
 		q?: string;
 		from?: string;
 		to?: string;
+		patient_id?: string | null;
+		contact_id?: string | null;
+		type_id?: string | null;
 	}
 ): string {
 	const url = new URL(`/v1/${resource}`, 'http://local');
@@ -83,6 +86,9 @@ export function listUrl(
 	if (params?.q) url.searchParams.set('q', params.q);
 	if (params?.from) url.searchParams.set('from', params.from);
 	if (params?.to) url.searchParams.set('to', params.to);
+	if (params?.patient_id) url.searchParams.set('patient_id', params.patient_id);
+	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
+	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
 	return `${url.pathname}${url.search}`;
 }
 

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { page } from '$app/state';
 	import type {
+		InboundMessage,
 		Patient,
 		Transaction,
 		TransactionCreate,
@@ -14,11 +16,15 @@
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import X from '@lucide/svelte/icons/x';
 
 	type Page = { items: Transaction[]; next_cursor: string | null };
 	type PatientsPage = { items: Patient[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
+
+	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
 
 	let formOpen = $state(false);
 	let editing = $state<Transaction | null>(null);
@@ -26,9 +32,15 @@
 	let formError = $state<string | null>(null);
 
 	const txQuery = createInfiniteQuery(() => ({
-		queryKey: ['transactions'],
+		queryKey: ['transactions', { patient_id: patientFilterId }],
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
-			apiGet<Page>(listUrl('transactions', { limit: 25, cursor: pageParam })),
+			apiGet<Page>(
+				listUrl('transactions', {
+					limit: 25,
+					cursor: pageParam,
+					patient_id: patientFilterId
+				})
+			),
 		initialPageParam: null as string | null,
 		getNextPageParam: (last: Page) => last.next_cursor
 	}));
@@ -37,6 +49,19 @@
 		queryKey: ['patients', { limit: 100, for: 'picker' }],
 		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 }))
 	}));
+
+	const filterPatient = $derived(
+		patientFilterId ? (patientsQuery.data?.items ?? []).find((p) => p.id === patientFilterId) : null
+	);
+
+	const inboxQuery = createQuery(() => ({
+		queryKey: ['whatsapp', 'inbox'],
+		queryFn: () => apiGet<{ messages: InboundMessage[] }>('/v1/whatsapp/inbox')
+	}));
+
+	const pendingCount = $derived(
+		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new').length
+	);
 
 	const items = $derived(txQuery.data?.pages.flatMap((p) => p.items) ?? []);
 
@@ -77,9 +102,49 @@
 <div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader title="İşlemler" description="Gelir ve gider kayıtları (tutarlar minor unit).">
 		{#snippet actions()}
-			<Button type="button" onclick={openCreate}>Yeni işlem</Button>
+			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+				<a
+					href="/finans/bakiyeler"
+					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
+				>
+					Bakiyeler
+				</a>
+				<a
+					href="/finans/aktar"
+					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
+				>
+					<Sparkles class="size-4" />
+					AI ile işlem
+					{#if pendingCount > 0}
+						<span
+							class="rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-semibold text-text tabular-nums"
+						>
+							{pendingCount}
+						</span>
+					{/if}
+				</a>
+				<Button type="button" class="w-full sm:w-auto" onclick={openCreate}>Yeni işlem</Button>
+			</div>
 		{/snippet}
 	</PageHeader>
+
+	{#if patientFilterId}
+		<div
+			class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand/30 bg-brand-subtle px-3 py-2"
+		>
+			<p class="text-sm text-text">
+				Hasta filtresi:
+				<span class="font-medium">{filterPatient?.full_name ?? patientFilterId.slice(0, 8)}</span>
+			</p>
+			<a
+				href="/finans"
+				class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text"
+			>
+				<X class="size-3.5" />
+				Filtreyi kaldır
+			</a>
+		</div>
+	{/if}
 
 	{#if txQuery.isPending}
 		<p class="text-sm text-text-muted">Yükleniyor…</p>
@@ -188,6 +253,7 @@
 	bind:open={formOpen}
 	transaction={editing}
 	patients={patientsQuery.data?.items ?? []}
+	defaultPatientId={patientFilterId}
 	{saving}
 	error={formError}
 	onsubmit={saveTransaction}

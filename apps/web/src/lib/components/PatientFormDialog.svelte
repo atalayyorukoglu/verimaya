@@ -1,9 +1,18 @@
 <script lang="ts">
-	import type { Patient, PatientCreate, PatientStatus, PatientUpdate } from '@verimaya/shared';
+	import { createQuery } from '@tanstack/svelte-query';
+	import type {
+		MembershipUser,
+		Patient,
+		PatientCreate,
+		PatientStatus,
+		PatientUpdate
+	} from '@verimaya/shared';
 	import { patientStatusLabels } from '@verimaya/shared';
-	import { fieldClass, labelClass, textareaClass } from '$lib/api';
+	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
+
+	type MembersPage = { items: MembershipUser[]; next_cursor: string | null };
 
 	let {
 		open = $bindable(false),
@@ -21,12 +30,19 @@
 
 	const statuses = Object.keys(patientStatusLabels) as PatientStatus[];
 
+	const membersQuery = createQuery(() => ({
+		queryKey: ['members', { for: 'patient-form' }],
+		queryFn: () => apiGet<MembersPage>(listUrl('members', { limit: 50 })),
+		enabled: open
+	}));
+
 	let full_name = $state('');
 	let phone = $state('');
 	let email = $state('');
 	let status = $state<PatientStatus>('lead');
 	let source = $state('');
 	let notes = $state('');
+	let assigned_user_id = $state('');
 
 	$effect(() => {
 		if (!open) return;
@@ -36,9 +52,11 @@
 		status = patient?.status ?? 'lead';
 		source = patient?.source ?? '';
 		notes = patient?.notes ?? '';
+		assigned_user_id = patient?.assigned_user_id ?? '';
 	});
 
 	const isEdit = $derived(!!patient);
+	const members = $derived(membersQuery.data?.items ?? []);
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -49,7 +67,8 @@
 			status,
 			source: source.trim() || null,
 			notes: notes.trim() || null,
-			assigned_user_id: patient?.assigned_user_id ?? null
+			assigned_user_id: assigned_user_id || null,
+			contact_id: patient?.contact_id ?? null
 		};
 		await onsubmit(payload);
 	}
@@ -94,6 +113,15 @@
 				<label class={labelClass} for="patient-source">Kaynak</label>
 				<input id="patient-source" class={fieldClass} bind:value={source} maxlength={128} />
 			</div>
+		</div>
+		<div>
+			<label class={labelClass} for="patient-assignee">Sorumlu</label>
+			<select id="patient-assignee" class={fieldClass} bind:value={assigned_user_id}>
+				<option value="">—</option>
+				{#each members as m (m.id)}
+					<option value={m.id}>{m.display_name}</option>
+				{/each}
+			</select>
 		</div>
 		<div>
 			<label class={labelClass} for="patient-notes">Notlar</label>

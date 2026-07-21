@@ -1,55 +1,60 @@
 # Verimaya — Tasarım Sistemi
 
-**Karar (2026-07-17, güncellendi):** Arayüz Cloudflare tasarım dilinden esinlenir; **açık + koyu tema** (varsayılan açık), **yalnız Türkçe**. Referans ekran görüntüleri: `docs/tasarim-referans/` (cloudflare-marketing.png, cloudflare-dashboard.png).
+**Karar (2026-07-17, güncellendi 2026-07-20):** Panel **açık + koyu tema** (varsayılan açık), **yalnız Türkçe**. Renk paleti **TickPort / fixrav warm neutrals** (`~/Projects/tickport/poc-sveltekit/src/app.css`); layout/iskelet Cloudflare dashboard desenini korur. Eski CF turuncusu (`#F6821F`) ve soğuk gri zeminler terk edildi.
+
+Kaynak referans: TickPort `--palette-*` → Verimaya `--brand` / `--bg` / `--surface` / … eşlemesi `apps/web/src/routes/layout.css` içinde.
 
 ## İki yüz, tek dil
 
-1. **Vitrin (login öncesi):** cloudflare.com tarzı — turuncu gradient hero, bol beyaz alanın koyu karşılığı, büyük başlıklar, bölüm bölüm akan tek sayfa.
-2. **Panel (login sonrası):** Cloudflare dashboard tarzı — sol gruplu menü, üstte hızlı arama (⌘K), kart tabanlı içerik, metrik kartlı ana sayfa. (tickport'taki panel hissiyle uyumlu.)
+1. **Vitrin (login öncesi):** sıcak nötr zemin + terracotta brand gradient hero, bol alan, büyük başlıklar, bölüm bölüm akan tek sayfa.
+2. **Panel (login sonrası):** Cloudflare dashboard düzeni — sol gruplu menü, üstte hızlı arama (⌘K), kart tabanlı içerik; **renkler TickPort paleti**.
 
 Tema değiştirici üst barda (ay/güneş). Varsayılan: **açık**. Tercih `localStorage` (`verimaya:theme`) ile saklanır. Dil değiştirici YOK — tek dil Türkçe.
 
 ## Renk token'ları (koyu tema)
 
-Tailwind config + CSS custom properties olarak tanımlanır; bileşenlerde ham hex kullanılmaz, daima token.
+Tailwind + CSS custom properties; bileşenlerde ham hex yok, daima token.
 
 | Token | Değer | Kullanım |
 |---|---|---|
-| `--brand` | `#F6821F` | Birincil aksiyon, aktif menü, vurgu (Cloudflare turuncusu) |
-| `--brand-hover` | `#FF9E42` | Hover durumları |
-| `--brand-subtle` | `rgba(246,130,31,0.12)` | Aktif menü zemini, rozet zeminleri |
-| `--gradient-hero` | `linear-gradient(135deg, #F6821F, #FBAD41)` | Vitrin hero, CTA bantları |
-| `--bg` | `#0B0D0F` | Sayfa zemini |
-| `--surface` | `#14171A` | Kartlar, sidebar |
-| `--surface-2` | `#1C2024` | Yükseltilmiş öğeler: modal, dropdown, hover satır |
-| `--border` | `#2C3136` | Kart/ayraç çizgileri (koyu temada gölge değil border kullanılır) |
-| `--text` | `#EDEFF2` | Ana metin |
-| `--text-muted` | `#9BA3AB` | İkincil metin, etiketler |
-| `--text-faint` | `#6B7280` | Placeholder, devre dışı |
-| `--success` | `#3FB950` | Başarı, "Yayında" durumu |
-| `--warning` | `#D29922` | Uyarı, "Geliştiriliyor" durumu |
-| `--danger` | `#F85149` | Hata, silme |
-| `--info` | `#58A6FF` | Bilgi, bağlantılar (panel içi linkler CF'deki gibi mavi) |
+| `--brand` | `#D97757` | Birincil aksiyon, aktif menü, vurgu (TickPort terracotta) |
+| `--brand-hover` | `#E89274` | Hover (koyu temada açık ton) |
+| `--brand-subtle` | `rgba(217,119,87,0.18)` | Aktif menü zemini, rozet zeminleri |
+| `--gradient-hero` | `linear-gradient(135deg, #D97757, #E8A08A)` | Vitrin hero, CTA bantları |
+| `--bg` | `#1A1A19` | Sayfa zemini |
+| `--surface` | `#242423` | Kartlar, sidebar |
+| `--surface-2` | `#2E2E2D` | Modal, dropdown, hover satır |
+| `--border` | `#333332` | Kart/ayraç (gölge değil border) |
+| `--text` | `#EDEDEC` | Ana metin |
+| `--text-muted` | `#8A8A87` | İkincil metin, etiketler |
+| `--text-faint` | `#6E6E6B` | Placeholder, devre dışı |
+| `--success` | `#4CAF50` | Başarı, "Yayında" |
+| `--warning` | `#D4A017` | Uyarı, "Geliştiriliyor" |
+| `--danger` | `#EF5350` | Hata, silme |
+| `--info` | `#8A9BB5` | Bilgi / panel linkleri (sıcak palete uyumlu mavi-gri) |
 
-Kontrast kuralı: turuncu, büyük alanlarda değil **vurgu olarak** kullanılır (buton, aktif durum, hero). Gövde metni asla turuncu olmaz.
+Kontrast kuralı: terracotta büyük alanlarda değil **vurgu** olarak (buton, aktif durum, hero). Gövde metni brand rengi olmaz.
 
 ## Renk token'ları (açık tema)
 
 | Token | Değer |
 |---|---|
-| `--bg` | `#F6F7F8` |
+| `--bg` | `#F9F9F8` |
 | `--surface` | `#FFFFFF` |
-| `--surface-2` | `#EEF0F2` |
-| `--border` | `#D8DDE2` |
-| `--text` | `#1B1F23` |
-| `--text-muted` | `#5B6570` |
-| `--text-faint` | `#8B949E` |
-| `--success` | `#1A7F37` |
+| `--surface-2` | `#F4F4F3` |
+| `--border` | `#E5E5E3` |
+| `--text` | `#1A1A19` |
+| `--text-muted` | `#6B6B68` |
+| `--text-faint` | `#9A9A96` |
+| `--success` | `#2E7D32` |
 | `--warning` | `#9A6700` |
-| `--danger` | `#CF222E` |
-| `--info` | `#0969DA` |
+| `--danger` | `#C62828` |
+| `--info` | `#5A6E8A` |
+| `--brand` | `#D97757` |
+| `--brand-hover` | `#C46648` |
+| `--brand-subtle` | `rgba(217,119,87,0.14)` |
 
-Brand token'ları her iki temada aynı (`--brand` / `--brand-hover` / `--brand-subtle`).
+`--brand` her iki temada aynı; hover tonları temaya göre ayarlanır. Brand üzerindeki metin daima `#FFFFFF` (`--primary-foreground`).
 
 ## Tipografi ve ölçüler
 
@@ -59,16 +64,18 @@ Brand token'ları her iki temada aynı (`--brand` / `--brand-hover` / `--brand-s
 
 ## Panel iskeleti (AppShell)
 
-Cloudflare dashboard düzeni birebir referans:
+Cloudflare dashboard **düzeni** referans; **renk** TickPort. Sidebar header/footer **birebir TickPort** (`SiteLogo`, `SidebarVersionFooter` — `~/Projects/tickport/poc-sveltekit`):
 
-- **Sol menü (240px, `--surface`):** üstte tenant/logo, altında gruplu navigasyon. Gruplar: *Ana* (Panel, Hastalar, Randevular), *İletişim* (WhatsApp Inbox), *Finans* (İşlemler, Raporlar), *Bağlantılar* (GHL, Reklamlar, n8n/API), *Yönetim* (Ekip, Ayarlar, Denetim Kaydı). Aktif öğe: `--brand-subtle` zemin + sol turuncu çubuk.
-- **Üst bar:** ortada/solda hızlı arama (⌘K — hasta/randevu/işlem arar), sağda "Yenilikler" zili, destek, hesap menüsü.
-- **Ana sayfa (login sonrası):** CF'deki "Pick up where you left off" deseni — üstte arama, altta üç kolon hızlı erişim (Son hastalar / Bugünün randevuları / Son mesajlar), en altta metrik kartları (yeni lead, dönüşüm, tahsilat, mesaj hacmi).
-- Mobil: alt sekme çubuğu (Panel, Hastalar, Randevular, İşlemler, Menü); Menü tam navigasyon çekmecesini açar. Tablolar kart görünümüne geçer.
+- **Genişlik:** `220px`; zemin `--bg` (surface değil).
+- **Header (`h-14`, `px-4`):** marka `h-8` + `gap-1`; başlık `text-sm font-semibold`; alt satır `text-[11px]` + `-mt-1.5` (sıkı satır aralığı). Alt satır = tenant adı.
+- **Nav:** grup etiketi `text-[10px] uppercase tracking-wider px-3`; öğe `gap-3 px-3 py-2 text-sm font-medium`; ince scroll çubuğu (hover/scroll’da).
+- **Footer (`px-4 py-3` + safe-area):** ortalanmış e-posta `text-xs` + `Verimaya · v{sürüm}` satırı.
+- **Üst bar:** ⌘K, Yenilikler, destek, hesap.
+- Mobil: alt sekme + çekmece aynı header/footer.
 
 ## Vitrin sayfası düzeni
 
-Tek uzun sayfa: gradient hero (değer vaadi + tek CTA "Demo talep et") → güven bandı (sektör/rakam) → 3-4 özellik bloğu (ekran görüntüleriyle) → entegrasyon logoları (WhatsApp, GHL, Meta, Google, n8n) → [Özellikler sayfasına link] → alt CTA bandı → footer. Fiyat sayfası MVP'de yok; satış demo üzerinden.
+Tek uzun sayfa: gradient hero (değer vaadi + tek CTA "Demo talep et") → güven bandı → özellik blokları → entegrasyon logoları → [Özellikler] → alt CTA → footer. Fiyat sayfası MVP'de yok; satış demo üzerinden.
 
 ## Özellikler sayfası (`/ozellikler`)
 
@@ -79,9 +86,9 @@ Tek sayfada mevcut + gelecek özellikler; hem kullanıcı için öğrenme noktas
   - 🟢 **Yayında** (`--success`) — yanında sürüm/tarih, changelog kaydına link
   - 🟠 **Geliştiriliyor** (`--warning`)
   - ⚪ **Planlandı** (`--text-muted`)
-- Gruplama modüle göre (Hasta Takibi, Randevu, Finans, WhatsApp, Entegrasyonlar, Raporlama); üstte duruma göre filtre.
-- Kural: bir özellik "Yayında"ya geçtiğinde aynı commit'te changelog kaydı da eklenir — ikisi aynı veri dosyası ailesinden beslenir, tutarsızlık olamaz.
+- Gruplama modüle göre; üstte duruma göre filtre.
+- Kural: bir özellik "Yayında"ya geçtiğinde aynı commit'te changelog kaydı da eklenir.
 
 ## Yenilikler sayfası (`/yenilikler`)
 
-Changelog'un kullanıcıya dönük yüzü; kurallar `docs/CHANGELOG-KURALLARI.md` içinde. Login sonrası üst barda zil ikonu: son girişten sonra yeni sürüm varsa turuncu nokta.
+Changelog'un kullanıcıya dönük yüzü; kurallar `docs/CHANGELOG-KURALLARI.md` içinde. Login sonrası üst barda zil ikonu: son girişten sonra yeni sürüm varsa brand renkli nokta.

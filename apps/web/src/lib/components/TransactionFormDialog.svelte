@@ -1,14 +1,25 @@
 <script lang="ts">
+	import { createQuery } from '@tanstack/svelte-query';
 	import type {
+		Contact,
+		FinanceCategory,
+		InvoiceStatus,
 		Patient,
+		SupportedCurrency,
+		Tenant,
 		Transaction,
 		TransactionCreate,
 		TransactionKind,
 		TransactionStatus,
 		TransactionUpdate
 	} from '@verimaya/shared';
-	import { transactionKindLabels, transactionStatusLabels } from '@verimaya/shared';
-	import { fieldClass, labelClass, textareaClass } from '$lib/api';
+	import {
+		invoiceStatusLabels,
+		SUPPORTED_CURRENCIES,
+		transactionKindLabels,
+		transactionStatusLabels
+	} from '@verimaya/shared';
+	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -16,6 +27,7 @@
 		open = $bindable(false),
 		transaction = null,
 		patients = [],
+		defaultPatientId = null,
 		saving = false,
 		error = null,
 		onsubmit
@@ -23,6 +35,7 @@
 		open?: boolean;
 		transaction?: Transaction | null;
 		patients?: Patient[];
+		defaultPatientId?: string | null;
 		saving?: boolean;
 		error?: string | null;
 		onsubmit: (data: TransactionCreate | TransactionUpdate) => void | Promise<void>;
@@ -30,26 +43,78 @@
 
 	const kinds = Object.keys(transactionKindLabels) as TransactionKind[];
 	const statuses = Object.keys(transactionStatusLabels) as TransactionStatus[];
+	const invoiceStatuses = Object.keys(invoiceStatusLabels) as InvoiceStatus[];
+
+	const tenantQuery = createQuery(() => ({
+		queryKey: ['tenants', 'current'],
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		enabled: open
+	}));
+
+	const catsQuery = createQuery(() => ({
+		queryKey: ['settings', 'finance-categories'],
+		queryFn: () => apiGet<{ items: FinanceCategory[] }>('/v1/settings/finance-categories'),
+		enabled: open
+	}));
+
+	const contactsQuery = createQuery(() => ({
+		queryKey: ['contacts', { limit: 100, for: 'tx-form' }],
+		queryFn: () =>
+			apiGet<{ items: Contact[]; next_cursor: string | null }>(listUrl('contacts', { limit: 100 })),
+		enabled: open
+	}));
+
+	const tenantBase = $derived(
+		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
+	);
 
 	let kind = $state<TransactionKind>('income');
 	let title = $state('');
+	let subtitle = $state('');
 	let category = $state('');
 	let occurred_on = $state('');
 	let status = $state<TransactionStatus>('unpaid');
+	let invoice_status = $state<InvoiceStatus>('none');
+	let currency = $state<SupportedCurrency>('TRY');
 	let amountMajor = $state('');
+	let amountBaseMajor = $state('');
+	let fxRate = $state('');
+	let paidMajor = $state('');
 	let patient_id = $state('');
+	let contact_id = $state('');
+	let contact_label = $state('');
 	let payment_method = $state('');
 	let description = $state('');
+
+	const categoryOptions = $derived(
+		(catsQuery.data?.items ?? [])
+			.filter((c) => c.kind === kind)
+			.sort((a, b) => a.sort_order - b.sort_order)
+	);
+
+	const selectedCategory = $derived(categoryOptions.find((c) => c.name === category) ?? null);
+	const subtitleOptions = $derived(selectedCategory?.subcategories ?? []);
+	const needsFx = $derived(currency !== tenantBase);
 
 	$effect(() => {
 		if (!open) return;
 		kind = transaction?.kind ?? 'income';
 		title = transaction?.title ?? '';
+		subtitle = transaction?.subtitle ?? '';
 		category = transaction?.category ?? '';
 		occurred_on = transaction?.occurred_on ?? new Date().toISOString().slice(0, 10);
 		status = transaction?.status ?? 'unpaid';
+		invoice_status = transaction?.invoice_status ?? 'none';
+		currency = transaction?.currency ?? tenantBase;
 		amountMajor = transaction ? String(transaction.amount / 100) : '';
-		patient_id = transaction?.patient_id ?? '';
+		amountBaseMajor =
+			transaction?.amount_base != null ? String(transaction.amount_base / 100) : '';
+		fxRate = transaction?.fx_rate != null ? String(transaction.fx_rate) : '';
+		paidMajor =
+			transaction?.paid_amount != null ? String(transaction.paid_amount / 100) : '';
+		patient_id = transaction?.patient_id ?? defaultPatientId ?? '';
+		contact_id = transaction?.contact_id ?? '';
+		contact_label = transaction?.contact_label ?? '';
 		payment_method = transaction?.payment_method ?? '';
 		description = transaction?.description ?? '';
 	});
@@ -60,21 +125,53 @@
 		e.preventDefault();
 		const amount = Math.round(Number.parseFloat(amountMajor.replace(',', '.')) * 100);
 		if (!Number.isFinite(amount) || amount <= 0) return;
+
+		let paid_amount: number | null = null;
+		if (status === 'paid') {
+			paid_amount = amount;
+		} else if (status === 'partial') {
+			const paid = Math.round(Number.parseFloat(paidMajor.replace(',', '.')) * 100);
+			if (!Number.isFinite(paid) || paid < 0) return;
+			paid_amount = Math.min(paid, amount);
+		}
+
+		let amount_base: number | null = null;
+		let fx_rate: number | null = null;
+		if (!needsFx) {
+			amount_base = amount;
+			fx_rate = 1;
+		} else {
+			amount_base = Math.round(Number.parseFloat(amountBaseMajor.replace(',', '.')) * 100);
+			if (!Number.isFinite(amount_base) || amount_base <= 0) return;
+			const rate = Number.parseFloat(fxRate.replace(',', '.'));
+			fx_rate = Number.isFinite(rate) && rate > 0 ? rate : null;
+		}
+
 		const payload = {
 			kind,
 			title: title.trim(),
-			subtitle: null,
+			subtitle: subtitle.trim() || null,
 			category: category.trim() || null,
 			occurred_on,
 			status,
-			invoice_status: transaction?.invoice_status ?? ('none' as const),
+			invoice_status,
 			payment_method: payment_method.trim() || null,
 			amount,
-			paid_amount:
-				status === 'paid' ? amount : status === 'partial' ? Math.floor(amount / 2) : null,
-			currency: 'TRY' as const,
+			paid_amount,
+			currency,
+			amount_base,
+			base_currency: tenantBase,
+			fx_rate,
+			fx_dated: needsFx ? occurred_on : occurred_on,
 			patient_id: patient_id || null,
-			contact_label: null,
+			contact_id: contact_id || null,
+			contact_label: (() => {
+				if (contact_id) {
+					const name = contactsQuery.data?.items.find((c) => c.id === contact_id)?.display_name;
+					return name ?? (contact_label.trim() || null);
+				}
+				return contact_label.trim() || null;
+			})(),
 			description: description.trim() || null
 		};
 		await onsubmit(payload);
@@ -84,7 +181,7 @@
 <Dialog
 	bind:open
 	title={isEdit ? 'İşlemi düzenle' : 'Yeni işlem'}
-	description="Tutar TL cinsinden girilir; API’ye kuruş olarak gider."
+	description="Tutar işlem para biriminde; yabancıysa baz ({tenantBase}) karşılığı zorunlu."
 >
 	<form id="tx-form" class="space-y-3" onsubmit={handleSubmit}>
 		<div class="grid gap-3 sm:grid-cols-2">
@@ -109,9 +206,17 @@
 			<label class={labelClass} for="tx-title">Başlık</label>
 			<input id="tx-title" class={fieldClass} bind:value={title} required maxlength={255} />
 		</div>
-		<div class="grid gap-3 sm:grid-cols-2">
+		<div class="grid gap-3 sm:grid-cols-3">
 			<div>
-				<label class={labelClass} for="tx-amount">Tutar (₺)</label>
+				<label class={labelClass} for="tx-currency">Para birimi</label>
+				<select id="tx-currency" class={fieldClass} bind:value={currency}>
+					{#each SUPPORTED_CURRENCIES as c (c)}
+						<option value={c}>{c}</option>
+					{/each}
+				</select>
+			</div>
+			<div>
+				<label class={labelClass} for="tx-amount">Tutar ({currency})</label>
 				<input
 					id="tx-amount"
 					class={fieldClass}
@@ -126,15 +231,115 @@
 				<input id="tx-date" class={fieldClass} type="date" bind:value={occurred_on} required />
 			</div>
 		</div>
+		{#if needsFx}
+			<div class="grid gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2">
+				<div>
+					<label class={labelClass} for="tx-base">Baz tutar ({tenantBase})</label>
+					<input
+						id="tx-base"
+						class={fieldClass}
+						bind:value={amountBaseMajor}
+						inputmode="decimal"
+						required
+						placeholder="0,00"
+					/>
+					<p class="mt-1 text-[11px] text-text-faint">Kayıt anı kuru — sonradan değişmez.</p>
+				</div>
+				<div>
+					<label class={labelClass} for="tx-fx">Kur (1 {currency} = ? {tenantBase})</label>
+					<input
+						id="tx-fx"
+						class={fieldClass}
+						bind:value={fxRate}
+						inputmode="decimal"
+						placeholder="örn. 43"
+					/>
+				</div>
+			</div>
+		{/if}
+		{#if status === 'partial'}
+			<div>
+				<label class={labelClass} for="tx-paid">Ödenen tutar ({currency})</label>
+				<input
+					id="tx-paid"
+					class={fieldClass}
+					bind:value={paidMajor}
+					inputmode="decimal"
+					required
+					placeholder="0,00"
+				/>
+			</div>
+		{/if}
 		<div class="grid gap-3 sm:grid-cols-2">
 			<div>
 				<label class={labelClass} for="tx-category">Kategori</label>
-				<input id="tx-category" class={fieldClass} bind:value={category} maxlength={128} />
+				{#if categoryOptions.length > 0}
+					<select id="tx-category" class={fieldClass} bind:value={category}>
+						<option value="">—</option>
+						{#each categoryOptions as c (c.id)}
+							<option value={c.name}>{c.name}</option>
+						{/each}
+					</select>
+				{:else}
+					<input id="tx-category" class={fieldClass} bind:value={category} maxlength={128} />
+				{/if}
 			</div>
 			<div>
-				<label class={labelClass} for="tx-method">Ödeme yöntemi</label>
-				<input id="tx-method" class={fieldClass} bind:value={payment_method} maxlength={64} />
+				<label class={labelClass} for="tx-subtitle">Alt kategori</label>
+				{#if subtitleOptions.length > 0}
+					<select id="tx-subtitle" class={fieldClass} bind:value={subtitle}>
+						<option value="">—</option>
+						{#each subtitleOptions as s (s)}
+							<option value={s}>{s}</option>
+						{/each}
+					</select>
+				{:else}
+					<input id="tx-subtitle" class={fieldClass} bind:value={subtitle} maxlength={255} />
+				{/if}
 			</div>
+		</div>
+		<div class="grid gap-3 sm:grid-cols-2">
+			<div>
+				<label class={labelClass} for="tx-contact">Kişi / firma</label>
+				<select
+					id="tx-contact"
+					class={fieldClass}
+					bind:value={contact_id}
+					onchange={() => {
+						if (!contact_id) return;
+						const c = contactsQuery.data?.items.find((x) => x.id === contact_id);
+						if (c) contact_label = c.display_name;
+					}}
+				>
+					<option value="">— serbest etiket —</option>
+					{#each contactsQuery.data?.items ?? [] as c (c.id)}
+						<option value={c.id}>{c.display_name} ({c.contact_type_name})</option>
+					{/each}
+				</select>
+			</div>
+			<div>
+				<label class={labelClass} for="tx-contact-label">Etiket (yedek)</label>
+				<input
+					id="tx-contact-label"
+					class={fieldClass}
+					bind:value={contact_label}
+					maxlength={255}
+					placeholder="Dizinde yoksa yazın"
+					disabled={!!contact_id}
+				/>
+			</div>
+		</div>
+		<div>
+			<label class={labelClass} for="tx-invoice">Fatura</label>
+			<select id="tx-invoice" class={fieldClass} bind:value={invoice_status}>
+				{#each invoiceStatuses as s (s)}
+					<option value={s}>{invoiceStatusLabels[s]}</option>
+				{/each}
+			</select>
+		</div>
+		<div>
+			<label class={labelClass} for="tx-method">Ödeme yöntemi</label>
+			<input id="tx-method" class={fieldClass} bind:value={payment_method} maxlength={64} />
 		</div>
 		<div>
 			<label class={labelClass} for="tx-patient">Hasta (opsiyonel)</label>
@@ -158,7 +363,11 @@
 		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
 			>İptal</Button
 		>
-		<Button type="submit" form="tx-form" disabled={saving || !title.trim() || !amountMajor}>
+		<Button
+			type="submit"
+			form="tx-form"
+			disabled={saving || !title.trim() || !amountMajor || (needsFx && !amountBaseMajor)}
+		>
 			{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
 		</Button>
 	{/snippet}

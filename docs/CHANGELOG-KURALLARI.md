@@ -42,7 +42,7 @@ Repo kökündeki `CHANGELOG.md`, Faz 2'ye kadar elle senkron tutulur; sonra kü�
 ## Yayınlama akışı
 
 1. Özellik biter → `features.ts`'te durum "Yayında" + `changelog.ts`'e sürüm kaydı (aynı PR/commit).
-2. Deploy → `/yenilikler` otomatik güncel; üst bardaki zilde turuncu nokta (kullanıcının son gördüğü sürüm `localStorage`'da tutulur, karşılaştırma istemcide).
+2. Deploy → `/yenilikler` otomatik güncel; üst bardaki zilde brand renkli nokta (kullanıcının son gördüğü sürüm `localStorage`'da tutulur, karşılaştırma istemcide).
 3. Obsidian `04-ilerleme-log`'a 1 satır not (geliştirici tarafı; kullanıcıya dönük olmayan detaylar oraya).
 
 ## Sorumluluk ayrımı

@@ -2,7 +2,7 @@
 
 ## Proje nedir?
 
-Türkiye'deki sağlık turizmi firmaları (saç ekimi, diş, estetik klinikleri/acenteleri) için multi-tenant B2B SaaS operasyon platformu. Modüller: hasta/lead takibi, randevu, finans, raporlama, WhatsApp inbox, GHL + Meta/Google Ads + n8n entegrasyonları. Solo geliştirici + Cursor AI ile ilerler.
+Türkiye'deki sağlık turizmi firmaları (saç ekimi, diş, estetik klinikleri/acenteleri) için multi-tenant B2B SaaS operasyon platformu. Modüller: hasta/lead takibi, randevu, finans (WhatsApp AI işlem aktarımı dahil), raporlama, GHL + Meta/Google Ads + n8n entegrasyonları. Solo geliştirici + Cursor AI ile ilerler.
 
 Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dahili kullanımda) ürününün sıfırdan, yeni stack ile yeniden inşasıdır. Eski sistemin şeması ve iş kuralları `docs/legacy-reference/` altında referanstır — kod taşınmaz, bilgi taşınır.
 
@@ -30,7 +30,7 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 - Tarihler ISO-8601 UTC; para birimleri minor unit (kuruş/cent) integer.
 - API: `/v1` prefix, cursor sayfalama (`?cursor=&limit=`), standart hata gövdesi (`error.code`, `error.message`, `request_id`).
 - Dokümantasyon ve commit mesajları Türkçe; kod, tanımlayıcılar ve log mesajları İngilizce.
-- UI tek dil **Türkçe** (i18n altyapısı yok). Tema: **açık (varsayılan) + koyu**, üst bardan değiştirilir. Tasarım dili Cloudflare-esinli: `docs/TASARIM.md`. Changelog/özellik sayfası kuralları: `docs/CHANGELOG-KURALLARI.md`.
+- UI tek dil **Türkçe** (i18n altyapısı yok). Tema: **açık (varsayılan) + koyu**, üst bardan değiştirilir. Renk: **TickPort warm neutrals** (terracotta `#D97757`); layout CF dashboard deseni — `docs/TASARIM.md`. Changelog/özellik sayfası kuralları: `docs/CHANGELOG-KURALLARI.md`.
 - Test: her tenant'lı endpoint için negatif izolasyon testi ("Tenant A, Tenant B verisini göremez") zorunludur.
 
 ## Süreç

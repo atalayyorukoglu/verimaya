@@ -26,6 +26,10 @@ export const appointmentSchema = z.object({
 	clinic_name: z.string().max(255).nullable(),
 	hotel_name: z.string().max(255).nullable(),
 	transfer_note: z.string().max(8000).nullable(),
+	/** Directory contacts for logistics parties (names denormalized above) */
+	clinic_contact_id: uuid.nullable().default(null),
+	hotel_contact_id: uuid.nullable().default(null),
+	transfer_contact_id: uuid.nullable().default(null),
 	notes: z.string().max(8000).nullable(),
 	created_at: isoDateTime,
 	updated_at: isoDateTime

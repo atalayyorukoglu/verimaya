@@ -1,7 +1,7 @@
 import type { PatientStatus } from './patient.js';
 import type { AppointmentStatus } from './appointment.js';
-import type { TransactionKind, TransactionStatus } from './transaction.js';
-import type { ConversationStatus } from './conversation.js';
+import type { InvoiceStatus, TransactionKind, TransactionStatus } from './transaction.js';
+import type { InboundMessageStatus } from './inbound-message.js';
 import type { FeatureStatus } from './features.js';
 import type { AuditAction, AuditEntity } from './audit.js';
 import type { UserRole } from './user.js';
@@ -38,11 +38,17 @@ export const transactionStatusLabels: Record<TransactionStatus, string> = {
 	unpaid: 'Ödenmedi'
 };
 
-export const conversationStatusLabels: Record<ConversationStatus, string> = {
-	open: 'Açık',
-	pending: 'Beklemede',
-	resolved: 'Çözüldü',
-	archived: 'Arşiv'
+export const invoiceStatusLabels: Record<InvoiceStatus, string> = {
+	none: 'Yok',
+	issued: 'Kesildi',
+	not_issued: 'Kesilmedi'
+};
+
+export const inboundMessageStatusLabels: Record<InboundMessageStatus, string> = {
+	new: 'Yeni',
+	parsed: 'Ayrıştırıldı',
+	approved: 'Onaylandı',
+	ignored: 'Yoksayıldı'
 };
 
 export const featureStatusLabels: Record<FeatureStatus, string> = {
@@ -62,7 +68,8 @@ export const auditEntityLabels: Record<AuditEntity, string> = {
 	patient: 'Hasta',
 	appointment: 'Randevu',
 	transaction: 'İşlem',
-	conversation: 'Konuşma',
+	inbound_message: 'WhatsApp mesajı',
+	file: 'Dosya',
 	tenant: 'Tenant',
 	user: 'Kullanıcı'
 };

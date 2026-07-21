@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { createQuery } from '@tanstack/svelte-query';
+	import type { Tenant } from '@verimaya/shared';
 	import { cn } from '$lib/utils';
+	import { apiGet } from '$lib/api';
 	import { mobileTabItems, navGroups } from '$lib/navigation';
-	import { canSeeNav, getDemoRole } from '$lib/rbac';
+	import { canAccessPath, canSeeNav, getDemoRole, roleLabels } from '$lib/rbac';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Menu from '@lucide/svelte/icons/menu';
@@ -10,6 +14,10 @@
 	import { changelog } from '@verimaya/shared';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import SiteLogo from '$lib/components/SiteLogo.svelte';
+	import SidebarVersionFooter from '$lib/components/SidebarVersionFooter.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -17,8 +25,19 @@
 	let mobileOpen = $state(false);
 	let role = $state(getDemoRole());
 	let hasUnreadChangelog = $state(false);
+	let supportOpen = $state(false);
+	let accountOpen = $state(false);
+	let desktopNavEl: HTMLElement | undefined = $state();
+	let mobileNavEl: HTMLElement | undefined = $state();
 
 	const pathname = $derived(page.url.pathname);
+
+	const tenantQuery = createQuery(() => ({
+		queryKey: ['tenants', 'current'],
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
+	}));
+
+	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
 
 	const visibleGroups = $derived(
 		navGroups
@@ -40,88 +59,136 @@
 		hasUnreadChangelog = localStorage.getItem('verimaya:last-seen-version') !== latest;
 	});
 
+	$effect(() => {
+		role = getDemoRole();
+		const path = page.url.pathname;
+		if (!canAccessPath(path, role)) {
+			void goto('/');
+		}
+	});
+
+	const allNavHrefs = $derived([
+		...navGroups.flatMap((g) => g.items.map((i) => i.href)),
+		...mobileTabItems.map((i) => i.href)
+	]);
+
 	function isActive(href: string): boolean {
 		if (href === '/') return pathname === '/';
-		return pathname === href || pathname.startsWith(`${href}/`);
+		if (pathname === href) return true;
+		if (!pathname.startsWith(`${href}/`)) return false;
+		return !allNavHrefs.some(
+			(other) =>
+				other !== href &&
+				other.startsWith(`${href}/`) &&
+				(pathname === other || pathname.startsWith(`${other}/`))
+		);
 	}
 
 	function closeMobile() {
 		mobileOpen = false;
 	}
+
+	function closeAccount() {
+		accountOpen = false;
+	}
+
+	/** TickPort: thin scrollbar only while scrolling */
+	function bindSidebarScroll(el: HTMLElement) {
+		let hideTimer: ReturnType<typeof setTimeout> | undefined;
+		const showScrollbar = () => {
+			el.classList.add('sidebar-nav-scroll--active');
+			if (hideTimer) clearTimeout(hideTimer);
+			hideTimer = setTimeout(() => {
+				el.classList.remove('sidebar-nav-scroll--active');
+			}, 900);
+		};
+		el.addEventListener('scroll', showScrollbar, { passive: true });
+		return () => {
+			el.removeEventListener('scroll', showScrollbar);
+			if (hideTimer) clearTimeout(hideTimer);
+			el.classList.remove('sidebar-nav-scroll--active');
+		};
+	}
+
+	$effect(() => {
+		const el = desktopNavEl;
+		if (!el) return;
+		return bindSidebarScroll(el);
+	});
+
+	$effect(() => {
+		const el = mobileNavEl;
+		if (!el) return;
+		return bindSidebarScroll(el);
+	});
 </script>
 
-<div class="flex min-h-dvh w-full bg-bg text-text">
-	<!-- Desktop sidebar: outer stretches with page; inner sticky fills viewport -->
-	<aside class="hidden w-60 shrink-0 border-r border-border bg-surface md:block">
-		<div class="sticky top-0 flex h-dvh flex-col">
-			<div class="flex h-14 shrink-0 items-center gap-2.5 border-b border-border px-4">
-				<span
-					class="flex size-7 items-center justify-center rounded-[6px] bg-brand text-sm font-semibold text-primary-foreground"
-					aria-hidden="true"
-				>
-					V
-				</span>
-				<div class="min-w-0">
-					<p class="truncate text-sm font-semibold tracking-tight">Verimaya</p>
-					<p class="truncate text-xs text-text-muted">Demo Klinik</p>
-				</div>
-			</div>
+<svelte:window
+	onclick={() => {
+		if (accountOpen) accountOpen = false;
+	}}
+/>
 
-			<nav class="min-h-0 flex-1 overflow-y-auto px-2 py-3" aria-label="Ana menü">
-				{#each visibleGroups as group (group.label)}
-					<div class="mb-4">
-						<p
-							class="px-2.5 pb-1.5 text-[11px] font-semibold tracking-wider text-text-faint uppercase"
-						>
-							{group.label}
-						</p>
-						<ul class="space-y-0.5">
-							{#each group.items as item (item.href)}
-								{@const active = isActive(item.href)}
-								{@const Icon = item.icon}
-								<li>
-									<a
-										href={item.href}
-										class={cn(
-											'relative flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
-											active
-												? 'bg-brand-subtle font-medium text-brand'
-												: 'text-text-muted hover:bg-surface-2 hover:text-text'
-										)}
-										aria-current={active ? 'page' : undefined}
-									>
-										{#if active}
-											<span
-												class="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r bg-brand"
-												aria-hidden="true"
-											></span>
-										{/if}
-										<Icon class="size-4 shrink-0" aria-hidden="true" />
-										<span class="truncate">{item.label}</span>
-									</a>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				{/each}
-			</nav>
-			<div class="shrink-0 border-t border-border px-2 py-2">
-				<a
-					href="/ozellikler"
-					class={cn(
-						'flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
-						isActive('/ozellikler')
-							? 'bg-brand-subtle font-medium text-brand'
-							: 'text-text-muted hover:bg-surface-2 hover:text-text'
-					)}
-				>
-					Özellikler
-				</a>
-			</div>
+<div class="flex min-h-dvh w-full bg-bg text-text">
+	<!-- Desktop sidebar — TickPort header/footer spacing (w-[220px]) -->
+	<aside class="hidden h-dvh w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex">
+		<div class="flex h-14 shrink-0 items-center border-b border-border bg-bg px-4">
+			<a href="/" class="block min-w-0 rounded-md">
+				<SiteLogo description={tenantName} />
+			</a>
+		</div>
+
+		<nav
+			bind:this={desktopNavEl}
+			class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto px-2 py-3"
+			aria-label="Ana menü"
+		>
+			{#each visibleGroups as group, gi (group.label)}
+				<div class={gi === 0 ? '' : 'mt-4'}>
+					<p
+						class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase"
+					>
+						{group.label}
+					</p>
+					<ul class="space-y-0.5">
+						{#each group.items as item (item.href)}
+							{@const active = isActive(item.href)}
+							{@const Icon = item.icon}
+							<li>
+								<a
+									href={item.href}
+									class={cn(
+										'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+										active
+											? 'bg-brand-subtle text-brand'
+											: 'text-text-muted hover:bg-surface-2 hover:text-text'
+									)}
+									aria-current={active ? 'page' : undefined}
+								>
+									<Icon class="size-4 shrink-0" aria-hidden="true" />
+									<span class="truncate">{item.label}</span>
+								</a>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/each}
+		</nav>
+
+		<div
+			class="shrink-0 border-t border-border bg-bg px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+		>
+			<a
+				href="/ayarlar"
+				class="mb-2 block truncate rounded-md px-1 py-1 text-center text-xs text-text-muted hover:text-text"
+				title="demo@verimaya.app"
+			>
+				demo@verimaya.app
+			</a>
+			<SidebarVersionFooter />
 		</div>
 	</aside>
 
-	<!-- Mobile drawer (Menü sekmesi) -->
 	{#if mobileOpen}
 		<button
 			type="button"
@@ -130,32 +197,32 @@
 			onclick={closeMobile}
 		></button>
 		<aside
-			class="fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-border bg-surface md:hidden"
+			class="fixed inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-border bg-bg md:hidden"
 		>
-			<div class="flex h-14 items-center justify-between border-b border-border px-4">
-				<div class="flex items-center gap-2.5">
-					<span
-						class="flex size-7 items-center justify-center rounded-[6px] bg-brand text-sm font-semibold text-primary-foreground"
-						aria-hidden="true"
-					>
-						V
-					</span>
-					<span class="text-sm font-semibold">Verimaya</span>
-				</div>
+			<div
+				class="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-bg px-4"
+			>
+				<a href="/" class="block min-w-0 rounded-md" onclick={closeMobile}>
+					<SiteLogo description={tenantName} />
+				</a>
 				<button
 					type="button"
-					class="rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
+					class="shrink-0 rounded-md p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
 					aria-label="Kapat"
 					onclick={closeMobile}
 				>
 					<X class="size-5" />
 				</button>
 			</div>
-			<nav class="flex-1 overflow-y-auto px-2 py-3" aria-label="Tüm menü">
-				{#each visibleGroups as group (group.label)}
-					<div class="mb-4">
+			<nav
+				bind:this={mobileNavEl}
+				class="sidebar-nav-scroll flex-1 overflow-y-auto px-2 py-3"
+				aria-label="Tüm menü"
+			>
+				{#each visibleGroups as group, gi (group.label)}
+					<div class={gi === 0 ? '' : 'mt-4'}>
 						<p
-							class="px-2.5 pb-1.5 text-[11px] font-semibold tracking-wider text-text-faint uppercase"
+							class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase"
 						>
 							{group.label}
 						</p>
@@ -168,19 +235,13 @@
 										href={item.href}
 										onclick={closeMobile}
 										class={cn(
-											'relative flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
+											'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
 											active
-												? 'bg-brand-subtle font-medium text-brand'
+												? 'bg-brand-subtle text-brand'
 												: 'text-text-muted hover:bg-surface-2 hover:text-text'
 										)}
 										aria-current={active ? 'page' : undefined}
 									>
-										{#if active}
-											<span
-												class="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r bg-brand"
-												aria-hidden="true"
-											></span>
-										{/if}
 										<Icon class="size-4 shrink-0" aria-hidden="true" />
 										<span class="truncate">{item.label}</span>
 									</a>
@@ -190,19 +251,18 @@
 					</div>
 				{/each}
 			</nav>
-			<div class="shrink-0 border-t border-border px-2 py-2">
+			<div
+				class="shrink-0 border-t border-border bg-bg px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+			>
 				<a
-					href="/ozellikler"
+					href="/ayarlar"
 					onclick={closeMobile}
-					class={cn(
-						'flex items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-sm transition-colors',
-						isActive('/ozellikler')
-							? 'bg-brand-subtle font-medium text-brand'
-							: 'text-text-muted hover:bg-surface-2 hover:text-text'
-					)}
+					class="mb-2 block truncate rounded-md px-1 py-1 text-center text-xs text-text-muted hover:text-text"
+					title="demo@verimaya.app"
 				>
-					Özellikler
+					demo@verimaya.app
 				</a>
+				<SidebarVersionFooter />
 			</div>
 		</aside>
 	{/if}
@@ -232,16 +292,64 @@
 					class="hidden rounded-[6px] p-2 text-text-muted transition-colors hover:bg-surface-2 hover:text-text sm:inline-flex"
 					aria-label="Destek"
 					title="Destek"
+					onclick={() => (supportOpen = true)}
 				>
 					<CircleHelp class="size-5" />
 				</button>
-				<button
-					type="button"
-					class="ml-1 flex size-8 items-center justify-center rounded-full border border-border bg-surface-2 text-xs font-semibold text-text"
-					aria-label="Hesap menüsü"
-				>
-					PF
-				</button>
+				<div class="relative ml-1">
+					<button
+						type="button"
+						class="flex size-8 items-center justify-center rounded-full border border-border bg-surface-2 text-xs font-semibold text-text"
+						aria-label="Hesap menüsü"
+						aria-expanded={accountOpen}
+						onclick={(e) => {
+							e.stopPropagation();
+							accountOpen = !accountOpen;
+						}}
+					>
+						PF
+					</button>
+					{#if accountOpen}
+						<div
+							class="absolute right-0 z-40 mt-2 w-56 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
+						>
+							<div class="border-b border-border px-3 py-2">
+								<p class="truncate text-sm font-medium text-text">Demo Kullanıcı</p>
+								<p class="truncate text-xs text-text-faint">demo@verimaya.app</p>
+								<p class="mt-1 text-xs text-text-muted">Rol: {roleLabels[role]}</p>
+							</div>
+							{#if canSeeNav('/ayarlar', role)}
+								<a
+									href="/ayarlar"
+									class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
+									onclick={closeAccount}
+								>
+									Ayarlar
+								</a>
+							{/if}
+							<a
+								href="/yenilikler"
+								class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
+								onclick={closeAccount}
+							>
+								Yenilikler
+							</a>
+							<button
+								type="button"
+								class="block w-full px-3 py-2 text-left text-sm text-text hover:bg-surface-2"
+								onclick={() => {
+									closeAccount();
+									supportOpen = true;
+								}}
+							>
+								Destek
+							</button>
+							<p class="border-t border-border px-3 py-2 text-xs text-text-faint">
+								Demo ortamında oturum kapatma yok.
+							</p>
+						</div>
+					{/if}
+				</div>
 			</div>
 		</header>
 
@@ -252,7 +360,6 @@
 		</main>
 	</div>
 
-	<!-- Mobile bottom tabs -->
 	<nav
 		class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur md:hidden"
 		style="padding-bottom: env(safe-area-inset-bottom)"
@@ -294,3 +401,20 @@
 		</ul>
 	</nav>
 </div>
+
+<Dialog bind:open={supportOpen} title="Destek" description="Demo ortamı — gerçek destek kanalı yok.">
+	<div class="space-y-3 text-sm text-text-muted">
+		<p>
+			Sorun veya geri bildirim için geliştiriciye yazın. Üretimde bu ekran ticket / e-posta
+			formuna bağlanacak.
+		</p>
+		<p>
+			<a class="font-medium text-brand hover:underline" href="mailto:destek@verimaya.app"
+				>destek@verimaya.app</a
+			>
+		</p>
+	</div>
+	{#snippet footer()}
+		<Button type="button" onclick={() => (supportOpen = false)}>Kapat</Button>
+	{/snippet}
+</Dialog>

@@ -5,15 +5,16 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 ## Faz 0a — Sözleşme + demo frontend (2-3 hafta, zaman kutulu) 🔜
 
 - [x] Monorepo iskeleti: pnpm workspaces + Turborepo
-- [x] `packages/shared`: zod şemaları (Patient, Appointment, Transaction, Conversation, Tenant, User) + endpoint sözleşmesi
+- [x] `packages/shared`: zod şemaları (Patient, Appointment, Transaction, InboundMessage, Tenant, User) + endpoint sözleşmesi
 - [x] `apps/web`: SvelteKit (Svelte 5, adapter-static SPA) + TanStack Query + Tailwind + shadcn-svelte
 - [x] MSW mock API (gerçek `/v1` path'leri, faker ile şemadan demo veri; boş liste / uzun isim / 500 kayıt uç durumları dahil)
-- [x] Tasarım sistemi temeli: koyu tema token'ları (`docs/TASARIM.md`), Inter, Tailwind config
+- [x] Tasarım sistemi temeli: TickPort warm palette + açık/koyu (`docs/TASARIM.md`), Inter, Tailwind v4 token'ları
 - [x] AppShell: CF-dashboard deseni — sol gruplu menü, üst bar (⌘K arama, yenilikler zili)
-- [x] Çekirdek ekranlar: hasta listesi/detay, randevu takvimi, finans, WhatsApp inbox, dashboard ("kaldığın yerden devam" deseni)
+- [x] Çekirdek ekranlar: hasta listesi/detay (finans özeti + bağlı işlem/randevu), randevu takvimi, finans, AI ile WhatsApp işlem aktarımı, dashboard ("kaldığın yerden devam" deseni)
 - [x] `/ozellikler` sayfası (`packages/shared/src/features.ts`'ten render) + `/yenilikler` iskeleti (`changelog.ts`)
 - [x] Rol değiştirici ile RBAC görünürlük provası
 - [x] Desktop + mobil responsive (gerçek cihazda `--host` testi)
+- [x] Demo: kişi/hasta çift kayıt tarama + birleştirme (`/kisiler/cift-kayit`, `/hastalar/cift-kayit`)
 
 ## Faz 0b — Gerçek temel (1 hafta)
 
@@ -27,7 +28,11 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 
 - [ ] Patients, appointments, transactions, audit log (legacy şemadan düzeltilmiş port)
 - [ ] Unique/indeks standartları + cursor sayfalama + arama (`pg_trgm`)
+- [ ] Hasta detayı: finans aggregate sunucu tarafı; dosya yükleme (`files` + object storage); Contact modeli
+- [ ] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit); soft-delete / tombstone; tenant RLS
+- [ ] Finans kategori sözlüğü + randevu tip/durum ayarları
 - [ ] MSW kapatılır, web gerçek API'ye bağlanır
+- [ ] Legacy notlar: `docs/legacy-reference/case-expenses.md`, `dosyalar.md`, `ayarlar.md`
 
 ## Faz 2 — Entegrasyon platformu (1-2 hafta)
 
@@ -36,11 +41,12 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [ ] Şifreli tenant credential tablosu
 - [ ] Queue-first webhook + backoff + dead-letter; Sentry + pino + request_id
 
-## Faz 3 — WhatsApp (2 hafta)
+## Faz 3 — WhatsApp finans aktarımı (2 hafta)
 
-- [ ] `WhatsAppProvider` arayüzü: Cloud API birincil, WAHA ikincil
-- [ ] Provider-agnostic modeller: `conversation`, `message`, `channel_account`
-- [ ] Inbox UI (WebSocket) + AI veri çıkarma (taslak/onay)
+- [ ] WAHA webhook → `inbound_messages` kuyruğu
+- [ ] `POST /v1/whatsapp/parse` — gerçek LLM ayrıştırma (taslak/onay akışı)
+- [ ] Manuel yapıştır + kuyruk tek ekranda (`/finans/aktar`)
+- [ ] AI correction kaydı (öğrenme için)
 
 ## Faz 4 — GHL senkronu (1-2 hafta)
 
@@ -57,7 +63,8 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 
 ## Faz 7 — Rapor, dashboard, PWA, vitrin (1-2 hafta)
 
-- [ ] Grafikler, dönemsel özetler, dashboard cache; PWA manifest
+- [ ] Grafikler, dönemsel özetler (sunucu aggregate), kategori drill-down; dashboard cache; PWA manifest
+- [ ] Legacy notlar: `docs/legacy-reference/raporlar.md`
 - [ ] Vitrin sayfası (CF-marketing tarzı: gradient hero, özellik blokları, entegrasyon logoları, demo CTA)
 
 ## Faz 8 — Veri göçü ve geçiş (1 hafta)

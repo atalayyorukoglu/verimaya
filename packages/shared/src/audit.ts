@@ -8,7 +8,8 @@ export const auditEntitySchema = z.enum([
 	'patient',
 	'appointment',
 	'transaction',
-	'conversation',
+	'inbound_message',
+	'file',
 	'tenant',
 	'user'
 ]);

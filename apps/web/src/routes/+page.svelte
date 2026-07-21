@@ -1,14 +1,18 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { Appointment, Conversation, Patient, Tenant } from '@verimaya/shared';
+	import type { Appointment, InboundMessage, Patient, Tenant } from '@verimaya/shared';
 	import { patientStatusLabels } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { formatDateTime, formatTime, isSameLocalDay } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
+	import { canAccessPath, getDemoRole } from '$lib/rbac';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
 	type Page<T> = { items: T[]; next_cursor: string | null };
+
+	const role = getDemoRole();
+	const canFinance = canAccessPath('/finans/aktar', role);
 
 	const tenantQuery = createQuery(() => ({
 		queryKey: ['tenants', 'current'],
@@ -25,9 +29,10 @@
 		queryFn: () => apiGet<Page<Appointment>>(listUrl('appointments', { limit: 40 }))
 	}));
 
-	const conversationsQuery = createQuery(() => ({
-		queryKey: ['conversations', { limit: 5 }],
-		queryFn: () => apiGet<Page<Conversation>>(listUrl('conversations', { limit: 5 }))
+	const inboxQuery = createQuery(() => ({
+		queryKey: ['whatsapp', 'inbox'],
+		queryFn: () => apiGet<{ messages: InboundMessage[] }>('/v1/whatsapp/inbox'),
+		enabled: canFinance
 	}));
 
 	const todayAppointments = $derived(
@@ -35,7 +40,16 @@
 	);
 
 	const recentPatients = $derived(patientsQuery.data?.items ?? []);
-	const recentMessages = $derived(conversationsQuery.data?.items ?? []);
+	const pendingMessages = $derived(
+		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new').slice(0, 5)
+	);
+	const pendingCount = $derived(
+		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new').length
+	);
+
+	const anyError = $derived(
+		patientsQuery.isError || appointmentsQuery.isError || (canFinance && inboxQuery.isError)
+	);
 </script>
 
 <svelte:head>
@@ -50,6 +64,12 @@
 			: 'Bugünkü operasyona hızlı bakış'}
 	/>
 
+	{#if anyError}
+		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+			Bazı paneller yüklenemedi. Sayfayı yenileyin veya MSW senaryosunu kontrol edin.
+		</div>
+	{/if}
+
 	<div class="mb-8 grid min-w-0 gap-4 lg:grid-cols-3">
 		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
@@ -58,6 +78,8 @@
 			</div>
 			{#if patientsQuery.isPending}
 				<p class="text-sm text-text-faint">Yükleniyor…</p>
+			{:else if patientsQuery.isError}
+				<p class="text-sm text-danger">Hastalar yüklenemedi.</p>
 			{:else if recentPatients.length === 0}
 				<p class="text-sm text-text-faint">Henüz hasta yok.</p>
 			{:else}
@@ -92,23 +114,30 @@
 			</div>
 			{#if appointmentsQuery.isPending}
 				<p class="text-sm text-text-faint">Yükleniyor…</p>
+			{:else if appointmentsQuery.isError}
+				<p class="text-sm text-danger">Randevular yüklenemedi.</p>
 			{:else if todayAppointments.length === 0}
 				<p class="text-sm text-text-faint">Bugün randevu yok.</p>
 			{:else}
 				<ul class="min-w-0 divide-y divide-border">
 					{#each todayAppointments as appt (appt.id)}
-						<li class="flex min-w-0 items-start gap-2 py-2.5 sm:gap-3">
-							<span
-								class="w-10 shrink-0 pt-0.5 text-sm font-medium text-brand tabular-nums sm:w-12"
+						<li class="min-w-0">
+							<a
+								href={appt.patient_id ? `/hastalar/${appt.patient_id}` : '/randevular'}
+								class="flex min-w-0 items-start gap-2 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:gap-3 sm:px-2"
 							>
-								{formatTime(appt.starts_at)}
-							</span>
-							<div class="min-w-0 flex-1 overflow-hidden">
-								<p class="truncate text-sm font-medium text-text">{appt.patient_display_name}</p>
-								<p class="truncate text-xs text-text-faint">
-									{appt.title ?? appt.appointment_type ?? 'Randevu'}
-								</p>
-							</div>
+								<span
+									class="w-10 shrink-0 pt-0.5 text-sm font-medium text-brand tabular-nums sm:w-12"
+								>
+									{formatTime(appt.starts_at)}
+								</span>
+								<div class="min-w-0 flex-1 overflow-hidden">
+									<p class="truncate text-sm font-medium text-text">{appt.patient_display_name}</p>
+									<p class="truncate text-xs text-text-faint">
+										{appt.title ?? appt.appointment_type ?? 'Randevu'}
+									</p>
+								</div>
+							</a>
 						</li>
 					{/each}
 				</ul>
@@ -117,35 +146,38 @@
 
 		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 class="text-sm font-semibold text-text">Son mesajlar</h2>
-				<a href="/inbox" class="text-xs text-info hover:underline">Inbox</a>
+				<h2 class="text-sm font-semibold text-text">Bekleyen WhatsApp</h2>
+				{#if canFinance}
+					<a href="/finans/aktar" class="text-xs text-info hover:underline">
+						{pendingCount > 0 ? `${pendingCount} yeni` : 'AI ile işlem'}
+					</a>
+				{:else}
+					<span class="text-xs text-text-faint">Finans yetkisi gerekli</span>
+				{/if}
 			</div>
-			{#if conversationsQuery.isPending}
+			{#if !canFinance}
+				<p class="text-sm text-text-faint">
+					Bu rol WhatsApp işlem aktarımını göremez. Rolü toolbar’dan değiştirin.
+				</p>
+			{:else if inboxQuery.isPending}
 				<p class="text-sm text-text-faint">Yükleniyor…</p>
-			{:else if recentMessages.length === 0}
-				<p class="text-sm text-text-faint">Henüz mesaj yok.</p>
+			{:else if inboxQuery.isError}
+				<p class="text-sm text-danger">Mesajlar yüklenemedi.</p>
+			{:else if pendingMessages.length === 0}
+				<p class="text-sm text-text-faint">Bekleyen mesaj yok.</p>
 			{:else}
 				<ul class="min-w-0 divide-y divide-border">
-					{#each recentMessages as conv (conv.id)}
+					{#each pendingMessages as msg (msg.id)}
 						<li class="min-w-0">
 							<a
-								href="/inbox"
+								href={`/finans/aktar?inbox=${msg.id}`}
 								class="block min-w-0 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:px-2"
 							>
-								<div class="flex min-w-0 items-center gap-2">
-									<p class="min-w-0 flex-1 truncate text-sm font-medium text-text">
-										{conv.contact_name ?? conv.patient_display_name ?? 'Bilinmeyen'}
-									</p>
-									{#if conv.unread_count > 0}
-										<span
-											class="shrink-0 rounded-full bg-brand px-1.5 text-[10px] font-semibold text-primary-foreground"
-										>
-											{conv.unread_count}
-										</span>
-									{/if}
-								</div>
+								<p class="truncate text-sm font-medium text-text">
+									{msg.body?.trim() || (msg.has_media ? '(medya)' : 'Mesaj')}
+								</p>
 								<p class="mt-0.5 truncate text-xs text-text-faint">
-									{conv.last_message_preview}
+									{formatDateTime(msg.created_at)}
 								</p>
 							</a>
 						</li>
@@ -158,7 +190,7 @@
 	<section>
 		<h2 class="mb-3 text-sm font-semibold text-text">Özet metrikler</h2>
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'Okunmamış', value: String(recentMessages.reduce((s, c) => s + c.unread_count, 0)), hint: 'Inbox' }, { label: 'Aktif tenant', value: tenantQuery.data?.base_currency ?? '—', hint: 'Para birimi' }] as card (card.label)}
+			{#each [{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' }, { label: 'Para birimi', value: tenantQuery.data?.base_currency ?? '—', hint: tenantQuery.data?.name ?? 'Organizasyon' }] as card (card.label)}
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{card.label}</p>
 					<p class="mt-1 text-2xl font-semibold tracking-tight text-text">{card.value}</p>

@@ -13,6 +13,11 @@ export const currencyCode = z
 	.length(3)
 	.regex(/^[A-Z]{3}$/);
 
+/** Currencies Verimaya supports in UI / tenant base. */
+export const supportedCurrencySchema = z.enum(['TRY', 'GBP', 'EUR', 'USD']);
+export type SupportedCurrency = z.infer<typeof supportedCurrencySchema>;
+export const SUPPORTED_CURRENCIES = supportedCurrencySchema.options;
+
 /** Money in minor units (kuruş/cent). Always integer. */
 export const moneyMinor = z.number().int();
 

@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { currencyCode, isoDateTime, uuid } from './common.js';
+import { isoDateTime, supportedCurrencySchema, uuid } from './common.js';
 
 export const tenantSchema = z.object({
 	id: uuid,
 	name: z.string().min(1).max(255),
 	slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
-	base_currency: currencyCode.default('TRY'),
+	base_currency: supportedCurrencySchema.default('TRY'),
 	/** UI label for the patient/case section (legacy: cases_section_label) */
 	patients_section_label: z.string().min(1).max(80).default('Hastalar'),
 	created_at: isoDateTime

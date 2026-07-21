@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		Appointment,
@@ -13,15 +15,19 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
+	import AppointmentOpsList from '$lib/components/AppointmentOpsList.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import X from '@lucide/svelte/icons/x';
 
 	type Page = { items: Appointment[]; next_cursor: string | null };
 	type PatientsPage = { items: Patient[]; next_cursor: string | null };
 	type ViewMode = 'day' | 'week';
 
 	const queryClient = useQueryClient();
+
+	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
 
 	let view = $state<ViewMode>('week');
 	let anchor = $state(startOfDay(new Date()));
@@ -57,13 +63,21 @@
 	);
 
 	const appointmentsQuery = createQuery(() => ({
-		queryKey: ['appointments', { from: rangeStart.toISOString(), to: rangeEnd.toISOString() }],
+		queryKey: [
+			'appointments',
+			{
+				from: rangeStart.toISOString(),
+				to: rangeEnd.toISOString(),
+				patient_id: patientFilterId
+			}
+		],
 		queryFn: () =>
 			apiGet<Page>(
 				listUrl('appointments', {
 					limit: 100,
 					from: rangeStart.toISOString(),
-					to: rangeEnd.toISOString()
+					to: rangeEnd.toISOString(),
+					patient_id: patientFilterId
 				})
 			)
 	}));
@@ -72,6 +86,12 @@
 		queryKey: ['patients', { limit: 100, for: 'picker' }],
 		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 }))
 	}));
+
+	const filterPatient = $derived(
+		patientFilterId
+			? (patientsQuery.data?.items ?? []).find((p) => p.id === patientFilterId)
+			: null
+	);
 
 	const byDay = $derived.by(() => {
 		const map = new Map<string, Appointment[]>();
@@ -93,6 +113,10 @@
 		view === 'day'
 			? formatDate(rangeStart.toISOString())
 			: `${formatDate(rangeStart.toISOString())} – ${formatDate(addDays(rangeStart, 6).toISOString())}`
+	);
+
+	const rangeAppointments = $derived(
+		[...(appointmentsQuery.data?.items ?? [])].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
 	);
 
 	function openCreate() {
@@ -127,6 +151,10 @@
 	function shift(dir: -1 | 1) {
 		anchor = addDays(anchor, view === 'day' ? dir : dir * 7);
 	}
+
+	function clearPatientFilter() {
+		void goto('/randevular');
+	}
 </script>
 
 <svelte:head>
@@ -136,7 +164,7 @@
 <div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader title="Randevular" description="Gün ve hafta takvim görünümü.">
 		{#snippet actions()}
-			<div class="flex flex-wrap items-center gap-2">
+			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 				<div class="flex rounded-[6px] border border-border bg-surface p-0.5">
 					<button
 						type="button"
@@ -191,6 +219,25 @@
 			</div>
 		{/snippet}
 	</PageHeader>
+
+	{#if patientFilterId}
+		<div
+			class="mb-4 flex flex-wrap items-center gap-2 rounded-[6px] border border-border bg-surface-2/50 px-3 py-2 text-sm"
+		>
+			<span class="text-text-muted">Hasta filtresi:</span>
+			<span class="font-medium text-text">
+				{filterPatient?.full_name ?? 'Yükleniyor…'}
+			</span>
+			<button
+				type="button"
+				class="inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-xs text-text-muted hover:bg-surface hover:text-text"
+				onclick={clearPatientFilter}
+			>
+				<X class="size-3.5" />
+				Temizle
+			</button>
+		</div>
+	{/if}
 
 	{#if appointmentsQuery.isPending}
 		<p class="text-sm text-text-muted">Yükleniyor…</p>
@@ -247,6 +294,16 @@
 				</section>
 			{/each}
 		</div>
+
+		<section class="mt-8 min-w-0">
+			<div class="mb-3">
+				<h2 class="text-sm font-semibold text-text">Operasyon listesi</h2>
+				<p class="mt-0.5 text-xs text-text-muted">
+					Seçili aralıktaki randevular — hasta notları kart üzerinde (takvim değişmeden).
+				</p>
+			</div>
+			<AppointmentOpsList appointments={rangeAppointments} onedit={openEdit} />
+		</section>
 	{/if}
 </div>
 
@@ -254,6 +311,7 @@
 	bind:open={formOpen}
 	appointment={editing}
 	patients={patientsQuery.data?.items ?? []}
+	defaultPatientId={patientFilterId}
 	{saving}
 	error={formError}
 	onsubmit={saveAppointment}

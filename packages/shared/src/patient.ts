@@ -29,6 +29,8 @@ export const patientSchema = z.object({
 	source: z.string().max(128).nullable(),
 	notes: z.string().max(8000).nullable(),
 	assigned_user_id: uuid.nullable(),
+	/** Optional link to directory Contact (typically type Hasta) */
+	contact_id: uuid.nullable().default(null),
 	created_at: isoDateTime,
 	updated_at: isoDateTime
 });

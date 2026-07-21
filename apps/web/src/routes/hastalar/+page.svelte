@@ -67,6 +67,9 @@
 					class="h-9 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:w-56"
 				/>
 				<Button type="submit" variant="secondary">Ara</Button>
+				<Button type="button" variant="outline" onclick={() => goto('/hastalar/cift-kayit')}
+					>Çift kayıt tara</Button
+				>
 				<Button type="button" onclick={() => (formOpen = true)}>Yeni hasta</Button>
 			</form>
 		{/snippet}
