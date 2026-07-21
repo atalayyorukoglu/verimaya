@@ -11,23 +11,20 @@ SvelteKit SPA (Svelte 5 runes). Faz 0a'da tüm `/v1/*` istekleri MSW ile mock'la
 | `PUBLIC_API_URL` | `http://localhost:3000` | NestJS API kökeni |
 | `PUBLIC_USE_MSW` | `true` | `true`: dev'de MSW mock; `false`: gerçek API |
 
-### MSW'yi kapatıp gerçek API'ye bağlanmak
+## MSW kapalı mod — kontrol listesi
 
-1. Postgres + Redis: repo kökünde `docker compose up -d`
-2. API migrasyon: `pnpm --filter @verimaya/api db:migrate`
-3. API sunucusu: `pnpm --filter @verimaya/api dev` → `http://localhost:3000`
-4. Web `.env`:
+Gerçek API ile çalışmak için sırayla:
 
-```bash
-PUBLIC_API_URL=http://localhost:3000
-PUBLIC_USE_MSW=false
-```
+- [ ] **Altyapı:** repo kökünde `docker compose up -d` (Postgres + Redis)
+- [ ] **Migrasyon:** `pnpm --filter @verimaya/api db:migrate`
+- [ ] **API:** `pnpm --filter @verimaya/api dev` → `http://localhost:3000` (health + auth hazır)
+- [ ] **Web `.env`:** `PUBLIC_API_URL=http://localhost:3000` ve `PUBLIC_USE_MSW=false`
+- [ ] **Web dev:** `pnpm --filter @verimaya/web dev` → `http://localhost:5173`
+- [ ] **Giriş:** `/giris` — better-auth (`/v1/auth/*`), oturum çerezi `credentials: include` ile API'ye gider
+- [ ] **Organizasyon:** oturumda aktif org yoksa giriş sonrası org seçimi veya ilk org oluşturma ekranı gelir (`authClient.organization.list` / `setActive`)
+- [ ] **Doğrulama:** hasta/kişi listeleri, çift kayıt tarama (`/kisiler/cift-kayit`, `/hastalar/cift-kayit`) gerçek `/v1/.../duplicate-groups` ve merge endpoint'lerine gider
 
-5. Web dev: `pnpm --filter @verimaya/web dev` → `http://localhost:5173`
-
-Giriş: `/giris` (better-auth, `/v1/auth/*`). Oturum çerezi `credentials: include` ile API'ye gider.
-
-Demo modunda (`PUBLIC_USE_MSW=true`) alt çubuktaki MSW senaryosu ve demo rol seçicisi görünür.
+MSW kapalıyken alt çubuktaki demo senaryo/rol seçicisi görünmez.
 
 ## Geliştirme
 
@@ -41,5 +38,6 @@ pnpm --filter @verimaya/web build
 
 - API istemcisi: `src/lib/api.ts` — `resolveApiUrl`, `credentials: 'include'`
 - Auth istemcisi: `src/lib/auth.ts` — better-auth + organization + 2FA
+- Org akışı: `src/lib/auth-org.ts` — giriş sonrası aktif tenant
 - Path sabitleri: `packages/shared` (`apiPaths`, `listUrl`)
 - TanStack Query; doğrudan `fetch` bileşenlerde kullanılmaz

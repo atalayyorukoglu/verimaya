@@ -10,13 +10,21 @@ export const apiPaths = {
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
 	patients: `${API_V1_PREFIX}/patients`,
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
+	patientsDuplicateGroups: `${API_V1_PREFIX}/patients/duplicate-groups`,
+	patientsMerge: `${API_V1_PREFIX}/patients/merge`,
 	appointments: `${API_V1_PREFIX}/appointments`,
 	contacts: `${API_V1_PREFIX}/contacts`,
+	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
+	contactsDuplicateGroups: `${API_V1_PREFIX}/contacts/duplicate-groups`,
+	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
 	transactions: `${API_V1_PREFIX}/transactions`,
 	auditLogs: `${API_V1_PREFIX}/audit-logs`,
 	settingsFinanceCategories: `${API_V1_PREFIX}/settings/finance-categories`,
 	settingsContactTypes: `${API_V1_PREFIX}/settings/contact-types`,
-	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`
+	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
+	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
+	apiKeys: `${API_V1_PREFIX}/api-keys`,
+	apiKey: (id: string) => `${API_V1_PREFIX}/api-keys/${id}`
 } as const;
 
 export type ListQueryParams = {
@@ -59,6 +67,8 @@ import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-c
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
+import { adMetricSchema } from './ad-metrics.js';
+import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
 
 /**
  * API contract sketch for /v1 routes.
@@ -141,6 +151,19 @@ export const apiContract = {
 	},
 	'GET /v1/settings/appointment-types': {
 		response: z.object({ items: z.array(appointmentTypeSettingSchema) })
+	},
+	'GET /v1/ad-metrics': {
+		response: z.object({ items: z.array(adMetricSchema) })
+	},
+	'GET /v1/api-keys': {
+		response: z.object({ items: z.array(apiKeySchema) })
+	},
+	'POST /v1/api-keys': {
+		body: apiKeyCreateSchema,
+		response: apiKeyCreatedSchema
+	},
+	'DELETE /v1/api-keys/:id': {
+		response: apiKeySchema
 	}
 } as const;
 

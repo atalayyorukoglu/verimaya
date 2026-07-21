@@ -52,6 +52,11 @@ export class IntegrationEventProcessor {
 					.update(integrationEvents)
 					.set({ status: 'processed', processedAt: now, updatedAt: now })
 					.where(eq(integrationEvents.id, payload.integrationEventId));
+			} else if (payload.provider === 'meta' || payload.provider === 'google') {
+				// Faz 5 stub: 6-hour incremental ad sync → ad_metrics_daily (OAuth + provider API later).
+				this.logger.debug(
+					`Ad metrics sync noop for provider ${payload.provider}; job ${jobId} completed without writes`
+				);
 			} else {
 				this.logger.debug(
 					`No handler for provider ${payload.provider}; marking job ${jobId} completed`

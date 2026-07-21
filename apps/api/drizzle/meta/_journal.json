@@ -64,6 +64,20 @@
 			"when": 1753108000000,
 			"tag": "0008_tenant_credentials",
 			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1753109000000,
+			"tag": "0009_ad_metrics_daily",
+			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1753110000000,
+			"tag": "0010_api_keys",
+			"breakpoints": true
 		}
 	]
 }

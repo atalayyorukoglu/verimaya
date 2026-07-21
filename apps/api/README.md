@@ -60,6 +60,19 @@ curl -s -X POST http://localhost:3000/v1/whatsapp/parse \
   -d '{"message":"Sandra 2900 GBP 2. vizit ödemesi alındı"}'
 ```
 
+## Faz 5 — Reklam metrikleri (stub)
+
+- Tablo: `ad_metrics_daily` (`tenant_id`, `provider` meta|google, `date`, `campaign_id`, `spend_minor`, `impressions`, `clicks`; `UNIQUE(tenant_id, provider, date, campaign_id)`; RLS).
+- API: `GET /v1/ad-metrics?from=&to=&provider=` — SessionGuard + ActiveOrgGuard; boş liste geçerli.
+- Worker stub: `ad_metrics.sync` ve `integration_event.process` + `provider=meta|google` → noop (6 saatlik incremental sync + OAuth ileride).
+
+## Faz 6 — Dış API + API key (stub)
+
+- Tablo: `api_keys` (`tenant_id`, `name`, `key_prefix`, `key_hash`, `scopes`, `created_at`, `revoked_at`; RLS). Lookup: `app.lookup_api_key(hash)` (SECURITY DEFINER).
+- API (oturum): `POST /v1/api-keys` (plaintext key yalnızca create yanıtında), `GET /v1/api-keys` (hash yok), `DELETE /v1/api-keys/:id` (revoke). Mutasyonlarda `Idempotency-Key` desteklenir (Faz 1'den beri domain CRUD'da da vardı).
+- `ApiKeyGuard`: `Authorization: Bearer vk_...` → hash doğrulama; **henüz global middleware'e bağlı değil** — route bazında `@UseGuards(ApiKeyGuard)` ile kullanılacak.
+- OpenAPI, `webhook_subscriptions`, HMAC giden event'ler henüz yok.
+
 ## Test
 
 ```bash

@@ -17,7 +17,8 @@
 		transactionKindLabels,
 		transactionStatusLabels
 	} from '@verimaya/shared';
-	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { apiPaths, listUrl } from '@verimaya/shared';
+	import { apiGet, apiSend } from '$lib/api';
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
 	import {
 		appointmentStatusTone,
@@ -54,7 +55,7 @@
 
 	const patientQuery = createQuery(() => ({
 		queryKey: ['patients', id],
-		queryFn: () => apiGet<Patient>(`/v1/patients/${id}`)
+		queryFn: () => apiGet<Patient>(apiPaths.patient(id))
 	}));
 
 	const txQuery = createQuery(() => ({
@@ -100,7 +101,7 @@
 		patientSaving = true;
 		patientFormError = null;
 		try {
-			await apiSend<Patient>(`/v1/patients/${id}`, 'PATCH', data);
+			await apiSend<Patient>(apiPaths.patient(id), 'PATCH', data);
 			await queryClient.invalidateQueries({ queryKey: ['patients'] });
 			patientFormOpen = false;
 		} catch (err) {

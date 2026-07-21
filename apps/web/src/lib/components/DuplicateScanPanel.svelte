@@ -7,7 +7,7 @@
 		Patient,
 		PatientDuplicateGroup
 	} from '@verimaya/shared';
-	import { duplicateMatchTypeLabels } from '@verimaya/shared';
+	import { apiPaths, duplicateMatchTypeLabels } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -36,9 +36,9 @@
 		queryKey: [kind, 'duplicate-groups'] as const,
 		queryFn: async (): Promise<{ items: AnyGroup[] }> => {
 			if (kind === 'contacts') {
-				return apiGet<{ items: ContactDuplicateGroup[] }>('/v1/contacts/duplicate-groups');
+				return apiGet<{ items: ContactDuplicateGroup[] }>(apiPaths.contactsDuplicateGroups);
 			}
-			return apiGet<{ items: PatientDuplicateGroup[] }>('/v1/patients/duplicate-groups');
+			return apiGet<{ items: PatientDuplicateGroup[] }>(apiPaths.patientsDuplicateGroups);
 		}
 	}));
 
@@ -89,7 +89,7 @@
 		error = null;
 		success = null;
 		try {
-			const path = kind === 'contacts' ? '/v1/contacts/merge' : '/v1/patients/merge';
+			const path = kind === 'contacts' ? apiPaths.contactsMerge : apiPaths.patientsMerge;
 			await apiSend(path, 'POST', { keep_id, merge_ids });
 			await queryClient.invalidateQueries({ queryKey: [kind, 'duplicate-groups'] });
 			await queryClient.invalidateQueries({
@@ -111,7 +111,7 @@
 
 <p class="mb-4 text-sm text-text-muted">
 	E-posta, telefon (normalize) veya ada göre olası çift kayıtlar. Bir kayıt seçip diğerlerini içine
-	birleştirin — bağlı işlem/randevu taşınır (demo).
+	birleştirin — bağlı işlem ve randevular taşınır.
 </p>
 
 {#if error}

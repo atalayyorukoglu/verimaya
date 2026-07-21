@@ -13,6 +13,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { SettingsModule } from './settings/settings.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { AdMetricsModule } from './ad-metrics/ad-metrics.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 
 @Module({
 	imports: [
@@ -32,7 +34,9 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 		WebhooksModule,
 		WhatsappModule,
 		SettingsModule,
-		AuditLogsModule
+		AuditLogsModule,
+		AdMetricsModule,
+		ApiKeysModule
 	]
 })
 export class AppModule {}

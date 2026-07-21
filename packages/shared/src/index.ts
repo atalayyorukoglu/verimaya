@@ -16,3 +16,5 @@ export * from './api.js';
 export * from './features.js';
 export * from './changelog.js';
 export * from './labels.js';
+export * from './ad-metrics.js';
+export * from './api-key.js';

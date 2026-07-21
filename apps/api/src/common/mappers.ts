@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import type {
+	AdMetric,
+	ApiKey,
 	Appointment,
 	AuditLog,
 	Contact,
@@ -9,6 +11,8 @@ import type {
 	Patient,
 	Transaction
 } from '@verimaya/shared';
+import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
+import type { ApiKeyRow } from '../db/schema/api-keys';
 import type { AppointmentRow } from '../db/schema/appointments';
 import type { AuditLogRow } from '../db/schema/audit';
 import type { ContactTypeRow } from '../db/schema/contact-types';
@@ -159,5 +163,30 @@ export function toAuditLog(row: AuditLogRow): AuditLog {
 		entity_type: row.entityType as AuditLog['entity_type'],
 		entity_label: row.entityLabel,
 		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toAdMetric(row: AdMetricsDailyRow): AdMetric {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		provider: row.provider as AdMetric['provider'],
+		date: row.date,
+		campaign_id: row.campaignId,
+		spend_minor: row.spendMinor,
+		impressions: row.impressions,
+		clicks: row.clicks
+	};
+}
+
+export function toApiKey(row: ApiKeyRow): ApiKey {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		name: row.name,
+		key_prefix: row.keyPrefix,
+		scopes: row.scopes as ApiKey['scopes'],
+		created_at: toIsoDateTime(row.createdAt),
+		revoked_at: row.revokedAt ? toIsoDateTime(row.revokedAt) : null
 	};
 }

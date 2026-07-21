@@ -8,7 +8,7 @@
 		Patient,
 		Transaction
 	} from '@verimaya/shared';
-	import { transactionKindLabels } from '@verimaya/shared';
+	import { apiPaths, transactionKindLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { formatDate, formatMoney, formatTime } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -27,7 +27,7 @@
 
 	const contactQuery = createQuery(() => ({
 		queryKey: ['contacts', id],
-		queryFn: () => apiGet<Contact>(`/v1/contacts/${id}`)
+		queryFn: () => apiGet<Contact>(apiPaths.contact(id))
 	}));
 
 	const txQuery = createQuery(() => ({
@@ -74,7 +74,7 @@
 		saving = true;
 		formError = null;
 		try {
-			await apiSend(`/v1/contacts/${id}`, 'PATCH', data);
+			await apiSend(apiPaths.contact(id), 'PATCH', data);
 			await queryClient.invalidateQueries({ queryKey: ['contacts'] });
 			await queryClient.invalidateQueries({ queryKey: ['patients'] });
 			formOpen = false;

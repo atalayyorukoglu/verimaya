@@ -6,6 +6,7 @@
 		ContactType,
 		ContactUpdate
 	} from '@verimaya/shared';
+	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -26,7 +27,7 @@
 
 	const typesQuery = createQuery(() => ({
 		queryKey: ['settings', 'contact-types'],
-		queryFn: () => apiGet<{ items: ContactType[] }>('/v1/settings/contact-types'),
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
 		enabled: open
 	}));
 

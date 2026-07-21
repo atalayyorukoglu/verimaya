@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
-	import type { Contact, ContactCreate, ContactType, ContactUpdate } from '@verimaya/shared';
-	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import type { Contact, ContactCreate, ContactType, ContactUpdate, ContractResponse } from '@verimaya/shared';
+	import { apiPaths, listUrl } from '@verimaya/shared';
+	import { apiGet, apiSend } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
-	type Page = { items: Contact[]; next_cursor: string | null };
+	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
 
 	const queryClient = useQueryClient();
 
@@ -22,22 +23,27 @@
 
 	const typesQuery = createQuery(() => ({
 		queryKey: ['settings', 'contact-types'],
-		queryFn: () => apiGet<{ items: ContactType[] }>('/v1/settings/contact-types')
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes)
 	}));
 
-	const contactsQuery = createQuery(() => ({
-		queryKey: ['contacts', { q: search, type_id: typeId || null, limit: 100 }],
-		queryFn: () =>
-			apiGet<Page>(
+	const contactTypes = $derived(typesQuery.data?.items ?? []);
+
+	const contactsQuery = createInfiniteQuery(() => ({
+		queryKey: ['contacts', { q: search, type_id: typeId || null }],
+		queryFn: ({ pageParam }: { pageParam: string | null }) =>
+			apiGet<ContactsPage>(
 				listUrl('contacts', {
-					limit: 100,
+					limit: 25,
 					q: search || undefined,
-					type_id: typeId || undefined
+					type_id: typeId || undefined,
+					cursor: pageParam
 				})
-			)
+			),
+		initialPageParam: null as string | null,
+		getNextPageParam: (last: ContactsPage) => last.next_cursor
 	}));
 
-	const items = $derived(contactsQuery.data?.items ?? []);
+	const items = $derived(contactsQuery.data?.pages.flatMap((p) => p.items) ?? []);
 
 	function submitSearch(e: Event) {
 		e.preventDefault();
@@ -61,9 +67,9 @@
 		formError = null;
 		try {
 			if (editing) {
-				await apiSend(`/v1/contacts/${editing.id}`, 'PATCH', data);
+				await apiSend(apiPaths.contact(editing.id), 'PATCH', data);
 			} else {
-				await apiSend('/v1/contacts', 'POST', data);
+				await apiSend(apiPaths.contacts, 'POST', data);
 			}
 			await queryClient.invalidateQueries({ queryKey: ['contacts'] });
 			await queryClient.invalidateQueries({ queryKey: ['patients'] });
@@ -105,7 +111,7 @@
 			bind:value={typeId}
 		>
 			<option value="">Tüm türler</option>
-			{#each typesQuery.data?.items ?? [] as t (t.id)}
+			{#each contactTypes as t (t.id)}
 				<option value={t.id}>{t.name}</option>
 			{/each}
 		</select>
@@ -118,7 +124,8 @@
 		<p class="text-sm text-danger">Kişiler yüklenemedi.</p>
 	{:else if items.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-6 text-center">
-			<p class="text-sm text-text-muted">Kişi yok.</p>
+			<p class="text-sm text-text-muted">Kişi bulunamadı.</p>
+			<Button class="mt-4" type="button" onclick={openCreate}>Yeni kişi</Button>
 		</div>
 	{:else}
 		<ul class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
@@ -143,6 +150,19 @@
 				</li>
 			{/each}
 		</ul>
+
+		{#if contactsQuery.hasNextPage}
+			<div class="mt-4 flex justify-center">
+				<Button
+					variant="outline"
+					type="button"
+					disabled={contactsQuery.isFetchingNextPage}
+					onclick={() => contactsQuery.fetchNextPage()}
+				>
+					{contactsQuery.isFetchingNextPage ? 'Yükleniyor…' : 'Daha fazla yükle'}
+				</Button>
+			</div>
+		{/if}
 	{/if}
 </div>
 

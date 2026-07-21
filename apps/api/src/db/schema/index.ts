@@ -12,3 +12,5 @@ export * from './files';
 export * from './finance-categories';
 export * from './case-notes';
 export * from './tenant-credentials';
+export * from './ad-metrics-daily';
+export * from './api-keys';

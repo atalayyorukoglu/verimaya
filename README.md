@@ -45,6 +45,6 @@ pnpm dev                      # web http://localhost:5173 (MSW demo, PUBLIC_USE_
 pnpm --filter @verimaya/api dev   # api http://localhost:3000
 ```
 
-Gerçek API ile web: `apps/web/.env` içinde `PUBLIC_USE_MSW=false` — ayrıntı [`apps/web/README.md`](./apps/web/README.md).
+Gerçek API ile web: `apps/web/.env` içinde `PUBLIC_USE_MSW=false` — adım adım kontrol listesi [`apps/web/README.md`](./apps/web/README.md#msw-kapalı-mod--kontrol-listesi).
 
 Diğer komutlar: `pnpm check`, `pnpm build`, `pnpm lint`.

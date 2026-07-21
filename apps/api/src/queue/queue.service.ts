@@ -41,6 +41,13 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 					await this.integrationEventProcessor.process(job.data.jobId, job.data.tenantId);
 					return { ok: true };
 				}
+				if (job.data.jobType === 'ad_metrics.sync') {
+					// Faz 5 stub: scheduled Meta/Google incremental sync (6h) → ad_metrics_daily; noop until OAuth adapters ship.
+					this.logger.debug(
+						`Ad metrics sync noop for tenant ${job.data.tenantId}; job ${job.id}`
+					);
+					return { ok: true };
+				}
 				this.logger.debug(`Noop worker handled job ${job.id} (${job.data.jobType})`);
 				return { ok: true };
 			},

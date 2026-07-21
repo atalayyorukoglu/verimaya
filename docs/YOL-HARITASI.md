@@ -59,13 +59,19 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 
 - [ ] Webhook-first + periyodik reconciliation; alan bazlı sahiplik; backfill import
 
-## Faz 5 — Reklam API'leri (1 hafta)
+## Faz 5 — Reklam API'leri (1 hafta) 🚧
 
-- [ ] Meta + Google Ads OAuth (tenant bazlı); 6 saatlik incremental sync → `ad_metrics_daily`
+- [x] `ad_metrics_daily` tablosu (RLS + grant)
+- [x] `GET /v1/ad-metrics?from=&to=&provider=` (SessionGuard; boş liste OK)
+- [ ] Meta + Google Ads OAuth (tenant bazlı)
+- [ ] 6 saatlik incremental sync → `ad_metrics_daily` (worker stub noop)
 
-## Faz 6 — Dış API + n8n (1 hafta)
+## Faz 6 — Dış API + n8n (1 hafta) 🚧
 
-- [ ] `/v1` REST + scope'lu API key + `Idempotency-Key` + OpenAPI
+- [x] `api_keys` tablosu + CRUD (create/list/revoke; hash listede yok)
+- [x] `ApiKeyGuard` stub (`Bearer vk_...`; global'e bağlı değil)
+- [x] `Idempotency-Key` (mutasyon endpoint'lerinde; Faz 1'den)
+- [ ] OpenAPI spec
 - [ ] `webhook_subscriptions` + HMAC imzalı giden event'ler
 
 ## Faz 7 — Rapor, dashboard, PWA, vitrin (1-2 hafta)
