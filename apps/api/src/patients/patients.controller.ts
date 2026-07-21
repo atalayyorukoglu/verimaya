@@ -1,0 +1,114 @@
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	Patch,
+	Post,
+	Query,
+	Req,
+	Res,
+	UseGuards
+} from '@nestjs/common';
+import {
+	cursorPageParams,
+	patientCreateSchema,
+	patientUpdateSchema
+} from '@verimaya/shared';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { IdempotencyService } from '../common/idempotency.service';
+import { parseBody } from '../common/mappers';
+import { SessionGuard } from '../auth/session.guard';
+import { PatientsService } from './patients.service';
+
+@Controller('patients')
+@UseGuards(SessionGuard, ActiveOrgGuard)
+export class PatientsController {
+	constructor(
+		private readonly patientsService: PatientsService,
+		private readonly idempotency: IdempotencyService
+	) {}
+
+	@Get()
+	list(
+		@Req() req: FastifyRequest,
+		@Query('cursor') cursor?: string,
+		@Query('limit') limit?: string
+	) {
+		const params = cursorPageParams.parse({ cursor, limit });
+		return this.patientsService.list(getActiveOrgId(req), params);
+	}
+
+	@Get(':id')
+	get(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.patientsService.get(getActiveOrgId(req), id);
+	}
+
+	@Post()
+	async create(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(patientCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/patients',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.patientsService.createWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Patch(':id')
+	async update(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(patientUpdateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'PATCH',
+			`/v1/patients/${id}`,
+			async (db) => ({
+				statusCode: 200,
+				body: await this.patientsService.updateWithDb(db, id, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Delete(':id')
+	async remove(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'DELETE',
+			`/v1/patients/${id}`,
+			async (db) => ({
+				statusCode: 200,
+				body: await this.patientsService.softDeleteWithDb(db, id)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+}

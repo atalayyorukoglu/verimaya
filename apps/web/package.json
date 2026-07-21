@@ -18,6 +18,7 @@
 		"@lucide/svelte": "^1.24.0",
 		"@tanstack/svelte-query": "^6.0.0",
 		"@verimaya/shared": "workspace:*",
+		"better-auth": "^1.6.23",
 		"clsx": "^2.1.1",
 		"msw": "^2.10.4",
 		"tailwind-merge": "^3.3.1",

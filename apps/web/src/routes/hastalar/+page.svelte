@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { createInfiniteQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
-	import type { Patient, PatientCreate, PatientUpdate } from '@verimaya/shared';
-	import { patientStatusLabels } from '@verimaya/shared';
-	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import type { ContractResponse, Patient, PatientCreate, PatientUpdate } from '@verimaya/shared';
+	import { apiPaths, listUrl, patientStatusLabels } from '@verimaya/shared';
+	import { apiGet, apiSend } from '$lib/api';
 	import { formatDateTime } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -11,7 +11,7 @@
 	import PatientFormDialog from '$lib/components/PatientFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 
-	type Page = { items: Patient[]; next_cursor: string | null };
+	type PatientsPage = ContractResponse<'GET /v1/patients'>;
 
 	const queryClient = useQueryClient();
 
@@ -24,9 +24,11 @@
 	const patientsQuery = createInfiniteQuery(() => ({
 		queryKey: ['patients', { q: search }],
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
-			apiGet<Page>(listUrl('patients', { limit: 25, q: search || undefined, cursor: pageParam })),
+			apiGet<PatientsPage>(
+				listUrl('patients', { limit: 25, q: search || undefined, cursor: pageParam })
+			),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: Page) => last.next_cursor
+		getNextPageParam: (last: PatientsPage) => last.next_cursor
 	}));
 
 	const patients = $derived(patientsQuery.data?.pages.flatMap((p) => p.items) ?? []);
@@ -40,7 +42,7 @@
 		saving = true;
 		formError = null;
 		try {
-			const created = await apiSend<Patient>('/v1/patients', 'POST', data);
+			const created = await apiSend<Patient>(apiPaths.patients, 'POST', data);
 			await queryClient.invalidateQueries({ queryKey: ['patients'] });
 			formOpen = false;
 			await goto(`/hastalar/${created.id}`);

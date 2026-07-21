@@ -41,8 +41,10 @@ verimaya/
 pnpm install
 docker compose up -d          # Postgres 16 (:5433) + Redis (:6379)
 pnpm --filter @verimaya/api db:migrate
-pnpm dev                      # web http://localhost:5173
+pnpm dev                      # web http://localhost:5173 (MSW demo, PUBLIC_USE_MSW=true)
 pnpm --filter @verimaya/api dev   # api http://localhost:3000
 ```
+
+Gerçek API ile web: `apps/web/.env` içinde `PUBLIC_USE_MSW=false` — ayrıntı [`apps/web/README.md`](./apps/web/README.md).
 
 Diğer komutlar: `pnpm check`, `pnpm build`, `pnpm lint`.

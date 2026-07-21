@@ -1,5 +1,44 @@
 import { z } from 'zod';
 import { cursorPageSchema } from './common.js';
+
+/** REST prefix for all Verimaya API routes. */
+export const API_V1_PREFIX = '/v1';
+
+/** Canonical /v1 path constants — MSW handlers and NestJS should match these. */
+export const apiPaths = {
+	me: `${API_V1_PREFIX}/me`,
+	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
+	patients: `${API_V1_PREFIX}/patients`,
+	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
+	appointments: `${API_V1_PREFIX}/appointments`,
+	contacts: `${API_V1_PREFIX}/contacts`,
+	transactions: `${API_V1_PREFIX}/transactions`
+} as const;
+
+export type ListQueryParams = {
+	cursor?: string | null;
+	limit?: number;
+	q?: string;
+	from?: string;
+	to?: string;
+	patient_id?: string | null;
+	contact_id?: string | null;
+	type_id?: string | null;
+};
+
+/** Build a cursor-paginated list URL (path + query only, no origin). */
+export function listUrl(resource: string, params?: ListQueryParams): string {
+	const url = new URL(`${API_V1_PREFIX}/${resource}`, 'http://local');
+	if (params?.cursor) url.searchParams.set('cursor', params.cursor);
+	if (params?.limit) url.searchParams.set('limit', String(params.limit));
+	if (params?.q) url.searchParams.set('q', params.q);
+	if (params?.from) url.searchParams.set('from', params.from);
+	if (params?.to) url.searchParams.set('to', params.to);
+	if (params?.patient_id) url.searchParams.set('patient_id', params.patient_id);
+	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
+	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
+	return `${url.pathname}${url.search}`;
+}
 import { patientSchema } from './patient.js';
 import { appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';

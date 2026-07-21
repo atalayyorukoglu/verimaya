@@ -1,0 +1,87 @@
+import {
+	Body,
+	Controller,
+	Get,
+	Param,
+	Patch,
+	Post,
+	Query,
+	Req,
+	Res,
+	UseGuards
+} from '@nestjs/common';
+import {
+	appointmentCreateSchema,
+	appointmentUpdateSchema,
+	cursorPageParams
+} from '@verimaya/shared';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { SessionGuard } from '../auth/session.guard';
+import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { IdempotencyService } from '../common/idempotency.service';
+import { parseBody } from '../common/mappers';
+import { AppointmentsService } from './appointments.service';
+
+@Controller('appointments')
+@UseGuards(SessionGuard, ActiveOrgGuard)
+export class AppointmentsController {
+	constructor(
+		private readonly appointmentsService: AppointmentsService,
+		private readonly idempotency: IdempotencyService
+	) {}
+
+	@Get()
+	list(
+		@Req() req: FastifyRequest,
+		@Query('cursor') cursor?: string,
+		@Query('limit') limit?: string
+	) {
+		const params = cursorPageParams.parse({ cursor, limit });
+		return this.appointmentsService.list(getActiveOrgId(req), params);
+	}
+
+	@Post()
+	async create(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(appointmentCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/appointments',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.appointmentsService.createWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Patch(':id')
+	async update(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(appointmentUpdateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'PATCH',
+			`/v1/appointments/${id}`,
+			async (db) => ({
+				statusCode: 200,
+				body: await this.appointmentsService.updateWithDb(db, id, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+}

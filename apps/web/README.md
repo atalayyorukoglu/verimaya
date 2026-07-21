@@ -1,42 +1,45 @@
-# sv
+# Verimaya Web
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit SPA (Svelte 5 runes). Faz 0a'da tüm `/v1/*` istekleri MSW ile mock'lanır; Faz 0b'den itibaren gerçek NestJS API'ye geçilebilir.
 
-## Creating a project
+## Ortam değişkenleri
 
-If you're seeing this, you've probably already done this step. Congrats!
+`apps/web/.env.example` dosyasını `.env` olarak kopyalayın:
 
-```sh
-# create a new project
-npx sv create my-app
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `PUBLIC_API_URL` | `http://localhost:3000` | NestJS API kökeni |
+| `PUBLIC_USE_MSW` | `true` | `true`: dev'de MSW mock; `false`: gerçek API |
+
+### MSW'yi kapatıp gerçek API'ye bağlanmak
+
+1. Postgres + Redis: repo kökünde `docker compose up -d`
+2. API migrasyon: `pnpm --filter @verimaya/api db:migrate`
+3. API sunucusu: `pnpm --filter @verimaya/api dev` → `http://localhost:3000`
+4. Web `.env`:
+
+```bash
+PUBLIC_API_URL=http://localhost:3000
+PUBLIC_USE_MSW=false
 ```
 
-To recreate this project with the same configuration:
+5. Web dev: `pnpm --filter @verimaya/web dev` → `http://localhost:5173`
 
-```sh
-# recreate this project
-npx sv@0.16.3 create --template minimal --types ts --add tailwindcss="plugins:none" sveltekit-adapter="adapter:static" prettier eslint --no-download-check --no-install apps/web
+Giriş: `/giris` (better-auth, `/v1/auth/*`). Oturum çerezi `credentials: include` ile API'ye gider.
+
+Demo modunda (`PUBLIC_USE_MSW=true`) alt çubuktaki MSW senaryosu ve demo rol seçicisi görünür.
+
+## Geliştirme
+
+```bash
+pnpm --filter @verimaya/web dev
+pnpm --filter @verimaya/web check
+pnpm --filter @verimaya/web build
 ```
 
-## Developing
+## Mimari notlar
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- API istemcisi: `src/lib/api.ts` — `resolveApiUrl`, `credentials: 'include'`
+- Auth istemcisi: `src/lib/auth.ts` — better-auth + organization + 2FA
+- Path sabitleri: `packages/shared` (`apiPaths`, `listUrl`)
+- TanStack Query; doğrudan `fetch` bileşenlerde kullanılmaz

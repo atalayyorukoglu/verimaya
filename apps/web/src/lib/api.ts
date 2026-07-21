@@ -1,4 +1,6 @@
 import type { ApiError } from '@verimaya/shared';
+export { apiPaths, listUrl } from '@verimaya/shared';
+import { PUBLIC_API_URL, USE_MSW } from '$lib/env';
 
 export class ApiRequestError extends Error {
 	readonly code: string;
@@ -12,6 +14,15 @@ export class ApiRequestError extends Error {
 		this.code = body?.error.code ?? 'unknown';
 		this.requestId = body?.request_id;
 	}
+}
+
+/** Resolve a contract path to a fetch URL (MSW same-origin in demo, real API otherwise). */
+export function resolveApiUrl(path: string): string {
+	if (path.startsWith('http://') || path.startsWith('https://')) return path;
+	const normalized = path.startsWith('/') ? path : `/${path}`;
+	if (USE_MSW && import.meta.env.DEV) return normalized;
+	const base = PUBLIC_API_URL.replace(/\/$/, '');
+	return `${base}${normalized}`;
 }
 
 function mockHeaders(): HeadersInit {
@@ -30,16 +41,20 @@ async function parseError(res: Response): Promise<never> {
 	throw new ApiRequestError(res.status, body);
 }
 
-export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
-	const res = await fetch(path, {
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+	return fetch(resolveApiUrl(path), {
 		...init,
+		credentials: 'include',
 		headers: {
 			Accept: 'application/json',
 			...mockHeaders(),
 			...init?.headers
 		}
 	});
+}
 
+export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
+	const res = await apiFetch(path, init);
 	if (!res.ok) await parseError(res);
 	return res.json() as Promise<T>;
 }
@@ -50,13 +65,11 @@ export async function apiSend<T>(
 	body?: unknown,
 	init?: RequestInit
 ): Promise<T> {
-	const res = await fetch(path, {
+	const res = await apiFetch(path, {
 		...init,
 		method,
 		headers: {
-			Accept: 'application/json',
 			'Content-Type': 'application/json',
-			...mockHeaders(),
 			...init?.headers
 		},
 		body: body === undefined ? undefined : JSON.stringify(body)
@@ -65,31 +78,6 @@ export async function apiSend<T>(
 	if (!res.ok) await parseError(res);
 	if (res.status === 204) return undefined as T;
 	return res.json() as Promise<T>;
-}
-
-export function listUrl(
-	resource: string,
-	params?: {
-		cursor?: string | null;
-		limit?: number;
-		q?: string;
-		from?: string;
-		to?: string;
-		patient_id?: string | null;
-		contact_id?: string | null;
-		type_id?: string | null;
-	}
-): string {
-	const url = new URL(`/v1/${resource}`, 'http://local');
-	if (params?.cursor) url.searchParams.set('cursor', params.cursor);
-	if (params?.limit) url.searchParams.set('limit', String(params.limit));
-	if (params?.q) url.searchParams.set('q', params.q);
-	if (params?.from) url.searchParams.set('from', params.from);
-	if (params?.to) url.searchParams.set('to', params.to);
-	if (params?.patient_id) url.searchParams.set('patient_id', params.patient_id);
-	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
-	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
-	return `${url.pathname}${url.search}`;
 }
 
 export const fieldClass =

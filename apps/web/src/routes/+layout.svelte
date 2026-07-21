@@ -2,22 +2,25 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { createQueryClient } from '$lib/query-client';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import DevToolbar from '$lib/components/DevToolbar.svelte';
+	import { USE_MSW } from '$lib/env';
 
 	let { children } = $props();
 
 	const queryClient = createQueryClient();
-	let mswReady = $state(false);
+	let appReady = $state(!USE_MSW || !import.meta.env.DEV);
+	const isAuthRoute = $derived(page.url.pathname.startsWith('/giris'));
 
 	onMount(async () => {
-		if (import.meta.env.DEV) {
+		if (USE_MSW && import.meta.env.DEV) {
 			const { startMockWorker } = await import('$lib/mocks/browser');
 			await startMockWorker();
 		}
-		mswReady = true;
+		appReady = true;
 	});
 </script>
 
@@ -26,12 +29,16 @@
 	<title>Verimaya</title>
 </svelte:head>
 
-{#if mswReady || !import.meta.env.DEV}
+{#if appReady}
 	<QueryClientProvider client={queryClient}>
-		<AppShell>
+		{#if isAuthRoute}
 			{@render children()}
-		</AppShell>
-		{#if import.meta.env.DEV}
+		{:else}
+			<AppShell>
+				{@render children()}
+			</AppShell>
+		{/if}
+		{#if import.meta.env.DEV && USE_MSW}
 			<DevToolbar />
 		{/if}
 	</QueryClientProvider>
