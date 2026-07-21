@@ -12,10 +12,10 @@ import {
 	UseGuards
 } from '@nestjs/common';
 import {
-	cursorPageParams,
 	mergeRecordsSchema,
 	patientCreateSchema,
-	patientUpdateSchema
+	patientUpdateSchema,
+	searchableListParams
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
@@ -36,9 +36,10 @@ export class PatientsController {
 	list(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
-		@Query('limit') limit?: string
+		@Query('limit') limit?: string,
+		@Query('q') q?: string
 	) {
-		const params = cursorPageParams.parse({ cursor, limit });
+		const params = searchableListParams.parse({ cursor, limit, q });
 		return this.patientsService.list(getActiveOrgId(req), params);
 	}
 

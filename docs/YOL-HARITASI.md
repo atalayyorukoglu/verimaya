@@ -27,13 +27,13 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 ## Faz 1 — Çekirdek domain (2-3 hafta) 🚧
 
 - [x] Patients, appointments, transactions CRUD (NestJS + Drizzle + RLS); contacts + contact_types
-- [x] `audit_logs` tablosu (migration); henüz listeleme API'si yok
+- [x] `audit_logs` tablosu + `GET /v1/audit-logs` (cursor sayfalama; yazma şimdilik merge'de)
 - [x] Cursor sayfalama + tenant indeksleri; `pg_trgm` GIN indeksleri (patients, contacts)
-- [ ] `?q=` arama API'si (`pg_trgm` sorguları henüz bağlanmadı)
+- [x] `?q=` arama API'si (patients + contacts list; `ILIKE` + trgm indeksleri)
 - [ ] Hasta detayı: finans aggregate sunucu tarafı; dosya yükleme (`files` tablosu var, object storage + upload API yok)
-- [ ] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit) — yalnız MSW demo
+- [x] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit) — NestJS API + izolasyon testi
 - [x] Soft-delete (patients `deleted_at`) + `Idempotency-Key` (mutasyon endpoint'leri)
-- [ ] Finans kategori sözlüğü + randevu tip/durum ayarları (tablolar var, `/v1/settings/*` API yok)
+- [x] Finans kategori + contact type + randevu tip ayarları (`GET /v1/settings/*`; boş tenant'ta seed, randevu tipleri statik)
 - [ ] MSW tam kapatma: `PUBLIC_USE_MSW=false` + `resolveApiUrl` altyapısı hazır; çoğu ekran hâlâ MSW'ye bağlı (tenants, settings, merge, inbox, dosyalar…)
 - [ ] Legacy notlar: `docs/legacy-reference/case-expenses.md`, `dosyalar.md`, `ayarlar.md`
 

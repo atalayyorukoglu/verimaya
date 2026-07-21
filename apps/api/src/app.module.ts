@@ -11,6 +11,8 @@ import { PatientsModule } from './patients/patients.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { SettingsModule } from './settings/settings.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
 
 @Module({
 	imports: [
@@ -28,7 +30,9 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 		AppointmentsModule,
 		TransactionsModule,
 		WebhooksModule,
-		WhatsappModule
+		WhatsappModule,
+		SettingsModule,
+		AuditLogsModule
 	]
 })
 export class AppModule {}

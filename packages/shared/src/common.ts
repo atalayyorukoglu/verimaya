@@ -26,6 +26,10 @@ export const cursorPageParams = z.object({
 	limit: z.coerce.number().int().min(1).max(100).default(25)
 });
 
+export const searchableListParams = cursorPageParams.extend({
+	q: z.string().trim().min(1).max(255).optional()
+});
+
 export function cursorPageSchema<T extends z.ZodTypeAny>(item: T) {
 	return z.object({
 		items: z.array(item),

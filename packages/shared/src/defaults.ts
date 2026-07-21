@@ -1,0 +1,52 @@
+/** Default contact type names seeded for new tenants. */
+export const DEFAULT_CONTACT_TYPE_NAMES = [
+	'Hasta',
+	'Klinik',
+	'Otel',
+	'Transfer',
+	'Diğer'
+] as const;
+
+/** Default appointment type names (no DB table — returned statically per tenant). */
+export const DEFAULT_APPOINTMENT_TYPE_NAMES = [
+	'Konsültasyon',
+	'Tedavi',
+	'Kontrol',
+	'Transfer'
+] as const;
+
+export type DefaultFinanceCategorySeed = {
+	kind: 'income' | 'expense';
+	name: string;
+	subcategories: string[];
+};
+
+/** Default finance category seeds for new tenants. */
+export const DEFAULT_FINANCE_CATEGORY_SEEDS: DefaultFinanceCategorySeed[] = [
+	{
+		kind: 'income',
+		name: 'Operasyon',
+		subcategories: ['Saç ekimi', 'İmplant', 'Konsültasyon', 'Genel']
+	},
+	{
+		kind: 'expense',
+		name: 'Operasyon',
+		subcategories: ['Saç ekimi', 'İmplant', 'Konsültasyon', 'Genel']
+	},
+	{
+		kind: 'expense',
+		name: 'Konaklama',
+		subcategories: ['Otel', 'Extra gece', 'Erken check-in']
+	},
+	{
+		kind: 'expense',
+		name: 'Transfer',
+		subcategories: ['Havalimanı', 'Şehir içi', 'Şehirler arası']
+	},
+	{
+		kind: 'expense',
+		name: 'Pazarlama',
+		subcategories: ['Meta Ads', 'Google Ads', 'Ajans']
+	},
+	{ kind: 'income', name: 'Diğer', subcategories: ['Genel'] }
+];

@@ -2,12 +2,18 @@ import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import type {
 	Appointment,
+	AuditLog,
 	Contact,
+	ContactType,
+	FinanceCategory,
 	Patient,
 	Transaction
 } from '@verimaya/shared';
 import type { AppointmentRow } from '../db/schema/appointments';
+import type { AuditLogRow } from '../db/schema/audit';
+import type { ContactTypeRow } from '../db/schema/contact-types';
 import type { ContactRow } from '../db/schema/contacts';
+import type { FinanceCategoryRow } from '../db/schema/finance-categories';
 import type { PatientRow } from '../db/schema/patients';
 import type { TransactionRow } from '../db/schema/transactions';
 import { toIsoDateTime } from './pagination';
@@ -117,5 +123,41 @@ export function toTransaction(row: TransactionRow): Transaction {
 		description: row.description,
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)
+	};
+}
+
+export function toFinanceCategory(row: FinanceCategoryRow): FinanceCategory {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		kind: row.kind as FinanceCategory['kind'],
+		name: row.name,
+		sort_order: row.sortOrder,
+		subcategories: row.subcategories,
+		created_at: toIsoDateTime(row.createdAt),
+		updated_at: toIsoDateTime(row.updatedAt)
+	};
+}
+
+export function toContactType(row: ContactTypeRow): ContactType {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		name: row.name,
+		sort_order: row.sortOrder,
+		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toAuditLog(row: AuditLogRow): AuditLog {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		actor_id: row.actorId,
+		actor_display_name: row.actorDisplayName,
+		action: row.action as AuditLog['action'],
+		entity_type: row.entityType as AuditLog['entity_type'],
+		entity_label: row.entityLabel,
+		created_at: toIsoDateTime(row.createdAt)
 	};
 }

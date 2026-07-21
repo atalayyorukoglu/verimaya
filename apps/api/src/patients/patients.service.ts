@@ -12,23 +12,33 @@ import {
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toPatient } from '../common/mappers';
+import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
 export class PatientsService {
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	async list(tenantId: string, params: { cursor?: string; limit: number }) {
+	async list(tenantId: string, params: { cursor?: string; limit: number; q?: string }) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const cursorCond = createdAtCursorCondition(
 				patients.createdAt,
 				patients.id,
 				params.cursor
 			);
+			const searchCond = textSearchCondition(params.q, [
+				patients.fullName,
+				patients.email,
+				patients.phone
+			]);
+			const filters = [isNull(patients.deletedAt)];
+			if (cursorCond) filters.push(cursorCond);
+			if (searchCond) filters.push(searchCond);
+
 			const rows = await db
 				.select()
 				.from(patients)
-				.where(and(isNull(patients.deletedAt), cursorCond))
+				.where(and(...filters))
 				.orderBy(desc(patients.createdAt), desc(patients.id))
 				.limit(params.limit + 1);
 

@@ -12,7 +12,11 @@ export const apiPaths = {
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
 	appointments: `${API_V1_PREFIX}/appointments`,
 	contacts: `${API_V1_PREFIX}/contacts`,
-	transactions: `${API_V1_PREFIX}/transactions`
+	transactions: `${API_V1_PREFIX}/transactions`,
+	auditLogs: `${API_V1_PREFIX}/audit-logs`,
+	settingsFinanceCategories: `${API_V1_PREFIX}/settings/finance-categories`,
+	settingsContactTypes: `${API_V1_PREFIX}/settings/contact-types`,
+	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`
 } as const;
 
 export type ListQueryParams = {

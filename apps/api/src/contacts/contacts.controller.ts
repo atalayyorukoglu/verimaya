@@ -13,8 +13,8 @@ import {
 import {
 	contactCreateSchema,
 	contactUpdateSchema,
-	cursorPageParams,
-	mergeRecordsSchema
+	mergeRecordsSchema,
+	searchableListParams
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
@@ -35,9 +35,10 @@ export class ContactsController {
 	list(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
-		@Query('limit') limit?: string
+		@Query('limit') limit?: string,
+		@Query('q') q?: string
 	) {
-		const params = cursorPageParams.parse({ cursor, limit });
+		const params = searchableListParams.parse({ cursor, limit, q });
 		return this.contactsService.list(getActiveOrgId(req), params);
 	}
 

@@ -1,28 +1,38 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { ContactCreate, ContactUpdate, MergeRecords } from '@verimaya/shared';
 import { findContactDuplicateGroups } from '@verimaya/shared';
 import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toContact } from '../common/mappers';
+import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
 export class ContactsService {
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	async list(tenantId: string, params: { cursor?: string; limit: number }) {
+	async list(tenantId: string, params: { cursor?: string; limit: number; q?: string }) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const cursorCond = createdAtCursorCondition(
 				contacts.createdAt,
 				contacts.id,
 				params.cursor
 			);
+			const searchCond = textSearchCondition(params.q, [
+				contacts.displayName,
+				contacts.email,
+				contacts.phone
+			]);
+			const filters = [];
+			if (cursorCond) filters.push(cursorCond);
+			if (searchCond) filters.push(searchCond);
+
 			const rows = await db
 				.select()
 				.from(contacts)
-				.where(cursorCond)
+				.where(filters.length > 0 ? and(...filters) : undefined)
 				.orderBy(desc(contacts.createdAt), desc(contacts.id))
 				.limit(params.limit + 1);
 
