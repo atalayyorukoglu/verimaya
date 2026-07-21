@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
-import type { MergeRecords, PatientCreate, PatientUpdate } from '@verimaya/shared';
+import type { MergeRecords, PatientCreate, PatientFileCreate, PatientUpdate } from '@verimaya/shared';
 import { findPatientDuplicateGroups } from '@verimaya/shared';
 import {
 	appointments,
@@ -11,7 +11,7 @@ import {
 } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
-import { toPatient } from '../common/mappers';
+import { toPatient, toPatientFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
@@ -60,6 +60,79 @@ export class PatientsService {
 			}
 			return toPatient(row);
 		});
+	}
+
+	async listFiles(tenantId: string, patientId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const patient = await this.findActiveRow(db, patientId);
+			if (!patient) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Patient not found' }
+				});
+			}
+
+			const rows = await db
+				.select()
+				.from(files)
+				.where(eq(files.patientId, patientId))
+				.orderBy(desc(files.createdAt), desc(files.id));
+
+			return { items: rows.map(toPatientFile) };
+		});
+	}
+
+	async createFileWithDb(
+		db: TenantDb,
+		tenantId: string,
+		patientId: string,
+		input: PatientFileCreate,
+		uploader: { userId: string; displayName: string }
+	) {
+		const patient = await this.findActiveRow(db, patientId);
+		if (!patient) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Patient not found' }
+			});
+		}
+
+		let appointmentId: string | null = input.appointment_id ?? null;
+		let appointmentLabel: string | null = null;
+
+		if (appointmentId) {
+			const [appt] = await db
+				.select()
+				.from(appointments)
+				.where(and(eq(appointments.id, appointmentId), eq(appointments.patientId, patientId)))
+				.limit(1);
+			if (!appt) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: 'Appointment does not belong to this patient'
+					}
+				});
+			}
+			const datePart = appt.startsAt.toISOString().slice(0, 10);
+			appointmentLabel = `${datePart} · ${appt.title ?? 'Randevu'}`;
+		}
+
+		const [row] = await db
+			.insert(files)
+			.values({
+				tenantId,
+				patientId,
+				appointmentId,
+				appointmentLabel,
+				filename: input.filename,
+				mimeType: input.mime_type ?? 'application/octet-stream',
+				sizeBytes: input.size_bytes ?? 0,
+				storageKey: 'local://pending',
+				uploadedByUserId: uploader.userId,
+				uploadedByDisplayName: uploader.displayName
+			})
+			.returning();
+
+		return toPatientFile(row!);
 	}
 
 	async createWithDb(db: TenantDb, tenantId: string, input: PatientCreate) {

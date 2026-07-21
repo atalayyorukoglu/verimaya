@@ -57,7 +57,7 @@ import { patientSchema } from './patient.js';
 import { appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
 import { inboundMessageSchema, transactionDraftSchema } from './inbound-message.js';
-import { patientFileSchema } from './file.js';
+import { patientFileCreateSchema, patientFileSchema } from './file.js';
 import { patientCaseNoteSchema } from './case-note.js';
 import { contactSchema, contactTypeSchema } from './contact.js';
 import {
@@ -98,6 +98,10 @@ export const apiContract = {
 	},
 	'GET /v1/patients/:id/files': {
 		response: z.object({ items: z.array(patientFileSchema) })
+	},
+	'POST /v1/patients/:id/files': {
+		body: patientFileCreateSchema,
+		response: patientFileSchema
 	},
 	'GET /v1/patients/:id/case-notes': {
 		response: z.object({ items: z.array(patientCaseNoteSchema) })

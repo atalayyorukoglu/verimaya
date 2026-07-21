@@ -13,7 +13,9 @@
 
 	const queryClient = createQueryClient();
 	let appReady = $state(!USE_MSW || !import.meta.env.DEV);
-	const isAuthRoute = $derived(page.url.pathname.startsWith('/giris'));
+	const isBareRoute = $derived(
+		page.url.pathname.startsWith('/giris') || page.url.pathname.startsWith('/vitrin')
+	);
 
 	onMount(async () => {
 		if (USE_MSW && import.meta.env.DEV) {
@@ -31,7 +33,7 @@
 
 {#if appReady}
 	<QueryClientProvider client={queryClient}>
-		{#if isAuthRoute}
+		{#if isBareRoute}
 			{@render children()}
 		{:else}
 			<AppShell>

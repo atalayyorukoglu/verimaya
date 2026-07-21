@@ -290,5 +290,14 @@
 				</form>
 			{/if}
 		</div>
+
+		<p class="mt-6 text-center text-sm text-text-muted">
+			<a
+				href="/vitrin"
+				class="text-text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
+			>
+				Verimaya nedir?
+			</a>
+		</p>
 	</div>
 </div>

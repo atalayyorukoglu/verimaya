@@ -14,6 +14,7 @@ import {
 import {
 	mergeRecordsSchema,
 	patientCreateSchema,
+	patientFileCreateSchema,
 	patientUpdateSchema,
 	searchableListParams
 } from '@verimaya/shared';
@@ -65,6 +66,38 @@ export class PatientsController {
 			async (db) => ({
 				statusCode: 200,
 				body: await this.patientsService.mergeWithDb(db, tenantId, input, actor)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Get(':id/files')
+	listFiles(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.patientsService.listFiles(getActiveOrgId(req), id);
+	}
+
+	@Post(':id/files')
+	async createFile(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(patientFileCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			`/v1/patients/${id}/files`,
+			async (db) => ({
+				statusCode: 201,
+				body: await this.patientsService.createFileWithDb(db, tenantId, id, input, {
+					userId: actor.actorId,
+					displayName: actor.actorDisplayName
+				})
 			})
 		);
 		reply.status(result.statusCode);

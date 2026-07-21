@@ -9,6 +9,7 @@ import type {
 	ContactType,
 	FinanceCategory,
 	Patient,
+	PatientFile,
 	Transaction
 } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
@@ -17,6 +18,7 @@ import type { AppointmentRow } from '../db/schema/appointments';
 import type { AuditLogRow } from '../db/schema/audit';
 import type { ContactTypeRow } from '../db/schema/contact-types';
 import type { ContactRow } from '../db/schema/contacts';
+import type { FileRow } from '../db/schema/files';
 import type { FinanceCategoryRow } from '../db/schema/finance-categories';
 import type { PatientRow } from '../db/schema/patients';
 import type { TransactionRow } from '../db/schema/transactions';
@@ -188,5 +190,20 @@ export function toApiKey(row: ApiKeyRow): ApiKey {
 		scopes: row.scopes as ApiKey['scopes'],
 		created_at: toIsoDateTime(row.createdAt),
 		revoked_at: row.revokedAt ? toIsoDateTime(row.revokedAt) : null
+	};
+}
+
+export function toPatientFile(row: FileRow): PatientFile {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		patient_id: row.patientId,
+		appointment_id: row.appointmentId,
+		appointment_label: row.appointmentLabel,
+		filename: row.filename,
+		mime_type: row.mimeType,
+		size_bytes: row.sizeBytes,
+		uploaded_by_display_name: row.uploadedByDisplayName,
+		created_at: toIsoDateTime(row.createdAt)
 	};
 }

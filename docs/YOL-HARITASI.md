@@ -31,6 +31,7 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] Cursor sayfalama + tenant indeksleri; `pg_trgm` GIN indeksleri (patients, contacts)
 - [x] `?q=` arama API'si (patients + contacts list; `ILIKE` + trgm indeksleri)
 - [ ] Hasta detayı: finans aggregate sunucu tarafı; dosya yükleme (`files` tablosu var, object storage + upload API yok)
+- [~] **Hasta dosyaları (metadata stub):** `GET/POST /v1/patients/:id/files` — `storage_key='local://pending'`, SessionGuard + ActiveOrgGuard + RLS; binary/S3 sonra
 - [x] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit) — NestJS API + izolasyon testi
 - [x] Soft-delete (patients `deleted_at`) + `Idempotency-Key` (mutasyon endpoint'leri)
 - [x] Finans kategori + contact type + randevu tip ayarları (`GET /v1/settings/*`; boş tenant'ta seed, randevu tipleri statik)
@@ -80,7 +81,7 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [ ] Grafikler (aylık bar), kategori alt-kırılım drill-down sunucuda; dashboard cache
 - [x] PWA manifest (`apps/web/static/manifest.webmanifest`); service worker sonra
 - [ ] Legacy notlar: `docs/legacy-reference/raporlar.md` (referans; güncelleme gerekmez)
-- [ ] Vitrin sayfası (CF-marketing tarzı: gradient hero, özellik blokları, entegrasyon logoları, demo CTA)
+- [~] Vitrin sayfası (`/vitrin`): minimal hero + tek CTA → `/giris` (AppShell dışı); tam CF-marketing vitrin sonra
 
 ## Faz 8 — Veri göçü ve geçiş (1 hafta)
 
