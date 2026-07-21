@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { ContactType } from '@verimaya/shared';
+	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -12,7 +13,7 @@
 
 	const typesQuery = createQuery(() => ({
 		queryKey: ['settings', 'contact-types'],
-		queryFn: () => apiGet<{ items: ContactType[] }>('/v1/settings/contact-types')
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes)
 	}));
 
 	let newName = $state('');
@@ -30,7 +31,7 @@
 		busy = true;
 		error = null;
 		try {
-			await apiSend('/v1/settings/contact-types', 'POST', { name });
+			await apiSend(apiPaths.settingsContactTypes, 'POST', { name });
 			newName = '';
 			await queryClient.invalidateQueries({ queryKey: ['settings', 'contact-types'] });
 		} catch (err) {
@@ -44,7 +45,7 @@
 		busy = true;
 		error = null;
 		try {
-			await apiSend(`/v1/settings/contact-types/${id}`, 'DELETE');
+			await apiSend(apiPaths.settingsContactType(id), 'DELETE');
 			await queryClient.invalidateQueries({ queryKey: ['settings', 'contact-types'] });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Silinemedi';

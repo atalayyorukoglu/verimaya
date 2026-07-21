@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createInfiniteQuery } from '@tanstack/svelte-query';
-	import type { AuditLog } from '@verimaya/shared';
+	import type { AuditLog, ContractResponse } from '@verimaya/shared';
 	import { auditActionLabels, auditEntityLabels } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { formatDateTime } from '$lib/format';
@@ -9,14 +9,14 @@
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 
-	type Page = { items: AuditLog[]; next_cursor: string | null };
+	type AuditLogsPage = ContractResponse<'GET /v1/audit-logs'>;
 
 	const logsQuery = createInfiniteQuery(() => ({
 		queryKey: ['audit-logs'],
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
-			apiGet<Page>(listUrl('audit-logs', { limit: 25, cursor: pageParam })),
+			apiGet<AuditLogsPage>(listUrl('audit-logs', { limit: 25, cursor: pageParam })),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: Page) => last.next_cursor
+		getNextPageParam: (last: AuditLogsPage) => last.next_cursor
 	}));
 
 	const items = $derived(logsQuery.data?.pages.flatMap((p) => p.items) ?? []);

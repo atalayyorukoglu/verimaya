@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { FinanceCategory, FinanceCategoryCreate } from '@verimaya/shared';
-	import { transactionKindLabels } from '@verimaya/shared';
+	import { apiPaths, transactionKindLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -15,7 +15,7 @@
 
 	const catsQuery = createQuery(() => ({
 		queryKey: ['settings', 'finance-categories'],
-		queryFn: () => apiGet<{ items: FinanceCategory[] }>('/v1/settings/finance-categories')
+		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories)
 	}));
 
 	const items = $derived(
@@ -64,14 +64,14 @@
 		const subcategories = parseSubs(formSubs);
 		try {
 			if (editing) {
-				await apiSend(`/v1/settings/finance-categories/${editing.id}`, 'PATCH', {
+				await apiSend(apiPaths.settingsFinanceCategory(editing.id), 'PATCH', {
 					kind: formKind,
 					name,
 					subcategories
 				});
 			} else {
 				const payload: FinanceCategoryCreate = { kind: formKind, name, subcategories };
-				await apiSend('/v1/settings/finance-categories', 'POST', payload);
+				await apiSend(apiPaths.settingsFinanceCategories, 'POST', payload);
 			}
 			await queryClient.invalidateQueries({ queryKey: ['settings', 'finance-categories'] });
 			dialogOpen = false;
@@ -84,7 +84,7 @@
 
 	async function remove(cat: FinanceCategory) {
 		if (!confirm(`“${cat.name}” silinsin mi?`)) return;
-		await apiSend(`/v1/settings/finance-categories/${cat.id}`, 'DELETE');
+		await apiSend(apiPaths.settingsFinanceCategory(cat.id), 'DELETE');
 		await queryClient.invalidateQueries({ queryKey: ['settings', 'finance-categories'] });
 	}
 </script>

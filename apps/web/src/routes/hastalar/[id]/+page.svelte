@@ -6,7 +6,10 @@
 		AppointmentCreate,
 		AppointmentUpdate,
 		Patient,
+		PatientFinanceSummary,
 		PatientUpdate,
+		SupportedCurrency,
+		Tenant,
 		Transaction,
 		TransactionCreate,
 		TransactionUpdate
@@ -19,6 +22,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
 	import {
 		appointmentStatusTone,
@@ -70,8 +74,23 @@
 			apiGet<PageOf<Appointment>>(listUrl('appointments', { limit: 20, patient_id: id }))
 	}));
 
+	const tenantQuery = createQuery(() => ({
+		queryKey: ['tenants', 'current'],
+		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
+		enabled: !USE_MSW
+	}));
+
+	const financeSummaryQuery = createQuery(() => ({
+		queryKey: ['patients', id, 'finance-summary'],
+		queryFn: () => apiGet<PatientFinanceSummary>(apiPaths.patientFinanceSummary(id)),
+		enabled: !USE_MSW
+	}));
+
 	const transactions = $derived(txQuery.data?.items ?? []);
 	const appointments = $derived(apptQuery.data?.items ?? []);
+	const baseCurrency = $derived(
+		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
+	);
 
 	const finance = $derived.by(() => {
 		const byCurrency = new Map<string, { income: number; expense: number }>();
@@ -214,7 +233,41 @@
 				</a>
 			</div>
 
-			{#if txQuery.isPending}
+			{#if !USE_MSW && financeSummaryQuery.isPending}
+				<p class="text-sm text-text-muted">Yükleniyor…</p>
+			{:else if !USE_MSW && financeSummaryQuery.data}
+				{@const summary = financeSummaryQuery.data}
+				{#if summary.transaction_count === 0}
+					<p class="text-sm text-text-muted">Bu hastaya bağlı işlem yok.</p>
+				{:else}
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+						<div>
+							<p class="text-xs text-text-muted">Gelir ({baseCurrency})</p>
+							<p class="mt-1 text-base font-semibold text-success tabular-nums">
+								+{formatMoney(summary.income_base, baseCurrency)}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs text-text-muted">Gider ({baseCurrency})</p>
+							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+								−{formatMoney(summary.expense_base, baseCurrency)}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs text-text-muted">Tahsil ({baseCurrency})</p>
+							<p class="mt-1 text-base font-semibold text-text tabular-nums">
+								{formatMoney(summary.paid_base, baseCurrency)}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs text-text-muted">Bekleyen ({baseCurrency})</p>
+							<p class="mt-1 text-base font-semibold text-warning tabular-nums">
+								{formatMoney(summary.outstanding_base, baseCurrency)}
+							</p>
+						</div>
+					</div>
+				{/if}
+			{:else if txQuery.isPending}
 				<p class="text-sm text-text-muted">Yükleniyor…</p>
 			{:else if finance.currencies.length === 0}
 				<p class="text-sm text-text-muted">Bu hastaya bağlı işlem yok.</p>
@@ -247,7 +300,7 @@
 					</div>
 				{/each}
 
-				{#if finance.categories.length > 0}
+				{#if USE_MSW && finance.categories.length > 0}
 					<div class="mt-4 border-t border-border pt-4">
 						<h3 class="mb-3 text-xs font-semibold tracking-wide text-text-muted uppercase">
 							Kategori dağılımı

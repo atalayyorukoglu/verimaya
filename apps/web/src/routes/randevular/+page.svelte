@@ -6,10 +6,11 @@
 		Appointment,
 		AppointmentCreate,
 		AppointmentUpdate,
+		ContractResponse,
 		Patient
 	} from '@verimaya/shared';
-	import { appointmentStatusLabels } from '@verimaya/shared';
-	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { apiPaths, appointmentStatusLabels, listUrl } from '@verimaya/shared';
+	import { apiGet, apiSend } from '$lib/api';
 	import { formatDate, formatTime } from '$lib/format';
 	import { appointmentStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -21,8 +22,8 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import X from '@lucide/svelte/icons/x';
 
-	type Page = { items: Appointment[]; next_cursor: string | null };
-	type PatientsPage = { items: Patient[]; next_cursor: string | null };
+	type AppointmentsPage = ContractResponse<'GET /v1/appointments'>;
+	type PatientsPage = ContractResponse<'GET /v1/patients'>;
 	type ViewMode = 'day' | 'week';
 
 	const queryClient = useQueryClient();
@@ -72,7 +73,7 @@
 			}
 		],
 		queryFn: () =>
-			apiGet<Page>(
+			apiGet<AppointmentsPage>(
 				listUrl('appointments', {
 					limit: 100,
 					from: rangeStart.toISOString(),
@@ -134,9 +135,9 @@
 		formError = null;
 		try {
 			if (editing) {
-				await apiSend(`/v1/appointments/${editing.id}`, 'PATCH', data);
+				await apiSend(apiPaths.appointment(editing.id), 'PATCH', data);
 			} else {
-				await apiSend('/v1/appointments', 'POST', data);
+				await apiSend(apiPaths.appointments, 'POST', data);
 			}
 			await queryClient.invalidateQueries({ queryKey: ['appointments'] });
 			formOpen = false;

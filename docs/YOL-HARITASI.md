@@ -22,7 +22,7 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] `apps/api`: NestJS (Fastify) + Drizzle + ilk migrasyonlar
 - [x] better-auth: e-posta/şifre + organization + üyelik + roller; admin TOTP 2FA
 - [x] RLS + `SET LOCAL app.current_tenant_id` + CI negatif tenant testleri
-- [x] CI (lint/typecheck/test) + Coolify ilk deploy
+- [x] CI (lint/typecheck/test) + Coolify hazırlığı (Dockerfile, `docs/DEPLOY-COOLIFY.md`; canlı Coolify deploy henüz yok)
 
 ## Faz 1 — Çekirdek domain (2-3 hafta) 🚧
 
@@ -30,8 +30,8 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] `audit_logs` tablosu + `GET /v1/audit-logs` (cursor sayfalama; yazma şimdilik merge'de)
 - [x] Cursor sayfalama + tenant indeksleri; `pg_trgm` GIN indeksleri (patients, contacts)
 - [x] `?q=` arama API'si (patients + contacts list; `ILIKE` + trgm indeksleri)
-- [ ] Hasta detayı: finans aggregate sunucu tarafı; dosya yükleme (`files` tablosu var, object storage + upload API yok)
-- [~] **Hasta dosyaları (metadata stub):** `GET/POST /v1/patients/:id/files` — `storage_key='local://pending'`, SessionGuard + ActiveOrgGuard + RLS; binary/S3 sonra
+- [~] Hasta detayı: finans aggregate sunucu tarafı (sonra); dosya metadata stub var, object storage/S3 yok
+- [~] **Hasta dosyaları (metadata stub):** `GET/POST /v1/patients/:id/files` — `storage_key='local://pending'`; binary/S3 sonra
 - [x] **Çift kayıt (gerçek):** `find_duplicate_*` + merge transaction (FK taşıma, audit) — NestJS API + izolasyon testi
 - [x] Soft-delete (patients `deleted_at`) + `Idempotency-Key` (mutasyon endpoint'leri)
 - [x] Finans kategori + contact type + randevu tip ayarları (`GET /v1/settings/*`; boş tenant'ta seed, randevu tipleri statik)
@@ -43,21 +43,22 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] BullMQ `default` kuyruk + noop worker
 - [x] `integration_events`, `outbox_events`, `jobs` tabloları (RLS + grant)
 - [x] Queue-first webhook stub (`POST /v1/webhooks/:provider` → 202, idempotency)
-- [ ] Bull Board
-- [ ] Şifreli tenant credential tablosu
-- [ ] Backoff + dead-letter (tam iş akışı)
+- [x] Bull Board (`/v1/admin/queues`; dev veya `ADMIN_QUEUE_TOKEN`)
+- [x] Tenant credential tablosu (`tenant_credentials`, ciphertext); AES-GCM sarma (`CryptoService`, `CREDENTIALS_ENCRYPTION_KEY`)
+- [x] Backoff + dead-letter (5 deneme, exponential backoff; tükenince `jobs` + `integration_events` → `failed`)
 - [~] Sentry + pino + request_id (kısmen: Fastify/pino + `request_id` yanıt gövdesi ✓; Sentry sonra)
 
 ## Faz 3 — WhatsApp finans aktarımı (2 hafta) 🚧
 
-- [ ] WAHA webhook → `inbound_messages` kuyruğu (`inbound_messages` tablosu henüz yok)
+- [x] WAHA webhook → `inbound_messages` kuyruğu (`POST /v1/webhooks/waha`; `inbound_messages` tablosu + RLS; BullMQ `inbound_message.process` noop stub)
 - [x] `POST /v1/whatsapp/parse` — sezgisel stub (SessionGuard + ActiveOrgGuard); **gerçek LLM henüz yok**
-- [ ] Inbox API (`GET /v1/whatsapp/inbox`, process/approve/ignore) — MSW demo
+- [~] Inbox API: `GET /v1/whatsapp/inbox` (cursor) + `GET /v1/whatsapp/inbox/:id` gerçek API; process/approve/ignore/parse henüz yok (MSW demo)
 - [ ] Manuel yapıştır + kuyruk tek ekranda (`/finans/aktar` — yapıştır gerçek API'ye bağlı; kuyruk MSW'de)
 - [ ] AI correction kaydı (öğrenme için)
 
-## Faz 4 — GHL senkronu (1-2 hafta)
+## Faz 4 — GHL senkronu (1-2 hafta) 🚧
 
+- [~] Adaptör stub + `tenant_credentials` + worker branch (`provider=ghl` noop/process)
 - [ ] Webhook-first + periyodik reconciliation; alan bazlı sahiplik; backfill import
 
 ## Faz 5 — Reklam API'leri (1 hafta) 🚧
@@ -72,7 +73,7 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] `api_keys` tablosu + CRUD (create/list/revoke; hash listede yok)
 - [x] `ApiKeyGuard` stub (`Bearer vk_...`; global'e bağlı değil)
 - [x] `Idempotency-Key` (mutasyon endpoint'lerinde; Faz 1'den)
-- [ ] OpenAPI spec
+- [~] OpenAPI spec — statik [`apps/api/openapi.yaml`](./apps/api/openapi.yaml) (auth, patients, contacts, webhooks, WhatsApp inbox, reports, api-keys); runtime Swagger UI yok
 - [ ] `webhook_subscriptions` + HMAC imzalı giden event'ler
 
 ## Faz 7 — Rapor, dashboard, PWA, vitrin (1-2 hafta)

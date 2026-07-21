@@ -77,6 +77,11 @@ export class PatientsController {
 		return this.patientsService.listFiles(getActiveOrgId(req), id);
 	}
 
+	@Get(':id/finance-summary')
+	financeSummary(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.patientsService.financeSummary(getActiveOrgId(req), id);
+	}
+
 	@Post(':id/files')
 	async createFile(
 		@Req() req: FastifyRequest,

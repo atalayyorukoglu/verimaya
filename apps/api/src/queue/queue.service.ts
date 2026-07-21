@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Job, Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { IntegrationEventProcessor } from './integration-event.processor';
+import { DEFAULT_QUEUE_JOB_OPTIONS } from './queue.constants';
 
 export const DEFAULT_QUEUE_NAME = 'default';
 
@@ -30,7 +31,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
 		const queueConnection = this.redis.duplicate();
 		this.defaultQueue = new Queue<DefaultQueueJobData>(DEFAULT_QUEUE_NAME, {
-			connection: queueConnection
+			connection: queueConnection,
+			defaultJobOptions: DEFAULT_QUEUE_JOB_OPTIONS
 		});
 
 		const workerConnection = this.redis.duplicate();
@@ -55,8 +57,29 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		);
 
 		this.defaultWorker.on('failed', (job, err) => {
-			this.logger.error(`Job ${job?.id ?? 'unknown'} failed: ${err.message}`);
+			if (!job) {
+				this.logger.error(`Unknown job failed: ${err.message}`);
+				return;
+			}
+
+			const maxAttempts = job.opts.attempts ?? DEFAULT_QUEUE_JOB_OPTIONS.attempts ?? 1;
+			this.logger.error(
+				`Job ${job.id} failed (attempt ${job.attemptsMade}/${maxAttempts}): ${err.message}`
+			);
+
+			if (job.attemptsMade < maxAttempts) {
+				return;
+			}
+
+			void this.handleExhaustedJob(job, err).catch((handleErr: unknown) => {
+				const message = handleErr instanceof Error ? handleErr.message : String(handleErr);
+				this.logger.error(`Failed to mark dead job ${job.id}: ${message}`);
+			});
 		});
+	}
+
+	getDefaultQueue(): Queue<DefaultQueueJobData> | null {
+		return this.defaultQueue;
 	}
 
 	async pingRedis(): Promise<boolean> {
@@ -77,6 +100,15 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		return this.defaultQueue.add(jobType, data, {
 			jobId: data.jobId
 		});
+	}
+
+	private async handleExhaustedJob(job: Job<DefaultQueueJobData>, err: Error): Promise<void> {
+		await this.integrationEventProcessor.markFailed(
+			job.data.jobId,
+			job.data.tenantId,
+			err.message,
+			job.attemptsMade
+		);
 	}
 
 	async onModuleDestroy() {

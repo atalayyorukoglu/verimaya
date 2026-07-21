@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDateTime, uuid } from './common.js';
+import { isoDateTime, moneyMinor, uuid } from './common.js';
 
 /**
  * Patient (legacy: Case). Lead/hasta kaydı — sağlık turizmi operasyonunun çekirdeği.
@@ -49,3 +49,13 @@ export type PatientCreate = z.infer<typeof patientCreateSchema>;
 export const patientUpdateSchema = patientCreateSchema.partial();
 
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
+
+export const patientFinanceSummarySchema = z.object({
+	income_base: moneyMinor,
+	expense_base: moneyMinor,
+	paid_base: moneyMinor,
+	outstanding_base: moneyMinor,
+	transaction_count: z.number().int().nonnegative()
+});
+
+export type PatientFinanceSummary = z.infer<typeof patientFinanceSummarySchema>;

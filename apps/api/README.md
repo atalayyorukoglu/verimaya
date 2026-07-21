@@ -19,12 +19,20 @@ pnpm --filter @verimaya/api dev
 - Domain CRUD: `GET|POST|PATCH|DELETE /v1/patients`, `/v1/contacts`, `/v1/appointments`, `/v1/transactions` (SessionGuard + ActiveOrgGuard; mutasyonlarda opsiyonel `Idempotency-Key`)
 - WhatsApp parse stub: `POST http://localhost:3000/v1/whatsapp/parse` — body `{ "message": "..." }` → `{ "records": [...] }` (heuristic; LLM Faz 3)
 - Webhook stub: `POST http://localhost:3000/v1/webhooks/:provider` → `202` (queue-first)
+- WAHA webhook: `POST http://localhost:3000/v1/webhooks/waha` → `202` (`inbound_messages` + kuyruk)
+- WhatsApp inbox: `GET /v1/whatsapp/inbox?cursor=&limit=`, `GET /v1/whatsapp/inbox/:id` (SessionGuard + ActiveOrgGuard)
+
+OpenAPI (statik, ana `/v1` rotalar): [`openapi.yaml`](./openapi.yaml)
 
 Yerel Postgres host portu **5433**, Redis **6379**. Runtime kullanıcı: `verimaya_app` (RLS). Migrasyon: `verimaya` (owner). Organization oluşturulunca aynı id ile `tenants` satırı yazılır. Admin TOTP: better-auth `twoFactor` (`/v1/auth/two-factor/*`).
 
 ### Faz 2 — kuyruk altyapısı
 
 Tablolar: `integration_events`, `outbox_events`, `jobs` (RLS + `verimaya_app` grant). BullMQ `default` kuyruğu noop worker ile ayağa kalkar.
+
+**Varsayılan job seçenekleri:** `attempts: 5`, exponential backoff (1s taban), `removeOnComplete.count: 1000`, `removeOnFail.count: 5000`. Denemeler tükendiğinde worker `jobs` (+ `integration_event.process` için `integration_events`) durumunu `failed` yapar.
+
+**Bull Board:** `GET http://localhost:3000/v1/admin/queues` — yalnızca `NODE_ENV=development` iken veya `ADMIN_QUEUE_TOKEN` tanımlıyken açılır. Geliştirme dışında `X-Admin-Queue-Token: <ADMIN_QUEUE_TOKEN>` header'ı gerekir.
 
 ### Faz 4 — GHL foundation (stub)
 
@@ -51,6 +59,17 @@ curl -s -X POST http://localhost:3000/v1/webhooks/ghl \
   -d '{"type":"contact.created","id":"evt-001"}'
 ```
 
+WAHA (WhatsApp inbox):
+
+```bash
+curl -s -X POST http://localhost:3000/v1/webhooks/waha \
+  -H 'Content-Type: application/json' \
+  -H 'X-Webhook-Signature: dev-webhook-secret' \
+  -H 'X-Tenant-Id: <tenant-uuid>' \
+  -H 'X-External-Event-Id: msg-001' \
+  -d '{"event":"message","payload":{"id":"msg-001","body":"Sandra 2900 GBP ödeme","from":"120363@g.us","chatName":"Finans"}}'
+```
+
 WhatsApp parse (oturum + aktif org gerekir; hasta eşleştirmesi tenant hasta listesinden):
 
 ```bash
@@ -71,7 +90,7 @@ curl -s -X POST http://localhost:3000/v1/whatsapp/parse \
 - Tablo: `api_keys` (`tenant_id`, `name`, `key_prefix`, `key_hash`, `scopes`, `created_at`, `revoked_at`; RLS). Lookup: `app.lookup_api_key(hash)` (SECURITY DEFINER).
 - API (oturum): `POST /v1/api-keys` (plaintext key yalnızca create yanıtında), `GET /v1/api-keys` (hash yok), `DELETE /v1/api-keys/:id` (revoke). Mutasyonlarda `Idempotency-Key` desteklenir (Faz 1'den beri domain CRUD'da da vardı).
 - `ApiKeyGuard`: `Authorization: Bearer vk_...` → hash doğrulama; **henüz global middleware'e bağlı değil** — route bazında `@UseGuards(ApiKeyGuard)` ile kullanılacak.
-- OpenAPI, `webhook_subscriptions`, HMAC giden event'ler henüz yok.
+- OpenAPI: statik [`openapi.yaml`](./openapi.yaml) — auth notu, patients, contacts, webhooks, WhatsApp inbox, reports, api-keys. `webhook_subscriptions`, HMAC giden event'ler henüz yok.
 
 ## Gözlemlenebilirlik (Faz 2)
 

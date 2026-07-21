@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { AppointmentTypeSetting } from '@verimaya/shared';
+	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -12,7 +13,7 @@
 
 	const typesQuery = createQuery(() => ({
 		queryKey: ['settings', 'appointment-types'],
-		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>('/v1/settings/appointment-types')
+		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes)
 	}));
 
 	const items = $derived(
@@ -30,7 +31,7 @@
 		saving = true;
 		error = null;
 		try {
-			await apiSend('/v1/settings/appointment-types', 'POST', { name });
+			await apiSend(apiPaths.settingsAppointmentTypes, 'POST', { name });
 			newName = '';
 			await queryClient.invalidateQueries({ queryKey: ['settings', 'appointment-types'] });
 		} catch (err) {
@@ -42,7 +43,7 @@
 
 	async function remove(item: AppointmentTypeSetting) {
 		if (!confirm(`“${item.name}” silinsin mi?`)) return;
-		await apiSend(`/v1/settings/appointment-types/${item.id}`, 'DELETE');
+		await apiSend(apiPaths.settingsAppointmentType(item.id), 'DELETE');
 		await queryClient.invalidateQueries({ queryKey: ['settings', 'appointment-types'] });
 	}
 </script>

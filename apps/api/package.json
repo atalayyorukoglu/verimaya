@@ -16,6 +16,8 @@
 	},
 	"dependencies": {
 		"@better-auth/drizzle-adapter": "^1.6.23",
+		"@bull-board/api": "^8.1.2",
+		"@bull-board/fastify": "^8.1.2",
 		"@nestjs/common": "^11.1.6",
 		"@nestjs/config": "^4.0.2",
 		"@nestjs/core": "^11.1.6",

@@ -6,6 +6,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { getAuth } from './auth/auth';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
+import { mountBullBoard } from './queue/bull-board.mount';
+import { QueueService } from './queue/queue.service';
 
 loadEnv({ path: '.env' });
 
@@ -89,6 +91,13 @@ async function bootstrap() {
 
 	app.setGlobalPrefix('v1');
 	await mountBetterAuth(app);
+
+	await app.init();
+	const queueService = app.get(QueueService);
+	await mountBullBoard(app, queueService, {
+		isDevelopment: (process.env.NODE_ENV ?? 'development') === 'development',
+		adminQueueToken: process.env.ADMIN_QUEUE_TOKEN
+	});
 
 	const port = Number(process.env.API_PORT ?? 3000);
 	await app.listen(port, '0.0.0.0');

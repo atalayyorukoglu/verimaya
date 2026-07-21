@@ -78,6 +78,13 @@
 			"when": 1753110000000,
 			"tag": "0010_api_keys",
 			"breakpoints": true
+		},
+		{
+			"idx": 11,
+			"version": "7",
+			"when": 1753111000000,
+			"tag": "0011_inbound_messages",
+			"breakpoints": true
 		}
 	]
 }

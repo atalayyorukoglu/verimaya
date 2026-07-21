@@ -14,3 +14,4 @@ export * from './case-notes';
 export * from './tenant-credentials';
 export * from './ad-metrics-daily';
 export * from './api-keys';
+export * from './inbound-messages';

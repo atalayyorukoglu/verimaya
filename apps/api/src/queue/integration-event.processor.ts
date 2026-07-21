@@ -69,4 +69,41 @@ export class IntegrationEventProcessor {
 				.where(eq(jobs.id, jobId));
 		});
 	}
+
+	async markFailed(
+		jobId: string,
+		tenantId: string,
+		errorMessage: string,
+		attempts: number
+	): Promise<void> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
+			if (!job) {
+				this.logger.warn(`Dead job ${jobId} not found in ledger`);
+				return;
+			}
+
+			const now = new Date();
+
+			await db
+				.update(jobs)
+				.set({
+					status: 'failed',
+					lastError: errorMessage,
+					attempts,
+					updatedAt: now
+				})
+				.where(eq(jobs.id, jobId));
+
+			if (job.jobType !== 'integration_event.process') {
+				return;
+			}
+
+			const payload = job.payload as IntegrationEventJobPayload;
+			await db
+				.update(integrationEvents)
+				.set({ status: 'failed', updatedAt: now })
+				.where(eq(integrationEvents.id, payload.integrationEventId));
+		});
+	}
 }

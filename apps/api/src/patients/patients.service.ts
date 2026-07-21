@@ -7,9 +7,11 @@ import {
 	caseNotes,
 	files,
 	patients,
+	tenants,
 	transactions
 } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
+import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toPatient, toPatientFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
@@ -59,6 +61,61 @@ export class PatientsService {
 				});
 			}
 			return toPatient(row);
+		});
+	}
+
+	async financeSummary(tenantId: string, patientId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const patient = await this.findActiveRow(db, patientId);
+			if (!patient) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Patient not found' }
+				});
+			}
+
+			const [tenant] = await db
+				.select({ baseCurrency: tenants.baseCurrency })
+				.from(tenants)
+				.where(eq(tenants.id, tenantId))
+				.limit(1);
+			const tenantBase = tenant?.baseCurrency ?? 'TRY';
+
+			const rows = await db
+				.select({
+					kind: transactions.kind,
+					amount: transactions.amount,
+					amountBase: transactions.amountBase,
+					currency: transactions.currency,
+					paidAmount: transactions.paidAmount
+				})
+				.from(transactions)
+				.where(eq(transactions.patientId, patientId));
+
+			let incomeBase = 0;
+			let expenseBase = 0;
+			let paidBase = 0;
+			let outstandingBase = 0;
+
+			for (const row of rows) {
+				const base = resolveBaseAmount(row, tenantBase);
+				if (base == null) continue;
+				if (row.kind === 'income') {
+					incomeBase += base;
+					const paid = resolvePaidBaseAmount(row, tenantBase) ?? 0;
+					paidBase += paid;
+					outstandingBase += base - paid;
+				} else {
+					expenseBase += base;
+				}
+			}
+
+			return {
+				income_base: incomeBase,
+				expense_base: expenseBase,
+				paid_base: paidBase,
+				outstanding_base: outstandingBase,
+				transaction_count: rows.length
+			};
 		});
 	}
 

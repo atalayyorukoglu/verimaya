@@ -9,7 +9,7 @@
 		Contact,
 		Patient
 	} from '@verimaya/shared';
-	import { appointmentStatusLabels } from '@verimaya/shared';
+	import { apiPaths, appointmentStatusLabels } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -36,7 +36,7 @@
 
 	const typesQuery = createQuery(() => ({
 		queryKey: ['settings', 'appointment-types'],
-		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>('/v1/settings/appointment-types'),
+		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes),
 		enabled: open
 	}));
 

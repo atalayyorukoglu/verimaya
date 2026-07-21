@@ -5,6 +5,7 @@ import {
 	DEFAULT_FINANCE_CATEGORY_SEEDS
 } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
+import { CryptoService } from '../common/crypto.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { SettingsService } from './settings.service';
 
@@ -46,7 +47,7 @@ describe('settings default seed', () => {
 				withTenantSession(id, () => fn({ tx: sql, db }))
 		} as TenantContextService;
 
-		settingsService = new SettingsService(tenantContext);
+		settingsService = new SettingsService(tenantContext, {} as CryptoService);
 	});
 
 	afterAll(async () => {

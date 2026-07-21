@@ -10,18 +10,26 @@ export const apiPaths = {
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
 	patients: `${API_V1_PREFIX}/patients`,
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
+	patientFinanceSummary: (id: string) => `${API_V1_PREFIX}/patients/${id}/finance-summary`,
 	patientsDuplicateGroups: `${API_V1_PREFIX}/patients/duplicate-groups`,
 	patientsMerge: `${API_V1_PREFIX}/patients/merge`,
 	appointments: `${API_V1_PREFIX}/appointments`,
+	appointment: (id: string) => `${API_V1_PREFIX}/appointments/${id}`,
 	contacts: `${API_V1_PREFIX}/contacts`,
 	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
 	contactsDuplicateGroups: `${API_V1_PREFIX}/contacts/duplicate-groups`,
 	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
 	transactions: `${API_V1_PREFIX}/transactions`,
+	transaction: (id: string) => `${API_V1_PREFIX}/transactions/${id}`,
 	auditLogs: `${API_V1_PREFIX}/audit-logs`,
 	settingsFinanceCategories: `${API_V1_PREFIX}/settings/finance-categories`,
+	settingsFinanceCategory: (id: string) => `${API_V1_PREFIX}/settings/finance-categories/${id}`,
 	settingsContactTypes: `${API_V1_PREFIX}/settings/contact-types`,
+	settingsContactType: (id: string) => `${API_V1_PREFIX}/settings/contact-types/${id}`,
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
+	settingsCredential: (provider: string) => `${API_V1_PREFIX}/settings/credentials/${provider}`,
+	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
+	whatsappInbox: `${API_V1_PREFIX}/whatsapp/inbox`,
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
 	apiKeys: `${API_V1_PREFIX}/api-keys`,
 	apiKey: (id: string) => `${API_V1_PREFIX}/api-keys/${id}`,
@@ -53,7 +61,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
 	return `${url.pathname}${url.search}`;
 }
-import { patientSchema } from './patient.js';
+import { patientSchema, patientFinanceSummarySchema } from './patient.js';
 import { appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
 import { inboundMessageSchema, transactionDraftSchema } from './inbound-message.js';
@@ -72,6 +80,7 @@ import { auditLogSchema } from './audit.js';
 import { adMetricSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
 import { reportByCategorySchema, reportSummarySchema } from './reports.js';
+import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 
 /**
  * API contract sketch for /v1 routes.
@@ -89,6 +98,9 @@ export const apiContract = {
 	},
 	'GET /v1/patients/:id': {
 		response: patientSchema
+	},
+	'GET /v1/patients/:id/finance-summary': {
+		response: patientFinanceSummarySchema
 	},
 	'GET /v1/appointments': {
 		response: cursorPageSchema(appointmentSchema)
@@ -142,7 +154,10 @@ export const apiContract = {
 		response: z.object({ records: z.array(transactionDraftSchema) })
 	},
 	'GET /v1/whatsapp/inbox': {
-		response: z.object({ messages: z.array(inboundMessageSchema) })
+		response: z.object({
+			messages: z.array(inboundMessageSchema),
+			next_cursor: z.string().nullable()
+		})
 	},
 	'GET /v1/whatsapp/inbox/:id': {
 		response: inboundMessageSchema
@@ -158,6 +173,13 @@ export const apiContract = {
 	},
 	'GET /v1/settings/appointment-types': {
 		response: z.object({ items: z.array(appointmentTypeSettingSchema) })
+	},
+	'GET /v1/settings/credentials/:provider': {
+		response: credentialStatusSchema
+	},
+	'PUT /v1/settings/credentials/:provider': {
+		body: credentialUpsertSchema,
+		response: credentialStatusSchema
 	},
 	'GET /v1/ad-metrics': {
 		response: z.object({ items: z.array(adMetricSchema) })

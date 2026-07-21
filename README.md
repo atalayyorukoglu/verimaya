@@ -48,3 +48,5 @@ pnpm --filter @verimaya/api dev   # api http://localhost:3000
 Gerçek API ile web: `apps/web/.env` içinde `PUBLIC_USE_MSW=false` — adım adım kontrol listesi [`apps/web/README.md`](./apps/web/README.md#msw-kapalı-mod--kontrol-listesi).
 
 Diğer komutlar: `pnpm check`, `pnpm build`, `pnpm lint`.
+
+API sözleşmesi (OpenAPI 3.1, statik): [`apps/api/openapi.yaml`](./apps/api/openapi.yaml).

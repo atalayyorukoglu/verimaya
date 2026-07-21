@@ -14,6 +14,7 @@
 		TransactionUpdate
 	} from '@verimaya/shared';
 	import {
+		apiPaths,
 		invoiceStatusLabels,
 		SUPPORTED_CURRENCIES,
 		transactionKindLabels,
@@ -47,13 +48,13 @@
 
 	const tenantQuery = createQuery(() => ({
 		queryKey: ['tenants', 'current'],
-		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
 		enabled: open
 	}));
 
 	const catsQuery = createQuery(() => ({
 		queryKey: ['settings', 'finance-categories'],
-		queryFn: () => apiGet<{ items: FinanceCategory[] }>('/v1/settings/finance-categories'),
+		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
 		enabled: open
 	}));
 

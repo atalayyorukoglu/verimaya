@@ -2,14 +2,15 @@
 	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import type {
+		ContractResponse,
 		InboundMessage,
 		Patient,
 		Transaction,
 		TransactionCreate,
 		TransactionUpdate
 	} from '@verimaya/shared';
-	import { transactionKindLabels, transactionStatusLabels } from '@verimaya/shared';
-	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { apiPaths, listUrl, transactionKindLabels, transactionStatusLabels } from '@verimaya/shared';
+	import { apiGet, apiSend } from '$lib/api';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -19,8 +20,8 @@
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import X from '@lucide/svelte/icons/x';
 
-	type Page = { items: Transaction[]; next_cursor: string | null };
-	type PatientsPage = { items: Patient[]; next_cursor: string | null };
+	type TransactionsPage = ContractResponse<'GET /v1/transactions'>;
+	type PatientsPage = ContractResponse<'GET /v1/patients'>;
 
 	const queryClient = useQueryClient();
 
@@ -34,7 +35,7 @@
 	const txQuery = createInfiniteQuery(() => ({
 		queryKey: ['transactions', { patient_id: patientFilterId }],
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
-			apiGet<Page>(
+			apiGet<TransactionsPage>(
 				listUrl('transactions', {
 					limit: 25,
 					cursor: pageParam,
@@ -42,7 +43,7 @@
 				})
 			),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: Page) => last.next_cursor
+		getNextPageParam: (last: TransactionsPage) => last.next_cursor
 	}));
 
 	const patientsQuery = createQuery(() => ({
@@ -56,7 +57,7 @@
 
 	const inboxQuery = createQuery(() => ({
 		queryKey: ['whatsapp', 'inbox'],
-		queryFn: () => apiGet<{ messages: InboundMessage[] }>('/v1/whatsapp/inbox')
+		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox)
 	}));
 
 	const pendingCount = $derived(
@@ -80,9 +81,9 @@
 		formError = null;
 		try {
 			if (editing) {
-				await apiSend(`/v1/transactions/${editing.id}`, 'PATCH', data);
+				await apiSend(apiPaths.transaction(editing.id), 'PATCH', data);
 			} else {
-				await apiSend('/v1/transactions', 'POST', data);
+				await apiSend(apiPaths.transactions, 'POST', data);
 			}
 			await queryClient.invalidateQueries({ queryKey: ['transactions'] });
 			formOpen = false;
