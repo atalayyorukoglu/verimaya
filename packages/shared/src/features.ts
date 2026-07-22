@@ -101,6 +101,16 @@ export const features: Feature[] = [
 		version: '0.1.0'
 	},
 	{
+		id: 'real-roas',
+		module: 'Raporlama',
+		title: 'Gerçek ROAS raporu',
+		description:
+			'Reklam harcamanızı dönem tahsilatıyla kıyaslayın; hasta başına maliyet ve kaynak kırılımı.',
+		status: 'yayinda',
+		released_at: '2026-07-22',
+		version: '0.3.0'
+	},
+	{
 		id: 'truth-calculator',
 		module: 'Pazarlama',
 		title: 'Gerçek ROAS hesabı',

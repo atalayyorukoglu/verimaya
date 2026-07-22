@@ -20,6 +20,19 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.3.0',
+		date: '2026-07-22',
+		title: 'Gerçek ROAS raporu',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'Raporlar’da Gerçek ROAS sekmesiyle reklam harcamanızı dönem tahsilatıyla kıyaslayabilir; CPL, CPA ve kaynak kırılımını görebilirsiniz.',
+				featureId: 'real-roas'
+			}
+		]
+	},
+	{
 		version: '0.2.0',
 		date: '2026-07-22',
 		title: 'Pazarlama araçları',

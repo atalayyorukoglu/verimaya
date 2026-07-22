@@ -167,14 +167,15 @@ Mevcut `YOL-HARITASI.md` Faz 5 (Ads) ve Faz 7 (Rapor) ile **örtüşür**; RoasM
 
 Bağımlılık: `ad_metrics_daily` dolu (OAuth sync veya geçici fixture/manuel); dönemsel tahsilat aggregate (Faz 7 mevcut).
 
-- [ ] Shared: `RealRoasInput/Result` (dönem, spend, revenue, leads, closed patients)
-- [ ] API: `GET /v1/reports/marketing` (veya `/v1/reports/roas`) — tenant scoped:
+- [x] Shared: `RealRoasInput/Result` (dönem, spend, revenue, leads, closed patients)
+- [x] API: `GET /v1/reports/marketing` (veya `/v1/reports/roas`) — tenant scoped:
   - spend: `ad_metrics_daily` aggregate (`from`/`to`/`provider`)
   - revenue: dönem gelir işlemleri (ve/veya kapalı hasta finans özeti politikası — **karar notu aşağıda**)
   - counts: yeni lead / `closed_won` (veya eşdeğer status) by `source`
-- [ ] Negatif izolasyon testi: Tenant A, Tenant B metriklerini göremez
-- [ ] Web: Raporlar’a “Pazarlama / Gerçek ROAS” bölümü + isteğe Truth overlay (katkı oranı kullanıcı girdisi)
-- [ ] Ayarlar > Bağlantılar > Reklamlar: “hasta başına maliyet · kaynak bazında” deep-link
+- [x] Negatif izolasyon testi: Tenant A, Tenant B metriklerini göremez
+- [x] Web: Raporlar’a “Pazarlama / Gerçek ROAS” bölümü
+- [ ] Web: isteğe Truth overlay (katkı oranı kullanıcı girdisi) — (V2/opsiyonel)
+- [ ] Ayarlar > Bağlantılar > Reklamlar: “hasta başına maliyet · kaynak bazında” deep-link — (V2/opsiyonel)
 
 **Ürün kararı (RM-3 başlamadan netleştir):**
 
@@ -183,6 +184,8 @@ Bağımlılık: `ad_metrics_daily` dolu (OAuth sync veya geçici fixture/manuel)
 3. Para birimi: spend USD/TRY karışımı — tek rapor para birimi kuralı.
 
 Öneri (varsayılan): V1 **tahsilat (income transactions) ÷ Ads spend**; attribution `patient.source`; kampanya kırılımı V2.
+
+**V1 karar:** gelir paydası = tahsilat (`paid_amount`); attribution = `patient.source`; kampanya kırılımı V2; spend V1 tenant taban para biriminde varsayılır (USD/TRY mutabakatı V2).
 
 ### RM-4 — Ads OAuth ve connector (P1) — mevcut Faz 5 tamamlama
 
@@ -306,5 +309,6 @@ RM-0 doküman ──► RM-1 shared core ──► RM-2 pazarlama UI
 | RM-0 Plan dokümanı | ✅ Bu dosya |
 | RM-1 Core shared | ✅ |
 | RM-2 Pazarlama UI | ✅ |
-| RM-3 … RM-7 | ⬜ Başlanmadı |
+| RM-3 Gerçek ROAS raporu | ✅ |
+| RM-4 … RM-7 | ⬜ Başlanmadı |
 | RoasMate arşiv | ⬜ |
