@@ -83,6 +83,14 @@ export const features: Feature[] = [
 		status: 'planlandi'
 	},
 	{
+		id: 'ads-connect',
+		module: 'Entegrasyonlar',
+		title: 'Meta & Google Ads bağlantısı',
+		description:
+			'Reklam hesabınızı bağlayın; kampanya harcaması günlük çekilir ve Gerçek ROAS raporunu besler.',
+		status: 'gelistiriliyor'
+	},
+	{
 		id: 'n8n-api',
 		module: 'Entegrasyonlar',
 		title: 'n8n ve dış API',

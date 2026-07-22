@@ -58,9 +58,13 @@ Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker
 
 `apps/api/src/integrations/ghl/` fixture-backed stub: `ghl.mapper.ts` contact/opportunity + minimal alanlar (ad/telefon/e-posta/external id) çıkarır. `GhlSyncService.processInboundEvent` tenant context içinde (1) `jobs` tablosuna `ghl.inbound.sync` ledger satırı yazar, (2) temiz contact'ta `patients` upsert eder (`source='ghl'`, notes marker `ghl_contact_id=<id>` — ayrı mapping tablosu/migration yok). `GhlClientStub` HTTP çağırmaz. `ghl.reconcile` OAuth yokken ledger noop satırı yazar. Periyodik 6h scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true` (varsayılan kapalı). Alan bazlı sahiplik (madde 5) gerçek adaptörle gelecek.
 
-## Reklam metrikleri (Faz 5 stub, 2026-07-22)
+## Reklam metrikleri / Ads adaptör katmanı (RM-4, 2026-07-22)
 
-`AdMetricsSyncService` (`ad_metrics.sync` job): tenant'ta Meta/Google `tenant_credentials` yoksa `ad_metrics_daily`'ye 1–3 deterministik fixture satırı upsert eder (unique: tenant+provider+date+campaign); cred varsa OAuth pull henüz yok — fixture yazılmaz. Aynı `ENABLE_INTEGRATION_SCHEDULERS` bayrağıyla 6h repeatable scheduler.
+`AdsProviderAdapter` arayüzü (`apps/api/src/integrations/ads/`): `buildAuthorizeUrl`, `exchangeCode`, `pullDailyMetrics` → `NormalizedAdMetricRow` (tenant’siz). Provider uygulamaları: `integrations/meta/meta-ads.adapter.ts`, `integrations/google/google-ads.adapter.ts`. `AdsAdapterRegistry` provider → adapter çözümler; domain / sync kodu Meta veya Google bilmez.
+
+OAuth: `AdsOAuthStateService` state’i `CryptoService` ile şifreler (tenantId+provider+exp); callback’te çözülür. Credential secret’ı `tenant_credentials` tablosunda AES-GCM ciphertext. UI: `GET/DELETE /v1/integrations/ads/*` + `/ayarlar/baglantilar/reklamlar`.
+
+`AdMetricsSyncService` (`ad_metrics.sync`): creds yoksa deterministik fixture upsert; creds varsa ilgili adapter `pullDailyMetrics` → idempotent `ad_metrics_daily` upsert (unique: tenant+provider+date+campaign). Periyodik 6h: `ENABLE_INTEGRATION_SCHEDULERS=true` (varsayılan kapalı). Canlı go-live için uygulama kimlikleri `.env` + harici OAuth konsolları gerekir (`docs/ROASMATE-GECIS.md` RM-4 go-live).
 
 ## Pazarlama hesap katmanı ve ROAS tanımı
 

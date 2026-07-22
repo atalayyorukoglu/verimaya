@@ -191,14 +191,28 @@ Bağımlılık: `ad_metrics_daily` dolu (OAuth sync veya geçici fixture/manuel)
 
 RoasMate’ten gelen “panel” ancak burada gerçek olur.
 
-- [ ] Meta Marketing API OAuth → `tenant_credentials`
-- [ ] Google Ads OAuth → `tenant_credentials`
-- [ ] Adaptörler: `apps/api/src/integrations/meta|google/`
-- [ ] `ad_metrics.sync` worker: fixture yerine gerçek pull; idempotent upsert
+- [x] Meta Marketing API OAuth → `tenant_credentials` + `MetaAdsAdapter`
+- [x] Google Ads OAuth → `tenant_credentials` + `GoogleAdsAdapter`
+- [x] Adaptörler: `apps/api/src/integrations/meta|google/`
+- [x] `ad_metrics.sync` worker: creds varsa adapter.pull; yoksa fixture; idempotent upsert
 - [ ] Offline conversion yol haritası notu (Google) — uygulama P2 olabilir
-- [ ] UI: bağlantı durumu, son sync, hata (Bull Board / jobs ile uyumlu)
+- [x] UI: bağlantı durumu, son sync, bağlan/kes (`/ayarlar/baglantilar/reklamlar`)
 
 **Kabul kriteri:** En az bir gerçek tenant credential ile `ad_metrics_daily` doluyor; RM-3 raporu canlı veri gösteriyor.
+
+- [ ] En az bir gerçek tenant credential ile `ad_metrics_daily` doluyor — (kod hazır; credential girildiğinde canlı)
+
+#### RM-4 go-live (harici, kullanıcı)
+
+Kod go-live hazır; canlı doğrulama harici kimlik bilgisi ister:
+
+1. **Meta for Developers:** uygulama oluştur; `ads_read` izni; Valid OAuth Redirect URI =
+   `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`. `.env`: `META_APP_ID`, `META_APP_SECRET` (+ isteğe `META_API_VERSION`).
+2. **Google Cloud + Ads:** OAuth client (web); scope `https://www.googleapis.com/auth/adwords`; redirect URI =
+   `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/google/callback`. Google Ads API developer token al.
+   `.env`: `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`.
+3. Ortak: `ADS_OAUTH_REDIRECT_BASE` (API public kök), `WEB_PUBLIC_URL` (callback sonrası web), `CREDENTIALS_ENCRYPTION_KEY`.
+4. Panelde **Ayarlar → Bağlantılar → Reklamlar** üzerinden bağlan; `ad_metrics.sync` tetikle (manuel job veya scheduler); Raporlar → Pazarlama’da spend görünmeli.
 
 ### RM-5 — Ölçüm olgunluğu ve kampanya kapıları (P1–P2) — ~1 hafta
 
@@ -310,5 +324,6 @@ RM-0 doküman ──► RM-1 shared core ──► RM-2 pazarlama UI
 | RM-1 Core shared | ✅ |
 | RM-2 Pazarlama UI | ✅ |
 | RM-3 Gerçek ROAS raporu | ✅ |
-| RM-4 … RM-7 | ⬜ Başlanmadı |
+| RM-4 Ads OAuth | 🟡 Kod tamam (go-live: harici credential) |
+| RM-5 … RM-7 | ⬜ Başlanmadı |
 | RoasMate arşiv | ⬜ |
