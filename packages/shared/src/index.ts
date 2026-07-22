@@ -22,3 +22,4 @@ export * from './reports.js';
 export * from './credentials.js';
 export * from './webhook-subscription.js';
 export * from './ai-correction.js';
+export * from './marketing/index.js';
