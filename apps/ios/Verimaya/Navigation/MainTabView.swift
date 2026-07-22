@@ -25,7 +25,7 @@ struct MainTabView: View {
       }
 
       NavigationStack {
-        ComingSoonView(message: "Yakında — Adım 7")
+        ReportsView()
       }
       .tabItem {
         Label("Raporlar", systemImage: "chart.bar")
