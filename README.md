@@ -49,4 +49,4 @@ Gerçek API ile web: `apps/web/.env` içinde `PUBLIC_USE_MSW=false` — adım ad
 
 Diğer komutlar: `pnpm check`, `pnpm build`, `pnpm lint`.
 
-API sözleşmesi (OpenAPI 3.1, statik): [`apps/api/openapi.yaml`](./apps/api/openapi.yaml).
+API sözleşmesi (OpenAPI 3.1): kaynak [`apps/api/openapi.yaml`](./apps/api/openapi.yaml) — runtime `GET /v1/openapi.yaml` ve Scalar UI `GET /v1/docs`.

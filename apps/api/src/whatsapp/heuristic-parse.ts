@@ -58,8 +58,8 @@ function extractContactLabel(text: string): string | null {
 }
 
 /**
- * Heuristic WhatsApp message parser (Faz 3 stub).
- * TODO(Faz 3): Replace with LLM extraction pipeline; output remains draft-only until human approval.
+ * Heuristic WhatsApp message parser (used by HeuristicLlmClient / LLM fallback).
+ * Output remains draft-only until human confirmation via POST /v1/transactions.
  */
 export function heuristicParseWhatsappMessage(
 	message: string,

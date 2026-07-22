@@ -1,0 +1,132 @@
+{
+	"source": "fixrav-tracker-sample",
+	"exported_at": "2026-07-01T12:00:00.000Z",
+	"contacts": [
+		{
+			"id": 101,
+			"type": "Hasta",
+			"name": "Atalay Demir",
+			"phone": "+90 532 000 0001",
+			"email": "atalay@example.com",
+			"notes": "Pilot hasta",
+			"is_internal": false
+		},
+		{
+			"id": 102,
+			"type": "Klinik",
+			"name": "Demo Klinik",
+			"phone": "+90 212 000 0000",
+			"email": "klinik@example.com",
+			"notes": null,
+			"is_internal": false
+		},
+		{
+			"id": 103,
+			"type": "Otel",
+			"name": "Demo Otel",
+			"phone": null,
+			"email": null,
+			"notes": null,
+			"is_internal": false
+		}
+	],
+	"cases": [
+		{
+			"id": 501,
+			"full_name": "Atalay Demir",
+			"phone": "+90 532 000 0001",
+			"email": "atalay@example.com",
+			"status": "scheduled",
+			"source": "Meta Ads",
+			"notes": "Legacy case #501",
+			"contact_id": 101,
+			"assigned_user": null
+		},
+		{
+			"id": 502,
+			"full_name": "Sandra Blake",
+			"phone": "+44 7700 900123",
+			"email": "sandra@example.com",
+			"status": "arrived",
+			"source": "Referral",
+			"notes": null,
+			"contact_id": null,
+			"assigned_user": null
+		}
+	],
+	"appointments": [
+		{
+			"id": 801,
+			"case_id": 501,
+			"title": "Konsültasyon",
+			"type": "Konsültasyon",
+			"status": "completed",
+			"starts_at": "2026-06-10T09:00:00.000Z",
+			"ends_at": "2026-06-10T10:00:00.000Z",
+			"clinic_name": "Demo Klinik",
+			"hotel_name": "Demo Otel",
+			"transfer_note": "SAW pickup",
+			"notes": null
+		},
+		{
+			"id": 802,
+			"case_id": 502,
+			"title": "Tedavi günü",
+			"type": "Tedavi",
+			"status": "confirmed",
+			"starts_at": "2026-07-15T08:00:00.000Z",
+			"ends_at": "2026-07-15T16:00:00.000Z",
+			"clinic_name": "Demo Klinik",
+			"hotel_name": null,
+			"transfer_note": null,
+			"notes": "2. vizit"
+		}
+	],
+	"transactions": [
+		{
+			"id": 901,
+			"case_id": 501,
+			"kind": "income",
+			"title": "Operasyon peşinat",
+			"subtitle": "Saç ekimi",
+			"category": "Operasyon",
+			"occurred_on": "2026-06-01",
+			"status": "paid",
+			"invoice_status": "none",
+			"payment_method": "card",
+			"amount_major": 1500,
+			"currency": "GBP",
+			"paid_amount_major": 1500,
+			"contact_id": null,
+			"description": "Kart ile peşinat"
+		},
+		{
+			"id": 902,
+			"case_id": 502,
+			"kind": "expense",
+			"title": "Otel",
+			"subtitle": "Extra gece",
+			"category": "Konaklama",
+			"occurred_on": "2026-07-14",
+			"status": "paid",
+			"invoice_status": "none",
+			"payment_method": "transfer",
+			"amount_major": 120,
+			"currency": "EUR",
+			"paid_amount_major": 120,
+			"contact_id": 103,
+			"description": null
+		}
+	],
+	"files": [
+		{
+			"id": 701,
+			"case_id": 501,
+			"appointment_id": 801,
+			"filename": "onam.pdf",
+			"mime_type": "application/pdf",
+			"size_bytes": 245760,
+			"drive_url": "https://drive.example/onam.pdf"
+		}
+	]
+}

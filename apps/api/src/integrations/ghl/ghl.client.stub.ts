@@ -9,10 +9,10 @@ export class GhlClientStub implements GhlClient {
 	constructor(private readonly syncService: GhlSyncService) {}
 
 	async processInboundEvent(event: GhlInboundEvent): Promise<GhlProcessResult> {
-		const result = this.syncService.parseInboundEvent(event);
+		const result = await this.syncService.processInboundEvent(event);
 
 		this.logger.log(
-			`stub: skip GHL inbound event ${event.integrationEventId} (tenant ${event.tenantId}, kind=${result.kind})`
+			`GHL inbound event ${event.integrationEventId} (tenant ${event.tenantId}): kind=${result.kind} action=${result.action}`
 		);
 
 		return result;

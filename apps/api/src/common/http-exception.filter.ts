@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import type { ApiError } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { captureException } from './sentry';
 
 const STATUS_TO_CODE: Partial<Record<HttpStatus, string>> = {
 	[HttpStatus.BAD_REQUEST]: 'bad_request',
@@ -99,6 +100,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
 		if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
 			req.log.error({ err: exception, request_id: requestId }, safeMessage);
+			captureException(exception, { requestId });
 		} else {
 			req.log.warn({ request_id: requestId, error: payload.error }, safeMessage);
 		}

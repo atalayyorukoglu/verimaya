@@ -19,6 +19,14 @@
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
+	import { USE_MSW } from '$lib/env';
+
+	type BeforeInstallPromptEvent = Event & {
+		prompt: () => Promise<void>;
+		userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+	};
+
+	const INSTALL_DISMISS_KEY = 'verimaya:install-prompt-dismissed';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -29,8 +37,11 @@
 	let accountOpen = $state(false);
 	let desktopNavEl: HTMLElement | undefined = $state();
 	let mobileNavEl: HTMLElement | undefined = $state();
+	let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null);
+	let installDismissed = $state(false);
 
 	const pathname = $derived(page.url.pathname);
+	const showInstallPrompt = $derived(!USE_MSW && installPromptEvent != null && !installDismissed);
 
 	const tenantQuery = createQuery(() => ({
 		queryKey: ['tenants', 'current'],
@@ -58,6 +69,33 @@
 		}
 		hasUnreadChangelog = localStorage.getItem('verimaya:last-seen-version') !== latest;
 	});
+
+	$effect(() => {
+		if (USE_MSW) return;
+		installDismissed = localStorage.getItem(INSTALL_DISMISS_KEY) === '1';
+
+		function onBeforeInstallPrompt(e: Event) {
+			e.preventDefault();
+			installPromptEvent = e as BeforeInstallPromptEvent;
+		}
+
+		window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+		return () => window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+	});
+
+	async function acceptInstall() {
+		const evt = installPromptEvent;
+		if (!evt) return;
+		await evt.prompt();
+		await evt.userChoice;
+		installPromptEvent = null;
+	}
+
+	function dismissInstall() {
+		installDismissed = true;
+		installPromptEvent = null;
+		localStorage.setItem(INSTALL_DISMISS_KEY, '1');
+	}
 
 	$effect(() => {
 		role = getDemoRole();
@@ -159,6 +197,30 @@
 <div
 	class="flex min-h-dvh w-full flex-col bg-bg text-text md:h-dvh md:max-h-dvh md:min-h-0 md:flex-row md:overflow-hidden"
 >
+	{#if showInstallPrompt}
+		<div
+			class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 mx-3 mb-2 rounded-[8px] border border-border bg-surface p-3 shadow-lg md:bottom-4 md:left-auto md:right-4 md:mx-0 md:w-[22rem]"
+			role="status"
+		>
+			<p class="text-sm font-medium text-text">Verimaya’yı ana ekrana ekle</p>
+			<p class="mt-1 text-xs leading-relaxed text-text-muted">
+				Uygulamayı cihazınıza kurarak daha hızlı açabilirsiniz.
+			</p>
+			<div class="mt-3 flex items-center gap-2">
+				<Button type="button" class="h-8 px-3 text-xs" onclick={() => void acceptInstall()}>
+					Kur
+				</Button>
+				<button
+					type="button"
+					class="h-8 rounded-[6px] px-3 text-xs font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+					onclick={dismissInstall}
+				>
+					Şimdi değil
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Desktop sidebar — TickPort: full viewport height, footer pinned -->
 	<aside
 		class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex"

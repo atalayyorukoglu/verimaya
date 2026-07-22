@@ -47,7 +47,7 @@ export class IntegrationEventProcessor {
 						payload: event.payload as Record<string, unknown>
 					});
 					this.logger.debug(
-						`GHL event ${event.id} processed: kind=${result.kind} externalId=${result.externalId ?? 'n/a'}`
+						`GHL event ${event.id} processed: kind=${result.kind} externalId=${result.externalId ?? 'n/a'} action=${result.action}`
 					);
 				}
 

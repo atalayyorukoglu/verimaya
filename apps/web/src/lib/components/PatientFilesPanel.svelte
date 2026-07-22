@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { Appointment, PatientFile } from '@verimaya/shared';
-	import { apiGet, apiSend } from '$lib/api';
+	import { apiPaths, type Appointment, type PatientFile } from '@verimaya/shared';
+	import { apiGet, apiSend, apiUpload, resolveApiUrl } from '$lib/api';
 	import { formatBytes, formatDateTime } from '$lib/format';
 	import { Button } from '$lib/components/ui/button';
+	import Download from '@lucide/svelte/icons/download';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Upload from '@lucide/svelte/icons/upload';
@@ -38,12 +39,10 @@
 		uploading = true;
 		uploadError = null;
 		try {
-			await apiSend<PatientFile>(`/v1/patients/${patientId}/files`, 'POST', {
-				filename: file.name,
-				mime_type: file.type || 'application/octet-stream',
-				size_bytes: file.size,
-				appointment_id: linkAppointmentId || null
-			});
+			const form = new FormData();
+			if (linkAppointmentId) form.append('appointment_id', linkAppointmentId);
+			form.append('file', file, file.name);
+			await apiUpload<PatientFile>(apiPaths.patientFiles(patientId), form);
 			await queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : 'Yükleme başarısız';
@@ -58,6 +57,28 @@
 			await queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : 'Silme başarısız';
+		}
+	}
+
+	async function downloadFile(file: PatientFile) {
+		uploadError = null;
+		try {
+			const res = await fetch(resolveApiUrl(apiPaths.patientFileDownload(patientId, file.id)), {
+				credentials: 'include',
+				headers: { Accept: '*/*' }
+			});
+			if (!res.ok) {
+				throw new Error(`İndirme başarısız (${res.status})`);
+			}
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = file.filename;
+			a.click();
+			URL.revokeObjectURL(url);
+		} catch (err) {
+			uploadError = err instanceof Error ? err.message : 'İndirme başarısız';
 		}
 	}
 </script>
@@ -115,8 +136,8 @@
 			</span>
 			<p class="text-sm font-medium text-text">Henüz dosya yok</p>
 			<p class="max-w-sm text-xs leading-relaxed text-text-muted">
-				Pasaport, onam formu veya ziyaret fotoğraflarını yükleyin. Demo’da içerik saklanmaz; yalnızca
-				metadata listelenir.
+				Pasaport, onam formu veya ziyaret fotoğraflarını yükleyin. Dosyalar sunucuda yerel diske
+				yazılır (S3 sonra).
 			</p>
 		</div>
 	{:else}
@@ -146,14 +167,24 @@
 							{/if}
 						</div>
 					</div>
-					<button
-						type="button"
-						class="shrink-0 cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"
-						aria-label="Dosyayı sil"
-						onclick={() => removeFile(file)}
-					>
-						<Trash2 class="size-3.5" />
-					</button>
+					<div class="flex shrink-0 items-center gap-0.5">
+						<button
+							type="button"
+							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
+							aria-label="Dosyayı indir"
+							onclick={() => downloadFile(file)}
+						>
+							<Download class="size-3.5" />
+						</button>
+						<button
+							type="button"
+							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"
+							aria-label="Dosyayı sil"
+							onclick={() => removeFile(file)}
+						>
+							<Trash2 class="size-3.5" />
+						</button>
+					</div>
 				</li>
 			{/each}
 		</ul>

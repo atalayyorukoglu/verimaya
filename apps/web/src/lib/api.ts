@@ -80,6 +80,23 @@ export async function apiSend<T>(
 	return res.json() as Promise<T>;
 }
 
+/** Multipart upload (do not set Content-Type — browser sets boundary). */
+export async function apiUpload<T>(path: string, formData: FormData, init?: RequestInit): Promise<T> {
+	const headers: Record<string, string> = {
+		Accept: 'application/json',
+		...(mockHeaders() as Record<string, string>)
+	};
+	const res = await fetch(resolveApiUrl(path), {
+		...init,
+		method: 'POST',
+		credentials: 'include',
+		headers,
+		body: formData
+	});
+	if (!res.ok) await parseError(res);
+	return res.json() as Promise<T>;
+}
+
 export const fieldClass =
 	'border-border bg-surface text-text placeholder:text-text-faint h-9 w-full rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40';
 

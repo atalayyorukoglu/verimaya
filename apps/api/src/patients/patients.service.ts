@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { MergeRecords, PatientCreate, PatientFileCreate, PatientUpdate } from '@verimaya/shared';
@@ -16,6 +17,13 @@ import { buildCursorPage, createdAtCursorCondition } from '../common/list-query'
 import { toPatient, toPatientFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+import {
+	buildLocalStorageKey,
+	localFileExists,
+	MAX_UPLOAD_BYTES,
+	openLocalFileStream,
+	writeLocalFile
+} from './local-file-storage';
 
 @Injectable()
 export class PatientsService {
@@ -143,7 +151,8 @@ export class PatientsService {
 		tenantId: string,
 		patientId: string,
 		input: PatientFileCreate,
-		uploader: { userId: string; displayName: string }
+		uploader: { userId: string; displayName: string },
+		options?: { fileId?: string; storageKey?: string; sizeBytes?: number }
 	) {
 		const patient = await this.findActiveRow(db, patientId);
 		if (!patient) {
@@ -152,44 +161,153 @@ export class PatientsService {
 			});
 		}
 
-		let appointmentId: string | null = input.appointment_id ?? null;
-		let appointmentLabel: string | null = null;
+		const { appointmentId, appointmentLabel } = await this.resolveAppointmentLink(
+			db,
+			patientId,
+			input.appointment_id ?? null
+		);
 
-		if (appointmentId) {
-			const [appt] = await db
-				.select()
-				.from(appointments)
-				.where(and(eq(appointments.id, appointmentId), eq(appointments.patientId, patientId)))
-				.limit(1);
-			if (!appt) {
-				throw new BadRequestException({
-					error: {
-						code: 'validation_error',
-						message: 'Appointment does not belong to this patient'
-					}
-				});
-			}
-			const datePart = appt.startsAt.toISOString().slice(0, 10);
-			appointmentLabel = `${datePart} · ${appt.title ?? 'Randevu'}`;
-		}
+		const fileId = options?.fileId ?? randomUUID();
+		const storageKey = options?.storageKey ?? 'local://pending';
+		const sizeBytes = options?.sizeBytes ?? input.size_bytes ?? 0;
 
 		const [row] = await db
 			.insert(files)
 			.values({
+				id: fileId,
 				tenantId,
 				patientId,
 				appointmentId,
 				appointmentLabel,
 				filename: input.filename,
 				mimeType: input.mime_type ?? 'application/octet-stream',
-				sizeBytes: input.size_bytes ?? 0,
-				storageKey: 'local://pending',
+				sizeBytes,
+				storageKey,
 				uploadedByUserId: uploader.userId,
 				uploadedByDisplayName: uploader.displayName
 			})
 			.returning();
 
 		return toPatientFile(row!);
+	}
+
+	/**
+	 * Multipart upload stub: writes bytes under UPLOAD_DIR, stores `local://…` key.
+	 * JSON metadata-only POST still uses `local://pending` (no bytes).
+	 */
+	async uploadLocalFileWithDb(
+		db: TenantDb,
+		tenantId: string,
+		patientId: string,
+		input: {
+			filename: string;
+			mimeType: string;
+			appointmentId?: string | null;
+			data: Buffer;
+		},
+		uploader: { userId: string; displayName: string }
+	) {
+		if (input.data.byteLength > MAX_UPLOAD_BYTES) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: `File exceeds ${MAX_UPLOAD_BYTES} byte limit`
+				}
+			});
+		}
+
+		const fileId = randomUUID();
+		const storageKey = buildLocalStorageKey(tenantId, patientId, fileId);
+		await writeLocalFile(storageKey, input.data);
+
+		return this.createFileWithDb(
+			db,
+			tenantId,
+			patientId,
+			{
+				filename: input.filename,
+				mime_type: input.mimeType,
+				size_bytes: input.data.byteLength,
+				appointment_id: input.appointmentId ?? null
+			},
+			uploader,
+			{ fileId, storageKey, sizeBytes: input.data.byteLength }
+		);
+	}
+
+	async openFileDownload(tenantId: string, patientId: string, fileId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const patient = await this.findActiveRow(db, patientId);
+			if (!patient) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Patient not found' }
+				});
+			}
+
+			const [row] = await db
+				.select()
+				.from(files)
+				.where(and(eq(files.id, fileId), eq(files.patientId, patientId)))
+				.limit(1);
+
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File not found' }
+				});
+			}
+
+			if (!localFileExists(row.storageKey)) {
+				throw new NotFoundException({
+					error: {
+						code: 'not_found',
+						message: 'File bytes not available (metadata-only or missing on disk)'
+					}
+				});
+			}
+
+			const stream = openLocalFileStream(row.storageKey);
+			if (!stream) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File bytes not available' }
+				});
+			}
+
+			return {
+				filename: row.filename,
+				mimeType: row.mimeType,
+				sizeBytes: row.sizeBytes,
+				stream
+			};
+		});
+	}
+
+	private async resolveAppointmentLink(
+		db: TenantDb,
+		patientId: string,
+		appointmentId: string | null
+	) {
+		if (!appointmentId) {
+			return { appointmentId: null as string | null, appointmentLabel: null as string | null };
+		}
+
+		const [appt] = await db
+			.select()
+			.from(appointments)
+			.where(and(eq(appointments.id, appointmentId), eq(appointments.patientId, patientId)))
+			.limit(1);
+		if (!appt) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: 'Appointment does not belong to this patient'
+				}
+			});
+		}
+		const datePart = appt.startsAt.toISOString().slice(0, 10);
+		return {
+			appointmentId,
+			appointmentLabel: `${datePart} · ${appt.title ?? 'Randevu'}`
+		};
 	}
 
 	async createWithDb(db: TenantDb, tenantId: string, input: PatientCreate) {

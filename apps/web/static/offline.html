@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="tr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#D97757" />
+		<title>Çevrimdışı — Verimaya</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+				--bg: #f9f9f8;
+				--text: #1a1a19;
+				--muted: #6b6b68;
+				--brand: #d97757;
+				--border: #e5e5e3;
+			}
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--bg: #1a1a19;
+					--text: #ededec;
+					--muted: #8a8a87;
+					--border: #333332;
+				}
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				min-height: 100dvh;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 1.5rem;
+				font-family:
+					system-ui,
+					-apple-system,
+					'Segoe UI',
+					sans-serif;
+				background: var(--bg);
+				color: var(--text);
+			}
+			main {
+				max-width: 22rem;
+				text-align: center;
+			}
+			.mark {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 2.5rem;
+				height: 2.5rem;
+				border-radius: 0.5rem;
+				background: var(--brand);
+				color: #fff;
+				font-weight: 600;
+				font-size: 1.125rem;
+				margin-bottom: 1.25rem;
+			}
+			h1 {
+				margin: 0;
+				font-size: 1.25rem;
+				font-weight: 600;
+				letter-spacing: -0.02em;
+			}
+			p {
+				margin: 0.75rem 0 0;
+				font-size: 0.9375rem;
+				line-height: 1.55;
+				color: var(--muted);
+			}
+			button {
+				margin-top: 1.5rem;
+				height: 2.5rem;
+				padding: 0 1.25rem;
+				border: none;
+				border-radius: 6px;
+				background: var(--brand);
+				color: #fff;
+				font-size: 0.875rem;
+				font-weight: 500;
+				cursor: pointer;
+			}
+			button:hover {
+				filter: brightness(0.96);
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<div class="mark" aria-hidden="true">V</div>
+			<h1>Çevrimdışısınız</h1>
+			<p>
+				İnternet bağlantısı yok. Önceden açtığınız sayfalar önbellekte olabilir; bağlantı gelince
+				yeniden deneyin.
+			</p>
+			<button type="button" onclick="location.reload()">Yeniden dene</button>
+		</main>
+	</body>
+</html>

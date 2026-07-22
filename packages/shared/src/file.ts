@@ -3,7 +3,8 @@ import { isoDateTime, uuid } from './common.js';
 
 /**
  * Patient / appointment attachment metadata.
- * Binary lives in object storage (Faz 1); demo keeps metadata only.
+ * Binary: local disk stub (`UPLOAD_DIR`, storage_key `local://…`) or metadata-only
+ * (`local://pending` for JSON POST). Object storage / signed URLs later.
  */
 export const patientFileSchema = z.object({
 	id: uuid,

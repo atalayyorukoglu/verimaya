@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -24,7 +25,25 @@ import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
+import { MAX_UPLOAD_BYTES } from './local-file-storage';
 import { PatientsService } from './patients.service';
+
+type MultipartRequest = FastifyRequest & {
+	isMultipart?: () => boolean;
+	file: () => Promise<{
+		filename: string;
+		mimetype: string;
+		toBuffer: () => Promise<Buffer>;
+		fields?: Record<string, unknown>;
+	} | undefined>;
+};
+
+function multipartFieldString(field: unknown): string | null {
+	const item = Array.isArray(field) ? field[0] : field;
+	if (!item || typeof item !== 'object') return null;
+	const value = (item as { value?: unknown }).value;
+	return typeof value === 'string' && value.length > 0 ? value : null;
+}
 
 @Controller('patients')
 @UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
@@ -79,6 +98,30 @@ export class PatientsController {
 		return this.patientsService.listFiles(getActiveOrgId(req), id);
 	}
 
+	@Get(':id/files/:fileId/download')
+	async downloadFile(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('fileId') fileId: string,
+		@Res() reply: FastifyReply
+	) {
+		const download = await this.patientsService.openFileDownload(
+			getActiveOrgId(req),
+			id,
+			fileId
+		);
+		reply.header('Content-Type', download.mimeType);
+		reply.header(
+			'Content-Disposition',
+			`attachment; filename="${download.filename.replace(/"/g, '')}"`
+		);
+		reply.header('X-Content-Type-Options', 'nosniff');
+		if (download.sizeBytes > 0) {
+			reply.header('Content-Length', String(download.sizeBytes));
+		}
+		return reply.send(download.stream);
+	}
+
 	@Get(':id/finance-summary')
 	financeSummary(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.patientsService.financeSummary(getActiveOrgId(req), id);
@@ -91,9 +134,57 @@ export class PatientsController {
 		@Body() body: unknown,
 		@Res({ passthrough: true }) reply: FastifyReply
 	) {
-		const input = parseBody(patientFileCreateSchema, body, req);
 		const tenantId = getActiveOrgId(req);
 		const actor = getActorFromRequest(req);
+		const multipartReq = req as MultipartRequest;
+
+		if (typeof multipartReq.isMultipart === 'function' && multipartReq.isMultipart()) {
+			const part = await multipartReq.file();
+			if (!part) {
+				throw new BadRequestException({
+					error: { code: 'validation_error', message: 'Expected multipart file field' }
+				});
+			}
+			const data = await part.toBuffer();
+			if (data.byteLength > MAX_UPLOAD_BYTES) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: `File exceeds ${MAX_UPLOAD_BYTES} byte limit`
+					}
+				});
+			}
+			const appointmentId = multipartFieldString(part.fields?.appointment_id);
+
+			const result = await this.idempotency.run(
+				tenantId,
+				getIdempotencyKey(req),
+				'POST',
+				`/v1/patients/${id}/files`,
+				async (db) => ({
+					statusCode: 201,
+					body: await this.patientsService.uploadLocalFileWithDb(
+						db,
+						tenantId,
+						id,
+						{
+							filename: part.filename || 'upload.bin',
+							mimeType: part.mimetype || 'application/octet-stream',
+							appointmentId,
+							data
+						},
+						{
+							userId: actor.actorId,
+							displayName: actor.actorDisplayName
+						}
+					)
+				})
+			);
+			reply.status(result.statusCode);
+			return result.body;
+		}
+
+		const input = parseBody(patientFileCreateSchema, body, req);
 		const result = await this.idempotency.run(
 			tenantId,
 			getIdempotencyKey(req),

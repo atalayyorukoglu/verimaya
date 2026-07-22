@@ -1,15 +1,20 @@
 import 'reflect-metadata';
 import { config as loadEnv } from 'dotenv';
+import multipart from '@fastify/multipart';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { getAuth } from './auth/auth';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
+import { initSentry } from './common/sentry';
+import { mountOpenApiDocs } from './docs/openapi.mount';
+import { MAX_UPLOAD_BYTES } from './patients/local-file-storage';
 import { mountBullBoard } from './queue/bull-board.mount';
 import { QueueService } from './queue/queue.service';
 
 loadEnv({ path: '.env' });
+initSentry();
 
 async function mountBetterAuth(app: NestFastifyApplication) {
 	const auth = getAuth();
@@ -18,9 +23,8 @@ async function mountBetterAuth(app: NestFastifyApplication) {
 	fastify.route({
 		method: ['GET', 'POST'],
 		url: '/v1/auth/*',
-		config: {
-			rawBody: true
-		},
+		// Custom flag for consumers; not part of FastifyContextConfig.
+		config: { rawBody: true } as Record<string, unknown>,
 		async handler(request: FastifyRequest, reply: FastifyReply) {
 			const host = request.headers.host ?? 'localhost:3000';
 			const url = new URL(request.url, `http://${host}`);
@@ -89,8 +93,13 @@ async function bootstrap() {
 		credentials: true
 	});
 
+	await app.register(multipart, {
+		limits: { fileSize: MAX_UPLOAD_BYTES }
+	});
+
 	app.setGlobalPrefix('v1');
 	await mountBetterAuth(app);
+	await mountOpenApiDocs(app);
 
 	await app.init();
 	const queueService = app.get(QueueService);

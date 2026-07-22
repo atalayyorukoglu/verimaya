@@ -751,12 +751,34 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const patient = store.patients.find((p) => p.id === params.id);
 		if (!patient) return notFound('Hasta bulunamadı');
-		const body = await request.json();
-		const parsed = patientFileCreateSchema.safeParse(body);
-		if (!parsed.success) return badRequest('Geçersiz dosya verisi', parsed.error.flatten());
+
+		const contentType = request.headers.get('content-type') ?? '';
+		let filename = 'upload.bin';
+		let mime_type = 'application/octet-stream';
+		let size_bytes = 0;
+		let appointmentId: string | null = null;
+
+		if (contentType.includes('multipart/form-data')) {
+			const form = await request.formData();
+			const uploaded = form.get('file');
+			if (!(uploaded instanceof File)) return badRequest('Expected multipart file field');
+			filename = uploaded.name || filename;
+			mime_type = uploaded.type || mime_type;
+			size_bytes = uploaded.size;
+			const apptRaw = form.get('appointment_id');
+			appointmentId =
+				typeof apptRaw === 'string' && apptRaw.length > 0 ? apptRaw : null;
+		} else {
+			const body = await request.json();
+			const parsed = patientFileCreateSchema.safeParse(body);
+			if (!parsed.success) return badRequest('Geçersiz dosya verisi', parsed.error.flatten());
+			filename = parsed.data.filename;
+			mime_type = parsed.data.mime_type ?? mime_type;
+			size_bytes = parsed.data.size_bytes ?? 0;
+			appointmentId = parsed.data.appointment_id ?? null;
+		}
 
 		let appointment_label: string | null = null;
-		const appointmentId = parsed.data.appointment_id ?? null;
 		if (appointmentId) {
 			const appt = store.appointments.find(
 				(a) => a.id === appointmentId && a.patient_id === patient.id
@@ -771,14 +793,27 @@ export const handlers = [
 			patient_id: patient.id,
 			appointment_id: appointmentId,
 			appointment_label,
-			filename: parsed.data.filename,
-			mime_type: parsed.data.mime_type ?? 'application/octet-stream',
-			size_bytes: parsed.data.size_bytes ?? 0,
+			filename,
+			mime_type,
+			size_bytes,
 			uploaded_by_display_name: demoUser.display_name,
 			created_at: nowIso()
 		};
 		store.files.unshift(file);
 		return HttpResponse.json(file, { status: 201 });
+	}),
+
+	http.get('/v1/patients/:id/files/:fileId/download', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const file = store.files.find((f) => f.id === params.fileId && f.patient_id === params.id);
+		if (!file) return notFound('Dosya bulunamadı');
+		return new HttpResponse(`MSW stub: ${file.filename}`, {
+			status: 200,
+			headers: {
+				'Content-Type': file.mime_type || 'application/octet-stream',
+				'Content-Disposition': `attachment; filename="${file.filename}"`
+			}
+		});
 	}),
 
 	http.delete('/v1/patients/:id/files/:fileId', ({ params, request }) => {

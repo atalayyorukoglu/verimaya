@@ -38,8 +38,19 @@
 			</ul>
 		</div>
 
+		<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
+			<h2 class="text-sm font-semibold text-text">Geliştirme / fixture</h2>
+			<p class="mt-2 text-sm leading-relaxed text-text-muted">
+				OAuth olmadan gelen GHL webhook'ları kuyrukta işlenir; contact alanları yeterliyse
+				tenant içinde hasta upsert edilir (<code class="text-xs">source=ghl</code>). Sync özeti
+				<code class="text-xs">jobs</code> ledger'ına yazılır. 6 saatlik
+				<code class="text-xs">ghl.reconcile</code> için
+				<code class="text-xs">ENABLE_INTEGRATION_SCHEDULERS=true</code> gerekir.
+			</p>
+		</div>
+
 		<p class="text-xs text-text-faint">
-			Gerçek OAuth bağlantısı ve webhook kaydı backend (Faz 2) ile birlikte açılacak.
+			Gerçek OAuth bağlantısı ve alan bazlı çift yönlü senkron sonraki adım.
 		</p>
 	</div>
 </div>

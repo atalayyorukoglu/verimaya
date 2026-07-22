@@ -1,4 +1,4 @@
-import type { GhlEventKind } from './ghl.types';
+import type { GhlContactFields, GhlEventKind } from './ghl.types';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
 	if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -16,6 +16,16 @@ function pickString(source: Record<string, unknown> | null, keys: string[]): str
 		}
 	}
 	return null;
+}
+
+function composeFullName(source: Record<string, unknown> | null): string | null {
+	const direct = pickString(source, ['fullName', 'full_name', 'name', 'contactName']);
+	if (direct) return direct;
+
+	const first = pickString(source, ['firstName', 'first_name']);
+	const last = pickString(source, ['lastName', 'last_name']);
+	const combined = [first, last].filter(Boolean).join(' ').trim();
+	return combined || null;
 }
 
 /**
@@ -59,7 +69,35 @@ export function extractGhlExternalId(
 		'opportunityId',
 		'opportunity_id',
 		'contactId',
-		'contact_id',
-		'locationId'
+		'contact_id'
 	]);
+}
+
+/**
+ * Extracts minimal contact fields from a fixture-shaped GHL webhook payload.
+ * Looks at nested `contact`, then the opportunity's contact, then top-level fields.
+ */
+export function extractGhlContactFields(payload: Record<string, unknown>): GhlContactFields {
+	const kind = detectGhlEventKind(payload);
+	const nestedContact =
+		asRecord(payload.contact) ??
+		asRecord(asRecord(payload.opportunity)?.contact) ??
+		(kind === 'contact' ? payload : null);
+
+	const source = nestedContact ?? payload;
+	const externalId =
+		pickString(source, ['id', 'contactId', 'contact_id']) ??
+		(kind === 'contact' ? extractGhlExternalId(payload, 'contact') : null);
+
+	return {
+		externalId,
+		fullName: composeFullName(source),
+		phone: pickString(source, ['phone', 'phoneNumber', 'phone_number']),
+		email: pickString(source, ['email', 'emailAddress', 'email_address'])
+	};
+}
+
+/** Marker stored in `patients.notes` to map GHL contact ids without a new table/migration. */
+export function ghlContactNotesMarker(externalId: string): string {
+	return `ghl_contact_id=${externalId}`;
 }

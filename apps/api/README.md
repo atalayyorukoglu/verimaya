@@ -17,12 +17,13 @@ pnpm --filter @verimaya/api dev
 - Auth: `http://localhost:3000/v1/auth/*` (better-auth)
 - Session: `GET http://localhost:3000/v1/me` (cookie)
 - Domain CRUD: `GET|POST|PATCH|DELETE /v1/patients`, `/v1/contacts`, `/v1/appointments`, `/v1/transactions` (SessionGuard + ActiveOrgGuard; mutasyonlarda opsiyonel `Idempotency-Key`)
-- WhatsApp parse stub: `POST http://localhost:3000/v1/whatsapp/parse` — body `{ "message": "..." }` → `{ "records": [...] }` (heuristic; LLM Faz 3)
+- WhatsApp parse: `POST http://localhost:3000/v1/whatsapp/parse` — body `{ "message": "..." }` → `{ "records": [...] }` (`LLM_API_KEY` yoksa heuristic; approve işlem oluşturmaz)
 - Webhook stub: `POST http://localhost:3000/v1/webhooks/:provider` → `202` (queue-first)
 - WAHA webhook: `POST http://localhost:3000/v1/webhooks/waha` → `202` (`inbound_messages` + kuyruk)
 - WhatsApp inbox: `GET /v1/whatsapp/inbox?cursor=&limit=`, `GET /v1/whatsapp/inbox/:id` (SessionGuard + ActiveOrgGuard)
+- OpenAPI: `GET http://localhost:3000/v1/openapi.yaml` · Scalar UI: `GET http://localhost:3000/v1/docs` (auth yok)
 
-OpenAPI (statik, ana `/v1` rotalar): [`openapi.yaml`](./openapi.yaml)
+OpenAPI kaynak dosya: [`openapi.yaml`](./openapi.yaml)
 
 Yerel Postgres host portu **5433**, Redis **6379**. Runtime kullanıcı: `verimaya_app` (RLS). Migrasyon: `verimaya` (owner). Organization oluşturulunca aynı id ile `tenants` satırı yazılır. Admin TOTP: better-auth `twoFactor` (`/v1/auth/two-factor/*`).
 
@@ -90,13 +91,13 @@ curl -s -X POST http://localhost:3000/v1/whatsapp/parse \
 - Tablo: `api_keys` (`tenant_id`, `name`, `key_prefix`, `key_hash`, `scopes`, `created_at`, `revoked_at`; RLS). Lookup: `app.lookup_api_key(hash)` (SECURITY DEFINER).
 - API (oturum): `POST /v1/api-keys` (plaintext key yalnızca create yanıtında), `GET /v1/api-keys` (hash yok), `DELETE /v1/api-keys/:id` (revoke). Mutasyonlarda `Idempotency-Key` desteklenir (Faz 1'den beri domain CRUD'da da vardı).
 - `ApiKeyGuard`: `Authorization: Bearer vk_...` → hash doğrulama; **henüz global middleware'e bağlı değil** — route bazında `@UseGuards(ApiKeyGuard)` ile kullanılacak.
-- OpenAPI: statik [`openapi.yaml`](./openapi.yaml) — auth notu, patients, contacts, webhooks, WhatsApp inbox, reports, api-keys. `webhook_subscriptions`, HMAC giden event'ler henüz yok.
+- OpenAPI: [`openapi.yaml`](./openapi.yaml) + runtime `GET /v1/openapi.yaml` / Scalar `GET /v1/docs`.
 
 ## Gözlemlenebilirlik (Faz 2)
 
 - **Log:** Fastify yerleşik pino (`LOG_LEVEL`, varsayılan `info`); istek kimliği `req.id`.
 - **Hata gövdesi:** tüm HTTP hataları `{ error: { code, message }, request_id }` (`packages/shared` `apiErrorSchema`). Global `HttpExceptionFilter` Nest/string/object yanıtlarını bu forma çevirir; `request_id` her zaman Fastify `req.id` (veya exception gövdesindeki değer).
-- **Sentry:** henüz yok (Faz 2 devam).
+- **Sentry:** `SENTRY_DSN` set ise `@sentry/node` 5xx hatalarını yakalar (`request_id` tag); boşsa no-op.
 
 ## Test
 

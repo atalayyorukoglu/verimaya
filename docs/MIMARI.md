@@ -54,6 +54,10 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 
 Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker`) dahili kullanımda çalışmaya devam eder. Şeması ve rota listesi `docs/legacy-reference/` altına çıkarılır; Verimaya şeması bunun düzeltilmiş portudur. Faz 8'de ETL ile veri göçü yapılır, kendi firmamız ilk tenant olur.
 
-## GHL entegrasyon durumu (2026-07-21)
+## GHL entegrasyon durumu (2026-07-22)
 
-`apps/api/src/integrations/ghl/` iskeleti genişletildi: `ghl.mapper.ts` webhook payload'ından `contact`/`opportunity`/`unknown` türünü ve external id'yi çıkarır (OAuth/HTTP adaptörü yok, gerçek GHL şeması netleşince güncellenecek). `GhlSyncService.parseInboundEvent` bunu loglar ve `{ kind, externalId, summary }` döner; `GhlClientStub.processInboundEvent` bu sonucu `IntegrationEventProcessor`'a taşır. Yeni `ghl.reconcile` BullMQ job tipi (`queue.service.ts`) şimdilik noop — hedef kadans: aktif GHL credential'ı olan her tenant için 6 saatte bir reconciliation (Faz 5'teki `ad_metrics.sync` ile aynı desen). Henüz DB yazımı yok; alan bazlı sahiplik kuralı (madde 5) adaptör gelince uygulanacak.
+`apps/api/src/integrations/ghl/` fixture-backed stub: `ghl.mapper.ts` contact/opportunity + minimal alanlar (ad/telefon/e-posta/external id) çıkarır. `GhlSyncService.processInboundEvent` tenant context içinde (1) `jobs` tablosuna `ghl.inbound.sync` ledger satırı yazar, (2) temiz contact'ta `patients` upsert eder (`source='ghl'`, notes marker `ghl_contact_id=<id>` — ayrı mapping tablosu/migration yok). `GhlClientStub` HTTP çağırmaz. `ghl.reconcile` OAuth yokken ledger noop satırı yazar. Periyodik 6h scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true` (varsayılan kapalı). Alan bazlı sahiplik (madde 5) gerçek adaptörle gelecek.
+
+## Reklam metrikleri (Faz 5 stub, 2026-07-22)
+
+`AdMetricsSyncService` (`ad_metrics.sync` job): tenant'ta Meta/Google `tenant_credentials` yoksa `ad_metrics_daily`'ye 1–3 deterministik fixture satırı upsert eder (unique: tenant+provider+date+campaign); cred varsa OAuth pull henüz yok — fixture yazılmaz. Aynı `ENABLE_INTEGRATION_SCHEDULERS` bayrağıyla 6h repeatable scheduler.

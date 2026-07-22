@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
 import type {
 	InboundMessageActionResponse,
@@ -8,9 +8,9 @@ import type {
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
+import { LLM_CLIENT, type LlmClient } from '../integrations/llm';
 import { PatientsService } from '../patients/patients.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
-import { heuristicParseWhatsappMessage } from './heuristic-parse';
 import { asRecord, extractInboundDisplayFields, mergeParsedPayload, toInboundMessage } from './inbound-mapper';
 
 const PARSE_ERROR_NO_TEXT = 'Medya mesajı — metin yok';
@@ -20,14 +20,15 @@ const PARSE_ERROR_NO_MATCH = 'Ayrıştırılamadı';
 export class WhatsappService {
 	constructor(
 		private readonly patientsService: PatientsService,
-		private readonly tenantContext: TenantContextService
+		private readonly tenantContext: TenantContextService,
+		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
 	async parseMessage(tenantId: string, message: string) {
 		const { items: patients } = await this.patientsService.list(tenantId, {
 			limit: 100
 		});
-		return heuristicParseWhatsappMessage(message, patients);
+		return this.llm.parseTransactionDrafts({ message, patients });
 	}
 
 	async listInbox(tenantId: string, params: { cursor?: string; limit: number }) {
@@ -59,7 +60,7 @@ export class WhatsappService {
 		});
 	}
 
-	/** Heuristic parse of a single inbox item; stashes drafts (or an error) into `payload`. */
+	/** LLM/heuristic parse of a single inbox item; stashes drafts (or an error) into `payload`. */
 	async parseInboxItem(tenantId: string, id: string): Promise<{ records: TransactionDraft[] }> {
 		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
 
@@ -73,7 +74,10 @@ export class WhatsappService {
 				return { records: [] };
 			}
 
-			const records = heuristicParseWhatsappMessage(display.body, patients);
+			const records = await this.llm.parseTransactionDrafts({
+				message: display.body,
+				patients
+			});
 			await this.savePayload(db, id, payload, {
 				parsed_records: records.length > 0 ? records : null,
 				parse_error: records.length === 0 ? PARSE_ERROR_NO_MATCH : null
@@ -82,7 +86,7 @@ export class WhatsappService {
 		});
 	}
 
-	/** Heuristic parse of every `new` message with text; skips media-only messages. */
+	/** Parse every `new` message with text; skips media-only messages. Does not create transactions. */
 	async processInbox(tenantId: string): Promise<InboundMessageProcessResponse> {
 		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
 
@@ -102,7 +106,10 @@ export class WhatsappService {
 				if (!display.body?.trim()) continue;
 
 				processed++;
-				const records = heuristicParseWhatsappMessage(display.body, patients);
+				const records = await this.llm.parseTransactionDrafts({
+					message: display.body,
+					patients
+				});
 				const isError = records.length === 0;
 				if (isError) error++;
 				else parsed++;
@@ -117,6 +124,7 @@ export class WhatsappService {
 		});
 	}
 
+	/** Marks inbox item approved only — does not auto-create transactions (POST /v1/transactions). */
 	async approveInboxItem(tenantId: string, id: string): Promise<InboundMessageActionResponse> {
 		return this.setStatus(tenantId, id, 'approved');
 	}

@@ -3,13 +3,18 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { Job, Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
+import { AdMetricsSyncService } from '../ad-metrics/ad-metrics.sync.service';
+import { DbService } from '../db/db.service';
+import { tenants } from '../db/schema';
 import { GhlSyncService } from '../integrations/ghl';
 import { IntegrationEventProcessor } from './integration-event.processor';
 import { OutboxProcessor } from './outbox.processor';
 import {
 	AD_METRICS_SYNC_JOB_TYPE,
 	DEFAULT_QUEUE_JOB_OPTIONS,
+	ENABLE_INTEGRATION_SCHEDULERS_ENV,
 	GHL_RECONCILE_JOB_TYPE,
+	INTEGRATION_SCHEDULER_EVERY_MS,
 	OUTBOX_DELIVER_JOB_TYPE
 } from './queue.constants';
 
@@ -30,12 +35,14 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
 	constructor(
 		private readonly config: ConfigService,
+		private readonly db: DbService,
 		private readonly integrationEventProcessor: IntegrationEventProcessor,
 		private readonly outboxProcessor: OutboxProcessor,
-		private readonly ghlSyncService: GhlSyncService
+		private readonly ghlSyncService: GhlSyncService,
+		private readonly adMetricsSyncService: AdMetricsSyncService
 	) {}
 
-	onModuleInit() {
+	async onModuleInit() {
 		const url = this.config.getOrThrow<string>('REDIS_URL');
 		this.redis = new Redis(url, { maxRetriesPerRequest: null });
 
@@ -54,15 +61,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 					return { ok: true };
 				}
 				if (job.data.jobType === AD_METRICS_SYNC_JOB_TYPE) {
-					// Faz 5 stub: scheduled Meta/Google incremental sync (6h) → ad_metrics_daily; noop until OAuth adapters ship.
-					this.logger.debug(
-						`Ad metrics sync noop for tenant ${job.data.tenantId}; job ${job.id}`
-					);
-					return { ok: true };
+					const result = await this.adMetricsSyncService.sync(job.data.tenantId);
+					return { ok: true, ...result };
 				}
 				if (job.data.jobType === GHL_RECONCILE_JOB_TYPE) {
-					// Faz 4 stub: periodic GHL reconciliation (intended cadence: 6h per tenant with an
-					// active credential); noop until the OAuth + real GHL adapter ships.
 					await this.ghlSyncService.reconcile(job.data.tenantId);
 					return { ok: true };
 				}
@@ -96,6 +98,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 				this.logger.error(`Failed to mark dead job ${job.id}: ${message}`);
 			});
 		});
+
+		await this.registerIntegrationSchedulersIfEnabled();
 	}
 
 	getDefaultQueue(): Queue<DefaultQueueJobData> | null {
@@ -123,9 +127,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	/**
-	 * Enqueues a `ad_metrics.sync` job for a tenant (Faz 5 skeleton — worker handler is a noop
-	 * until Meta/Google OAuth adapters ship). Intended caller: a future 6h scheduler per tenant
-	 * with active ad credentials.
+	 * Enqueues a one-shot `ad_metrics.sync` job for a tenant (fixture writer when no OAuth).
+	 * Periodic cadence: see {@link registerIntegrationSchedulersIfEnabled}.
 	 */
 	async enqueueAdMetricsSync(tenantId: string): Promise<Job<DefaultQueueJobData>> {
 		return this.enqueueDefaultJob(AD_METRICS_SYNC_JOB_TYPE, {
@@ -136,9 +139,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	/**
-	 * Enqueues a `ghl.reconcile` job for a tenant (Faz 4 skeleton — worker handler is a noop
-	 * until the GHL OAuth adapter ships). Intended caller: a future 6h scheduler per tenant
-	 * with an active GHL credential.
+	 * Enqueues a one-shot `ghl.reconcile` job for a tenant.
+	 * Periodic cadence: see {@link registerIntegrationSchedulersIfEnabled}.
 	 */
 	async enqueueGhlReconcile(tenantId: string): Promise<Job<DefaultQueueJobData>> {
 		return this.enqueueDefaultJob(GHL_RECONCILE_JOB_TYPE, {
@@ -148,10 +150,82 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		});
 	}
 
+	/**
+	 * Registers BullMQ repeatable job schedulers (every 6h) for each tenant:
+	 * - `ghl.reconcile:<tenantId>`
+	 * - `ad_metrics.sync:<tenantId>`
+	 *
+	 * Only runs when `ENABLE_INTEGRATION_SCHEDULERS=true`. Safe default is off so local
+	 * workers do not spam Redis. Manual enqueue via {@link enqueueGhlReconcile} /
+	 * {@link enqueueAdMetricsSync} always works regardless of this flag.
+	 */
+	private async registerIntegrationSchedulersIfEnabled(): Promise<void> {
+		const enabled =
+			this.config.get<string>(ENABLE_INTEGRATION_SCHEDULERS_ENV)?.trim().toLowerCase() ===
+			'true';
+		if (!enabled) {
+			this.logger.log(
+				`Integration schedulers skipped (${ENABLE_INTEGRATION_SCHEDULERS_ENV}!=true). Use enqueueGhlReconcile / enqueueAdMetricsSync for one-shot runs.`
+			);
+			return;
+		}
+
+		if (!this.defaultQueue) {
+			this.logger.warn('Cannot register integration schedulers: default queue not ready');
+			return;
+		}
+
+		const tenantRows = await this.db.client.select({ id: tenants.id }).from(tenants);
+		if (tenantRows.length === 0) {
+			this.logger.log('Integration schedulers enabled but no tenants found; nothing registered');
+			return;
+		}
+
+		for (const { id: tenantId } of tenantRows) {
+			await this.defaultQueue.upsertJobScheduler(
+				`${GHL_RECONCILE_JOB_TYPE}:${tenantId}`,
+				{ every: INTEGRATION_SCHEDULER_EVERY_MS },
+				{
+					name: GHL_RECONCILE_JOB_TYPE,
+					data: {
+						jobId: `${GHL_RECONCILE_JOB_TYPE}:${tenantId}`,
+						tenantId,
+						jobType: GHL_RECONCILE_JOB_TYPE
+					}
+				}
+			);
+			await this.defaultQueue.upsertJobScheduler(
+				`${AD_METRICS_SYNC_JOB_TYPE}:${tenantId}`,
+				{ every: INTEGRATION_SCHEDULER_EVERY_MS },
+				{
+					name: AD_METRICS_SYNC_JOB_TYPE,
+					data: {
+						jobId: `${AD_METRICS_SYNC_JOB_TYPE}:${tenantId}`,
+						tenantId,
+						jobType: AD_METRICS_SYNC_JOB_TYPE
+					}
+				}
+			);
+		}
+
+		this.logger.log(
+			`Registered 6h integration schedulers for ${tenantRows.length} tenant(s) (ghl.reconcile + ad_metrics.sync)`
+		);
+	}
+
 	private async handleExhaustedJob(job: Job<DefaultQueueJobData>, err: Error): Promise<void> {
 		if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {
 			// OutboxProcessor already persists status='failed' on every attempt.
 			this.logger.error(`Outbox delivery ${job.data.jobId} exhausted retries: ${err.message}`);
+			return;
+		}
+		if (
+			job.data.jobType === GHL_RECONCILE_JOB_TYPE ||
+			job.data.jobType === AD_METRICS_SYNC_JOB_TYPE
+		) {
+			this.logger.error(
+				`Scheduled job ${job.data.jobType} for tenant ${job.data.tenantId} exhausted retries: ${err.message}`
+			);
 			return;
 		}
 		await this.integrationEventProcessor.markFailed(

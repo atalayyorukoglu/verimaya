@@ -12,6 +12,9 @@ export const apiPaths = {
 	patients: `${API_V1_PREFIX}/patients`,
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
 	patientFinanceSummary: (id: string) => `${API_V1_PREFIX}/patients/${id}/finance-summary`,
+	patientFiles: (id: string) => `${API_V1_PREFIX}/patients/${id}/files`,
+	patientFileDownload: (patientId: string, fileId: string) =>
+		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/download`,
 	patientsDuplicateGroups: `${API_V1_PREFIX}/patients/duplicate-groups`,
 	patientsMerge: `${API_V1_PREFIX}/patients/merge`,
 	appointments: `${API_V1_PREFIX}/appointments`,
@@ -144,6 +147,10 @@ export const apiContract = {
 	'POST /v1/patients/:id/files': {
 		body: patientFileCreateSchema,
 		response: patientFileSchema
+	},
+	'GET /v1/patients/:id/files/:fileId/download': {
+		/** Binary stream — not a JSON zod body */
+		response: z.unknown()
 	},
 	'GET /v1/patients/:id/case-notes': {
 		response: z.object({ items: z.array(patientCaseNoteSchema) })

@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
+import { HeuristicLlmClient } from '../integrations/llm';
 import { PatientsService } from '../patients/patients.service';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { WhatsappService } from './whatsapp.service';
@@ -84,7 +85,11 @@ describe('inbound_messages RLS isolation', () => {
 			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
 		} as TenantContextService;
 
-		whatsappService = new WhatsappService(new PatientsService(tenantContext), tenantContext);
+		whatsappService = new WhatsappService(
+			new PatientsService(tenantContext),
+			tenantContext,
+			new HeuristicLlmClient()
+		);
 	});
 
 	afterAll(async () => {
