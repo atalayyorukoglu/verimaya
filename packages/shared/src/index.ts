@@ -19,6 +19,7 @@ export * from './labels.js';
 export * from './ad-metrics.js';
 export * from './api-key.js';
 export * from './reports.js';
+export * from './marketing-report.js';
 export * from './credentials.js';
 export * from './webhook-subscription.js';
 export * from './ai-correction.js';

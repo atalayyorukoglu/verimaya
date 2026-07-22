@@ -54,3 +54,10 @@ export {
 	type TrustScoreCheck,
 	type TrustScoreResult
 } from './trust-score/schema.js';
+export { calculateRealRoas } from './real-roas/calculate.js';
+export {
+	realRoasInput,
+	realRoasResult,
+	type RealRoasInput,
+	type RealRoasResult
+} from './real-roas/schema.js';
