@@ -1,0 +1,10 @@
+# XcodeGen output
+Verimaya.xcodeproj/
+# Xcode
+xcuserdata/
+*.xcuserstate
+.DS_Store
+build/
+DerivedData/
+# Local junk
+cj.txt
