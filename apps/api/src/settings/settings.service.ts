@@ -247,6 +247,12 @@ export class SettingsService {
 		});
 	}
 
+	async deleteCredential(tenantId: string, provider: string): Promise<void> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db.delete(tenantCredentials).where(eq(tenantCredentials.provider, provider));
+		});
+	}
+
 	private async findFinanceCategoryRow(db: TenantDb, id: string) {
 		const [row] = await db
 			.select()

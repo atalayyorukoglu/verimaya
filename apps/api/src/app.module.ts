@@ -19,6 +19,7 @@ import { AdMetricsModule } from './ad-metrics/ad-metrics.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { ReportsModule } from './reports/reports.module';
 import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subscriptions.module';
+import { AdsModule } from './integrations/ads/ads.module';
 
 @Module({
 	imports: [
@@ -41,6 +42,7 @@ import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subs
 		WhatsappModule,
 		SettingsModule,
 		AuditLogsModule,
+		AdsModule,
 		AdMetricsModule,
 		ApiKeysModule,
 		ReportsModule,

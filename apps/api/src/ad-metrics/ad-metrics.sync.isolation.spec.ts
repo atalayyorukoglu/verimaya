@@ -1,10 +1,15 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { CryptoService } from '../common/crypto.service';
 import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
+import { AdsAdapterRegistry } from '../integrations/ads/ads-adapter.registry';
+import { SettingsService } from '../settings/settings.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { FIXTURE_META_CAMPAIGN_ID } from './ad-metrics.fixtures';
 import { AdMetricsSyncService } from './ad-metrics.sync.service';
+
+process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -35,7 +40,12 @@ describe('AdMetricsSyncService tenant isolation', () => {
 
 		const { db } = getDb(databaseUrl);
 		const dbService = { client: db, sql } as unknown as DbService;
-		syncService = new AdMetricsSyncService(new TenantContextService(dbService));
+		const tenantContext = new TenantContextService(dbService);
+		syncService = new AdMetricsSyncService(
+			tenantContext,
+			new SettingsService(tenantContext, new CryptoService()),
+			new AdsAdapterRegistry()
+		);
 	});
 
 	afterAll(async () => {

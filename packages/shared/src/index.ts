@@ -17,6 +17,7 @@ export * from './features.js';
 export * from './changelog.js';
 export * from './labels.js';
 export * from './ad-metrics.js';
+export * from './ads-connection.js';
 export * from './api-key.js';
 export * from './reports.js';
 export * from './marketing-report.js';
