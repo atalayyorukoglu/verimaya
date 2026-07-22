@@ -1,6 +1,6 @@
 # Verimaya Web
 
-SvelteKit SPA (Svelte 5 runes). Faz 0a'da tüm `/v1/*` istekleri MSW ile mock'lanır; Faz 0b'den itibaren gerçek NestJS API'ye geçilebilir.
+SvelteKit SPA (Svelte 5 runes). Varsayılan olarak gerçek NestJS API'ye bağlanır; API çalıştırmadan demo görmek için MSW'yi elle açabilirsiniz (`PUBLIC_USE_MSW=true` — tüm `/v1/*` istekleri mock'lanır, faker ile şemadan veri üretilir).
 
 ## Ortam değişkenleri
 
@@ -9,11 +9,15 @@ SvelteKit SPA (Svelte 5 runes). Faz 0a'da tüm `/v1/*` istekleri MSW ile mock'la
 | Değişken | Varsayılan | Açıklama |
 |---|---|---|
 | `PUBLIC_API_URL` | `http://localhost:3000` | NestJS API kökeni |
-| `PUBLIC_USE_MSW` | `true` | `true`: dev'de MSW mock; `false`: gerçek API |
+| `PUBLIC_USE_MSW` | `false` | `false`: gerçek API; `true`: API'siz demo — dev'de MSW mock açılır |
 
-## MSW kapalı mod — kontrol listesi
+## API'siz demo (MSW)
 
-Gerçek API ile çalışmak için sırayla:
+API çalıştırmadan arayüzü görmek için `apps/web/.env`'de `PUBLIC_USE_MSW=true` set edip `pnpm --filter @verimaya/web dev` çalıştırın; alt çubukta demo senaryo/rol seçicisi görünür.
+
+## Gerçek API modu — kontrol listesi
+
+`PUBLIC_USE_MSW=false` (varsayılan) ile çalışmak için sırayla:
 
 - [ ] **Altyapı:** repo kökünde `docker compose up -d` (Postgres + Redis)
 - [ ] **Migrasyon:** `pnpm --filter @verimaya/api db:migrate`

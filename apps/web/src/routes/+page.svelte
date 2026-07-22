@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { Appointment, InboundMessage, Patient, Tenant } from '@verimaya/shared';
-	import { patientStatusLabels } from '@verimaya/shared';
+	import type { Appointment, InboundMessage, Patient, ReportSummary, Tenant } from '@verimaya/shared';
+	import { patientStatusLabels, reportUrl } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
-	import { formatDateTime, formatTime, isSameLocalDay } from '$lib/format';
+	import { USE_MSW } from '$lib/env';
+	import { formatDateTime, formatMoney, formatTime, isSameLocalDay } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
 	import { canAccessPath, getDemoRole } from '$lib/rbac';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -13,6 +14,21 @@
 
 	const role = getDemoRole();
 	const canFinance = canAccessPath('/finans/aktar', role);
+
+	function pad2(n: number) {
+		return String(n).padStart(2, '0');
+	}
+
+	function isoDay(d: Date) {
+		return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+	}
+
+	const currentMonthRange = (() => {
+		const now = new Date();
+		const first = new Date(now.getFullYear(), now.getMonth(), 1);
+		const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+		return { from: isoDay(first), to: isoDay(last) };
+	})();
 
 	const tenantQuery = createQuery(() => ({
 		queryKey: ['tenants', 'current'],
@@ -35,6 +51,12 @@
 		enabled: canFinance
 	}));
 
+	const summaryQuery = createQuery(() => ({
+		queryKey: ['reports', 'summary', 'dashboard', currentMonthRange],
+		queryFn: () => apiGet<ReportSummary>(reportUrl('summary', currentMonthRange)),
+		enabled: !USE_MSW && canFinance
+	}));
+
 	const todayAppointments = $derived(
 		(appointmentsQuery.data?.items ?? []).filter((a) => isSameLocalDay(a.starts_at)).slice(0, 5)
 	);
@@ -48,7 +70,10 @@
 	);
 
 	const anyError = $derived(
-		patientsQuery.isError || appointmentsQuery.isError || (canFinance && inboxQuery.isError)
+		patientsQuery.isError ||
+			appointmentsQuery.isError ||
+			(canFinance && inboxQuery.isError) ||
+			(!USE_MSW && canFinance && summaryQuery.isError)
 	);
 </script>
 
@@ -190,7 +215,22 @@
 	<section>
 		<h2 class="mb-3 text-sm font-semibold text-text">Özet metrikler</h2>
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' }, { label: 'Para birimi', value: tenantQuery.data?.base_currency ?? '—', hint: tenantQuery.data?.name ?? 'Organizasyon' }] as card (card.label)}
+			{#each [
+				{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' },
+				{ label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' },
+				{ label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' },
+				{
+					label: 'Net (bu ay)',
+					value:
+						!USE_MSW && canFinance && summaryQuery.data
+							? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY')
+							: tenantQuery.data?.base_currency ?? '—',
+					hint:
+						!USE_MSW && canFinance
+							? 'Sunucu aggregate'
+							: (tenantQuery.data?.name ?? 'Organizasyon')
+				}
+			] as card (card.label)}
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{card.label}</p>
 					<p class="mt-1 text-2xl font-semibold tracking-tight text-text">{card.value}</p>

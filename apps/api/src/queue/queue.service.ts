@@ -1,10 +1,17 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Job, Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
+import { GhlSyncService } from '../integrations/ghl';
 import { IntegrationEventProcessor } from './integration-event.processor';
 import { OutboxProcessor } from './outbox.processor';
-import { DEFAULT_QUEUE_JOB_OPTIONS, OUTBOX_DELIVER_JOB_TYPE } from './queue.constants';
+import {
+	AD_METRICS_SYNC_JOB_TYPE,
+	DEFAULT_QUEUE_JOB_OPTIONS,
+	GHL_RECONCILE_JOB_TYPE,
+	OUTBOX_DELIVER_JOB_TYPE
+} from './queue.constants';
 
 export const DEFAULT_QUEUE_NAME = 'default';
 
@@ -24,7 +31,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 	constructor(
 		private readonly config: ConfigService,
 		private readonly integrationEventProcessor: IntegrationEventProcessor,
-		private readonly outboxProcessor: OutboxProcessor
+		private readonly outboxProcessor: OutboxProcessor,
+		private readonly ghlSyncService: GhlSyncService
 	) {}
 
 	onModuleInit() {
@@ -45,11 +53,17 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 					await this.integrationEventProcessor.process(job.data.jobId, job.data.tenantId);
 					return { ok: true };
 				}
-				if (job.data.jobType === 'ad_metrics.sync') {
+				if (job.data.jobType === AD_METRICS_SYNC_JOB_TYPE) {
 					// Faz 5 stub: scheduled Meta/Google incremental sync (6h) → ad_metrics_daily; noop until OAuth adapters ship.
 					this.logger.debug(
 						`Ad metrics sync noop for tenant ${job.data.tenantId}; job ${job.id}`
 					);
+					return { ok: true };
+				}
+				if (job.data.jobType === GHL_RECONCILE_JOB_TYPE) {
+					// Faz 4 stub: periodic GHL reconciliation (intended cadence: 6h per tenant with an
+					// active credential); noop until the OAuth + real GHL adapter ships.
+					await this.ghlSyncService.reconcile(job.data.tenantId);
 					return { ok: true };
 				}
 				if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {
@@ -105,6 +119,32 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		}
 		return this.defaultQueue.add(jobType, data, {
 			jobId: data.jobId
+		});
+	}
+
+	/**
+	 * Enqueues a `ad_metrics.sync` job for a tenant (Faz 5 skeleton — worker handler is a noop
+	 * until Meta/Google OAuth adapters ship). Intended caller: a future 6h scheduler per tenant
+	 * with active ad credentials.
+	 */
+	async enqueueAdMetricsSync(tenantId: string): Promise<Job<DefaultQueueJobData>> {
+		return this.enqueueDefaultJob(AD_METRICS_SYNC_JOB_TYPE, {
+			jobId: randomUUID(),
+			tenantId,
+			jobType: AD_METRICS_SYNC_JOB_TYPE
+		});
+	}
+
+	/**
+	 * Enqueues a `ghl.reconcile` job for a tenant (Faz 4 skeleton — worker handler is a noop
+	 * until the GHL OAuth adapter ships). Intended caller: a future 6h scheduler per tenant
+	 * with an active GHL credential.
+	 */
+	async enqueueGhlReconcile(tenantId: string): Promise<Job<DefaultQueueJobData>> {
+		return this.enqueueDefaultJob(GHL_RECONCILE_JOB_TYPE, {
+			jobId: randomUUID(),
+			tenantId,
+			jobType: GHL_RECONCILE_JOB_TYPE
 		});
 	}
 

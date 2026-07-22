@@ -5,6 +5,7 @@
 	import type {
 		Patient,
 		ReportByCategory,
+		ReportByCategoryDetail,
 		ReportMonthly,
 		ReportSummary,
 		SupportedCurrency,
@@ -138,6 +139,25 @@
 				reportUrl('by-category', { from: dateRange.from, to: dateRange.to })
 			),
 		enabled: !USE_MSW
+	}));
+
+	const drillCategoryLabel = $derived(drill?.mode === 'category' ? drill.label : null);
+
+	const byCategoryDetailQuery = createQuery(() => ({
+		queryKey: [
+			'reports',
+			'by-category-detail',
+			{ from: dateRange.from, to: dateRange.to, category: drillCategoryLabel }
+		],
+		queryFn: () =>
+			apiGet<ReportByCategoryDetail>(
+				reportUrl('by-category-detail', {
+					from: dateRange.from,
+					to: dateRange.to,
+					category: drillCategoryLabel
+				})
+			),
+		enabled: !USE_MSW && drillCategoryLabel != null
 	}));
 
 	const monthlyRange = $derived.by(() => {
@@ -372,7 +392,7 @@
 		});
 	});
 
-	const bySubtitle = $derived.by(() => {
+	const clientBySubtitle = $derived.by(() => {
 		const map = new Map<string, { income: number; expense: number; count: number }>();
 		for (const t of categoryRows) {
 			const base = amountInBase(t, baseCurrency);
@@ -387,6 +407,19 @@
 		return [...map.entries()]
 			.map(([label, v]) => ({ label, ...v, net: v.income - v.expense }))
 			.sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+	});
+
+	const bySubtitle = $derived.by(() => {
+		if (!USE_MSW && byCategoryDetailQuery.data) {
+			return byCategoryDetailQuery.data.items.map((row) => ({
+				label: row.subtitle_name,
+				income: row.income_base,
+				expense: row.expense_base,
+				net: row.net_base,
+				count: row.transaction_count
+			}));
+		}
+		return clientBySubtitle;
 	});
 
 	const categoryHero = $derived.by(() => {
@@ -434,7 +467,8 @@
 	const failed = $derived(
 		txQuery.isError ||
 			patientsQuery.isError ||
-			(!USE_MSW && (summaryQuery.isError || byCategoryQuery.isError || monthlyQuery.isError))
+			(!USE_MSW && (summaryQuery.isError || byCategoryQuery.isError || monthlyQuery.isError)) ||
+			(!USE_MSW && drillCategoryLabel != null && byCategoryDetailQuery.isError)
 	);
 
 	function setTab(next: TabKey) {
@@ -848,6 +882,10 @@
 					</div>
 				</div>
 			</div>
+
+			{#if !USE_MSW && byCategoryDetailQuery.isPending}
+				<p class="text-sm text-text-muted">Alt kategoriler yükleniyor…</p>
+			{/if}
 
 			<ul class="space-y-2">
 				{#each bySubtitle as sub (sub.label)}

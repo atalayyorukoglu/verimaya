@@ -20,6 +20,7 @@ import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/act
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { AppointmentsService } from './appointments.service';
 
 @Controller('appointments')
@@ -27,7 +28,8 @@ import { AppointmentsService } from './appointments.service';
 export class AppointmentsController {
 	constructor(
 		private readonly appointmentsService: AppointmentsService,
-		private readonly idempotency: IdempotencyService
+		private readonly idempotency: IdempotencyService,
+		private readonly webhookSubscriptions: WebhookSubscriptionsService
 	) {}
 
 	@Get()
@@ -58,6 +60,14 @@ export class AppointmentsController {
 				body: await this.appointmentsService.createWithDb(db, tenantId, input)
 			})
 		);
+		if (!result.replayed) {
+			// Domain hook: fan out to tenant-configured outbound webhooks (Faz 6, best-effort).
+			await this.webhookSubscriptions.enqueueOutbound(
+				tenantId,
+				'appointment.created',
+				result.body as unknown as Record<string, unknown>
+			);
+		}
 		reply.status(result.statusCode);
 		return result.body;
 	}

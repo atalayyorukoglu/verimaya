@@ -34,6 +34,9 @@
 	let drafts = $state<DraftState[]>([]);
 	let activeInboxId = $state<string | null>(null);
 	let showLongWarning = $state(false);
+	/** AI çıktısının orijinali — kullanıcı düzelttiğinde Faz 3 correction kaydı için kıyaslanır. */
+	let originalDrafts = $state<TransactionDraft[]>([]);
+	let correctionSubmitted = $state(false);
 
 	const inboxQuery = createQuery(() => ({
 		queryKey: ['whatsapp', 'inbox'],
@@ -55,6 +58,51 @@
 		return records.map((r) => ({ ...r, _status: 'idle', _error: null }));
 	}
 
+	function stripDraftMeta(state: DraftState[]): TransactionDraft[] {
+		return state.map((d) => ({
+			kind: d.kind,
+			amount: d.amount,
+			currency: d.currency,
+			counterparty_amount: d.counterparty_amount,
+			title: d.title,
+			category: d.category,
+			subcategory: d.subcategory,
+			patient_id: d.patient_id,
+			patient_display_name: d.patient_display_name,
+			contact_label: d.contact_label,
+			occurred_on: d.occurred_on,
+			payment_method: d.payment_method,
+			description: d.description
+		}));
+	}
+
+	/** Freshly-parsed AI records become the new "original" snapshot for correction diffing. */
+	function setDrafts(records: TransactionDraft[]) {
+		originalDrafts = records;
+		correctionSubmitted = false;
+		drafts = initDrafts(records);
+	}
+
+	/**
+	 * Faz 3: kullanıcı taslakları AI çıktısından farklı kaydettiyse (veya onaylarken hâlâ
+	 * fark varsa) tek bir correction kaydı gönderir. Batch başına en fazla bir kez çalışır.
+	 */
+	async function maybeSubmitCorrection(inboxId: string | null) {
+		if (correctionSubmitted || originalDrafts.length === 0) return;
+		const current = stripDraftMeta(drafts);
+		if (JSON.stringify(current) === JSON.stringify(originalDrafts)) return;
+		correctionSubmitted = true;
+		try {
+			await apiSend(apiPaths.whatsappCorrections, 'POST', {
+				inbound_message_id: inboxId,
+				original_parsed: originalDrafts,
+				corrected: current
+			});
+		} catch {
+			/* Correction kaydı best-effort — onay/kayıt akışını bloklamaz. */
+		}
+	}
+
 	$effect(() => {
 		const inboxId = page.url.searchParams.get('inbox');
 		if (!inboxId || inboxId === activeInboxId) return;
@@ -63,8 +111,9 @@
 		activeInboxId = inboxId;
 		message = item.body ?? '';
 		if (item.parsed_records && item.parsed_records.length > 0) {
-			drafts = initDrafts(item.parsed_records);
+			setDrafts(item.parsed_records);
 		} else {
+			originalDrafts = [];
 			drafts = [];
 		}
 	});
@@ -76,11 +125,12 @@
 			const res = await apiSend<{ records: TransactionDraft[] }>(apiPaths.whatsappParse, 'POST', {
 				message: text
 			});
-			drafts = initDrafts(res.records);
+			setDrafts(res.records);
 			if (res.records.length === 0) parseError = 'Mesajdan işlem çıkarılamadı.';
 		} catch (err) {
 			parseError = err instanceof Error ? err.message : 'Analiz başarısız';
 			drafts = [];
+			originalDrafts = [];
 		} finally {
 			parsing = false;
 		}
@@ -106,7 +156,7 @@
 				apiPaths.whatsappInboxParse(item.id),
 				'POST'
 			);
-			drafts = initDrafts(res.records);
+			setDrafts(res.records);
 			if (res.records.length === 0) {
 				parseError = item.has_media ? 'Medya mesajı — metin yok.' : 'Mesajdan işlem çıkarılamadı.';
 			}
@@ -114,6 +164,7 @@
 		} catch (err) {
 			parseError = err instanceof Error ? err.message : 'Analiz başarısız';
 			drafts = [];
+			originalDrafts = [];
 		} finally {
 			parsing = false;
 		}
@@ -135,15 +186,18 @@
 			activeInboxId = null;
 			message = '';
 			drafts = [];
+			originalDrafts = [];
 		}
 		await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'inbox'] });
 	}
 
 	async function approveInbox(id: string) {
+		await maybeSubmitCorrection(id);
 		await apiSend(apiPaths.whatsappInboxApprove(id), 'POST');
 		activeInboxId = null;
 		message = '';
 		drafts = [];
+		originalDrafts = [];
 		await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'inbox'] });
 	}
 
@@ -164,7 +218,8 @@
 			/* keep TRY */
 		}
 		const currency = draft.currency;
-		const stubRate = currency === 'GBP' ? 43 : currency === 'EUR' ? 36 : currency === 'USD' ? 34 : 1;
+		const stubRate =
+			currency === 'GBP' ? 43 : currency === 'EUR' ? 36 : currency === 'USD' ? 34 : 1;
 		let amount_base = draft.counterparty_amount ?? null;
 		let fx_rate: number | null = null;
 		if (currency === tenantBase) {
@@ -202,6 +257,9 @@
 			await apiSend('/v1/transactions', 'POST', payload);
 			drafts = drafts.map((d, i) => (i === index ? { ...d, _status: 'saved', _error: null } : d));
 			await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+			if (drafts.every((d) => d._status === 'saved')) {
+				await maybeSubmitCorrection(activeInboxId);
+			}
 			if (activeInboxId && drafts.every((d) => d._status === 'saved')) {
 				await approveInbox(activeInboxId);
 			}

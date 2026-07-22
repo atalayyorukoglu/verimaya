@@ -45,21 +45,21 @@ describe('reports summary tenant isolation', () => {
 		await withTenantSession(tenantA, async () => {
 			await sql`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, amount_base, currency
+					tenant_id, kind, title, category, subtitle, occurred_on, status, amount, amount_base, currency
 				)
 				values
-					(${tenantA}, 'income', 'Tenant A income', ${period.from}, 'paid', 10000, 10000, 'TRY'),
-					(${tenantA}, 'expense', 'Tenant A expense', ${period.from}, 'paid', 3000, 3000, 'TRY')
+					(${tenantA}, 'income', 'Tenant A income', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'paid', 10000, 10000, 'TRY'),
+					(${tenantA}, 'expense', 'Tenant A expense', 'Saç Ekimi', 'Malzeme', ${period.from}, 'paid', 3000, 3000, 'TRY')
 			`;
 		});
 
 		await withTenantSession(tenantB, async () => {
 			await sql`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, amount_base, currency
+					tenant_id, kind, title, category, subtitle, occurred_on, status, amount, amount_base, currency
 				)
 				values
-					(${tenantB}, 'income', 'Tenant B income', ${period.from}, 'paid', 50000, 50000, 'TRY')
+					(${tenantB}, 'income', 'Tenant B income', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'paid', 50000, 50000, 'TRY')
 			`;
 		});
 
@@ -122,6 +122,49 @@ describe('reports summary tenant isolation', () => {
 		expect(monthly.items).toEqual([
 			{
 				month: '2026-01',
+				income_base: 50000,
+				expense_base: 0,
+				net_base: 50000,
+				transaction_count: 1
+			}
+		]);
+	});
+
+	it('Tenant A by-category-detail excludes Tenant B transactions', async () => {
+		const detail = await reportsService.byCategoryDetail(tenantA, {
+			...period,
+			category: 'Saç Ekimi'
+		});
+
+		expect(detail.category).toBe('Saç Ekimi');
+		expect(detail.items).toEqual([
+			{
+				subtitle_name: 'Konsültasyon',
+				income_base: 10000,
+				expense_base: 0,
+				net_base: 10000,
+				transaction_count: 1
+			},
+			{
+				subtitle_name: 'Malzeme',
+				income_base: 0,
+				expense_base: 3000,
+				net_base: -3000,
+				transaction_count: 1
+			}
+		]);
+	});
+
+	it('Tenant B by-category-detail excludes Tenant A transactions', async () => {
+		const detail = await reportsService.byCategoryDetail(tenantB, {
+			...period,
+			category: 'Saç Ekimi'
+		});
+
+		expect(detail.category).toBe('Saç Ekimi');
+		expect(detail.items).toEqual([
+			{
+				subtitle_name: 'Konsültasyon',
 				income_base: 50000,
 				expense_base: 0,
 				net_base: 50000,

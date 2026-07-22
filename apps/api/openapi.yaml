@@ -31,6 +31,7 @@ tags:
   - name: Patients
   - name: Contacts
   - name: Webhooks
+  - name: Webhook Subscriptions
   - name: WhatsApp
   - name: Reports
   - name: API Keys
@@ -99,6 +100,20 @@ components:
         created_at: { type: string, format: date-time }
         revoked_at: { type: string, format: date-time, nullable: true }
 
+    WebhookSubscription:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        event_types:
+          type: array
+          items:
+            type: string
+            enum: [transaction.created, transaction.updated, patient.created, appointment.created]
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+
     CursorPagePatients:
       type: object
       properties:
@@ -115,6 +130,26 @@ components:
       type: object
       properties:
         messages: { type: array, items: { $ref: '#/components/schemas/InboundMessage' } }
+        next_cursor: { type: string, nullable: true }
+
+    AiCorrection:
+      type: object
+      description: |
+        Human correction to an AI-parsed WhatsApp transaction draft (Faz 3 learning signal).
+        Append-only — never mutates the original inbox item or transaction.
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        inbound_message_id: { type: string, format: uuid, nullable: true }
+        original_parsed: { type: array, items: { type: object } }
+        corrected: { type: array, items: { type: object } }
+        created_by: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    CursorPageAiCorrections:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AiCorrection' } }
         next_cursor: { type: string, nullable: true }
 
     WebhookAccepted:
@@ -134,6 +169,11 @@ components:
     ReportMonthly:
       type: object
       description: Monthly income/expense/net buckets (`YYYY-MM`, minor units), aligned with finance-base FX resolution
+      additionalProperties: true
+
+    ReportByCategoryDetail:
+      type: object
+      description: Subtitle breakdown (income/expense/net, minor units) within a single category
       additionalProperties: true
 
   parameters:
@@ -491,6 +531,50 @@ paths:
         '404':
           description: Not found (or other tenant)
 
+  /whatsapp/corrections:
+    post:
+      tags: [WhatsApp]
+      summary: Record a human correction to an AI-parsed transaction draft batch
+      description: |
+        Faz 3 learning signal — stores what the heuristic parser produced (`original_parsed`)
+        alongside what the user actually saved (`corrected`). Never mutates the source inbox
+        item or transaction; append-only audit trail for future prompt/parser tuning.
+      security:
+        - sessionCookie: []
+        - bearerApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_parsed, corrected]
+              properties:
+                inbound_message_id: { type: string, format: uuid, nullable: true }
+                original_parsed: { type: array, items: { type: object } }
+                corrected: { type: array, items: { type: object } }
+      responses:
+        '201':
+          description: Correction recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiCorrection' }
+    get:
+      tags: [WhatsApp]
+      summary: List recorded AI corrections (cursor, newest first)
+      security:
+        - sessionCookie: []
+        - bearerApiKey: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Corrections page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CursorPageAiCorrections' }
+
   /whatsapp/parse:
     post:
       tags: [WhatsApp]
@@ -550,6 +634,30 @@ paths:
       responses:
         '200':
           description: Category breakdown
+
+  /reports/by-category-detail:
+    get:
+      tags: [Reports]
+      summary: Subtitle breakdown within a category
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: category
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Subtitle breakdown
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportByCategoryDetail' }
 
   /reports/monthly:
     get:
@@ -632,3 +740,77 @@ paths:
       responses:
         '200':
           description: Revoked
+
+  /webhook-subscriptions:
+    get:
+      tags: [Webhook Subscriptions]
+      summary: List outbound webhook subscriptions
+      description: |
+        Session-only settings CRUD — external API keys never manage a tenant's own
+        outbound webhook destinations.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Subscription list (secret never returned)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/WebhookSubscription' }
+    post:
+      tags: [Webhook Subscriptions]
+      summary: Create outbound webhook subscription
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, secret, event_types]
+              properties:
+                url: { type: string, format: uri }
+                secret:
+                  type: string
+                  description: Shared secret used to sign `X-Verimaya-Signature` (never stored in plaintext, never returned)
+                  minLength: 16
+                event_types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [transaction.created, transaction.updated, patient.created, appointment.created]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookSubscription' }
+
+  /webhook-subscriptions/{id}:
+    delete:
+      tags: [Webhook Subscriptions]
+      summary: Delete outbound webhook subscription
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: Idempotency-Key
+          in: header
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deleted
+        '404':
+          description: Not found

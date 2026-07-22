@@ -37,11 +37,21 @@ export const apiPaths = {
 	whatsappInboxParse: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/parse`,
 	whatsappInboxApprove: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/approve`,
 	whatsappInboxIgnore: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/ignore`,
+	whatsappCorrections: `${API_V1_PREFIX}/whatsapp/corrections`,
+	whatsappCorrectionsList: (params?: { cursor?: string | null; limit?: number }) => {
+		const url = new URL(`${API_V1_PREFIX}/whatsapp/corrections`, 'http://local');
+		if (params?.cursor) url.searchParams.set('cursor', params.cursor);
+		if (params?.limit) url.searchParams.set('limit', String(params.limit));
+		return `${url.pathname}${url.search}`;
+	},
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
 	apiKeys: `${API_V1_PREFIX}/api-keys`,
 	apiKey: (id: string) => `${API_V1_PREFIX}/api-keys/${id}`,
+	webhookSubscriptions: `${API_V1_PREFIX}/webhook-subscriptions`,
+	webhookSubscription: (id: string) => `${API_V1_PREFIX}/webhook-subscriptions/${id}`,
 	reportsSummary: `${API_V1_PREFIX}/reports/summary`,
 	reportsByCategory: `${API_V1_PREFIX}/reports/by-category`,
+	reportsByCategoryDetail: `${API_V1_PREFIX}/reports/by-category-detail`,
 	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`
 } as const;
 
@@ -92,8 +102,15 @@ import { membershipUserSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
 import { adMetricSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
-import { reportByCategorySchema, reportMonthlySchema, reportSummarySchema } from './reports.js';
+import {
+	reportByCategoryDetailSchema,
+	reportByCategorySchema,
+	reportMonthlySchema,
+	reportSummarySchema
+} from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
+import { aiCorrectionCreateSchema, aiCorrectionSchema } from './ai-correction.js';
+import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
 
 /**
  * API contract sketch for /v1 routes.
@@ -187,6 +204,13 @@ export const apiContract = {
 	'POST /v1/whatsapp/inbox/:id/ignore': {
 		response: inboundMessageActionResponseSchema
 	},
+	'POST /v1/whatsapp/corrections': {
+		body: aiCorrectionCreateSchema,
+		response: aiCorrectionSchema
+	},
+	'GET /v1/whatsapp/corrections': {
+		response: cursorPageSchema(aiCorrectionSchema)
+	},
 	'GET /v1/members': {
 		response: cursorPageSchema(membershipUserSchema)
 	},
@@ -219,11 +243,24 @@ export const apiContract = {
 	'DELETE /v1/api-keys/:id': {
 		response: apiKeySchema
 	},
+	'GET /v1/webhook-subscriptions': {
+		response: z.object({ items: z.array(webhookSubscriptionSchema) })
+	},
+	'POST /v1/webhook-subscriptions': {
+		body: webhookSubscriptionCreateSchema,
+		response: webhookSubscriptionSchema
+	},
+	'DELETE /v1/webhook-subscriptions/:id': {
+		response: z.object({ id: z.string().uuid() })
+	},
 	'GET /v1/reports/summary': {
 		response: reportSummarySchema
 	},
 	'GET /v1/reports/by-category': {
 		response: reportByCategorySchema
+	},
+	'GET /v1/reports/by-category-detail': {
+		response: reportByCategoryDetailSchema
 	},
 	'GET /v1/reports/monthly': {
 		response: reportMonthlySchema

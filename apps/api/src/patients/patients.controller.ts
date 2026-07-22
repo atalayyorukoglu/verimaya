@@ -23,6 +23,7 @@ import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey 
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { PatientsService } from './patients.service';
 
 @Controller('patients')
@@ -30,7 +31,8 @@ import { PatientsService } from './patients.service';
 export class PatientsController {
 	constructor(
 		private readonly patientsService: PatientsService,
-		private readonly idempotency: IdempotencyService
+		private readonly idempotency: IdempotencyService,
+		private readonly webhookSubscriptions: WebhookSubscriptionsService
 	) {}
 
 	@Get()
@@ -132,6 +134,14 @@ export class PatientsController {
 				body: await this.patientsService.createWithDb(db, tenantId, input)
 			})
 		);
+		if (!result.replayed) {
+			// Domain hook: fan out to tenant-configured outbound webhooks (Faz 6, best-effort).
+			await this.webhookSubscriptions.enqueueOutbound(
+				tenantId,
+				'patient.created',
+				result.body as unknown as Record<string, unknown>
+			);
+		}
 		reply.status(result.statusCode);
 		return result.body;
 	}

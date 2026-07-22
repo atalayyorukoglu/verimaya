@@ -91,6 +91,14 @@ export class TransactionsController {
 				body: await this.transactionsService.updateWithDb(db, tenantId, id, input)
 			})
 		);
+		if (!result.replayed) {
+			// Domain hook: fan out to tenant-configured outbound webhooks (Faz 6, best-effort).
+			await this.webhookSubscriptions.enqueueOutbound(
+				tenantId,
+				'transaction.updated',
+				result.body as unknown as Record<string, unknown>
+			);
+		}
 		reply.status(result.statusCode);
 		return result.body;
 	}

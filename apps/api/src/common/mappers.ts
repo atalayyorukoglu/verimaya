@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import type {
 	AdMetric,
+	AiCorrection,
 	ApiKey,
 	Appointment,
 	AuditLog,
@@ -15,6 +16,7 @@ import type {
 	WebhookSubscription
 } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
+import type { AiCorrectionRow } from '../db/schema/ai-corrections';
 import type { ApiKeyRow } from '../db/schema/api-keys';
 import type { AppointmentRow } from '../db/schema/appointments';
 import type { AuditLogRow } from '../db/schema/audit';
@@ -215,6 +217,18 @@ export function toWebhookSubscription(row: WebhookSubscriptionRow): WebhookSubsc
 		url: row.url,
 		event_types: row.eventTypes,
 		active: row.active,
+		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toAiCorrection(row: AiCorrectionRow): AiCorrection {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		inbound_message_id: row.inboundMessageId,
+		original_parsed: row.originalParsed as AiCorrection['original_parsed'],
+		corrected: row.corrected as AiCorrection['corrected'],
+		created_by: row.createdBy,
 		created_at: toIsoDateTime(row.createdAt)
 	};
 }

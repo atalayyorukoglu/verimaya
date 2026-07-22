@@ -3,12 +3,13 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { PatientsModule } from '../patients/patients.module';
 import { TenantModule } from '../tenant/tenant.module';
+import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappController } from './whatsapp.controller';
 import { WhatsappService } from './whatsapp.service';
 
 @Module({
 	imports: [AuthModule, CommonModule, PatientsModule, TenantModule],
 	controllers: [WhatsappController],
-	providers: [WhatsappService]
+	providers: [WhatsappService, AiCorrectionsService]
 })
 export class WhatsappModule {}

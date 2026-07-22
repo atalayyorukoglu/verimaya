@@ -37,6 +37,29 @@ export const reportByCategorySchema = z.object({
 });
 export type ReportByCategory = z.infer<typeof reportByCategorySchema>;
 
+export const reportByCategoryDetailParams = z.object({
+	from: isoDate.optional(),
+	to: isoDate.optional(),
+	category: z.string().trim().min(1).max(255)
+});
+export type ReportByCategoryDetailParams = z.infer<typeof reportByCategoryDetailParams>;
+
+export const reportSubtitleRowSchema = z.object({
+	subtitle_name: z.string(),
+	income_base: moneyMinor,
+	expense_base: moneyMinor,
+	net_base: moneyMinor,
+	transaction_count: z.number().int().nonnegative()
+});
+export type ReportSubtitleRow = z.infer<typeof reportSubtitleRowSchema>;
+
+export const reportByCategoryDetailSchema = z.object({
+	period: reportPeriodSchema,
+	category: z.string(),
+	items: z.array(reportSubtitleRowSchema)
+});
+export type ReportByCategoryDetail = z.infer<typeof reportByCategoryDetailSchema>;
+
 /** `YYYY-MM` bucket key. */
 export const reportMonthKey = z.string().regex(/^\d{4}-\d{2}$/);
 
@@ -57,11 +80,12 @@ export type ReportMonthly = z.infer<typeof reportMonthlySchema>;
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(
-	path: 'summary' | 'by-category' | 'monthly',
-	params?: { from?: string | null; to?: string | null }
+	path: 'summary' | 'by-category' | 'monthly' | 'by-category-detail',
+	params?: { from?: string | null; to?: string | null; category?: string | null }
 ): string {
 	const url = new URL(`/v1/reports/${path}`, 'http://local');
 	if (params?.from) url.searchParams.set('from', params.from);
 	if (params?.to) url.searchParams.set('to', params.to);
+	if (params?.category) url.searchParams.set('category', params.category);
 	return `${url.pathname}${url.search}`;
 }

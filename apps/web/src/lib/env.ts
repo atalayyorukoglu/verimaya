@@ -2,7 +2,7 @@
 export const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000';
 
 /**
- * When true (default in demo), MSW intercepts /v1/* in dev.
- * Set PUBLIC_USE_MSW=false to call the real API at PUBLIC_API_URL.
+ * When true, MSW intercepts /v1/* in dev — useful for demoing without a running API.
+ * Default is false (real API at PUBLIC_API_URL). Set PUBLIC_USE_MSW=true to enable the mock demo.
  */
-export const USE_MSW = (import.meta.env.PUBLIC_USE_MSW ?? 'true') === 'true';
+export const USE_MSW = (import.meta.env.PUBLIC_USE_MSW ?? 'false') === 'true';

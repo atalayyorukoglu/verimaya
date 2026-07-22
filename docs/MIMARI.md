@@ -53,3 +53,7 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 ## Eski sistemle ilişki
 
 Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker`) dahili kullanımda çalışmaya devam eder. Şeması ve rota listesi `docs/legacy-reference/` altına çıkarılır; Verimaya şeması bunun düzeltilmiş portudur. Faz 8'de ETL ile veri göçü yapılır, kendi firmamız ilk tenant olur.
+
+## GHL entegrasyon durumu (2026-07-21)
+
+`apps/api/src/integrations/ghl/` iskeleti genişletildi: `ghl.mapper.ts` webhook payload'ından `contact`/`opportunity`/`unknown` türünü ve external id'yi çıkarır (OAuth/HTTP adaptörü yok, gerçek GHL şeması netleşince güncellenecek). `GhlSyncService.parseInboundEvent` bunu loglar ve `{ kind, externalId, summary }` döner; `GhlClientStub.processInboundEvent` bu sonucu `IntegrationEventProcessor`'a taşır. Yeni `ghl.reconcile` BullMQ job tipi (`queue.service.ts`) şimdilik noop — hedef kadans: aktif GHL credential'ı olan her tenant için 6 saatte bir reconciliation (Faz 5'teki `ad_metrics.sync` ile aynı desen). Henüz DB yazımı yok; alan bazlı sahiplik kuralı (madde 5) adaptör gelince uygulanacak.

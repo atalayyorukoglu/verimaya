@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker/locale/en';
 import type {
+	AiCorrection,
 	ApiKey,
 	Appointment,
 	AppointmentTypeSetting,
@@ -15,7 +16,8 @@ import type {
 	Tenant,
 	Transaction,
 	MembershipUser,
-	UserRole
+	UserRole,
+	WebhookSubscription
 } from '@verimaya/shared';
 
 export type MockScenario = 'default' | 'empty' | 'large';
@@ -164,8 +166,7 @@ function makeTransaction(
 		overrides.category !== undefined
 			? overrides.category
 			: faker.helpers.arrayElement(['Operasyon', 'Konaklama', 'Transfer', 'Pazarlama']);
-	const subtitle =
-		overrides.subtitle !== undefined ? overrides.subtitle : pickSubtitle(category);
+	const subtitle = overrides.subtitle !== undefined ? overrides.subtitle : pickSubtitle(category);
 	return {
 		id: faker.string.uuid(),
 		tenant_id: DEMO_TENANT_ID,
@@ -363,14 +364,18 @@ export type DemoStore = {
 	members: MembershipUser[];
 	auditLogs: AuditLog[];
 	apiKeys: ApiKey[];
+	webhookSubscriptions: WebhookSubscription[];
+	aiCorrections: AiCorrection[];
 };
 
 function slugify(name: string): string {
-	return name
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-|-$/g, '')
-		.slice(0, 48) || 'org';
+	return (
+		name
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-|-$/g, '')
+			.slice(0, 48) || 'org'
+	);
 }
 
 function makeExtraTenants(): Tenant[] {
@@ -625,6 +630,19 @@ function makeApiKeys(): ApiKey[] {
 			scopes: ['read', 'write'],
 			created_at: iso(faker.date.recent({ days: 30 })),
 			revoked_at: null
+		}
+	];
+}
+
+function makeWebhookSubscriptions(): WebhookSubscription[] {
+	return [
+		{
+			id: faker.string.uuid(),
+			tenant_id: DEMO_TENANT_ID,
+			url: 'https://n8n.example.com/webhook/verimaya-demo',
+			event_types: ['transaction.created', 'patient.created'],
+			active: true,
+			created_at: iso(faker.date.recent({ days: 20 }))
 		}
 	];
 }
@@ -937,7 +955,9 @@ function buildStore(scenario: MockScenario): DemoStore {
 			appointmentTypes: [],
 			members: [{ ...demoUser }],
 			auditLogs: [],
-			apiKeys: []
+			apiKeys: [],
+			webhookSubscriptions: [],
+			aiCorrections: []
 		};
 	}
 
@@ -1229,7 +1249,9 @@ function buildStore(scenario: MockScenario): DemoStore {
 		appointmentTypes: makeAppointmentTypes(),
 		members,
 		auditLogs,
-		apiKeys: makeApiKeys()
+		apiKeys: makeApiKeys(),
+		webhookSubscriptions: makeWebhookSubscriptions(),
+		aiCorrections: []
 	};
 }
 

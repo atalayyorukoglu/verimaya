@@ -1,15 +1,19 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { cursorPageParams, whatsappParseRequestSchema } from '@verimaya/shared';
+import { aiCorrectionCreateSchema, cursorPageParams, whatsappParseRequestSchema } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
-import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
+import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { parseBody } from '../common/mappers';
+import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappService } from './whatsapp.service';
 
 @Controller('whatsapp')
 @UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class WhatsappController {
-	constructor(private readonly whatsappService: WhatsappService) {}
+	constructor(
+		private readonly whatsappService: WhatsappService,
+		private readonly aiCorrectionsService: AiCorrectionsService
+	) {}
 
 	@Post('parse')
 	async parse(@Req() req: FastifyRequest, @Body() body: unknown) {
@@ -51,5 +55,22 @@ export class WhatsappController {
 	@Post('inbox/:id/ignore')
 	ignoreInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.ignoreInboxItem(getActiveOrgId(req), id);
+	}
+
+	@Post('corrections')
+	createCorrection(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(aiCorrectionCreateSchema, body, req);
+		const actor = getActorFromRequest(req);
+		return this.aiCorrectionsService.create(getActiveOrgId(req), input, actor.actorId);
+	}
+
+	@Get('corrections')
+	listCorrections(
+		@Req() req: FastifyRequest,
+		@Query('cursor') cursor?: string,
+		@Query('limit') limit?: string
+	) {
+		const params = cursorPageParams.parse({ cursor, limit });
+		return this.aiCorrectionsService.list(getActiveOrgId(req), params);
 	}
 }

@@ -18,6 +18,9 @@ import {
 	mergeRecordsSchema,
 	userRoleSchema,
 	apiKeyCreateSchema,
+	webhookSubscriptionCreateSchema,
+	aiCorrectionCreateSchema,
+	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
 	type Appointment,
@@ -31,7 +34,8 @@ import {
 	type PatientFile,
 	type Tenant,
 	type Transaction,
-	type TransactionDraft
+	type TransactionDraft,
+	type WebhookSubscription
 } from '@verimaya/shared';
 import { parseWhatsappMessage } from './whatsapp-parse';
 import { findContactDuplicateGroups, findPatientDuplicateGroups } from './duplicates';
@@ -668,6 +672,32 @@ export const handlers = [
 		return HttpResponse.json({ records });
 	}),
 
+	http.post('/v1/whatsapp/corrections', async ({ request }) => {
+		const body = await request.json();
+		const parsed = aiCorrectionCreateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz düzeltme', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const correction: AiCorrection = {
+			id: crypto.randomUUID(),
+			tenant_id: store.tenant.id,
+			inbound_message_id: parsed.data.inbound_message_id ?? null,
+			original_parsed: parsed.data.original_parsed,
+			corrected: parsed.data.corrected,
+			created_by: DEMO_USER_ID,
+			created_at: nowIso()
+		};
+		store.aiCorrections.unshift(correction);
+		return HttpResponse.json(correction, { status: 201 });
+	}),
+
+	http.get('/v1/whatsapp/corrections', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(
+			paginate(store.aiCorrections, url.searchParams.get('cursor'), limitFrom(url))
+		);
+	}),
+
 	http.get('/v1/patients/:id/files', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		const patient = store.patients.find((p) => p.id === params.id);
@@ -753,9 +783,7 @@ export const handlers = [
 
 	http.delete('/v1/patients/:id/files/:fileId', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const idx = store.files.findIndex(
-			(f) => f.id === params.fileId && f.patient_id === params.id
-		);
+		const idx = store.files.findIndex((f) => f.id === params.fileId && f.patient_id === params.id);
 		if (idx < 0) return notFound('Dosya bulunamadı');
 		store.files.splice(idx, 1);
 		return new HttpResponse(null, { status: 204 });
@@ -1154,6 +1182,36 @@ export const handlers = [
 		return HttpResponse.json(item);
 	}),
 
+	http.get('/v1/webhook-subscriptions', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({ items: store.webhookSubscriptions });
+	}),
+
+	http.post('/v1/webhook-subscriptions', async ({ request }) => {
+		const body = await request.json();
+		const parsed = webhookSubscriptionCreateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz webhook aboneliği', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const item: WebhookSubscription = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			url: parsed.data.url,
+			event_types: parsed.data.event_types,
+			active: true,
+			created_at: nowIso()
+		};
+		store.webhookSubscriptions.push(item);
+		return HttpResponse.json(item, { status: 201 });
+	}),
+
+	http.delete('/v1/webhook-subscriptions/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.webhookSubscriptions.findIndex((w) => w.id === params.id);
+		if (idx < 0) return notFound('Abonelik bulunamadı');
+		store.webhookSubscriptions.splice(idx, 1);
+		return HttpResponse.json({ id: params.id });
+	}),
+
 	http.get('/v1/dev/tenants', ({ request }) => {
 		const store = getStore(scenarioFrom(request));
 		return HttpResponse.json({ items: store.tenants });
@@ -1164,11 +1222,12 @@ export const handlers = [
 		const name = body.name?.trim();
 		if (!name) return badRequest('İsim gerekli');
 		const store = getStore(scenarioFrom(request));
-		const baseSlug = name
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-')
-			.replace(/^-|-$/g, '')
-			.slice(0, 40) || 'org';
+		const baseSlug =
+			name
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-|-$/g, '')
+				.slice(0, 40) || 'org';
 		let slug = baseSlug;
 		let n = 2;
 		while (store.tenants.some((t) => t.slug === slug)) {

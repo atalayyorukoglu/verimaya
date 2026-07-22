@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { and, eq, gte, lte } from 'drizzle-orm';
 import type {
 	ReportByCategory,
+	ReportByCategoryDetail,
+	ReportByCategoryDetailParams,
 	ReportMonthly,
 	ReportPeriodParams,
 	ReportSummary
@@ -13,6 +15,7 @@ import { TenantContextService } from '../tenant/tenant-context.service';
 type TxRow = {
 	kind: string;
 	category: string | null;
+	subtitle: string | null;
 	occurredOn: string;
 	amount: number;
 	amountBase: number | null;
@@ -23,6 +26,11 @@ type TxRow = {
 function categoryLabel(category: string | null): string {
 	const trimmed = (category ?? '').trim();
 	return trimmed || 'Kategorisiz';
+}
+
+function subtitleLabel(subtitle: string | null): string {
+	const trimmed = (subtitle ?? '').trim();
+	return trimmed || 'Genel';
 }
 
 @Injectable()
@@ -93,6 +101,57 @@ export class ReportsService {
 
 			return {
 				period: { from: params.from ?? null, to: params.to ?? null },
+				items
+			};
+		});
+	}
+
+	async byCategoryDetail(
+		tenantId: string,
+		params: ReportByCategoryDetailParams
+	): Promise<ReportByCategoryDetail> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const tenantBase = await this.getTenantBase(db, tenantId);
+			const rows = await this.fetchTransactions(db, params);
+			const category = params.category.trim();
+
+			const map = new Map<
+				string,
+				{ income_base: number; expense_base: number; transaction_count: number }
+			>();
+
+			for (const row of rows) {
+				if (categoryLabel(row.category) !== category) continue;
+
+				const label = subtitleLabel(row.subtitle);
+				const cur = map.get(label) ?? {
+					income_base: 0,
+					expense_base: 0,
+					transaction_count: 0
+				};
+				cur.transaction_count += 1;
+
+				const base = resolveBaseAmount(row, tenantBase);
+				if (base != null) {
+					if (row.kind === 'income') cur.income_base += base;
+					else cur.expense_base += base;
+				}
+				map.set(label, cur);
+			}
+
+			const items = [...map.entries()]
+				.map(([subtitle_name, v]) => ({
+					subtitle_name,
+					income_base: v.income_base,
+					expense_base: v.expense_base,
+					net_base: v.income_base - v.expense_base,
+					transaction_count: v.transaction_count
+				}))
+				.sort((a, b) => Math.abs(b.net_base) - Math.abs(a.net_base));
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				category,
 				items
 			};
 		});
@@ -170,6 +229,7 @@ export class ReportsService {
 			.select({
 				kind: transactions.kind,
 				category: transactions.category,
+				subtitle: transactions.subtitle,
 				occurredOn: transactions.occurredOn,
 				amount: transactions.amount,
 				amountBase: transactions.amountBase,

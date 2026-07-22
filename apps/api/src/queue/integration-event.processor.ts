@@ -41,11 +41,14 @@ export class IntegrationEventProcessor {
 					.limit(1);
 
 				if (event) {
-					await this.ghlClient.processInboundEvent({
+					const result = await this.ghlClient.processInboundEvent({
 						integrationEventId: event.id,
 						tenantId,
 						payload: event.payload as Record<string, unknown>
 					});
+					this.logger.debug(
+						`GHL event ${event.id} processed: kind=${result.kind} externalId=${result.externalId ?? 'n/a'}`
+					);
 				}
 
 				await db
