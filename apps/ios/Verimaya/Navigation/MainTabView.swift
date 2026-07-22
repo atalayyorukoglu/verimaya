@@ -18,7 +18,7 @@ struct MainTabView: View {
       }
 
       NavigationStack {
-        ComingSoonView(message: "Yakında — Adım 6")
+        TransactionsView()
       }
       .tabItem {
         Label("Finans", systemImage: "turkishlirasign.circle")
