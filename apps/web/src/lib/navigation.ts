@@ -6,6 +6,12 @@ import Calendar from '@lucide/svelte/icons/calendar';
 import Wallet from '@lucide/svelte/icons/wallet';
 import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 import ChartColumn from '@lucide/svelte/icons/chart-column';
+import Megaphone from '@lucide/svelte/icons/megaphone';
+import Calculator from '@lucide/svelte/icons/calculator';
+import FlaskConical from '@lucide/svelte/icons/flask-conical';
+import ShieldCheck from '@lucide/svelte/icons/shield-check';
+import LayoutTemplate from '@lucide/svelte/icons/layout-template';
+import Gauge from '@lucide/svelte/icons/gauge';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -39,6 +45,17 @@ export const navGroups: NavGroup[] = [
 			{ label: 'İşlemler', href: '/finans', icon: Wallet },
 			{ label: 'Bakiyeler', href: '/finans/bakiyeler', icon: ArrowLeftRight },
 			{ label: 'Raporlar', href: '/raporlar', icon: ChartColumn }
+		]
+	},
+	{
+		label: 'Pazarlama',
+		items: [
+			{ label: 'Genel Bakış', href: '/pazarlama', icon: Megaphone },
+			{ label: 'Hesap', href: '/pazarlama/hesap', icon: Calculator },
+			{ label: 'Simülatör', href: '/pazarlama/simulator', icon: FlaskConical },
+			{ label: 'Uyumluluk', href: '/pazarlama/uyumluluk', icon: ShieldCheck },
+			{ label: 'Şablonlar', href: '/pazarlama/sablonlar', icon: LayoutTemplate },
+			{ label: 'Ölçüm', href: '/pazarlama/olcum', icon: Gauge }
 		]
 	},
 	{

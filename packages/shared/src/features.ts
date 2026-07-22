@@ -7,6 +7,7 @@ export type FeatureModule =
 	| 'WhatsApp'
 	| 'Entegrasyonlar'
 	| 'Raporlama'
+	| 'Pazarlama'
 	| 'Platform';
 
 export type Feature = {
@@ -98,6 +99,46 @@ export const features: Feature[] = [
 		status: 'yayinda',
 		released_at: '2026-07-20',
 		version: '0.1.0'
+	},
+	{
+		id: 'truth-calculator',
+		module: 'Pazarlama',
+		title: 'Gerçek ROAS hesabı',
+		description:
+			'Platform ROAS’ını katkı payı ve maliyetlerle gerçek kâra çevirin; başabaş ve hasta başı reklam tavanını görün.',
+		status: 'gelistiriliyor'
+	},
+	{
+		id: 'ad-simulator',
+		module: 'Pazarlama',
+		title: 'Reklam matematiği simülatörü',
+		description:
+			'CPC, dönüşüm ve satış oranıyla satış başı maliyet, trafik ışığı ve ölçek tavanını hesaplayın.',
+		status: 'gelistiriliyor'
+	},
+	{
+		id: 'ad-compliance',
+		module: 'Pazarlama',
+		title: 'Reklam uyumluluk taraması',
+		description:
+			'Reklam veya landing metnindeki yasaklı / riskli sağlık vaatlerini tarayın.',
+		status: 'gelistiriliyor'
+	},
+	{
+		id: 'marketing-templates',
+		module: 'Pazarlama',
+		title: 'UTM ve bütçe şablonları',
+		description:
+			'UTM linki üretin; 3:2:2 kreatif ve 60/30/10 bütçe bölüşümünü hızlıca çıkarın.',
+		status: 'gelistiriliyor'
+	},
+	{
+		id: 'trust-score',
+		module: 'Pazarlama',
+		title: 'Ölçüm olgunluğu (Trust Score)',
+		description:
+			'Consent, CAPI, enhanced conversions ve CRM geri bildirim checklist’iyle ölçüm skorunu görün.',
+		status: 'gelistiriliyor'
 	},
 	{
 		id: 'duplicate-scan',
