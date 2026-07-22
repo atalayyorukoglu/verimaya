@@ -356,6 +356,9 @@ function notFound(message: string) {
 	);
 }
 
+/** Demo: Meta connected so disconnect UI is exercisable under MSW. */
+const mswAdsConnected = new Set<string>(['meta']);
+
 export const handlers = [
 	http.get('/v1/me', () => HttpResponse.json(demoUser)),
 
@@ -644,6 +647,41 @@ export const handlers = [
 		const to = url.searchParams.get('to');
 		const provider = url.searchParams.get('provider');
 		return HttpResponse.json(buildMarketingReport(store, from, to, provider));
+	}),
+
+	http.get('/v1/integrations/ads/status', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const lastFor = (provider: 'meta' | 'google') => {
+			const dates = store.adMetricsDaily
+				.filter((r) => r.provider === provider)
+				.map((r) => r.date)
+				.sort();
+			return dates.at(-1) ?? null;
+		};
+		return HttpResponse.json({
+			items: [
+				{
+					provider: 'meta',
+					connected: mswAdsConnected.has('meta'),
+					key_version: mswAdsConnected.has('meta') ? 1 : null,
+					last_sync_date: lastFor('meta')
+				},
+				{
+					provider: 'google',
+					connected: mswAdsConnected.has('google'),
+					key_version: mswAdsConnected.has('google') ? 1 : null,
+					last_sync_date: lastFor('google')
+				}
+			]
+		});
+	}),
+
+	http.delete('/v1/integrations/ads/:provider', ({ params }) => {
+		const provider = String(params.provider);
+		if (provider === 'meta' || provider === 'google') {
+			mswAdsConnected.delete(provider);
+		}
+		return new HttpResponse(null, { status: 204 });
 	}),
 
 	http.post('/v1/transactions', async ({ request }) => {

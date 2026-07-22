@@ -9,7 +9,9 @@
 		description,
 		status,
 		meta = [],
-		actionLabel
+		actionLabel,
+		actionHref,
+		onDisconnect
 	}: {
 		name: string;
 		description: string;
@@ -17,6 +19,10 @@
 		/** Key/value rows shown when relevant, e.g. "Son senkron" */
 		meta?: { label: string; value: string }[];
 		actionLabel?: string;
+		/** When set, primary action renders as an enabled link (OAuth authorize). */
+		actionHref?: string;
+		/** When set and status is connected, shows a secondary disconnect control. */
+		onDisconnect?: () => void;
 	} = $props();
 
 	const statusInfo: Record<
@@ -27,6 +33,10 @@
 		disconnected: { label: 'Bağlı değil', tone: 'neutral' },
 		planned: { label: 'Planlandı', tone: 'warning' }
 	};
+
+	const showActions = $derived(
+		Boolean(actionLabel) || (Boolean(onDisconnect) && status === 'connected')
+	);
 </script>
 
 <div class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4 sm:p-5">
@@ -49,17 +59,33 @@
 		</dl>
 	{/if}
 
-	{#if actionLabel}
-		<div class="mt-4">
-			<Button
-				type="button"
-				variant="outline"
-				size="sm"
-				disabled
-				title="Gerçek bağlantı akışı backend ile birlikte gelecek"
-			>
-				{actionLabel}
-			</Button>
+	{#if showActions}
+		<div class="mt-4 flex flex-wrap gap-2">
+			{#if actionLabel}
+				{#if actionHref}
+					<a
+						href={actionHref}
+						class="inline-flex h-8 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-xs font-medium whitespace-nowrap text-text transition-colors hover:bg-surface-2"
+					>
+						{actionLabel}
+					</a>
+				{:else}
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						disabled
+						title="Gerçek bağlantı akışı backend ile birlikte gelecek"
+					>
+						{actionLabel}
+					</Button>
+				{/if}
+			{/if}
+			{#if onDisconnect && status === 'connected'}
+				<Button type="button" variant="outline" size="sm" onclick={onDisconnect}>
+					Bağlantıyı kes
+				</Button>
+			{/if}
 		</div>
 	{/if}
 </div>
