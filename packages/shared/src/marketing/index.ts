@@ -48,11 +48,13 @@ export {
 	trustCheckInput,
 	trustScoreCheck,
 	trustScoreResult,
+	trustScoreSettings,
 	type Grade,
 	type TrustCheckId,
 	type TrustCheckInput,
 	type TrustScoreCheck,
-	type TrustScoreResult
+	type TrustScoreResult,
+	type TrustScoreSettings
 } from './trust-score/schema.js';
 export { calculateRealRoas } from './real-roas/calculate.js';
 export {

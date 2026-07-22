@@ -21,6 +21,7 @@ import {
 	apiKeyCreateSchema,
 	webhookSubscriptionCreateSchema,
 	aiCorrectionCreateSchema,
+	trustScoreSettings,
 	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
@@ -1028,6 +1029,20 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const items = [...store.financeCategories].sort((a, b) => a.sort_order - b.sort_order);
 		return HttpResponse.json({ items });
+	}),
+
+	http.get('/v1/settings/trust-score', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(store.trustScore);
+	}),
+
+	http.put('/v1/settings/trust-score', async ({ request }) => {
+		const body = await request.json();
+		const parsed = trustScoreSettings.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz trust score', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		store.trustScore = parsed.data;
+		return HttpResponse.json(store.trustScore);
 	}),
 
 	http.get('/v1/settings/contact-types', ({ request }) => {

@@ -16,7 +16,8 @@ import {
 	contactTypeCreateSchema,
 	credentialUpsertSchema,
 	financeCategoryCreateSchema,
-	financeCategoryUpdateSchema
+	financeCategoryUpdateSchema,
+	trustScoreSettings
 } from '@verimaya/shared';
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
@@ -90,5 +91,16 @@ export class SettingsController {
 	) {
 		const input = parseBody(credentialUpsertSchema, body, req);
 		return this.settingsService.storeCredential(getActiveOrgId(req), provider, input);
+	}
+
+	@Get('trust-score')
+	getTrustScore(@Req() req: FastifyRequest) {
+		return this.settingsService.getTrustScore(getActiveOrgId(req));
+	}
+
+	@Put('trust-score')
+	putTrustScore(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(trustScoreSettings, body, req);
+		return this.settingsService.saveTrustScore(getActiveOrgId(req), input);
 	}
 }

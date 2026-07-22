@@ -1,29 +1,91 @@
 <script lang="ts">
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import {
 		calculateTrustScore,
 		type Grade,
 		type TrustCheckId,
-		type TrustScoreResult
+		type TrustScoreResult,
+		type TrustScoreSettings
 	} from '@verimaya/shared';
+	import { apiGet, apiSend, labelClass } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
-	import { labelClass } from '$lib/api';
+	import { Button } from '$lib/components/ui/button';
 
 	type Maturity = 0 | 50 | 100;
 
 	type CheckRow = {
 		id: TrustCheckId;
 		label: string;
+		hint: string;
 		score: Maturity;
 	};
 
-	let checks = $state<CheckRow[]>([
-		{ id: 'consent_mode', label: 'Consent Mode / KVKK rıza sinyali', score: 50 },
-		{ id: 'enhanced_conversions', label: 'Gelişmiş dönüşümler / CAPI', score: 50 },
-		{ id: 'server_side_tagging', label: 'Sunucu taraflı etiketleme (SST)', score: 0 },
-		{ id: 'crm_feedback', label: 'CRM → Ads geri bildirimi (offline conversion)', score: 0 },
-		{ id: 'emq_score', label: 'Eşleşme/lead kalitesi (EMQ)', score: 50 }
-	]);
+	const DEFAULT_CHECKS: CheckRow[] = [
+		{
+			id: 'consent_mode',
+			label: 'Consent Mode / KVKK rıza sinyali',
+			hint: 'KVKK/consent sinyali — rıza ve CMP durumunun ölçüm zincirine aktarılması.',
+			score: 0
+		},
+		{
+			id: 'enhanced_conversions',
+			label: 'Gelişmiş dönüşümler / CAPI',
+			hint: 'CAPI / gelişmiş dönüşüm — sunucu veya geliştirilmiş dönüşüm geri bildirimi.',
+			score: 0
+		},
+		{
+			id: 'server_side_tagging',
+			label: 'Sunucu taraflı etiketleme (SST)',
+			hint: 'SST — sunucu taraflı etiketleme / container kurulumu.',
+			score: 0
+		},
+		{
+			id: 'crm_feedback',
+			label: 'CRM → Ads geri bildirimi (offline conversion)',
+			hint: 'CRM→Ads offline conversion — kapalı/kazanılan lead’in reklam platformuna dönüşü.',
+			score: 0
+		},
+		{
+			id: 'emq_score',
+			label: 'Eşleşme/lead kalitesi (EMQ)',
+			hint: 'Lead / eşleşme kalitesi — Event Match Quality veya benzeri eşleşme skoru.',
+			score: 0
+		}
+	];
+
+	function asMaturity(score: number): Maturity {
+		if (score >= 100) return 100;
+		if (score >= 50) return 50;
+		return 0;
+	}
+
+	function mergeSaved(saved: TrustScoreSettings | undefined): CheckRow[] {
+		const byId = new Map((saved?.checks ?? []).map((c) => [c.id, c.score]));
+		return DEFAULT_CHECKS.map((row) => ({
+			...row,
+			score: byId.has(row.id) ? asMaturity(byId.get(row.id)!) : 0
+		}));
+	}
+
+	const queryClient = useQueryClient();
+
+	const settingsQuery = createQuery(() => ({
+		queryKey: ['settings', 'trust-score'],
+		queryFn: () => apiGet<TrustScoreSettings>('/v1/settings/trust-score')
+	}));
+
+	let checks = $state<CheckRow[]>(mergeSaved(undefined));
+	let hydrated = $state(false);
+	let saving = $state(false);
+	let saveError = $state<string | null>(null);
+	let saveOk = $state(false);
+
+	$effect(() => {
+		if (!settingsQuery.isSuccess || hydrated) return;
+		checks = mergeSaved(settingsQuery.data);
+		hydrated = true;
+	});
 
 	const maturityOptions: { value: Maturity; label: string }[] = [
 		{ value: 0, label: 'Yok' },
@@ -55,10 +117,29 @@
 
 	function setScore(id: TrustCheckId, score: Maturity) {
 		checks = checks.map((c) => (c.id === id ? { ...c, score } : c));
+		saveOk = false;
 	}
 
 	function labelForId(id: TrustCheckId): string {
 		return checks.find((c) => c.id === id)?.label ?? id;
+	}
+
+	async function save() {
+		saving = true;
+		saveError = null;
+		saveOk = false;
+		try {
+			const body: TrustScoreSettings = {
+				checks: checks.map((c) => ({ id: c.id, score: c.score }))
+			};
+			await apiSend<TrustScoreSettings>('/v1/settings/trust-score', 'PUT', body);
+			await queryClient.invalidateQueries({ queryKey: ['settings', 'trust-score'] });
+			saveOk = true;
+		} catch (err) {
+			saveError = err instanceof Error ? err.message : 'Kayıt başarısız';
+		} finally {
+			saving = false;
+		}
 	}
 </script>
 
@@ -69,8 +150,31 @@
 <div class="mx-auto max-w-5xl min-w-0">
 	<PageHeader
 		title="Ölçüm Olgunluğu"
-		description="Veri/izleme kurulumunuzu puanlayın; zayıf halkaları görün. (Manuel değerlendirme; entegrasyon yok.)"
-	/>
+		description="Veri/izleme kurulumunuzu puanlayın; tenant bazında kaydedilir. Zayıf halkaları görün."
+	>
+		{#snippet actions()}
+			<Button type="button" size="sm" disabled={saving || settingsQuery.isPending} onclick={() => void save()}>
+				{saving ? 'Kaydediliyor…' : 'Kaydet'}
+			</Button>
+		{/snippet}
+	</PageHeader>
+
+	{#if settingsQuery.isPending && !hydrated}
+		<p class="mb-4 text-sm text-text-muted">Kayıtlı checklist yükleniyor…</p>
+	{/if}
+	{#if saveOk}
+		<div
+			class="mb-4 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
+			role="status"
+		>
+			Ölçüm checklist’i kaydedildi.
+		</div>
+	{/if}
+	{#if saveError}
+		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+			{saveError}
+		</div>
+	{/if}
 
 	<div class="grid gap-4 lg:grid-cols-2">
 		<section class="rounded-lg border border-border bg-surface p-5">
@@ -79,6 +183,7 @@
 				{#each checks as check (check.id)}
 					<li class="border-b border-border pb-4 last:border-0 last:pb-0">
 						<p class={labelClass}>{check.label}</p>
+						<p class="mt-0.5 text-xs text-text-faint">{check.hint}</p>
 						<div class="mt-2 flex flex-wrap gap-2" role="group" aria-label={check.label}>
 							{#each maturityOptions as opt (opt.value)}
 								<button

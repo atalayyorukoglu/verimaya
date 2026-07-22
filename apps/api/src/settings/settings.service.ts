@@ -4,17 +4,27 @@ import type {
 	ContactTypeCreate,
 	CredentialUpsert,
 	FinanceCategoryCreate,
-	FinanceCategoryUpdate
+	FinanceCategoryUpdate,
+	TrustScoreSettings
 } from '@verimaya/shared';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
-	DEFAULT_FINANCE_CATEGORY_SEEDS
+	DEFAULT_FINANCE_CATEGORY_SEEDS,
+	trustScoreSettings
 } from '@verimaya/shared';
-import { contactTypes, contacts, financeCategories, tenantCredentials } from '../db/schema';
+import {
+	contactTypes,
+	contacts,
+	financeCategories,
+	tenantCredentials,
+	tenantSettings
+} from '../db/schema';
 import { toContactType, toFinanceCategory } from '../common/mappers';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { buildDefaultAppointmentTypes } from './appointment-type-defaults';
+
+const TRUST_SCORE_KEY = 'trust_score';
 
 @Injectable()
 export class SettingsService {
@@ -251,6 +261,48 @@ export class SettingsService {
 		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			await db.delete(tenantCredentials).where(eq(tenantCredentials.provider, provider));
 		});
+	}
+
+	async getTenantSetting(tenantId: string, key: string): Promise<unknown | null> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select({ value: tenantSettings.value })
+				.from(tenantSettings)
+				.where(eq(tenantSettings.key, key))
+				.limit(1);
+			return row?.value ?? null;
+		});
+	}
+
+	async setTenantSetting(tenantId: string, key: string, value: unknown): Promise<void> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.insert(tenantSettings)
+				.values({
+					tenantId,
+					key,
+					value
+				})
+				.onConflictDoUpdate({
+					target: [tenantSettings.tenantId, tenantSettings.key],
+					set: {
+						value,
+						updatedAt: new Date()
+					}
+				});
+		});
+	}
+
+	async getTrustScore(tenantId: string): Promise<TrustScoreSettings> {
+		const raw = await this.getTenantSetting(tenantId, TRUST_SCORE_KEY);
+		if (raw == null) return { checks: [] };
+		const parsed = trustScoreSettings.safeParse(raw);
+		return parsed.success ? parsed.data : { checks: [] };
+	}
+
+	async saveTrustScore(tenantId: string, settings: TrustScoreSettings): Promise<TrustScoreSettings> {
+		await this.setTenantSetting(tenantId, TRUST_SCORE_KEY, settings);
+		return settings;
 	}
 
 	private async findFinanceCategoryRow(db: TenantDb, id: string) {

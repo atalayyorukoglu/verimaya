@@ -34,3 +34,9 @@ export const trustScoreResult = z.object({
 	checks: z.array(trustScoreCheck)
 });
 export type TrustScoreResult = z.infer<typeof trustScoreResult>;
+
+/** Persisted tenant checklist input (Ölçüm / Trust Score settings). */
+export const trustScoreSettings = z.object({
+	checks: z.array(trustCheckInput)
+});
+export type TrustScoreSettings = z.infer<typeof trustScoreSettings>;

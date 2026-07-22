@@ -18,7 +18,8 @@ import type {
 	Transaction,
 	MembershipUser,
 	UserRole,
-	WebhookSubscription
+	WebhookSubscription,
+	TrustScoreSettings
 } from '@verimaya/shared';
 
 export type MockScenario = 'default' | 'empty' | 'large';
@@ -369,6 +370,8 @@ export type DemoStore = {
 	apiKeys: ApiKey[];
 	webhookSubscriptions: WebhookSubscription[];
 	aiCorrections: AiCorrection[];
+	/** Persisted Trust Score checklist (MSW). */
+	trustScore: TrustScoreSettings;
 };
 
 function slugify(name: string): string {
@@ -1000,7 +1003,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 			auditLogs: [],
 			apiKeys: [],
 			webhookSubscriptions: [],
-			aiCorrections: []
+			aiCorrections: [],
+			trustScore: { checks: [] }
 		};
 	}
 
@@ -1295,7 +1299,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 		auditLogs,
 		apiKeys: makeApiKeys(),
 		webhookSubscriptions: makeWebhookSubscriptions(),
-		aiCorrections: []
+		aiCorrections: [],
+		trustScore: { checks: [] }
 	};
 }
 
