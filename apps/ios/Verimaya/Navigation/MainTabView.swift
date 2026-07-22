@@ -11,7 +11,7 @@ struct MainTabView: View {
       }
 
       NavigationStack {
-        ComingSoonView(message: "Yakında — Adım 5")
+        AppointmentsView()
       }
       .tabItem {
         Label("Randevular", systemImage: "calendar")
