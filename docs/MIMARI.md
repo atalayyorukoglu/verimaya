@@ -61,3 +61,16 @@ Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker
 ## Reklam metrikleri (Faz 5 stub, 2026-07-22)
 
 `AdMetricsSyncService` (`ad_metrics.sync` job): tenant'ta Meta/Google `tenant_credentials` yoksa `ad_metrics_daily`'ye 1–3 deterministik fixture satırı upsert eder (unique: tenant+provider+date+campaign); cred varsa OAuth pull henüz yok — fixture yazılmaz. Aynı `ENABLE_INTEGRATION_SCHEDULERS` bayrağıyla 6h repeatable scheduler.
+
+## Pazarlama hesap katmanı ve ROAS tanımı
+
+`packages/shared/src/marketing`: saf, Vitest'li birim-ekonomi fonksiyonları — `truth-calculator`, `ad-simulator`, `compliance`, `templates`, `trust-score`. Para alanları minor unit (kuruş integer); oranlar `number` (Infinity taşıyabilir); Infinity/uygulanamaz para çıktısı `null`. Geçiş planı: `docs/ROASMATE-GECIS.md`.
+
+İki-katman ROAS (UI'da ayrı etiketlenir; karışıklık önlenir):
+
+- **Platform ROAS** = raporlanan dönüşüm değeri ÷ spend (Meta/Google veya manuel girdi).
+- **Gerçek ROAS (Verimaya)** = dönem tahsilatı ÷ Ads spend (`transactions` + `ad_metrics_daily`) — RM-3'te canlanır.
+
+Attribution V1: `patient.source`. Kampanya kırılımı V2.
+
+Kritik formüller UI'da yeniden yazılmaz; shared'dan import.

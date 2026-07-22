@@ -70,6 +70,8 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [ ] Meta + Google Ads OAuth (tenant bazlı)
 - [~] 6 saatlik incremental sync → `ad_metrics_daily` — `ad_metrics.sync` worker: OAuth cred yoksa 1–3 deterministik fixture satırı idempotent upsert; cred varsa OAuth pull bekleniyor (skip); `ENABLE_INTEGRATION_SCHEDULERS=true` ile tenant başına 6h scheduler; gerçek Meta/Google adaptörü yok
 
+**RoasMate birleşimi** (`docs/ROASMATE-GECIS.md`): Faz 5b — Pazarlama matematiği (RM-1 shared core ✅, RM-2 `/pazarlama` araç UI); Faz 7b — Gerçek ROAS raporu (RM-3); Faz 5 Ads OAuth = RM-4. Bu alt fazlar mevcut Faz 5/7'yi genişletir, yerine geçmez.
+
 ## Faz 6 — Dış API + n8n (1 hafta) 🚧
 
 - [x] `api_keys` tablosu + CRUD (create/list/revoke; hash listede yok)
@@ -86,6 +88,8 @@ Toplam hedef: **10-14 hafta** (AI destekli solo tempo). Fazlar sıralı; Faz 0-2
 - [x] PWA: manifest (`apps/web/static/manifest.webmanifest` + ikonlar) + service worker (`apps/web/static/sw.js`; shell cache-first, `/v1` network-first, navigasyon offline → `static/offline.html`; MSW açıkken kayıt edilmez); AppShell’de hafif `beforeinstallprompt` kurulum bandı (Türkçe, kapatılabilir, yalnız `!USE_MSW`)
 - [x] Legacy notlar: `docs/legacy-reference/raporlar.md` — "Durum (Verimaya)" notu eklendi
 - [x] Vitrin sayfası (`/vitrin`): TickPort warm neutrals + terracotta hero (marka hero-level, tek başlık, tek cümle, CTA → `/giris`, AppShell dışı, hafif motion); tam CF-marketing vitrin (güven bandı / özellik blokları) sonra
+
+**RoasMate birleşimi** (`docs/ROASMATE-GECIS.md`): Faz 7b — Gerçek ROAS raporu (RM-3); Faz 5b pazarlama matematiği ve Ads OAuth eşlemesi için bkz. Faz 5 notu. Alt fazlar mevcut Faz 5/7'yi genişletir, yerine geçmez.
 
 ## Faz 8 — Veri göçü ve geçiş (1 hafta)
 
