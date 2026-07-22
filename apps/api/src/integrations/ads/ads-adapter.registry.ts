@@ -1,18 +1,24 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { adProviderSchema, type AdProvider } from '@verimaya/shared';
+import { metaAdsAdapterFromEnv } from '../meta/meta-ads.adapter';
 import { StubAdsAdapter } from './ads.stub-adapter';
 import type { AdsProviderAdapter } from './ads.types';
 
 /**
- * Resolves AdsProviderAdapter by provider. Defaults to StubAdsAdapter for meta+google;
- * RM-4b/c will swap in real Meta/Google adapters.
+ * Resolves AdsProviderAdapter by provider.
+ * meta → MetaAdsAdapter (RM-4b); google → Stub until RM-4c.
  */
 @Injectable()
 export class AdsAdapterRegistry {
 	private readonly adapters = new Map<AdProvider, AdsProviderAdapter>([
-		['meta', new StubAdsAdapter('meta')],
+		['meta', metaAdsAdapterFromEnv()],
 		['google', new StubAdsAdapter('google')]
 	]);
+
+	/** Test helper: swap adapter without Nest DI. */
+	replace(provider: AdProvider, adapter: AdsProviderAdapter): void {
+		this.adapters.set(provider, adapter);
+	}
 
 	get(provider: AdProvider): AdsProviderAdapter {
 		const adapter = this.adapters.get(provider);

@@ -8,7 +8,7 @@ import { DbService } from '../../db/db.service';
 import { SettingsService } from '../../settings/settings.service';
 import { TenantContextService } from '../../tenant/tenant-context.service';
 import { AdsAdapterRegistry } from './ads-adapter.registry';
-import { STUB_META_CAMPAIGN_ID } from './ads.stub-adapter';
+import { STUB_META_CAMPAIGN_ID, StubAdsAdapter } from './ads.stub-adapter';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -45,11 +45,10 @@ describe('Ads OAuth stub sync tenant isolation', () => {
 		const tenantContext = new TenantContextService(dbService);
 		const crypto = new CryptoService();
 		settingsService = new SettingsService(tenantContext, crypto);
-		syncService = new AdMetricsSyncService(
-			tenantContext,
-			settingsService,
-			new AdsAdapterRegistry()
-		);
+		const registry = new AdsAdapterRegistry();
+		// Isolation asserts stub campaign ids — keep Stub for meta (Meta HTTP covered in unit specs).
+		registry.replace('meta', new StubAdsAdapter('meta'));
+		syncService = new AdMetricsSyncService(tenantContext, settingsService, registry);
 
 		await settingsService.storeCredential(tenantA, 'meta', { secret: 'stub-meta-token' });
 	});
