@@ -1,6 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { betterAuth } from 'better-auth';
-import { organization, twoFactor } from 'better-auth/plugins';
+import { bearer, organization, twoFactor } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
 import {
 	account,
@@ -50,6 +50,7 @@ export function createAuth() {
 			}
 		}),
 		plugins: [
+			bearer(),
 			organization({
 				ac,
 				roles: {

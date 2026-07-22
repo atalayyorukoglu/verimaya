@@ -90,7 +90,8 @@ async function bootstrap() {
 			.split(',')
 			.map((s) => s.trim())
 			.filter(Boolean),
-		credentials: true
+		credentials: true,
+		exposedHeaders: ['set-auth-token']
 	});
 
 	await app.register(multipart, {
