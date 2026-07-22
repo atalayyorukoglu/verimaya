@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
+		MarketingReport,
 		Patient,
 		ReportByCategory,
 		ReportByCategoryDetail,
@@ -15,6 +16,7 @@
 		TransactionUpdate
 	} from '@verimaya/shared';
 	import {
+		marketingReportUrl,
 		patientStatusLabels,
 		reportUrl,
 		transactionKindLabels,
@@ -22,7 +24,7 @@
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { USE_MSW } from '$lib/env';
-	import { formatDate, formatMoney } from '$lib/format';
+	import { formatDate, formatMoney, formatRatio } from '$lib/format';
 	import { amountInBase, isFxMissing, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -34,12 +36,13 @@
 	import Folder from '@lucide/svelte/icons/folder';
 	import FolderTree from '@lucide/svelte/icons/folder-tree';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import Megaphone from '@lucide/svelte/icons/megaphone';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Tag from '@lucide/svelte/icons/tag';
 
 	type TxPage = { items: Transaction[]; next_cursor: string | null };
 	type PatientsPage = { items: Patient[]; next_cursor: string | null };
-	type TabKey = 'ozet' | 'kategori';
+	type TabKey = 'ozet' | 'kategori' | 'pazarlama';
 	type PeriodKey = 'bu-ay' | 'gecen-ay' | 'tum' | 'ozel';
 	type Drill =
 		| null
@@ -87,7 +90,12 @@
 		return 'neu';
 	}
 
-	const tab = $derived<TabKey>(page.url.searchParams.get('tab') === 'kategori' ? 'kategori' : 'ozet');
+	const tab = $derived.by((): TabKey => {
+		const t = page.url.searchParams.get('tab');
+		if (t === 'kategori') return 'kategori';
+		if (t === 'pazarlama') return 'pazarlama';
+		return 'ozet';
+	});
 
 	let periodKey = $state<PeriodKey>('bu-ay');
 	let customFrom = $state(monthRange(0).from);
@@ -171,6 +179,14 @@
 		queryFn: () =>
 			apiGet<ReportMonthly>(reportUrl('monthly', monthlyRange)),
 		enabled: !USE_MSW
+	}));
+
+	const marketingQuery = createQuery(() => ({
+		queryKey: ['reports', 'marketing', { from: dateRange.from, to: dateRange.to }],
+		queryFn: () =>
+			apiGet<MarketingReport>(
+				marketingReportUrl({ from: dateRange.from, to: dateRange.to })
+			)
 	}));
 
 	const tenantQuery = createQuery(() => ({
@@ -462,11 +478,13 @@
 	const loading = $derived(
 		txQuery.isPending ||
 			patientsQuery.isPending ||
+			marketingQuery.isPending ||
 			(!USE_MSW && (summaryQuery.isPending || byCategoryQuery.isPending || monthlyQuery.isPending))
 	);
 	const failed = $derived(
 		txQuery.isError ||
 			patientsQuery.isError ||
+			marketingQuery.isError ||
 			(!USE_MSW && (summaryQuery.isError || byCategoryQuery.isError || monthlyQuery.isError)) ||
 			(!USE_MSW && drillCategoryLabel != null && byCategoryDetailQuery.isError)
 	);
@@ -475,7 +493,7 @@
 		drill = null;
 		const url = new URL(page.url);
 		if (next === 'ozet') url.searchParams.delete('tab');
-		else url.searchParams.set('tab', 'kategori');
+		else url.searchParams.set('tab', next);
 		void goto(`${url.pathname}${url.search}`, { replaceState: true, noScroll: true });
 	}
 
@@ -531,9 +549,9 @@
 
 <div class="mx-auto max-w-6xl min-w-0">
 	<div class="mb-4">
-		<PageHeader title="Raporlar" description="Dönem özeti ve kategori kırılımı (demo).">
+		<PageHeader title="Raporlar" description="Dönem özeti, kategori kırılımı ve gerçek ROAS.">
 			{#snippet actions()}
-				<div class="flex shrink-0 gap-1.5">
+				<div class="flex shrink-0 flex-wrap gap-1.5">
 					<Button
 						type="button"
 						size="sm"
@@ -551,6 +569,15 @@
 					>
 						<FolderTree class="size-3.5" />
 						Kategori
+					</Button>
+					<Button
+						type="button"
+						size="sm"
+						variant={tab === 'pazarlama' ? 'default' : 'outline'}
+						onclick={() => setTab('pazarlama')}
+					>
+						<Megaphone class="size-3.5" />
+						Pazarlama
 					</Button>
 				</div>
 			{/snippet}
@@ -772,6 +799,93 @@
 				</ul>
 			{/if}
 		</section>
+	{:else if tab === 'pazarlama'}
+		{@const marketing = marketingQuery.data}
+		{#if !marketing}
+			<p class="text-sm text-text-muted">Pazarlama raporu yüklenemedi.</p>
+		{:else}
+			<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+				<div class="rounded-lg border border-border bg-surface p-4">
+					<p class="text-xs text-text-muted">Reklam harcaması ({baseCurrency})</p>
+					<p class="mt-1 truncate text-lg font-semibold text-text tabular-nums">
+						{formatMoney(marketing.spend_base, baseCurrency)}
+					</p>
+				</div>
+				<div class="rounded-lg border border-border bg-surface p-4">
+					<p class="text-xs text-text-muted">Tahsilat (dönem) ({baseCurrency})</p>
+					<p class="mt-1 truncate text-lg font-semibold text-success tabular-nums">
+						{formatMoney(marketing.revenue_base, baseCurrency)}
+					</p>
+				</div>
+				<div class="rounded-lg border border-border bg-surface p-4">
+					<p class="text-xs text-text-muted">Gerçek ROAS</p>
+					<p class="mt-1 truncate text-lg font-semibold text-text tabular-nums">
+						{marketing.real_roas == null ? '—' : formatRatio(marketing.real_roas)}
+					</p>
+				</div>
+				<div class="rounded-lg border border-border bg-surface p-4">
+					<p class="text-xs text-text-muted">Hasta başı maliyet</p>
+					<p class="mt-1 text-sm font-semibold text-text tabular-nums">
+						<span class="text-text-muted">CPL</span>
+						{marketing.cost_per_lead == null
+							? '—'
+							: formatMoney(marketing.cost_per_lead, baseCurrency)}
+					</p>
+					<p class="mt-0.5 text-sm font-semibold text-text tabular-nums">
+						<span class="text-text-muted">CPA</span>
+						{marketing.cost_per_closed == null
+							? '—'
+							: formatMoney(marketing.cost_per_closed, baseCurrency)}
+					</p>
+				</div>
+			</div>
+
+			<p class="mt-3 text-xs text-text-muted">
+				Gerçek ROAS = dönem tahsilatı ÷ reklam harcaması. Platform ROAS'tan farklıdır.
+			</p>
+
+			<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
+				<div class="flex flex-wrap items-baseline justify-between gap-2">
+					<h2 class="text-sm font-semibold text-text">Kaynak kırılımı</h2>
+					<p class="text-xs text-text-muted">
+						{marketing.leads_count} lead · {marketing.closed_count} kapalı
+					</p>
+				</div>
+
+				{#if marketing.by_source.length === 0}
+					<p class="mt-4 text-sm text-text-muted">Veri yok.</p>
+				{:else}
+					<div class="mt-4 -mx-1 overflow-x-auto">
+						<table class="w-full min-w-[28rem] text-left text-sm">
+							<thead>
+								<tr class="border-b border-border text-xs text-text-muted">
+									<th class="px-1 pb-2 font-medium">Kaynak</th>
+									<th class="px-1 pb-2 text-right font-medium">Lead</th>
+									<th class="px-1 pb-2 text-right font-medium">Kapalı</th>
+									<th class="px-1 pb-2 text-right font-medium">Tahsilat</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-border">
+								{#each marketing.by_source as row (row.source)}
+									<tr>
+										<td class="px-1 py-2.5 font-medium text-text">{row.source}</td>
+										<td class="px-1 py-2.5 text-right tabular-nums text-text">
+											{row.leads}
+										</td>
+										<td class="px-1 py-2.5 text-right tabular-nums text-text">
+											{row.closed}
+										</td>
+										<td class="px-1 py-2.5 text-right tabular-nums text-text">
+											{formatMoney(row.revenue_base, baseCurrency)}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{/if}
+			</section>
+		{/if}
 	{:else}
 		<!-- Kategori sekmesi -->
 		{#if !drill}
@@ -1001,10 +1115,10 @@
 
 	<p class="mt-4 text-xs text-text-faint">
 		{#if USE_MSW}
-			Demo: dönem filtresi MSW üzerinden; özet ve kategori toplamları istemcide hesaplanır.
+			Demo: dönem filtresi MSW üzerinden; özet/kategori istemcide, pazarlama raporu mock endpoint’ten.
 		{:else}
-			Özet ve kategori toplamları sunucu aggregate endpoint'lerinden gelir; grafik ve drill-down için
-			işlem listesi ayrıca yüklenir.
+			Özet, kategori ve pazarlama toplamları sunucu aggregate endpoint'lerinden gelir; grafik ve
+			drill-down için işlem listesi ayrıca yüklenir.
 		{/if}
 	</p>
 </div>

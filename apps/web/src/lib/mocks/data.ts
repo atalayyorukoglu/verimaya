@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker/locale/en';
 import type {
 	AiCorrection,
+	AdMetric,
 	ApiKey,
 	Appointment,
 	AppointmentTypeSetting,
@@ -354,6 +355,8 @@ export type DemoStore = {
 	patients: Patient[];
 	appointments: Appointment[];
 	transactions: Transaction[];
+	/** Daily ad spend rows (demo fixture for Gerçek ROAS). */
+	adMetricsDaily: AdMetric[];
 	inboundMessages: InboundMessage[];
 	files: PatientFile[];
 	caseNotes: PatientCaseNote[];
@@ -654,6 +657,45 @@ function daysAgo(days: number, hour = 10): Date {
 	return d;
 }
 
+function isoDayLocal(d: Date): string {
+	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Demo ad spend for Gerçek ROAS — ~30 gün, meta/google karışık.
+ * Toplam harcama birkaç bin ₺ (kuruş minor).
+ */
+function makeAdMetricsDaily(): AdMetric[] {
+	const rows: AdMetric[] = [];
+	const campaigns = [
+		{ provider: 'meta' as const, campaign_id: 'meta-leadgen-tr' },
+		{ provider: 'meta' as const, campaign_id: 'meta-retarget' },
+		{ provider: 'google' as const, campaign_id: 'google-search-brand' }
+	];
+	// Deterministic-ish spends so "Bu ay" totals look realistic (~4–6 bin ₺).
+	const spendPattern = [
+		42_500, 38_000, 55_000, 29_500, 61_000, 47_200, 33_800, 52_400, 44_100, 36_700, 58_900,
+		41_200, 49_600, 27_300, 53_000
+	];
+
+	for (let i = 0; i < spendPattern.length; i++) {
+		const day = daysAgo(i * 2 + 1);
+		const camp = campaigns[i % campaigns.length]!;
+		const spend = spendPattern[i]!;
+		rows.push({
+			id: faker.string.uuid(),
+			tenant_id: DEMO_TENANT_ID,
+			provider: camp.provider,
+			date: isoDayLocal(day),
+			campaign_id: camp.campaign_id,
+			spend_minor: spend,
+			impressions: Math.round(spend / 8) + 200,
+			clicks: Math.round(spend / 900) + 12
+		});
+	}
+	return rows;
+}
+
 function makeAtalaySeed(): {
 	patient: Patient;
 	appointments: Appointment[];
@@ -946,6 +988,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			patients: [],
 			appointments: [],
 			transactions: [],
+			adMetricsDaily: [],
 			inboundMessages: [],
 			files: [],
 			caseNotes: [],
@@ -1225,6 +1268,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		patients,
 		appointments,
 		transactions,
+		adMetricsDaily: makeAdMetricsDaily(),
 		inboundMessages,
 		files: atalay.files,
 		caseNotes: [

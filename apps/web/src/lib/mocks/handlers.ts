@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import {
+	calculateRealRoas,
 	patientCreateSchema,
 	patientUpdateSchema,
 	appointmentCreateSchema,
@@ -28,6 +29,7 @@ import {
 	type Contact,
 	type ContactType,
 	type FinanceCategory,
+	type MarketingReport,
 	type MembershipUser,
 	type Patient,
 	type PatientCaseNote,
@@ -137,6 +139,113 @@ function amountInBaseMock(tx: Transaction, tenantBase: string): number | null {
 		return tx.amount_base;
 	}
 	return null;
+}
+
+/** Tahsilat in tenant base — mirrors resolvePaidBaseAmount (TRY-simple for demo). */
+function paidInBaseMock(tx: Transaction, tenantBase: string): number {
+	if (tx.paid_amount == null) return 0;
+	if (tx.currency === tenantBase) return tx.paid_amount;
+	const base = amountInBaseMock(tx, tenantBase);
+	if (base == null || tx.amount <= 0) return 0;
+	return Math.round((tx.paid_amount / tx.amount) * base);
+}
+
+function sourceLabel(source: string | null | undefined): string {
+	const trimmed = (source ?? '').trim();
+	return trimmed || 'Bilinmeyen';
+}
+
+function patientCreatedDay(iso: string): string {
+	return iso.slice(0, 10);
+}
+
+function buildMarketingReport(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null,
+	provider: string | null
+): MarketingReport {
+	const tenantBase = store.tenant.base_currency;
+
+	let spendRows = store.adMetricsDaily;
+	if (from) spendRows = spendRows.filter((r) => r.date >= from);
+	if (to) spendRows = spendRows.filter((r) => r.date <= to);
+	if (provider === 'meta' || provider === 'google') {
+		spendRows = spendRows.filter((r) => r.provider === provider);
+	}
+	const spend_base = spendRows.reduce((sum, r) => sum + r.spend_minor, 0);
+
+	const incomeRows = filterTransactionsByPeriod(store.transactions, from, to).filter(
+		(t) => t.kind === 'income'
+	);
+	const patientById = new Map(store.patients.map((p) => [p.id, p]));
+	const revenueBySource = new Map<string, number>();
+	let revenue_base = 0;
+	for (const t of incomeRows) {
+		const paid = paidInBaseMock(t, tenantBase);
+		revenue_base += paid;
+		const patient = t.patient_id ? patientById.get(t.patient_id) : undefined;
+		const label = sourceLabel(patient?.source);
+		revenueBySource.set(label, (revenueBySource.get(label) ?? 0) + paid);
+	}
+
+	const cohortPatients = store.patients.filter((p) => {
+		const day = patientCreatedDay(p.created_at);
+		if (from && day < from) return false;
+		if (to && day > to) return false;
+		return true;
+	});
+	const cohortBySource = new Map<string, { leads: number; closed: number }>();
+	let leads_count = 0;
+	let closed_count = 0;
+	for (const p of cohortPatients) {
+		leads_count += 1;
+		const isClosed = p.status === 'closed_won';
+		if (isClosed) closed_count += 1;
+		const label = sourceLabel(p.source);
+		const cur = cohortBySource.get(label) ?? { leads: 0, closed: 0 };
+		cur.leads += 1;
+		if (isClosed) cur.closed += 1;
+		cohortBySource.set(label, cur);
+	}
+
+	const sourceKeys = new Set([...revenueBySource.keys(), ...cohortBySource.keys()]);
+	const by_source = [...sourceKeys]
+		.map((source) => {
+			const cohort = cohortBySource.get(source);
+			return {
+				source,
+				leads: cohort?.leads ?? 0,
+				closed: cohort?.closed ?? 0,
+				revenue_base: revenueBySource.get(source) ?? 0
+			};
+		})
+		.sort(
+			(a, b) =>
+				Math.abs(b.leads) +
+				Math.abs(b.closed) +
+				Math.abs(b.revenue_base) -
+				(Math.abs(a.leads) + Math.abs(a.closed) + Math.abs(a.revenue_base))
+		);
+
+	const metrics = calculateRealRoas({
+		spendMinor: spend_base,
+		revenueMinor: revenue_base,
+		leads: leads_count,
+		closed: closed_count
+	});
+
+	return {
+		period: { from, to },
+		spend_base,
+		revenue_base,
+		real_roas: metrics.realRoas,
+		leads_count,
+		closed_count,
+		cost_per_lead: metrics.costPerLead,
+		cost_per_closed: metrics.costPerClosed,
+		by_source
+	};
 }
 
 function filterTransactionsByPeriod(
@@ -526,6 +635,15 @@ export const handlers = [
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
 		return HttpResponse.json(buildReportByCategory(store, from, to));
+	}),
+
+	http.get('/v1/reports/marketing', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		const provider = url.searchParams.get('provider');
+		return HttpResponse.json(buildMarketingReport(store, from, to, provider));
 	}),
 
 	http.post('/v1/transactions', async ({ request }) => {
