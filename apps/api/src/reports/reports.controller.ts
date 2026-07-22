@@ -1,5 +1,9 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
-import { reportByCategoryDetailParams, reportPeriodParams } from '@verimaya/shared';
+import {
+	marketingReportParams,
+	reportByCategoryDetailParams,
+	reportPeriodParams
+} from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
@@ -49,5 +53,16 @@ export class ReportsController {
 	) {
 		const params = reportPeriodParams.parse({ from, to });
 		return this.reportsService.monthly(getActiveOrgId(req), params);
+	}
+
+	@Get('marketing')
+	marketing(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string,
+		@Query('provider') provider?: string
+	) {
+		const params = marketingReportParams.parse({ from, to, provider });
+		return this.reportsService.marketing(getActiveOrgId(req), params);
 	}
 }
