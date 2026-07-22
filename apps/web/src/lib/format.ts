@@ -59,6 +59,35 @@ export function formatPercent(fraction: number, digits = 1): string {
 	}).format(fraction);
 }
 
+/**
+ * TL metnini kuruş integer'a çevirir.
+ * "1.000,50" / "1000.5" → 100050; boş veya geçersiz → null.
+ */
+export function parseMoneyInput(value: string): number | null {
+	const raw = value.trim().replace(/\s/g, '');
+	if (!raw) return null;
+
+	let normalized = raw;
+	const lastComma = raw.lastIndexOf(',');
+	const lastDot = raw.lastIndexOf('.');
+
+	if (lastComma !== -1 && lastDot !== -1) {
+		if (lastComma > lastDot) {
+			normalized = raw.replace(/\./g, '').replace(',', '.');
+		} else {
+			normalized = raw.replace(/,/g, '');
+		}
+	} else if (lastComma !== -1) {
+		normalized = raw.replace(',', '.');
+	} else if (/^\d{1,3}(\.\d{3})+$/.test(raw)) {
+		normalized = raw.replace(/\./g, '');
+	}
+
+	const tl = Number(normalized);
+	if (!Number.isFinite(tl)) return null;
+	return Math.round(tl * 100);
+}
+
 export function isSameLocalDay(iso: string, day = new Date()): boolean {
 	const d = new Date(iso);
 	return (
