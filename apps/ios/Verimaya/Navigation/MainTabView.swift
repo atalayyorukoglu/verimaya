@@ -32,24 +32,12 @@ struct MainTabView: View {
       }
 
       NavigationStack {
-        ComingSoonView(message: "Yakında — Adım 8")
+        SettingsView()
       }
       .tabItem {
         Label("Ayarlar", systemImage: "gearshape")
       }
     }
     .tint(VerimayaTheme.brand)
-  }
-}
-
-private struct ComingSoonView: View {
-  let message: String
-
-  var body: some View {
-    ZStack {
-      VerimayaTheme.bg.ignoresSafeArea()
-      Text(message)
-        .foregroundStyle(VerimayaTheme.textMuted)
-    }
   }
 }
