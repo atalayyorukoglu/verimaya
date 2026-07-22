@@ -20,6 +20,19 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.4.0',
+		date: '2026-07-22',
+		title: 'Yayın öncesi kontrol',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'Yayın Öncesi ekranında uyumluluk, birim ekonomi ve ölçüm eşiğini tek bakışta kontrol edebilirsiniz; bu bir uyarıdır, engel değildir.',
+				featureId: 'campaign-precheck'
+			}
+		]
+	},
+	{
 		version: '0.3.0',
 		date: '2026-07-22',
 		title: 'Gerçek ROAS raporu',

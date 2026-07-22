@@ -12,6 +12,7 @@ import FlaskConical from '@lucide/svelte/icons/flask-conical';
 import ShieldCheck from '@lucide/svelte/icons/shield-check';
 import LayoutTemplate from '@lucide/svelte/icons/layout-template';
 import Gauge from '@lucide/svelte/icons/gauge';
+import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -55,7 +56,8 @@ export const navGroups: NavGroup[] = [
 			{ label: 'Simülatör', href: '/pazarlama/simulator', icon: FlaskConical },
 			{ label: 'Uyumluluk', href: '/pazarlama/uyumluluk', icon: ShieldCheck },
 			{ label: 'Şablonlar', href: '/pazarlama/sablonlar', icon: LayoutTemplate },
-			{ label: 'Ölçüm', href: '/pazarlama/olcum', icon: Gauge }
+			{ label: 'Ölçüm', href: '/pazarlama/olcum', icon: Gauge },
+			{ label: 'Yayın Öncesi', href: '/pazarlama/kampanya', icon: ClipboardCheck }
 		]
 	},
 	{

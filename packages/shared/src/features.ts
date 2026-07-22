@@ -169,6 +169,16 @@ export const features: Feature[] = [
 		version: '0.2.0'
 	},
 	{
+		id: 'campaign-precheck',
+		module: 'Pazarlama',
+		title: 'Yayın öncesi kontrol',
+		description:
+			'Kampanyayı yayınlamadan önce uyumluluk, birim ekonomi ve ölçüm eşiğini tek ekranda kontrol edin.',
+		status: 'yayinda',
+		released_at: '2026-07-22',
+		version: '0.4.0'
+	},
+	{
 		id: 'duplicate-scan',
 		module: 'Hasta Takibi',
 		title: 'Kişi ve hasta çift kayıt',

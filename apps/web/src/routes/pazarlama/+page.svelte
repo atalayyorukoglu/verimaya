@@ -6,6 +6,7 @@
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import LayoutTemplate from '@lucide/svelte/icons/layout-template';
 	import Gauge from '@lucide/svelte/icons/gauge';
+	import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
 
 	type ToolCard = {
 		href: string;
@@ -44,6 +45,12 @@
 			title: 'Ölçüm',
 			description: 'Consent, CAPI ve CRM geri bildirimiyle Trust Score.',
 			icon: Gauge
+		},
+		{
+			href: '/pazarlama/kampanya',
+			title: 'Yayın Öncesi',
+			description: 'Uyumluluk, birim ekonomi ve ölçüm eşiğini tek ekranda kontrol et.',
+			icon: ClipboardCheck
 		}
 	];
 </script>
