@@ -20,6 +20,43 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.2.0',
+		date: '2026-07-22',
+		title: 'Pazarlama araçları',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'Platform ROAS’ını gerçek kâr, başabaş ve reklam tavanına çeviren Hesap aracını kullanabilirsiniz.',
+				featureId: 'truth-calculator'
+			},
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'CPC ve funnel oranlarıyla satış başı maliyet, trafik ışığı ve ölçek tavanını Simülatör’de hesaplayabilirsiniz.',
+				featureId: 'ad-simulator'
+			},
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'Reklam veya landing metnindeki yasaklı sağlık ifadelerini Uyumluluk taramasıyla yakalayabilirsiniz.',
+				featureId: 'ad-compliance'
+			},
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'UTM linki üretebilir; 60/30/10 bütçe ve 3:2:2 kreatif dağılımını Şablonlar’dan çıkarabilirsiniz.',
+				featureId: 'marketing-templates'
+			},
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'Consent, CAPI ve CRM geri bildirimi checklist’iyle Ölçüm Olgunluğu (Trust Score) puanını görebilirsiniz.',
+				featureId: 'trust-score'
+			}
+		]
+	},
+	{
 		version: '0.1.0',
 		date: '2026-07-20',
 		title: 'Faz 0a demo arayüzü',

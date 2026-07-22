@@ -106,7 +106,9 @@ export const features: Feature[] = [
 		title: 'Gerçek ROAS hesabı',
 		description:
 			'Platform ROAS’ını katkı payı ve maliyetlerle gerçek kâra çevirin; başabaş ve hasta başı reklam tavanını görün.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-22',
+		version: '0.2.0'
 	},
 	{
 		id: 'ad-simulator',
@@ -114,7 +116,9 @@ export const features: Feature[] = [
 		title: 'Reklam matematiği simülatörü',
 		description:
 			'CPC, dönüşüm ve satış oranıyla satış başı maliyet, trafik ışığı ve ölçek tavanını hesaplayın.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-22',
+		version: '0.2.0'
 	},
 	{
 		id: 'ad-compliance',
@@ -122,7 +126,9 @@ export const features: Feature[] = [
 		title: 'Reklam uyumluluk taraması',
 		description:
 			'Reklam veya landing metnindeki yasaklı / riskli sağlık vaatlerini tarayın.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-22',
+		version: '0.2.0'
 	},
 	{
 		id: 'marketing-templates',
@@ -130,7 +136,9 @@ export const features: Feature[] = [
 		title: 'UTM ve bütçe şablonları',
 		description:
 			'UTM linki üretin; 3:2:2 kreatif ve 60/30/10 bütçe bölüşümünü hızlıca çıkarın.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-22',
+		version: '0.2.0'
 	},
 	{
 		id: 'trust-score',
@@ -138,7 +146,9 @@ export const features: Feature[] = [
 		title: 'Ölçüm olgunluğu (Trust Score)',
 		description:
 			'Consent, CAPI, enhanced conversions ve CRM geri bildirim checklist’iyle ölçüm skorunu görün.',
-		status: 'gelistiriliyor'
+		status: 'yayinda',
+		released_at: '2026-07-22',
+		version: '0.2.0'
 	},
 	{
 		id: 'duplicate-scan',

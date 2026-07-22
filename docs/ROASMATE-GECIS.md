@@ -121,8 +121,8 @@ Mevcut `YOL-HARITASI.md` Faz 5 (Ads) ve Faz 7 (Rapor) ile **örtüşür**; RoasM
 ### RM-0 — Dokümantasyon ve sınırlar ✅
 
 - [x] Bu geçiş planı (`docs/ROASMATE-GECIS.md`)
-- [ ] `YOL-HARITASI.md` içine RoasMate birleşimi referansı (Faz 5/7 notu)
-- [ ] `MIMARI.md`’ye pazarlama hesap katmanı + ROAS tanımı (kısa)
+- [x] `YOL-HARITASI.md` içine RoasMate birleşimi referansı (Faz 5/7 notu)
+- [x] `MIMARI.md`’ye pazarlama hesap katmanı + ROAS tanımı (kısa)
 - [ ] Obsidian: “RoasMate → Verimaya tek ürün” kararı (1–2 satır)
 
 ### RM-1 — Core formülleri shared’a (P0) — ~3–5 gün ✅
@@ -145,19 +145,19 @@ Mevcut `YOL-HARITASI.md` Faz 5 (Ads) ve Faz 7 (Rapor) ile **örtüşür**; RoasM
 
 **Taşınmaz:** `MockAdsConnector` implementasyonu; yalnız ileride adaptör için interface notu `MIMARI.md`.
 
-### RM-2 — Pazarlama araç UI (P0) — ~1 hafta
+### RM-2 — Pazarlama araç UI (P0) — ~1 hafta ✅
 
 **Amaç:** Acente MSW veya gerçek API ile birim ekonomi araçlarını kullanır; Ads OAuth gerekmez.
 
-- [ ] AppShell menü: **Pazarlama** grubu
-- [ ] `/pazarlama` hub (kısa açıklama + araç kartları)
-- [ ] `/pazarlama/hesap` — Truth Calculator (URL state opsiyonel)
-- [ ] `/pazarlama/simulator` — Ad Simulator (trafik ışığı, ölçek, hedef satış)
-- [ ] `/pazarlama/uyumluluk` — metin yapıştır → yasaklı kelime hit listesi
-- [ ] `/pazarlama/sablonlar` — UTM + 60/30/10 + 3:2:2
-- [ ] `/pazarlama/olcum` — Trust Score checklist (manuel checkbox; entegrasyon yok)
-- [ ] `features.ts` + changelog + `/ozellikler` güncellemesi
-- [ ] Mobil + açık/koyu tema (mevcut tasarım sistemi)
+- [x] AppShell menü: **Pazarlama** grubu
+- [x] `/pazarlama` hub (kısa açıklama + araç kartları)
+- [x] `/pazarlama/hesap` — Truth Calculator (URL state opsiyonel)
+- [x] `/pazarlama/simulator` — Ad Simulator (trafik ışığı, ölçek, hedef satış)
+- [x] `/pazarlama/uyumluluk` — metin yapıştır → yasaklı kelime hit listesi
+- [x] `/pazarlama/sablonlar` — UTM + 60/30/10 + 3:2:2
+- [x] `/pazarlama/olcum` — Trust Score checklist (manuel checkbox; entegrasyon yok)
+- [x] `features.ts` + changelog + `/ozellikler` güncellemesi
+- [x] Mobil + açık/koyu tema (mevcut tasarım sistemi)
 
 **Kabul kriteri:** Demo tenant’ta araçlar çalışır; hesaplar shared fonksiyonlarından gelir (UI’da formül kopyası yok).
 
@@ -305,5 +305,6 @@ RM-0 doküman ──► RM-1 shared core ──► RM-2 pazarlama UI
 |---|---|
 | RM-0 Plan dokümanı | ✅ Bu dosya |
 | RM-1 Core shared | ✅ |
-| RM-2 … RM-7 | ⬜ Başlanmadı |
+| RM-2 Pazarlama UI | ✅ |
+| RM-3 … RM-7 | ⬜ Başlanmadı |
 | RoasMate arşiv | ⬜ |
