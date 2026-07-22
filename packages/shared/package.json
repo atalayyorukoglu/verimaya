@@ -15,12 +15,15 @@
 	"types": "./src/index.ts",
 	"scripts": {
 		"check": "tsc --noEmit",
-		"build": "tsc -p tsconfig.build.json"
+		"build": "tsc -p tsconfig.build.json",
+		"test": "vitest run",
+		"test:watch": "vitest"
 	},
 	"dependencies": {
 		"zod": "^3.25.76"
 	},
 	"devDependencies": {
-		"typescript": "^5.9.2"
+		"typescript": "^5.9.2",
+		"vitest": "^4.1.10"
 	}
 }
