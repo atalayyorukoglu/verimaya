@@ -1,5 +1,7 @@
 # RoasMate → Verimaya Geçiş Planı
 
+**Durum özeti (2026-07-22):** RM-1…5 + RM-7 tamam. RM-4 canlı credential bekliyor (kod hazır). RM-6 bilinçli olarak atlandı (P2).
+
 **Karar (2026-07-22):** RoasMate ayrı ürün olarak büyütülmez. Reklam matematiği, uyumluluk ve pazarlama UX’i Verimaya’ya gömülür; tek gelişen ürün Verimaya’dır. İlk hedef kitle: sağlık turizmi acenteleri / klinikleri.
 
 Kaynak repo: `~/Projects/roasmate` (referans; kod taşıma değil, **bilgi + formül + UX kalıbı** taşıma — `docs/legacy-reference/` prensibiyle aynı).
@@ -216,16 +218,18 @@ Kod go-live hazır; canlı doğrulama harici kimlik bilgisi ister:
 
 ### RM-5 — Ölçüm olgunluğu ve kampanya kapıları (P1–P2) — ~1 hafta
 
-- [ ] Trust Score’u tenant ayarına bağlama (persist: `tenant_settings` veya benzeri JSON)
-- [ ] Checklist maddelerini Verimaya gerçeklerine map et:
+- [x] Trust Score’u tenant ayarına bağlama (persist: `tenant_settings` key=`trust_score`)
+- [x] Checklist maddelerini Verimaya gerçeklerine map et:
   - consent / KVKK notu
   - Enhanced conversions / CAPI (entegrasyon durumu)
-  - CRM → Ads feedback (offline conversion job var mı?)
-  - EMQ / lead kalitesi (ileride GHL opportunity)
-- [ ] Kampanya sihirbazı (hafif): yayın öncesi checkbox’lar (compliance + birim ekonomi + trust eşiği) — zorunlu gate değil, uyarı bandı
-- [ ] Compliance: reklam metni / LP metni kaydı opsiyonel (audit log)
+  - CRM → Ads feedback (offline conversion)
+  - EMQ / lead kalitesi
+- [x] Kampanya sihirbazı (hafif): yayın öncesi checkbox’lar (compliance + birim ekonomi + trust eşiği) — zorunlu gate değil, uyarı bandı (`/pazarlama/kampanya`)
+- [ ] Compliance: reklam metni / LP metni kaydı opsiyonel (audit log) — (V2)
 
-### RM-6 — İçerik ve radar (P2) — isteğe bağlı
+### RM-6 — İçerik ve radar (P2) — isteğe bağlı *(atlandı — P2)*
+
+Bilinçli ertelendi; çekirdek RM-1…5 + RM-7 birleşim değeri için gerekli değil.
 
 - [ ] Academy müfredatından “lead ≠ hasta”, CAPI, 3:2:2, 60-30-10 → `docs/` veya uygulama içi yardım
 - [ ] Community vaka şablonu (yaptım / sayılar / öğrendim) — dahili pilot notları; public community yok
@@ -234,10 +238,11 @@ Kod go-live hazır; canlı doğrulama harici kimlik bilgisi ister:
 
 ### RM-7 — RoasMate emeklilik
 
-- [ ] RoasMate README: “Yeni geliştirme Verimaya’da; bu repo arşiv”
-- [ ] Gerekirse repo archive / read-only
-- [ ] Domain/DNS ve Vercel projesi kapatma veya Verimaya vitrine yönlendirme
-- [ ] Stripe test ürünleri iptal (varsa)
+- [x] RoasMate README: arşiv banner + canonical Verimaya işaretlendi
+- [x] Canonical formül/UI yolu Verimaya’da (`packages/shared/src/marketing`, `/pazarlama`, Gerçek ROAS)
+- [ ] Repo’yu GitHub’da archive / read-only yap — (kullanıcı: repo archive)
+- [ ] Domain/DNS ve Vercel projesi kapatma veya Verimaya vitrine yönlendirme — (kullanıcı: domain/Vercel)
+- [ ] Stripe test ürünlerini iptal (varsa) — (kullanıcı: Stripe)
 
 ---
 
@@ -325,5 +330,7 @@ RM-0 doküman ──► RM-1 shared core ──► RM-2 pazarlama UI
 | RM-2 Pazarlama UI | ✅ |
 | RM-3 Gerçek ROAS raporu | ✅ |
 | RM-4 Ads OAuth | 🟡 Kod tamam (go-live: harici credential) |
-| RM-5 … RM-7 | ⬜ Başlanmadı |
-| RoasMate arşiv | ⬜ |
+| RM-5 Ölçüm + kampanya kapısı | ✅ |
+| RM-6 İçerik / radar | ⬜ Atlandı (P2) |
+| RM-7 RoasMate emeklilik | ✅ Kod/doküman; harici kapatma kullanıcıda |
+| RoasMate arşiv | ✅ README + canonical işaret |
