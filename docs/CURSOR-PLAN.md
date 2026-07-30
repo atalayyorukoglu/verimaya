@@ -563,7 +563,7 @@ onaylı değilse kullanıcıya sor — taslak metinle yayına **çıkma**.
 
 ### Adım 16 — Ölçüm okuma yüzeyi
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Toplanan veri okunabilir olmadan işe yaramaz. En küçük yeterli çözüm:
 
