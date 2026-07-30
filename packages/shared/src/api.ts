@@ -40,7 +40,12 @@ export const apiPaths = {
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	scorecardProfile: `${API_V1_PREFIX}/scorecard/profile`,
+	scorecardCurrent: `${API_V1_PREFIX}/scorecard/current`,
 	scorecardAssessments: `${API_V1_PREFIX}/scorecard/assessments`,
+	scorecardAssessmentComplete: (id: string) =>
+		`${API_V1_PREFIX}/scorecard/assessments/${id}/complete`,
+	scorecardAssessmentAnswers: (id: string) =>
+		`${API_V1_PREFIX}/scorecard/assessments/${id}/answers`,
 	scorecardBaseline: `${API_V1_PREFIX}/scorecard/baseline`,
 	scorecardAutoFill: `${API_V1_PREFIX}/scorecard/auto-fill`,
 	scorecardAssessmentAutoFill: (id: string) =>

@@ -1375,7 +1375,7 @@ bağlantısı taşıyor; boş veri durumunda hiçbiri uydurulmuyor (test). Tenan
 
 ### Adım 36 — Ürün içi karne ekranı
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Panel içinde `/scorecard` (rota **İngilizce** — AGENTS.md § Dil ve slug;
 kullanıcıya görünen ad kataloğa `nav.scorecard` olarak eklenir).

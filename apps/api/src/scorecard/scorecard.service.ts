@@ -7,13 +7,19 @@ import { and, eq, isNull } from 'drizzle-orm';
 import {
 	SCORECARD_INCOMPARABILITY_WARNING,
 	SCORECARD_PROFILE_LOCKED_CODE,
+	computeAssessmentStats,
+	type ScorecardAnswerUpsert,
 	type ScorecardBaselineCreate,
+	type ScorecardBandId,
 	type ScorecardProfileCreate,
-	type ScorecardProfilePatch
+	type ScorecardProfilePatch,
+	type SetupAnswers
 } from '@verimaya/shared';
 import {
+	scorecardAnswers,
 	scorecardAssessments,
 	scorecardProfiles,
+	type ScorecardAnswerRow,
 	type ScorecardAssessmentRow,
 	type ScorecardProfileRow
 } from '../db/schema/scorecard';
@@ -42,6 +48,29 @@ export type ScorecardAssessmentDto = {
 	incomparability_warning: string | null;
 };
 
+export type ScorecardAnswerDto = {
+	id: string;
+	criterion_id: string;
+	score: number | null;
+	na_declared: boolean;
+	evidence_note: string | null;
+	source: string;
+	answered_at: string;
+};
+
+export type ScorecardCurrentDto = {
+	profile: ScorecardProfileDto | null;
+	assessment: ScorecardAssessmentDto | null;
+	answers: ScorecardAnswerDto[];
+	stats: {
+		denominator: number;
+		zero_count: number;
+		scored_count: number;
+		percentage: number | null;
+		maturity: string | null;
+	} | null;
+};
+
 @Injectable()
 export class ScorecardService {
 	constructor(private readonly tenantContext: TenantContextService) {}
@@ -50,6 +79,209 @@ export class ScorecardService {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findActiveProfile(db, tenantId);
 			return row ? this.toProfileDto(row) : null;
+		});
+	}
+
+	/** Active profile + open assessment + answers + live stats (Adım 36). */
+	async getCurrent(tenantId: string): Promise<ScorecardCurrentDto> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const profile = await this.findActiveProfile(db, tenantId);
+			if (!profile) {
+				return { profile: null, assessment: null, answers: [], stats: null };
+			}
+
+			const [open] = await db
+				.select()
+				.from(scorecardAssessments)
+				.where(
+					and(
+						eq(scorecardAssessments.tenantId, tenantId),
+						eq(scorecardAssessments.profileId, profile.id),
+						isNull(scorecardAssessments.completedAt)
+					)
+				)
+				.limit(1);
+
+			const assessment = open ?? null;
+			const answerRows = assessment
+				? await db
+						.select()
+						.from(scorecardAnswers)
+						.where(
+							and(
+								eq(scorecardAnswers.tenantId, tenantId),
+								eq(scorecardAnswers.assessmentId, assessment.id)
+							)
+						)
+				: [];
+
+			const setup = this.toSetup(profile);
+			const stats = computeAssessmentStats(
+				profile.band as ScorecardBandId,
+				setup,
+				answerRows.map((a) => ({
+					criterionId: a.criterionId,
+					score: a.score,
+					naDeclared: a.naDeclared
+				}))
+			);
+
+			return {
+				profile: this.toProfileDto(profile),
+				assessment: assessment ? this.toAssessmentDto(assessment) : null,
+				answers: answerRows.map((a) => this.toAnswerDto(a)),
+				stats: {
+					denominator: stats.denominator,
+					zero_count: stats.zeroCount,
+					scored_count: stats.scoredCount,
+					percentage: stats.percentage,
+					maturity: stats.maturity
+				}
+			};
+		});
+	}
+
+	async upsertAnswer(
+		tenantId: string,
+		assessmentId: string,
+		input: ScorecardAnswerUpsert
+	): Promise<ScorecardAnswerDto> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [assessment] = await db
+				.select()
+				.from(scorecardAssessments)
+				.where(
+					and(
+						eq(scorecardAssessments.id, assessmentId),
+						eq(scorecardAssessments.tenantId, tenantId)
+					)
+				)
+				.limit(1);
+			if (!assessment) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Assessment not found' }
+				});
+			}
+			if (assessment.completedAt) {
+				throw new ConflictException({
+					error: {
+						code: 'conflict',
+						message: 'Assessment is completed; start a new measurement to change answers'
+					}
+				});
+			}
+
+			const na = input.na_declared === true;
+			const score = na ? null : input.score;
+			const now = new Date();
+
+			const [existing] = await db
+				.select()
+				.from(scorecardAnswers)
+				.where(
+					and(
+						eq(scorecardAnswers.assessmentId, assessmentId),
+						eq(scorecardAnswers.criterionId, input.criterion_id)
+					)
+				)
+				.limit(1);
+
+			if (existing) {
+				const [row] = await db
+					.update(scorecardAnswers)
+					.set({
+						score,
+						naDeclared: na,
+						evidenceNote: input.evidence_note ?? existing.evidenceNote,
+						source: 'manual',
+						answeredAt: now,
+						updatedAt: now
+					})
+					.where(eq(scorecardAnswers.id, existing.id))
+					.returning();
+				return this.toAnswerDto(row!);
+			}
+
+			const [row] = await db
+				.insert(scorecardAnswers)
+				.values({
+					tenantId,
+					assessmentId,
+					criterionId: input.criterion_id,
+					score,
+					naDeclared: na,
+					evidenceNote: input.evidence_note ?? null,
+					source: 'manual',
+					answeredAt: now
+				})
+				.returning();
+			return this.toAnswerDto(row!);
+		});
+	}
+
+	async completeAssessment(
+		tenantId: string,
+		assessmentId: string
+	): Promise<ScorecardAssessmentDto> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [assessment] = await db
+				.select()
+				.from(scorecardAssessments)
+				.where(
+					and(
+						eq(scorecardAssessments.id, assessmentId),
+						eq(scorecardAssessments.tenantId, tenantId)
+					)
+				)
+				.limit(1);
+			if (!assessment) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Assessment not found' }
+				});
+			}
+			if (assessment.completedAt) {
+				return this.toAssessmentDto(assessment);
+			}
+
+			const [profile] = await db
+				.select()
+				.from(scorecardProfiles)
+				.where(eq(scorecardProfiles.id, assessment.profileId))
+				.limit(1);
+			if (!profile) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Profile not found' }
+				});
+			}
+
+			const answerRows = await db
+				.select()
+				.from(scorecardAnswers)
+				.where(eq(scorecardAnswers.assessmentId, assessmentId));
+
+			const stats = computeAssessmentStats(
+				profile.band as ScorecardBandId,
+				this.toSetup(profile),
+				answerRows.map((a) => ({
+					criterionId: a.criterionId,
+					score: a.score,
+					naDeclared: a.naDeclared
+				}))
+			);
+
+			const now = new Date();
+			const [row] = await db
+				.update(scorecardAssessments)
+				.set({
+					completedAt: now,
+					zeroCount: stats.zeroCount,
+					percentage: stats.percentage === null ? null : String(stats.percentage),
+					updatedAt: now
+				})
+				.where(eq(scorecardAssessments.id, assessmentId))
+				.returning();
+
+			return this.toAssessmentDto(row!);
 		});
 	}
 
@@ -259,6 +491,26 @@ export class ScorecardService {
 			});
 		}
 		return profile;
+	}
+
+	private toSetup(profile: ScorecardProfileRow): SetupAnswers {
+		return {
+			S1: profile.setupS1,
+			S2: profile.setupS2,
+			S3: profile.setupS3
+		};
+	}
+
+	private toAnswerDto(row: ScorecardAnswerRow): ScorecardAnswerDto {
+		return {
+			id: row.id,
+			criterion_id: row.criterionId,
+			score: row.score,
+			na_declared: row.naDeclared,
+			evidence_note: row.evidenceNote,
+			source: row.source,
+			answered_at: row.answeredAt.toISOString()
+		};
 	}
 
 	private toProfileDto(row: ScorecardProfileRow): ScorecardProfileDto {

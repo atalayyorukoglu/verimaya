@@ -44,7 +44,8 @@ export const navGroups: NavGroup[] = [
 			{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
 			{ labelKey: 'nav.patients', href: '/patients', icon: Users },
 			{ labelKey: 'nav.contacts', href: '/contacts', icon: Contact },
-			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar }
+			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
+			{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck }
 		]
 	},
 	{

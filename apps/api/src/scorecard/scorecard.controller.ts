@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
+	scorecardAnswerUpsertSchema,
 	scorecardBaselineCreateSchema,
 	scorecardProfileCreateSchema,
 	scorecardProfilePatchSchema
@@ -18,6 +19,11 @@ export class ScorecardController {
 		private readonly scorecardService: ScorecardService,
 		private readonly autoFillService: ScorecardAutoFillService
 	) {}
+
+	@Get('current')
+	getCurrent(@Req() req: FastifyRequest) {
+		return this.scorecardService.getCurrent(getActiveOrgId(req));
+	}
 
 	@Get('profile')
 	getProfile(@Req() req: FastifyRequest) {
@@ -39,6 +45,21 @@ export class ScorecardController {
 	@Post('assessments')
 	startAssessment(@Req() req: FastifyRequest) {
 		return this.scorecardService.startAssessment(getActiveOrgId(req));
+	}
+
+	@Post('assessments/:id/complete')
+	completeAssessment(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.scorecardService.completeAssessment(getActiveOrgId(req), id);
+	}
+
+	@Put('assessments/:id/answers')
+	upsertAnswer(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown
+	) {
+		const input = parseBody(scorecardAnswerUpsertSchema, body, req);
+		return this.scorecardService.upsertAnswer(getActiveOrgId(req), id, input);
 	}
 
 	@Post('baseline')

@@ -38,6 +38,8 @@ tags:
   - name: API Keys
   - name: Health
   - name: Karne
+  - name: Scorecard
+    description: In-product AI scorecard (tenant-scoped; distinct from public Karne)
     description: |
       Public free AI scorecard funnel (no auth, no tenant).
       Rate-limited to 30 requests/minute/IP. Writes only `karne_*` tables.

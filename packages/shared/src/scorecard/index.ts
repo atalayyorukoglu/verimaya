@@ -30,3 +30,11 @@ export {
 	getCriterionById,
 	isCriterionInDenominator
 } from './criteria.js';
+export {
+	SCORECARD_MATURITY_THRESHOLDS,
+	computeAssessmentStats,
+	maturityFromPercentage,
+	type AnswerLike,
+	type AssessmentStats,
+	type ScorecardMaturityId
+} from './stats.js';

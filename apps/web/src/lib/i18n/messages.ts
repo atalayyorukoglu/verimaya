@@ -31,6 +31,7 @@ const tr = {
 	'nav.transactions': 'İşlemler',
 	'nav.balances': 'Bakiyeler',
 	'nav.reports': 'Raporlar',
+	'nav.scorecard': 'Karne',
 	'nav.marketingOverview': 'Genel Bakış',
 	'nav.calculator': 'Hesap',
 	'nav.simulator': 'Simülatör',
@@ -65,7 +66,50 @@ const tr = {
 	'settings.ai.prompt.reset': 'Varsayılana dön',
 	'settings.ai.prompt.saved': 'Kaydedildi.',
 	'settings.ai.prompt.footnote':
-		'Prompt demo: localStorage. Gerçek tenant prompt’u ayrı iş; ifşa ayarı API’de saklanır.'
+		'Prompt demo: localStorage. Gerçek tenant prompt’u ayrı iş; ifşa ayarı API’de saklanır.',
+
+	// Ürün içi karne (Adım 36)
+	'scorecard.title': 'Yapay zeka karnesi',
+	'scorecard.description':
+		'Kurum içi ölçüm — ücretsiz karneden ayrıdır. Birincil gösterge kapanan / kalan sıfırlar.',
+	'scorecard.loading': 'Karne yükleniyor…',
+	'scorecard.loadError': 'Karne yüklenemedi.',
+	'scorecard.setup.title': 'Profil oluştur',
+	'scorecard.setup.band': 'Ekip büyüklüğü',
+	'scorecard.setup.s1': 'Orta kademe yöneticiniz var mı?',
+	'scorecard.setup.s2': 'Ayrı departman / fonksiyonlarınız var mı?',
+	'scorecard.setup.s3': 'Yazılı süreç dokümanlarınız var mı?',
+	'scorecard.setup.yes': 'Evet',
+	'scorecard.setup.no': 'Hayır',
+	'scorecard.setup.create': 'Profili oluştur ve ölçüme başla',
+	'scorecard.setup.creating': 'Oluşturuluyor…',
+	'scorecard.zeros.heading': 'Sıfırlar',
+	'scorecard.zeros.primary': '{zeros} sıfır · {denom} geçerli kriter',
+	'scorecard.zeros.hint':
+		'Birincil gösterge budur. İkinci ölçümde “kaç sıfır kapandı” karşılaştırması burada görünür.',
+	'scorecard.percentage.label': 'Yüzde',
+	'scorecard.percentage.warning':
+		'Farklı ölçek bantlarının yüzdeleri birbiriyle kıyaslanmaz. Bu yüzde yalnızca kendi önceki ölçümünüzle karşılaştırmak içindir.',
+	'scorecard.maturity.baslangic': 'Başlangıç',
+	'scorecard.maturity.parcali': 'Parçalı',
+	'scorecard.maturity.tutarli': 'Tutarlı',
+	'scorecard.maturity.olgun': 'Olgun',
+	'scorecard.maturity.temporary':
+		'Olgunluk eşikleri geçicidir; saha testinden önce kesinleşmez.',
+	'scorecard.headcount': 'Ölçek bandı',
+	'scorecard.autoFill': 'Sistem cevaplarını doldur',
+	'scorecard.autoFilling': 'Dolduruluyor…',
+	'scorecard.autoFilledBadge': 'Otomatik',
+	'scorecard.naBadge': 'N/A beyan',
+	'scorecard.complete': 'Ölçümü tamamla',
+	'scorecard.completing': 'Tamamlanıyor…',
+	'scorecard.startAssessment': 'Ölçüme başla',
+	'scorecard.disclosureLink': 'İfşa ayarını aç',
+	'scorecard.scoreLabel': 'Puan (0–4)',
+	'scorecard.baselineWarning': 'Başlangıç ölçümü — önceki skorla kıyaslanamaz.',
+	'scorecard.dimension.changeHeading': 'Boyutlar',
+	'scorecard.dimension.zeros': '{zeros}/{scored} sıfır',
+	'scorecard.emptyAnswers': 'Henüz cevap yok — otomatik doldur veya satırdan puan ver.'
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -83,6 +127,7 @@ const en: Record<MessageKey, string> = {
 	'nav.transactions': 'Transactions',
 	'nav.balances': 'Balances',
 	'nav.reports': 'Reports',
+	'nav.scorecard': 'Scorecard',
 	'nav.marketingOverview': 'Overview',
 	'nav.calculator': 'Calculator',
 	'nav.simulator': 'Simulator',
@@ -116,7 +161,49 @@ const en: Record<MessageKey, string> = {
 	'settings.ai.prompt.reset': 'Reset to default',
 	'settings.ai.prompt.saved': 'Saved.',
 	'settings.ai.prompt.footnote':
-		'Prompt is demo localStorage. Real tenant prompt is separate; disclosure is stored via API.'
+		'Prompt is demo localStorage. Real tenant prompt is separate; disclosure is stored via API.',
+
+	'scorecard.title': 'AI scorecard',
+	'scorecard.description':
+		'In-product assessment — separate from the free public scorecard. Primary signal is zeros closed / remaining.',
+	'scorecard.loading': 'Loading scorecard…',
+	'scorecard.loadError': 'Could not load scorecard.',
+	'scorecard.setup.title': 'Create profile',
+	'scorecard.setup.band': 'Team size',
+	'scorecard.setup.s1': 'Do you have middle managers?',
+	'scorecard.setup.s2': 'Do you have separate departments / functions?',
+	'scorecard.setup.s3': 'Do you have written process documents?',
+	'scorecard.setup.yes': 'Yes',
+	'scorecard.setup.no': 'No',
+	'scorecard.setup.create': 'Create profile and start assessment',
+	'scorecard.setup.creating': 'Creating…',
+	'scorecard.zeros.heading': 'Zeros',
+	'scorecard.zeros.primary': '{zeros} zeros · {denom} applicable criteria',
+	'scorecard.zeros.hint':
+		'This is the primary signal. On the second measurement, “how many zeros closed” will appear here.',
+	'scorecard.percentage.label': 'Percentage',
+	'scorecard.percentage.warning':
+		'Percentages across headcount bands are not comparable. This percentage is only for comparing with your own prior measurement.',
+	'scorecard.maturity.baslangic': 'Starting',
+	'scorecard.maturity.parcali': 'Partial',
+	'scorecard.maturity.tutarli': 'Consistent',
+	'scorecard.maturity.olgun': 'Mature',
+	'scorecard.maturity.temporary':
+		'Maturity thresholds are temporary until field testing.',
+	'scorecard.headcount': 'Headcount band',
+	'scorecard.autoFill': 'Fill system-known answers',
+	'scorecard.autoFilling': 'Filling…',
+	'scorecard.autoFilledBadge': 'Auto',
+	'scorecard.naBadge': 'N/A declared',
+	'scorecard.complete': 'Complete assessment',
+	'scorecard.completing': 'Completing…',
+	'scorecard.startAssessment': 'Start assessment',
+	'scorecard.disclosureLink': 'Open disclosure settings',
+	'scorecard.scoreLabel': 'Score (0–4)',
+	'scorecard.baselineWarning': 'Baseline measurement — not comparable to prior scores.',
+	'scorecard.dimension.changeHeading': 'Dimensions',
+	'scorecard.dimension.zeros': '{zeros}/{scored} zeros',
+	'scorecard.emptyAnswers': 'No answers yet — auto-fill or score each row.'
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { tr, en };
