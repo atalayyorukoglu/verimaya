@@ -933,7 +933,7 @@ Desenleri dar tut, testle. Bu akış KVKK veri işleme envanterine yazılmalı �
 
 ### Adım 23b — Generic `/webhooks/:provider` imzasını HMAC'e taşı
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Adım 21 bulgu 1: generic webhook stub'ı `X-Webhook-Signature` istiyor ama
 değeri `WEBHOOK_STUB_SECRET` ile **düz string eşitliği** karşılaştırıyor

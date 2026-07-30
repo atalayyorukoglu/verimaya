@@ -426,8 +426,11 @@ paths:
       tags: [Webhooks]
       summary: Generic queue-first webhook ingest (GHL, Meta, Google, …)
       description: |
-        Validates stub signature, writes `integration_events`, enqueues BullMQ job. Returns **202 Accepted**.
-        Idempotent on `(provider, external_event_id)`.
+        Validates HMAC-SHA256 signature (`WEBHOOK_SECRET_<PROVIDER>`), writes `integration_events`,
+        enqueues BullMQ job. Returns **202 Accepted**. Idempotent on `(provider, external_event_id)`.
+
+        **Signature:** same scheme as WAHA — HMAC-SHA256 over `${X-Webhook-Timestamp}.${rawBody}`
+        with `X-Webhook-Signature: v1=<hex>`. Timestamp within ±5 minutes. Invalid/missing secret → **401**.
       parameters:
         - name: provider
           in: path
@@ -438,7 +441,12 @@ paths:
           in: header
           required: true
           schema: { type: string }
-          description: Must match `WEBHOOK_STUB_SECRET` (dev default `dev-webhook-secret`)
+          description: '`v1=` + hex HMAC-SHA256 of `${timestamp}.${rawBody}`'
+        - name: X-Webhook-Timestamp
+          in: header
+          required: true
+          schema: { type: string }
+          description: Unix seconds; must be within ±300s of server time
         - name: X-Tenant-Id
           in: header
           required: true
@@ -461,7 +469,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/WebhookAccepted' }
         '401':
-          description: Invalid or missing signature
+          description: Invalid or missing HMAC signature / timestamp / secret
 
   /webhooks/waha:
     post:

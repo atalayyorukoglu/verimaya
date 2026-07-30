@@ -43,21 +43,28 @@ Tablolar: `integration_events`, `outbox_events`, `jobs` (RLS + `verimaya_app` gr
 
 **Credential şifreleme:** OAuth/API token'ları yalnızca `ciphertext` sütununda saklanır; AES-GCM uygulaması ileride eklenecek. Plaintext credential loglanmaz ve API yanıtlarına yazılmaz.
 
-Webhook stub header'ları (geliştirme):
+Webhook header'ları (HMAC — provider ve WAHA):
 
 | Header | Açıklama |
 |--------|----------|
-| `X-Webhook-Signature` | `WEBHOOK_STUB_SECRET` ile eşleşmeli |
-| `X-Tenant-Id` | Aktif tenant UUID (ileride provider credential'dan çözülecek) |
+| `X-Webhook-Timestamp` | Unix saniye; sunucu saatiyle ±5 dk |
+| `X-Webhook-Signature` | `v1=` + hex(`HMAC-SHA256(secret, "${timestamp}.${rawBody}")`) |
+| `X-Tenant-Id` | Aktif tenant UUID |
 | `X-External-Event-Id` | Opsiyonel; yoksa payload `id` / hash |
 
+Secret: WAHA → `WAHA_WEBHOOK_SECRET`; generic → `WEBHOOK_SECRET_<PROVIDER>` (ör. `WEBHOOK_SECRET_GHL`).
+
 ```bash
+BODY='{"type":"contact.created","id":"evt-001"}'
+TS=$(date +%s)
+SIG=$(node -e "const c=require('crypto');const b=process.argv[1];const t=process.argv[2];const s=process.env.WEBHOOK_SECRET_GHL||'dev-ghl-webhook-secret';console.log('v1='+c.createHmac('sha256',s).update(t+'.'+b).digest('hex'))" "$BODY" "$TS")
 curl -s -X POST http://localhost:3000/v1/webhooks/ghl \
   -H 'Content-Type: application/json' \
-  -H 'X-Webhook-Signature: dev-webhook-secret' \
+  -H "X-Webhook-Timestamp: $TS" \
+  -H "X-Webhook-Signature: $SIG" \
   -H 'X-Tenant-Id: <tenant-uuid>' \
   -H 'X-External-Event-Id: evt-001' \
-  -d '{"type":"contact.created","id":"evt-001"}'
+  -d "$BODY"
 ```
 
 WAHA (WhatsApp inbox) — HMAC-SHA256 (`WAHA_WEBHOOK_SECRET`):

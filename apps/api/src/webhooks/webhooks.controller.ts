@@ -5,8 +5,7 @@ import {
 	HttpCode,
 	Param,
 	Post,
-	Req,
-	UnauthorizedException
+	Req
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { and, eq } from 'drizzle-orm';
@@ -18,13 +17,13 @@ import { TenantContextService } from '../tenant/tenant-context.service';
 import { extractWahaExternalId } from '../whatsapp/inbound-mapper';
 import {
 	extractRawBody,
-	verifyWahaSignature,
-	WAHA_SIGNATURE_HEADER,
-	WAHA_TIMESTAMP_HEADER,
+	providerWebhookSecretEnvKey,
+	verifyWebhookSignature,
+	WEBHOOK_SIGNATURE_HEADER,
+	WEBHOOK_TIMESTAMP_HEADER,
 	type WebhookRequestWithRawBody
 } from './webhooks.signature';
 
-const STUB_SIGNATURE_HEADER = 'x-webhook-signature';
 const TENANT_HEADER = 'x-tenant-id';
 const EXTERNAL_EVENT_ID_HEADER = 'x-external-event-id';
 
@@ -73,40 +72,25 @@ function externalEventIdHeader(request: FastifyRequest): string | undefined {
 		: undefined;
 }
 
-/** Generic provider webhooks — stub shared-secret equality (pre-HMAC). */
-function validateStubWebhookRequest(request: FastifyRequest, config: ConfigService) {
-	const signature = request.headers[STUB_SIGNATURE_HEADER];
-	if (typeof signature !== 'string' || !signature.trim()) {
-		throw new UnauthorizedException('Missing webhook signature');
-	}
-
-	const expectedSecret = config.get<string>('WEBHOOK_STUB_SECRET') ?? 'dev-webhook-secret';
-	if (signature !== expectedSecret) {
-		throw new UnauthorizedException('Invalid webhook signature');
-	}
-
-	const tenantId = requireTenantId(request);
-	const rawBody = extractRawBody(request as WebhookRequestWithRawBody);
-	const payloadHash = hashPayload(rawBody);
-	const payload = parseJsonPayload(rawBody);
-
-	return {
-		tenantId,
-		rawBody,
-		payloadHash,
-		payload,
-		externalEventIdHeader: externalEventIdHeader(request)
-	};
+function resolveWebhookSecret(config: ConfigService, envKey: string): string {
+	return config.get<string>(envKey)?.trim() ?? '';
 }
 
-/** WAHA — HMAC-SHA256 of `${timestamp}.${rawBody}` + ±5 min window. */
-function validateWahaWebhookRequest(request: FastifyRequest, config: ConfigService) {
-	const secret = config.get<string>('WAHA_WEBHOOK_SECRET')?.trim() ?? '';
+/**
+ * HMAC-SHA256 of `${timestamp}.${rawBody}` + ±5 min window.
+ * Secret from `envKey` (e.g. WAHA_WEBHOOK_SECRET or WEBHOOK_SECRET_GHL).
+ */
+function validateHmacWebhookRequest(
+	request: FastifyRequest,
+	config: ConfigService,
+	secretEnvKey: string
+) {
+	const secret = resolveWebhookSecret(config, secretEnvKey);
 	const rawBody = extractRawBody(request as WebhookRequestWithRawBody);
-	const signatureHeader = request.headers[WAHA_SIGNATURE_HEADER];
-	const timestampHeader = request.headers[WAHA_TIMESTAMP_HEADER];
+	const signatureHeader = request.headers[WEBHOOK_SIGNATURE_HEADER];
+	const timestampHeader = request.headers[WEBHOOK_TIMESTAMP_HEADER];
 
-	verifyWahaSignature({
+	verifyWebhookSignature({
 		rawBody,
 		signatureHeader: typeof signatureHeader === 'string' ? signatureHeader : undefined,
 		timestampHeader: typeof timestampHeader === 'string' ? timestampHeader : undefined,
@@ -137,9 +121,10 @@ export class WebhooksController {
 	@Post('waha')
 	@HttpCode(202)
 	async ingestWaha(@Req() request: FastifyRequest) {
-		const { tenantId, payloadHash, payload, externalEventIdHeader } = validateWahaWebhookRequest(
+		const { tenantId, payloadHash, payload, externalEventIdHeader } = validateHmacWebhookRequest(
 			request,
-			this.config
+			this.config,
+			'WAHA_WEBHOOK_SECRET'
 		);
 
 		const externalId = extractWahaExternalId(payload, payloadHash, externalEventIdHeader);
@@ -214,17 +199,23 @@ export class WebhooksController {
 	@Post(':provider')
 	@HttpCode(202)
 	async ingest(@Param('provider') provider: string, @Req() request: FastifyRequest) {
-		const { tenantId, payloadHash, payload, externalEventIdHeader } = validateStubWebhookRequest(
-			request,
-			this.config
-		);
-
-		const externalEventId = extractExternalEventId(payload, payloadHash, externalEventIdHeader);
-
 		const normalizedProvider = provider.trim().toLowerCase();
 		if (!normalizedProvider) {
 			throw new BadRequestException('Provider is required');
 		}
+
+		const secretEnvKey = providerWebhookSecretEnvKey(normalizedProvider);
+		if (!secretEnvKey) {
+			throw new BadRequestException('Provider is required');
+		}
+
+		const { tenantId, payloadHash, payload, externalEventIdHeader } = validateHmacWebhookRequest(
+			request,
+			this.config,
+			secretEnvKey
+		);
+
+		const externalEventId = extractExternalEventId(payload, payloadHash, externalEventIdHeader);
 
 		const jobId = randomUUID();
 
