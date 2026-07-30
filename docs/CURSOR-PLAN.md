@@ -286,7 +286,7 @@ gidilemiyor. Ekranda hiçbir yerde "Başlangıç / Parçalı / Tutarlı / Olgun"
 
 ### Adım 8 — 10 puanlı soru akışı (UI)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Tek soru / tek ekran akışı. Şartname §3 sırası **korunur** (kolay → rahatsız
 edici → kendi çıkarına dokunan kapanış). Sıra değiştirilemez; terk noktası ölçümü buna bağlı.

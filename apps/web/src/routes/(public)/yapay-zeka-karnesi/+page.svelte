@@ -3,19 +3,26 @@
 	import { PUBLIC_SITE_URL } from '$lib/env';
 	import {
 		intakeQuestions,
+		karneQuestions,
 		type IntakeBandId,
 		type IntakeEuId
 	} from '$lib/karne/questions';
 	import {
 		canAdvanceIntake,
+		canAdvanceQuestion,
 		currentIntakeAnswer,
+		currentQuestionAnswer,
 		getIntakeIndex,
 		getKarneStep,
+		getQuestionIndex,
 		hydrateKarneFromSession,
 		intakeBack,
 		intakeNext,
+		questionBack,
+		questionNext,
 		setIntakeBand,
 		setIntakeEu,
+		setQuestionAnswer,
 		startKarne
 	} from '$lib/karne/state.svelte';
 
@@ -28,8 +35,13 @@
 	const step = $derived(getKarneStep());
 	const intakeIdx = $derived(getIntakeIndex());
 	const intakeQ = $derived(intakeQuestions[intakeIdx]);
-	const selected = $derived(currentIntakeAnswer());
-	const canNext = $derived(canAdvanceIntake());
+	const intakeSelected = $derived(currentIntakeAnswer());
+	const canIntakeNext = $derived(canAdvanceIntake());
+
+	const qIdx = $derived(getQuestionIndex());
+	const question = $derived(karneQuestions[qIdx]);
+	const questionSelected = $derived(currentQuestionAnswer());
+	const canQuestionNext = $derived(canAdvanceQuestion());
 
 	onMount(() => {
 		hydrateKarneFromSession();
@@ -42,6 +54,9 @@
 			setIntakeEu(choiceId as IntakeEuId);
 		}
 	}
+
+	const choiceClass =
+		'flex min-h-11 cursor-pointer items-center gap-3 rounded-[8px] border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring';
 </script>
 
 <svelte:head>
@@ -99,21 +114,20 @@
 				{intakeQ.title}
 			</h1>
 
-			<fieldset class="mt-8 space-y-3 border-0 p-0">
+			<fieldset class="mt-8 space-y-3 border-0 p-0" aria-label={intakeQ.title}>
 				<legend class="sr-only">{intakeQ.title}</legend>
 				{#each intakeQ.choices as choice (choice.id)}
 					<label
-						class="flex cursor-pointer items-center gap-3 rounded-[8px] border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring {selected ===
-						choice.id
+						class="{choiceClass} {intakeSelected === choice.id
 							? 'border-brand ring-1 ring-brand'
 							: ''}"
 					>
 						<input
 							type="radio"
-							class="size-4 accent-[var(--brand)]"
+							class="size-4 shrink-0 accent-[var(--brand)]"
 							name="karne-intake-{intakeQ.id}"
 							value={choice.id}
-							checked={selected === choice.id}
+							checked={intakeSelected === choice.id}
 							onchange={() => onSelectIntake(choice.id)}
 						/>
 						<span class="text-sm font-medium text-text">{choice.label}</span>
@@ -132,14 +146,63 @@
 				<button
 					type="button"
 					class="inline-flex h-11 min-w-28 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-					disabled={!canNext}
+					disabled={!canIntakeNext}
 					onclick={intakeNext}
 				>
 					İleri
 				</button>
 			</div>
 		{:else if step === 'questions'}
-			<!-- scored questions UI: Adım 8 -->
+			<p class="text-sm text-text-muted" aria-live="polite">
+				{qIdx + 1} / {karneQuestions.length}
+			</p>
+			<h1 class="mt-3 text-[clamp(1.35rem,3.5vw,1.75rem)] font-semibold tracking-tight text-text">
+				{question.title}
+			</h1>
+			{#if question.hint}
+				<p class="mt-3 text-sm leading-relaxed text-text-muted">
+					Örneğin: {question.hint}
+				</p>
+			{/if}
+
+			<fieldset class="mt-8 space-y-3 border-0 p-0" aria-label={question.title}>
+				<legend class="sr-only">{question.title}</legend>
+				{#each question.choices as choice (choice.id)}
+					<label
+						class="{choiceClass} {questionSelected === choice.id
+							? 'border-brand ring-1 ring-brand'
+							: ''}"
+					>
+						<input
+							type="radio"
+							class="size-4 shrink-0 accent-[var(--brand)]"
+							name="karne-q-{question.id}"
+							value={choice.id}
+							checked={questionSelected === choice.id}
+							onchange={() => setQuestionAnswer(choice.id)}
+						/>
+						<span class="text-sm font-medium text-text">{choice.label}</span>
+					</label>
+				{/each}
+			</fieldset>
+
+			<div class="mt-10 flex items-center justify-between gap-3">
+				<button
+					type="button"
+					class="inline-flex h-11 items-center justify-center rounded-[6px] px-4 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+					onclick={questionBack}
+				>
+					Geri
+				</button>
+				<button
+					type="button"
+					class="inline-flex h-11 min-w-28 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+					disabled={!canQuestionNext}
+					onclick={questionNext}
+				>
+					{qIdx >= karneQuestions.length - 1 ? 'Bitir' : 'İleri'}
+				</button>
+			</div>
 		{:else}
 			<!-- result UI: Adım 10 -->
 		{/if}
