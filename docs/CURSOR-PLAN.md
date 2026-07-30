@@ -1029,7 +1029,7 @@ bağlı. İki yol aynı servisi çağırmalı, iki ayrı mantık doğmamalı.
 
 ### Adım 25 — LLM sağlayıcı yolu: sürüm ledger'ı + TCO + KVKK envanteri
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** PII maskeleme **Adım 23a'ya taşındı** — bu adım artık yalnız sağlayıcı
 yolunun canlıya hazırlanmasıdır. Adım 21 bulgu 4'e göre seçim mantığı (`LLM_API_KEY` boş →

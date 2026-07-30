@@ -9,7 +9,7 @@ import type {
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
-import { LLM_CLIENT, type LlmClient } from '../integrations/llm';
+import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { PatientsService } from '../patients/patients.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { asRecord, extractInboundDisplayFields, mergeParsedPayload, toInboundMessage } from './inbound-mapper';
@@ -31,7 +31,11 @@ export class WhatsappService {
 		const { items: patients } = await this.patientsService.list(tenantId, {
 			limit: 100
 		});
-		return this.llm.parseTransactionDrafts({ message, patients });
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const result = await this.llm.parseTransactionDrafts({ message, patients });
+			await writeLlmParseLedger(db, tenantId, result.usage);
+			return result.records;
+		});
 	}
 
 	async listInbox(tenantId: string, params: { cursor?: string; limit: number }) {
@@ -80,10 +84,12 @@ export class WhatsappService {
 				return { records: [] };
 			}
 
-			const records = await this.llm.parseTransactionDrafts({
+			const result = await this.llm.parseTransactionDrafts({
 				message: display.body,
 				patients
 			});
+			await writeLlmParseLedger(db, tenantId, result.usage);
+			const records = result.records;
 			await this.savePayload(db, id, payload, {
 				parsed_records: records.length > 0 ? records : null,
 				parse_error: records.length === 0 ? PARSE_ERROR_NO_MATCH : null
@@ -169,10 +175,12 @@ export class WhatsappService {
 			return 'error';
 		}
 
-		const records = await this.llm.parseTransactionDrafts({
+		const result = await this.llm.parseTransactionDrafts({
 			message: display.body,
 			patients
 		});
+		await writeLlmParseLedger(db, row.tenantId, result.usage);
+		const records = result.records;
 		const isError = records.length === 0;
 		await this.savePayload(db, row.id, payload, {
 			parsed_records: isError ? null : records,

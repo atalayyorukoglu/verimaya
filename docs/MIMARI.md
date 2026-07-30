@@ -55,7 +55,20 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 - KVKK: veri işleme envanteri, export/silme endpoint'i, LLM'e giden veride PII minimizasyonu
   (**uygulandı 2026-07-30:** WhatsApp → OpenAI-uyumlu istemci yolu `buildMaskedLlmUserPayload`
   tek geçiş noktasından geçer — telefon/e-posta/TCKN/IBAN/kart + hasta adı; modele yalnız
-  opak `patient_ref`. Heuristic parse maskelenmez. Envanter satırı Adım 25'te tamamlanır).
+  opak `patient_ref`. Heuristic parse maskelenmez).
+  Her parse çağrısı `jobs` tablosuna `llm.parse` ledger satırı yazar (sağlayıcı, yanıt
+  gövdesindeki gerçek `model`, token sayıları, tahmini maliyet micro-USD, path /
+  fallback). `LLM_API_KEY` boş → heuristic; dolu + hata/timeout → heuristic fallback
+  (`LLM_TIMEOUT_MS`, varsayılan 15s). KVKK envanter satırı:
+  `SecondBrain-Remote/03-Areas/VeriMaya/05-guvenlik-kvkk.md`.
+
+## LLM parse ledger (Adım 25, 2026-07-30)
+
+`job_type = llm.parse`, `status = completed`. Payload alanları: `provider`, `model`,
+`requested_model`, `prompt_tokens`, `completion_tokens`, `total_tokens`,
+`estimated_cost_usd_micros`, `path` (`heuristic` | `openai_compatible` |
+`openai_compatible_fallback`), `error`. Karne kriteri 3.2 / 8.5 bu satırlardan okunur
+(Adım 35).
 
 ## Eski sistemle ilişki
 
