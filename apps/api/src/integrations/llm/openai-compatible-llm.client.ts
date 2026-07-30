@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { transactionDraftSchema, type TransactionDraft } from '@verimaya/shared';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type { LlmClient, LlmParseContext } from './llm.types';
+import { buildMaskedLlmUserPayload } from './pii-mask';
 
 export type OpenAiCompatibleLlmConfig = {
 	apiKey: string;
@@ -40,6 +41,7 @@ function parseDraftsPayload(raw: unknown): TransactionDraft[] {
 /**
  * OpenAI-compatible chat completions client (OpenAI, Azure-compat, local gateways).
  * On any failure, falls back to the heuristic parser so inbox processing stays available.
+ * External HTTP always goes through {@link buildMaskedLlmUserPayload} (PII choke point).
  */
 export class OpenAiCompatibleLlmClient implements LlmClient {
 	private readonly logger = new Logger(OpenAiCompatibleLlmClient.name);
@@ -55,27 +57,23 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 				`LLM parse failed, falling back to heuristic: ${err instanceof Error ? err.message : String(err)}`
 			);
 		}
+		// Heuristic uses the original (unmasked) message — masking is LLM-egress only.
 		return heuristicParseWhatsappMessage(ctx.message, ctx.patients);
 	}
 
 	private async callModel(ctx: LlmParseContext): Promise<TransactionDraft[]> {
-		const patientHints = ctx.patients.slice(0, 40).map((p) => ({
-			id: p.id,
-			full_name: p.full_name
-		}));
+		const maskedUser = buildMaskedLlmUserPayload(ctx);
 
 		const system = [
 			'You extract finance transaction drafts from WhatsApp messages for a medical tourism ops platform.',
 			'Return ONLY valid JSON: {"records":[...]} matching TransactionDraft fields.',
 			'amount is integer minor units (kuruş/cents). currency is TRY|GBP|EUR|USD.',
-			'kind is income|expense. Do not invent patients; match patient_id only from the provided list.',
+			'kind is income|expense. Do not invent patients; set patient_id only to a patient_ref UUID from the provided list (or null).',
+			'Message text may contain placeholders like [TELEFON]/[EPOSTA]/[HASTA] — ignore them for matching.',
 			'If nothing can be extracted, return {"records":[]}.'
 		].join(' ');
 
-		const user = JSON.stringify({
-			message: ctx.message,
-			patients: patientHints
-		});
+		const user = JSON.stringify(maskedUser);
 
 		const base = this.config.baseUrl.replace(/\/$/, '');
 		const url = `${base}/chat/completions`;

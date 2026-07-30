@@ -900,7 +900,7 @@ sırasını bozma.
 
 ### Adım 23a — LLM PII maskeleme (sağlayıcıdan ÖNCE)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Adım 21 bulgu 3: `LLM_API_KEY` doluyken mesajın **tam metni** + hastanın
 `full_name` alanı modele gidiyor (`openai-compatible-llm.client.ts:62–78`), telefon/e-posta

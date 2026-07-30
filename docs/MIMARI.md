@@ -52,7 +52,10 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 - better-auth: e-posta/şifre + admin'e TOTP 2FA; JWT access/refresh, refresh rotation.
 - Tenant credential'ları AES-GCM şifreli, anahtar yalnız deploy secret'ında.
 - Günlük otomatik Postgres yedeği + sunucu dışı kopya + aylık restore provası.
-- KVKK: veri işleme envanteri, export/silme endpoint'i, LLM'e giden veride PII minimizasyonu.
+- KVKK: veri işleme envanteri, export/silme endpoint'i, LLM'e giden veride PII minimizasyonu
+  (**uygulandı 2026-07-30:** WhatsApp → OpenAI-uyumlu istemci yolu `buildMaskedLlmUserPayload`
+  tek geçiş noktasından geçer — telefon/e-posta/TCKN/IBAN/kart + hasta adı; modele yalnız
+  opak `patient_ref`. Heuristic parse maskelenmez. Envanter satırı Adım 25'te tamamlanır).
 
 ## Eski sistemle ilişki
 
