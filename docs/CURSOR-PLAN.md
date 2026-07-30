@@ -771,7 +771,7 @@ kalır. Silme ayrı ve elle.
 
 ### Adım 20a — Yol haritasında Faz 1'i kapat
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** S3/R2 indi, Faz 1'in tek açık ucu kapandı. Yol haritası **tek kaynak**;
 `[~]` bırakmak kaymaya yol açar.
