@@ -1284,7 +1284,7 @@ dönemidir. Çıkan istekleri listeye yaz, yol haritasına sor.
 
 ### Adım 33 — Kriter seti + bant/kurulum veri modeli (shared)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** 43 kriterin tamamı tipli veri olarak `packages/shared/src/scorecard/`
 altına girer.
