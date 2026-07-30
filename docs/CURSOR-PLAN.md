@@ -720,7 +720,7 @@ kalır. Silme ayrı ve elle.
 
 ### Adım 21 — Faz 3 kapanış denetimi (kod yazılmaz, liste çıkarılır)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Kalan iş listesini **varsaymak yerine ölçerek** çıkar. Çıktı: kullanıcıya
 sunulacak kısa bir tablo, sonra onun kararına göre Adım 22+ şekillenir.
@@ -744,6 +744,21 @@ Sonunda kullanıcıya sorulur: hangileri bu turda kapatılacak?
 
 **Riskler/dikkat:** Bu adımda **kod yazma**. Protokol madde 6'nın uygulaması: belirsizlik
 varsa ölç ve sor.
+
+#### Bulgu tablosu (2026-07-30)
+
+| # | Konu | Durum | Kanıt |
+|---|---|---|---|
+| 1 | WAHA webhook imza | **kısmi** | `validateWebhookRequest` `X-Webhook-Signature` ister ama değer `WEBHOOK_STUB_SECRET` ile **düz string eşitliği** (`webhooks.controller.ts:47–56`). HMAC-SHA256 / ham gövde imzası / zaman damgası yok. Tenant `X-Tenant-Id` ile istemciden geliyor. |
+| 2 | Giden WhatsApp mesaj yolu | **yok** | Inbox/parse/approve yalnız inbound (`whatsapp.controller.ts`, `inbound_messages`). WAHA send / outbound adaptörü veya `POST …/send` yok. (Faz 6 `outbox` = tenant webhook fan-out, WhatsApp değil.) |
+| 3 | LLM sağlayıcı + PII | **kısmi** | `LLM_API_KEY` varsa `OpenAiCompatibleLlmClient`, yoksa heuristic (`llm.module.ts:6–18`). Gerçek HTTP chat/completions var (`openai-compatible-llm.client.ts:61–113`). PII: mesaj **tam metin** + hasta `id`/`full_name` (max 40) modele gidiyor (`:62–78`); telefon/e-posta strip yok → MIMARI PII minimizasyonu uygulanmıyor. |
+| 4 | Heuristic vs LLM seçimi | **var** | Env: `LLM_API_KEY` boş → `HeuristicLlmClient` (`llm.module.ts:7–9`); dolu → OpenAI-uyumlu + hata/ boş sonuçta heuristic fallback (`openai-compatible-llm.client.ts:49–58`). `LLM_BASE_URL`, `LLM_MODEL` opsiyonel. |
+| 5 | `inbound_message.process` retry / DLQ | **yok** (fiilen noop) | Job enqueue edilir (`webhooks.controller.ts:136–152`) ama worker bu `jobType`'ı **işlemez** — `Noop worker handled job` (`queue.service.ts:75–76`). Parse yolu senkron `POST /whatsapp/inbox/process` (`whatsapp.service.ts:90+`). Genel BullMQ `attempts: 5` var (`queue.constants.ts:26–31`); inbound için dedicated dead-letter testi **yok** (yalnız RLS izolasyon: `inbox.isolation.spec.ts`). |
+| 6 | `ai_corrections` → karne 4.5/4.6/5.4/7.2 | **kısmi** | Tablo + create/list API var (`ai-corrections.service.ts`; şema jsonb `original_parsed`/`corrected`). 4.5 için “son 90g kayıt var mı” listeden türetilir. Alan bazlı diff / onay-red agregasyonu / 4.6 (anahtar kişi → aslında `audit_logs`, Adım 35) için sorgu **yok**. Isolation testi var; ürün içi karne auto-fill henüz yok (Adım 35). |
+
+**Özet boşluklar (Adım 22+ adayları):** HMAC imza (22), giden mesaj + ifşa (23–24), worker’da gerçek `inbound_message.process` + retry/DLQ testi, LLM PII minimizasyonu, karne için corrections agregasyon (35 ile örtüşür).
+
+**Karar bekleniyor:** Bu turda hangileri kapatılsın? (Plan sırası 22→23→24 önerir; 5 numaralı worker boşluğu planda ayrı adım yok — eklenmeli mi?)
 
 ---
 
