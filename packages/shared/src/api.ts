@@ -42,6 +42,9 @@ export const apiPaths = {
 	scorecardProfile: `${API_V1_PREFIX}/scorecard/profile`,
 	scorecardAssessments: `${API_V1_PREFIX}/scorecard/assessments`,
 	scorecardBaseline: `${API_V1_PREFIX}/scorecard/baseline`,
+	scorecardAutoFill: `${API_V1_PREFIX}/scorecard/auto-fill`,
+	scorecardAssessmentAutoFill: (id: string) =>
+		`${API_V1_PREFIX}/scorecard/assessments/${id}/auto-fill`,
 	whatsappParse: `${API_V1_PREFIX}/whatsapp/parse`,
 	whatsappInbox: `${API_V1_PREFIX}/whatsapp/inbox`,
 	whatsappInboxItem: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}`,

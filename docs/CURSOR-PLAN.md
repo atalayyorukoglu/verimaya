@@ -1343,7 +1343,7 @@ tablosuyla uyumlu: 1-4 → ~32, 5-15 → ~39, 16+ → ~40-43.
 
 ### Adım 35 — Otomatik dolan kriterler (sistemin bildiği cevaplar)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Yol haritası Faz 8'in çekirdeği. Otomatik dolan kriterler ve kaynakları:
 

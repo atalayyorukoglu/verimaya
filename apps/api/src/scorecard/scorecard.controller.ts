@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
 	scorecardBaselineCreateSchema,
@@ -8,12 +8,16 @@ import {
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
 import { parseBody } from '../common/mappers';
+import { ScorecardAutoFillService } from './auto-fill.service';
 import { ScorecardService } from './scorecard.service';
 
 @Controller('scorecard')
 @UseGuards(SessionGuard, ActiveOrgGuard)
 export class ScorecardController {
-	constructor(private readonly scorecardService: ScorecardService) {}
+	constructor(
+		private readonly scorecardService: ScorecardService,
+		private readonly autoFillService: ScorecardAutoFillService
+	) {}
 
 	@Get('profile')
 	getProfile(@Req() req: FastifyRequest) {
@@ -41,5 +45,16 @@ export class ScorecardController {
 	startBaseline(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const input = parseBody(scorecardBaselineCreateSchema, body, req);
 		return this.scorecardService.startBaseline(getActiveOrgId(req), input);
+	}
+
+	/** Apply system-known answers onto the open assessment (or `:id`). */
+	@Post('auto-fill')
+	autoFillOpen(@Req() req: FastifyRequest) {
+		return this.autoFillService.applyAutoFill(getActiveOrgId(req));
+	}
+
+	@Post('assessments/:id/auto-fill')
+	autoFillAssessment(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.autoFillService.applyAutoFill(getActiveOrgId(req), id);
 	}
 }
