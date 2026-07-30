@@ -470,11 +470,23 @@ paths:
         Queue-first ingest for WAHA message events. Writes `inbound_messages`
         (unique on tenant + provider + external_id) and enqueues `inbound_message.process`.
         Returns **202 Accepted**.
+
+        **Signature:** HMAC-SHA256 over `${X-Webhook-Timestamp}.${rawBody}` with
+        `WAHA_WEBHOOK_SECRET`. Send `X-Webhook-Signature: v1=<hex>`. Timestamp must be
+        within ±5 minutes (replay protection). Invalid signature → **401** and nothing is queued.
       parameters:
         - name: X-Webhook-Signature
           in: header
           required: true
           schema: { type: string }
+          description: '`v1=` + hex HMAC-SHA256 of `${timestamp}.${rawBody}`'
+          example: v1=0123abcd…
+        - name: X-Webhook-Timestamp
+          in: header
+          required: true
+          schema: { type: string }
+          description: Unix seconds; must be within ±300s of server time
+          example: '1730000000'
         - name: X-Tenant-Id
           in: header
           required: true
@@ -507,6 +519,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/WebhookAccepted' }
+        '401':
+          description: Invalid or missing HMAC signature / timestamp window
 
   /whatsapp/inbox:
     get:

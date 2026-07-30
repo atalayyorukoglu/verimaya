@@ -60,15 +60,26 @@ curl -s -X POST http://localhost:3000/v1/webhooks/ghl \
   -d '{"type":"contact.created","id":"evt-001"}'
 ```
 
-WAHA (WhatsApp inbox):
+WAHA (WhatsApp inbox) — HMAC-SHA256 (`WAHA_WEBHOOK_SECRET`):
+
+| Header | Açıklama |
+|--------|----------|
+| `X-Webhook-Timestamp` | Unix saniye; sunucu saatiyle ±5 dk |
+| `X-Webhook-Signature` | `v1=` + hex(`HMAC-SHA256(secret, "${timestamp}.${rawBody}")`) |
+| `X-Tenant-Id` | Aktif tenant UUID |
+| `X-External-Event-Id` | Opsiyonel; yoksa payload'dan |
 
 ```bash
+BODY='{"event":"message","payload":{"id":"msg-001","body":"Sandra 2900 GBP ödeme","from":"120363@g.us","chatName":"Finans"}}'
+TS=$(date +%s)
+SIG=$(node -e "const c=require('crypto');const b=process.argv[1];const t=process.argv[2];const s=process.env.WAHA_WEBHOOK_SECRET||'dev-waha-webhook-secret';console.log('v1='+c.createHmac('sha256',s).update(t+'.'+b).digest('hex'))" "$BODY" "$TS")
 curl -s -X POST http://localhost:3000/v1/webhooks/waha \
   -H 'Content-Type: application/json' \
-  -H 'X-Webhook-Signature: dev-webhook-secret' \
+  -H "X-Webhook-Timestamp: $TS" \
+  -H "X-Webhook-Signature: $SIG" \
   -H 'X-Tenant-Id: <tenant-uuid>' \
   -H 'X-External-Event-Id: msg-001' \
-  -d '{"event":"message","payload":{"id":"msg-001","body":"Sandra 2900 GBP ödeme","from":"120363@g.us","chatName":"Finans"}}'
+  -d "$BODY"
 ```
 
 WhatsApp parse (oturum + aktif org gerekir; hasta eşleştirmesi tenant hasta listesinden):

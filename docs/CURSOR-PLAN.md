@@ -764,7 +764,7 @@ varsa ölç ve sor.
 
 ### Adım 22 — WAHA webhook imza doğrulaması
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** (Adım 21 "yok/kısmi" derse.) Queue-first webhook deseninin ilk şartı imza.
 
@@ -1424,3 +1424,27 @@ Karışıklık olmasın diye açıkça yazılıyor. Bunlar yol haritasında var 
 > Tüm adımlar bittiğinde bu dosyayı ve değişen her şeyi denetlemek için Opus
 > tekrar çağrılacak. O yüzden her adımın commit'i temiz ve adım numarasıyla
 > izlenebilir olsun — denetim git log'dan adım adım gidecek.
+
+---
+
+## Kontrol / karar bekleyen sorular
+
+Plan sırasına göre ilerleniyor; aşağıdaki maddeler ara sormadan biriktirildi.
+Denetimde netleştirilip gerekirse plana adım olarak eklenecek.
+
+1. **`inbound_message.process` worker noop (Adım 21 #5):** Job enqueue ediliyor ama
+   `queue.service.ts` bu tipi işlemiyor (noop). Parse bugün senkron
+   `POST /whatsapp/inbox/process` ile. Bu turda ayrı bir adım olarak worker + retry/DLQ
+   testi eklensin mi, yoksa Adım 25+ / Faz 3 kapanışına mı bırakılsın?
+
+2. **Generic `/webhooks/:provider` stub secret:** WAHA HMAC'e geçti; GHL vb. hâlâ
+   `WEBHOOK_STUB_SECRET` düz eşitlik. Aynı HMAC desenine ne zaman taşınsın?
+
+3. **Pending dosya süpürme (>24s):** Adım 19'da `TODO(jobs)` — 24 saatten eski
+   `files.status=pending` satırları. Şimdi mi, storage / jobs bloğunda mı?
+
+4. **Obsidian yol haritası Faz 1 `[~]`→`[x]`:** Adım 20 sonrası kullanıcı onayı
+   bekleniyordu; güncellensin mi?
+
+5. **LLM PII minimizasyonu (Adım 21 #3):** Mesaj tam metin + hasta adı modele gidiyor.
+   Ayrı adım mı, Adım 25 (LLM ledger) ile birlikte mi?

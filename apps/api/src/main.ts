@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { config as loadEnv } from 'dotenv';
+import { Readable } from 'node:stream';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { HttpException, HttpStatus } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { mountOpenApiDocs } from './docs/openapi.mount';
 import { MAX_UPLOAD_BYTES } from './storage/storage.types';
 import { mountBullBoard } from './queue/bull-board.mount';
 import { QueueService } from './queue/queue.service';
+import type { WebhookRequestWithRawBody } from './webhooks/webhooks.signature';
 
 /** CORS allowlist: panel origins + public web (karne / OAuth return). */
 function corsOrigins(): string[] {
@@ -27,6 +29,34 @@ function corsOrigins(): string[] {
 
 loadEnv({ path: '.env' });
 initSentry();
+
+/**
+ * Capture exact request bytes for `/v1/webhooks/*` so HMAC can verify the
+ * wire body (JSON.parse → stringify would break signatures).
+ */
+function registerWebhookRawBodyHook(app: NestFastifyApplication) {
+	const fastify = app.getHttpAdapter().getInstance();
+	fastify.addHook('preParsing', (request, _reply, payload, done) => {
+		const path = request.url.split('?')[0] ?? '';
+		if (!path.startsWith('/v1/webhooks')) {
+			done(null, payload);
+			return;
+		}
+
+		const chunks: Buffer[] = [];
+		payload.on('data', (chunk: Buffer | string) => {
+			chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+		});
+		payload.on('end', () => {
+			const raw = Buffer.concat(chunks);
+			(request as WebhookRequestWithRawBody).rawBody = raw.toString('utf8');
+			done(null, Readable.from(raw));
+		});
+		payload.on('error', (err: Error) => {
+			done(err, undefined);
+		});
+	});
+}
 
 async function mountBetterAuth(app: NestFastifyApplication) {
 	const auth = getAuth();
@@ -149,6 +179,7 @@ async function bootstrap() {
 	});
 
 	app.setGlobalPrefix('v1');
+	registerWebhookRawBodyHook(app);
 	await mountBetterAuth(app);
 	await mountOpenApiDocs(app);
 
