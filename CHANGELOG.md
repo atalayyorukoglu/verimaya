@@ -2,6 +2,14 @@
 
 Kaynak: `packages/shared/src/changelog.ts` (docs/CHANGELOG-KURALLARI.md).
 
+## 0.6.0 — 2026-07-30
+
+### GHL bağlantısı ve ürün içi karne
+
+- **Eklendi (Entegrasyonlar):** Ayarlar’dan GoHighLevel hesabınızı bağlayıp kesebilirsiniz; senkron alan sahipliği kurallarına uyar.
+- **Eklendi (Platform):** Panelde ürün içi yapay zeka karnesini doldurabilir, sistem cevaplarını çekebilir ve iki ölçümü karşılaştırabilirsiniz.
+- **Eklendi (Entegrasyonlar):** Meta ve Google Ads OAuth akışı hazır; hesabınızı bağladığınızda günlük harcama panele düşer.
+
 ## 0.5.0 — 2026-07-30
 
 ### Ücretsiz yapay zeka karnesi

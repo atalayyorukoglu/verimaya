@@ -1621,7 +1621,7 @@ bu adımı yapma, veri kaybı riski gerçek.
 
 ### Adım 44 — Yol haritası ve dokümanları senkronla
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Tamamlanan işler tek kaynağa işlenir.
 
@@ -1669,27 +1669,15 @@ Karışıklık olmasın diye açıkça yazılıyor. Bunlar yol haritasında var 
 
 ## Kontrol / karar bekleyen sorular
 
-Plan sırasına göre ilerleniyor; aşağıdaki maddeler ara sormadan biriktirildi.
-Denetimde netleştirilip gerekirse plana adım olarak eklenecek.
+Plan Adım 1–44 uygulandı. Aşağıdaki maddeler **karara bağlandı** (2026-07-30):
 
-1. **`inbound_message.process` worker noop (Adım 21 #5):** Job enqueue ediliyor ama
-   `queue.service.ts` bu tipi işlemiyor (noop). Parse bugün senkron
-   `POST /whatsapp/inbox/process` ile. Bu turda ayrı bir adım olarak worker + retry/DLQ
-   testi eklensin mi, yoksa Adım 25+ / Faz 3 kapanışına mı bırakılsın?
+| # | Soru | Karar |
+|---|---|---|
+| 1 | `inbound_message.process` worker | Adım 24a — worker bağlandı |
+| 2 | Generic webhook stub secret | Adım 23b — HMAC |
+| 3 | Pending dosya süpürme | Adım 30a |
+| 4 | Yol haritası Faz 1 `[~]` | Adım 20a + Adım 44 senkron |
+| 5 | LLM PII | Adım 23a |
+| 6 | Adım 24 outbound | Port iskeleti + ifşa hook (gönderim ayrı) |
 
-2. **Generic `/webhooks/:provider` stub secret:** WAHA HMAC'e geçti; GHL vb. hâlâ
-   `WEBHOOK_STUB_SECRET` düz eşitlik. Aynı HMAC desenine ne zaman taşınsın?
-
-3. **Pending dosya süpürme (>24s):** Adım 19'da `TODO(jobs)` — 24 saatten eski
-   `files.status=pending` satırları. Şimdi mi, storage / jobs bloğunda mı?
-
-4. **Obsidian yol haritası Faz 1 `[~]`→`[x]`:** Adım 20 sonrası kullanıcı onayı
-   bekleniyordu; güncellensin mi?
-
-5. **LLM PII minimizasyonu (Adım 21 #3):** Mesaj tam metin + hasta adı modele gidiyor.
-   Ayrı adım mı, Adım 25 (LLM ledger) ile birlikte mi?
-
-6. **Adım 24 (ifşa → giden mesaj):** Adım 21'e göre giden WhatsApp yolu **yok**. Plan:
-   "bu adım giden yolun kendisiyle birlikte yeniden boyutlandırılır ve kullanıcıya sorulur."
-   Bu turda (a) minimal outbound send + ifşa, (b) yalnız stub/adaptör iskeleti + ifşa
-   hook'u, (c) Adım 24'ü ertele — hangisi?
+Kalan açık işler plan «Kullanıcıya kalan işler» + «YER ALMAYAN» bölümlerinde.

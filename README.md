@@ -4,7 +4,7 @@ Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (m
 
 ## Durum
 
-**Faz 0b** tamamlandı (Docker + NestJS + better-auth + RLS + CI). Yol haritası artık yalnızca Obsidian'da: `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` — mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
+**CURSOR-PLAN** (Adım 1–44) kod olarak kapandı (`docs/CURSOR-PLAN.md`). Açık kalanlar canlı ops: Coolify/yedek (31), pilot (32), Meta/Google Ads go-live (38–39). Yol haritası: `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` — mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
 
 ## Stack
 

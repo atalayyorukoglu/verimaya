@@ -72,7 +72,7 @@ export const features: Feature[] = [
 		title: 'GoHighLevel senkronu',
 		description:
 			'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Verimaya ile eşleştirin.',
-		status: 'planlandi'
+		status: 'gelistiriliyor'
 	},
 	{
 		id: 'ads-metrics',
@@ -80,7 +80,7 @@ export const features: Feature[] = [
 		title: 'Meta ve Google Ads metrikleri',
 		description:
 			'Reklam harcaması ve dönüşümleri günlük özet olarak panele çekin.',
-		status: 'planlandi'
+		status: 'gelistiriliyor'
 	},
 	{
 		id: 'ads-connect',
@@ -96,7 +96,9 @@ export const features: Feature[] = [
 		title: 'n8n ve dış API',
 		description:
 			'Scope’lu API anahtarı ve imzalı webhook’larla otomasyonları bağlayın.',
-		status: 'planlandi'
+		status: 'yayinda',
+		released_at: '2026-07-20',
+		version: '0.1.0'
 	},
 	{
 		id: 'reports-dashboard',
@@ -205,5 +207,15 @@ export const features: Feature[] = [
 		status: 'yayinda',
 		released_at: '2026-07-30',
 		version: '0.5.0'
+	},
+	{
+		id: 'in-product-scorecard',
+		module: 'Platform',
+		title: 'Ürün içi yapay zeka karnesi',
+		description:
+			'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması — panel /scorecard.',
+		status: 'yayinda',
+		released_at: '2026-07-30',
+		version: '0.6.0'
 	}
 ];

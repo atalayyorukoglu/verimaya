@@ -20,6 +20,31 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.6.0',
+		date: '2026-07-30',
+		title: 'GHL bağlantısı ve ürün içi karne',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'Entegrasyonlar',
+				text: 'Ayarlar’dan GoHighLevel hesabınızı bağlayıp kesebilirsiniz; senkron alan sahipliği kurallarına uyar.',
+				featureId: 'ghl-sync'
+			},
+			{
+				type: 'eklendi',
+				module: 'Platform',
+				text: 'Panelde ürün içi yapay zeka karnesini doldurabilir, sistem cevaplarını çekebilir ve iki ölçümü karşılaştırabilirsiniz.',
+				featureId: 'in-product-scorecard'
+			},
+			{
+				type: 'eklendi',
+				module: 'Entegrasyonlar',
+				text: 'Meta ve Google Ads OAuth akışı hazır; hesabınızı bağladığınızda günlük harcama panele düşer.',
+				featureId: 'ads-connect'
+			}
+		]
+	},
+	{
 		version: '0.5.0',
 		date: '2026-07-30',
 		title: 'Ücretsiz yapay zeka karnesi',
