@@ -1313,7 +1313,7 @@ tablosuyla uyumlu: 1-4 → ~32, 5-15 → ~39, 16+ → ~40-43.
 
 ### Adım 34 — Ölçüm/profil tabloları + profil kilidi
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Şartname §5 — profil ilk ölçümde kilitlenir; sessiz yeniden hesaplama yasak.
 

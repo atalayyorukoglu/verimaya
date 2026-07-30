@@ -27,3 +27,4 @@ export * from './ai-correction.js';
 export * from './ai-disclosure.js';
 export * from './marketing/index.js';
 export * from './scorecard/index.js';
+export * from './scorecard-api.js';

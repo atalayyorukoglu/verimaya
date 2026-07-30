@@ -21,6 +21,7 @@ import { ReportsModule } from './reports/reports.module';
 import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subscriptions.module';
 import { AdsModule } from './integrations/ads/ads.module';
 import { KarneModule } from './karne/karne.module';
+import { ScorecardModule } from './scorecard/scorecard.module';
 import { StorageModule } from './storage/storage.module';
 
 @Module({
@@ -50,7 +51,8 @@ import { StorageModule } from './storage/storage.module';
 		ApiKeysModule,
 		ReportsModule,
 		WebhookSubscriptionsModule,
-		KarneModule
+		KarneModule,
+		ScorecardModule
 	]
 })
 export class AppModule {}
