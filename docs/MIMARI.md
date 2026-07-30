@@ -76,15 +76,17 @@ Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker
 
 ## GHL entegrasyon durumu (2026-07-30)
 
-`apps/api/src/integrations/ghl/` — **OAuth bağlan/kes** (Adım 40): Marketplace authorize +
-token exchange → `tenant_credentials` provider=`ghl` (AES-GCM; secret JSON:
-access/refresh/expiresAt/locationId). Panel: `/settings/connections/ghl`.
+`apps/api/src/integrations/ghl/` — **OAuth bağlan/kes** (Adım 40) + **HTTP istemci** (Adım 41):
+`GHL_CLIENT` DI — `GHL_CLIENT_ID`+`SECRET` varsa `GhlHttpClient` (fetch, 429/5xx backoff,
+401’de refresh+persist), yoksa `GhlClientStub` (ağ yok). Inbound hâlâ
+`GhlSyncService` (queue-first). Pull: `getContact` / `listContacts`.
 
-Inbound sync hâlâ fixture-backed: `ghl.mapper.ts` contact/opportunity çıkarır;
-`GhlSyncService.processInboundEvent` `jobs` ledger + hasta upsert (`source='ghl'`,
-`ghl_contact_id=` notes marker). `GhlClientStub` HTTP çağırmaz (Adım 41 gerçek istemci).
-`ghl.reconcile` OAuth yokken ledger noop. Scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true`.
-Alan bazlı sahiplik gerçek adaptörle (Adım 42+).
+Secret: `tenant_credentials` provider=`ghl` (AES-GCM JSON: access/refresh/expiresAt/locationId).
+Panel: `/settings/connections/ghl`.
+
+Inbound sync: `ghl.mapper.ts` contact/opportunity; hasta upsert (`source='ghl'`,
+`ghl_contact_id=` notes marker). `ghl.reconcile` OAuth yokken ledger noop (Adım 43).
+Scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true`. Alan sahipliği Adım 42.
 
 ## Reklam metrikleri / Ads adaptör katmanı (RM-4, 2026-07-22)
 

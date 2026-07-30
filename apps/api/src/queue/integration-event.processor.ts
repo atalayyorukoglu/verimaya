@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { integrationEvents, jobs } from '../db/schema/queue';
-import { GhlClientStub } from '../integrations/ghl';
+import { GHL_CLIENT, type GhlClient } from '../integrations/ghl/ghl.types';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 type IntegrationEventJobPayload = {
@@ -15,7 +15,7 @@ export class IntegrationEventProcessor {
 
 	constructor(
 		private readonly tenantContext: TenantContextService,
-		private readonly ghlClient: GhlClientStub
+		@Inject(GHL_CLIENT) private readonly ghlClient: GhlClient
 	) {}
 
 	async process(jobId: string, tenantId: string): Promise<void> {

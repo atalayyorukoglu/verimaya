@@ -38,7 +38,8 @@ Tablolar: `integration_events`, `outbox_events`, `jobs` (RLS + `verimaya_app` gr
 ### Faz 4 — GHL foundation (stub)
 
 - Tablo: `tenant_credentials` (`tenant_id`, `provider`, `ciphertext` bytea, `key_version`, `created_at`; `UNIQUE(tenant_id, provider)`; RLS).
-- Adaptör: `apps/api/src/integrations/ghl/` — `GhlClient` arayüzü + `GhlClientStub` (dış API çağrısı yok).
+- Adaptör: `apps/api/src/integrations/ghl/` — `GhlClient` + `GhlHttpClient` / `GhlClientStub`
+  (`GHL_CLIENT_ID`+`SECRET` varsa HTTP). OAuth: `/v1/integrations/ghl/*`.
 - Worker: `integration_event.process` + `provider=ghl` → stub işler, `jobs`/`integration_events` durumu güncellenir.
 
 **Credential şifreleme:** OAuth/API token'ları yalnızca `ciphertext` sütununda saklanır; AES-GCM uygulaması ileride eklenecek. Plaintext credential loglanmaz ve API yanıtlarına yazılmaz.

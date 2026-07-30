@@ -33,7 +33,36 @@ export type GhlProcessResult = {
 	contact: GhlContactFields | null;
 };
 
-/** GoHighLevel API adapter contract — domain code depends on this, not HTTP. */
+/** Normalized remote contact from GHL Contacts API (Adım 41+). */
+export type GhlRemoteContact = {
+	id: string;
+	locationId: string | null;
+	fullName: string | null;
+	phone: string | null;
+	email: string | null;
+	dateUpdated: string | null;
+};
+
+export type GhlListContactsParams = {
+	limit?: number;
+	startAfterId?: string;
+	query?: string;
+};
+
+export type GhlListContactsResult = {
+	contacts: GhlRemoteContact[];
+	nextStartAfterId: string | null;
+};
+
+/** Nest DI token for {@link GhlClient}. */
+export const GHL_CLIENT = Symbol('GHL_CLIENT');
+
+/**
+ * GoHighLevel adapter contract — domain/queue code depends on this, not fetch.
+ * Inbound webhooks stay queue-first; HTTP methods are for reconcile / pull (Adım 43).
+ */
 export interface GhlClient {
 	processInboundEvent(event: GhlInboundEvent): Promise<GhlProcessResult>;
+	getContact(tenantId: string, contactId: string): Promise<GhlRemoteContact | null>;
+	listContacts(tenantId: string, params?: GhlListContactsParams): Promise<GhlListContactsResult>;
 }

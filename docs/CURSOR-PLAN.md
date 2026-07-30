@@ -1518,9 +1518,8 @@ Bloke olursa Adım 40'a geç, buraya sonra dön (bağımlılık yok).
 
 ## G2 — GHL gerçek adaptörü
 
-> Durum (2026-07-30): **Adım 40 OAuth bağlan/kes tamam.** `GhlClientStub` hâlâ HTTP
-> çağırmaz (Adım 41). `ghl.reconcile` OAuth yokken noop ledger; hasta eşlemesi `notes`
-> marker (`ghl_contact_id=…`) — ayrı mapping tablosu yok (MIMARI.md § GHL).
+> Durum (2026-07-30): **Adım 40–41 tamam.** `GHL_CLIENT` → HTTP veya stub (env).
+> `ghl.reconcile` hâlâ noop (Adım 43). Hasta eşlemesi `notes` marker — Adım 42 `external_ids`.
 
 ### Adım 40 — GHL OAuth: state, authorize, callback
 
@@ -1551,7 +1550,7 @@ dokümana bak, varsayma.
 
 ### Adım 41 — GHL HTTP istemcisi (stub → gerçek)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `GhlClientStub` yerine gerçek istemci; **stub kaldırılmaz**, test için kalır.
 
