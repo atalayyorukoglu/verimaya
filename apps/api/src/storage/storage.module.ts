@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { FilesSweepService } from './files-sweep.service';
 import { LocalFileStorage } from './local-file.storage';
 import { RoutingFileStorage, type StorageDriverName } from './routing-file.storage';
 import { readS3ConfigFromEnv, S3FileStorage, tryReadS3ConfigFromEnv } from './s3-file.storage';
@@ -30,8 +31,9 @@ function createFileStorage(): FileStoragePort {
 		{
 			provide: FILE_STORAGE,
 			useFactory: createFileStorage
-		}
+		},
+		FilesSweepService
 	],
-	exports: [FILE_STORAGE]
+	exports: [FILE_STORAGE, FilesSweepService]
 })
 export class StorageModule {}

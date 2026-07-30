@@ -1197,7 +1197,7 @@ devam ediyor (MIMARI.md § Eski sistemle ilişki) — kesim tek yönlü değil.
 
 ### Adım 30a — Yetim presigned dosya süpürme
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Adım 19'dan **bilinçli olarak ertelendi** (karar 3B). Presigned yükleme
 başlatılıp `confirm` edilmeyen kayıtlar hem `files` tablosunda hem R2'de yetim kalıyor.

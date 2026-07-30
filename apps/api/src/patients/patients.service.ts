@@ -217,7 +217,7 @@ export class PatientsService {
 
 	/**
 	 * Create pending meta + return an upload URL (S3 presign, or local content PUT).
-	 * TODO(jobs): sweep `status=pending` older than 24h (delete meta + storage object).
+	 * Orphan pending rows (>24h) are swept by `files.sweep_pending` (Adım 30a).
 	 */
 	async presignFileWithDb(
 		db: TenantDb,

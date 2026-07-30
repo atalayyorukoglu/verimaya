@@ -7,6 +7,11 @@ import { AdMetricsSyncService } from '../ad-metrics/ad-metrics.sync.service';
 import { DbService } from '../db/db.service';
 import { tenants } from '../db/schema';
 import { GhlSyncService } from '../integrations/ghl';
+import {
+	FILES_SWEEP_EVERY_MS,
+	FILES_SWEEP_PENDING_JOB_TYPE,
+	FilesSweepService
+} from '../storage/files-sweep.service';
 import { InboundMessageProcessor } from '../whatsapp/inbound-message.processor';
 import { IntegrationEventProcessor } from './integration-event.processor';
 import { OutboxProcessor } from './outbox.processor';
@@ -42,7 +47,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		private readonly outboxProcessor: OutboxProcessor,
 		private readonly ghlSyncService: GhlSyncService,
 		private readonly adMetricsSyncService: AdMetricsSyncService,
-		private readonly inboundMessageProcessor: InboundMessageProcessor
+		private readonly inboundMessageProcessor: InboundMessageProcessor,
+		private readonly filesSweepService: FilesSweepService
 	) {}
 
 	async onModuleInit() {
@@ -78,6 +84,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 				if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {
 					await this.outboxProcessor.deliver(job.data.jobId, job.data.tenantId);
 					return { ok: true };
+				}
+				if (job.data.jobType === FILES_SWEEP_PENDING_JOB_TYPE) {
+					const result = await this.filesSweepService.sweepTenant(job.data.tenantId);
+					return { ok: true, ...result };
 				}
 				this.logger.debug(`Noop worker handled job ${job.id} (${job.data.jobType})`);
 				return { ok: true };
@@ -158,13 +168,25 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	/**
-	 * Registers BullMQ repeatable job schedulers (every 6h) for each tenant:
-	 * - `ghl.reconcile:<tenantId>`
-	 * - `ad_metrics.sync:<tenantId>`
+	 * Enqueues a one-shot `files.sweep_pending` job for a tenant.
+	 * Periodic cadence: daily when {@link registerIntegrationSchedulersIfEnabled} is on.
+	 */
+	async enqueueFilesSweepPending(tenantId: string): Promise<Job<DefaultQueueJobData>> {
+		return this.enqueueDefaultJob(FILES_SWEEP_PENDING_JOB_TYPE, {
+			jobId: randomUUID(),
+			tenantId,
+			jobType: FILES_SWEEP_PENDING_JOB_TYPE
+		});
+	}
+
+	/**
+	 * Registers BullMQ repeatable job schedulers for each tenant:
+	 * - `ghl.reconcile` + `ad_metrics.sync` every 6h
+	 * - `files.sweep_pending` every 24h
 	 *
 	 * Only runs when `ENABLE_INTEGRATION_SCHEDULERS=true`. Safe default is off so local
 	 * workers do not spam Redis. Manual enqueue via {@link enqueueGhlReconcile} /
-	 * {@link enqueueAdMetricsSync} always works regardless of this flag.
+	 * {@link enqueueAdMetricsSync} / {@link enqueueFilesSweepPending} always works.
 	 */
 	private async registerIntegrationSchedulersIfEnabled(): Promise<void> {
 		const enabled =
@@ -172,7 +194,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 			'true';
 		if (!enabled) {
 			this.logger.log(
-				`Integration schedulers skipped (${ENABLE_INTEGRATION_SCHEDULERS_ENV}!=true). Use enqueueGhlReconcile / enqueueAdMetricsSync for one-shot runs.`
+				`Integration schedulers skipped (${ENABLE_INTEGRATION_SCHEDULERS_ENV}!=true). Use enqueueGhlReconcile / enqueueAdMetricsSync / enqueueFilesSweepPending for one-shot runs.`
 			);
 			return;
 		}
@@ -213,10 +235,22 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 					}
 				}
 			);
+			await this.defaultQueue.upsertJobScheduler(
+				`${FILES_SWEEP_PENDING_JOB_TYPE}:${tenantId}`,
+				{ every: FILES_SWEEP_EVERY_MS },
+				{
+					name: FILES_SWEEP_PENDING_JOB_TYPE,
+					data: {
+						jobId: `${FILES_SWEEP_PENDING_JOB_TYPE}:${tenantId}`,
+						tenantId,
+						jobType: FILES_SWEEP_PENDING_JOB_TYPE
+					}
+				}
+			);
 		}
 
 		this.logger.log(
-			`Registered 6h integration schedulers for ${tenantRows.length} tenant(s) (ghl.reconcile + ad_metrics.sync)`
+			`Registered schedulers for ${tenantRows.length} tenant(s) (ghl.reconcile + ad_metrics.sync 6h; files.sweep_pending 24h)`
 		);
 	}
 
@@ -228,7 +262,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		}
 		if (
 			job.data.jobType === GHL_RECONCILE_JOB_TYPE ||
-			job.data.jobType === AD_METRICS_SYNC_JOB_TYPE
+			job.data.jobType === AD_METRICS_SYNC_JOB_TYPE ||
+			job.data.jobType === FILES_SWEEP_PENDING_JOB_TYPE
 		) {
 			this.logger.error(
 				`Scheduled job ${job.data.jobType} for tenant ${job.data.tenantId} exhausted retries: ${err.message}`
