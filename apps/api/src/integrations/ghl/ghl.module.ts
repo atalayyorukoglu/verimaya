@@ -7,6 +7,7 @@ import { GhlHttpClient, ghlHttpClientEnvConfigured } from './ghl.client.http';
 import { GhlClientStub } from './ghl.client.stub';
 import { GhlController } from './ghl.controller';
 import { GhlOAuthStateService } from './ghl-oauth.state';
+import { GhlReconcileService } from './ghl.reconcile.service';
 import { GhlSyncService } from './ghl.sync.service';
 import { GHL_CLIENT, type GhlClient } from './ghl.types';
 
@@ -28,8 +29,9 @@ import { GHL_CLIENT, type GhlClient } from './ghl.types';
 			useFactory: (stub: GhlClientStub, http: GhlHttpClient): GhlClient =>
 				ghlHttpClientEnvConfigured() ? http : stub,
 			inject: [GhlClientStub, GhlHttpClient]
-		}
+		},
+		GhlReconcileService
 	],
-	exports: [GHL_CLIENT, GhlClientStub, GhlSyncService]
+	exports: [GHL_CLIENT, GhlClientStub, GhlSyncService, GhlReconcileService]
 })
 export class GhlModule {}

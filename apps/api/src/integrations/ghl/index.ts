@@ -4,6 +4,7 @@ export * from './ghl.field-ownership';
 export { GhlClientStub } from './ghl.client.stub';
 export { GhlHttpClient, ghlHttpClientEnvConfigured } from './ghl.client.http';
 export { GhlSyncService } from './ghl.sync.service';
+export { GhlReconcileService } from './ghl.reconcile.service';
 export { GhlModule } from './ghl.module';
 export { GhlOAuthClient, ghlOAuthClientFromEnv, parseGhlStoredSecret } from './ghl-oauth.client';
 export { GhlOAuthStateService, GHL_OAUTH_PROVIDER } from './ghl-oauth.state';

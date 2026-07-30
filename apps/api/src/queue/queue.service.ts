@@ -6,7 +6,7 @@ import Redis from 'ioredis';
 import { AdMetricsSyncService } from '../ad-metrics/ad-metrics.sync.service';
 import { DbService } from '../db/db.service';
 import { tenants } from '../db/schema';
-import { GhlSyncService } from '../integrations/ghl';
+import { GhlReconcileService } from '../integrations/ghl/ghl.reconcile.service';
 import {
 	FILES_SWEEP_EVERY_MS,
 	FILES_SWEEP_PENDING_JOB_TYPE,
@@ -45,7 +45,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		private readonly db: DbService,
 		private readonly integrationEventProcessor: IntegrationEventProcessor,
 		private readonly outboxProcessor: OutboxProcessor,
-		private readonly ghlSyncService: GhlSyncService,
+		private readonly ghlReconcileService: GhlReconcileService,
 		private readonly adMetricsSyncService: AdMetricsSyncService,
 		private readonly inboundMessageProcessor: InboundMessageProcessor,
 		private readonly filesSweepService: FilesSweepService
@@ -78,7 +78,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 					return { ok: true, ...result };
 				}
 				if (job.data.jobType === GHL_RECONCILE_JOB_TYPE) {
-					await this.ghlSyncService.reconcile(job.data.tenantId);
+					await this.ghlReconcileService.reconcile(job.data.tenantId);
 					return { ok: true };
 				}
 				if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {

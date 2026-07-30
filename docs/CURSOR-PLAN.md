@@ -1518,7 +1518,7 @@ Bloke olursa Adım 40'a geç, buraya sonra dön (bağımlılık yok).
 
 ## G2 — GHL gerçek adaptörü
 
-> Durum (2026-07-30): **Adım 40–42 tamam.** Reconcile gerçek mutabakat = Adım 43.
+> Durum (2026-07-30): **Adım 40–43 tamam.** Kapanış = Adım 44.
 
 ### Adım 40 — GHL OAuth: state, authorize, callback
 
@@ -1597,7 +1597,7 @@ sahiplik tablosuna aykırı yazma testte yakalanıyor.
 
 ### Adım 43 — GHL reconcile: gerçek mutabakat
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `ghl.reconcile` noop olmaktan çıkar.
 
