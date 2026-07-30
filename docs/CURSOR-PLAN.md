@@ -1121,7 +1121,7 @@ bu adıma **karıştırma** (Blok G'de ayrı).
 
 ### Adım 28 — ETL apply: sözlük + kişiler + hastalar
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `etl-dry-run.js` gerçek yazma yoluna kavuşur — ama yalnız ilk iki katman.
 
