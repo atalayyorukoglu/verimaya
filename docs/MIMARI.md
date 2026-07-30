@@ -76,17 +76,14 @@ Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker
 
 ## GHL entegrasyon durumu (2026-07-30)
 
-`apps/api/src/integrations/ghl/` — **OAuth bağlan/kes** (Adım 40) + **HTTP istemci** (Adım 41):
-`GHL_CLIENT` DI — `GHL_CLIENT_ID`+`SECRET` varsa `GhlHttpClient` (fetch, 429/5xx backoff,
-401’de refresh+persist), yoksa `GhlClientStub` (ağ yok). Inbound hâlâ
-`GhlSyncService` (queue-first). Pull: `getContact` / `listContacts`.
+`apps/api/src/integrations/ghl/` — OAuth (40) + HTTP istemci (41) + **eşleme/sahiplik (42)**:
 
-Secret: `tenant_credentials` provider=`ghl` (AES-GCM JSON: access/refresh/expiresAt/locationId).
-Panel: `/settings/connections/ghl`.
-
-Inbound sync: `ghl.mapper.ts` contact/opportunity; hasta upsert (`source='ghl'`,
-`ghl_contact_id=` notes marker). `ghl.reconcile` OAuth yokken ledger noop (Adım 43).
-Scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true`. Alan sahipliği Adım 42.
+- Eşleme: `external_ids` (`source=ghl`, `entity_type=patient`). Yeni inbound marker
+  yazmaz; legacy `ghl_contact_id=` notes hâlâ okunur. Geçiş:
+  `pnpm --filter @verimaya/api ghl:migrate-markers [-- --apply]` (marker silinmez).
+- Sahiplik (`ghl.field-ownership.ts`): patient `fullName`/`phone`/`email`/`status` → GHL;
+  `notes` → Verimaya. İhlal `assertFieldWriteAllowed` ile testte yakalanır.
+- `GHL_CLIENT`: env varsa `GhlHttpClient`, yoksa stub. Reconcile hâlâ noop (Adım 43).
 
 ## Reklam metrikleri / Ads adaptör katmanı (RM-4, 2026-07-22)
 

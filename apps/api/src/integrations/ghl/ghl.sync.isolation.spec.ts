@@ -40,6 +40,7 @@ describe('GhlSyncService tenant isolation', () => {
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
 		await sql`delete from patients where tenant_id in (${tenantA}, ${tenantB})`;
+		await sql`delete from external_ids where tenant_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from jobs where tenant_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from audit_logs where tenant_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
@@ -101,5 +102,21 @@ describe('GhlSyncService tenant isolation', () => {
 		expect(visibleToA).toHaveLength(1);
 		expect(visibleToA[0]?.full_name).toBe('Isolation Patient A Updated');
 		expect(visibleToA[0]?.source).toBe('ghl');
+
+		const mapping = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select external_id, internal_id from external_ids
+				where source = 'ghl' and entity_type = 'patient' and external_id = ${externalId}
+			`;
+		});
+		expect(mapping).toHaveLength(1);
+		expect(mapping[0]?.internal_id).toBe(resultA.patientId);
+
+		const notesRow = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`select notes from patients where id = ${resultA.patientId!}`;
+		});
+		expect(notesRow[0]?.notes).toBeNull();
 	});
 });

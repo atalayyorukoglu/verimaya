@@ -1518,8 +1518,7 @@ Bloke olursa Adım 40'a geç, buraya sonra dön (bağımlılık yok).
 
 ## G2 — GHL gerçek adaptörü
 
-> Durum (2026-07-30): **Adım 40–41 tamam.** `GHL_CLIENT` → HTTP veya stub (env).
-> `ghl.reconcile` hâlâ noop (Adım 43). Hasta eşlemesi `notes` marker — Adım 42 `external_ids`.
+> Durum (2026-07-30): **Adım 40–42 tamam.** Reconcile gerçek mutabakat = Adım 43.
 
 ### Adım 40 — GHL OAuth: state, authorize, callback
 
@@ -1573,7 +1572,7 @@ bağımlı hale getirme.
 
 ### Adım 42 — GHL eşleme tablosuna geçiş + alan bazlı sahiplik
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** İki borç birlikte kapanır.
 

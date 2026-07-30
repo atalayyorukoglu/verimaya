@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { and, eq, ilike, isNull } from 'drizzle-orm';
 import { writeAuditLog } from '../../common/audit-helper';
-import { jobs, patients } from '../../db/schema';
+import { externalIds, jobs, patients } from '../../db/schema';
 import {
 	GHL_INBOUND_SYNC_LOG_JOB_TYPE,
 	GHL_RECONCILE_JOB_TYPE
 } from '../../queue/queue.constants';
 import { TenantContextService } from '../../tenant/tenant-context.service';
+import { pickOwnedFields } from './ghl.field-ownership';
 import {
 	detectGhlEventKind,
 	extractGhlContactFields,
@@ -21,19 +22,23 @@ import type {
 
 const SYSTEM_ACTOR = {
 	actorId: null,
-	actorDisplayName: 'GHL sync (fixture)'
+	actorDisplayName: 'GHL sync'
 } as const;
+
+const GHL_SOURCE = 'ghl';
+const PATIENT_ENTITY = 'patient';
 
 /** Reject ids that would break note markers or ILIKE matching. */
 function isSafeExternalId(value: string): boolean {
 	return value.length > 0 && value.length <= 128 && /^[A-Za-z0-9._:-]+$/.test(value);
 }
 
+type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
+
 /**
- * GHL sync (Faz 4, no OAuth). Parses fixture-shaped webhook payloads, writes a durable
- * sync log row into `jobs` (`ghl.inbound.sync`), and optionally upserts a minimal patient
- * when contact fields are clean. External-id mapping uses `patients.notes` marker
- * (`ghl_contact_id=<id>`) + `source='ghl'` — no new table/migration.
+ * GHL sync: inbound webhook → jobs ledger + patient upsert via `external_ids`
+ * (source=ghl). Legacy `ghl_contact_id=` notes markers are still readable until
+ * `migrate-ghl-markers` runs; new writes do not add markers (Adım 42).
  */
 @Injectable()
 export class GhlSyncService {
@@ -41,7 +46,6 @@ export class GhlSyncService {
 
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	/** Detects contact/opportunity from an inbound webhook payload (no writes). */
 	parseInboundEvent(event: GhlInboundEvent): Omit<GhlProcessResult, 'action' | 'patientId'> {
 		const kind = detectGhlEventKind(event.payload);
 		const contact = extractGhlContactFields(event.payload);
@@ -54,10 +58,6 @@ export class GhlSyncService {
 		return { kind, externalId, summary, contact };
 	}
 
-	/**
-	 * Processes an inbound GHL event under the event's tenant: sync log + optional patient upsert.
-	 * Isolation-safe via `withTenant` / RLS.
-	 */
 	async processInboundEvent(event: GhlInboundEvent): Promise<GhlProcessResult> {
 		const parsed = this.parseInboundEvent(event);
 
@@ -77,32 +77,42 @@ export class GhlSyncService {
 						`GHL event ${event.integrationEventId}: incomplete/unsafe contact fields (need fullName+safe externalId)`
 					);
 				} else {
-					const marker = ghlContactNotesMarker(externalId);
-					const [existing] = await db
-						.select()
-						.from(patients)
-						.where(
-							and(
-								eq(patients.source, 'ghl'),
-								ilike(patients.notes, `%${marker}%`),
-								isNull(patients.deletedAt)
-							)
-						)
-						.limit(1);
+					const existingId = await this.resolvePatientId(db, externalId);
 
-					if (existing) {
+					const ownedPatch = pickOwnedFields(
+						{
+							fullName: contact.fullName,
+							phone: contact.phone,
+							email: contact.email,
+							status: 'lead',
+							notes: 'ignored-by-ownership'
+						},
+						'ghl'
+					);
+
+					if (existingId) {
 						const [updated] = await db
 							.update(patients)
 							.set({
-								fullName: contact.fullName,
-								phone: contact.phone ?? existing.phone,
-								email: contact.email ?? existing.email,
+								fullName: String(ownedPatch.fullName),
+								phone:
+									ownedPatch.phone != null
+										? String(ownedPatch.phone)
+										: undefined,
+								email:
+									ownedPatch.email != null
+										? String(ownedPatch.email)
+										: undefined,
+								...(ownedPatch.status != null
+									? { status: String(ownedPatch.status) }
+									: {}),
 								updatedAt: new Date()
 							})
-							.where(eq(patients.id, existing.id))
+							.where(eq(patients.id, existingId))
 							.returning();
-						patientId = updated?.id ?? existing.id;
+						patientId = updated?.id ?? existingId;
 						action = 'patient_updated';
+						await this.ensureExternalId(db, event.tenantId, externalId, patientId);
 						await writeAuditLog(
 							db,
 							event.tenantId,
@@ -112,22 +122,29 @@ export class GhlSyncService {
 							contact.fullName
 						);
 					} else {
-						const notes = `${marker} · imported from GHL fixture`;
 						const [created] = await db
 							.insert(patients)
 							.values({
 								tenantId: event.tenantId,
-								fullName: contact.fullName,
-								phone: contact.phone,
-								email: contact.email,
-								status: 'lead',
-								source: 'ghl',
-								notes
+								fullName: String(ownedPatch.fullName),
+								phone:
+									ownedPatch.phone != null ? String(ownedPatch.phone) : null,
+								email:
+									ownedPatch.email != null ? String(ownedPatch.email) : null,
+								status: String(ownedPatch.status ?? 'lead'),
+								source: GHL_SOURCE,
+								notes: null
 							})
 							.returning();
 						patientId = created?.id ?? null;
 						action = 'patient_created';
 						if (created) {
+							await this.ensureExternalId(
+								db,
+								event.tenantId,
+								externalId,
+								created.id
+							);
 							await writeAuditLog(
 								db,
 								event.tenantId,
@@ -175,10 +192,6 @@ export class GhlSyncService {
 		});
 	}
 
-	/**
-	 * `ghl.reconcile` job handler. Without OAuth there is no GHL API to pull from — writes a
-	 * completed ledger row documenting the noop so ops can see the scheduler fired.
-	 */
 	async reconcile(tenantId: string): Promise<void> {
 		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			await db.insert(jobs).values({
@@ -199,5 +212,63 @@ export class GhlSyncService {
 		this.logger.debug(
 			`ghl.reconcile fixture noop for tenant ${tenantId} (ledger row written; no OAuth adapter)`
 		);
+	}
+
+	/** Prefer external_ids; fall back to legacy notes marker (read-only). */
+	private async resolvePatientId(db: TenantDb, externalId: string): Promise<string | null> {
+		const [mapped] = await db
+			.select({ internalId: externalIds.internalId })
+			.from(externalIds)
+			.where(
+				and(
+					eq(externalIds.source, GHL_SOURCE),
+					eq(externalIds.entityType, PATIENT_ENTITY),
+					eq(externalIds.externalId, externalId)
+				)
+			)
+			.limit(1);
+		if (mapped?.internalId) return mapped.internalId;
+
+		const marker = ghlContactNotesMarker(externalId);
+		const [legacy] = await db
+			.select({ id: patients.id })
+			.from(patients)
+			.where(
+				and(
+					eq(patients.source, GHL_SOURCE),
+					ilike(patients.notes, `%${marker}%`),
+					isNull(patients.deletedAt)
+				)
+			)
+			.limit(1);
+		return legacy?.id ?? null;
+	}
+
+	private async ensureExternalId(
+		db: TenantDb,
+		tenantId: string,
+		externalId: string,
+		internalId: string
+	): Promise<void> {
+		const [existing] = await db
+			.select({ id: externalIds.id })
+			.from(externalIds)
+			.where(
+				and(
+					eq(externalIds.source, GHL_SOURCE),
+					eq(externalIds.entityType, PATIENT_ENTITY),
+					eq(externalIds.externalId, externalId)
+				)
+			)
+			.limit(1);
+		if (existing) return;
+
+		await db.insert(externalIds).values({
+			tenantId,
+			source: GHL_SOURCE,
+			entityType: PATIENT_ENTITY,
+			externalId,
+			internalId
+		});
 	}
 }

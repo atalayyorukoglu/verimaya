@@ -1,5 +1,6 @@
 export * from './ghl.types';
 export * from './ghl.mapper';
+export * from './ghl.field-ownership';
 export { GhlClientStub } from './ghl.client.stub';
 export { GhlHttpClient, ghlHttpClientEnvConfigured } from './ghl.client.http';
 export { GhlSyncService } from './ghl.sync.service';

@@ -16,7 +16,8 @@
 		"etl:dry-run": "node scripts/etl.js",
 		"etl:verify": "node scripts/etl-verify.js",
 		"karne:stats": "node scripts/karne-stats.js",
-		"files:migrate-s3": "node scripts/migrate-files-to-s3.js"
+		"files:migrate-s3": "node scripts/migrate-files-to-s3.js",
+		"ghl:migrate-markers": "node scripts/migrate-ghl-markers.js"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.1098.0",
