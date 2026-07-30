@@ -1,14 +1,15 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, forwardRef } from '@nestjs/common';
 import { AdMetricsModule } from '../ad-metrics/ad-metrics.module';
 import { CommonModule } from '../common/common.module';
 import { GhlModule } from '../integrations/ghl/ghl.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { IntegrationEventProcessor } from './integration-event.processor';
 import { OutboxProcessor } from './outbox.processor';
 import { QueueService } from './queue.service';
 
 @Global()
 @Module({
-	imports: [GhlModule, AdMetricsModule, CommonModule],
+	imports: [GhlModule, AdMetricsModule, CommonModule, forwardRef(() => WhatsappModule)],
 	providers: [IntegrationEventProcessor, OutboxProcessor, QueueService],
 	exports: [QueueService]
 })

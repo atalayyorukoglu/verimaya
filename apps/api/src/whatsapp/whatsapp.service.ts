@@ -4,6 +4,7 @@ import type {
 	InboundMessageActionResponse,
 	InboundMessageProcessResponse,
 	InboundMessageStatus,
+	Patient,
 	TransactionDraft
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
@@ -15,6 +16,8 @@ import { asRecord, extractInboundDisplayFields, mergeParsedPayload, toInboundMes
 
 const PARSE_ERROR_NO_TEXT = 'Medya mesajı — metin yok';
 const PARSE_ERROR_NO_MATCH = 'Ayrıştırılamadı';
+
+export type ProcessInboundOutcome = 'parsed' | 'error' | 'skipped';
 
 @Injectable()
 export class WhatsappService {
@@ -70,7 +73,10 @@ export class WhatsappService {
 			const display = extractInboundDisplayFields(payload);
 
 			if (!display.body?.trim()) {
-				await this.savePayload(db, id, payload, { parsed_records: null, parse_error: PARSE_ERROR_NO_TEXT });
+				await this.savePayload(db, id, payload, {
+					parsed_records: null,
+					parse_error: PARSE_ERROR_NO_TEXT
+				});
 				return { records: [] };
 			}
 
@@ -83,6 +89,25 @@ export class WhatsappService {
 				parse_error: records.length === 0 ? PARSE_ERROR_NO_MATCH : null
 			});
 			return { records };
+		});
+	}
+
+	/**
+	 * Process one inbound message (queue worker + shared with batch process).
+	 * Idempotent: only `status === 'new'` rows are parsed; otherwise `skipped`.
+	 */
+	async processInboundMessage(
+		tenantId: string,
+		inboundMessageId: string
+	): Promise<ProcessInboundOutcome> {
+		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
+
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const row = await this.findRow(db, inboundMessageId);
+			if (row.status !== 'new') {
+				return 'skipped';
+			}
+			return this.processNewInboundRow(db, row, patients);
 		});
 	}
 
@@ -103,21 +128,13 @@ export class WhatsappService {
 			for (const row of rows) {
 				const payload = asRecord(row.payload) ?? {};
 				const display = extractInboundDisplayFields(payload);
+				// Batch endpoint historically skipped media-only without status change.
 				if (!display.body?.trim()) continue;
 
 				processed++;
-				const records = await this.llm.parseTransactionDrafts({
-					message: display.body,
-					patients
-				});
-				const isError = records.length === 0;
-				if (isError) error++;
-				else parsed++;
-
-				await this.savePayload(db, row.id, payload, {
-					parsed_records: isError ? null : records,
-					parse_error: isError ? PARSE_ERROR_NO_MATCH : null
-				});
+				const outcome = await this.processNewInboundRow(db, row, patients);
+				if (outcome === 'parsed') parsed++;
+				else if (outcome === 'error') error++;
 			}
 
 			return { processed, parsed, error };
@@ -131,6 +148,37 @@ export class WhatsappService {
 
 	async ignoreInboxItem(tenantId: string, id: string): Promise<InboundMessageActionResponse> {
 		return this.setStatus(tenantId, id, 'ignored');
+	}
+
+	/**
+	 * Shared parse path for a `new` row. Media-only → parsed with error text (worker must complete).
+	 */
+	private async processNewInboundRow(
+		db: TenantDb,
+		row: InboundMessageRow,
+		patients: Patient[]
+	): Promise<'parsed' | 'error'> {
+		const payload = asRecord(row.payload) ?? {};
+		const display = extractInboundDisplayFields(payload);
+
+		if (!display.body?.trim()) {
+			await this.savePayload(db, row.id, payload, {
+				parsed_records: null,
+				parse_error: PARSE_ERROR_NO_TEXT
+			});
+			return 'error';
+		}
+
+		const records = await this.llm.parseTransactionDrafts({
+			message: display.body,
+			patients
+		});
+		const isError = records.length === 0;
+		await this.savePayload(db, row.id, payload, {
+			parsed_records: isError ? null : records,
+			parse_error: isError ? PARSE_ERROR_NO_MATCH : null
+		});
+		return isError ? 'error' : 'parsed';
 	}
 
 	private async setStatus(

@@ -13,6 +13,7 @@ import type { FastifyRequest } from 'fastify';
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { integrationEvents, jobs } from '../db/schema/queue';
 import { DEFAULT_QUEUE_NAME, QueueService } from '../queue/queue.service';
+import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { extractWahaExternalId } from '../whatsapp/inbound-mapper';
 import {
@@ -161,7 +162,7 @@ export class WebhooksController {
 				id: jobId,
 				tenantId,
 				queue: DEFAULT_QUEUE_NAME,
-				jobType: 'inbound_message.process',
+				jobType: INBOUND_MESSAGE_PROCESS_JOB_TYPE,
 				payload: { inboundMessageId },
 				status: 'pending'
 			});
@@ -174,10 +175,10 @@ export class WebhooksController {
 		});
 
 		if (!result.duplicate) {
-			const bullJob = await this.queue.enqueueDefaultJob('inbound_message.process', {
+			const bullJob = await this.queue.enqueueDefaultJob(INBOUND_MESSAGE_PROCESS_JOB_TYPE, {
 				jobId: result.jobId,
 				tenantId,
-				jobType: 'inbound_message.process'
+				jobType: INBOUND_MESSAGE_PROCESS_JOB_TYPE
 			});
 
 			await this.tenantContext.withTenant(tenantId, async ({ db }) => {

@@ -12,6 +12,9 @@ export const GHL_RECONCILE_JOB_TYPE = 'ghl.reconcile';
 /** Durable ledger job type written by GHL inbound processing (sync audit trail, no migration). */
 export const GHL_INBOUND_SYNC_LOG_JOB_TYPE = 'ghl.inbound.sync';
 
+/** WAHA inbound → parse drafts (queue-first; same logic as POST /whatsapp/inbox/process). */
+export const INBOUND_MESSAGE_PROCESS_JOB_TYPE = 'inbound_message.process';
+
 /** 6h cadence for per-tenant integration schedulers (ms). */
 export const INTEGRATION_SCHEDULER_EVERY_MS = 6 * 60 * 60 * 1000;
 

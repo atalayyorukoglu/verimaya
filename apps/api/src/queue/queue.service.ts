@@ -7,6 +7,7 @@ import { AdMetricsSyncService } from '../ad-metrics/ad-metrics.sync.service';
 import { DbService } from '../db/db.service';
 import { tenants } from '../db/schema';
 import { GhlSyncService } from '../integrations/ghl';
+import { InboundMessageProcessor } from '../whatsapp/inbound-message.processor';
 import { IntegrationEventProcessor } from './integration-event.processor';
 import { OutboxProcessor } from './outbox.processor';
 import {
@@ -14,6 +15,7 @@ import {
 	DEFAULT_QUEUE_JOB_OPTIONS,
 	ENABLE_INTEGRATION_SCHEDULERS_ENV,
 	GHL_RECONCILE_JOB_TYPE,
+	INBOUND_MESSAGE_PROCESS_JOB_TYPE,
 	INTEGRATION_SCHEDULER_EVERY_MS,
 	OUTBOX_DELIVER_JOB_TYPE
 } from './queue.constants';
@@ -39,7 +41,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		private readonly integrationEventProcessor: IntegrationEventProcessor,
 		private readonly outboxProcessor: OutboxProcessor,
 		private readonly ghlSyncService: GhlSyncService,
-		private readonly adMetricsSyncService: AdMetricsSyncService
+		private readonly adMetricsSyncService: AdMetricsSyncService,
+		private readonly inboundMessageProcessor: InboundMessageProcessor
 	) {}
 
 	async onModuleInit() {
@@ -58,6 +61,10 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 			async (job: Job<DefaultQueueJobData>) => {
 				if (job.data.jobType === 'integration_event.process') {
 					await this.integrationEventProcessor.process(job.data.jobId, job.data.tenantId);
+					return { ok: true };
+				}
+				if (job.data.jobType === INBOUND_MESSAGE_PROCESS_JOB_TYPE) {
+					await this.inboundMessageProcessor.process(job.data.jobId, job.data.tenantId);
 					return { ok: true };
 				}
 				if (job.data.jobType === AD_METRICS_SYNC_JOB_TYPE) {

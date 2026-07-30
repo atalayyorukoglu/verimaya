@@ -4,10 +4,11 @@ import { CommonModule } from '../common/common.module';
 import { LlmModule } from '../integrations/llm';
 import { PatientsModule } from '../patients/patients.module';
 import { SettingsModule } from '../settings/settings.module';
+import { SettingsService } from '../settings/settings.service';
 import { TenantModule } from '../tenant/tenant.module';
 import { TenantContextService } from '../tenant/tenant-context.service';
-import { SettingsService } from '../settings/settings.service';
 import { AiCorrectionsService } from './ai-corrections.service';
+import { InboundMessageProcessor } from './inbound-message.processor';
 import { DisclosingOutboundMessagePort } from './outbound/disclosing-outbound.port';
 import { OUTBOUND_MESSAGE_PORT } from './outbound/outbound.port';
 import { StubOutboundMessagePort } from './outbound/outbound.stub';
@@ -20,6 +21,7 @@ import { WhatsappService } from './whatsapp.service';
 	providers: [
 		WhatsappService,
 		AiCorrectionsService,
+		InboundMessageProcessor,
 		StubOutboundMessagePort,
 		{
 			provide: OUTBOUND_MESSAGE_PORT,
@@ -31,6 +33,6 @@ import { WhatsappService } from './whatsapp.service';
 			inject: [StubOutboundMessagePort, SettingsService, TenantContextService]
 		}
 	],
-	exports: [OUTBOUND_MESSAGE_PORT]
+	exports: [OUTBOUND_MESSAGE_PORT, WhatsappService, InboundMessageProcessor]
 })
 export class WhatsappModule {}

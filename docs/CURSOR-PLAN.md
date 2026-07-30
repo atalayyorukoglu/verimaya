@@ -998,7 +998,7 @@ sorulmadan ekleme.
 
 ### Adım 24a — `inbound_message.process` worker + retry/DLQ
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Adım 21 bulgu 5: job enqueue ediliyor (`webhooks.controller.ts:136–152`)
 ama worker bu `jobType`'ı işlemiyor — `Noop worker handled job` (`queue.service.ts:75–76`).
