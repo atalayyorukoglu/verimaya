@@ -35,6 +35,9 @@ export const SCORECARD_INCOMPARABILITY_WARNING =
 export const SCORECARD_PERCENTAGE_WARNING =
 	'Farklı ölçek bantlarının yüzdeleri birbiriyle kıyaslanmaz. Bu yüzde yalnızca kendi önceki ölçümünüzle karşılaştırmak içindir.';
 
+/** Returned when compare spans different profiles / baseline (§5). */
+export const SCORECARD_COMPARE_BLOCKED_CODE = 'scorecard_compare_blocked' as const;
+
 export const scorecardAnswerUpsertSchema = z.object({
 	criterion_id: z.string().min(1),
 	score: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable(),

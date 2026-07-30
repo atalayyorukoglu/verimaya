@@ -38,3 +38,9 @@ export {
 	type AssessmentStats,
 	type ScorecardMaturityId
 } from './stats.js';
+export {
+	buildAssessmentComparison,
+	type ComparisonResult,
+	type CriterionTransition,
+	type ScoreLike
+} from './compare.js';

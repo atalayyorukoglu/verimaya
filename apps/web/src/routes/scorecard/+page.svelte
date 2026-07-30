@@ -45,6 +45,12 @@
 			percentage: number | null;
 			maturity: 'baslangic' | 'parcali' | 'tutarli' | 'olgun' | null;
 		} | null;
+		history: Array<{
+			id: string;
+			completed_at: string | null;
+			zero_count: number | null;
+			percentage: string | null;
+		}>;
 	};
 
 	const queryClient = useQueryClient();
@@ -171,6 +177,17 @@
 				<Button disabled={completeBusy} onclick={completeAssessment}>
 					{completeBusy ? t('scorecard.completing') : t('scorecard.complete')}
 				</Button>
+			{:else if currentQuery.data?.profile}
+				<Button variant="outline" onclick={startAssessment}>{t('scorecard.newMeasurement')}</Button>
+				{#if (currentQuery.data.history?.length ?? 0) >= 2}
+					{@const h = currentQuery.data.history}
+					<a
+						href={`/scorecard/compare?previous=${h[1]!.id}&current=${h[0]!.id}`}
+						class="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm font-medium text-text hover:bg-surface"
+					>
+						{t('scorecard.compare.link')}
+					</a>
+				{/if}
 			{/if}
 		{/snippet}
 	</PageHeader>
@@ -254,6 +271,22 @@
 			</p>
 			<p class="mt-2 text-sm text-text-muted">{t('scorecard.zeros.hint')}</p>
 		</section>
+
+		{#if data.history.length > 0}
+			<section class="mb-6">
+				<h2 class="mb-2 text-sm font-semibold text-text">{t('scorecard.history.heading')}</h2>
+				<ul class="space-y-1 text-sm text-text-muted">
+					{#each data.history as h (h.id)}
+						<li>
+							{t('scorecard.history.row')
+								.replace('{date}', h.completed_at?.slice(0, 10) ?? '—')
+								.replace('{zeros}', String(h.zero_count ?? '—'))
+								.replace('{pct}', h.percentage != null ? `${h.percentage}%` : '—')}
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 
 		<!-- 2. Dimensions summary -->
 		<section class="mb-6">

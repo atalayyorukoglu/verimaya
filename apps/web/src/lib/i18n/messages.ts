@@ -109,7 +109,19 @@ const tr = {
 	'scorecard.baselineWarning': 'Başlangıç ölçümü — önceki skorla kıyaslanamaz.',
 	'scorecard.dimension.changeHeading': 'Boyutlar',
 	'scorecard.dimension.zeros': '{zeros}/{scored} sıfır',
-	'scorecard.emptyAnswers': 'Henüz cevap yok — otomatik doldur veya satırdan puan ver.'
+	'scorecard.emptyAnswers': 'Henüz cevap yok — otomatik doldur veya satırdan puan ver.',
+	'scorecard.newMeasurement': 'Yeni ölçüm başlat',
+	'scorecard.compare.link': 'Ölçümleri karşılaştır',
+	'scorecard.compare.title': 'Ölçüm karşılaştırması',
+	'scorecard.compare.description': 'Aynı profildeki iki tamamlanmış ölçüm — birincil gösterge kapanan sıfırlar.',
+	'scorecard.compare.primary': '{prev} sıfırdan {closed} kapandı',
+	'scorecard.compare.blocked': 'Kıyaslama yapılamıyor',
+	'scorecard.compare.back': 'Karneye dön',
+	'scorecard.compare.closedBadge': 'Sıfır kapandı',
+	'scorecard.compare.loading': 'Karşılaştırma yükleniyor…',
+	'scorecard.compare.loadError': 'Karşılaştırma yüklenemedi.',
+	'scorecard.history.heading': 'Arşivlenen ölçümler',
+	'scorecard.history.row': '{date} · {zeros} sıfır · {pct}'
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -203,7 +215,20 @@ const en: Record<MessageKey, string> = {
 	'scorecard.baselineWarning': 'Baseline measurement — not comparable to prior scores.',
 	'scorecard.dimension.changeHeading': 'Dimensions',
 	'scorecard.dimension.zeros': '{zeros}/{scored} zeros',
-	'scorecard.emptyAnswers': 'No answers yet — auto-fill or score each row.'
+	'scorecard.emptyAnswers': 'No answers yet — auto-fill or score each row.',
+	'scorecard.newMeasurement': 'Start new measurement',
+	'scorecard.compare.link': 'Compare measurements',
+	'scorecard.compare.title': 'Measurement comparison',
+	'scorecard.compare.description':
+		'Two completed measurements on the same profile — primary signal is zeros closed.',
+	'scorecard.compare.primary': '{closed} of {prev} zeros closed',
+	'scorecard.compare.blocked': 'Comparison unavailable',
+	'scorecard.compare.back': 'Back to scorecard',
+	'scorecard.compare.closedBadge': 'Zero closed',
+	'scorecard.compare.loading': 'Loading comparison…',
+	'scorecard.compare.loadError': 'Could not load comparison.',
+	'scorecard.history.heading': 'Archived measurements',
+	'scorecard.history.row': '{date} · {zeros} zeros · {pct}'
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { tr, en };

@@ -42,6 +42,9 @@ export const apiPaths = {
 	scorecardProfile: `${API_V1_PREFIX}/scorecard/profile`,
 	scorecardCurrent: `${API_V1_PREFIX}/scorecard/current`,
 	scorecardAssessments: `${API_V1_PREFIX}/scorecard/assessments`,
+	scorecardAssessment: (id: string) => `${API_V1_PREFIX}/scorecard/assessments/${id}`,
+	scorecardCompare: (previous: string, current: string) =>
+		`${API_V1_PREFIX}/scorecard/compare?previous=${encodeURIComponent(previous)}&current=${encodeURIComponent(current)}`,
 	scorecardAssessmentComplete: (id: string) =>
 		`${API_V1_PREFIX}/scorecard/assessments/${id}/complete`,
 	scorecardAssessmentAnswers: (id: string) =>

@@ -1409,7 +1409,7 @@ reddediyor.
 
 ### Adım 37 — İkinci ölçüm, arşiv ve saha testi kaydı
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Ürünün ana vaadi "kendi geçmişinle kıyaslan" — ikinci ölçüm olmadan vaat yok.
 

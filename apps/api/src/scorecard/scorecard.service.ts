@@ -3,10 +3,11 @@ import {
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import {
 	SCORECARD_INCOMPARABILITY_WARNING,
 	SCORECARD_PROFILE_LOCKED_CODE,
+	buildAssessmentComparison,
 	computeAssessmentStats,
 	type ScorecardAnswerUpsert,
 	type ScorecardBaselineCreate,
@@ -69,7 +70,33 @@ export type ScorecardCurrentDto = {
 		percentage: number | null;
 		maturity: string | null;
 	} | null;
+	/** Completed assessments on the active profile (newest first). */
+	history: ScorecardAssessmentDto[];
 };
+
+export type ScorecardCompareDto =
+	| {
+			comparable: true;
+			previous: ScorecardAssessmentDto;
+			current: ScorecardAssessmentDto;
+			closed_zeros: number;
+			opened_zeros: number;
+			previous_zero_count: number;
+			current_zero_count: number;
+			primary_message: string;
+			transitions: Array<{
+				criterion_id: string;
+				previous_score: number | null;
+				current_score: number | null;
+				closed_zero: boolean;
+			}>;
+	  }
+	| {
+			comparable: false;
+			warning: string;
+			previous: ScorecardAssessmentDto | null;
+			current: ScorecardAssessmentDto | null;
+	  };
 
 @Injectable()
 export class ScorecardService {
@@ -87,7 +114,7 @@ export class ScorecardService {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const profile = await this.findActiveProfile(db, tenantId);
 			if (!profile) {
-				return { profile: null, assessment: null, answers: [], stats: null };
+				return { profile: null, assessment: null, answers: [], stats: null, history: [] };
 			}
 
 			const [open] = await db
@@ -115,6 +142,19 @@ export class ScorecardService {
 						)
 				: [];
 
+			const historyRows = await db
+				.select()
+				.from(scorecardAssessments)
+				.where(
+					and(
+						eq(scorecardAssessments.tenantId, tenantId),
+						eq(scorecardAssessments.profileId, profile.id),
+						isNotNull(scorecardAssessments.completedAt)
+					)
+				)
+				.orderBy(desc(scorecardAssessments.completedAt))
+				.limit(20);
+
 			const setup = this.toSetup(profile);
 			const stats = computeAssessmentStats(
 				profile.band as ScorecardBandId,
@@ -136,9 +176,129 @@ export class ScorecardService {
 					scored_count: stats.scoredCount,
 					percentage: stats.percentage,
 					maturity: stats.maturity
-				}
+				},
+				history: historyRows.map((r) => this.toAssessmentDto(r))
 			};
 		});
+	}
+
+	async listAssessments(tenantId: string): Promise<ScorecardAssessmentDto[]> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await db
+				.select()
+				.from(scorecardAssessments)
+				.where(eq(scorecardAssessments.tenantId, tenantId))
+				.orderBy(desc(scorecardAssessments.startedAt))
+				.limit(50);
+			return rows.map((r) => this.toAssessmentDto(r));
+		});
+	}
+
+	async getAssessment(
+		tenantId: string,
+		assessmentId: string
+	): Promise<{ assessment: ScorecardAssessmentDto; answers: ScorecardAnswerDto[] }> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const assessment = await this.requireAssessment(db, tenantId, assessmentId);
+			const answerRows = await db
+				.select()
+				.from(scorecardAnswers)
+				.where(
+					and(
+						eq(scorecardAnswers.tenantId, tenantId),
+						eq(scorecardAnswers.assessmentId, assessmentId)
+					)
+				);
+			return {
+				assessment: this.toAssessmentDto(assessment),
+				answers: answerRows.map((a) => this.toAnswerDto(a))
+			};
+		});
+	}
+
+	/**
+	 * Compare two assessments. Different profiles → not comparable (§5 warning verbatim).
+	 */
+	async compareAssessments(
+		tenantId: string,
+		previousId: string,
+		currentId: string
+	): Promise<ScorecardCompareDto> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const previous = await this.requireAssessment(db, tenantId, previousId);
+			const current = await this.requireAssessment(db, tenantId, currentId);
+
+			if (previous.profileId !== current.profileId || current.isBaseline) {
+				return {
+					comparable: false,
+					warning: SCORECARD_INCOMPARABILITY_WARNING,
+					previous: this.toAssessmentDto(previous),
+					current: this.toAssessmentDto(current)
+				};
+			}
+
+			const prevAnswers = await db
+				.select()
+				.from(scorecardAnswers)
+				.where(eq(scorecardAnswers.assessmentId, previousId));
+			const currAnswers = await db
+				.select()
+				.from(scorecardAnswers)
+				.where(eq(scorecardAnswers.assessmentId, currentId));
+
+			const comparison = buildAssessmentComparison(
+				prevAnswers.map((a) => ({
+					criterionId: a.criterionId,
+					score: a.score,
+					naDeclared: a.naDeclared
+				})),
+				currAnswers.map((a) => ({
+					criterionId: a.criterionId,
+					score: a.score,
+					naDeclared: a.naDeclared
+				}))
+			);
+
+			return {
+				comparable: true,
+				previous: this.toAssessmentDto(previous),
+				current: this.toAssessmentDto(current),
+				closed_zeros: comparison.closedZeros,
+				opened_zeros: comparison.openedZeros,
+				previous_zero_count: comparison.previousZeroCount,
+				current_zero_count: comparison.currentZeroCount,
+				primary_message: `${comparison.closedZeros} of ${comparison.previousZeroCount} zeros closed`,
+				transitions: comparison.transitions.map((t) => ({
+					criterion_id: t.criterionId,
+					previous_score: t.previousScore,
+					current_score: t.currentScore,
+					closed_zero: t.closedZero
+				}))
+			};
+		});
+	}
+
+	private async requireAssessment(
+		db: TenantDb,
+		tenantId: string,
+		assessmentId: string
+	): Promise<ScorecardAssessmentRow> {
+		const [row] = await db
+			.select()
+			.from(scorecardAssessments)
+			.where(
+				and(
+					eq(scorecardAssessments.id, assessmentId),
+					eq(scorecardAssessments.tenantId, tenantId)
+				)
+			)
+			.limit(1);
+		if (!row) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Assessment not found' }
+			});
+		}
+		return row;
 	}
 
 	async upsertAnswer(

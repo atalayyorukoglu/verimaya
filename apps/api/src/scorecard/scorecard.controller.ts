@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
 	scorecardAnswerUpsertSchema,
@@ -23,6 +23,29 @@ export class ScorecardController {
 	@Get('current')
 	getCurrent(@Req() req: FastifyRequest) {
 		return this.scorecardService.getCurrent(getActiveOrgId(req));
+	}
+
+	@Get('assessments')
+	listAssessments(@Req() req: FastifyRequest) {
+		return this.scorecardService.listAssessments(getActiveOrgId(req));
+	}
+
+	@Get('assessments/:id')
+	getAssessment(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.scorecardService.getAssessment(getActiveOrgId(req), id);
+	}
+
+	@Get('compare')
+	compare(
+		@Req() req: FastifyRequest,
+		@Query('previous') previousId: string,
+		@Query('current') currentId: string
+	) {
+		return this.scorecardService.compareAssessments(
+			getActiveOrgId(req),
+			previousId ?? '',
+			currentId ?? ''
+		);
 	}
 
 	@Get('profile')
