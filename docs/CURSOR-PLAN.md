@@ -198,7 +198,7 @@ biz 1'i bitiriyoruz). `hreflang` etiketi şimdi eklenmez — ikinci dil yokken y
 
 ### Adım 5 — Karne içerik veri modeli (kod yok, veri var)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Şartnamedeki soru metinleri, şıklar ve puanlar tek bir tipli sabit dosyaya
 yazılır. UI bu adımda yazılmaz — böylece içerik hatası UI'dan bağımsız denetlenebilir.
