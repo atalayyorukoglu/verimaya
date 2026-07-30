@@ -1,3 +1,22 @@
-# allow crawling everything by default
+# Verimaya — crawler rules
+# Public marketing surfaces are indexable; the SPA panel is not.
+
 User-agent: *
-Disallow:
+Allow: /vitrin
+Allow: /vitrin/
+Allow: /robots.txt
+Allow: /sitemap.xml
+
+Disallow: /patients
+Disallow: /appointments
+Disallow: /finance
+Disallow: /settings
+Disallow: /reports
+Disallow: /marketing
+Disallow: /contacts
+Disallow: /login
+Disallow: /dev
+Disallow: /features
+Disallow: /changelog
+
+Sitemap: https://verimaya.app/sitemap.xml

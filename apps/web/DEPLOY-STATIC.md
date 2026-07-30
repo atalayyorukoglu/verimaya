@@ -1,6 +1,29 @@
-# Static deploy (Coolify / Cloudflare)
+# Static deploy (Coolify / Cloudflare / nginx)
 
-`adapter-static` + `fallback: index.html` — çıktı: `apps/web/build/` (SvelteKit build).
+`adapter-static` + `fallback: index.html` — çıktı: `apps/web/build/`.
+
+Public rotalar (`(public)/`, örn. `/vitrin/`) **prerender** edilir → `build/vitrin/index.html`.
+Panel rotaları SPA fallback’e düşer → `build/index.html` (`noindex`).
+
+## Kritik: `try_files` sırası
+
+SPA fallback (`-s` / `try_files … /index.html`) **prerender dosyasından önce** çalışırsa
+`/vitrin` isteği boş SPA kabuğuna gider; SEO içeriği kaybolur.
+
+Doğru sıra (prerender önce, fallback en sonda):
+
+```nginx
+try_files $uri $uri/index.html $uri/ /index.html;
+```
+
+| İstek | Eşleşme |
+|---|---|
+| `/vitrin` veya `/vitrin/` | `$uri/index.html` → `vitrin/index.html` |
+| `/patients` | dosya yok → `/index.html` (SPA) |
+| `/robots.txt` | `$uri` → `robots.txt` |
+
+`npx serve … -s` bu sırayı garanti etmez; lokal doğrulama için aşağıdaki nginx
+örneğini veya `pnpm --filter @verimaya/web preview` kullan.
 
 ## Coolify (önerilen)
 
@@ -8,11 +31,12 @@
 2. **Build command:** `pnpm install --frozen-lockfile && pnpm --filter @verimaya/web build`
 3. **Publish directory:** `apps/web/build`
 4. Ortam: `PUBLIC_API_URL=https://api…`, `PUBLIC_USE_MSW=false`
-5. SPA fallback: Coolify/nginx `try_files $uri $uri/ /index.html` (genelde static site şablonunda hazır).
+5. SPA + prerender: nginx/Caddy kuralında yukarıdaki `try_files` sırası (Coolify static
+   şablonu yalnızca `$uri $uri/ /index.html` ise ` $uri/index.html` eklenmeli).
 
-## Alternatif: nginx Dockerfile
+## nginx (`apps/web/nginx.conf`)
 
-Monorepo kökünden:
+Monorepo kökünden Dockerfile:
 
 ```dockerfile
 FROM node:22-alpine AS build
@@ -27,8 +51,26 @@ COPY --from=build /app/apps/web/build /usr/share/nginx/html
 EXPOSE 80
 ```
 
-`apps/web/nginx.conf` — yalnız ihtiyaç halinde eklenir; Coolify static çoğu senaryoda yeterli.
-
 ## Cloudflare Pages
 
 Build: `pnpm --filter @verimaya/web build` · Output: `apps/web/build` · `PUBLIC_*` build-time env.
+
+Cloudflare Pages varsayılanı çoğu dosyayı doğru servis eder; `_redirectes` / SPA fallback
+ekliyorsan prerender path’lerini (`/vitrin`, `/vitrin/`) istisna tut.
+
+## Doğrulama
+
+```bash
+pnpm --filter @verimaya/web build
+# prerender içeriği:
+grep -c "Hasta yolculuğunu" apps/web/build/vitrin/index.html   # >= 1
+# SPA kabuğunda noindex (postbuild inject — layout head fallback'te render olmaz):
+grep -c "noindex" apps/web/build/index.html                   # >= 1
+# public prerender noindex taşımamalı:
+grep -c "noindex" apps/web/build/vitrin/index.html || true    # 0
+curl -s https://<host>/robots.txt
+curl -s https://<host>/sitemap.xml
+```
+
+Panel rotalarında kök layout da client-side `<meta name="robots" content="noindex">`
+ekler (SPA navigasyon); ilk HTML cevabı için `scripts/inject-spa-noindex.mjs` şarttır.

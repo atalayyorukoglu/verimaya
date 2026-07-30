@@ -21,6 +21,8 @@
 	const isBareRoute = $derived(
 		page.url.pathname.startsWith('/login') || page.url.pathname.startsWith('/vitrin')
 	);
+	/** Marketing prerender surfaces only — panel + login stay noindex. */
+	const isIndexablePublic = $derived(page.url.pathname.startsWith('/vitrin'));
 
 	onMount(async () => {
 		if (USE_MSW && import.meta.env.DEV) {
@@ -37,6 +39,9 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>Verimaya</title>
+	{#if !isIndexablePublic}
+		<meta name="robots" content="noindex" />
+	{/if}
 </svelte:head>
 
 {#if appReady}

@@ -127,7 +127,7 @@ içeriği görür ama kullanıcı JS kapalıyken boş sayfa görür) — CSS'i b
 
 ### Adım 3 — Prerender edilen sayfanın gerçekten servis edildiğini garantiye al
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Statik deploy'da `try_files $uri $uri/ /index.html` kuralı `/vitrin`
 isteğini `build/vitrin/index.html`'e mi düşürüyor yoksa SPA fallback'ine mi — bunu netleştir
