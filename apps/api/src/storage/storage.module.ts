@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { LocalFileStorage } from './local-file.storage';
+import { readS3ConfigFromEnv, S3FileStorage } from './s3-file.storage';
 import { FILE_STORAGE, type FileStoragePort } from './storage.types';
 
 function createFileStorage(): FileStoragePort {
@@ -7,9 +8,10 @@ function createFileStorage(): FileStoragePort {
 	if (driver === 'local') {
 		return new LocalFileStorage();
 	}
-	throw new Error(
-		`Unsupported STORAGE_DRIVER="${driver}" (Adım 17: only "local"; S3/R2 lands in Adım 18)`
-	);
+	if (driver === 's3') {
+		return new S3FileStorage(readS3ConfigFromEnv());
+	}
+	throw new Error(`Unsupported STORAGE_DRIVER="${driver}" (supported: local, s3)`);
 }
 
 @Global()

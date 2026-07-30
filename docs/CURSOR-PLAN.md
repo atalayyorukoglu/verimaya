@@ -628,7 +628,7 @@ Refaktör sırasında güvenlik kontrolü düşmesi klasik hatadır.
 
 ### Adım 18 — S3/R2 adapter
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `apps/api/src/storage/s3-file.storage.ts` — Cloudflare R2 (S3 uyumlu)
 hedefli, `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`.

@@ -13,7 +13,7 @@ export type FilePutMeta = {
 
 /**
  * Domain-facing file storage port — patients never talk to S3/disk directly.
- * Local adapter returns null from signed* methods; S3 adapter (Adım 18) implements them.
+ * Local: signed* → null. S3/R2: short-lived presigned URLs (default 5 min).
  */
 export interface FileStoragePort {
 	/** Opaque `storage_key` for a new object (`local://…` or later `s3://…`). */

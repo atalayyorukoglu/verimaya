@@ -16,6 +16,8 @@
 		"karne:stats": "node scripts/karne-stats.js"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1098.0",
+		"@aws-sdk/s3-request-presigner": "^3.1098.0",
 		"@better-auth/drizzle-adapter": "^1.6.23",
 		"@bull-board/api": "^8.1.2",
 		"@bull-board/fastify": "^8.1.2",
