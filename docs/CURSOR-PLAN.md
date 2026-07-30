@@ -1446,7 +1446,8 @@ doğrular, anlaşılırlığı doğrulamaz.
 
 ### Adım 38 — Meta Ads go-live
 
-- [ ] durum
+- [ ] durum — **repo runbook + long-lived token hazır** (`docs/ADS-META-GOLIVE.md`);
+  canlı Meta App / OAuth / metrik kabulü henüz yok.
 
 **Ne yapılacak:** Meta uygulaması kurulur ve gerçek OAuth uçtan uca doğrulanır.
 

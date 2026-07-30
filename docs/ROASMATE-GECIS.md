@@ -206,7 +206,10 @@ RoasMate’ten gelen “panel” ancak burada gerçek olur.
 
 #### RM-4 go-live (harici, kullanıcı)
 
-Kod go-live hazır; canlı doğrulama harici kimlik bilgisi ister:
+Kod go-live hazır; canlı doğrulama harici kimlik bilgisi ister.
+
+**Meta (Adım 38):** ayrıntılı runbook → [`docs/ADS-META-GOLIVE.md`](./ADS-META-GOLIVE.md)
+(uzun ömürlü token, log denetimi, idempotent sync, kabul tablosu).
 
 1. **Meta for Developers:** uygulama oluştur; `ads_read` izni; Valid OAuth Redirect URI =
    `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`. `.env`: `META_APP_ID`, `META_APP_SECRET` (+ isteğe `META_API_VERSION`).

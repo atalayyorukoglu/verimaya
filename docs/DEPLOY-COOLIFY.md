@@ -111,6 +111,7 @@ Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /i
 | `FILES_SWEEP_DRY_RUN` | İlk hafta `true`, sonra kapat |
 
 Opsiyonel: `LLM_*`, Ads OAuth (`META_*`, `GOOGLE_ADS_*`), webhook secret’ları.
+Meta Ads canlı: `docs/ADS-META-GOLIVE.md` (redirect URI = `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`).
 
 Web build:
 

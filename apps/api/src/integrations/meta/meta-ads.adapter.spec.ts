@@ -32,13 +32,16 @@ describe('MetaAdsAdapter', () => {
 		expect(url.searchParams.get('redirect_uri')).toContain('/meta/callback');
 	});
 
-	it('exchangeCode stores accessToken and adAccountId in secret JSON', async () => {
+	it('exchangeCode stores long-lived accessToken and adAccountId in secret JSON', async () => {
 		const calls: string[] = [];
 		const fetchFn: FetchFn = async (input) => {
 			const url = String(input);
 			calls.push(url);
+			if (url.includes('grant_type=fb_exchange_token')) {
+				return jsonResponse({ access_token: 'tok-long' });
+			}
 			if (url.includes('/oauth/access_token')) {
-				return jsonResponse({ access_token: 'tok-abc' });
+				return jsonResponse({ access_token: 'tok-short' });
 			}
 			if (url.includes('/me/adaccounts')) {
 				return jsonResponse({ data: [{ account_id: '999888777' }] });
@@ -53,11 +56,36 @@ describe('MetaAdsAdapter', () => {
 		});
 
 		const parsed = JSON.parse(secret) as { accessToken: string; adAccountId: string };
-		expect(parsed.accessToken).toBe('tok-abc');
+		expect(parsed.accessToken).toBe('tok-long');
 		expect(parsed.adAccountId).toBe('999888777');
 		expect(calls[0]).toContain('client_id=app-123');
 		expect(calls[0]).toContain('client_secret=secret-456');
-		expect(calls[1]).toContain('access_token=tok-abc');
+		expect(calls.some((c) => c.includes('grant_type=fb_exchange_token'))).toBe(true);
+		expect(calls.some((c) => c.includes('access_token=tok-long'))).toBe(true);
+	});
+
+	it('exchangeCode falls back to short-lived token if long-lived exchange fails', async () => {
+		const fetchFn: FetchFn = async (input) => {
+			const url = String(input);
+			if (url.includes('grant_type=fb_exchange_token')) {
+				return jsonResponse({ error: { message: 'exchange failed' } }, 400);
+			}
+			if (url.includes('/oauth/access_token')) {
+				return jsonResponse({ access_token: 'tok-short' });
+			}
+			if (url.includes('/me/adaccounts')) {
+				return jsonResponse({ data: [{ account_id: 'act_1' }] });
+			}
+			throw new Error(`unexpected URL: ${url}`);
+		};
+
+		const adapter = new MetaAdsAdapter(config, fetchFn);
+		const { secret } = await adapter.exchangeCode({
+			code: 'auth-code',
+			redirectUri: 'http://localhost:3000/v1/integrations/ads/meta/callback'
+		});
+		expect(JSON.parse(secret).accessToken).toBe('tok-short');
+		expect(JSON.parse(secret).adAccountId).toBe('1');
 	});
 
 	it('pullDailyMetrics maps spend major-unit string to kuruş integer', async () => {

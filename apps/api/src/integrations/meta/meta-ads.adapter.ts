@@ -92,9 +92,11 @@ export class MetaAdsAdapter implements AdsProviderAdapter {
 			throw new Error(metaErrorMessage('Meta token exchange failed', tokenBody, tokenRes.status));
 		}
 
+		const accessToken = await this.exchangeLongLivedToken(tokenBody.access_token);
+
 		const accountsUrl = new URL(`https://graph.facebook.com/${this.apiVersion}/me/adaccounts`);
 		accountsUrl.searchParams.set('fields', 'account_id');
-		accountsUrl.searchParams.set('access_token', tokenBody.access_token);
+		accountsUrl.searchParams.set('access_token', accessToken);
 
 		const accountsRes = await this.fetchFn(accountsUrl.toString());
 		const accountsBody = (await accountsRes.json()) as MetaAdAccountsResponse;
@@ -110,10 +112,33 @@ export class MetaAdsAdapter implements AdsProviderAdapter {
 		}
 
 		const secret: MetaStoredSecret = {
-			accessToken: tokenBody.access_token,
+			accessToken,
 			adAccountId: String(adAccountId).replace(/^act_/, '')
 		};
 		return { secret: JSON.stringify(secret) };
+	}
+
+	/**
+	 * Short-lived user tokens (~1–2h) → long-lived (~60d).
+	 * On failure, keep the short-lived token so connect still succeeds.
+	 */
+	private async exchangeLongLivedToken(shortLived: string): Promise<string> {
+		const url = new URL(`https://graph.facebook.com/${this.apiVersion}/oauth/access_token`);
+		url.searchParams.set('grant_type', 'fb_exchange_token');
+		url.searchParams.set('client_id', this.config.appId);
+		url.searchParams.set('client_secret', this.config.appSecret);
+		url.searchParams.set('fb_exchange_token', shortLived);
+
+		try {
+			const res = await this.fetchFn(url.toString());
+			const body = (await res.json()) as MetaTokenResponse;
+			if (res.ok && body.access_token) {
+				return body.access_token;
+			}
+		} catch {
+			/* fall through — reconnect UX covers expiry */
+		}
+		return shortLived;
 	}
 
 	async pullDailyMetrics(p: { secret: string; since: string }): Promise<NormalizedAdMetricRow[]> {
