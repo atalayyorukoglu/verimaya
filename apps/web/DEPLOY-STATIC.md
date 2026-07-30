@@ -64,12 +64,17 @@ ekliyorsan prerender path’lerini (`/vitrin`, `/vitrin/`) istisna tut.
 pnpm --filter @verimaya/web build
 # prerender içeriği:
 grep -c "Hasta yolculuğunu" apps/web/build/vitrin/index.html   # >= 1
+test -f apps/web/build/yapay-zeka-karnesi/index.html
 # SPA kabuğunda noindex (postbuild inject — layout head fallback'te render olmaz):
 grep -c "noindex" apps/web/build/index.html                   # >= 1
 # public prerender noindex taşımamalı:
 grep -c "noindex" apps/web/build/vitrin/index.html || true    # 0
+grep -c "noindex" apps/web/build/yapay-zeka-karnesi/index.html || true  # 0
 curl -s https://<host>/robots.txt
 curl -s https://<host>/sitemap.xml
+# Canlı (Adım 31): docs/DEPLOY-COOLIFY.md § Canlı kabul
+curl -sS https://<host>/vitrin | grep -q "Hasta yolculuğunu"
+curl -sS https://<host>/yapay-zeka-karnesi | grep -qiE "karne|yapay"
 ```
 
 Panel rotalarında kök layout da client-side `<meta name="robots" content="noindex">`

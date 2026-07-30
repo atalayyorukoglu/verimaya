@@ -1226,7 +1226,8 @@ yok. Filtreyi testle sabitle, ilk hafta dry-run ile koş.
 
 ### Adım 31 — Coolify canlı deploy + yedek/restore provası
 
-- [ ] durum
+- [ ] durum — **repo runbook hazır** (`docs/DEPLOY-COOLIFY.md`); canlı kabul (health /
+  panel / prerender / restore kaydı) henüz yok (`verimaya.app` DNS çözülmüyor, 2026-07-30).
 
 **Ne yapılacak:** Yol haritası Faz 0b: *"Coolify hazırlığı (canlı deploy henüz yok)"*.
 Pilot bunsuz başlamaz.
