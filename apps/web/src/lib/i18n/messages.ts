@@ -46,17 +46,19 @@ const tr = {
 	// Ayarlar · AI
 	'settings.ai.title': 'AI ayarları',
 	'settings.ai.description':
-		'WhatsApp AI şeffaflığı (EU AI Act m.50, 2 Ağustos 2026) ve demo sistem prompt’u.',
+		'WhatsApp AI şeffaflığı (EU AI Act m.50) ve demo sistem prompt’u. İfşa metni giden AI mesajlarına eklenecek.',
 	'settings.ai.disclosure.heading': 'WhatsApp AI ifşa metni',
 	'settings.ai.disclosure.why':
-		'Otomatik veya AI destekli giden mesajlarda alıcıya yapay zekâ kullanımı bildirilmelidir. Bu ayar karne kriteri 7.6’yı besler; metin giden yolda (Adım 24) uygulanır.',
-	'settings.ai.disclosure.enabled': 'İfşa metnini giden AI mesajlarına ekle',
+		'EU AI Act m.50 gereği AI destekli giden mesajlarda alıcı bilgilendirilmelidir. Bu ayar karne kriteri 7.6’yı besler. Giden gönderim yolu henüz bağlı değil; metin giden AI mesajlarına eklenecek.',
+	'settings.ai.disclosure.enabled': 'Giden AI mesajlarına ifşa metni eklenecek',
 	'settings.ai.disclosure.textLabel': 'İfşa metni',
 	'settings.ai.disclosure.save': 'İfşayı kaydet',
 	'settings.ai.disclosure.saving': 'Kaydediliyor…',
 	'settings.ai.disclosure.saved': 'Kaydedildi.',
 	'settings.ai.disclosure.error': 'Kayıt başarısız.',
 	'settings.ai.disclosure.loadError': 'Ayar yüklenemedi.',
+	'settings.ai.disclosure.note':
+		'Gerçek WhatsApp gönderimi henüz yok. Port + ifşa hook’u hazır; gönderim ayrı karardır.',
 	'settings.ai.prompt.label': 'Prompt',
 	'settings.ai.prompt.default': 'varsayılan',
 	'settings.ai.prompt.save': 'Kaydet',
@@ -95,17 +97,19 @@ const en: Record<MessageKey, string> = {
 
 	'settings.ai.title': 'AI settings',
 	'settings.ai.description':
-		'WhatsApp AI transparency (EU AI Act Art. 50, 2 Aug 2026) and demo system prompt.',
+		'WhatsApp AI transparency (EU AI Act Art. 50) and demo system prompt. Disclosure will be added to outbound AI messages.',
 	'settings.ai.disclosure.heading': 'WhatsApp AI disclosure',
 	'settings.ai.disclosure.why':
-		'Automated or AI-assisted outbound messages must disclose AI use to the recipient. This setting feeds scorecard criterion 7.6; the text is applied on the outbound path (step 24).',
-	'settings.ai.disclosure.enabled': 'Append disclosure to outbound AI messages',
+		'EU AI Act Art. 50 requires recipients to be informed about AI-assisted outbound messages. This setting feeds scorecard criterion 7.6. Outbound delivery is not wired yet; the text will be prepended to outbound AI messages.',
+	'settings.ai.disclosure.enabled': 'Disclosure text will be added to outbound AI messages',
 	'settings.ai.disclosure.textLabel': 'Disclosure text',
 	'settings.ai.disclosure.save': 'Save disclosure',
 	'settings.ai.disclosure.saving': 'Saving…',
 	'settings.ai.disclosure.saved': 'Saved.',
 	'settings.ai.disclosure.error': 'Save failed.',
 	'settings.ai.disclosure.loadError': 'Could not load setting.',
+	'settings.ai.disclosure.note':
+		'Real WhatsApp send is not available yet. Port + disclosure hook are ready; shipping send is a separate decision.',
 	'settings.ai.prompt.label': 'Prompt',
 	'settings.ai.prompt.default': 'default',
 	'settings.ai.prompt.save': 'Save',

@@ -139,6 +139,7 @@ Kurallar:
 				<span class="text-sm text-danger">{t('settings.ai.disclosure.loadError')}</span>
 			{/if}
 		</div>
+		<p class="mt-3 text-xs text-text-faint">{t('settings.ai.disclosure.note')}</p>
 	</section>
 
 	<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">

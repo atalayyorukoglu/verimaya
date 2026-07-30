@@ -961,7 +961,7 @@ yok. Yine de `.env.example` ve OpenAPI güncellenmezse ileride sessiz 401'lere y
 
 ### Adım 24 — Giden mesaj portu + ifşa hook'u (gerçek gönderim kapsam dışı)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Adım 21 bulgu 2: giden WhatsApp yolu **yok**. Karar (6B): bu adım gerçek
 gönderimi inşa **etmez** — giden yolun *portunu* tanımlar ve ifşayı **port sınırında zorunlu

@@ -3,14 +3,34 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { LlmModule } from '../integrations/llm';
 import { PatientsModule } from '../patients/patients.module';
+import { SettingsModule } from '../settings/settings.module';
 import { TenantModule } from '../tenant/tenant.module';
+import { TenantContextService } from '../tenant/tenant-context.service';
+import { SettingsService } from '../settings/settings.service';
 import { AiCorrectionsService } from './ai-corrections.service';
+import { DisclosingOutboundMessagePort } from './outbound/disclosing-outbound.port';
+import { OUTBOUND_MESSAGE_PORT } from './outbound/outbound.port';
+import { StubOutboundMessagePort } from './outbound/outbound.stub';
 import { WhatsappController } from './whatsapp.controller';
 import { WhatsappService } from './whatsapp.service';
 
 @Module({
-	imports: [AuthModule, CommonModule, LlmModule, PatientsModule, TenantModule],
+	imports: [AuthModule, CommonModule, LlmModule, PatientsModule, SettingsModule, TenantModule],
 	controllers: [WhatsappController],
-	providers: [WhatsappService, AiCorrectionsService]
+	providers: [
+		WhatsappService,
+		AiCorrectionsService,
+		StubOutboundMessagePort,
+		{
+			provide: OUTBOUND_MESSAGE_PORT,
+			useFactory: (
+				stub: StubOutboundMessagePort,
+				settings: SettingsService,
+				tenantContext: TenantContextService
+			) => new DisclosingOutboundMessagePort(stub, settings, tenantContext),
+			inject: [StubOutboundMessagePort, SettingsService, TenantContextService]
+		}
+	],
+	exports: [OUTBOUND_MESSAGE_PORT]
 })
 export class WhatsappModule {}
