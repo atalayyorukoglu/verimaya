@@ -88,7 +88,7 @@ Adım 2'nin kabul kriteri bunu yakalayacak şekilde yazıldı.
 
 ### Adım 2 — `(public)` rota grubu kur ve `/vitrin`'i taşı
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Login öncesi (public, SEO'lu) yüzey ile panel (SPA, `noindex`) yüzeyini
 rota düzeyinde ayır. SvelteKit rota grubu URL'i değiştirmez — `/vitrin` yine `/vitrin`.

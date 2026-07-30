@@ -16,6 +16,8 @@
 	// SSR/prerender must render real content — never the "Yükleniyor…" placeholder.
 	// In the browser, wait for MSW only when the mock worker is active in dev.
 	let appReady = $state(!browser || !USE_MSW || !import.meta.env.DEV);
+	// Public routes also render under this root layout; skip AppShell for bare surfaces.
+	// `/vitrin` lives in `(public)/` but URL is unchanged — keep it here with `/login`.
 	const isBareRoute = $derived(
 		page.url.pathname.startsWith('/login') || page.url.pathname.startsWith('/vitrin')
 	);

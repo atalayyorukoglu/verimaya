@@ -1,14 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
-	let visible = $state(false);
-
-	onMount(() => {
-		const id = requestAnimationFrame(() => {
-			visible = true;
-		});
-		return () => cancelAnimationFrame(id);
-	});
+	// Always visible so prerendered HTML and no-JS users see content (not opacity:0).
+	const visible = true;
 </script>
 
 <svelte:head>
@@ -34,7 +26,7 @@
 	>
 		<span class="text-sm font-semibold tracking-tight text-text">Verimaya</span>
 		<a
-			href="/giris"
+			href="/login"
 			class="text-sm font-medium text-text-muted transition-colors hover:text-text"
 		>
 			Giriş
@@ -68,7 +60,7 @@
 		</p>
 		<div class:vitrin-in={visible} style="--delay: 380ms" class="mt-10">
 			<a
-				href="/giris"
+				href="/login"
 				class="vitrin-cta inline-flex h-11 min-w-44 items-center justify-center rounded-[6px] bg-brand px-8 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98]"
 			>
 				Giriş yap
