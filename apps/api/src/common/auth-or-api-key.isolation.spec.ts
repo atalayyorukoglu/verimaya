@@ -9,6 +9,7 @@ import { SessionGuard } from '../auth/session.guard';
 import type { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { PatientsService } from '../patients/patients.service';
+import { LocalFileStorage } from '../storage/local-file.storage';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { getActiveOrgId } from './active-org.guard';
 
@@ -103,7 +104,7 @@ describe('AuthOrApiKeyGuard dual-auth tenant isolation', () => {
 			withTenant: async <T>(id: string, fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>) =>
 				withTenantSession(id, () => fn({ tx: sql, db }))
 		} as TenantContextService;
-		patientsService = new PatientsService(tenantContext);
+		patientsService = new PatientsService(tenantContext, new LocalFileStorage());
 	});
 
 	afterAll(async () => {

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService } from '../tenant/tenant-context.service';
+import { LocalFileStorage } from '../storage/local-file.storage';
 import { PatientsService } from './patients.service';
 
 const databaseUrl =
@@ -89,7 +90,7 @@ describe('patient finance summary tenant isolation', () => {
 				withTenantSession(tenantId, () => fn({ tx: sql, db }))
 		} as TenantContextService;
 
-		patientsService = new PatientsService(tenantContext);
+		patientsService = new PatientsService(tenantContext, new LocalFileStorage());
 	});
 
 	afterAll(async () => {

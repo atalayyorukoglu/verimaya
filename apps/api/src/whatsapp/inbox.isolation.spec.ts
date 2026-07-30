@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { HeuristicLlmClient } from '../integrations/llm';
 import { PatientsService } from '../patients/patients.service';
+import { LocalFileStorage } from '../storage/local-file.storage';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { WhatsappService } from './whatsapp.service';
 
@@ -86,7 +87,7 @@ describe('inbound_messages RLS isolation', () => {
 		} as TenantContextService;
 
 		whatsappService = new WhatsappService(
-			new PatientsService(tenantContext),
+			new PatientsService(tenantContext, new LocalFileStorage()),
 			tenantContext,
 			new HeuristicLlmClient()
 		);

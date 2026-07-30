@@ -25,7 +25,7 @@ import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
-import { MAX_UPLOAD_BYTES } from './local-file-storage';
+import { MAX_UPLOAD_BYTES } from '../storage/storage.types';
 import { PatientsService } from './patients.service';
 
 type MultipartRequest = FastifyRequest & {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { MergeRecords, PatientCreate, PatientFileCreate, PatientUpdate } from '@verimaya/shared';
 import { findPatientDuplicateGroups } from '@verimaya/shared';
@@ -16,18 +16,20 @@ import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toPatient, toPatientFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
-import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import {
-	buildLocalStorageKey,
-	localFileExists,
+	FILE_STORAGE,
 	MAX_UPLOAD_BYTES,
-	openLocalFileStream,
-	writeLocalFile
-} from './local-file-storage';
+	PENDING_STORAGE_KEY,
+	type FileStoragePort
+} from '../storage/storage.types';
+import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
 export class PatientsService {
-	constructor(private readonly tenantContext: TenantContextService) {}
+	constructor(
+		private readonly tenantContext: TenantContextService,
+		@Inject(FILE_STORAGE) private readonly storage: FileStoragePort
+	) {}
 
 	async list(tenantId: string, params: { cursor?: string; limit: number; q?: string }) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
@@ -168,7 +170,7 @@ export class PatientsService {
 		);
 
 		const fileId = options?.fileId ?? randomUUID();
-		const storageKey = options?.storageKey ?? 'local://pending';
+		const storageKey = options?.storageKey ?? PENDING_STORAGE_KEY;
 		const sizeBytes = options?.sizeBytes ?? input.size_bytes ?? 0;
 
 		const [row] = await db
@@ -217,8 +219,11 @@ export class PatientsService {
 		}
 
 		const fileId = randomUUID();
-		const storageKey = buildLocalStorageKey(tenantId, patientId, fileId);
-		await writeLocalFile(storageKey, input.data);
+		const storageKey = this.storage.buildKey(tenantId, patientId, fileId);
+		await this.storage.put(storageKey, input.data, {
+			contentType: input.mimeType,
+			filename: input.filename
+		});
 
 		return this.createFileWithDb(
 			db,
@@ -256,7 +261,7 @@ export class PatientsService {
 				});
 			}
 
-			if (!localFileExists(row.storageKey)) {
+			if (!(await this.storage.exists(row.storageKey))) {
 				throw new NotFoundException({
 					error: {
 						code: 'not_found',
@@ -265,7 +270,7 @@ export class PatientsService {
 				});
 			}
 
-			const stream = openLocalFileStream(row.storageKey);
+			const stream = await this.storage.getStream(row.storageKey);
 			if (!stream) {
 				throw new NotFoundException({
 					error: { code: 'not_found', message: 'File bytes not available' }

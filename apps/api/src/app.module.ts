@@ -21,6 +21,7 @@ import { ReportsModule } from './reports/reports.module';
 import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subscriptions.module';
 import { AdsModule } from './integrations/ads/ads.module';
 import { KarneModule } from './karne/karne.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
 	imports: [
@@ -29,6 +30,7 @@ import { KarneModule } from './karne/karne.module';
 			envFilePath: ['.env', '../../.env']
 		}),
 		DbModule,
+		StorageModule,
 		QueueModule,
 		TenantModule,
 		AuthModule,

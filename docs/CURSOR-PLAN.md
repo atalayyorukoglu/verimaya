@@ -597,7 +597,7 @@ bu çıktıyı düzenli oku, yoksa saha testi ekseni 1 ve 3 boşa gider.
 
 ### Adım 17 — Depolama portu (arayüz) + local adapter'ı arkasına al
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Adaptör katmanı ilkesi (AGENTS.md madde 5) dosya depolamaya da uygulanır:
 domain kodu S3'ü bilmez.

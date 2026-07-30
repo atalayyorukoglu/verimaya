@@ -11,7 +11,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { initSentry } from './common/sentry';
 import { mountOpenApiDocs } from './docs/openapi.mount';
-import { MAX_UPLOAD_BYTES } from './patients/local-file-storage';
+import { MAX_UPLOAD_BYTES } from './storage/storage.types';
 import { mountBullBoard } from './queue/bull-board.mount';
 import { QueueService } from './queue/queue.service';
 

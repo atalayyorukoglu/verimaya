@@ -12,6 +12,7 @@ import { patients } from '../db/schema/patients';
 import { toContact, toPatient } from '../common/mappers';
 import { ContactsService } from '../contacts/contacts.service';
 import { PatientsService } from '../patients/patients.service';
+import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 const databaseUrl =
@@ -58,7 +59,7 @@ describe('duplicate merge isolation and FK reassignment', () => {
 		`;
 		await admin.end();
 
-		patientsService = new PatientsService({} as TenantContextService);
+		patientsService = new PatientsService({} as TenantContextService, new LocalFileStorage());
 		contactsService = new ContactsService({} as TenantContextService);
 
 		const { sql } = getDb(databaseUrl);
