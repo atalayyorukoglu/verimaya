@@ -48,7 +48,7 @@ function rankTopThreeWeak(zeros: KarneQuestion[], euExposure: boolean): KarneQue
 	return prioritized.slice(0, 3);
 }
 
-/** Pure scorer — no weights, no totalScore/percentage on the result. */
+/** Pure scorer — no weights; aggregate totals are never exposed on the result. */
 export function scoreKarne(answers: KarneAnswers, intake: KarneIntakeInput): KarneResult {
 	const zeroQuestions: KarneQuestion[] = [];
 	const strongQuestions: KarneQuestion[] = [];

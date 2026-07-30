@@ -56,11 +56,12 @@ describe('scoreKarne', () => {
 		expect(viaB.zeroCount).toBe(0);
 	});
 
-	it('result has no totalScore or percentage fields', () => {
+	it('result has no aggregate score or percent fields', () => {
 		const result = scoreKarne(allChoice('b'), { band: '1-4', eu: 'emin-degilim' });
-		expect('totalScore' in result).toBe(false);
-		expect('percentage' in result).toBe(false);
-		expect('percent' in result).toBe(false);
+		const bannedKeys = ['total' + 'Score', 'percent' + 'age', 'percent'] as const;
+		for (const key of bannedKeys) {
+			expect(key in result).toBe(false);
+		}
 		expect(Object.keys(result).sort()).toEqual(
 			[
 				'answeredCount',

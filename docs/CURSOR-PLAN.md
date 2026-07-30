@@ -352,7 +352,7 @@ ortamında sorun çıkarabilir; saf `.ts` testleri için `environment: 'node'` y
 
 ### Adım 10 — Çıktı ekranı
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Şartname §5'in birebir uygulaması. **Bu adımın kuralları pazarlık konusu
 değildir** — §5 açıkça öyle diyor.

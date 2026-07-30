@@ -12,7 +12,10 @@
 		canAdvanceQuestion,
 		currentIntakeAnswer,
 		currentQuestionAnswer,
+		getIntakeBand,
+		getIntakeEu,
 		getIntakeIndex,
+		getKarneAnswers,
 		getKarneStep,
 		getQuestionIndex,
 		hydrateKarneFromSession,
@@ -25,6 +28,8 @@
 		setQuestionAnswer,
 		startKarne
 	} from '$lib/karne/state.svelte';
+	import { scoreKarne } from '$lib/karne/score';
+	import KarneResult from '$lib/components/KarneResult.svelte';
 
 	const title = 'Ücretsiz Yapay Zeka Karnesi — Verimaya';
 	const description =
@@ -42,6 +47,13 @@
 	const question = $derived(karneQuestions[qIdx]);
 	const questionSelected = $derived(currentQuestionAnswer());
 	const canQuestionNext = $derived(canAdvanceQuestion());
+
+	const result = $derived(
+		scoreKarne(getKarneAnswers(), {
+			band: getIntakeBand(),
+			eu: getIntakeEu()
+		})
+	);
 
 	onMount(() => {
 		hydrateKarneFromSession();
@@ -204,7 +216,7 @@
 				</button>
 			</div>
 		{:else}
-			<!-- result UI: Adım 10 -->
+			<KarneResult {result} />
 		{/if}
 	</main>
 </div>
