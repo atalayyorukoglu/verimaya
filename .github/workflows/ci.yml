@@ -59,3 +59,6 @@ jobs:
 
       - name: Web check
         run: pnpm --filter @verimaya/web check
+
+      - name: Web tests
+        run: pnpm --filter @verimaya/web test

@@ -313,7 +313,7 @@ bilinçli kuruyor ve §6 terk ölçümü bu sıraya dayanıyor.
 
 ### Adım 9 — Puanlama mantığı (saf fonksiyon + birim testi)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Puanlama UI'dan ayrı, saf ve test edilebilir bir fonksiyona alınır.
 

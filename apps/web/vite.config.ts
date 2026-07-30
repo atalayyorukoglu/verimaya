@@ -3,6 +3,7 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
+// Unit tests: apps/web/vitest.config.ts (separate — sveltekit() breaks node env).
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
