@@ -390,7 +390,7 @@ alan bloğunu "yer kaplıyor" diye atlama. Bu ürünün güvenilirliğinin tek g
 
 ### Adım 11 — Karne SEO + sitemap + vitrin bağlantısı
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Karne artık çalışıyor; huninin ağzını aç.
 

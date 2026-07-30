@@ -91,12 +91,18 @@
 			Lead’den randevuya, finanstan WhatsApp işlem aktarımına — sağlık turizmi operasyonları için
 			çok kiracılı B2B platform.
 		</p>
-		<div class:vitrin-in={visible} style="--delay: 380ms" class="mt-10">
+		<div class:vitrin-in={visible} style="--delay: 380ms" class="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
 			<a
 				href="/login"
 				class="vitrin-cta inline-flex h-11 min-w-44 items-center justify-center rounded-[6px] bg-brand px-8 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98]"
 			>
 				Giriş yap
+			</a>
+			<a
+				href="/yapay-zeka-karnesi/"
+				class="inline-flex h-11 min-w-44 items-center justify-center rounded-[6px] border border-border bg-surface px-6 text-sm font-medium text-text transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			>
+				5 dakikada yapay zeka karnenizi alın
 			</a>
 		</div>
 	</main>

@@ -22,7 +22,7 @@ export type Feature = {
 };
 
 /**
- * Tek kaynak: /ozellikler sayfası buradan render edilir.
+ * Tek kaynak: /features sayfası buradan render edilir.
  * "Yayında"ya geçen özellik aynı commit'te changelog.ts'e de yazılır.
  */
 export const features: Feature[] = [
@@ -195,5 +195,15 @@ export const features: Feature[] = [
 		description:
 			'Her klinik/acente kendi verisini görür; ekip rolleriyle erişim sınırlanır.',
 		status: 'gelistiriliyor'
+	},
+	{
+		id: 'free-ai-scorecard',
+		module: 'Platform',
+		title: 'Ücretsiz yapay zeka karnesi',
+		description:
+			'Üyeliksiz 5 dakikalık karne: kliniğin yapay zeka hazırlığında kanıtı olmayan alanları net cümlelerle görün.',
+		status: 'yayinda',
+		released_at: '2026-07-30',
+		version: '0.5.0'
 	}
 ];

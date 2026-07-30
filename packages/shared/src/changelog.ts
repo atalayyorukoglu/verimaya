@@ -15,10 +15,23 @@ export type ChangelogEntry = {
 };
 
 /**
- * Tek kaynak: /yenilikler + (ileride) CHANGELOG.md buradan beslenir.
+ * Tek kaynak: /changelog + (ileride) CHANGELOG.md buradan beslenir.
  * docs/CHANGELOG-KURALLARI.md
  */
 export const changelog: ChangelogEntry[] = [
+	{
+		version: '0.5.0',
+		date: '2026-07-30',
+		title: 'Ücretsiz yapay zeka karnesi',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'Platform',
+				text: 'Vitrinden üyeliksiz yapay zeka karnesini 5 dakikada doldurabilir; kanıtı olmayan alanları net cümlelerle görebilirsiniz.',
+				featureId: 'free-ai-scorecard'
+			}
+		]
+	},
 	{
 		version: '0.4.0',
 		date: '2026-07-22',

@@ -73,4 +73,25 @@
 			<strong class="font-semibold">2 Ağustos 2026</strong>'dan itibaren sizi kapsıyor.
 		</p>
 	{/if}
+
+	<div class="border-t border-border pt-8">
+		<p class="text-sm leading-relaxed text-text-muted">
+			Verimaya, hasta yolculuğunu tek panelde toplar — lead’den randevuya, finanstan WhatsApp
+			aktarımına.
+		</p>
+		<div class="mt-4 flex flex-col gap-3 sm:flex-row">
+			<a
+				href="/vitrin/"
+				class="inline-flex h-11 items-center justify-center rounded-[6px] border border-border bg-surface px-5 text-sm font-medium text-text transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			>
+				Vitrine dön
+			</a>
+			<a
+				href="/login"
+				class="inline-flex h-11 items-center justify-center rounded-[6px] bg-brand px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			>
+				Demo için giriş
+			</a>
+		</div>
+	</div>
 </section>

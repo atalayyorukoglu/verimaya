@@ -4,6 +4,8 @@
 User-agent: *
 Allow: /vitrin
 Allow: /vitrin/
+Allow: /yapay-zeka-karnesi
+Allow: /yapay-zeka-karnesi/
 Allow: /robots.txt
 Allow: /sitemap.xml
 
