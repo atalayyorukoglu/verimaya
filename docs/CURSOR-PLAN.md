@@ -1173,7 +1173,7 @@ karşılaştır, otomatik teste güvenme.
 
 ### Adım 30 — ETL doğrulama raporu + kesim provası
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `etl-stub.md` § Faz 5-6.
 
