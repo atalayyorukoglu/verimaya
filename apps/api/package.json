@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"build": "nest build",
-		"dev": "nest start --watch",
+		"dev": "nest start --watch --entryFile apps/api/src/main",
 		"start": "node dist/apps/api/src/main.js",
 		"check": "tsc --noEmit",
 		"lint": "tsc --noEmit",
@@ -19,6 +19,7 @@
 		"@bull-board/api": "^8.1.2",
 		"@bull-board/fastify": "^8.1.2",
 		"@fastify/multipart": "^10.1.0",
+		"@fastify/rate-limit": "^11.2.0",
 		"@nestjs/common": "^11.1.6",
 		"@nestjs/config": "^4.0.2",
 		"@nestjs/core": "^11.1.6",
@@ -33,7 +34,8 @@
 		"ioredis": "^5.7.0",
 		"postgres": "^3.4.7",
 		"reflect-metadata": "^0.2.2",
-		"rxjs": "^7.8.2"
+		"rxjs": "^7.8.2",
+		"zod": "^3.25.76"
 	},
 	"devDependencies": {
 		"@nestjs/cli": "^11.0.10",

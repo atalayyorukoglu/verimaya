@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { config as loadEnv } from 'dotenv';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -12,6 +14,16 @@ import { mountOpenApiDocs } from './docs/openapi.mount';
 import { MAX_UPLOAD_BYTES } from './patients/local-file-storage';
 import { mountBullBoard } from './queue/bull-board.mount';
 import { QueueService } from './queue/queue.service';
+
+/** CORS allowlist: panel origins + public web (karne / OAuth return). */
+function corsOrigins(): string[] {
+	const trusted = (process.env.TRUSTED_ORIGINS ?? 'http://localhost:5173')
+		.split(',')
+		.map((s) => s.trim())
+		.filter(Boolean);
+	const publicWeb = process.env.WEB_PUBLIC_URL?.trim();
+	return [...new Set([...trusted, ...(publicWeb ? [publicWeb] : [])])];
+}
 
 loadEnv({ path: '.env' });
 initSentry();
@@ -86,16 +98,33 @@ async function bootstrap() {
 	app.useGlobalFilters(new HttpExceptionFilter());
 
 	app.enableCors({
-		origin: (process.env.TRUSTED_ORIGINS ?? 'http://localhost:5173')
-			.split(',')
-			.map((s) => s.trim())
-			.filter(Boolean),
+		origin: corsOrigins(),
 		credentials: true,
 		exposedHeaders: ['set-auth-token']
 	});
 
 	await app.register(multipart, {
 		limits: { fileSize: MAX_UPLOAD_BYTES }
+	});
+
+	// Unauthenticated karne write surface only — 30/min/IP (Adım 13).
+	// Plugin throws errorResponseBuilder result; Nest filter needs HttpException for 429 body.
+	await app.register(rateLimit, {
+		global: true,
+		max: 30,
+		timeWindow: '1 minute',
+		allowList: (req: FastifyRequest) => {
+			const path = req.url.split('?')[0] ?? '';
+			return !path.startsWith('/v1/public/karne');
+		},
+		errorResponseBuilder: (req: FastifyRequest, context) =>
+			new HttpException(
+				{
+					error: { code: 'rate_limited', message: 'Too many requests' },
+					request_id: String(req.id)
+				},
+				context.statusCode === 403 ? HttpStatus.FORBIDDEN : HttpStatus.TOO_MANY_REQUESTS
+			)
 	});
 
 	app.setGlobalPrefix('v1');

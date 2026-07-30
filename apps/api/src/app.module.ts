@@ -20,6 +20,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
 import { ReportsModule } from './reports/reports.module';
 import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subscriptions.module';
 import { AdsModule } from './integrations/ads/ads.module';
+import { KarneModule } from './karne/karne.module';
 
 @Module({
 	imports: [
@@ -46,7 +47,8 @@ import { AdsModule } from './integrations/ads/ads.module';
 		AdMetricsModule,
 		ApiKeysModule,
 		ReportsModule,
-		WebhookSubscriptionsModule
+		WebhookSubscriptionsModule,
+		KarneModule
 	]
 })
 export class AppModule {}

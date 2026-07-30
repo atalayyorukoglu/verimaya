@@ -467,7 +467,7 @@ gerekçesi doğar.
 
 ### Adım 13 — Public ölçüm endpoint'leri
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `apps/api/src/karne/` modülü. Auth yok, `AuthOrApiKeyGuard` yok, tenant
 context yok.

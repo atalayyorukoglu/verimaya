@@ -36,6 +36,10 @@ tags:
   - name: Reports
   - name: API Keys
   - name: Health
+  - name: Karne
+    description: |
+      Public free AI scorecard funnel (no auth, no tenant).
+      Rate-limited to 30 requests/minute/IP. Writes only `karne_*` tables.
 
 components:
   schemas:
@@ -814,3 +818,128 @@ paths:
           description: Deleted
         '404':
           description: Not found
+
+  /public/karne/sessions:
+    post:
+      tags: [Karne]
+      summary: Start an anonymous scorecard session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [band, eu_exposure]
+              properties:
+                band:
+                  type: string
+                  enum: ['1-4', '5-15', '16+']
+                eu_exposure:
+                  type: string
+                  enum: [evet, hayir, emin-degilim]
+                referrer_host:
+                  type: string
+                  maxLength: 253
+                  description: Referrer host only (no path/query)
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [session_id]
+                properties:
+                  session_id: { type: string, format: uuid }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /public/karne/events:
+    post:
+      tags: [Karne]
+      summary: Record viewed/answered event (idempotent per session+question+type)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, question_id, event_type]
+              properties:
+                session_id: { type: string, format: uuid }
+                question_id:
+                  type: string
+                  enum: [band, eu, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10]
+                event_type:
+                  type: string
+                  enum: [viewed, answered]
+                choice_id: { type: string, maxLength: 64 }
+                dwell_ms: { type: integer, minimum: 0, maximum: 3600000 }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted: { type: boolean }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+
+  /public/karne/complete:
+    post:
+      tags: [Karne]
+      summary: Mark session completed with zero_count
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, zero_count]
+              properties:
+                session_id: { type: string, format: uuid }
+                zero_count: { type: integer, minimum: 0, maximum: 10 }
+      responses:
+        '204':
+          description: Completed
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
