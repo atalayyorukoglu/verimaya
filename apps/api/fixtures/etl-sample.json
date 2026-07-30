@@ -198,6 +198,23 @@
 			"paid_amount_major": 450.5,
 			"contact_id": null,
 			"description": "Mayıs kampanya"
+		},
+		{
+			"id": 904,
+			"case_id": 503,
+			"kind": "income",
+			"title": "Örnek 100 TL",
+			"subtitle": null,
+			"category": "Ticari Gelirler",
+			"occurred_on": "2026-07-01",
+			"status": "paid",
+			"invoice_status": "none",
+			"payment_method": "cash",
+			"amount_major": 100,
+			"currency": "TRY",
+			"paid_amount_major": 100,
+			"contact_id": null,
+			"description": "Para dönüşüm kontrolü: 100 → 10000 minor"
 		}
 	],
 	"files": [
@@ -217,6 +234,20 @@
 			"filename": "pasaport-scan.jpg",
 			"mime_type": "image/jpeg",
 			"size_bytes": 512000
+		}
+	],
+	"case_notes": [
+		{
+			"id": 1001,
+			"case_id": 501,
+			"body": "Pilot-run not: konsültasyon tamamlandı.",
+			"author_display_name": "Ops"
+		},
+		{
+			"id": 1002,
+			"case_id": 502,
+			"body": "Transfer notu: SAW → otel.",
+			"author_display_name": "Ops"
 		}
 	]
 }

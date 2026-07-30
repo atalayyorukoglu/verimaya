@@ -1148,7 +1148,7 @@ sayılarıyla eşleşir. **İkinci koşu 0 yeni satır ekler** (idempotency kan�
 
 ### Adım 29 — ETL apply: randevu, işlem, dosya meta, case notları
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** İlişkili veri katmanı (`etl-stub.md` § Fazlar 4).
 

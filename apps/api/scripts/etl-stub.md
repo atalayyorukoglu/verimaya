@@ -12,42 +12,38 @@ Eşleme: `docs/legacy-reference/ETL-ESLEME.md`. Script: `apps/api/scripts/etl.js
 ## Fazlar
 
 1. **Keşif** — `schema.sql` + satır sayıları (`ETL-ESLEME.md`) ✅
-2. **Sözlük** — contact_types, finance_categories, appointment_types → apply ✅ (Adım 28)
+2. **Sözlük** — contact_types, finance_categories, appointment_types ✅ (Adım 28)
 3. **Kişiler & hastalar** — contacts + patients + `external_ids` ✅ (Adım 28)
-4. **İlişkili veri** — randevu, işlem, dosya meta, case notları (Adım 29)
+4. **İlişkili veri** — randevu, işlem, dosya meta, case notları ✅ (Adım 29)
 5. **Doğrulama** — satır sayısı, checksum, rapor (Adım 30)
 6. **Kesim** — idempotent cutover
 
 ## CLI
 
 ```bash
-# Dry-run (varsayılan) — fixture map + özet
 pnpm --filter @verimaya/api etl
 pnpm --filter @verimaya/api etl -- --fixture ./fixtures/etl-sample.json
 
-# Apply katman 1 (sözlük + contacts + patients)
 pnpm --filter @verimaya/api etl -- --apply --tenant-id <verimaya-tenant-uuid> \
   --fixture ./fixtures/etl-sample.json
 
-# Canlı Tracker (salt okunur) → aynı apply
 TRACKER_DATABASE_URL=postgresql://… \
   pnpm --filter @verimaya/api etl -- --apply --tenant-id <uuid> --tracker-tenant-id <tracker-tenant-uuid>
 ```
 
-`etl:dry-run` hâlâ alias (`node scripts/etl.js`).
+### Apply katmanları
 
-### Apply davranışı (Adım 28)
+| Katman | Kaynak → hedef | Idempotency |
+|--------|----------------|-------------|
+| 1 | contact_types, finance_categories, `etl.appointment_types`, contacts, patients | isim / `external_ids` |
+| 2 | appointments, transactions (`*100` minor), files (`local://pending`), case_notes | `external_ids` |
 
-| Kaynak | Hedef | Idempotency |
-|--------|--------|-------------|
-| contact_types / fixture list | `contact_types` | isim varsa skip |
-| finance_categories | `finance_categories` | `ON CONFLICT (tenant, kind, name)` |
-| appointment_types | `tenant_settings` key `etl.appointment_types` | key varsa skip |
-| contacts | `contacts` + `external_ids` | `external_ids` lookup |
-| cases | `patients` + `external_ids` | `external_ids` lookup |
+Kırık FK → satır **skip** + `stats.errors` (sessiz düşürme yok). İkinci koşu 0 insert.
 
-Batch: 1000 ( `--batch-size`). İkinci koşu contacts/patients **0 insert**.
+### Para
+
+`amount_major` (fixture) veya Tracker `amount` (numeric major) → `round(x * 100)` minor integer. Örnek: 100 TRY → 10000; 450.5 → 45050.
 
 ## Erteleme
 
-Audit, WhatsApp ham mesajları, üyeler, Drive blob — ilk cutover dışı. Randevu/işlem/dosya: Adım 29.
+Audit, WhatsApp ham mesajları, üyeler, Drive/blob byte taşıma, P2P payer/payee — cutover 1 dışı.

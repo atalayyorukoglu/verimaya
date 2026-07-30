@@ -6,13 +6,14 @@ import { closeDb, getDb } from './client';
 
 const require = createRequire(import.meta.url);
 const {
-	applyLayer1,
+	applyAll,
 	attachContactLegacy,
 	loadFixtureFile,
 	mapFixture,
+	toMinor,
 	DEFAULT_FIXTURE
 } = require('../../scripts/etl.js') as {
-	applyLayer1: (
+	applyAll: (
 		sql: unknown,
 		tenantId: string,
 		mapped: unknown,
@@ -20,6 +21,10 @@ const {
 	) => Promise<{
 		contacts: { inserted: number; skipped: number };
 		patients: { inserted: number; skipped: number };
+		appointments: { inserted: number; skipped: number };
+		transactions: { inserted: number; skipped: number };
+		files: { inserted: number; skipped: number };
+		case_notes: { inserted: number; skipped: number };
 		errors: string[];
 	}>;
 	attachContactLegacy: (mapped: unknown, source: unknown) => unknown;
@@ -27,7 +32,12 @@ const {
 	mapFixture: (source: unknown, tenantId: string) => {
 		contacts: unknown[];
 		patients: unknown[];
+		appointments: unknown[];
+		transactions: { verimaya: { amount: number | null; title: string } }[];
+		files: unknown[];
+		case_notes: unknown[];
 	};
+	toMinor: (major: number) => number;
 	DEFAULT_FIXTURE: string;
 };
 
@@ -38,7 +48,7 @@ const databaseUrl =
 
 const fixturePath = path.resolve(path.dirname(DEFAULT_FIXTURE), 'etl-sample.json');
 
-describe('ETL apply layer 1 (Adım 28)', () => {
+describe('ETL apply layer 1+2 (Adım 28–29)', () => {
 	const tenantId = randomUUID();
 	let sql: ReturnType<typeof getDb>['sql'];
 
@@ -59,6 +69,10 @@ describe('ETL apply layer 1 (Adım 28)', () => {
 	afterAll(async () => {
 		await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			await tx`delete from case_notes where tenant_id = ${tenantId}`;
+			await tx`delete from files where tenant_id = ${tenantId}`;
+			await tx`delete from transactions where tenant_id = ${tenantId}`;
+			await tx`delete from appointments where tenant_id = ${tenantId}`;
 			await tx`delete from patients where tenant_id = ${tenantId}`;
 			await tx`delete from contacts where tenant_id = ${tenantId}`;
 			await tx`delete from external_ids where tenant_id = ${tenantId}`;
@@ -71,47 +85,56 @@ describe('ETL apply layer 1 (Adım 28)', () => {
 		await closeDb();
 	});
 
-	it('applies fixture contacts/patients then second run inserts 0', async () => {
-		const source = loadFixtureFile(fixturePath);
-		const mapped = attachContactLegacy(mapFixture(source, tenantId), source) as {
-			contacts: unknown[];
-			patients: unknown[];
-		};
+	it('toMinor: 100 TL → 10000', () => {
+		expect(toMinor(100)).toBe(10000);
+		expect(toMinor(1500)).toBe(150000);
+		expect(toMinor(450.5)).toBe(45050);
+	});
 
-		const first = await applyLayer1(sql, tenantId, mapped, 1000);
+	it('applies fixture then second run inserts 0; money sample matches', async () => {
+		const source = loadFixtureFile(fixturePath);
+		const mapped = attachContactLegacy(mapFixture(source, tenantId), source) as ReturnType<
+			typeof mapFixture
+		>;
+
+		const first = await applyAll(sql, tenantId, mapped, 1000);
 		expect(first.contacts.inserted).toBe(mapped.contacts.length);
 		expect(first.patients.inserted).toBe(mapped.patients.length);
-		expect(first.contacts.skipped).toBe(0);
-		expect(first.patients.skipped).toBe(0);
+		expect(first.appointments.inserted).toBe(mapped.appointments.length);
+		expect(first.transactions.inserted).toBe(mapped.transactions.length);
+		expect(first.files.inserted).toBe(mapped.files.length);
+		expect(first.case_notes.inserted).toBe(mapped.case_notes.length);
 
-		const counts = await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			const [c] = await tx`select count(*)::int as n from contacts`;
-			const [p] = await tx`select count(*)::int as n from patients`;
-			const [e] = await tx`select count(*)::int as n from external_ids`;
-			return { contacts: c!.n as number, patients: p!.n as number, external: e!.n as number };
-		});
-
-		expect(counts.contacts).toBe(mapped.contacts.length);
-		expect(counts.patients).toBe(mapped.patients.length);
-		expect(counts.external).toBe(mapped.contacts.length + mapped.patients.length);
-
-		const second = await applyLayer1(sql, tenantId, mapped, 1000);
-		expect(second.contacts.inserted).toBe(0);
-		expect(second.patients.inserted).toBe(0);
-		expect(second.contacts.skipped).toBe(mapped.contacts.length);
-		expect(second.patients.skipped).toBe(mapped.patients.length);
-
-		const link = await sql.begin(async (tx) => {
+		const money = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			return tx`
-				select p.full_name, c.display_name
-				from patients p
-				left join contacts c on c.id = p.contact_id
-				where p.full_name = 'Atalay Demir'
+				select title, amount, currency, paid_amount
+				from transactions
+				where title = 'Örnek 100 TL'
 			`;
 		});
-		expect(link).toHaveLength(1);
-		expect(link[0]!.display_name).toBe('Atalay Demir');
+		expect(money).toHaveLength(1);
+		expect(money[0]!.amount).toBe(10000);
+		expect(money[0]!.paid_amount).toBe(10000);
+		expect(money[0]!.currency).toBe('TRY');
+
+		const gbp = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`
+				select amount, currency from transactions where title = 'Operasyon peşinat'
+			`;
+		});
+		expect(gbp[0]!.amount).toBe(150000);
+		expect(gbp[0]!.currency).toBe('GBP');
+
+		const second = await applyAll(sql, tenantId, mapped, 1000);
+		expect(second.contacts.inserted).toBe(0);
+		expect(second.patients.inserted).toBe(0);
+		expect(second.appointments.inserted).toBe(0);
+		expect(second.transactions.inserted).toBe(0);
+		expect(second.files.inserted).toBe(0);
+		expect(second.case_notes.inserted).toBe(0);
+		expect(second.appointments.skipped).toBe(mapped.appointments.length);
+		expect(second.transactions.skipped).toBe(mapped.transactions.length);
 	});
 });
