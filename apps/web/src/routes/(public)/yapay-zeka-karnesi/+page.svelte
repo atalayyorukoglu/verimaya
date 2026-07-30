@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { PUBLIC_SITE_URL } from '$lib/env';
 	import {
@@ -29,6 +30,13 @@
 		startKarne
 	} from '$lib/karne/state.svelte';
 	import { scoreKarne } from '$lib/karne/score';
+	import {
+		clearKarneTelemetrySession,
+		startSession,
+		trackAnswered,
+		trackComplete,
+		trackViewed
+	} from '$lib/karne/telemetry';
 	import KarneResult from '$lib/components/KarneResult.svelte';
 
 	const title = 'Ücretsiz Yapay Zeka Karnesi — Verimaya';
@@ -57,13 +65,55 @@
 
 	onMount(() => {
 		hydrateKarneFromSession();
+		ensureTelemetrySession();
 	});
+
+	/** Viewed events for scored questions (idempotent on API). */
+	$effect(() => {
+		if (!browser) return;
+		if (step !== 'questions') return;
+		const id = question.id;
+		trackViewed(id);
+	});
+
+	function ensureTelemetrySession(): void {
+		const band = getIntakeBand();
+		const eu = getIntakeEu();
+		const s = getKarneStep();
+		if (!band || !eu) return;
+		if (s !== 'questions' && s !== 'result') return;
+		startSession({ band, eu_exposure: eu });
+	}
+
+	function onStart(): void {
+		clearKarneTelemetrySession();
+		startKarne();
+	}
 
 	function onSelectIntake(choiceId: string) {
 		if (intakeQ.id === 'band') {
 			setIntakeBand(choiceId as IntakeBandId);
 		} else {
 			setIntakeEu(choiceId as IntakeEuId);
+		}
+	}
+
+	function onIntakeNext(): void {
+		intakeNext();
+		if (getKarneStep() === 'questions') {
+			ensureTelemetrySession();
+		}
+	}
+
+	function onQuestionNext(): void {
+		const id = question.id;
+		const choice = questionSelected;
+		if (choice) {
+			trackAnswered(id, choice);
+		}
+		questionNext();
+		if (getKarneStep() === 'result') {
+			trackComplete(result.zeroCount);
 		}
 	}
 
@@ -114,7 +164,7 @@
 			<button
 				type="button"
 				class="mt-10 inline-flex h-11 min-w-44 items-center justify-center rounded-[6px] bg-brand px-8 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98]"
-				onclick={startKarne}
+				onclick={onStart}
 			>
 				Başla
 			</button>
@@ -159,7 +209,7 @@
 					type="button"
 					class="inline-flex h-11 min-w-28 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
 					disabled={!canIntakeNext}
-					onclick={intakeNext}
+					onclick={onIntakeNext}
 				>
 					İleri
 				</button>
@@ -210,7 +260,7 @@
 					type="button"
 					class="inline-flex h-11 min-w-28 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
 					disabled={!canQuestionNext}
-					onclick={questionNext}
+					onclick={onQuestionNext}
 				>
 					{qIdx >= karneQuestions.length - 1 ? 'Bitir' : 'İleri'}
 				</button>

@@ -502,7 +502,7 @@ loglanır.
 
 ### Adım 14 — Web tarafı event gönderimi
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Karne akışı ölçüm gönderir. Ölçüm **asla kullanıcı akışını bloklamaz**.
 

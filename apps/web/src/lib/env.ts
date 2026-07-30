@@ -14,3 +14,14 @@ export const PUBLIC_SITE_URL = (
  * Default is false (real API at PUBLIC_API_URL). Set PUBLIC_USE_MSW=true to enable the mock demo.
  */
 export const USE_MSW = (import.meta.env.PUBLIC_USE_MSW ?? 'false') === 'true';
+
+/**
+ * Free scorecard funnel telemetry (`/v1/public/karne/*`).
+ * Explicit true/false overrides; otherwise off in dev, on in production.
+ */
+export const KARNE_TELEMETRY_ENABLED = (() => {
+	const flag = import.meta.env.PUBLIC_KARNE_TELEMETRY;
+	if (flag === 'false') return false;
+	if (flag === 'true') return true;
+	return import.meta.env.PROD;
+})();
