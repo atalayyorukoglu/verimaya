@@ -35,12 +35,16 @@ NestJS API (Fastify)
 Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 
 1. Ortak şema multi-tenancy: `tenant_id NOT NULL` + PostgreSQL RLS + CI'da negatif izolasyon testleri.
+   **Tek bilinçli istisna (2026-07-30):** `karne_sessions` / `karne_events` / `karne_leads` — ücretsiz
+   karne hunisi; ziyaretçi henüz tenant değil. `tenant_id` yok, RLS yok. Başka tablo için emsal değil
+   (`apps/api/src/db/schema/karne-events.ts` üst yorumu).
 2. Queue-first webhook + idempotency (`UNIQUE (provider, external_event_id)`).
 3. Denetlenebilir kayıt kaynağı PostgreSQL: `jobs`, `integration_events`, `outbox_events`.
 4. Provider adaptör katmanı; domain kodu dış servisi bilmez.
 5. GHL senkronunda alan bazlı sahiplik; reklam metrikleri `ad_metrics_daily`den okunur.
 6. AI çıkarımı taslak/onay akışıyla; otomatik kesin kayıt yok.
 7. Cache anahtarlarında `tenant_id`.
+8. **Adres uzayı İngilizce, arayüz dili katalogdan** (2026-07-26): API yolları, panel rotaları, tablo/şema/dizin adları İngilizce; kullanıcıya görünen metin `apps/web/src/lib/i18n/messages.ts`'ten gelir. Panel rotasına locale prefix eklenmez. Gerekçe ve vitrin locale planı: `docs/TASARIM.md` § Dil ve slug.
 
 ## Güvenlik çerçevesi
 
@@ -62,7 +66,7 @@ Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker
 
 `AdsProviderAdapter` arayüzü (`apps/api/src/integrations/ads/`): `buildAuthorizeUrl`, `exchangeCode`, `pullDailyMetrics` → `NormalizedAdMetricRow` (tenant’siz). Provider uygulamaları: `integrations/meta/meta-ads.adapter.ts`, `integrations/google/google-ads.adapter.ts`. `AdsAdapterRegistry` provider → adapter çözümler; domain / sync kodu Meta veya Google bilmez.
 
-OAuth: `AdsOAuthStateService` state’i `CryptoService` ile şifreler (tenantId+provider+exp); callback’te çözülür. Credential secret’ı `tenant_credentials` tablosunda AES-GCM ciphertext. UI: `GET/DELETE /v1/integrations/ads/*` + `/ayarlar/baglantilar/reklamlar`.
+OAuth: `AdsOAuthStateService` state’i `CryptoService` ile şifreler (tenantId+provider+exp); callback’te çözülür. Credential secret’ı `tenant_credentials` tablosunda AES-GCM ciphertext. UI: `GET/DELETE /v1/integrations/ads/*` + `/settings/connections/ads`.
 
 `AdMetricsSyncService` (`ad_metrics.sync`): creds yoksa deterministik fixture upsert; creds varsa ilgili adapter `pullDailyMetrics` → idempotent `ad_metrics_daily` upsert (unique: tenant+provider+date+campaign). Periyodik 6h: `ENABLE_INTEGRATION_SCHEDULERS=true` (varsayılan kapalı). Canlı go-live için uygulama kimlikleri `.env` + harici OAuth konsolları gerekir (`docs/ROASMATE-GECIS.md` RM-4 go-live).
 

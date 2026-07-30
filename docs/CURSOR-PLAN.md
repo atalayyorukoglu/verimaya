@@ -430,7 +430,7 @@ karşılığı var.
 
 ### Adım 12 — Ölçüm şeması + migration
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** İki tablo, ikisi de tenant'sız, ikisi de RLS'siz — ve bu durum şema
 dosyasında gerekçesiyle yazılı.
