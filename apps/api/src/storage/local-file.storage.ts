@@ -1,8 +1,8 @@
-import { createReadStream, existsSync } from 'node:fs';
+import { createReadStream, existsSync, statSync } from 'node:fs';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
-import type { FilePutMeta, FileStoragePort } from './storage.types';
+import type { FileObjectStat, FilePutMeta, FileStoragePort } from './storage.types';
 
 /** Default local upload root (dev stub). Override with UPLOAD_DIR. */
 export const DEFAULT_UPLOAD_DIR = '.data/uploads';
@@ -65,6 +65,13 @@ export class LocalFileStorage implements FileStoragePort {
 	async exists(key: string): Promise<boolean> {
 		const absolute = resolveLocalFilePath(key);
 		return absolute != null && existsSync(absolute);
+	}
+
+	async stat(key: string): Promise<FileObjectStat | null> {
+		const absolute = resolveLocalFilePath(key);
+		if (!absolute || !existsSync(absolute)) return null;
+		const st = statSync(absolute);
+		return { sizeBytes: st.size, contentType: null };
 	}
 
 	async remove(key: string): Promise<void> {

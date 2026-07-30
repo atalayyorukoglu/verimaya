@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { apiPaths, type Appointment, type PatientFile } from '@verimaya/shared';
-	import { apiGet, apiSend, apiUpload, resolveApiUrl } from '$lib/api';
+	import {
+		apiPaths,
+		type Appointment,
+		type PatientFile,
+		type PatientFilePresignResponse
+	} from '@verimaya/shared';
+	import { apiGet, apiSend, resolveApiUrl } from '$lib/api';
 	import { formatBytes, formatDateTime } from '$lib/format';
 	import { Button } from '$lib/components/ui/button';
 	import Download from '@lucide/svelte/icons/download';
@@ -19,6 +24,7 @@
 
 	const queryClient = useQueryClient();
 	let uploading = $state(false);
+	let uploadProgress = $state<number | null>(null);
 	let uploadError = $state<string | null>(null);
 	let linkAppointmentId = $state('');
 	let fileInput: HTMLInputElement | undefined = $state();
@@ -30,6 +36,47 @@
 
 	const files = $derived(filesQuery.data?.items ?? []);
 
+	function putWithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const xhr = new XMLHttpRequest();
+			xhr.open('PUT', url);
+			// Cookie auth only for our API content endpoint — not for S3/R2 presigned URLs.
+			xhr.withCredentials = url.includes('/v1/patients/');
+			if (file.type) xhr.setRequestHeader('Content-Type', file.type);
+			xhr.upload.onprogress = (ev) => {
+				if (ev.lengthComputable) {
+					onProgress(Math.round((ev.loaded / ev.total) * 100));
+				}
+			};
+			xhr.onload = () => {
+				if (xhr.status >= 200 && xhr.status < 300) resolve();
+				else reject(new Error(`Yükleme başarısız (${xhr.status})`));
+			};
+			xhr.onerror = () => reject(new Error('Yükleme ağı hatası'));
+			xhr.send(file);
+		});
+	}
+
+	async function uploadViaPresign(file: File): Promise<void> {
+		const presign = await apiSend<PatientFilePresignResponse>(
+			apiPaths.patientFilesPresign(patientId),
+			'POST',
+			{
+				filename: file.name,
+				mime_type: file.type || 'application/octet-stream',
+				size_bytes: file.size,
+				appointment_id: linkAppointmentId || null
+			}
+		);
+
+		uploadProgress = 0;
+		const targetUrl = resolveApiUrl(presign.upload_url);
+		await putWithProgress(targetUrl, file, (pct) => {
+			uploadProgress = pct;
+		});
+		await apiSend(apiPaths.patientFileConfirm(patientId, presign.file_id), 'POST');
+	}
+
 	async function onFilePicked(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
@@ -37,17 +84,16 @@
 		if (!file) return;
 
 		uploading = true;
+		uploadProgress = null;
 		uploadError = null;
 		try {
-			const form = new FormData();
-			if (linkAppointmentId) form.append('appointment_id', linkAppointmentId);
-			form.append('file', file, file.name);
-			await apiUpload<PatientFile>(apiPaths.patientFiles(patientId), form);
+			await uploadViaPresign(file);
 			await queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : 'Yükleme başarısız';
 		} finally {
 			uploading = false;
+			uploadProgress = null;
 		}
 	}
 
@@ -116,10 +162,26 @@
 				onclick={() => fileInput?.click()}
 			>
 				<Upload class="size-3.5" />
-				{uploading ? 'Yükleniyor…' : 'Yükle'}
+				{uploading
+					? uploadProgress != null
+						? `Yükleniyor ${uploadProgress}%`
+						: 'Yükleniyor…'
+					: 'Yükle'}
 			</Button>
 		</div>
 	</div>
+
+	{#if uploading && uploadProgress != null}
+		<div
+			class="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-2"
+			role="progressbar"
+			aria-valuenow={uploadProgress}
+			aria-valuemin={0}
+			aria-valuemax={100}
+		>
+			<div class="h-full bg-brand transition-[width]" style={`width: ${uploadProgress}%`}></div>
+		</div>
+	{/if}
 
 	{#if uploadError}
 		<p class="mt-2 text-xs text-danger">{uploadError}</p>
@@ -136,8 +198,8 @@
 			</span>
 			<p class="text-sm font-medium text-text">Henüz dosya yok</p>
 			<p class="max-w-sm text-xs leading-relaxed text-text-muted">
-				Pasaport, onam formu veya ziyaret fotoğraflarını yükleyin. Dosyalar sunucuda yerel diske
-				yazılır (S3 sonra).
+				Pasaport, onam formu veya ziyaret fotoğraflarını yükleyin. Büyük dosyalar doğrudan
+				depolamaya gider (presigned).
 			</p>
 		</div>
 	{:else}
@@ -154,6 +216,9 @@
 							<p class="truncate text-sm font-medium text-text">{file.filename}</p>
 							<p class="text-xs text-text-faint">
 								{formatBytes(file.size_bytes)} · {formatDateTime(file.created_at)}
+								{#if file.status === 'pending'}
+									· bekliyor
+								{/if}
 								{#if file.uploaded_by_display_name}
 									· {file.uploaded_by_display_name}
 								{/if}
@@ -168,14 +233,16 @@
 						</div>
 					</div>
 					<div class="flex shrink-0 items-center gap-0.5">
-						<button
-							type="button"
-							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
-							aria-label="Dosyayı indir"
-							onclick={() => downloadFile(file)}
-						>
-							<Download class="size-3.5" />
-						</button>
+						{#if file.status !== 'pending'}
+							<button
+								type="button"
+								class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
+								aria-label="Dosyayı indir"
+								onclick={() => downloadFile(file)}
+							>
+								<Download class="size-3.5" />
+							</button>
+						{/if}
 						<button
 							type="button"
 							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"

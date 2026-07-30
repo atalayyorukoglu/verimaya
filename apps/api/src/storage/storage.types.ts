@@ -3,12 +3,20 @@ import type { Readable } from 'node:stream';
 /** Max upload size (25 MiB) — enforced at the API boundary. */
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
+/** Default presigned / upload URL TTL (5 minutes). */
+export const DEFAULT_PRESIGN_TTL_SECONDS = 5 * 60;
+
 /** Metadata-only file rows (no bytes on disk yet). */
 export const PENDING_STORAGE_KEY = 'local://pending';
 
 export type FilePutMeta = {
 	contentType?: string;
 	filename?: string;
+};
+
+export type FileObjectStat = {
+	sizeBytes: number;
+	contentType: string | null;
 };
 
 /**
@@ -24,6 +32,9 @@ export interface FileStoragePort {
 	getStream(key: string): Promise<Readable | null>;
 
 	exists(key: string): Promise<boolean>;
+
+	/** Object metadata (HeadObject / fs.stat); null if missing. */
+	stat(key: string): Promise<FileObjectStat | null>;
 
 	remove(key: string): Promise<void>;
 

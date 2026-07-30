@@ -7,12 +7,12 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'node:stream';
-import type { FilePutMeta, FileStoragePort } from './storage.types';
+import type { FileObjectStat, FilePutMeta, FileStoragePort } from './storage.types';
+import { DEFAULT_PRESIGN_TTL_SECONDS } from './storage.types';
 
 const S3_SCHEME = 's3://';
 
-/** Default presigned URL TTL (5 minutes). */
-export const DEFAULT_PRESIGN_TTL_SECONDS = 5 * 60;
+export { DEFAULT_PRESIGN_TTL_SECONDS };
 
 export type S3FileStorageConfig = {
 	endpoint: string;
@@ -143,6 +143,26 @@ export class S3FileStorage implements FileStoragePort {
 			return true;
 		} catch (err) {
 			if (isNotFound(err)) return false;
+			throw err;
+		}
+	}
+
+	async stat(key: string): Promise<FileObjectStat | null> {
+		const objectKey = resolveS3ObjectKey(key);
+		if (!objectKey) return null;
+		try {
+			const out = await this.client.send(
+				new HeadObjectCommand({
+					Bucket: this.config.bucket,
+					Key: objectKey
+				})
+			);
+			return {
+				sizeBytes: Number(out.ContentLength ?? 0),
+				contentType: out.ContentType ?? null
+			};
+		} catch (err) {
+			if (isNotFound(err)) return null;
 			throw err;
 		}
 	}

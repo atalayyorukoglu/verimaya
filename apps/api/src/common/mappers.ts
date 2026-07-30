@@ -243,6 +243,7 @@ export function toPatientFile(row: FileRow): PatientFile {
 		filename: row.filename,
 		mime_type: row.mimeType,
 		size_bytes: row.sizeBytes,
+		status: row.status === 'pending' ? 'pending' : 'ready',
 		uploaded_by_display_name: row.uploadedByDisplayName,
 		created_at: toIsoDateTime(row.createdAt)
 	};

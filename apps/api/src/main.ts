@@ -90,7 +90,9 @@ async function bootstrap() {
 		new FastifyAdapter({
 			logger: {
 				level: process.env.LOG_LEVEL ?? 'info'
-			}
+			},
+			// Allow local content PUT up to the same cap as multipart uploads.
+			bodyLimit: MAX_UPLOAD_BYTES
 		}),
 		{ logger: false }
 	);
@@ -107,6 +109,25 @@ async function bootstrap() {
 		limits: { fileSize: MAX_UPLOAD_BYTES }
 	});
 
+	const fastify = app.getHttpAdapter().getInstance();
+	const binaryTypes = [
+		'application/octet-stream',
+		'application/pdf',
+		'image/png',
+		'image/jpeg',
+		'image/jpg',
+		'image/webp',
+		'image/gif'
+	];
+	for (const type of binaryTypes) {
+		fastify.addContentTypeParser(
+			type,
+			{ parseAs: 'buffer', bodyLimit: MAX_UPLOAD_BYTES },
+			(_req, body, done) => {
+				done(null, body);
+			}
+		);
+	}
 	// Unauthenticated karne write surface only — 30/min/IP (Adım 13).
 	// Plugin throws errorResponseBuilder result; Nest filter needs HttpException for 429 body.
 	await app.register(rateLimit, {

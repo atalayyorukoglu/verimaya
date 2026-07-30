@@ -36,11 +36,11 @@ export const CONTACT_VEGA_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd5';
 export const CONTACT_KLINIK_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd6';
 export const CONTACT_TRANSFER_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd7';
 export const CONTACT_INTERNAL_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd8';
-/** Intentional duplicates for /kisiler/cift-kayit demo */
+/** Intentional duplicates for /contacts/duplicates demo */
 export const CONTACT_DUP_HOTEL_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddd10';
 export const CONTACT_DUP_ATALAY_EMAIL_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddd11';
 export const CONTACT_DUP_ATALAY_NAME_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddd12';
-/** Same phone as Atalay — /hastalar/cift-kayit demo */
+/** Same phone as Atalay — /patients/duplicates demo */
 export const ATALAY_DUP_PATIENT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
 
 export const demoTenant: Tenant = {
@@ -713,7 +713,7 @@ function makeAtalaySeed(): {
 		email: 'atalay.demir@example.com',
 		status: 'follow_up',
 		source: 'WhatsApp',
-		notes: 'Demo hasta — 5 ziyaret + dosya/finans özeti için sabit kayıt.',
+		notes: 'Demo hasta — 5 ziyaret + dosya/finance özeti için sabit kayıt.',
 		assigned_user_id: DEMO_USER_ID,
 		contact_id: ATALAY_CONTACT_ID,
 		created_at: iso(daysAgo(120, 9)),
@@ -947,6 +947,7 @@ function makeAtalaySeed(): {
 			mime_type: f.mime,
 			size_bytes: f.size,
 			uploaded_by_display_name: demoUser.display_name,
+			status: 'ready' as const,
 			created_at: iso(daysAgo(f.ago, 16))
 		};
 	});

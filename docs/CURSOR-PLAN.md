@@ -656,7 +656,7 @@ PUT için gerekli.
 
 ### Adım 19 — Presigned yükleme akışı + tenant izolasyon testi
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Büyük dosya API sunucusundan geçmesin.
 

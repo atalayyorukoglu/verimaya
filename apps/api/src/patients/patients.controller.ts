@@ -7,6 +7,7 @@ import {
 	Param,
 	Patch,
 	Post,
+	Put,
 	Query,
 	Req,
 	Res,
@@ -16,6 +17,7 @@ import {
 	mergeRecordsSchema,
 	patientCreateSchema,
 	patientFileCreateSchema,
+	patientFilePresignSchema,
 	patientUpdateSchema,
 	searchableListParams
 } from '@verimaya/shared';
@@ -125,6 +127,82 @@ export class PatientsController {
 	@Get(':id/finance-summary')
 	financeSummary(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.patientsService.financeSummary(getActiveOrgId(req), id);
+	}
+
+	@Post(':id/files/presign')
+	async presignFile(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const input = parseBody(patientFilePresignSchema, body, req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			`/v1/patients/${id}/files/presign`,
+			async (db) => ({
+				statusCode: 201,
+				body: await this.patientsService.presignFileWithDb(db, tenantId, id, input, {
+					userId: actor.actorId,
+					displayName: actor.actorDisplayName
+				})
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Put(':id/files/:fileId/content')
+	async putFileContent(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('fileId') fileId: string
+	) {
+		const data = coerceUploadBuffer(req.body);
+		if (!data) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: 'Expected raw file body (application/octet-stream or image/*)'
+				}
+			});
+		}
+		const contentType = typeof req.headers['content-type'] === 'string'
+			? req.headers['content-type']
+			: undefined;
+		return this.patientsService.putFileContent(
+			getActiveOrgId(req),
+			id,
+			fileId,
+			data,
+			contentType
+		);
+	}
+
+	@Post(':id/files/:fileId/confirm')
+	async confirmFile(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('fileId') fileId: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			`/v1/patients/${id}/files/${fileId}/confirm`,
+			async (_db) => ({
+				statusCode: 200,
+				body: await this.patientsService.confirmFile(tenantId, id, fileId)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
 	}
 
 	@Post(':id/files')
@@ -280,4 +358,11 @@ export class PatientsController {
 		reply.status(result.statusCode);
 		return result.body;
 	}
+}
+
+function coerceUploadBuffer(body: unknown): Buffer | null {
+	if (Buffer.isBuffer(body)) return body;
+	if (body instanceof Uint8Array) return Buffer.from(body);
+	if (typeof body === 'string' && body.length > 0) return Buffer.from(body);
+	return null;
 }

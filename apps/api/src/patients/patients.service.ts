@@ -1,7 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
-import type { MergeRecords, PatientCreate, PatientFileCreate, PatientUpdate } from '@verimaya/shared';
+import type {
+	MergeRecords,
+	PatientCreate,
+	PatientFileCreate,
+	PatientFilePresign,
+	PatientUpdate
+} from '@verimaya/shared';
 import { findPatientDuplicateGroups } from '@verimaya/shared';
 import {
 	appointments,
@@ -18,11 +24,20 @@ import { toPatient, toPatientFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
 import {
 	FILE_STORAGE,
+	DEFAULT_PRESIGN_TTL_SECONDS,
 	MAX_UPLOAD_BYTES,
 	PENDING_STORAGE_KEY,
 	type FileStoragePort
 } from '../storage/storage.types';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+
+function publicApiOrigin(): string {
+	const raw =
+		process.env.BETTER_AUTH_URL?.trim() ||
+		process.env.ADS_OAUTH_REDIRECT_BASE?.trim() ||
+		'http://localhost:3000';
+	return raw.replace(/\/$/, '');
+}
 
 @Injectable()
 export class PatientsService {
@@ -154,7 +169,12 @@ export class PatientsService {
 		patientId: string,
 		input: PatientFileCreate,
 		uploader: { userId: string; displayName: string },
-		options?: { fileId?: string; storageKey?: string; sizeBytes?: number }
+		options?: {
+			fileId?: string;
+			storageKey?: string;
+			sizeBytes?: number;
+			status?: 'pending' | 'ready';
+		}
 	) {
 		const patient = await this.findActiveRow(db, patientId);
 		if (!patient) {
@@ -172,6 +192,7 @@ export class PatientsService {
 		const fileId = options?.fileId ?? randomUUID();
 		const storageKey = options?.storageKey ?? PENDING_STORAGE_KEY;
 		const sizeBytes = options?.sizeBytes ?? input.size_bytes ?? 0;
+		const status = options?.status ?? 'ready';
 
 		const [row] = await db
 			.insert(files)
@@ -184,6 +205,7 @@ export class PatientsService {
 				filename: input.filename,
 				mimeType: input.mime_type ?? 'application/octet-stream',
 				sizeBytes,
+				status,
 				storageKey,
 				uploadedByUserId: uploader.userId,
 				uploadedByDisplayName: uploader.displayName
@@ -194,7 +216,162 @@ export class PatientsService {
 	}
 
 	/**
-	 * Multipart upload stub: writes bytes under UPLOAD_DIR, stores `local://…` key.
+	 * Create pending meta + return an upload URL (S3 presign, or local content PUT).
+	 * TODO(jobs): sweep `status=pending` older than 24h (delete meta + storage object).
+	 */
+	async presignFileWithDb(
+		db: TenantDb,
+		tenantId: string,
+		patientId: string,
+		input: PatientFilePresign,
+		uploader: { userId: string; displayName: string }
+	) {
+		if (input.size_bytes > MAX_UPLOAD_BYTES) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: `File exceeds ${MAX_UPLOAD_BYTES} byte limit`
+				}
+			});
+		}
+
+		const fileId = randomUUID();
+		const storageKey = this.storage.buildKey(tenantId, patientId, fileId);
+		const expiresIn = DEFAULT_PRESIGN_TTL_SECONDS;
+
+		await this.createFileWithDb(
+			db,
+			tenantId,
+			patientId,
+			{
+				filename: input.filename,
+				mime_type: input.mime_type,
+				size_bytes: input.size_bytes,
+				appointment_id: input.appointment_id ?? null
+			},
+			uploader,
+			{ fileId, storageKey, sizeBytes: input.size_bytes, status: 'pending' }
+		);
+
+		const signed = await this.storage.signedPutUrl(storageKey, expiresIn);
+		const uploadUrl =
+			signed ?? `${publicApiOrigin()}/v1/patients/${patientId}/files/${fileId}/content`;
+
+		return {
+			file_id: fileId,
+			upload_url: uploadUrl,
+			storage_key: storageKey,
+			expires_in: expiresIn
+		};
+	}
+
+	/** Local-driver content upload (when signedPutUrl is unavailable). */
+	async putFileContent(
+		tenantId: string,
+		patientId: string,
+		fileId: string,
+		data: Buffer,
+		contentType?: string
+	) {
+		if (data.byteLength > MAX_UPLOAD_BYTES) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: `File exceeds ${MAX_UPLOAD_BYTES} byte limit`
+				}
+			});
+		}
+
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const row = await this.findFileRow(db, patientId, fileId);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File not found' }
+				});
+			}
+			if (row.status !== 'pending') {
+				throw new BadRequestException({
+					error: { code: 'validation_error', message: 'File is not awaiting upload' }
+				});
+			}
+			if (data.byteLength !== row.sizeBytes) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: `Uploaded size ${data.byteLength} does not match declared ${row.sizeBytes}`
+					}
+				});
+			}
+
+			await this.storage.put(row.storageKey, data, {
+				contentType: contentType ?? row.mimeType,
+				filename: row.filename
+			});
+
+			return { accepted: true };
+		});
+	}
+
+	async confirmFile(tenantId: string, patientId: string, fileId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const row = await this.findFileRow(db, patientId, fileId);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File not found' }
+				});
+			}
+			if (row.status === 'ready') {
+				return toPatientFile(row);
+			}
+
+			const objectStat = await this.storage.stat(row.storageKey);
+			if (!objectStat) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: 'Upload not found in storage — complete PUT before confirm'
+					}
+				});
+			}
+			if (objectStat.sizeBytes !== row.sizeBytes) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: `Stored size ${objectStat.sizeBytes} does not match declared ${row.sizeBytes}`
+					}
+				});
+			}
+
+			const [updated] = await db
+				.update(files)
+				.set({
+					status: 'ready',
+					mimeType: objectStat.contentType ?? row.mimeType
+				})
+				.where(and(eq(files.id, fileId), eq(files.patientId, patientId)))
+				.returning();
+
+			return toPatientFile(updated!);
+		});
+	}
+
+	private async findFileRow(db: TenantDb, patientId: string, fileId: string) {
+		const patient = await this.findActiveRow(db, patientId);
+		if (!patient) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Patient not found' }
+			});
+		}
+		const [row] = await db
+			.select()
+			.from(files)
+			.where(and(eq(files.id, fileId), eq(files.patientId, patientId)))
+			.limit(1);
+		return row ?? null;
+	}
+
+	/**
+	 * Multipart upload stub: writes bytes under storage port, status ready.
 	 * JSON metadata-only POST still uses `local://pending` (no bytes).
 	 */
 	async uploadLocalFileWithDb(
@@ -267,6 +444,12 @@ export class PatientsService {
 						code: 'not_found',
 						message: 'File bytes not available (metadata-only or missing on disk)'
 					}
+				});
+			}
+
+			if (row.status === 'pending') {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File upload not confirmed yet' }
 				});
 			}
 

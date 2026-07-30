@@ -1,11 +1,25 @@
 import { randomUUID } from 'node:crypto';
+import { NotFoundException } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
+import { LocalFileStorage } from '../storage/local-file.storage';
+import { TenantContextService } from '../tenant/tenant-context.service';
+import { PatientsService } from './patients.service';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
+
+async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
+	const { sql } = getDb(databaseUrl);
+	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
+	try {
+		return await fn();
+	} finally {
+		await sql`select set_config('app.current_tenant_id', '', false)`;
+	}
+}
 
 describe('files RLS isolation', () => {
 	const tenantA = randomUUID();
@@ -14,10 +28,11 @@ describe('files RLS isolation', () => {
 	let patientB: string;
 	let fileA: string;
 	let fileB: string;
+	let patientsService: PatientsService;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
-		const { sql } = getDb(databaseUrl);
+		const { sql, db } = getDb(databaseUrl);
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -55,8 +70,8 @@ describe('files RLS isolation', () => {
 		fileA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
-				insert into files (tenant_id, patient_id, filename, mime_type, size_bytes, storage_key)
-				values (${tenantA}, ${patientA}, 'a.pdf', 'application/pdf', 0, 'local://pending')
+				insert into files (tenant_id, patient_id, filename, mime_type, size_bytes, storage_key, status)
+				values (${tenantA}, ${patientA}, 'a.pdf', 'application/pdf', 0, 'local://pending', 'ready')
 				returning id
 			`;
 			return row!.id as string;
@@ -64,13 +79,23 @@ describe('files RLS isolation', () => {
 
 		fileB = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			const storageKey = `local://${tenantB}/${patientB}/${randomUUID()}`;
 			const [row] = await tx`
-				insert into files (tenant_id, patient_id, filename, mime_type, size_bytes, storage_key)
-				values (${tenantB}, ${patientB}, 'b.pdf', 'application/pdf', 0, 'local://pending')
+				insert into files (tenant_id, patient_id, filename, mime_type, size_bytes, storage_key, status)
+				values (${tenantB}, ${patientB}, 'b.pdf', 'application/pdf', 4, ${storageKey}, 'pending')
 				returning id
 			`;
 			return row!.id as string;
 		});
+
+		const tenantContext = {
+			withTenant: async <T>(
+				tenantId: string,
+				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
+			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
+		} as TenantContextService;
+
+		patientsService = new PatientsService(tenantContext, new LocalFileStorage());
 	});
 
 	afterAll(async () => {
@@ -111,5 +136,14 @@ describe('files RLS isolation', () => {
 		});
 
 		expect(rows).toHaveLength(0);
+	});
+
+	it('Tenant A cannot confirm or PUT content for Tenant B pending file', async () => {
+		await expect(patientsService.confirmFile(tenantA, patientB, fileB)).rejects.toBeInstanceOf(
+			NotFoundException
+		);
+		await expect(
+			patientsService.putFileContent(tenantA, patientB, fileB, Buffer.from('test'))
+		).rejects.toBeInstanceOf(NotFoundException);
 	});
 });

@@ -13,6 +13,11 @@ export const apiPaths = {
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
 	patientFinanceSummary: (id: string) => `${API_V1_PREFIX}/patients/${id}/finance-summary`,
 	patientFiles: (id: string) => `${API_V1_PREFIX}/patients/${id}/files`,
+	patientFilesPresign: (id: string) => `${API_V1_PREFIX}/patients/${id}/files/presign`,
+	patientFileConfirm: (patientId: string, fileId: string) =>
+		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/confirm`,
+	patientFileContent: (patientId: string, fileId: string) =>
+		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/content`,
 	patientFileDownload: (patientId: string, fileId: string) =>
 		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/download`,
 	patientsDuplicateGroups: `${API_V1_PREFIX}/patients/duplicate-groups`,

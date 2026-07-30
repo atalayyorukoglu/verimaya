@@ -294,6 +294,98 @@ paths:
         '404':
           description: Not found
 
+  /patients/{id}/files/presign:
+    post:
+      tags: [Patients]
+      summary: Presign direct upload (pending meta row)
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: Idempotency-Key
+          in: header
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filename, size_bytes]
+              properties:
+                filename: { type: string }
+                mime_type: { type: string }
+                size_bytes: { type: integer, minimum: 1, maximum: 26214400 }
+                appointment_id: { type: string, format: uuid, nullable: true }
+      responses:
+        '201':
+          description: Presign payload
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [file_id, upload_url, storage_key, expires_in]
+                properties:
+                  file_id: { type: string, format: uuid }
+                  upload_url: { type: string, format: uri }
+                  storage_key: { type: string }
+                  expires_in: { type: integer }
+
+  /patients/{id}/files/{fileId}/content:
+    put:
+      tags: [Patients]
+      summary: Upload bytes (local driver content PUT; S3 uses presigned URL instead)
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: fileId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: Accepted
+        '404':
+          description: Not found
+
+  /patients/{id}/files/{fileId}/confirm:
+    post:
+      tags: [Patients]
+      summary: Confirm upload after client PUT (HeadObject / stat)
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: fileId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: Idempotency-Key
+          in: header
+          schema: { type: string }
+      responses:
+        '200':
+          description: File ready
+        '400':
+          description: Bytes missing or size mismatch
+        '404':
+          description: Not found
+
   /contacts:
     get:
       tags: [Contacts]

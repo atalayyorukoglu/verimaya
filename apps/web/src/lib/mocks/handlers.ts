@@ -10,6 +10,7 @@ import {
 	tenantUpdateSchema,
 	whatsappParseRequestSchema,
 	patientFileCreateSchema,
+	patientFilePresignSchema,
 	patientCaseNoteCreateSchema,
 	contactTypeCreateSchema,
 	contactCreateSchema,
@@ -904,6 +905,67 @@ export const handlers = [
 		return new HttpResponse(null, { status: 204 });
 	}),
 
+	http.post('/v1/patients/:id/files/presign', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const patient = store.patients.find((p) => p.id === params.id);
+		if (!patient) return notFound('Hasta bulunamadı');
+		const body = await request.json();
+		const parsed = patientFilePresignSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz dosya verisi', parsed.error.flatten());
+
+		const fileId = crypto.randomUUID();
+		const storage_key = `local://demo/${patient.id}/${fileId}`;
+		let appointment_label: string | null = null;
+		const appointmentId = parsed.data.appointment_id ?? null;
+		if (appointmentId) {
+			const appt = store.appointments.find((a) => a.id === appointmentId);
+			appointment_label = appt ? appointmentLabel(appt) : null;
+		}
+		const file: PatientFile = {
+			id: fileId,
+			tenant_id: patient.tenant_id,
+			patient_id: patient.id,
+			appointment_id: appointmentId,
+			appointment_label,
+			filename: parsed.data.filename,
+			mime_type: parsed.data.mime_type,
+			size_bytes: parsed.data.size_bytes,
+			status: 'pending',
+			uploaded_by_display_name: demoUser.display_name,
+			created_at: nowIso()
+		};
+		store.files.unshift(file);
+		const origin = new URL(request.url).origin;
+		return HttpResponse.json(
+			{
+				file_id: fileId,
+				upload_url: `${origin}/v1/patients/${patient.id}/files/${fileId}/content`,
+				storage_key,
+				expires_in: 300
+			},
+			{ status: 201 }
+		);
+	}),
+
+	http.put('/v1/patients/:id/files/:fileId/content', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const file = store.files.find((f) => f.id === params.fileId && f.patient_id === params.id);
+		if (!file) return notFound('Dosya bulunamadı');
+		const buf = Buffer.from(await request.arrayBuffer());
+		if (buf.byteLength !== file.size_bytes) {
+			return badRequest('Boyut uyuşmuyor');
+		}
+		return HttpResponse.json({ accepted: true });
+	}),
+
+	http.post('/v1/patients/:id/files/:fileId/confirm', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const file = store.files.find((f) => f.id === params.fileId && f.patient_id === params.id);
+		if (!file) return notFound('Dosya bulunamadı');
+		file.status = 'ready';
+		return HttpResponse.json(file);
+	}),
+
 	http.post('/v1/patients/:id/files', async ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		const patient = store.patients.find((p) => p.id === params.id);
@@ -953,6 +1015,7 @@ export const handlers = [
 			filename,
 			mime_type,
 			size_bytes,
+			status: 'ready',
 			uploaded_by_display_name: demoUser.display_name,
 			created_at: nowIso()
 		};
@@ -1008,6 +1071,7 @@ export const handlers = [
 			filename: parsed.data.filename,
 			mime_type: parsed.data.mime_type ?? 'application/octet-stream',
 			size_bytes: parsed.data.size_bytes ?? 0,
+			status: 'ready',
 			uploaded_by_display_name: demoUser.display_name,
 			created_at: nowIso()
 		};

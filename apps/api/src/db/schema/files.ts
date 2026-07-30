@@ -22,6 +22,8 @@ export const files = pgTable(
 		filename: text('filename').notNull(),
 		mimeType: text('mime_type').notNull().default('application/octet-stream'),
 		sizeBytes: integer('size_bytes').notNull(),
+		/** pending = presigned/not confirmed; ready = bytes verified */
+		status: text('status').notNull().default('ready'),
 		/** Object storage key — not exposed in API contract */
 		storageKey: text('storage_key').notNull(),
 		uploadedByUserId: uuid('uploaded_by_user_id').references(() => user.id, {
