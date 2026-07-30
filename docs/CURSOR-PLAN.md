@@ -1095,7 +1095,7 @@ hasta verisi repoya girmesin.
 
 ### Adım 27 — External id map tablosu + migration
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** ETL'in idempotent olabilmesi için legacy kimlik ↔ Verimaya UUID eşlemesi
 kalıcı bir tabloda durmalı. Bugün GHL entegrasyonu bunu `notes` içinde marker ile yapıyor

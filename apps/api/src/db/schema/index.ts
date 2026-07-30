@@ -19,3 +19,4 @@ export * from './webhook-subscriptions';
 export * from './ai-corrections';
 export * from './tenant-settings';
 export * from './karne-events';
+export * from './external-ids';
