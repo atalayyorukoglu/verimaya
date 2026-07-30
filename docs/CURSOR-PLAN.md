@@ -533,7 +533,7 @@ guard'ı). SSR sırasında `navigator` yok.
 
 ### Adım 15 — E-posta yakalama + KVKK aydınlatması
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Karar: **sonuç gösterildikten sonra** iste, konum tek sabitle değişebilsin.
 

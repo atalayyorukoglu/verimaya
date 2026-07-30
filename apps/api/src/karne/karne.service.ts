@@ -1,8 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DbService } from '../db/db.service';
-import { karneEvents, karneSessions } from '../db/schema/karne-events';
-import type { KarneComplete, KarneEventCreate, KarneSessionCreate } from './karne.schemas';
+import { karneEvents, karneLeads, karneSessions } from '../db/schema/karne-events';
+import type {
+	KarneComplete,
+	KarneEventCreate,
+	KarneLeadCreate,
+	KarneSessionCreate
+} from './karne.schemas';
 
 /** Coarse UA family only — never store the raw User-Agent string. */
 export function userAgentFamily(ua: string | undefined): string | null {
@@ -80,6 +85,29 @@ export class KarneService {
 				lastSeenAt: new Date()
 			})
 			.where(eq(karneSessions.id, input.session_id));
+	}
+
+	/**
+	 * Idempotent on email: duplicate address returns without inserting a new row.
+	 * Honeypot (`website`) is rejected in the zod schema before this runs.
+	 */
+	async createLead(input: KarneLeadCreate): Promise<void> {
+		const exists = await this.sessionExists(input.session_id);
+		if (!exists) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Karne session not found' }
+			});
+		}
+
+		const email = input.email.trim().toLowerCase();
+		await this.db.client
+			.insert(karneLeads)
+			.values({
+				sessionId: input.session_id,
+				email,
+				consentAt: new Date()
+			})
+			.onConflictDoNothing({ target: karneLeads.email });
 	}
 
 	private async sessionExists(sessionId: string): Promise<boolean> {

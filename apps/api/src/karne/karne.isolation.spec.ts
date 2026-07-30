@@ -53,4 +53,41 @@ describe('karne public tables (no tenant)', () => {
 
 		await sql`delete from karne_sessions where id = ${session!.id}`;
 	});
+
+	it('lead insert is idempotent on email; honeypot rejected by schema', async () => {
+		const { sql } = getDb(databaseUrl);
+		const { karneLeadCreateSchema } = await import('./karne.schemas');
+
+		const honey = karneLeadCreateSchema.safeParse({
+			session_id: '00000000-0000-4000-8000-000000000001',
+			email: 'a@b.co',
+			consent: true,
+			website: 'http://spam.example'
+		});
+		expect(honey.success).toBe(false);
+
+		const [session] = await sql`
+			insert into karne_sessions (band, eu_exposure)
+			values ('5-15', 'evet')
+			returning id
+		`;
+
+		await sql`
+			insert into karne_leads (session_id, email, consent_at)
+			values (${session!.id}, 'dup@example.com', now())
+			on conflict (email) do nothing
+		`;
+		await sql`
+			insert into karne_leads (session_id, email, consent_at)
+			values (${session!.id}, 'dup@example.com', now())
+			on conflict (email) do nothing
+		`;
+
+		const leads = await sql`
+			select count(*)::int as n from karne_leads where email = 'dup@example.com'
+		`;
+		expect(leads[0]!.n).toBe(1);
+
+		await sql`delete from karne_sessions where id = ${session!.id}`;
+	});
 });

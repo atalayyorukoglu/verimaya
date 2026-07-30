@@ -20,12 +20,14 @@
 	const isBareRoute = $derived(
 		page.url.pathname.startsWith('/login') ||
 			page.url.pathname.startsWith('/vitrin') ||
-			page.url.pathname.startsWith('/yapay-zeka-karnesi')
+			page.url.pathname.startsWith('/yapay-zeka-karnesi') ||
+			page.url.pathname.startsWith('/kvkk-aydinlatma')
 	);
 	/** Marketing prerender surfaces only — panel + login stay noindex. */
 	const isIndexablePublic = $derived(
 		page.url.pathname.startsWith('/vitrin') ||
-			page.url.pathname.startsWith('/yapay-zeka-karnesi')
+			page.url.pathname.startsWith('/yapay-zeka-karnesi') ||
+			page.url.pathname.startsWith('/kvkk-aydinlatma')
 	);
 
 	onMount(async () => {

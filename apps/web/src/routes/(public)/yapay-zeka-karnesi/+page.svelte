@@ -62,6 +62,8 @@
 			eu: getIntakeEu()
 		})
 	);
+	const intakeBand = $derived(getIntakeBand());
+	const intakeEu = $derived(getIntakeEu());
 
 	onMount(() => {
 		hydrateKarneFromSession();
@@ -265,8 +267,8 @@
 					{qIdx >= karneQuestions.length - 1 ? 'Bitir' : 'İleri'}
 				</button>
 			</div>
-		{:else}
-			<KarneResult {result} />
+		{:else if intakeBand && intakeEu}
+			<KarneResult result={result} band={intakeBand} eu={intakeEu} />
 		{/if}
 	</main>
 </div>

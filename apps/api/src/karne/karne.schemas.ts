@@ -39,6 +39,25 @@ export const karneCompleteSchema = z.object({
 	zero_count: z.number().int().min(0).max(10)
 });
 
+/** `website` is a honeypot — must be absent or empty. */
+export const karneLeadCreateSchema = z
+	.object({
+		session_id: z.string().uuid(),
+		email: z.string().trim().email().max(320),
+		consent: z.literal(true),
+		website: z.string().max(200).optional()
+	})
+	.superRefine((data, ctx) => {
+		if (data.website !== undefined && data.website.trim() !== '') {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: 'Invalid request',
+				path: ['website']
+			});
+		}
+	});
+
 export type KarneSessionCreate = z.infer<typeof karneSessionCreateSchema>;
 export type KarneEventCreate = z.infer<typeof karneEventCreateSchema>;
 export type KarneComplete = z.infer<typeof karneCompleteSchema>;
+export type KarneLeadCreate = z.infer<typeof karneLeadCreateSchema>;

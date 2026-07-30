@@ -4,6 +4,7 @@ import { parseBody } from '../common/mappers';
 import {
 	karneCompleteSchema,
 	karneEventCreateSchema,
+	karneLeadCreateSchema,
 	karneSessionCreateSchema
 } from './karne.schemas';
 import { KarneService } from './karne.service';
@@ -39,5 +40,12 @@ export class KarneController {
 	async complete(@Req() req: FastifyRequest) {
 		const body = parseBody(karneCompleteSchema, req.body, req);
 		await this.karne.complete(body);
+	}
+
+	@Post('leads')
+	@HttpCode(204)
+	async createLead(@Req() req: FastifyRequest) {
+		const body = parseBody(karneLeadCreateSchema, req.body, req);
+		await this.karne.createLead(body);
 	}
 }

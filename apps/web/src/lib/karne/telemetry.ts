@@ -202,3 +202,88 @@ export function trackComplete(zeroCount: number): void {
 		}
 	})();
 }
+
+/**
+ * Ensure a karne session exists for lead capture (works even when event telemetry is off).
+ */
+export async function ensureSessionForLead(
+	input: KarneSessionStartInput
+): Promise<string | null> {
+	if (!browser) return null;
+	const existing = getStoredSessionId();
+	if (existing) return existing;
+	try {
+		const res = await fetch(apiUrl('sessions'), {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				band: input.band,
+				eu_exposure: input.eu_exposure,
+				referrer_host: referrerHost()
+			}),
+			keepalive: true
+		});
+		if (!res.ok) return null;
+		const data = (await res.json()) as { session_id?: string };
+		if (typeof data.session_id === 'string' && data.session_id.length > 0) {
+			setStoredSessionId(data.session_id);
+			return data.session_id;
+		}
+	} catch {
+		return null;
+	}
+	return null;
+}
+
+export type SubmitKarneLeadInput = {
+	email: string;
+	consent: true;
+	/** Honeypot — must be empty. */
+	website: string;
+	band: IntakeBandId;
+	eu_exposure: IntakeEuId;
+};
+
+export type SubmitKarneLeadResult =
+	| { ok: true }
+	| { ok: false; reason: 'validation' | 'network' };
+
+/** POST /leads — returns structured result for the form UI (not fire-and-forget). */
+export async function submitKarneLead(
+	input: SubmitKarneLeadInput
+): Promise<SubmitKarneLeadResult> {
+	if (!browser) return { ok: false, reason: 'network' };
+	if (input.website.trim() !== '') {
+		// Trip honeypot client-side: pretend success so bots don't retry.
+		return { ok: true };
+	}
+	const email = input.email.trim();
+	if (!email || !input.consent) {
+		return { ok: false, reason: 'validation' };
+	}
+
+	try {
+		const session_id = await ensureSessionForLead({
+			band: input.band,
+			eu_exposure: input.eu_exposure
+		});
+		if (!session_id) return { ok: false, reason: 'network' };
+
+		const res = await fetch(apiUrl('leads'), {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				session_id,
+				email,
+				consent: true,
+				website: ''
+			}),
+			keepalive: true
+		});
+		if (res.status === 204 || res.ok) return { ok: true };
+		if (res.status === 400) return { ok: false, reason: 'validation' };
+		return { ok: false, reason: 'network' };
+	} catch {
+		return { ok: false, reason: 'network' };
+	}
+}

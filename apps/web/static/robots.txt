@@ -6,6 +6,8 @@ Allow: /vitrin
 Allow: /vitrin/
 Allow: /yapay-zeka-karnesi
 Allow: /yapay-zeka-karnesi/
+Allow: /kvkk-aydinlatma
+Allow: /kvkk-aydinlatma/
 Allow: /robots.txt
 Allow: /sitemap.xml
 

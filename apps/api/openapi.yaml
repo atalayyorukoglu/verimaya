@@ -943,3 +943,45 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ApiError' }
+
+  /public/karne/leads:
+    post:
+      tags: [Karne]
+      summary: Capture email lead with KVKK consent (honeypot field `website`)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, email, consent]
+              properties:
+                session_id: { type: string, format: uuid }
+                email: { type: string, format: email, maxLength: 320 }
+                consent:
+                  type: boolean
+                  enum: [true]
+                  description: Must be true; unchecked consent is rejected
+                website:
+                  type: string
+                  maxLength: 200
+                  description: Honeypot — must be empty; non-empty → 400
+      responses:
+        '204':
+          description: Accepted (also when email already exists — no duplicate row)
+        '400':
+          description: Validation error or honeypot tripped
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiError' }
