@@ -259,7 +259,7 @@ görünmez, sol menü yok. `pnpm --filter @verimaya/web build` sonrası
 
 ### Adım 7 — Kurulum soruları (2 puanlanmayan soru)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Şartname §2'deki iki soru. Puan vermezler; **raporun dilini ve tonunu**
 belirlerler.
