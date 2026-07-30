@@ -4,14 +4,16 @@ Eski sistemin (FastAPI + PostgreSQL + React) veri modeli ve iş kuralları buray
 
 ## Doldurulacaklar
 
-- [ ] `schema.sql` — eski veritabanı şeması:
+- [x] `schema.sql` — eski veritabanı şeması (yerel Tracker dump, 2026-07-30):
 
 ```bash
 # fixrav-tracker docker compose ayaktayken:
 docker compose -f ~/Projects/fixrav-web/_projects/fixrav-tracker/docker-compose.yml \
-  exec db pg_dump -U postgres --schema-only fixrav > schema.sql
+  exec db pg_dump -U fixrav --schema-only --no-owner --no-acl tracker > schema.sql
+# \restrict satırını commit öncesi sil
 ```
 
+- [x] `ETL-ESLEME.md` — Tracker → Verimaya alan / enum / sözlük eşlemesi (Adım 26)
 - [ ] `routes.md` — eski API rota listesi (FastAPI `/docs` OpenAPI çıktısından veya `backend/app/routers/` taramasından)
 - [ ] `roller-erisim.md` — `docs/referans/KULLANICI_ROLLERI_VE_ERISIM.md` kopyası (RBAC matrisi)
 - [ ] `notlar.md` — ilk sürümde pişman olunan modelleme kararları ve yeni şemada yapılacak düzeltmeler
@@ -22,6 +24,7 @@ Yeni bir domain tablosu tasarlanırken önce buradaki karşılığına bakılır
 
 ## Hazır notlar
 
+- [x] `ETL-ESLEME.md` — Alan eşleme + sözlük + satır sayıları (Adım 26)
 - [x] `case-expenses.md` — Case Expenses = hasta/proje finans özeti; legacy hataları ve Verimaya düzeltmeleri
 - [x] `dosyalar.md` — Case/appointment dosya yükleme; Drive hataları ve Verimaya storage planı
 - [x] `raporlar.md` — Reports summary/category; dönem + drill-down; istemci aggregate hataları

@@ -1,6 +1,38 @@
 {
 	"source": "fixrav-tracker-sample",
-	"exported_at": "2026-07-01T12:00:00.000Z",
+	"exported_at": "2026-07-30T21:00:00.000Z",
+	"notes": "Anonim örnek. Canlı Tracker PK UUID; fixture id'leri dry-run için sentetik integer. Finans kategorileri yerel Tracker seed'inden (2026-07-30).",
+	"finance_categories": [
+		{
+			"kind": "income",
+			"name": "Ticari Gelirler",
+			"subcategories": ["Hizmet Tahsilatı"]
+		},
+		{
+			"kind": "income",
+			"name": "Diğer Gelirler",
+			"subcategories": ["İade"]
+		},
+		{
+			"kind": "expense",
+			"name": "Operasyon Giderleri",
+			"subcategories": ["Otel/Apart", "Havalimanı Transferi", "Tedavi Ücreti"]
+		},
+		{
+			"kind": "expense",
+			"name": "Pazarlama ve Reklam",
+			"subcategories": ["Reklam", "Ajans"]
+		}
+	],
+	"contact_types": ["Otel", "Transfer", "Klinik", "Hasta", "Diğer"],
+	"appointment_types": ["Yeni Hasta", "Devam Hastası", "RPT"],
+	"appointment_statuses": [
+		"Randevu Ayarlanıyor",
+		"Planlandı",
+		"Tamamlandı",
+		"İptal",
+		"Gelmedi"
+	],
 	"contacts": [
 		{
 			"id": 101,
@@ -28,6 +60,15 @@
 			"email": null,
 			"notes": null,
 			"is_internal": false
+		},
+		{
+			"id": 104,
+			"type": "Transfer",
+			"name": "Demo Transfer",
+			"phone": "+90 216 000 0000",
+			"email": null,
+			"notes": null,
+			"is_internal": false
 		}
 	],
 	"cases": [
@@ -52,15 +93,26 @@
 			"notes": null,
 			"contact_id": null,
 			"assigned_user": null
+		},
+		{
+			"id": 503,
+			"full_name": "Örnek Lead",
+			"phone": null,
+			"email": null,
+			"status": "lead",
+			"source": null,
+			"notes": "Email/phone yok — status default örneği",
+			"contact_id": null,
+			"assigned_user": null
 		}
 	],
 	"appointments": [
 		{
 			"id": 801,
 			"case_id": 501,
-			"title": "Konsültasyon",
-			"type": "Konsültasyon",
-			"status": "completed",
+			"title": "Yeni Hasta",
+			"type": "Yeni Hasta",
+			"status": "Tamamlandı",
 			"starts_at": "2026-06-10T09:00:00.000Z",
 			"ends_at": "2026-06-10T10:00:00.000Z",
 			"clinic_name": "Demo Klinik",
@@ -71,15 +123,28 @@
 		{
 			"id": 802,
 			"case_id": 502,
-			"title": "Tedavi günü",
-			"type": "Tedavi",
-			"status": "confirmed",
+			"title": "Devam Hastası",
+			"type": "Devam Hastası",
+			"status": "Planlandı",
 			"starts_at": "2026-07-15T08:00:00.000Z",
 			"ends_at": "2026-07-15T16:00:00.000Z",
 			"clinic_name": "Demo Klinik",
 			"hotel_name": null,
 			"transfer_note": null,
 			"notes": "2. vizit"
+		},
+		{
+			"id": 803,
+			"case_id": 501,
+			"title": "RPT",
+			"type": "RPT",
+			"status": "scheduled",
+			"starts_at": "2026-08-01T10:00:00.000Z",
+			"ends_at": null,
+			"clinic_name": "Demo Klinik",
+			"hotel_name": null,
+			"transfer_note": null,
+			"notes": null
 		}
 	],
 	"transactions": [
@@ -88,8 +153,8 @@
 			"case_id": 501,
 			"kind": "income",
 			"title": "Operasyon peşinat",
-			"subtitle": "Saç ekimi",
-			"category": "Operasyon",
+			"subtitle": "Hizmet Tahsilatı",
+			"category": "Ticari Gelirler",
 			"occurred_on": "2026-06-01",
 			"status": "paid",
 			"invoice_status": "none",
@@ -105,8 +170,8 @@
 			"case_id": 502,
 			"kind": "expense",
 			"title": "Otel",
-			"subtitle": "Extra gece",
-			"category": "Konaklama",
+			"subtitle": "Otel/Apart",
+			"category": "Operasyon Giderleri",
 			"occurred_on": "2026-07-14",
 			"status": "paid",
 			"invoice_status": "none",
@@ -116,6 +181,23 @@
 			"paid_amount_major": 120,
 			"contact_id": 103,
 			"description": null
+		},
+		{
+			"id": 903,
+			"case_id": 501,
+			"kind": "expense",
+			"title": "Meta Ads",
+			"subtitle": "Reklam",
+			"category": "Pazarlama ve Reklam",
+			"occurred_on": "2026-05-20",
+			"status": "paid",
+			"invoice_status": "issued",
+			"payment_method": "card",
+			"amount_major": 450.5,
+			"currency": "TRY",
+			"paid_amount_major": 450.5,
+			"contact_id": null,
+			"description": "Mayıs kampanya"
 		}
 	],
 	"files": [
@@ -127,6 +209,14 @@
 			"mime_type": "application/pdf",
 			"size_bytes": 245760,
 			"drive_url": "https://drive.example/onam.pdf"
+		},
+		{
+			"id": 702,
+			"case_id": 502,
+			"appointment_id": null,
+			"filename": "pasaport-scan.jpg",
+			"mime_type": "image/jpeg",
+			"size_bytes": 512000
 		}
 	]
 }

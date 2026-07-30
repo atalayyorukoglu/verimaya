@@ -1069,7 +1069,7 @@ yazılır, env'deki istenen değer değil.
 
 ### Adım 26 — Legacy keşif + alan eşleme tablosu
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `etl-stub.md` § Fazlar 1-2'nin fiilen yapılması. Kod değil, **doğrulanmış
 eşleme** üretilir.

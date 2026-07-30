@@ -6,7 +6,7 @@ Kaynak: `~/Projects/fixrav-web/_projects/fixrav-tracker` (PostgreSQL, tek tenant
 
 - Tracker DB salt-okunur snapshot (prod kopyası veya `pg_dump`)
 - Verimaya migrasyonları uygulanmış boş tenant + org (better-auth)
-- `docs/legacy-reference/` entity notları ve alan eşlemeleri
+- `docs/legacy-reference/` entity notları ve alan eşlemeleri — **`ETL-ESLEME.md` (Adım 26)**
 
 ## Fazlar
 
