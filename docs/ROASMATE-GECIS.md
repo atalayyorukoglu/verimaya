@@ -45,12 +45,12 @@ Hepsi Vitest’li saf TypeScript; Verimaya’ya en temiz taşınan parça buras�
 
 | RoasMate route | Anlamı | Verimaya hedefi |
 |---|---|---|
-| `/app/hesap` | Truth Calculator | `/pazarlama/hesap` (veya `/raporlar/gercek-roas`) |
-| `/app/simulator` | Reklam matematiği simülatörü | `/pazarlama/simulator` |
-| `/app/compliance` | Yasaklı dil tarayıcı | `/pazarlama/uyumluluk` |
-| `/app/panel` | Ads + gerçek ROAS overlay | `/raporlar` + pazarlama ROAS kartı (gerçek veri) |
-| `/app/guven-modulu` | Trust Score | `/pazarlama/olcum` veya ayarlar checklist |
-| `/app/sablonlar` | UTM / bütçe şablonları | `/pazarlama/sablonlar` |
+| `/app/hesap` | Truth Calculator | `/marketing/calculator` (veya `/reports/gercek-roas`) |
+| `/app/simulator` | Reklam matematiği simülatörü | `/marketing/simulator` |
+| `/app/compliance` | Yasaklı dil tarayıcı | `/marketing/compliance` |
+| `/app/panel` | Ads + gerçek ROAS overlay | `/reports` + pazarlama ROAS kartı (gerçek veri) |
+| `/app/guven-modulu` | Trust Score | `/marketing/measurement` veya ayarlar checklist |
+| `/app/sablonlar` | UTM / bütçe şablonları | `/marketing/templates` |
 | `/app/sihirbaz` | Kampanya kapıları | P2 — yayın öncesi checklist |
 | Academy / Community | Müfredat + vaka | P2 — yardım/docs veya iç notlar |
 
@@ -78,7 +78,7 @@ packages/shared  (zod + saf hesap fonksiyonları + Vitest)
         │         ├─ patients.source + status (attribution)
         │         └─ transactions / finance-summary (gelir)
         │
-        └─► apps/web  /pazarlama/* + /raporlar (TR UI, Svelte 5 runes)
+        └─► apps/web  /marketing/* + /reports (TR UI, Svelte 5 runes)
 
 Meta/Google OAuth (Faz 5)
         │
@@ -98,7 +98,7 @@ integrations/meta|google → BullMQ ad_metrics.sync → ad_metrics_daily
 
 - Sol menü grubu: **Pazarlama** (yeni) — Hesap, Simülatör, Uyumluluk, Şablonlar, Ölçüm olgunluğu.
 - Raporlar’a ek kart: **Gerçek ROAS** (spend ↔ tahsilat / kapalı hasta).
-- `packages/shared/src/features.ts`: yeni feature id’leri (`truth-calculator`, `ad-simulator`, `ad-compliance`, `real-roas`, …) — `/ozellikler` ile senkron.
+- `packages/shared/src/features.ts`: yeni feature id’leri (`truth-calculator`, `ad-simulator`, `ad-compliance`, `real-roas`, …) — `/features` ile senkron.
 - Changelog: `docs/CHANGELOG-KURALLARI.md` — kullanıcı dilinde, `featureId` bağlı.
 
 ### 3.2 ROAS tanımı (ürün kararı)
@@ -152,13 +152,13 @@ Mevcut `YOL-HARITASI.md` Faz 5 (Ads) ve Faz 7 (Rapor) ile **örtüşür**; RoasM
 **Amaç:** Acente MSW veya gerçek API ile birim ekonomi araçlarını kullanır; Ads OAuth gerekmez.
 
 - [x] AppShell menü: **Pazarlama** grubu
-- [x] `/pazarlama` hub (kısa açıklama + araç kartları)
-- [x] `/pazarlama/hesap` — Truth Calculator (URL state opsiyonel)
-- [x] `/pazarlama/simulator` — Ad Simulator (trafik ışığı, ölçek, hedef satış)
-- [x] `/pazarlama/uyumluluk` — metin yapıştır → yasaklı kelime hit listesi
-- [x] `/pazarlama/sablonlar` — UTM + 60/30/10 + 3:2:2
-- [x] `/pazarlama/olcum` — Trust Score checklist (manuel checkbox; entegrasyon yok)
-- [x] `features.ts` + changelog + `/ozellikler` güncellemesi
+- [x] `/marketing` hub (kısa açıklama + araç kartları)
+- [x] `/marketing/calculator` — Truth Calculator (URL state opsiyonel)
+- [x] `/marketing/simulator` — Ad Simulator (trafik ışığı, ölçek, hedef satış)
+- [x] `/marketing/compliance` — metin yapıştır → yasaklı kelime hit listesi
+- [x] `/marketing/templates` — UTM + 60/30/10 + 3:2:2
+- [x] `/marketing/measurement` — Trust Score checklist (manuel checkbox; entegrasyon yok)
+- [x] `features.ts` + changelog + `/features` güncellemesi
 - [x] Mobil + açık/koyu tema (mevcut tasarım sistemi)
 
 **Kabul kriteri:** Demo tenant’ta araçlar çalışır; hesaplar shared fonksiyonlarından gelir (UI’da formül kopyası yok).
@@ -198,7 +198,7 @@ RoasMate’ten gelen “panel” ancak burada gerçek olur.
 - [x] Adaptörler: `apps/api/src/integrations/meta|google/`
 - [x] `ad_metrics.sync` worker: creds varsa adapter.pull; yoksa fixture; idempotent upsert
 - [ ] Offline conversion yol haritası notu (Google) — uygulama P2 olabilir
-- [x] UI: bağlantı durumu, son sync, bağlan/kes (`/ayarlar/baglantilar/reklamlar`)
+- [x] UI: bağlantı durumu, son sync, bağlan/kes (`/settings/connections/ads`)
 
 **Kabul kriteri:** En az bir gerçek tenant credential ile `ad_metrics_daily` doluyor; RM-3 raporu canlı veri gösteriyor.
 
@@ -224,7 +224,7 @@ Kod go-live hazır; canlı doğrulama harici kimlik bilgisi ister:
   - Enhanced conversions / CAPI (entegrasyon durumu)
   - CRM → Ads feedback (offline conversion)
   - EMQ / lead kalitesi
-- [x] Kampanya sihirbazı (hafif): yayın öncesi checkbox’lar (compliance + birim ekonomi + trust eşiği) — zorunlu gate değil, uyarı bandı (`/pazarlama/kampanya`)
+- [x] Kampanya sihirbazı (hafif): yayın öncesi checkbox’lar (compliance + birim ekonomi + trust eşiği) — zorunlu gate değil, uyarı bandı (`/marketing/pre-launch`)
 - [ ] Compliance: reklam metni / LP metni kaydı opsiyonel (audit log) — (V2)
 
 ### RM-6 — İçerik ve radar (P2) — isteğe bağlı *(atlandı — P2)*
@@ -234,12 +234,12 @@ Bilinçli ertelendi; çekirdek RM-1…5 + RM-7 birleşim değeri için gerekli d
 - [ ] Academy müfredatından “lead ≠ hasta”, CAPI, 3:2:2, 60-30-10 → `docs/` veya uygulama içi yardım
 - [ ] Community vaka şablonu (yaptım / sayılar / öğrendim) — dahili pilot notları; public community yok
 - [ ] Değişiklik Radarı: Meta/Google/TikTok politika uyarıları (seed + admin approve) — ops uyarı modeli
-- [ ] RoasMate marketing sitesi / changelog yüzeyi — Verimaya `/yenilikler` yeterli
+- [ ] RoasMate marketing sitesi / changelog yüzeyi — Verimaya `/changelog` yeterli
 
 ### RM-7 — RoasMate emeklilik
 
 - [x] RoasMate README: arşiv banner + canonical Verimaya işaretlendi
-- [x] Canonical formül/UI yolu Verimaya’da (`packages/shared/src/marketing`, `/pazarlama`, Gerçek ROAS)
+- [x] Canonical formül/UI yolu Verimaya’da (`packages/shared/src/marketing`, `/marketing`, Gerçek ROAS)
 - [ ] Repo’yu GitHub’da archive / read-only yap — (kullanıcı: repo archive)
 - [ ] Domain/DNS ve Vercel projesi kapatma veya Verimaya vitrine yönlendirme — (kullanıcı: domain/Vercel)
 - [ ] Stripe test ürünlerini iptal (varsa) — (kullanıcı: Stripe)
@@ -256,8 +256,8 @@ Bilinçli ertelendi; çekirdek RM-1…5 + RM-7 birleşim değeri için gerekli d
 | `packages/core/src/trust-score/` | `packages/shared/src/marketing/trust-score/` ✅ |
 | `packages/core/src/templates/` | `packages/shared/src/marketing/templates/` ✅ |
 | `packages/core/src/ads/connector.ts` | Referans → `integrations/meta\|google` + mevcut `ad-metrics` |
-| `/app/hesap` UI | `apps/web/src/routes/pazarlama/hesap/` |
-| `/app/simulator` UI | `apps/web/src/routes/pazarlama/simulator/` |
+| `/app/hesap` UI | `apps/web/src/routes/marketing/calculator/` |
+| `/app/simulator` UI | `apps/web/src/routes/marketing/simulator/` |
 | Panel ROAS | `GET /v1/reports/marketing` + `apps/web` raporlar |
 | Auth / billing / community | Taşınmaz |
 
@@ -317,7 +317,7 @@ RM-0 doküman ──► RM-1 shared core ──► RM-2 pazarlama UI
 
 ## 10. Obsidian log (oturum özeti şablonu)
 
-> RoasMate ayrı ürün bırakıldı; geçiş planı `docs/ROASMATE-GECIS.md`. İlk iş: shared’a Truth Calculator + Simulator + compliance (RM-1), sonra `/pazarlama` UI (RM-2).
+> RoasMate ayrı ürün bırakıldı; geçiş planı `docs/ROASMATE-GECIS.md`. İlk iş: shared’a Truth Calculator + Simulator + compliance (RM-1), sonra `/marketing` UI (RM-2).
 
 ---
 

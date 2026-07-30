@@ -6,7 +6,7 @@
 		title,
 		description,
 		hint = 'Bu alan Faz 0b sonrası gerçek veriye bağlanacak. Şimdilik yer tutucu.',
-		ctaHref = '/ozellikler',
+		ctaHref = '/features',
 		ctaLabel = 'Özelliklere bak',
 		children
 	}: {

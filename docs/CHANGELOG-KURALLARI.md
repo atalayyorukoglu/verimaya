@@ -1,6 +1,6 @@
 # Changelog Kuralları
 
-**Karar (2026-07-17):** Tek kaynak, iki yüz. Kayıtlar tipli veri olarak tutulur; hem repo `CHANGELOG.md` hem uygulamadaki `/yenilikler` sayfası bu kaynaktan beslenir. Elle iki yerde yazım yok.
+**Karar (2026-07-17):** Tek kaynak, iki yüz. Kayıtlar tipli veri olarak tutulur; hem repo `CHANGELOG.md` hem uygulamadaki `/changelog` sayfası bu kaynaktan beslenir. Elle iki yerde yazım yok.
 
 ## Tek kaynak
 
@@ -36,19 +36,19 @@ Repo kökündeki `CHANGELOG.md`, Faz 2'ye kadar elle senkron tutulur; sonra kü�
 2. Her madde **ne işe yaradığını** söyler; tek cümle, Türkçe, etken çatı ("Artık randevuları takvimden sürükleyerek taşıyabilirsiniz").
 3. Yalnız kullanıcının görebildiği değişiklikler yazılır. İç refaktör, bağımlılık güncellemesi vb. yazılmaz; istisna: **guvenlik** tipi (kullanıcı görmese de her zaman yazılır, detay vermeden: "Oturum güvenliği güçlendirildi").
 4. Kategori sırası sabit: eklendi → degisti → duzeltildi → kaldirildi → guvenlik.
-5. Bir özellik `/ozellikler` sayfasında "Yayında"ya geçiyorsa, aynı commit'te changelog kaydı `featureId` ile eklenir.
+5. Bir özellik `/features` sayfasında "Yayında"ya geçiyorsa, aynı commit'te changelog kaydı `featureId` ile eklenir.
 6. Kaldırılan/değişen davranış varsa kullanıcıya etkisi açıkça yazılır ("X artık Y menüsünün altında").
 
 ## Yayınlama akışı
 
 1. Özellik biter → `features.ts`'te durum "Yayında" + `changelog.ts`'e sürüm kaydı (aynı PR/commit).
-2. Deploy → `/yenilikler` otomatik güncel; üst bardaki zilde brand renkli nokta (kullanıcının son gördüğü sürüm `localStorage`'da tutulur, karşılaştırma istemcide).
+2. Deploy → `/changelog` otomatik güncel; üst bardaki zilde brand renkli nokta (kullanıcının son gördüğü sürüm `localStorage`'da tutulur, karşılaştırma istemcide).
 3. Obsidian `04-ilerleme-log`'a 1 satır not (geliştirici tarafı; kullanıcıya dönük olmayan detaylar oraya).
 
 ## Sorumluluk ayrımı
 
 | Nerede | Ne var | Kim için |
 |---|---|---|
-| `/yenilikler` + `CHANGELOG.md` | Kullanıcının görebildiği değişiklikler | Müşteri |
-| `/ozellikler` | Mevcut + gelecek özelliklerin durumu | Müşteri + satış + geliştirici |
+| `/changelog` + `CHANGELOG.md` | Kullanıcının görebildiği değişiklikler | Müşteri |
+| `/features` | Mevcut + gelecek özelliklerin durumu | Müşteri + satış + geliştirici |
 | Obsidian `04-ilerleme-log` | Teknik ilerleme, iç kararlar | Geliştirici |

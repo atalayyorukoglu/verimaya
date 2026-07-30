@@ -34,6 +34,17 @@ Cursor'ın tek tek çalıştırabileceği atomik adımlara böler. Tamamlanmış
 | Karne ölçüm sinki | **`apps/api`'de public endpoint** (auth yok, tenant yok, rate-limit + honeypot) | Adım 13-17 |
 | E-posta kapısı | **Sonuç gösterildikten sonra**, konumu tek bir sabitle değişebilir (`EMAIL_GATE_POSITION`) | Adım 16 |
 
+## Adım 21 denetimi sonrası kararlar (2026-07-30)
+
+| Soru | Karar | Nerede |
+|---|---|---|
+| `inbound_message.process` worker (noop) | **Ayrı adım** | Adım 24a |
+| Generic `/webhooks/:provider` stub secret | **Bu turda HMAC'e taşı** | Adım 23b |
+| Yetim presigned dosya süpürme (>24s) | **Ertelendi** | Adım 30a |
+| Yol haritası Faz 1 `[~]`→`[x]` | **Güncelle** | Adım 20a |
+| LLM PII minimizasyonu | **Ayrı adım, sağlayıcıdan ÖNCE** | Adım 23a |
+| Adım 24 (ifşa → giden mesaj) | **Port iskeleti + ifşa hook'u** (gerçek gönderim kapsam dışı) | Adım 24 |
+
 ## Şartnamede tespit edilen çelişki — Adım 6'dan önce oku
 
 `Ucretsiz-Karne-Sorulari.md` başlığı **"11 Soru"** diyor; içeriği ise §2'de **2 puanlanmayan**
@@ -43,6 +54,52 @@ bu da 10 × 4 ile tutarlı.
 **Bu planda geçerli sayım: 2 puanlanmayan + 10 puanlı.** Başlıktaki "11" şartnamenin kendi
 iç tutarsızlığıdır; toplam puan tavanı (40) ve çıktı ekranı metni ("10 sorudan 7'sinde…")
 10 puanlı soruyu doğruluyor. Cursor bu sayımı kullanır, şartname başlığını değil.
+
+---
+
+# BLOK 0 — Git tabanını düzelt (HER ŞEYDEN ÖNCE)
+
+### Adım 0 — Commit edilmemiş rota göçü + i18n tabanını commit'le
+
+- [x] durum
+
+**Ne yapılacak:** `chore/en-routes-i18n` branch'inde, Adım 1'den **önceye** ait büyük bir
+değişiklik seti hâlâ commit edilmemiş: İngilizce rota göçü (37 silme + 20 untracked dizin),
+`apps/web/src/lib/i18n/locale.svelte.ts` (untracked) ve 17 dosya değişikliği (AGENTS.md,
+TASARIM.md, `navigation.ts`, `rbac.ts`, `AppShell.svelte`, …).
+
+**Bunun sonucu:** HEAD şu an derlenmiyor. `apps/web/src/routes/settings/ai/+page.svelte`
+(Adım 23'te commit edildi) 12. satırda `import { t } from '$lib/i18n/locale.svelte'` diyor;
+o dosya HEAD'de yok. HEAD ayrıca hem eski Türkçe ağacı (`ayarlar`, `hastalar`, `finans`,
+`giris`, `kisiler`, `ozellikler`, `pazarlama`, `randevular`, `raporlar`, `yenilikler`) hem
+iki yeni İngilizce parçayı (`(public)/`, `settings/ai/`) birlikte taşıyor. Temiz klonda
+`pnpm check` ve `pnpm build` patlar; CI bu branch'te kırmızı.
+
+Yapılacak:
+- Untracked dosyaların **tamamı** eklenir (`apps/web/src/routes/` altındaki 20 dizin +
+  `apps/web/src/lib/i18n/locale.svelte.ts`).
+- Türkçe rota silmeleri stage'lenir.
+- 17 değişiklik aynı commit'e girer.
+- Tek commit, mesaj: `chore: ingilizce rota gocu + i18n locale tabani (adim 1 oncesi)`
+- **`git clean -fd` / `git checkout .` ÇALIŞTIRMA** — untracked dosyalar commit edilene
+  kadar tüm göç tek komut mesafesinde silinebilir durumda.
+
+**Dokunulacak dosyalar/klasörler:** Yukarıdaki 74 yol. Kod **yazılmaz**, yalnız git durumu
+düzeltilir.
+
+**Kabul kriteri:**
+```bash
+git status --short          # boş
+git stash list              # boş
+pnpm install --frozen-lockfile
+pnpm check && pnpm build    # ikisi de temiz
+git ls-files apps/web/src/lib/i18n/    # locale.svelte.ts ve messages.ts, ikisi de
+git ls-tree -d --name-only HEAD apps/web/src/routes/   # Türkçe dizin YOK
+```
+
+**Riskler/dikkat:** Bu commit Adım 1-23'ün *altına* değil *üstüne* düşecek (geçmiş yeniden
+yazılmıyor). Kabul edilebilir — önemli olan HEAD'in derlenir hale gelmesi. Rebase ile araya
+sokmayı **deneme**, 23 commit'i riske atar.
 
 ---
 
@@ -712,6 +769,30 @@ kalır. Silme ayrı ve elle.
 
 ---
 
+### Adım 20a — Yol haritasında Faz 1'i kapat
+
+- [ ] durum
+
+**Ne yapılacak:** S3/R2 indi, Faz 1'in tek açık ucu kapandı. Yol haritası **tek kaynak**;
+`[~]` bırakmak kaymaya yol açar.
+
+- `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`:
+  - Faz 1 → `[~] Hasta dosyaları: local upload stub çalışıyor, S3/R2 sonra`
+    → `[x] Hasta dosyaları: FileStoragePort + S3/R2 adapter + presigned upload`
+  - Faz 1 rozeti `🚧` → `✅`
+  - "Sırada ne var" #4'ten hasta dosyaları maddesi düşülür
+- Faz 2 rozeti `🚧` → `✅` (altı maddenin hepsi zaten `[x]`, rozet eskimişti)
+
+**Dokunulacak dosyalar/klasörler:**
+- `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` (repo dışı, Obsidian)
+
+**Kabul kriteri:** Faz 1 ve Faz 2 altında `[ ]`/`[~]` madde kalmamış; rozetler `✅`.
+
+**Riskler/dikkat:** Repo içinde ikinci bir yol haritası dosyası oluşturma
+(`docs/YOL-HARITASI.md` 2026-07-30'da bilerek silindi). Bu adım yalnız Obsidian dosyasına dokunur.
+
+---
+
 # BLOK E — Faz 3 WhatsApp'ın kalanı (yol haritası öncelik #5)
 
 > Yol haritası: "Zaten büyük ölçüde çalışıyor (`ai_corrections`, taslak/onay). Bu bitince
@@ -817,56 +898,164 @@ sırasını bozma.
 
 ---
 
-### Adım 24 — İfşa metninin giden mesajda uygulanması
+### Adım 23a — LLM PII maskeleme (sağlayıcıdan ÖNCE)
 
 - [ ] durum
 
-**Ne yapılacak:** Ayar açıkken, AI destekli/otomatik giden her WhatsApp mesajının başına
-(veya konuşmanın ilk mesajına) ifşa metni eklenir.
+**Ne yapılacak:** Adım 21 bulgu 3: `LLM_API_KEY` doluyken mesajın **tam metni** + hastanın
+`full_name` alanı modele gidiyor (`openai-compatible-llm.client.ts:62–78`), telefon/e-posta
+strip'i yok. MIMARI.md § Güvenlik "LLM'e giden veride PII minimizasyonu" diyor — uygulanmıyor.
 
-- Uygulama noktası giden mesaj yolunda; Adım 21 "giden yol yok" derse bu adım **giden yolun
-  kendisiyle birlikte** yeniden boyutlandırılır ve kullanıcıya sorulur.
-- İnsanın elle yazdığı mesaja ifşa eklenmez — yalnız AI üretimi.
-- Uygulandığı her seferde `audit_logs` satırı (kanıt üretimi).
+Bu adım Adım 25'ten **ayrıldı ve öne alındı**: maskeleme sağlayıcı yolundan önce inerse,
+canlı LLM çağrısının maskelenmemiş hasta verisiyle yayına çıkması yapısal olarak imkânsız olur.
+
+- `apps/api/src/integrations/llm/pii-mask.ts`: telefon (TR + uluslararası), e-posta, TCKN,
+  IBAN, kart numarası desenleri → yer tutucu (`[TELEFON]`, `[EPOSTA]`, …).
+- Hasta `full_name` modele **gönderilmez**; gerekiyorsa yalnız opak `patient_ref`.
+- Maskeleme LLM istemcisine girmeden önce, tek bir geçiş noktasında uygulanır — çağrı
+  başına elle çağrılan bir yardımcı değil.
+- `pii-mask.spec.ts`: her desen için pozitif + negatif vaka; maskelemenin parse doğruluğunu
+  bozmadığı (tutar/tarih çıkarımı hâlâ çalışıyor) en az 3 örnekle doğrulanır.
 
 **Dokunulacak dosyalar/klasörler:**
-- `apps/api/src/whatsapp/whatsapp.service.ts`, giden mesaj adaptörü
-- `apps/api/src/common/audit-helper.ts` kullanımı
+- `apps/api/src/integrations/llm/pii-mask.ts`, `pii-mask.spec.ts` (yeni)
+- `apps/api/src/integrations/llm/openai-compatible-llm.client.ts`
+- `docs/MIMARI.md` (§ Güvenlik çerçevesi — uygulandı notu)
 
-**Kabul kriteri:** Ayar açıkken gönderilen AI mesajı ifşa metnini içerir; kapalıyken içermez;
-elle yazılan mesaj her iki durumda da değişmez. Audit kaydı oluşur.
+**Kabul kriteri:** `pnpm --filter @verimaya/api test` yeşil. Gerçek bir WhatsApp mesajı
+örneğinde modele giden gövde loglanıp gözle doğrulanır: telefon, e-posta ve hasta adı **yok**.
+Heuristic yol etkilenmemiş.
 
-**Riskler/dikkat:** AGENTS.md madde 6 — AI çıkarımı taslaktır, insan onayı olmadan kesin
-kayda yazılmaz. Bu adım o kuralı değiştirmez, yalnız **onaylanmış** giden mesaja ifşa ekler.
+**Riskler/dikkat:** Aşırı maskeleme parse kalitesini düşürür (tutar "1234" telefon sanılabilir).
+Desenleri dar tut, testle. Bu akış KVKK veri işleme envanterine yazılmalı — Adım 25'te tamamlanır.
 
 ---
 
-### Adım 25 — LLM sağlayıcı yolu + PII minimizasyonu
+### Adım 23b — Generic `/webhooks/:provider` imzasını HMAC'e taşı
 
 - [ ] durum
 
-**Ne yapılacak:** (Adım 21 bulgusuna göre.) `POST /v1/whatsapp/parse`'ın LLM yolu canlıya
-hazır hale getirilir.
+**Ne yapılacak:** Adım 21 bulgu 1: generic webhook stub'ı `X-Webhook-Signature` istiyor ama
+değeri `WEBHOOK_STUB_SECRET` ile **düz string eşitliği** karşılaştırıyor
+(`webhooks.controller.ts:47–56`). AGENTS.md madde 2 koşulsuz: "endpoint yalnız **imza doğrular**".
 
-- `apps/api/src/integrations/llm/` adaptör arayüzü (domain kodu sağlayıcıyı bilmez —
-  AGENTS.md madde 5).
-- `LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY` env; sağlayıcı ve **sürüm** loglanır
-  (ürün içi karne kriteri 3.2 buradan dolacak).
-- PII minimizasyonu: LLM'e gönderilmeden önce telefon/e-posta/TCKN maskelenir; maskeleme
-  fonksiyonu ayrı ve test edilir.
-- Hata/timeout durumunda `heuristic-parse.ts`'e düşer (graceful degradation).
-- Maliyet/token sayımı `jobs` ledger'ına yazılır (karne kriteri 8.5 TCO için).
+Adım 22'de WAHA için yazılan `webhooks.signature.ts` helper'ı burada yeniden kullanılır —
+maliyet düşük, yeni desen icat edilmez.
+
+- Düz eşitlik → HMAC-SHA256 (ham gövde) + zaman damgası penceresi.
+- Provider başına secret çözümü (`WEBHOOK_SECRET_<PROVIDER>`), yoksa 401.
+- Mevcut idempotency (`provider` + `external_event_id` / `payload_hash`) korunur.
+- Test: geçerli imza → 202 + 1 satır; geçersiz → 401 + **0** satır; aynı event iki kez →
+  202 + 1 satır.
 
 **Dokunulacak dosyalar/klasörler:**
-- `apps/api/src/integrations/llm/`, yeni `pii-mask.ts` + `pii-mask.spec.ts`
-- `apps/api/src/whatsapp/whatsapp.service.ts`, `.env.example`, `docs/MIMARI.md`
+- `apps/api/src/webhooks/webhooks.controller.ts`, `webhooks.signature.ts`
+- `apps/api/src/webhooks/*.spec.ts`, `.env.example`, `apps/api/openapi.yaml`
 
-**Kabul kriteri:** Maskeleme testi telefon/e-posta/TCKN için geçer; LLM sağlayıcısı kapalıyken
-parse hâlâ heuristic ile çalışır; kullanılan model ve sürüm `jobs` satırında görünür.
+**Kabul kriteri:** Üç test geçer; `grep -n "WEBHOOK_STUB_SECRET" apps/api/src/` boş döner.
 
-**Riskler/dikkat:** Hasta verisi dış LLM'e gidiyor — KVKK veri işleme envanterine bu akış
-yazılmalı (`docs/` altında ilgili not veya Obsidian `05-guvenlik-kvkk.md`). Envanter
-güncellenmeden prod'a alma.
+**Riskler/dikkat:** Bu rotayı bugün tüketen gerçek bir provider yok — kırılacak entegrasyon
+yok. Yine de `.env.example` ve OpenAPI güncellenmezse ileride sessiz 401'lere yol açar.
+
+---
+
+### Adım 24 — Giden mesaj portu + ifşa hook'u (gerçek gönderim kapsam dışı)
+
+- [ ] durum
+
+**Ne yapılacak:** Adım 21 bulgu 2: giden WhatsApp yolu **yok**. Karar (6B): bu adım gerçek
+gönderimi inşa **etmez** — giden yolun *portunu* tanımlar ve ifşayı **port sınırında zorunlu
+kılar**. Böylece gerçek gönderim ne zaman gelirse gelsin ifşa zaten devrede olur.
+
+Gerekçe: gerçek outbound (A) yol haritasının Faz 3 listesinde yok, kapsam genişlemesi olur;
+Adım 24'ü tümden ertelemek (C) ise Adım 23'ün kendi riskini gerçekleştirir — hiçbir şey
+yapmayan bir ayar.
+
+- `apps/api/src/whatsapp/outbound/outbound.port.ts`: `OutboundMessagePort` —
+  `send({ tenantId, to, body, origin: 'ai' | 'human' })`.
+- `outbound.stub.ts`: gönderme yapmaz, `jobs` ledger'ına satır yazar (denetlenebilir).
+- `disclosure.decorator.ts` (veya servis katmanı): `origin === 'ai'` **ve** tenant ayarı açıksa
+  ifşa metnini gövdenin başına ekler; `origin === 'human'` ise dokunmaz.
+- Her uygulamada `audit_logs` satırı (kanıt üretimi — karne kriteri 8.5).
+- **Adım 23'ün UI metni düzeltilir:** `/settings/ai` kartı "hastalarınız bilgilendiriliyor"
+  **diyemez** — henüz gönderim yok. Gelecek zaman kullan: "Giden AI mesajlarına eklenecek."
+  Aksi halde ayarın kendisi yanlış beyan üretir.
+
+**Dokunulacak dosyalar/klasörler:**
+- `apps/api/src/whatsapp/outbound/` (yeni), `whatsapp.module.ts`
+- `apps/api/src/common/audit-helper.ts` kullanımı
+- `apps/web/src/routes/settings/ai/+page.svelte`, `apps/web/src/lib/i18n/messages.ts`
+
+**Kabul kriteri:** Birim testi: ayar açık + `origin='ai'` → gövde ifşa ile başlıyor;
+ayar kapalı → başlamıyor; `origin='human'` → her iki durumda da değişmiyor. Audit satırı
+oluşuyor. `/settings/ai` metni gelecek zamanda.
+
+**Riskler/dikkat:** AGENTS.md madde 6 — AI çıkarımı taslaktır, insan onayı olmadan kesin
+kayda yazılmaz. Bu adım o kuralı değiştirmez. Gerçek gönderim ayrı bir karar; yol haritasına
+sorulmadan ekleme.
+
+---
+
+### Adım 24a — `inbound_message.process` worker + retry/DLQ
+
+- [ ] durum
+
+**Ne yapılacak:** Adım 21 bulgu 5: job enqueue ediliyor (`webhooks.controller.ts:136–152`)
+ama worker bu `jobType`'ı işlemiyor — `Noop worker handled job` (`queue.service.ts:75–76`).
+Parse bugün yalnız senkron `POST /whatsapp/inbox/process` ile çalışıyor. Queue-first deseni
+yarım: kuyruğa yazılıyor, kuyruktan okunmuyor.
+
+- `inbound_message.process` handler'ı gerçek işleme bağlanır (mevcut senkron servis yolunu
+  çağırır — mantık kopyalanmaz).
+- Tenant context içinde çalışır (`SET LOCAL app.current_tenant_id`), RLS bypass yok.
+- Idempotent: aynı `inboundMessageId` iki kez işlenirse tek sonuç.
+- Genel `attempts: 5` + backoff (`queue.constants.ts:26–31`) devralınır; başarısızlıkta
+  dead-letter'a düşer ve `jobs` satırı `failed` olur.
+- **Dedicated test** (bugün yok): başarı yolu, kalıcı hata → DLQ, tekrar işleme → tek sonuç.
+
+**Dokunulacak dosyalar/klasörler:**
+- `apps/api/src/queue/queue.service.ts` (handler kaydı), yeni
+  `apps/api/src/whatsapp/inbound-message.processor.ts`
+- `apps/api/src/whatsapp/whatsapp.service.ts` (ortak yol), yeni spec dosyası
+
+**Kabul kriteri:** WAHA webhook'u atıldıktan sonra **elle çağrı olmadan** mesaj işlenmiş
+oluyor. Kasten bozulmuş payload 5 denemeden sonra DLQ'ya düşüyor ve `jobs.status = 'failed'`.
+Aynı mesaj iki kez kuyruğa girerse tek `ai_corrections`/parse sonucu oluşuyor.
+
+**Riskler/dikkat:** Senkron `process` endpoint'i **kaldırılmaz** — manuel yapıştır akışı ona
+bağlı. İki yol aynı servisi çağırmalı, iki ayrı mantık doğmamalı.
+
+---
+
+### Adım 25 — LLM sağlayıcı yolu: sürüm ledger'ı + TCO + KVKK envanteri
+
+- [ ] durum
+
+**Ne yapılacak:** PII maskeleme **Adım 23a'ya taşındı** — bu adım artık yalnız sağlayıcı
+yolunun canlıya hazırlanmasıdır. Adım 21 bulgu 4'e göre seçim mantığı (`LLM_API_KEY` boş →
+heuristic, dolu → OpenAI-uyumlu + fallback) zaten **çalışıyor**; eksik olan izlenebilirlik.
+
+- Kullanılan **sağlayıcı ve model sürümü** her çağrıda `jobs` ledger satırına yazılır —
+  ürün içi karne kriteri 3.2 ("model sağlayıcı ve sürüm biliniyor mu") buradan otomatik dolacak
+  (Adım 35).
+- Token/maliyet sayımı aynı satıra — karne kriteri 8.5 (TCO'da insan+makine zamanı).
+- Hata/timeout'ta `heuristic-parse.ts`'e düşüş davranışı testle sabitlenir (bugün var ama
+  testi yok).
+- **KVKK veri işleme envanteri:** hasta mesajının dış LLM'e gittiği akış yazılır —
+  hangi veri, hangi sağlayıcı, hangi ülke, saklama süresi, maskeleme (Adım 23a).
+
+**Dokunulacak dosyalar/klasörler:**
+- `apps/api/src/integrations/llm/openai-compatible-llm.client.ts`, `llm.module.ts`
+- `apps/api/src/whatsapp/whatsapp.service.ts`, `.env.example`
+- `SecondBrain-Remote/03-Areas/VeriMaya/05-guvenlik-kvkk.md`, `docs/MIMARI.md`
+
+**Kabul kriteri:** Bir parse çağrısı sonrası `jobs` satırında sağlayıcı + model sürümü +
+token sayısı görünüyor. `LLM_API_KEY` boşken parse heuristic ile çalışıyor (test). Sağlayıcı
+timeout verdiğinde heuristic'e düşüyor (test). KVKK envanterinde bu akışın satırı var.
+
+**Riskler/dikkat:** Envanter güncellenmeden **prod'a alma** (Adım 31 ön koşulu). Model sürümü
+sağlayıcı tarafından sessizce değişebilir — ledger'a yanıt gövdesindeki gerçek `model` alanı
+yazılır, env'deki istenen değer değil.
 
 ---
 
@@ -1003,6 +1192,33 @@ sona okunabilir ve her maddesi "kim yapar / nasıl geri alınır" içeriyor.
 
 **Riskler/dikkat:** Geri dönüş planı olmayan cutover yapma. Tracker dahili kullanımda çalışmaya
 devam ediyor (MIMARI.md § Eski sistemle ilişki) — kesim tek yönlü değil.
+
+---
+
+### Adım 30a — Yetim presigned dosya süpürme
+
+- [ ] durum
+
+**Ne yapılacak:** Adım 19'dan **bilinçli olarak ertelendi** (karar 3B). Presigned yükleme
+başlatılıp `confirm` edilmeyen kayıtlar hem `files` tablosunda hem R2'de yetim kalıyor.
+Pilot gerçek yükleme üretmeye başlamadan **önce** kapatılır.
+
+- BullMQ tekrarlı iş (`files.sweep_pending`, günde 1 kez): 24 saatten eski `pending`
+  satırlar → R2 objesi varsa sil, satırı sil.
+- Silinen her kayıt `jobs` ledger'ına sayıyla yazılır (sessiz silme yok).
+- Tenant context içinde, RLS bypass yok.
+- `--dry-run` eşdeğeri: `FILES_SWEEP_DRY_RUN=true` ile yalnız sayar, silmez (ilk hafta böyle koş).
+
+**Dokunulacak dosyalar/klasörler:**
+- `apps/api/src/storage/files-sweep.processor.ts` (yeni), `apps/api/src/queue/`
+- `apps/api/src/db/schema/files.ts` (gerekirse `status` indeksi), `.env.example`
+
+**Kabul kriteri:** 25 saat önce oluşturulmuş `pending` kayıt süpürülüyor; 23 saatlik kayıt
+**duruyor**; `ready` kayıt hiçbir yaşta silinmiyor (test). Dry-run modunda hiçbir şey silinmiyor
+ama sayı doğru.
+
+**Riskler/dikkat:** `ready` kaydı yanlışlıkla süpüren bir sorgu veri kaybıdır ve geri dönüşü
+yok. Filtreyi testle sabitle, ilk hafta dry-run ile koş.
 
 ---
 

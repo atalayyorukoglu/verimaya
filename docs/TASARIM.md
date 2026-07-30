@@ -4,12 +4,54 @@
 
 Kaynak referans: TickPort `--palette-*` → Verimaya `--brand` / `--bg` / `--surface` / … eşlemesi `apps/web/src/routes/layout.css` içinde.
 
-## İki yüz, tek dil
+## İki yüz
 
 1. **Vitrin (login öncesi):** sıcak nötr zemin + terracotta brand gradient hero, bol alan, büyük başlıklar, bölüm bölüm akan tek sayfa.
 2. **Panel (login sonrası):** Cloudflare dashboard düzeni — sol gruplu menü, üstte hızlı arama (⌘K), kart tabanlı içerik; **renkler TickPort paleti**.
 
-Tema değiştirici üst barda (ay/güneş). Varsayılan: **açık**. Tercih `localStorage` (`verimaya:theme`) ile saklanır. Dil değiştirici YOK — tek dil Türkçe.
+Tema değiştirici üst barda (ay/güneş). Varsayılan: **açık**. Tercih `localStorage` (`verimaya:theme`) ile saklanır. Dil değiştirici arayüzde YOK — yayındaki tek dil Türkçe, ama altyapı iki dilli (aşağı bak).
+
+## Dil ve slug
+
+**Karar (2026-07-26).** Önceki karar "yalnız Türkçe, i18n altyapısı kurulmaz" idi (2026-07-17). Değişti; eski karar silinmedi, üzerine yazıldı.
+
+### Neden değişti
+
+Rakip taraması, çok dilliliğin bu pazarda **ana satış argümanı** olduğunu gösterdi: Senkron.ai 50+ dil, GreftLens 9 dilde hasta formu, Estesoft çok dilli WhatsApp. Panelin fiili kullanıcısı da büyük oranda Arapça/Rusça/İngilizce konuşan satış temsilcisi. "Yalnız Türkçe" kararı tek satırla üç ayrı yüzeyi birden kapatıyordu.
+
+Zamanlama gerekçesi: i18n iskelesini **şimdi** kurmak ucuz (ekran sayısı az), 40 ekran + iOS yazıldıktan sonra geri dönmek haftalar sürer.
+
+### Üç yüzey, üç ayrı karar
+
+| Yüzey | Slug dili | Locale prefix | Durum |
+| --- | --- | --- | --- |
+| API (`/v1/...`) | İngilizce — değiştirilemez | yok | ✅ zaten öyleydi |
+| Panel rotası | İngilizce | **yok** — dil kullanıcı tercihi | ✅ 2026-07-26'da taşındı |
+| Vitrin | her dil kendi dilinde | ileride `/tr/` + `/en/` | ⏸ ön koşul eksik |
+
+Panel rotası SEO taşımaz (SPA + `noindex`), dolayısıyla slug dili bir ürün kararı değil kod tutarlılığı kararıdır: şema ve tablo adları İngilizce (`Patient`, `patients`), rota da İngilizce olmalı — aksi halde kalıcı bir çeviri katmanı doğar.
+
+### Metin nasıl yazılır
+
+- Katalog: `apps/web/src/lib/i18n/messages.ts`. `tr` tip kaynağıdır; `en`'de eksik anahtar derleme hatası verir.
+- Erişim: `import { t } from '$lib/i18n/locale.svelte'` → `t('nav.patients')`.
+- `navigation.ts` etiketleri `labelKey: MessageKey` taşır, ham string taşımaz.
+- Yayındaki dil `defaultLocale = 'tr'`. Dil değiştirici arayüze **eklenmedi**; `setLocale()` hazır, açılması ayrı karar.
+- Mevcut ekranların Türkçe metinleri henüz kataloğa taşınmadı. Kural yeni ve dokunulan kod için bağlayıcı.
+
+### Vitrin locale ağacı neden kurulmadı
+
+`apps/web/src/routes/+layout.ts` içinde `ssr = false` ve `prerender = false` — vitrin Google'a boş `index.html` iskeleti olarak gidiyor, `<svelte:head>` içeriği hiç render edilmiyor. **Bugün hiç SEO yok**, dolayısıyla locale/slug stratejisi karşılık üretmez.
+
+Sıra:
+
+1. Vitrini prerender edilebilir hale getir (o rota için `ssr = true` gerekir).
+2. `/tr/` ve `/en/` ağacını kur, her dil kendi slug'ıyla (`/tr/ozellikler`, `/en/features`).
+3. `/` için **Cloudflare'de uçta 302** yönlendirme + `hreflang`. JavaScript ile yönlendirme yapılmaz — SPA'da istemci yönlendirmesi SEO'yu öldürür.
+
+Çıplak kök (`/` = tek dil, prefix'siz) bilinçli olarak seçilmedi: ikinci dil eklenince ya mevcut linkler kırılır ya `/ozellikler` ile `/tr/ozellikler` aynı sayfayı sunar (yinelenen içerik). İkisi de prefix'li olunca "hangi dil birincil" sorusu tek satırlık bir yönlendirme kuralına iner ve her gün değiştirilebilir — segment kararı (acente / klinik) verilene kadar sabitlenmemesi gereken şey tam olarak bu.
+
+Pazar deseni de bunu doğruluyor: `planports.com/tr/...` ve `estesoft.com.tr/tr/...` — ikisi de her iki dili prefix'liyor, çıplak kök kullanmıyor.
 
 ## Renk token'ları (koyu tema)
 
@@ -77,7 +119,7 @@ Cloudflare dashboard **düzeni** referans; **renk** TickPort. Sidebar header/foo
 
 Tek uzun sayfa: gradient hero (değer vaadi + tek CTA "Demo talep et") → güven bandı → özellik blokları → entegrasyon logoları → [Özellikler] → alt CTA → footer. Fiyat sayfası MVP'de yok; satış demo üzerinden.
 
-## Özellikler sayfası (`/ozellikler`)
+## Özellikler sayfası (`/features`)
 
 Tek sayfada mevcut + gelecek özellikler; hem kullanıcı için öğrenme noktası hem bizim için yol haritası vitrini. Login gerektirmez (vitrinden linklenir), panel içinden de erişilir.
 
@@ -89,6 +131,6 @@ Tek sayfada mevcut + gelecek özellikler; hem kullanıcı için öğrenme noktas
 - Gruplama modüle göre; üstte duruma göre filtre.
 - Kural: bir özellik "Yayında"ya geçtiğinde aynı commit'te changelog kaydı da eklenir.
 
-## Yenilikler sayfası (`/yenilikler`)
+## Yenilikler sayfası (`/changelog`)
 
 Changelog'un kullanıcıya dönük yüzü; kurallar `docs/CHANGELOG-KURALLARI.md` içinde. Login sonrası üst barda zil ikonu: son girişten sonra yeni sürüm varsa brand renkli nokta.

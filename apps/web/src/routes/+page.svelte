@@ -13,7 +13,7 @@
 	type Page<T> = { items: T[]; next_cursor: string | null };
 
 	const role = getDemoRole();
-	const canFinance = canAccessPath('/finans/aktar', role);
+	const canFinance = canAccessPath('/finance/ai-transaction', role);
 
 	function pad2(n: number) {
 		return String(n).padStart(2, '0');
@@ -99,7 +99,7 @@
 		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-sm font-semibold text-text">Son hastalar</h2>
-				<a href="/hastalar" class="text-xs text-info hover:underline">Tümü</a>
+				<a href="/patients" class="text-xs text-info hover:underline">Tümü</a>
 			</div>
 			{#if patientsQuery.isPending}
 				<p class="text-sm text-text-faint">Yükleniyor…</p>
@@ -112,7 +112,7 @@
 					{#each recentPatients as patient (patient.id)}
 						<li class="min-w-0">
 							<a
-								href={`/hastalar/${patient.id}`}
+								href={`/patients/${patient.id}`}
 								class="flex min-w-0 items-center gap-2 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:gap-3 sm:px-2"
 							>
 								<div class="min-w-0 flex-1 overflow-hidden">
@@ -135,7 +135,7 @@
 		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-sm font-semibold text-text">Bugünün randevuları</h2>
-				<a href="/randevular" class="text-xs text-info hover:underline">Tümü</a>
+				<a href="/appointments" class="text-xs text-info hover:underline">Tümü</a>
 			</div>
 			{#if appointmentsQuery.isPending}
 				<p class="text-sm text-text-faint">Yükleniyor…</p>
@@ -148,7 +148,7 @@
 					{#each todayAppointments as appt (appt.id)}
 						<li class="min-w-0">
 							<a
-								href={appt.patient_id ? `/hastalar/${appt.patient_id}` : '/randevular'}
+								href={appt.patient_id ? `/patients/${appt.patient_id}` : '/appointments'}
 								class="flex min-w-0 items-start gap-2 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:gap-3 sm:px-2"
 							>
 								<span
@@ -173,7 +173,7 @@
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-sm font-semibold text-text">Bekleyen WhatsApp</h2>
 				{#if canFinance}
-					<a href="/finans/aktar" class="text-xs text-info hover:underline">
+					<a href="/finance/ai-transaction" class="text-xs text-info hover:underline">
 						{pendingCount > 0 ? `${pendingCount} yeni` : 'AI ile işlem'}
 					</a>
 				{:else}
@@ -195,7 +195,7 @@
 					{#each pendingMessages as msg (msg.id)}
 						<li class="min-w-0">
 							<a
-								href={`/finans/aktar?inbox=${msg.id}`}
+								href={`/finance/ai-transaction?inbox=${msg.id}`}
 								class="block min-w-0 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:px-2"
 							>
 								<p class="truncate text-sm font-medium text-text">

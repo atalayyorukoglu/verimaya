@@ -4,9 +4,7 @@ Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (m
 
 ## Durum
 
-**Faz 0b** tamamlandı (Docker + NestJS + better-auth + RLS + CI). **Faz 1** — çekirdek domain. Yol haritası: [`docs/YOL-HARITASI.md`](./docs/YOL-HARITASI.md) — mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
-
-Proje takibi Obsidian'da: `SecondBrain-Remote/03-Areas/Verimaya`.
+**Faz 0b** tamamlandı (Docker + NestJS + better-auth + RLS + CI). Yol haritası artık yalnızca Obsidian'da: `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` — mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
 
 ## Stack
 

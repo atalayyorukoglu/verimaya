@@ -162,7 +162,7 @@
 								{/if}
 							</div>
 							<a
-								href={kind === 'contacts' ? `/kisiler/${row.id}` : `/hastalar/${row.id}`}
+								href={kind === 'contacts' ? `/contacts/${row.id}` : `/patients/${row.id}`}
 								class="shrink-0 text-xs text-brand hover:underline"
 							>
 								Aç

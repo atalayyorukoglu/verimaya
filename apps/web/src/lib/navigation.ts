@@ -18,63 +18,70 @@ import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
 import Bell from '@lucide/svelte/icons/bell';
 
+import type { MessageKey } from '$lib/i18n/messages';
+
+/**
+ * Rota İngilizce, etiket katalogdan gelir.
+ * `labelKey` bilinçli olarak string değil — yanlış anahtar derleme hatası verir.
+ * Kural: docs/TASARIM.md § Dil ve slug.
+ */
 export type NavItem = {
-	label: string;
+	labelKey: MessageKey;
 	href: string;
 	icon: Component;
 };
 
 export type NavGroup = {
-	label: string;
+	labelKey: MessageKey;
 	items: NavItem[];
 };
 
 /** Panel nav — CF dashboard grupları, TickPort renkleri; docs/TASARIM.md */
 export const navGroups: NavGroup[] = [
 	{
-		label: 'Ana',
+		labelKey: 'nav.group.main',
 		items: [
-			{ label: 'Panel', href: '/', icon: LayoutDashboard },
-			{ label: 'Hastalar', href: '/hastalar', icon: Users },
-			{ label: 'Kişiler', href: '/kisiler', icon: Contact },
-			{ label: 'Randevular', href: '/randevular', icon: Calendar }
+			{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
+			{ labelKey: 'nav.patients', href: '/patients', icon: Users },
+			{ labelKey: 'nav.contacts', href: '/contacts', icon: Contact },
+			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar }
 		]
 	},
 	{
-		label: 'Finans',
+		labelKey: 'nav.group.finance',
 		items: [
-			{ label: 'İşlemler', href: '/finans', icon: Wallet },
-			{ label: 'Bakiyeler', href: '/finans/bakiyeler', icon: ArrowLeftRight },
-			{ label: 'Raporlar', href: '/raporlar', icon: ChartColumn }
+			{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
+			{ labelKey: 'nav.balances', href: '/finance/balances', icon: ArrowLeftRight },
+			{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
 		]
 	},
 	{
-		label: 'Pazarlama',
+		labelKey: 'nav.group.marketing',
 		items: [
-			{ label: 'Genel Bakış', href: '/pazarlama', icon: Megaphone },
-			{ label: 'Hesap', href: '/pazarlama/hesap', icon: Calculator },
-			{ label: 'Simülatör', href: '/pazarlama/simulator', icon: FlaskConical },
-			{ label: 'Uyumluluk', href: '/pazarlama/uyumluluk', icon: ShieldCheck },
-			{ label: 'Şablonlar', href: '/pazarlama/sablonlar', icon: LayoutTemplate },
-			{ label: 'Ölçüm', href: '/pazarlama/olcum', icon: Gauge },
-			{ label: 'Yayın Öncesi', href: '/pazarlama/kampanya', icon: ClipboardCheck }
+			{ labelKey: 'nav.marketingOverview', href: '/marketing', icon: Megaphone },
+			{ labelKey: 'nav.calculator', href: '/marketing/calculator', icon: Calculator },
+			{ labelKey: 'nav.simulator', href: '/marketing/simulator', icon: FlaskConical },
+			{ labelKey: 'nav.compliance', href: '/marketing/compliance', icon: ShieldCheck },
+			{ labelKey: 'nav.templates', href: '/marketing/templates', icon: LayoutTemplate },
+			{ labelKey: 'nav.measurement', href: '/marketing/measurement', icon: Gauge },
+			{ labelKey: 'nav.preLaunch', href: '/marketing/pre-launch', icon: ClipboardCheck }
 		]
 	},
 	{
-		label: 'Sistem',
+		labelKey: 'nav.group.system',
 		items: [
-			{ label: 'Ayarlar', href: '/ayarlar', icon: Settings },
-			{ label: 'Özellikler', href: '/ozellikler', icon: Sparkles },
-			{ label: 'Yenilikler', href: '/yenilikler', icon: Bell },
-			{ label: 'Geliştirici', href: '/dev', icon: UserCog }
+			{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
+			{ labelKey: 'nav.features', href: '/features', icon: Sparkles },
+			{ labelKey: 'nav.changelog', href: '/changelog', icon: Bell },
+			{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }
 		]
 	}
 ];
 
 /** Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar */
 export const mobileTabItems: NavItem[] = [
-	{ label: 'Panel', href: '/', icon: LayoutDashboard },
-	{ label: 'Hastalar', href: '/hastalar', icon: Users },
-	{ label: 'Randevular', href: '/randevular', icon: Calendar },
-	{ label: 'İşlemler', href: '/finans', icon: Wallet }
+	{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
+	{ labelKey: 'nav.patients', href: '/patients', icon: Users },
+	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
+	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet }
 ];

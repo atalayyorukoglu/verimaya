@@ -33,6 +33,12 @@ final class SessionStore: ObservableObject {
       } else {
         apply(try await APIClient.shared.me())
         organizations = (try? await AuthAPI.listOrganizations(token: token)) ?? []
+        // Self-heal: an older session may have no active org set. Set the first
+        // one so ActiveOrgGuard-protected endpoints (patients, etc.) work.
+        if activeOrganizationId == nil, let first = organizations.first {
+          try? await AuthAPI.setActive(token: token, organizationId: first.id)
+          apply(try await APIClient.shared.me())
+        }
       }
       isAuthenticated = true
     } catch {

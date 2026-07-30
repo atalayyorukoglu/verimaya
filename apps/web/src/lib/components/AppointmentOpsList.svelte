@@ -47,7 +47,7 @@
 								{/if}
 							</p>
 							<a
-								href={`/hastalar/${appt.patient_id}`}
+								href={`/patients/${appt.patient_id}`}
 								class="mt-0.5 block truncate text-sm font-semibold text-text hover:text-brand hover:underline"
 							>
 								{appt.patient_display_name}

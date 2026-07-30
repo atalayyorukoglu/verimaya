@@ -34,10 +34,31 @@ alwaysApply: false
 
 ## UI ve tasarım
 
-- Tasarım sistemi: `docs/TASARIM.md` — **TickPort warm neutrals** renk + CF dashboard layout; **açık + koyu tema** (varsayılan açık, üst barda değiştirici), **yalnız Türkçe** (i18n altyapısı kurulmaz, metinler doğrudan Türkçe yazılır).
+- Tasarım sistemi: `docs/TASARIM.md` — **TickPort warm neutrals** renk + CF dashboard layout; **açık + koyu tema** (varsayılan açık, üst barda değiştirici). Yayındaki tek dil **Türkçe**, ama **i18n altyapısı kurulu** (aşağı bak).
 - Renkler daima token üzerinden (`--brand`, `--surface`, `--border`…); bileşende ham hex yasak. Brand (terracotta `#D97757`) yalnız vurgudur (buton, aktif durum); gövde metni asla brand rengi olmaz. Kaynak palet: TickPort `poc-sveltekit/src/app.css`.
 - Bileşenler: shadcn-svelte (bits-ui tabanlı) öncelikli; özel bileşen ancak karşılamıyorsa yazılır.
 - Panel düzeni: CF dashboard iskeleti; sidebar header/footer **TickPort birebir** (`SiteLogo` + `SidebarVersionFooter`, 220px, `docs/TASARIM.md`).
 - Responsive zorunlu: her yeni ekran mobil (375px) ve desktop'ta kontrol edilir; tablolar mobilde kart görünümüne düşer.
 - Tarihler kullanıcıya lokal saatte gösterilir, API'ye ISO-8601 UTC gider. Para, minor unit integer'dan formatlanarak gösterilir.
-- `/ozellikler` ve `/yenilikler` sayfaları elle HTML ile değil, `packages/shared`'daki `features.ts` / `changelog.ts` veri dosyalarından render edilir (kurallar: `docs/CHANGELOG-KURALLARI.md`).
+- `/features` ve `/changelog` sayfaları elle HTML ile değil, `packages/shared`'daki `features.ts` / `changelog.ts` veri dosyalarından render edilir (kurallar: `docs/CHANGELOG-KURALLARI.md`).
+
+## Dil ve slug (2026-07-26)
+
+Tam kural ve gerekçe: `AGENTS.md` § Dil ve slug.
+
+```svelte
+<!-- ❌ BAD — Türkçe rota + gömülü Türkçe metin -->
+<a href="/hastalar">Hastalar</a>
+
+<!-- ✅ GOOD — İngilizce rota + katalogdan metin -->
+<script lang="ts">
+  import { t } from '$lib/i18n/locale.svelte';
+</script>
+<a href="/patients">{t('nav.patients')}</a>
+```
+
+- **Rota, dizin ve slug daima İngilizce**: `/patients`, `/settings/connections/ads`, `/marketing/pre-launch`. Türkçe rota açılmaz.
+- **Panel rotasına locale prefix eklenmez.** `/tr/...` ve `/en/...` yalnız vitrin için (henüz kurulmadı); panelde dil kullanıcı tercihidir.
+- Kullanıcıya görünen her metin `apps/web/src/lib/i18n/messages.ts` kataloğuna anahtar olarak eklenir; bileşende `t('key')` ile okunur. `tr` tip kaynağıdır, `en`'de eksik anahtar derleme hatasıdır.
+- `navigation.ts` etiketleri `labelKey: MessageKey` taşır, ham string taşımaz.
+- Modül düzeyinde `$state` gerektiren dosya `*.svelte.ts` uzantısıyla yazılır ve `.ts` olmadan import edilir (`$lib/i18n/locale.svelte`).

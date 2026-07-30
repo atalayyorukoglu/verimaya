@@ -5,16 +5,16 @@ const STORAGE_KEY = 'verimaya:demo-role';
 /** Nav href → roles that can see it. */
 const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
-	'/hastalar': ['owner', 'admin', 'manager', 'agent', 'readonly'],
-	'/kisiler': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
-	'/randevular': ['owner', 'admin', 'manager', 'agent', 'readonly'],
-	'/finans': ['owner', 'admin', 'manager', 'finance'],
-	'/finans/aktar': ['owner', 'admin', 'manager', 'finance'],
-	'/finans/bakiyeler': ['owner', 'admin', 'manager', 'finance'],
-	'/raporlar': ['owner', 'admin', 'manager', 'finance', 'readonly'],
-	'/ayarlar': ['owner', 'admin'],
-	'/ozellikler': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
-	'/yenilikler': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/patients': ['owner', 'admin', 'manager', 'agent', 'readonly'],
+	'/contacts': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/appointments': ['owner', 'admin', 'manager', 'agent', 'readonly'],
+	'/finance': ['owner', 'admin', 'manager', 'finance'],
+	'/finance/ai-transaction': ['owner', 'admin', 'manager', 'finance'],
+	'/finance/balances': ['owner', 'admin', 'manager', 'finance'],
+	'/reports': ['owner', 'admin', 'manager', 'finance', 'readonly'],
+	'/settings': ['owner', 'admin'],
+	'/features': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/changelog': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/dev': ['owner', 'admin']
 };
 

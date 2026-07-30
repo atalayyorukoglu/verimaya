@@ -6,6 +6,7 @@
 	import { cn } from '$lib/utils';
 	import { apiGet } from '$lib/api';
 	import { mobileTabItems, navGroups } from '$lib/navigation';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { canAccessPath, canSeeNav, getDemoRole, roleLabels } from '$lib/rbac';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
@@ -236,12 +237,12 @@
 			class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto px-2 py-3"
 			aria-label="Ana menü"
 		>
-			{#each visibleGroups as group, gi (group.label)}
+			{#each visibleGroups as group, gi (group.labelKey)}
 				<div class={gi === 0 ? '' : 'mt-4'}>
 					<p
 						class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase"
 					>
-						{group.label}
+						{t(group.labelKey)}
 					</p>
 					<ul class="space-y-0.5">
 						{#each group.items as item (item.href)}
@@ -259,7 +260,7 @@
 									aria-current={active ? 'page' : undefined}
 								>
 									<Icon class="size-4 shrink-0" aria-hidden="true" />
-									<span class="truncate">{item.label}</span>
+									<span class="truncate">{t(item.labelKey)}</span>
 								</a>
 							</li>
 						{/each}
@@ -272,7 +273,7 @@
 			class="shrink-0 border-t border-border bg-bg px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
 		>
 			<a
-				href="/ayarlar"
+				href="/settings"
 				class="mb-2 block truncate rounded-md px-1 py-1 text-center text-xs text-text-muted hover:text-text"
 				title="demo@verimaya.app"
 			>
@@ -312,12 +313,12 @@
 				class="sidebar-nav-scroll flex-1 overflow-y-auto px-2 py-3"
 				aria-label="Tüm menü"
 			>
-				{#each visibleGroups as group, gi (group.label)}
+				{#each visibleGroups as group, gi (group.labelKey)}
 					<div class={gi === 0 ? '' : 'mt-4'}>
 						<p
 							class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase"
 						>
-							{group.label}
+							{t(group.labelKey)}
 						</p>
 						<ul class="space-y-0.5">
 							{#each group.items as item (item.href)}
@@ -336,7 +337,7 @@
 										aria-current={active ? 'page' : undefined}
 									>
 										<Icon class="size-4 shrink-0" aria-hidden="true" />
-										<span class="truncate">{item.label}</span>
+										<span class="truncate">{t(item.labelKey)}</span>
 									</a>
 								</li>
 							{/each}
@@ -348,7 +349,7 @@
 				class="shrink-0 border-t border-border bg-bg px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
 			>
 				<a
-					href="/ayarlar"
+					href="/settings"
 					onclick={closeMobile}
 					class="mb-2 block truncate rounded-md px-1 py-1 text-center text-xs text-text-muted hover:text-text"
 					title="demo@verimaya.app"
@@ -369,7 +370,7 @@
 			<div class="ml-auto flex shrink-0 items-center gap-1">
 				<ThemeToggle />
 				<a
-					href="/yenilikler"
+					href="/changelog"
 					class="relative rounded-[6px] p-2 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 					aria-label="Yenilikler"
 					title="Yenilikler"
@@ -411,9 +412,9 @@
 								<p class="truncate text-xs text-text-faint">demo@verimaya.app</p>
 								<p class="mt-1 text-xs text-text-muted">Rol: {roleLabels[role]}</p>
 							</div>
-							{#if canSeeNav('/ayarlar', role)}
+							{#if canSeeNav('/settings', role)}
 								<a
-									href="/ayarlar"
+									href="/settings"
 									class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
 									onclick={closeAccount}
 								>
@@ -421,7 +422,7 @@
 								</a>
 							{/if}
 							<a
-								href="/yenilikler"
+								href="/changelog"
 								class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
 								onclick={closeAccount}
 							>
@@ -472,7 +473,7 @@
 						aria-current={active ? 'page' : undefined}
 					>
 						<Icon class="size-5 shrink-0" aria-hidden="true" />
-						<span class="truncate">{item.label}</span>
+						<span class="truncate">{t(item.labelKey)}</span>
 					</a>
 				</li>
 			{/each}

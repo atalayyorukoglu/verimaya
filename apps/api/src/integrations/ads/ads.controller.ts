@@ -108,7 +108,7 @@ export class AdsController {
 			redirectUri
 		});
 		await this.settings.storeCredential(payload.tenantId, provider, { secret });
-		return reply.redirect(`${webPublicUrl()}/ayarlar/baglantilar?ads=${provider}`, 302);
+		return reply.redirect(`${webPublicUrl()}/settings/connections/ads?ads=${provider}`, 302);
 	}
 
 	@Delete(':provider')
