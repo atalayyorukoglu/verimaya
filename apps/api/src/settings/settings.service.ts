@@ -5,12 +5,16 @@ import type {
 	CredentialUpsert,
 	FinanceCategoryCreate,
 	FinanceCategoryUpdate,
-	TrustScoreSettings
+	TrustScoreSettings,
+	WhatsappAiDisclosure,
+	WhatsappAiDisclosureUpdate
 } from '@verimaya/shared';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS,
-	trustScoreSettings
+	defaultWhatsappAiDisclosure,
+	trustScoreSettings,
+	whatsappAiDisclosureSchema
 } from '@verimaya/shared';
 import {
 	contactTypes,
@@ -20,11 +24,14 @@ import {
 	tenantSettings
 } from '../db/schema';
 import { toContactType, toFinanceCategory } from '../common/mappers';
+import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { buildDefaultAppointmentTypes } from './appointment-type-defaults';
 
 const TRUST_SCORE_KEY = 'trust_score';
+const WHATSAPP_AI_DISCLOSURE_KEY = 'whatsapp_ai_disclosure';
+const AI_DISCLOSURE_AUDIT_LABEL = 'whatsapp_ai_disclosure';
 
 @Injectable()
 export class SettingsService {
@@ -303,6 +310,54 @@ export class SettingsService {
 	async saveTrustScore(tenantId: string, settings: TrustScoreSettings): Promise<TrustScoreSettings> {
 		await this.setTenantSetting(tenantId, TRUST_SCORE_KEY, settings);
 		return settings;
+	}
+
+	async getAiDisclosure(tenantId: string): Promise<WhatsappAiDisclosure> {
+		const raw = await this.getTenantSetting(tenantId, WHATSAPP_AI_DISCLOSURE_KEY);
+		if (raw == null) return defaultWhatsappAiDisclosure();
+		const parsed = whatsappAiDisclosureSchema.safeParse(raw);
+		return parsed.success ? parsed.data : defaultWhatsappAiDisclosure();
+	}
+
+	async saveAiDisclosure(
+		tenantId: string,
+		input: WhatsappAiDisclosureUpdate,
+		actor: AuditActor
+	): Promise<WhatsappAiDisclosure> {
+		const value: WhatsappAiDisclosure = {
+			enabled: input.enabled,
+			text: input.text,
+			updated_by: actor.actorDisplayName,
+			updated_at: new Date().toISOString()
+		};
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.insert(tenantSettings)
+				.values({
+					tenantId,
+					key: WHATSAPP_AI_DISCLOSURE_KEY,
+					value
+				})
+				.onConflictDoUpdate({
+					target: [tenantSettings.tenantId, tenantSettings.key],
+					set: {
+						value,
+						updatedAt: new Date()
+					}
+				});
+
+			await writeAuditLog(
+				db,
+				tenantId,
+				actor,
+				'update',
+				'tenant',
+				AI_DISCLOSURE_AUDIT_LABEL
+			);
+		});
+
+		return value;
 	}
 
 	private async findFinanceCategoryRow(db: TenantDb, id: string) {

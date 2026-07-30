@@ -787,7 +787,7 @@ gövdeyi tüketmeden önce sakla. Mevcut `validateWebhookRequest` bunu yapıyor 
 
 ### Adım 23 — WhatsApp AI ifşa ayarı (kriter 7.6)
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Ürün içi karnenin **en kritik otomatik dolan kriteri** ve aynı zamanda
 gerçek bir uyum yükümlülüğü (EU AI Act m.50, 2 Ağustos 2026). Yol haritası Faz 8 bunu açıkça
@@ -1448,3 +1448,8 @@ Denetimde netleştirilip gerekirse plana adım olarak eklenecek.
 
 5. **LLM PII minimizasyonu (Adım 21 #3):** Mesaj tam metin + hasta adı modele gidiyor.
    Ayrı adım mı, Adım 25 (LLM ledger) ile birlikte mi?
+
+6. **Adım 24 (ifşa → giden mesaj):** Adım 21'e göre giden WhatsApp yolu **yok**. Plan:
+   "bu adım giden yolun kendisiyle birlikte yeniden boyutlandırılır ve kullanıcıya sorulur."
+   Bu turda (a) minimal outbound send + ifşa, (b) yalnız stub/adaptör iskeleti + ifşa
+   hook'u, (c) Adım 24'ü ertele — hangisi?

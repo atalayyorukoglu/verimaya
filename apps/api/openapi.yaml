@@ -33,6 +33,7 @@ tags:
   - name: Webhooks
   - name: Webhook Subscriptions
   - name: WhatsApp
+  - name: Settings
   - name: Reports
   - name: API Keys
   - name: Health
@@ -703,6 +704,44 @@ paths:
       responses:
         '200':
           description: Parsed transaction drafts
+
+  /settings/ai-disclosure:
+    get:
+      tags: [Settings]
+      summary: WhatsApp AI disclosure setting (criterion 7.6)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Current disclosure (defaults if unset)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled, text, updated_by, updated_at]
+                properties:
+                  enabled: { type: boolean }
+                  text: { type: string, maxLength: 2000 }
+                  updated_by: { type: string, nullable: true }
+                  updated_at: { type: string, format: date-time, nullable: true }
+    put:
+      tags: [Settings]
+      summary: Update WhatsApp AI disclosure (writes audit_logs)
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled, text]
+              properties:
+                enabled: { type: boolean }
+                text: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '200':
+          description: Saved disclosure including updated_by / updated_at
 
   /reports/summary:
     get:

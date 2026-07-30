@@ -17,10 +17,11 @@ import {
 	credentialUpsertSchema,
 	financeCategoryCreateSchema,
 	financeCategoryUpdateSchema,
-	trustScoreSettings
+	trustScoreSettings,
+	whatsappAiDisclosureUpdateSchema
 } from '@verimaya/shared';
 import { SessionGuard } from '../auth/session.guard';
-import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
+import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest } from '../common/active-org.guard';
 import { parseBody } from '../common/mappers';
 import { SettingsService } from './settings.service';
 
@@ -102,5 +103,20 @@ export class SettingsController {
 	putTrustScore(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const input = parseBody(trustScoreSettings, body, req);
 		return this.settingsService.saveTrustScore(getActiveOrgId(req), input);
+	}
+
+	@Get('ai-disclosure')
+	getAiDisclosure(@Req() req: FastifyRequest) {
+		return this.settingsService.getAiDisclosure(getActiveOrgId(req));
+	}
+
+	@Put('ai-disclosure')
+	putAiDisclosure(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(whatsappAiDisclosureUpdateSchema, body, req);
+		return this.settingsService.saveAiDisclosure(
+			getActiveOrgId(req),
+			input,
+			getActorFromRequest(req)
+		);
 	}
 }

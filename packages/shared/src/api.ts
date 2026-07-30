@@ -38,6 +38,7 @@ export const apiPaths = {
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
 	settingsCredential: (provider: string) => `${API_V1_PREFIX}/settings/credentials/${provider}`,
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
+	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	whatsappParse: `${API_V1_PREFIX}/whatsapp/parse`,
 	whatsappInbox: `${API_V1_PREFIX}/whatsapp/inbox`,
 	whatsappInboxItem: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}`,
