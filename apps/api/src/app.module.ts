@@ -20,6 +20,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
 import { ReportsModule } from './reports/reports.module';
 import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subscriptions.module';
 import { AdsModule } from './integrations/ads/ads.module';
+import { GhlModule } from './integrations/ghl/ghl.module';
 import { KarneModule } from './karne/karne.module';
 import { ScorecardModule } from './scorecard/scorecard.module';
 import { StorageModule } from './storage/storage.module';
@@ -47,6 +48,7 @@ import { StorageModule } from './storage/storage.module';
 		SettingsModule,
 		AuditLogsModule,
 		AdsModule,
+		GhlModule,
 		AdMetricsModule,
 		ApiKeysModule,
 		ReportsModule,

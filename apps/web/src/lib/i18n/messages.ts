@@ -121,7 +121,34 @@ const tr = {
 	'scorecard.compare.loading': 'Karşılaştırma yükleniyor…',
 	'scorecard.compare.loadError': 'Karşılaştırma yüklenemedi.',
 	'scorecard.history.heading': 'Arşivlenen ölçümler',
-	'scorecard.history.row': '{date} · {zeros} sıfır · {pct}'
+	'scorecard.history.row': '{date} · {zeros} sıfır · {pct}',
+
+	'settings.ghl.title': 'GoHighLevel',
+	'settings.ghl.description':
+		'Lead ve iletişim senkronu — webhook-first, alan sahipliği kurallı.',
+	'settings.ghl.card.name': 'GHL hesabı',
+	'settings.ghl.card.description':
+		"Contact ve opportunity webhook'ları kuyruğa yazılır, worker'da işlenir; Verimaya sahibi olduğu alanları GHL'e geri yazar.",
+	'settings.ghl.connect': "GHL'e bağlan",
+	'settings.ghl.flash': 'GHL bağlantısı tamamlandı.',
+	'settings.ghl.statusLabel': 'Durum',
+	'settings.ghl.statusConnected': 'Bağlı',
+	'settings.ghl.statusDisconnected': 'Bağlı değil',
+	'settings.ghl.locationLabel': 'Location',
+	'settings.ghl.userTypeLabel': 'Token tipi',
+	'settings.ghl.keyVersionLabel': 'Anahtar sürümü',
+	'settings.ghl.loading': 'Bağlantı durumu yükleniyor…',
+	'settings.ghl.loadError': 'Bağlantı durumu yüklenemedi.',
+	'settings.ghl.disconnectError': 'Bağlantı kesilemedi',
+	'settings.ghl.ownership.heading': 'Alan sahipliği (planlanan)',
+	'settings.ghl.ownership.lead': 'Lead durumu ve pipeline aşaması: GHL sahibi',
+	'settings.ghl.ownership.ops': 'Randevu, finans ve operasyon alanları: Verimaya sahibi',
+	'settings.ghl.ownership.conflict': 'Çakışmada kaynak sahibi kazanır, olay denetim kaydına düşer.',
+	'settings.ghl.dev.heading': 'Geliştirme / fixture',
+	'settings.ghl.dev.body':
+		"OAuth olmadan gelen GHL webhook'ları kuyrukta işlenir; contact alanları yeterliyse tenant içinde hasta upsert edilir (source=ghl). Sync özeti jobs ledger'ına yazılır. 6 saatlik ghl.reconcile için ENABLE_INTEGRATION_SCHEDULERS=true gerekir.",
+	'settings.ghl.footnote':
+		'Token AES-GCM ile saklanır. Refresh Adım 41 HTTP istemcisinde kullanılır; access ~24s, refresh kullanıma kadar ~1 yıl.'
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -228,7 +255,34 @@ const en: Record<MessageKey, string> = {
 	'scorecard.compare.loading': 'Loading comparison…',
 	'scorecard.compare.loadError': 'Could not load comparison.',
 	'scorecard.history.heading': 'Archived measurements',
-	'scorecard.history.row': '{date} · {zeros} zeros · {pct}'
+	'scorecard.history.row': '{date} · {zeros} zeros · {pct}',
+
+	'settings.ghl.title': 'GoHighLevel',
+	'settings.ghl.description':
+		'Lead and contact sync — webhook-first, field ownership rules.',
+	'settings.ghl.card.name': 'GHL account',
+	'settings.ghl.card.description':
+		'Contact and opportunity webhooks are queued and processed by workers; Verimaya writes back fields it owns.',
+	'settings.ghl.connect': 'Connect GHL',
+	'settings.ghl.flash': 'GHL connection completed.',
+	'settings.ghl.statusLabel': 'Status',
+	'settings.ghl.statusConnected': 'Connected',
+	'settings.ghl.statusDisconnected': 'Not connected',
+	'settings.ghl.locationLabel': 'Location',
+	'settings.ghl.userTypeLabel': 'Token type',
+	'settings.ghl.keyVersionLabel': 'Key version',
+	'settings.ghl.loading': 'Loading connection status…',
+	'settings.ghl.loadError': 'Could not load connection status.',
+	'settings.ghl.disconnectError': 'Could not disconnect',
+	'settings.ghl.ownership.heading': 'Field ownership (planned)',
+	'settings.ghl.ownership.lead': 'Lead status and pipeline stage: GHL owns',
+	'settings.ghl.ownership.ops': 'Appointments, finance, and ops fields: Verimaya owns',
+	'settings.ghl.ownership.conflict': 'On conflict the source owner wins; the event is audited.',
+	'settings.ghl.dev.heading': 'Development / fixture',
+	'settings.ghl.dev.body':
+		'GHL webhooks without OAuth are still processed; clean contacts upsert patients (source=ghl). Sync summary goes to the jobs ledger. 6h ghl.reconcile needs ENABLE_INTEGRATION_SCHEDULERS=true.',
+	'settings.ghl.footnote':
+		'Tokens are stored with AES-GCM. Refresh is used by the Adım 41 HTTP client; access ~24h, refresh ~1y until used.'
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { tr, en };

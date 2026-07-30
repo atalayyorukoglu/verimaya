@@ -1518,13 +1518,13 @@ Bloke olursa Adım 40'a geç, buraya sonra dön (bağımlılık yok).
 
 ## G2 — GHL gerçek adaptörü
 
-> Durum: `apps/api/src/integrations/ghl/` fixture-backed stub. `GhlClientStub` HTTP çağırmaz;
-> `ghl.reconcile` OAuth yokken noop ledger satırı yazıyor; hasta eşlemesi `notes` marker'ıyla
-> (`ghl_contact_id=…`) yapılıyor — ayrı mapping tablosu yok (MIMARI.md § GHL entegrasyon durumu).
+> Durum (2026-07-30): **Adım 40 OAuth bağlan/kes tamam.** `GhlClientStub` hâlâ HTTP
+> çağırmaz (Adım 41). `ghl.reconcile` OAuth yokken noop ledger; hasta eşlemesi `notes`
+> marker (`ghl_contact_id=…`) — ayrı mapping tablosu yok (MIMARI.md § GHL).
 
 ### Adım 40 — GHL OAuth: state, authorize, callback
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Ads tarafındaki desen GHL'e uygulanır — **yeni desen icat etme**,
 `AdsOAuthStateService` ve `tenant_credentials` yaklaşımını taklit et.

@@ -38,11 +38,13 @@ tags:
   - name: API Keys
   - name: Health
   - name: Karne
-  - name: Scorecard
-    description: In-product AI scorecard (tenant-scoped; distinct from public Karne)
     description: |
       Public free AI scorecard funnel (no auth, no tenant).
       Rate-limited to 30 requests/minute/IP. Writes only `karne_*` tables.
+  - name: Scorecard
+    description: In-product AI scorecard (tenant-scoped; distinct from public Karne)
+  - name: Integrations
+    description: External OAuth connectors (GHL, Ads)
 
 components:
   schemas:
@@ -1148,6 +1150,45 @@ paths:
       responses:
         '200':
           description: Snapshot (profile may be null)
+  /integrations/ghl/status:
+    get:
+      tags: [Integrations]
+      summary: GHL OAuth connection status
+      responses:
+        '200':
+          description: connected, key_version, location_id, user_type
+  /integrations/ghl/authorize:
+    get:
+      tags: [Integrations]
+      summary: Start GHL Marketplace OAuth (302)
+      responses:
+        '302':
+          description: Redirect to marketplace.gohighlevel.com/oauth/chooselocation
+  /integrations/ghl/callback:
+    get:
+      tags: [Integrations]
+      summary: GHL OAuth callback — exchange code, store AES-GCM secret, redirect to web
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+        - in: query
+          name: state
+          required: true
+          schema: { type: string }
+      responses:
+        '302':
+          description: Redirect to /settings/connections/ghl?ghl=connected
+        '400':
+          description: Invalid or expired OAuth state
+  /integrations/ghl:
+    delete:
+      tags: [Integrations]
+      summary: Disconnect GHL (delete tenant_credentials provider=ghl)
+      responses:
+        '204':
+          description: Disconnected
   /scorecard/profile:
     get:
       tags: [Scorecard]

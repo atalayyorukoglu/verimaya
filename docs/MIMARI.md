@@ -74,9 +74,17 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 
 Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker`) dahili kullanımda çalışmaya devam eder. Şeması ve rota listesi `docs/legacy-reference/` altına çıkarılır; Verimaya şeması bunun düzeltilmiş portudur. Faz 8'de ETL ile veri göçü yapılır, kendi firmamız ilk tenant olur.
 
-## GHL entegrasyon durumu (2026-07-22)
+## GHL entegrasyon durumu (2026-07-30)
 
-`apps/api/src/integrations/ghl/` fixture-backed stub: `ghl.mapper.ts` contact/opportunity + minimal alanlar (ad/telefon/e-posta/external id) çıkarır. `GhlSyncService.processInboundEvent` tenant context içinde (1) `jobs` tablosuna `ghl.inbound.sync` ledger satırı yazar, (2) temiz contact'ta `patients` upsert eder (`source='ghl'`, notes marker `ghl_contact_id=<id>` — ayrı mapping tablosu/migration yok). `GhlClientStub` HTTP çağırmaz. `ghl.reconcile` OAuth yokken ledger noop satırı yazar. Periyodik 6h scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true` (varsayılan kapalı). Alan bazlı sahiplik (madde 5) gerçek adaptörle gelecek.
+`apps/api/src/integrations/ghl/` — **OAuth bağlan/kes** (Adım 40): Marketplace authorize +
+token exchange → `tenant_credentials` provider=`ghl` (AES-GCM; secret JSON:
+access/refresh/expiresAt/locationId). Panel: `/settings/connections/ghl`.
+
+Inbound sync hâlâ fixture-backed: `ghl.mapper.ts` contact/opportunity çıkarır;
+`GhlSyncService.processInboundEvent` `jobs` ledger + hasta upsert (`source='ghl'`,
+`ghl_contact_id=` notes marker). `GhlClientStub` HTTP çağırmaz (Adım 41 gerçek istemci).
+`ghl.reconcile` OAuth yokken ledger noop. Scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true`.
+Alan bazlı sahiplik gerçek adaptörle (Adım 42+).
 
 ## Reklam metrikleri / Ads adaptör katmanı (RM-4, 2026-07-22)
 

@@ -39,6 +39,10 @@ export const apiPaths = {
 	settingsCredential: (provider: string) => `${API_V1_PREFIX}/settings/credentials/${provider}`,
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
+	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
+	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
+	integrationsGhlCallback: `${API_V1_PREFIX}/integrations/ghl/callback`,
+	integrationsGhl: `${API_V1_PREFIX}/integrations/ghl`,
 	scorecardProfile: `${API_V1_PREFIX}/scorecard/profile`,
 	scorecardCurrent: `${API_V1_PREFIX}/scorecard/current`,
 	scorecardAssessments: `${API_V1_PREFIX}/scorecard/assessments`,
@@ -132,6 +136,7 @@ import {
 	reportSummarySchema
 } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
+import { ghlConnectionStatus } from './ghl-connection.js';
 import { aiCorrectionCreateSchema, aiCorrectionSchema } from './ai-correction.js';
 import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
 
@@ -256,6 +261,9 @@ export const apiContract = {
 	'PUT /v1/settings/credentials/:provider': {
 		body: credentialUpsertSchema,
 		response: credentialStatusSchema
+	},
+	'GET /v1/integrations/ghl/status': {
+		response: ghlConnectionStatus
 	},
 	'GET /v1/ad-metrics': {
 		response: z.object({ items: z.array(adMetricSchema) })

@@ -1,56 +1,128 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import type { GhlConnectionStatus } from '@verimaya/shared';
+	import { apiGet, apiSend } from '$lib/api';
+	import { PUBLIC_API_URL } from '$lib/env';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import IntegrationCard from '$lib/components/IntegrationCard.svelte';
+
+	const queryClient = useQueryClient();
+	const apiOrigin = PUBLIC_API_URL.replace(/\/$/, '');
+	const authorizeHref = `${apiOrigin}/v1/integrations/ghl/authorize`;
+
+	const statusQuery = createQuery(() => ({
+		queryKey: ['integrations', 'ghl', 'status'],
+		queryFn: () => apiGet<GhlConnectionStatus>('/v1/integrations/ghl/status')
+	}));
+
+	const flashConnected = $derived(page.url.searchParams.get('ghl') === 'connected');
+
+	const cardStatus = $derived(
+		statusQuery.data?.connected ? ('connected' as const) : ('disconnected' as const)
+	);
+
+	const cardMeta = $derived.by((): { label: string; value: string }[] => {
+		const data = statusQuery.data;
+		return [
+			{
+				label: t('settings.ghl.statusLabel'),
+				value: data?.connected
+					? t('settings.ghl.statusConnected')
+					: t('settings.ghl.statusDisconnected')
+			},
+			{
+				label: t('settings.ghl.locationLabel'),
+				value: data?.location_id ?? '—'
+			},
+			{
+				label: t('settings.ghl.userTypeLabel'),
+				value: data?.user_type ?? '—'
+			},
+			{
+				label: t('settings.ghl.keyVersionLabel'),
+				value: data?.key_version != null ? String(data.key_version) : '—'
+			}
+		];
+	});
+
+	let disconnecting = $state(false);
+	let disconnectError = $state<string | null>(null);
+
+	async function disconnect() {
+		disconnecting = true;
+		disconnectError = null;
+		try {
+			await apiSend('/v1/integrations/ghl', 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ghl', 'status'] });
+		} catch (err) {
+			disconnectError = err instanceof Error ? err.message : t('settings.ghl.disconnectError');
+		} finally {
+			disconnecting = false;
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>GHL · Ayarlar · Verimaya</title>
+	<title>{t('settings.ghl.title')} · {t('nav.settings')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
-	<PageHeader
-		title="GoHighLevel"
-		description="Lead ve iletişim senkronu — webhook-first, alan sahipliği kurallı."
-	/>
+	<PageHeader title={t('settings.ghl.title')} description={t('settings.ghl.description')} />
 
-	<div class="space-y-4">
-		<IntegrationCard
-			name="GHL hesabı"
-			description="Contact ve opportunity webhook'ları kuyruğa yazılır, worker'da işlenir; Verimaya sahibi olduğu alanları GHL'e geri yazar."
-			status="disconnected"
-			actionLabel="GHL'e bağlan"
-			meta={[
-				{ label: 'Senkron yönü', value: 'Çift yönlü (alan sahipliğine göre)' },
-				{ label: 'Webhook durumu', value: 'Kurulmadı' }
-			]}
-		/>
-
-		<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<h2 class="text-sm font-semibold text-text">Alan sahipliği (planlanan)</h2>
-			<ul class="mt-3 space-y-1.5 text-sm text-text-muted">
-				<li>· Lead durumu ve pipeline aşaması: <span class="text-text">GHL sahibi</span></li>
-				<li>
-					· Randevu, finans ve operasyon alanları: <span class="text-text">Verimaya sahibi</span>
-				</li>
-				<li>· Çakışmada kaynak sahibi kazanır, olay denetim kaydına düşer.</li>
-			</ul>
+	{#if flashConnected}
+		<div
+			class="mb-4 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
+			role="status"
+		>
+			{t('settings.ghl.flash')}
 		</div>
+	{/if}
 
-		<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<h2 class="text-sm font-semibold text-text">Geliştirme / fixture</h2>
-			<p class="mt-2 text-sm leading-relaxed text-text-muted">
-				OAuth olmadan gelen GHL webhook'ları kuyrukta işlenir; contact alanları yeterliyse
-				tenant içinde hasta upsert edilir (<code class="text-xs">source=ghl</code>). Sync özeti
-				<code class="text-xs">jobs</code> ledger'ına yazılır. 6 saatlik
-				<code class="text-xs">ghl.reconcile</code> için
-				<code class="text-xs">ENABLE_INTEGRATION_SCHEDULERS=true</code> gerekir.
-			</p>
+	{#if disconnectError}
+		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+			{disconnectError}
 		</div>
+	{/if}
 
-		<p class="text-xs text-text-faint">
-			Gerçek OAuth bağlantısı ve alan bazlı çift yönlü senkron sonraki adım.
-		</p>
-	</div>
+	{#if statusQuery.isPending}
+		<p class="text-sm text-text-muted">{t('settings.ghl.loading')}</p>
+	{:else if statusQuery.isError}
+		<p class="text-sm text-danger">{t('settings.ghl.loadError')}</p>
+	{:else}
+		<div class="space-y-4">
+			<IntegrationCard
+				name={t('settings.ghl.card.name')}
+				description={t('settings.ghl.card.description')}
+				status={cardStatus}
+				meta={cardMeta}
+				actionLabel={statusQuery.data?.connected ? undefined : t('settings.ghl.connect')}
+				actionHref={statusQuery.data?.connected ? undefined : authorizeHref}
+				onDisconnect={statusQuery.data?.connected && !disconnecting
+					? () => void disconnect()
+					: undefined}
+			/>
+
+			<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
+				<h2 class="text-sm font-semibold text-text">{t('settings.ghl.ownership.heading')}</h2>
+				<ul class="mt-3 space-y-1.5 text-sm text-text-muted">
+					<li>· {t('settings.ghl.ownership.lead')}</li>
+					<li>· {t('settings.ghl.ownership.ops')}</li>
+					<li>· {t('settings.ghl.ownership.conflict')}</li>
+				</ul>
+			</div>
+
+			<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
+				<h2 class="text-sm font-semibold text-text">{t('settings.ghl.dev.heading')}</h2>
+				<p class="mt-2 text-sm leading-relaxed text-text-muted">
+					{t('settings.ghl.dev.body')}
+				</p>
+			</div>
+
+			<p class="text-xs text-text-faint">{t('settings.ghl.footnote')}</p>
+		</div>
+	{/if}
 </div>
