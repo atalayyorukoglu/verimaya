@@ -2,6 +2,7 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { createQueryClient } from '$lib/query-client';
@@ -12,9 +13,11 @@
 	let { children } = $props();
 
 	const queryClient = createQueryClient();
-	let appReady = $state(!USE_MSW || !import.meta.env.DEV);
+	// SSR/prerender must render real content — never the "Yükleniyor…" placeholder.
+	// In the browser, wait for MSW only when the mock worker is active in dev.
+	let appReady = $state(!browser || !USE_MSW || !import.meta.env.DEV);
 	const isBareRoute = $derived(
-		page.url.pathname.startsWith('/giris') || page.url.pathname.startsWith('/vitrin')
+		page.url.pathname.startsWith('/login') || page.url.pathname.startsWith('/vitrin')
 	);
 
 	onMount(async () => {

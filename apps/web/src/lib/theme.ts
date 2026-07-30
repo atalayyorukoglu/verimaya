@@ -9,10 +9,13 @@ export function getStoredTheme(): Theme {
 }
 
 export function applyTheme(theme: Theme) {
+	if (typeof document === 'undefined') return;
 	const root = document.documentElement;
 	root.classList.toggle('dark', theme === 'dark');
 	root.style.colorScheme = theme;
-	localStorage.setItem(STORAGE_KEY, theme);
+	if (typeof localStorage !== 'undefined') {
+		localStorage.setItem(STORAGE_KEY, theme);
+	}
 }
 
 export function toggleTheme(): Theme {
