@@ -65,6 +65,18 @@ export function readS3ConfigFromEnv(): S3FileStorageConfig {
 	return { endpoint, region, bucket, accessKeyId, secretAccessKey, forcePathStyle };
 }
 
+/** Returns null when S3 env is incomplete — used for optional dual-driver mode. */
+export function tryReadS3ConfigFromEnv(): S3FileStorageConfig | null {
+	const endpoint = process.env.S3_ENDPOINT?.trim();
+	const bucket = process.env.S3_BUCKET?.trim();
+	const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
+	const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY?.trim();
+	if (!endpoint && !bucket && !accessKeyId && !secretAccessKey) {
+		return null;
+	}
+	return readS3ConfigFromEnv();
+}
+
 /**
  * Cloudflare R2 / S3-compatible object storage.
  * Bucket must stay private — access only via this adapter (proxy stream or presigned URL).

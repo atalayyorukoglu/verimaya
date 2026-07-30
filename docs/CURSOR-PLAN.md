@@ -687,7 +687,7 @@ türetir. Confirm edilmeyen `pending` satırlar için temizlik işi (24 saat son
 
 ### Adım 20 — Mevcut local dosyaların taşınması + dokümantasyon
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Geçiş yolu ve geri dönüş yolu yazılı olsun.
 
