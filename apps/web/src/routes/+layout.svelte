@@ -17,12 +17,16 @@
 	// In the browser, wait for MSW only when the mock worker is active in dev.
 	let appReady = $state(!browser || !USE_MSW || !import.meta.env.DEV);
 	// Public routes also render under this root layout; skip AppShell for bare surfaces.
-	// `/vitrin` lives in `(public)/` but URL is unchanged — keep it here with `/login`.
 	const isBareRoute = $derived(
-		page.url.pathname.startsWith('/login') || page.url.pathname.startsWith('/vitrin')
+		page.url.pathname.startsWith('/login') ||
+			page.url.pathname.startsWith('/vitrin') ||
+			page.url.pathname.startsWith('/yapay-zeka-karnesi')
 	);
 	/** Marketing prerender surfaces only — panel + login stay noindex. */
-	const isIndexablePublic = $derived(page.url.pathname.startsWith('/vitrin'));
+	const isIndexablePublic = $derived(
+		page.url.pathname.startsWith('/vitrin') ||
+			page.url.pathname.startsWith('/yapay-zeka-karnesi')
+	);
 
 	onMount(async () => {
 		if (USE_MSW && import.meta.env.DEV) {

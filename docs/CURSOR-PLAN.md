@@ -231,7 +231,7 @@ ile **kelimesi kelimesine** eşleşir (elle karşılaştır, özetleme).
 
 ### Adım 6 — `/yapay-zeka-karnesi` rota iskeleti
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** `(public)` grubu altında yeni üst düzey rota; prerender edilir, AppShell yok,
 login yok. Bu adımda yalnız **iskelet**: giriş ekranı (başlık, ne olduğu, süre vaadi "5 dakika",
