@@ -26,6 +26,23 @@ Cursor'ın tek tek çalıştırabileceği atomik adımlara böler. Tamamlanmış
 
 ---
 
+## Kullanıcıya kalan işler (ops — agent atlar, kod devam eder)
+
+> 2026-07-30: Kullanıcı "benim yapacaklarımı not al, sen devam et" dedi.
+> Aşağıdaki adımların **repo/runbook kısmı** bitti; canlı kabul kullanıcıda.
+> Agent Adım 39 runbook’undan sonra **Adım 40+** (GHL kod) ile ilerler.
+
+| Adım | Repo | Kullanıcı (canlı kabul) | Runbook |
+|---|---|---|---|
+| **31** Coolify + yedek/restore | ✅ | DNS, Coolify stack, günlük yedek + sunucu dışı kopya, restore prova kaydı, health/vitrin/karne curl | `docs/DEPLOY-COOLIFY.md` |
+| **32** Pilot kesim | — | Prod tenant + ETL apply + dahili pilot günlüğü | `docs/ETL-KESIM.md` (31 sonrası) |
+| **38** Meta Ads go-live | ✅ | Meta App, OAuth bağlan, 7g metrik, 2× sync idempotent, log sızıntı denetimi | `docs/ADS-META-GOLIVE.md` |
+| **39** Google Ads go-live | (runbook) | Google Cloud + Ads developer token (onay **haftalar** sürebilir — erken başlat) | `docs/ADS-GOOGLE-GOLIVE.md` |
+
+Canlı sonuçları (URL, restore satırı, Ads kabul tablosu) yazılınca ilgili `[ ]` → `[x]`.
+
+---
+
 ## Verilmiş kararlar — bu planda sabittir, tekrar sorulmaz
 
 | Konu | Karar | Nerede kullanılır |
@@ -1226,8 +1243,10 @@ yok. Filtreyi testle sabitle, ilk hafta dry-run ile koş.
 
 ### Adım 31 — Coolify canlı deploy + yedek/restore provası
 
-- [ ] durum — **repo runbook hazır** (`docs/DEPLOY-COOLIFY.md`); canlı kabul (health /
-  panel / prerender / restore kaydı) henüz yok (`verimaya.app` DNS çözülmüyor, 2026-07-30).
+- [ ] durum — **repo ✅** (`docs/DEPLOY-COOLIFY.md`, commit `9b7f408`).
+  **Kullanıcıda:** DNS + Coolify (api/web/Postgres/Redis) + Cloudflare/firewall + günlük
+  yedek/sunucu dışı kopya + restore prova kaydı + curl kabul.
+  Not: 2026-07-30 `verimaya.app` DNS çözülmüyordu.
 
 **Ne yapılacak:** Yol haritası Faz 0b: *"Coolify hazırlığı (canlı deploy henüz yok)"*.
 Pilot bunsuz başlamaz.
@@ -1255,7 +1274,8 @@ aydınlatması yayında olmadan bu adımı tamamlama.
 
 ### Adım 32 — Pilot kesim: kendi firmamız ilk tenant
 
-- [ ] durum
+- [ ] durum — **Kullanıcıda** (Adım 31 canlı kabulünden sonra). Repo ETL araçları hazır
+  (Adım 28–30). Agent bu adımı atlar; F3/G blok koduna devam eder.
 
 **Ne yapılacak:** ETL apply canlıda koşulur, kendi firmamız ilk tenant olur, 2-4 haftalık
 dahili pilot başlar.
@@ -1446,8 +1466,9 @@ doğrular, anlaşılırlığı doğrulamaz.
 
 ### Adım 38 — Meta Ads go-live
 
-- [ ] durum — **repo runbook + long-lived token hazır** (`docs/ADS-META-GOLIVE.md`);
-  canlı Meta App / OAuth / metrik kabulü henüz yok.
+- [ ] durum — **repo ✅** (`docs/ADS-META-GOLIVE.md` + long-lived token, commit `63e1747`).
+  **Kullanıcıda:** Meta App + OAuth + 7g metrik + idempotent sync + log denetimi
+  (kabul tablosu runbook’ta).
 
 **Ne yapılacak:** Meta uygulaması kurulur ve gerçek OAuth uçtan uca doğrulanır.
 
@@ -1473,7 +1494,10 @@ bağlan" akışı). Secret'ın log'a düşmediğini **gözle doğrula** — bu s
 
 ### Adım 39 — Google Ads go-live
 
-- [ ] durum
+- [ ] durum — **repo ✅** (`docs/ADS-GOOGLE-GOLIVE.md` + opsiyonel
+  `GOOGLE_ADS_LOGIN_CUSTOMER_ID` MCC header).
+  **Kullanıcıda:** Google Cloud OAuth + Ads developer token + OAuth bağlan + 7g metrik +
+  idempotent sync + log denetimi (kabul tablosu runbook’ta). Token onayı haftalar sürebilir.
 
 **Ne yapılacak:** Adım 38'in Google karşılığı.
 

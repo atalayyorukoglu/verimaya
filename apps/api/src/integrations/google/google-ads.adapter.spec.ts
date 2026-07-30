@@ -122,4 +122,34 @@ describe('GoogleAdsAdapter', () => {
 			clicks: 320
 		});
 	});
+
+	it('sends login-customer-id when MCC id is configured', async () => {
+		const fetchFn: FetchFn = async (input, init) => {
+			const url = String(input);
+			if (url === 'https://oauth2.googleapis.com/token') {
+				return jsonResponse({ access_token: 'access-fresh' });
+			}
+			if (url.includes('/googleAds:searchStream')) {
+				expect(init?.headers).toMatchObject({
+					authorization: 'Bearer access-fresh',
+					'developer-token': 'dev-tok',
+					'login-customer-id': '1112223333'
+				});
+				return jsonResponse([]);
+			}
+			throw new Error(`unexpected URL: ${url}`);
+		};
+
+		const adapter = new GoogleAdsAdapter(
+			{ ...config, loginCustomerId: '111-222-3333' },
+			fetchFn
+		);
+		await adapter.pullDailyMetrics({
+			secret: JSON.stringify({
+				refreshToken: 'refresh-xyz',
+				customerId: '9876543210'
+			}),
+			since: '2026-07-01'
+		});
+	});
 });

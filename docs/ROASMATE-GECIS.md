@@ -211,11 +211,15 @@ Kod go-live hazır; canlı doğrulama harici kimlik bilgisi ister.
 **Meta (Adım 38):** ayrıntılı runbook → [`docs/ADS-META-GOLIVE.md`](./ADS-META-GOLIVE.md)
 (uzun ömürlü token, log denetimi, idempotent sync, kabul tablosu).
 
+**Google (Adım 39):** ayrıntılı runbook → [`docs/ADS-GOOGLE-GOLIVE.md`](./ADS-GOOGLE-GOLIVE.md)
+(offline refresh, opsiyonel MCC `GOOGLE_ADS_LOGIN_CUSTOMER_ID`, kabul tablosu).
+
 1. **Meta for Developers:** uygulama oluştur; `ads_read` izni; Valid OAuth Redirect URI =
    `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`. `.env`: `META_APP_ID`, `META_APP_SECRET` (+ isteğe `META_API_VERSION`).
 2. **Google Cloud + Ads:** OAuth client (web); scope `https://www.googleapis.com/auth/adwords`; redirect URI =
    `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/google/callback`. Google Ads API developer token al.
-   `.env`: `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`.
+   `.env`: `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`
+   (+ MCC ise `GOOGLE_ADS_LOGIN_CUSTOMER_ID`).
 3. Ortak: `ADS_OAUTH_REDIRECT_BASE` (API public kök), `WEB_PUBLIC_URL` (callback sonrası web), `CREDENTIALS_ENCRYPTION_KEY`.
 4. Panelde **Ayarlar → Bağlantılar → Reklamlar** üzerinden bağlan; `ad_metrics.sync` tetikle (manuel job veya scheduler); Raporlar → Pazarlama’da spend görünmeli.
 

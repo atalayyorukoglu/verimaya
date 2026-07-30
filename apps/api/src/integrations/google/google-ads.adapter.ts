@@ -4,6 +4,8 @@ export type GoogleAdsAdapterConfig = {
 	clientId: string;
 	clientSecret: string;
 	developerToken: string;
+	/** MCC manager customer id (digits only); sent as login-customer-id when set. */
+	loginCustomerId?: string;
 	apiVersion?: string;
 };
 
@@ -70,6 +72,11 @@ function formBody(params: Record<string, string>): string {
 	return new URLSearchParams(params).toString();
 }
 
+function normalizeLoginCustomerId(raw: string | undefined): string | undefined {
+	const digits = raw?.replace(/\D/g, '').trim();
+	return digits || undefined;
+}
+
 /**
  * Google Ads API adapter (OAuth offline + GAQL searchStream).
  * Inject fetchFn in tests; production uses globalThis.fetch.
@@ -77,6 +84,7 @@ function formBody(params: Record<string, string>): string {
 export class GoogleAdsAdapter implements AdsProviderAdapter {
 	readonly provider = 'google' as const;
 	private readonly apiVersion: string;
+	private readonly loginCustomerId: string | undefined;
 	private readonly fetchFn: FetchFn;
 
 	constructor(
@@ -84,7 +92,19 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		fetchFn: FetchFn = globalThis.fetch.bind(globalThis)
 	) {
 		this.apiVersion = config.apiVersion?.trim() || DEFAULT_API_VERSION;
+		this.loginCustomerId = normalizeLoginCustomerId(config.loginCustomerId);
 		this.fetchFn = fetchFn;
+	}
+
+	private adsAuthHeaders(accessToken: string): Record<string, string> {
+		const headers: Record<string, string> = {
+			authorization: `Bearer ${accessToken}`,
+			'developer-token': this.config.developerToken
+		};
+		if (this.loginCustomerId) {
+			headers['login-customer-id'] = this.loginCustomerId;
+		}
+		return headers;
 	}
 
 	buildAuthorizeUrl(p: { state: string; redirectUri: string }): string {
@@ -121,10 +141,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		const customersUrl = `https://googleads.googleapis.com/${this.apiVersion}/customers:listAccessibleCustomers`;
 		const customersRes = await this.fetchFn(customersUrl, {
 			method: 'GET',
-			headers: {
-				authorization: `Bearer ${tokenBody.access_token}`,
-				'developer-token': this.config.developerToken
-			}
+			headers: this.adsAuthHeaders(tokenBody.access_token)
 		});
 		const customersBody = (await customersRes.json()) as ListAccessibleCustomersResponse;
 		if (!customersRes.ok) {
@@ -167,8 +184,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		const res = await this.fetchFn(streamUrl, {
 			method: 'POST',
 			headers: {
-				authorization: `Bearer ${accessToken}`,
-				'developer-token': this.config.developerToken,
+				...this.adsAuthHeaders(accessToken),
 				'content-type': 'application/json'
 			},
 			body: JSON.stringify({ query })
@@ -267,6 +283,7 @@ export function googleAdsAdapterFromEnv(fetchFn?: FetchFn): GoogleAdsAdapter {
 			clientId: process.env.GOOGLE_ADS_CLIENT_ID?.trim() ?? '',
 			clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET?.trim() ?? '',
 			developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim() ?? '',
+			loginCustomerId: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.trim(),
 			apiVersion: process.env.GOOGLE_ADS_API_VERSION?.trim() || DEFAULT_API_VERSION
 		},
 		fetchFn
