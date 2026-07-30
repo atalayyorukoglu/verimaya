@@ -1,14 +1,47 @@
 <script lang="ts">
+	import { PUBLIC_SITE_URL } from '$lib/env';
+
 	// Always visible so prerendered HTML and no-JS users see content (not opacity:0).
 	const visible = true;
+
+	const title = 'Verimaya — Sağlık turizmi operasyon platformu';
+	const description =
+		'Sağlık turizmi firmaları için hasta takibi, randevu, finans ve entegrasyonlar — tek panelde.';
+	const canonical = `${PUBLIC_SITE_URL}/vitrin/`;
+	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
+
+	const organizationLd = {
+		'@context': 'https://schema.org',
+		'@type': 'Organization',
+		name: 'Verimaya',
+		url: PUBLIC_SITE_URL,
+		logo: `${PUBLIC_SITE_URL}/icon-512.png`,
+		description
+	};
 </script>
 
 <svelte:head>
-	<title>Verimaya — Sağlık turizmi operasyon platformu</title>
-	<meta
-		name="description"
-		content="Sağlık turizmi firmaları için hasta takibi, randevu, finans ve entegrasyonlar — tek panelde."
-	/>
+	<title>{title}</title>
+	<meta name="description" content={description} />
+	<link rel="canonical" href={canonical} />
+
+	<meta property="og:type" content="website" />
+	<meta property="og:locale" content="tr_TR" />
+	<meta property="og:site_name" content="Verimaya" />
+	<meta property="og:title" content={title} />
+	<meta property="og:description" content={description} />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="Verimaya" />
+
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={title} />
+	<meta name="twitter:description" content={description} />
+	<meta name="twitter:image" content={ogImage} />
+
+	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd)}</script>`}
 </svelte:head>
 
 <div class="vitrin relative flex min-h-dvh flex-col overflow-hidden bg-bg text-text">

@@ -164,7 +164,7 @@ dokümana yaz.
 
 ### Adım 4 — Vitrin `<head>` SEO paketi
 
-- [ ] durum
+- [x] durum
 
 **Ne yapılacak:** Prerender açıldığına göre `<svelte:head>` içeriği artık Google'a ulaşıyor.
 Vitrin sayfasına canonical, Open Graph, Twitter card ve `Organization` JSON-LD eklenir.
