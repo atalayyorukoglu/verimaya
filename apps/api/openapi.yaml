@@ -1140,3 +1140,91 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ApiError' }
+
+  /scorecard/current:
+    get:
+      tags: [Scorecard]
+      summary: Active profile, open assessment, answers, live stats
+      responses:
+        '200':
+          description: Snapshot (profile may be null)
+  /scorecard/profile:
+    get:
+      tags: [Scorecard]
+      summary: Active scorecard profile
+      responses:
+        '200':
+          description: Profile or null
+    post:
+      tags: [Scorecard]
+      summary: Create first profile (unlocked)
+      responses:
+        '200':
+          description: Created
+        '409':
+          description: Active profile already exists
+    patch:
+      tags: [Scorecard]
+      summary: Patch unlocked profile; 409 if locked
+      responses:
+        '200':
+          description: Updated
+        '409':
+          description: Profile locked — use POST /scorecard/baseline
+  /scorecard/assessments:
+    post:
+      tags: [Scorecard]
+      summary: Start or continue open assessment (locks profile)
+      responses:
+        '200':
+          description: Profile + assessment
+  /scorecard/assessments/{id}/answers:
+    put:
+      tags: [Scorecard]
+      summary: Upsert manual answer (source=manual)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Answer
+  /scorecard/assessments/{id}/complete:
+    post:
+      tags: [Scorecard]
+      summary: Complete assessment; persist zero_count + percentage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Assessment
+  /scorecard/assessments/{id}/auto-fill:
+    post:
+      tags: [Scorecard]
+      summary: Apply system-known auto answers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Auto-fill result
+  /scorecard/auto-fill:
+    post:
+      tags: [Scorecard]
+      summary: Auto-fill open assessment
+      responses:
+        '200':
+          description: Auto-fill result
+  /scorecard/baseline:
+    post:
+      tags: [Scorecard]
+      summary: Archive profile and start incomparable baseline
+      responses:
+        '200':
+          description: New profile + baseline assessment
