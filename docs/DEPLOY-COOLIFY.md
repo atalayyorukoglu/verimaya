@@ -195,7 +195,7 @@ psql … -c "select max(created_at) from audit_logs;"
 
 | Tarih (UTC) | Dump dosyası | Hedef | Sonuç | Not |
 |---|---|---|---|---|
-| _örn. 2026-07-30_ | `pg-….sql.gz` | staging PG | OK / FAIL | |
+| 2026-07-31 | `pg-20260731T143657Z.sql.gz` | `verimaya_restore_test` (aynı PG, prod dışı DB) | OK | 37 public tablo eşleşti; test DB drop edildi. Sunucu dışı kopya henüz yok. |
 
 > Canlı kabul: en az **bir** OK satırı olmadan Adım 31 kapanmaz.
 
