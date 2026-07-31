@@ -18,10 +18,10 @@ coverage
 .cursor
 **/*.spec.ts
 **/*.isolation.spec.ts
-apps/web
+# apps/web must be in context for apps/web/Dockerfile (nginx static).
+apps/ios
 docs
 docker
 docker-compose.yml
 README.md
 **/README.md
-!apps/web/DEPLOY-STATIC.md
