@@ -27,6 +27,7 @@ COPY apps/web apps/web
 
 # Vite/SvelteKit embeds PUBLIC_* at build time; write .env.production so
 # Coolify missing/empty build-args cannot silently fall back to localhost.
+# (force-rebuild bump: 2026-07-31)
 RUN printf '%s\n' \
 	"PUBLIC_API_URL=${PUBLIC_API_URL}" \
 	"PUBLIC_SITE_URL=${PUBLIC_SITE_URL}" \
