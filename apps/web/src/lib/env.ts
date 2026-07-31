@@ -6,7 +6,7 @@ export const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhos
  * Production default matches sitemap/robots; override via PUBLIC_SITE_URL.
  */
 export const PUBLIC_SITE_URL = (
-	import.meta.env.PUBLIC_SITE_URL ?? 'https://verimaya.app'
+	import.meta.env.PUBLIC_SITE_URL ?? 'https://verimaya.com'
 ).replace(/\/$/, '');
 
 /**

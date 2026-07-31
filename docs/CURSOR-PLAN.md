@@ -1246,7 +1246,7 @@ yok. Filtreyi testle sabitle, ilk hafta dry-run ile koş.
 - [ ] durum — **repo ✅** (`docs/DEPLOY-COOLIFY.md`, commit `9b7f408`).
   **Kullanıcıda:** DNS + Coolify (api/web/Postgres/Redis) + Cloudflare/firewall + günlük
   yedek/sunucu dışı kopya + restore prova kaydı + curl kabul.
-  Not: 2026-07-30 `verimaya.app` DNS çözülmüyordu.
+  Not: Canlı domain kararı **`verimaya.com`** (2026-07-31). Eski not: `verimaya.app` DNS yoktu.
 
 **Ne yapılacak:** Yol haritası Faz 0b: *"Coolify hazırlığı (canlı deploy henüz yok)"*.
 Pilot bunsuz başlamaz.

@@ -16,7 +16,7 @@ runbook’udur. Canlı kabul olmadan Adım 38 kapanmış sayılmaz.
 {ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback
 ```
 
-Örnek: `https://api.verimaya.app/v1/integrations/ads/meta/callback`
+Örnek: `https://api.verimaya.com/v1/integrations/ads/meta/callback`
 
 5. App ID + App Secret → Coolify / `.env` (aşağı).
 

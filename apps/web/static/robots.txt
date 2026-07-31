@@ -23,4 +23,4 @@ Disallow: /dev
 Disallow: /features
 Disallow: /changelog
 
-Sitemap: https://verimaya.app/sitemap.xml
+Sitemap: https://verimaya.com/sitemap.xml

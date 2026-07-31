@@ -10,7 +10,7 @@ günlük Postgres yedeği + sunucu dışı kopya; **restore provası kayıtlı**
 ## Önkoşullar
 
 - [ ] Coolify kurulu Hetzner sunucu (tercihen DE/FI — AB lokasyonu)
-- [ ] Cloudflare zone (ör. `verimaya.app`) — DNS proxy **turuncu bulut**
+- [ ] Cloudflare zone (ör. `verimaya.com`) — DNS proxy **turuncu bulut**
 - [ ] GitHub repo Coolify’a bağlı
 - [ ] Adım 15 KVKK aydınlatması yayında (`/kvkk-aydinlatma`) — karne e-posta toplar;
       aydınlatma yokken public karneyi açma
@@ -64,7 +64,7 @@ Migrate: `DATABASE_URL` = owner / superuser.
 | Build context | **monorepo kökü** |
 | Port | `3000` (`API_PORT`) |
 | Health | `GET /v1/health` (liveness), `GET /v1/health/ready` (Postgres+Redis) |
-| Domain | örn. `api.verimaya.app` |
+| Domain | örn. `api.verimaya.com` |
 
 **Migrasyon (önerilen):** Pre-deploy / one-shot:
 
@@ -84,7 +84,7 @@ Volume: `UPLOAD_DIR` mount (local driver veya `local://` legacy satırlar için)
 |---|---|
 | Build | `pnpm install --frozen-lockfile && pnpm --filter @verimaya/web build` |
 | Publish | `apps/web/build` |
-| Domain | örn. `app.verimaya.app` veya apex `verimaya.app` |
+| Domain | örn. `app.verimaya.com` veya apex `verimaya.com` |
 | Env (build-time) | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_USE_MSW=false` |
 
 Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /index.html;`
