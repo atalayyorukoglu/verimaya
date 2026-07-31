@@ -25,6 +25,14 @@ RUN pnpm install --frozen-lockfile --filter @verimaya/web...
 COPY packages/shared packages/shared
 COPY apps/web apps/web
 
+# Vite/SvelteKit embeds PUBLIC_* at build time; write .env.production so
+# Coolify missing/empty build-args cannot silently fall back to localhost.
+RUN printf '%s\n' \
+	"PUBLIC_API_URL=${PUBLIC_API_URL}" \
+	"PUBLIC_SITE_URL=${PUBLIC_SITE_URL}" \
+	"PUBLIC_USE_MSW=${PUBLIC_USE_MSW}" \
+	> apps/web/.env.production
+
 RUN pnpm --filter @verimaya/shared build
 RUN pnpm --filter @verimaya/web build
 
