@@ -34,21 +34,24 @@ try_files $uri $uri/index.html $uri/ /index.html;
 5. SPA + prerender: nginx/Caddy kuralında yukarıdaki `try_files` sırası (Coolify static
    şablonu yalnızca `$uri $uri/ /index.html` ise ` $uri/index.html` eklenmeli).
 
-## nginx (`apps/web/nginx.conf`)
+## nginx (`apps/web/Dockerfile` + `nginx.conf`)
 
-Monorepo kökünden Dockerfile:
+Coolify **Application** (önerilen — `try_files` sırası garantili):
 
-```dockerfile
-FROM node:22-alpine AS build
-RUN corepack enable && corepack prepare pnpm@11.1.3 --activate
-WORKDIR /app
-COPY . .
-RUN pnpm install --frozen-lockfile && pnpm --filter @verimaya/web build
+| Ayar | Değer |
+|---|---|
+| Dockerfile | `apps/web/Dockerfile` |
+| Build context | monorepo kökü |
+| Port | `80` |
+| Domain | `app.verimaya.com` (veya apex) |
+| Build args | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_USE_MSW=false` |
 
-FROM nginx:alpine
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/apps/web/build /usr/share/nginx/html
-EXPOSE 80
+```bash
+docker build -f apps/web/Dockerfile \
+  --build-arg PUBLIC_API_URL=https://api.verimaya.com \
+  --build-arg PUBLIC_SITE_URL=https://app.verimaya.com \
+  --build-arg PUBLIC_USE_MSW=false \
+  .
 ```
 
 ## Cloudflare Pages
