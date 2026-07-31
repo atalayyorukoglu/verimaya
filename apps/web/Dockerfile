@@ -9,12 +9,11 @@ RUN corepack enable && corepack prepare pnpm@11.1.3 --activate
 FROM base AS build
 WORKDIR /app
 
-ARG PUBLIC_API_URL=https://api.verimaya.com
-ARG PUBLIC_SITE_URL=https://app.verimaya.com
-ARG PUBLIC_USE_MSW=false
-ENV PUBLIC_API_URL=$PUBLIC_API_URL \
-	PUBLIC_SITE_URL=$PUBLIC_SITE_URL \
-	PUBLIC_USE_MSW=$PUBLIC_USE_MSW
+# Production panel defaults. Coolify may pass empty --build-arg and wipe ARG
+# defaults; hardcode here so Vite never embeds localhost.
+ENV PUBLIC_API_URL=https://api.verimaya.com \
+	PUBLIC_SITE_URL=https://app.verimaya.com \
+	PUBLIC_USE_MSW=false
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY apps/web/package.json apps/web/
@@ -25,13 +24,10 @@ RUN pnpm install --frozen-lockfile --filter @verimaya/web...
 COPY packages/shared packages/shared
 COPY apps/web apps/web
 
-# Vite/SvelteKit embeds PUBLIC_* at build time; write .env.production so
-# Coolify missing/empty build-args cannot silently fall back to localhost.
-# (force-rebuild bump: 2026-07-31)
 RUN printf '%s\n' \
-	"PUBLIC_API_URL=${PUBLIC_API_URL}" \
-	"PUBLIC_SITE_URL=${PUBLIC_SITE_URL}" \
-	"PUBLIC_USE_MSW=${PUBLIC_USE_MSW}" \
+	'PUBLIC_API_URL=https://api.verimaya.com' \
+	'PUBLIC_SITE_URL=https://app.verimaya.com' \
+	'PUBLIC_USE_MSW=false' \
 	> apps/web/.env.production
 
 RUN pnpm --filter @verimaya/shared build
