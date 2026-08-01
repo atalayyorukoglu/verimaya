@@ -43,7 +43,6 @@ function redirectUriFor(provider: AdProvider): string {
 }
 
 @Controller('integrations/ads')
-@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 export class AdsController {
 	constructor(
 		private readonly registry: AdsAdapterRegistry,
@@ -53,6 +52,7 @@ export class AdsController {
 	) {}
 
 	@Get('status')
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 	async status(@Req() req: FastifyRequest): Promise<AdConnectionsResponse> {
 		const tenantId = getActiveOrgId(req);
 		const items = await Promise.all(
@@ -79,6 +79,7 @@ export class AdsController {
 	}
 
 	@Get(':provider/authorize')
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 	async authorize(
 		@Req() req: FastifyRequest,
 		@Res() reply: FastifyReply,
@@ -113,6 +114,7 @@ export class AdsController {
 
 	@Delete(':provider')
 	@HttpCode(204)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
 	async disconnect(@Req() req: FastifyRequest, @Param('provider') providerParam: string) {
 		const provider = this.registry.parseProvider(providerParam);
 		await this.settings.deleteCredential(getActiveOrgId(req), provider);

@@ -32,7 +32,7 @@ Kod hazır (`GoogleAdsAdapter`, OAuth offline + refresh, `ad_metrics.sync`). Bu 
 | `GOOGLE_ADS_CLIENT_ID` | evet | OAuth client |
 | `GOOGLE_ADS_CLIENT_SECRET` | evet | Coolify secret; **asla loglama** |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | evet | Ads API header |
-| `GOOGLE_ADS_API_VERSION` | hayır | varsayılan `v17` |
+| `GOOGLE_ADS_API_VERSION` | hayır | varsayılan `v25` (sunset sürümler HTML 404 döner) |
 | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | MCC ise | Manager (MCC) hesabı ile erişimde `login-customer-id` header (tire yok, yalnız rakam) |
 | `ADS_OAUTH_REDIRECT_BASE` | evet | Public API kökü |
 | `WEB_PUBLIC_URL` | evet | Callback sonrası dönüş |

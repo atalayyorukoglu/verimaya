@@ -48,7 +48,8 @@ type GoogleStoredSecret = {
 	customerId: string;
 };
 
-const DEFAULT_API_VERSION = 'v17';
+/** Current GAQL REST major; sunset versions return HTML 404 instead of JSON. */
+const DEFAULT_API_VERSION = 'v25';
 const ADWORDS_SCOPE = 'https://www.googleapis.com/auth/adwords';
 
 function utcToday(): string {
@@ -70,6 +71,21 @@ function googleErrorMessage(
 
 function formBody(params: Record<string, string>): string {
 	return new URLSearchParams(params).toString();
+}
+
+async function readJsonBody<T extends object>(res: Response, label: string): Promise<T> {
+	const text = await res.text();
+	const ctype = res.headers.get('content-type') ?? '';
+	if (!ctype.includes('json') && text.trimStart().startsWith('<')) {
+		throw new Error(
+			`${label}: Google returned HTML (HTTP ${res.status}) — check GOOGLE_ADS_API_VERSION (use a current version, e.g. v25) and that Google Ads API is enabled`
+		);
+	}
+	try {
+		return JSON.parse(text) as T;
+	} catch {
+		throw new Error(`${label}: non-JSON response (HTTP ${res.status})`);
+	}
 }
 
 function normalizeLoginCustomerId(raw: string | undefined): string | undefined {
@@ -96,12 +112,16 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		this.fetchFn = fetchFn;
 	}
 
-	private adsAuthHeaders(accessToken: string): Record<string, string> {
+	private adsAuthHeaders(
+		accessToken: string,
+		opts?: { includeLoginCustomerId?: boolean }
+	): Record<string, string> {
 		const headers: Record<string, string> = {
 			authorization: `Bearer ${accessToken}`,
-			'developer-token': this.config.developerToken
+			'developer-token': this.config.developerToken,
+			'content-type': 'application/json'
 		};
-		if (this.loginCustomerId) {
+		if (opts?.includeLoginCustomerId !== false && this.loginCustomerId) {
 			headers['login-customer-id'] = this.loginCustomerId;
 		}
 		return headers;
@@ -131,7 +151,10 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 				grant_type: 'authorization_code'
 			})
 		});
-		const tokenBody = (await tokenRes.json()) as GoogleTokenResponse;
+		const tokenBody = await readJsonBody<GoogleTokenResponse>(
+			tokenRes,
+			'Google token exchange failed'
+		);
 		if (!tokenRes.ok || !tokenBody.refresh_token || !tokenBody.access_token) {
 			throw new Error(
 				googleErrorMessage('Google token exchange failed', tokenBody, tokenRes.status)
@@ -141,9 +164,12 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		const customersUrl = `https://googleads.googleapis.com/${this.apiVersion}/customers:listAccessibleCustomers`;
 		const customersRes = await this.fetchFn(customersUrl, {
 			method: 'GET',
-			headers: this.adsAuthHeaders(tokenBody.access_token)
+			headers: this.adsAuthHeaders(tokenBody.access_token, { includeLoginCustomerId: false })
 		});
-		const customersBody = (await customersRes.json()) as ListAccessibleCustomersResponse;
+		const customersBody = await readJsonBody<ListAccessibleCustomersResponse>(
+			customersRes,
+			'Google listAccessibleCustomers failed'
+		);
 		if (!customersRes.ok) {
 			throw new Error(
 				googleErrorMessage(
@@ -190,7 +216,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 			body: JSON.stringify({ query })
 		});
 
-		const body: unknown = await res.json();
+		const body = await readJsonBody<unknown>(res, 'Google searchStream failed');
 		if (!res.ok) {
 			const errBody =
 				typeof body === 'object' && body !== null
@@ -221,7 +247,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 				client_secret: this.config.clientSecret
 			})
 		});
-		const body = (await res.json()) as GoogleTokenResponse;
+		const body = await readJsonBody<GoogleTokenResponse>(res, 'Google token refresh failed');
 		if (!res.ok || !body.access_token) {
 			throw new Error(googleErrorMessage('Google token refresh failed', body, res.status));
 		}
