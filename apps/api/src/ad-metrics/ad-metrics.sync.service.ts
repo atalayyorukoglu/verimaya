@@ -8,6 +8,13 @@ import { buildFixtureAdMetricsRows } from './ad-metrics.fixtures';
 
 const AD_PROVIDERS = ['meta', 'google'] as const;
 
+/**
+ * Reports "all time" only sums what is in `ad_metrics_daily`.
+ * Manual sync must pull a long window so totals match Ads UI history.
+ * (~10 years — enough for typical health-tourism ad accounts.)
+ */
+const AD_METRICS_SYNC_LOOKBACK_DAYS = 3650;
+
 function sinceDaysAgo(days: number): string {
 	const d = new Date();
 	d.setUTCHours(0, 0, 0, 0);
@@ -42,7 +49,7 @@ export class AdMetricsSyncService {
 			return this.syncFixture(tenantId);
 		}
 
-		const since = sinceDaysAgo(30);
+		const since = sinceDaysAgo(AD_METRICS_SYNC_LOOKBACK_DAYS);
 		let upserted = 0;
 
 		for (const providerRaw of providers) {

@@ -175,7 +175,7 @@ const tr = {
 	'settings.ads.syncOk': 'Senkron tamam: {count} satır ({mode}).',
 	'settings.ads.syncError': 'Senkron başarısız.',
 	'settings.ads.syncHint':
-		'Otomatik zamanlayıcı kapalıdır. Veriler yalnızca bu düğmeyle çekilir.',
+		'Otomatik zamanlayıcı kapalıdır. Bu düğme yaklaşık son 10 yıllık günlük harcamayı çeker; Raporlar yalnızca DB’deki satırları toplar.',
 	'settings.ads.googleCustomerId.label': 'Google Ads müşteri hesap no',
 	'settings.ads.googleCustomerId.hint':
 		'MCC ile bağlandıysan, metrik çekilecek client hesabın numarasını gir (tire opsiyonel).',
@@ -347,7 +347,8 @@ const en: Record<MessageKey, string> = {
 	'settings.ads.syncing': 'Pulling…',
 	'settings.ads.syncOk': 'Sync done: {count} rows ({mode}).',
 	'settings.ads.syncError': 'Sync failed.',
-	'settings.ads.syncHint': 'Automatic scheduler is off. Data is pulled only via this button.',
+	'settings.ads.syncHint':
+		'Automatic scheduler is off. This button pulls ~10 years of daily spend; Reports only sums rows already in the DB.',
 	'settings.ads.googleCustomerId.label': 'Google Ads customer ID',
 	'settings.ads.googleCustomerId.hint':
 		'If you connected via an MCC, enter the client account number to pull metrics for (dashes optional).',
