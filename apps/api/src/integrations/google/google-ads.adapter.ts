@@ -56,16 +56,26 @@ function utcToday(): string {
 	return new Date().toISOString().slice(0, 10);
 }
 
-function googleErrorMessage(
-	prefix: string,
-	body: { error?: string | { message?: string }; error_description?: string },
-	status: number
-): string {
-	if (typeof body.error === 'string') {
-		const detail = body.error_description?.trim() || body.error;
+function googleErrorMessage(prefix: string, body: unknown, status: number): string {
+	if (typeof body !== 'object' || body === null) {
+		return `${prefix} (HTTP ${status})`;
+	}
+	const b = body as {
+		error?: string | {
+			message?: string;
+			details?: Array<{ errors?: Array<{ message?: string }> }>;
+		};
+		error_description?: string;
+	};
+	if (typeof b.error === 'string') {
+		const detail = b.error_description?.trim() || b.error;
 		return `${prefix}: ${detail}`;
 	}
-	const detail = body.error?.message?.trim();
+	const nested = b.error?.details
+		?.flatMap((d) => d.errors ?? [])
+		.map((e) => e.message?.trim())
+		.find(Boolean);
+	const detail = nested || b.error?.message?.trim();
 	return detail ? `${prefix}: ${detail}` : `${prefix} (HTTP ${status})`;
 }
 
@@ -180,11 +190,17 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 			);
 		}
 
-		const resourceName = customersBody.resourceNames?.[0];
-		if (!resourceName) {
+		const resourceNames = customersBody.resourceNames ?? [];
+		if (resourceNames.length === 0) {
 			throw new Error('Google listAccessibleCustomers returned no customers');
 		}
-		const customerId = resourceName.replace(/^customers\//, '');
+
+		// Prefer a non-MCC id: searchStream on manager accounts returns 403.
+		const ids = resourceNames
+			.map((name) => name.replace(/^customers\//, ''))
+			.filter(Boolean);
+		const customerId =
+			ids.find((id) => id !== this.loginCustomerId) ?? ids[0];
 		if (!customerId) {
 			throw new Error('Google customer resource name missing id');
 		}
@@ -199,6 +215,8 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 	async pullDailyMetrics(p: { secret: string; since: string }): Promise<NormalizedAdMetricRow[]> {
 		const stored = this.parseSecret(p.secret);
 		const accessToken = await this.refreshAccessToken(stored.refreshToken);
+		let customerId = await this.resolveReportCustomerId(accessToken, stored.customerId);
+
 		const until = utcToday();
 		const query = [
 			'SELECT segments.date, campaign.id, metrics.cost_micros, metrics.impressions, metrics.clicks',
@@ -206,23 +224,21 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 			`WHERE segments.date BETWEEN '${p.since}' AND '${until}'`
 		].join(' ');
 
-		const streamUrl = `https://googleads.googleapis.com/${this.apiVersion}/customers/${stored.customerId}/googleAds:searchStream`;
-		const res = await this.fetchFn(streamUrl, {
-			method: 'POST',
-			headers: {
-				...this.adsAuthHeaders(accessToken),
-				'content-type': 'application/json'
-			},
-			body: JSON.stringify({ query })
-		});
+		let res = await this.searchStream(accessToken, customerId, query);
+		let body = await readJsonBody<unknown>(res, 'Google searchStream failed');
 
-		const body = await readJsonBody<unknown>(res, 'Google searchStream failed');
+		// Stored id may be an MCC even when LOGIN_CUSTOMER_ID differs — retry via clients.
+		if (!res.ok && res.status === 403 && customerId === stored.customerId) {
+			const clientId = await this.findFirstClientCustomerId(accessToken, stored.customerId);
+			if (clientId && clientId !== customerId) {
+				customerId = clientId;
+				res = await this.searchStream(accessToken, customerId, query);
+				body = await readJsonBody<unknown>(res, 'Google searchStream failed');
+			}
+		}
+
 		if (!res.ok) {
-			const errBody =
-				typeof body === 'object' && body !== null
-					? (body as { error?: { message?: string } })
-					: {};
-			throw new Error(googleErrorMessage('Google searchStream failed', errBody, res.status));
+			throw new Error(googleErrorMessage('Google searchStream failed', body, res.status));
 		}
 
 		const batches = this.normalizeStreamBatches(body);
@@ -234,6 +250,71 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 			}
 		}
 		return out;
+	}
+
+	private searchStream(
+		accessToken: string,
+		customerId: string,
+		query: string
+	): Promise<Response> {
+		const streamUrl = `https://googleads.googleapis.com/${this.apiVersion}/customers/${customerId}/googleAds:searchStream`;
+		return this.fetchFn(streamUrl, {
+			method: 'POST',
+			headers: this.adsAuthHeaders(accessToken),
+			body: JSON.stringify({ query })
+		});
+	}
+
+	/**
+	 * Manager (MCC) accounts cannot run campaign searchStream. If the stored id is the
+	 * MCC (or equals login-customer-id), pick the first non-manager client under it.
+	 */
+	private async resolveReportCustomerId(
+		accessToken: string,
+		storedCustomerId: string
+	): Promise<string> {
+		const isManager =
+			Boolean(this.loginCustomerId) && storedCustomerId === this.loginCustomerId;
+		if (!isManager) {
+			return storedCustomerId;
+		}
+		const clientId = await this.findFirstClientCustomerId(accessToken, storedCustomerId);
+		if (!clientId) {
+			throw new Error(
+				'Google MCC has no client accounts to report on — link a client under the manager or reconnect with a client user'
+			);
+		}
+		return clientId;
+	}
+
+	private async findFirstClientCustomerId(
+		accessToken: string,
+		managerCustomerId: string
+	): Promise<string | null> {
+		const query = [
+			'SELECT customer_client.client_customer, customer_client.manager',
+			'FROM customer_client',
+			'WHERE customer_client.manager = FALSE'
+		].join(' ');
+		const res = await this.searchStream(accessToken, managerCustomerId, query);
+		const body = await readJsonBody<unknown>(res, 'Google customer_client lookup failed');
+		if (!res.ok) {
+			throw new Error(
+				googleErrorMessage('Google customer_client lookup failed', body, res.status)
+			);
+		}
+
+		const batches = this.normalizeStreamBatches(body);
+		for (const batch of batches) {
+			for (const row of batch.results ?? []) {
+				const raw = (
+					row as { customerClient?: { clientCustomer?: string } }
+				).customerClient?.clientCustomer;
+				const id = raw?.replace(/^customers\//, '').trim();
+				if (id) return id;
+			}
+		}
+		return null;
 	}
 
 	private async refreshAccessToken(refreshToken: string): Promise<string> {

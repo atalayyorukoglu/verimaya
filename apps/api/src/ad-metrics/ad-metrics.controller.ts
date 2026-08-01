@@ -1,4 +1,13 @@
-import { Controller, Get, HttpCode, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+	BadRequestException,
+	Controller,
+	Get,
+	HttpCode,
+	Post,
+	Query,
+	Req,
+	UseGuards
+} from '@nestjs/common';
 import { adMetricsListParams } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
@@ -28,7 +37,12 @@ export class AdMetricsController {
 	/** One-shot pull (no scheduler). Runs sync inline and returns upsert counts. */
 	@Post('sync')
 	@HttpCode(200)
-	sync(@Req() req: FastifyRequest) {
-		return this.adMetricsSyncService.sync(getActiveOrgId(req));
+	async sync(@Req() req: FastifyRequest) {
+		try {
+			return await this.adMetricsSyncService.sync(getActiveOrgId(req));
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'Ad metrics sync failed';
+			throw new BadRequestException(message);
+		}
 	}
 }

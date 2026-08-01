@@ -152,4 +152,59 @@ describe('GoogleAdsAdapter', () => {
 			since: '2026-07-01'
 		});
 	});
+
+	it('resolves MCC stored id to a client account before campaign pull', async () => {
+		const calls: string[] = [];
+		const fetchFn: FetchFn = async (input) => {
+			const url = String(input);
+			calls.push(url);
+			if (url === 'https://oauth2.googleapis.com/token') {
+				return jsonResponse({ access_token: 'access-fresh' });
+			}
+			if (url.includes('/customers/1112223333/googleAds:searchStream')) {
+				return jsonResponse([
+					{
+						results: [
+							{
+								customerClient: {
+									clientCustomer: 'customers/5556667777',
+									manager: false
+								}
+							}
+						]
+					}
+				]);
+			}
+			if (url.includes('/customers/5556667777/googleAds:searchStream')) {
+				return jsonResponse([
+					{
+						results: [
+							{
+								segments: { date: '2026-07-20' },
+								campaign: { id: '99' },
+								metrics: { cost_micros: '1000000', impressions: '10', clicks: '1' }
+							}
+						]
+					}
+				]);
+			}
+			throw new Error(`unexpected URL: ${url}`);
+		};
+
+		const adapter = new GoogleAdsAdapter(
+			{ ...config, loginCustomerId: '1112223333' },
+			fetchFn
+		);
+		const rows = await adapter.pullDailyMetrics({
+			secret: JSON.stringify({
+				refreshToken: 'refresh-xyz',
+				customerId: '1112223333'
+			}),
+			since: '2026-07-01'
+		});
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0]?.campaignId).toBe('99');
+		expect(calls.some((u) => u.includes('/customers/5556667777/'))).toBe(true);
+	});
 });
