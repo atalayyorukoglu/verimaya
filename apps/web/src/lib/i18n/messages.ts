@@ -176,6 +176,13 @@ const tr = {
 	'settings.ads.syncError': 'Senkron başarısız.',
 	'settings.ads.syncHint':
 		'Otomatik zamanlayıcı kapalıdır. Veriler yalnızca bu düğmeyle çekilir.',
+	'settings.ads.googleCustomerId.label': 'Google Ads müşteri hesap no',
+	'settings.ads.googleCustomerId.hint':
+		'MCC ile bağlandıysan, metrik çekilecek client hesabın numarasını gir (tire opsiyonel).',
+	'settings.ads.googleCustomerId.save': 'Hesap no kaydet',
+	'settings.ads.googleCustomerId.saving': 'Kaydediliyor…',
+	'settings.ads.googleCustomerId.saved': 'Müşteri hesap no kaydedildi.',
+	'settings.ads.googleCustomerId.error': 'Hesap no kaydedilemedi.',
 	'settings.ads.dev.heading': 'Geliştirme / demo verisi',
 	'settings.ads.dev.body':
 		'OAuth yokken senkron örnek satır yazar. Otomatik 6s kuyruk için ENABLE_INTEGRATION_SCHEDULERS=true gerekir — prod’da kapalı tutuyoruz.',
@@ -341,6 +348,13 @@ const en: Record<MessageKey, string> = {
 	'settings.ads.syncOk': 'Sync done: {count} rows ({mode}).',
 	'settings.ads.syncError': 'Sync failed.',
 	'settings.ads.syncHint': 'Automatic scheduler is off. Data is pulled only via this button.',
+	'settings.ads.googleCustomerId.label': 'Google Ads customer ID',
+	'settings.ads.googleCustomerId.hint':
+		'If you connected via an MCC, enter the client account number to pull metrics for (dashes optional).',
+	'settings.ads.googleCustomerId.save': 'Save customer ID',
+	'settings.ads.googleCustomerId.saving': 'Saving…',
+	'settings.ads.googleCustomerId.saved': 'Customer ID saved.',
+	'settings.ads.googleCustomerId.error': 'Could not save customer ID.',
 	'settings.ads.dev.heading': 'Development / demo data',
 	'settings.ads.dev.body':
 		'Without OAuth, sync writes sample rows. Periodic 6h queue needs ENABLE_INTEGRATION_SCHEDULERS=true — we keep it off in prod.',

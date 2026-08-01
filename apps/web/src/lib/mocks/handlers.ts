@@ -666,15 +666,29 @@ export const handlers = [
 					provider: 'meta',
 					connected: mswAdsConnected.has('meta'),
 					key_version: mswAdsConnected.has('meta') ? 1 : null,
-					last_sync_date: lastFor('meta')
+					last_sync_date: lastFor('meta'),
+					customer_id: null
 				},
 				{
 					provider: 'google',
 					connected: mswAdsConnected.has('google'),
 					key_version: mswAdsConnected.has('google') ? 1 : null,
-					last_sync_date: lastFor('google')
+					last_sync_date: lastFor('google'),
+					customer_id: mswAdsConnected.has('google') ? '5556667777' : null
 				}
 			]
+		});
+	}),
+
+	http.patch('/v1/integrations/ads/google/customer-id', async ({ request }) => {
+		const body = (await request.json()) as { customer_id?: string };
+		const digits = String(body.customer_id ?? '').replace(/\D/g, '');
+		return HttpResponse.json({
+			provider: 'google',
+			connected: true,
+			key_version: 1,
+			last_sync_date: null,
+			customer_id: digits || null
 		});
 	}),
 

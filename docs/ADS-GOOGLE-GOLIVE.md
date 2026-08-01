@@ -34,7 +34,7 @@ Kod hazır (`GoogleAdsAdapter`, OAuth offline + refresh, `ad_metrics.sync`). Bu 
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | evet | Ads API header |
 | `GOOGLE_ADS_API_VERSION` | hayır | varsayılan `v25` (sunset sürümler HTML 404 döner) |
 | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | MCC ise | Manager (MCC) hesabı ile erişimde `login-customer-id` header (tire yok, yalnız rakam) |
-| `GOOGLE_ADS_CUSTOMER_ID` | MCC’de sık | Raporlanacak **client** hesap id (tire yok). `listAccessibleCustomers` yalnız MCC dönerse zorunlu |
+| `GOOGLE_ADS_CUSTOMER_ID` | nadiren | Platform geneli override. Normal yol: panelde tenant **Google Ads müşteri hesap no** |
 | `ADS_OAUTH_REDIRECT_BASE` | evet | Public API kökü |
 | `WEB_PUBLIC_URL` | evet | Callback sonrası dönüş |
 | `TRUSTED_ORIGINS` | evet | Panel origin |
@@ -82,7 +82,7 @@ Bağlan + bir sync sonrası loglarda **olmamalı**:
 | Belirti | Kontrol |
 |---|---|
 | `Developer token is not approved` | Ads API Center onay durumu; test hesabı mı. |
-| MCC / permission denied | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` = manager; `GOOGLE_ADS_CUSTOMER_ID` = client (rakam). |
+| MCC / permission denied | Panelde client hesap no kaydet; `GOOGLE_ADS_LOGIN_CUSTOMER_ID` = MCC. |
 | Redirect URI mismatch | Google konsol URI birebir callback yolu. |
 | Refresh token yok | `prompt=consent` + `access_type=offline`; önceki grant’i iptal edip yeniden bağlan. |
 | Fixture satırlar | OAuth cred yoksa sync fixture yazar — `google` satırı var mı. |

@@ -43,6 +43,8 @@ export const apiPaths = {
 	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
 	integrationsGhlCallback: `${API_V1_PREFIX}/integrations/ghl/callback`,
 	integrationsGhl: `${API_V1_PREFIX}/integrations/ghl`,
+	integrationsAdsStatus: `${API_V1_PREFIX}/integrations/ads/status`,
+	integrationsAdsGoogleCustomerId: `${API_V1_PREFIX}/integrations/ads/google/customer-id`,
 	scorecardProfile: `${API_V1_PREFIX}/scorecard/profile`,
 	scorecardCurrent: `${API_V1_PREFIX}/scorecard/current`,
 	scorecardAssessments: `${API_V1_PREFIX}/scorecard/assessments`,
@@ -138,6 +140,11 @@ import {
 } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 import { ghlConnectionStatus } from './ghl-connection.js';
+import {
+	adConnectionsResponse,
+	adConnectionStatus,
+	adGoogleCustomerIdUpdate
+} from './ads-connection.js';
 import { aiCorrectionCreateSchema, aiCorrectionSchema } from './ai-correction.js';
 import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
 
@@ -265,6 +272,13 @@ export const apiContract = {
 	},
 	'GET /v1/integrations/ghl/status': {
 		response: ghlConnectionStatus
+	},
+	'GET /v1/integrations/ads/status': {
+		response: adConnectionsResponse
+	},
+	'PATCH /v1/integrations/ads/google/customer-id': {
+		body: adGoogleCustomerIdUpdate,
+		response: adConnectionStatus
 	},
 	'GET /v1/ad-metrics': {
 		response: z.object({ items: z.array(adMetricSchema) })

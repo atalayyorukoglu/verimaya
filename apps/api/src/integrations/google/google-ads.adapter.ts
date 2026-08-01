@@ -276,34 +276,30 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 	}
 
 	/**
-	 * Prefer explicit env client id, then OAuth-accessible non-MCC accounts.
-	 * Avoids customer_client GAQL (often 403 on Basic Access / MCC).
+	 * Prefer tenant-saved client id (UI), then env override, then OAuth-accessible non-MCC accounts.
 	 */
 	private async resolveReportCustomerIds(
 		accessToken: string,
 		storedCustomerId: string
 	): Promise<string[]> {
+		const stored = storedCustomerId.replace(/\D/g, '');
+
 		if (this.configuredCustomerId) {
 			return [this.configuredCustomerId];
 		}
 
+		// Tenant UI: Google müşteri hesap no (saved into credential JSON).
+		if (stored && stored !== this.loginCustomerId) {
+			return [stored];
+		}
+
 		const accessible = await this.listAccessibleCustomerIds(accessToken);
 		const withoutManager = accessible.filter((id) => id !== this.loginCustomerId);
-
 		if (withoutManager.length > 0) {
 			return withoutManager;
 		}
 
-		if (storedCustomerId && storedCustomerId !== this.loginCustomerId) {
-			return [storedCustomerId];
-		}
-
-		if (accessible.length > 0) {
-			// Only MCC visible — campaign queries will 403; still try so error path is clear.
-			return accessible;
-		}
-
-		return [storedCustomerId];
+		return accessible.length > 0 ? accessible : [stored || storedCustomerId];
 	}
 
 	private async listAccessibleCustomerIds(accessToken: string): Promise<string[]> {

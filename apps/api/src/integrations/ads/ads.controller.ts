@@ -1,15 +1,24 @@
 import {
+	BadRequestException,
+	Body,
 	Controller,
 	Delete,
 	Get,
 	HttpCode,
 	Param,
+	Patch,
 	Query,
 	Req,
 	Res,
 	UseGuards
 } from '@nestjs/common';
-import { adOAuthCallbackQuery, type AdConnectionsResponse, type AdProvider } from '@verimaya/shared';
+import {
+	adGoogleCustomerIdUpdate,
+	adOAuthCallbackQuery,
+	type AdConnectionStatus,
+	type AdConnectionsResponse,
+	type AdProvider
+} from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { max, eq } from 'drizzle-orm';
 import { ActiveOrgGuard, getActiveOrgId } from '../../common/active-org.guard';
@@ -42,6 +51,17 @@ function redirectUriFor(provider: AdProvider): string {
 	return `${adsRedirectBase()}/v1/integrations/ads/${provider}/callback`;
 }
 
+function parseGoogleCustomerId(secret: string): string | null {
+	try {
+		const parsed = JSON.parse(secret) as { customerId?: unknown };
+		if (typeof parsed.customerId !== 'string') return null;
+		const digits = parsed.customerId.replace(/\D/g, '');
+		return digits || null;
+	} catch {
+		return null;
+	}
+}
+
 @Controller('integrations/ads')
 export class AdsController {
 	constructor(
@@ -56,26 +76,44 @@ export class AdsController {
 	async status(@Req() req: FastifyRequest): Promise<AdConnectionsResponse> {
 		const tenantId = getActiveOrgId(req);
 		const items = await Promise.all(
-			AD_PROVIDERS.map(async (provider) => {
-				const cred = await this.settings.getCredentialStatus(tenantId, provider);
-				const last_sync_date = await this.tenantContext.withTenant(tenantId, async ({ db }) => {
-					const [row] = await db
-						.select({ last: max(adMetricsDaily.date) })
-						.from(adMetricsDaily)
-						.where(eq(adMetricsDaily.provider, provider));
-					return row?.last ?? null;
-				});
-
-				return {
-					provider,
-					connected: cred.configured,
-					key_version: cred.configured ? (cred.key_version ?? null) : null,
-					last_sync_date
-				};
-			})
+			AD_PROVIDERS.map(async (provider) => this.buildStatus(tenantId, provider))
 		);
-
 		return { items };
+	}
+
+	@Patch('google/customer-id')
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	async updateGoogleCustomerId(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown
+	): Promise<AdConnectionStatus> {
+		const tenantId = getActiveOrgId(req);
+		const { customer_id } = adGoogleCustomerIdUpdate.parse(body);
+		let secret: string;
+		try {
+			secret = await this.settings.loadCredentialSecret(tenantId, 'google');
+		} catch {
+			throw new BadRequestException('Google Ads is not connected');
+		}
+
+		let parsed: { refreshToken?: unknown; customerId?: unknown };
+		try {
+			parsed = JSON.parse(secret) as { refreshToken?: unknown; customerId?: unknown };
+		} catch {
+			throw new BadRequestException('Google credential is corrupt — reconnect OAuth');
+		}
+		if (typeof parsed.refreshToken !== 'string' || !parsed.refreshToken) {
+			throw new BadRequestException('Google credential missing refresh token — reconnect OAuth');
+		}
+
+		await this.settings.storeCredential(tenantId, 'google', {
+			secret: JSON.stringify({
+				refreshToken: parsed.refreshToken,
+				customerId: customer_id
+			})
+		});
+
+		return this.buildStatus(tenantId, 'google');
 	}
 
 	@Get(':provider/authorize')
@@ -118,5 +156,37 @@ export class AdsController {
 	async disconnect(@Req() req: FastifyRequest, @Param('provider') providerParam: string) {
 		const provider = this.registry.parseProvider(providerParam);
 		await this.settings.deleteCredential(getActiveOrgId(req), provider);
+	}
+
+	private async buildStatus(
+		tenantId: string,
+		provider: AdProvider
+	): Promise<AdConnectionStatus> {
+		const cred = await this.settings.getCredentialStatus(tenantId, provider);
+		const last_sync_date = await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select({ last: max(adMetricsDaily.date) })
+				.from(adMetricsDaily)
+				.where(eq(adMetricsDaily.provider, provider));
+			return row?.last ?? null;
+		});
+
+		let customer_id: string | null = null;
+		if (cred.configured && provider === 'google') {
+			try {
+				const secret = await this.settings.loadCredentialSecret(tenantId, 'google');
+				customer_id = parseGoogleCustomerId(secret);
+			} catch {
+				customer_id = null;
+			}
+		}
+
+		return {
+			provider,
+			connected: cred.configured,
+			key_version: cred.configured ? (cred.key_version ?? null) : null,
+			last_sync_date,
+			customer_id
+		};
 	}
 }

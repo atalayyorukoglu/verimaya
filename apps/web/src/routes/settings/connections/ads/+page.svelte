@@ -8,7 +8,7 @@
 		type AdMetricsSyncResult,
 		type AdProvider
 	} from '@verimaya/shared';
-	import { apiGet, apiSend } from '$lib/api';
+	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
 	import { PUBLIC_API_URL } from '$lib/env';
 	import { formatDate } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -33,9 +33,7 @@
 
 	const flashLabel = $derived(adsFlash === 'meta' ? 'Meta' : adsFlash === 'google' ? 'Google' : '');
 
-	const anyConnected = $derived(
-		Boolean(statusQuery.data?.items.some((i) => i.connected))
-	);
+	const anyConnected = $derived(Boolean(statusQuery.data?.items.some((i) => i.connected)));
 
 	function itemFor(provider: AdProvider): AdConnectionStatus | undefined {
 		return statusQuery.data?.items.find((i) => i.provider === provider);
@@ -74,6 +72,24 @@
 	let syncError = $state<string | null>(null);
 	let syncOk = $state<string | null>(null);
 
+	let googleCustomerIdDraft = $state('');
+	let googleCustomerIdHydrated = $state(false);
+	let savingCustomerId = $state(false);
+	let customerIdError = $state<string | null>(null);
+	let customerIdOk = $state<string | null>(null);
+
+	$effect(() => {
+		const google = statusQuery.data?.items.find((i) => i.provider === 'google');
+		if (!googleCustomerIdHydrated && google?.connected) {
+			googleCustomerIdDraft = google.customer_id ?? '';
+			googleCustomerIdHydrated = true;
+		}
+		if (google && !google.connected) {
+			googleCustomerIdDraft = '';
+			googleCustomerIdHydrated = false;
+		}
+	});
+
 	async function disconnect(provider: AdProvider) {
 		disconnecting = provider;
 		disconnectError = null;
@@ -84,6 +100,25 @@
 			disconnectError = err instanceof Error ? err.message : t('settings.ads.disconnectError');
 		} finally {
 			disconnecting = null;
+		}
+	}
+
+	async function saveGoogleCustomerId(e: Event) {
+		e.preventDefault();
+		savingCustomerId = true;
+		customerIdError = null;
+		customerIdOk = null;
+		try {
+			await apiSend(apiPaths.integrationsAdsGoogleCustomerId, 'PATCH', {
+				customer_id: googleCustomerIdDraft
+			});
+			customerIdOk = t('settings.ads.googleCustomerId.saved');
+			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ads', 'status'] });
+		} catch (err) {
+			customerIdError =
+				err instanceof Error ? err.message : t('settings.ads.googleCustomerId.error');
+		} finally {
+			savingCustomerId = false;
 		}
 	}
 
@@ -126,6 +161,21 @@
 	{#if disconnectError}
 		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
 			{disconnectError}
+		</div>
+	{/if}
+
+	{#if customerIdOk}
+		<div
+			class="mb-4 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
+			role="status"
+		>
+			{customerIdOk}
+		</div>
+	{/if}
+
+	{#if customerIdError}
+		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+			{customerIdError}
 		</div>
 	{/if}
 
@@ -175,6 +225,33 @@
 					? () => void disconnect('google')
 					: undefined}
 			/>
+
+			{#if googleItem?.connected}
+				<form
+					class="rounded-lg border border-border bg-surface p-4 sm:p-5"
+					onsubmit={(e) => void saveGoogleCustomerId(e)}
+				>
+					<label class={labelClass} for="google-customer-id">
+						{t('settings.ads.googleCustomerId.label')}
+					</label>
+					<p class="mt-1 text-sm text-text-muted">{t('settings.ads.googleCustomerId.hint')}</p>
+					<input
+						id="google-customer-id"
+						class="{fieldClass} mt-3"
+						inputmode="numeric"
+						autocomplete="off"
+						placeholder="1234567890"
+						bind:value={googleCustomerIdDraft}
+					/>
+					<div class="mt-3">
+						<Button type="submit" size="sm" disabled={savingCustomerId}>
+							{savingCustomerId
+								? t('settings.ads.googleCustomerId.saving')
+								: t('settings.ads.googleCustomerId.save')}
+						</Button>
+					</div>
+				</form>
+			{/if}
 
 			{#if anyConnected}
 				<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
