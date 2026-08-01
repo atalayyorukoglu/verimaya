@@ -6,6 +6,11 @@ export type GoogleAdsAdapterConfig = {
 	developerToken: string;
 	/** MCC manager customer id (digits only); sent as login-customer-id when set. */
 	loginCustomerId?: string;
+	/**
+	 * Optional client account to report on (digits only). Use when OAuth user is an MCC
+	 * and listAccessibleCustomers does not expose leaf accounts.
+	 */
+	customerId?: string;
 	apiVersion?: string;
 };
 
@@ -111,6 +116,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 	readonly provider = 'google' as const;
 	private readonly apiVersion: string;
 	private readonly loginCustomerId: string | undefined;
+	private readonly configuredCustomerId: string | undefined;
 	private readonly fetchFn: FetchFn;
 
 	constructor(
@@ -119,6 +125,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 	) {
 		this.apiVersion = config.apiVersion?.trim() || DEFAULT_API_VERSION;
 		this.loginCustomerId = normalizeLoginCustomerId(config.loginCustomerId);
+		this.configuredCustomerId = normalizeLoginCustomerId(config.customerId);
 		this.fetchFn = fetchFn;
 	}
 
@@ -215,7 +222,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 	async pullDailyMetrics(p: { secret: string; since: string }): Promise<NormalizedAdMetricRow[]> {
 		const stored = this.parseSecret(p.secret);
 		const accessToken = await this.refreshAccessToken(stored.refreshToken);
-		let customerId = await this.resolveReportCustomerId(accessToken, stored.customerId);
+		const candidates = await this.resolveReportCustomerIds(accessToken, stored.customerId);
 
 		const until = utcToday();
 		const query = [
@@ -224,31 +231,34 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 			`WHERE segments.date BETWEEN '${p.since}' AND '${until}'`
 		].join(' ');
 
-		let res = await this.searchStream(accessToken, customerId, query);
-		let body = await readJsonBody<unknown>(res, 'Google searchStream failed');
-
-		// Stored id may be an MCC even when LOGIN_CUSTOMER_ID differs — retry via clients.
-		if (!res.ok && res.status === 403 && customerId === stored.customerId) {
-			const clientId = await this.findFirstClientCustomerId(accessToken, stored.customerId);
-			if (clientId && clientId !== customerId) {
-				customerId = clientId;
-				res = await this.searchStream(accessToken, customerId, query);
-				body = await readJsonBody<unknown>(res, 'Google searchStream failed');
-			}
-		}
-
-		if (!res.ok) {
-			throw new Error(googleErrorMessage('Google searchStream failed', body, res.status));
-		}
-
-		const batches = this.normalizeStreamBatches(body);
 		const out: NormalizedAdMetricRow[] = [];
-		for (const batch of batches) {
-			for (const row of batch.results ?? []) {
-				const mapped = this.mapResultRow(row);
-				if (mapped) out.push(mapped);
+		const failures: string[] = [];
+
+		for (const customerId of candidates) {
+			const res = await this.searchStream(accessToken, customerId, query);
+			const body = await readJsonBody<unknown>(res, 'Google searchStream failed');
+			if (!res.ok) {
+				failures.push(
+					`${customerId}: ${googleErrorMessage('searchStream', body, res.status)}`
+				);
+				continue;
+			}
+			const batches = this.normalizeStreamBatches(body);
+			for (const batch of batches) {
+				for (const row of batch.results ?? []) {
+					const mapped = this.mapResultRow(row);
+					if (mapped) out.push(mapped);
+				}
 			}
 		}
+
+		if (out.length === 0 && failures.length > 0) {
+			throw new Error(
+				`Google Ads pull failed for all candidate accounts. ${failures.join(' | ')}. ` +
+					'If you use an MCC, set GOOGLE_ADS_CUSTOMER_ID to a client account id (digits only) and restart the API.'
+			);
+		}
+
 		return out;
 	}
 
@@ -266,57 +276,59 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 	}
 
 	/**
-	 * Manager (MCC) accounts cannot run campaign searchStream. If the stored id is the
-	 * MCC (or equals login-customer-id), pick the first non-manager client under it.
+	 * Prefer explicit env client id, then OAuth-accessible non-MCC accounts.
+	 * Avoids customer_client GAQL (often 403 on Basic Access / MCC).
 	 */
-	private async resolveReportCustomerId(
+	private async resolveReportCustomerIds(
 		accessToken: string,
 		storedCustomerId: string
-	): Promise<string> {
-		const isManager =
-			Boolean(this.loginCustomerId) && storedCustomerId === this.loginCustomerId;
-		if (!isManager) {
-			return storedCustomerId;
+	): Promise<string[]> {
+		if (this.configuredCustomerId) {
+			return [this.configuredCustomerId];
 		}
-		const clientId = await this.findFirstClientCustomerId(accessToken, storedCustomerId);
-		if (!clientId) {
-			throw new Error(
-				'Google MCC has no client accounts to report on — link a client under the manager or reconnect with a client user'
-			);
+
+		const accessible = await this.listAccessibleCustomerIds(accessToken);
+		const withoutManager = accessible.filter((id) => id !== this.loginCustomerId);
+
+		if (withoutManager.length > 0) {
+			return withoutManager;
 		}
-		return clientId;
+
+		if (storedCustomerId && storedCustomerId !== this.loginCustomerId) {
+			return [storedCustomerId];
+		}
+
+		if (accessible.length > 0) {
+			// Only MCC visible — campaign queries will 403; still try so error path is clear.
+			return accessible;
+		}
+
+		return [storedCustomerId];
 	}
 
-	private async findFirstClientCustomerId(
-		accessToken: string,
-		managerCustomerId: string
-	): Promise<string | null> {
-		const query = [
-			'SELECT customer_client.client_customer, customer_client.manager',
-			'FROM customer_client',
-			'WHERE customer_client.manager = FALSE'
-		].join(' ');
-		const res = await this.searchStream(accessToken, managerCustomerId, query);
-		const body = await readJsonBody<unknown>(res, 'Google customer_client lookup failed');
-		if (!res.ok) {
+	private async listAccessibleCustomerIds(accessToken: string): Promise<string[]> {
+		const customersUrl = `https://googleads.googleapis.com/${this.apiVersion}/customers:listAccessibleCustomers`;
+		const customersRes = await this.fetchFn(customersUrl, {
+			method: 'GET',
+			headers: this.adsAuthHeaders(accessToken, { includeLoginCustomerId: false })
+		});
+		const customersBody = await readJsonBody<ListAccessibleCustomersResponse>(
+			customersRes,
+			'Google listAccessibleCustomers failed'
+		);
+		if (!customersRes.ok) {
 			throw new Error(
-				googleErrorMessage('Google customer_client lookup failed', body, res.status)
+				googleErrorMessage(
+					'Google listAccessibleCustomers failed',
+					customersBody,
+					customersRes.status
+				)
 			);
 		}
-
-		const batches = this.normalizeStreamBatches(body);
-		for (const batch of batches) {
-			for (const row of batch.results ?? []) {
-				const raw = (
-					row as { customerClient?: { clientCustomer?: string } }
-				).customerClient?.clientCustomer;
-				const id = raw?.replace(/^customers\//, '').trim();
-				if (id) return id;
-			}
-		}
-		return null;
+		return (customersBody.resourceNames ?? [])
+			.map((name) => name.replace(/^customers\//, ''))
+			.filter(Boolean);
 	}
-
 	private async refreshAccessToken(refreshToken: string): Promise<string> {
 		const res = await this.fetchFn('https://oauth2.googleapis.com/token', {
 			method: 'POST',
@@ -391,6 +403,7 @@ export function googleAdsAdapterFromEnv(fetchFn?: FetchFn): GoogleAdsAdapter {
 			clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET?.trim() ?? '',
 			developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim() ?? '',
 			loginCustomerId: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID?.trim(),
+			customerId: process.env.GOOGLE_ADS_CUSTOMER_ID?.trim(),
 			apiVersion: process.env.GOOGLE_ADS_API_VERSION?.trim() || DEFAULT_API_VERSION
 		},
 		fetchFn

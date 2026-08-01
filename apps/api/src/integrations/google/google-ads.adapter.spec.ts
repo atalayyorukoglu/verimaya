@@ -153,27 +153,16 @@ describe('GoogleAdsAdapter', () => {
 		});
 	});
 
-	it('resolves MCC stored id to a client account before campaign pull', async () => {
-		const calls: string[] = [];
+	it('resolves MCC via listAccessibleCustomers (skips customer_client)', async () => {
 		const fetchFn: FetchFn = async (input) => {
 			const url = String(input);
-			calls.push(url);
 			if (url === 'https://oauth2.googleapis.com/token') {
 				return jsonResponse({ access_token: 'access-fresh' });
 			}
-			if (url.includes('/customers/1112223333/googleAds:searchStream')) {
-				return jsonResponse([
-					{
-						results: [
-							{
-								customerClient: {
-									clientCustomer: 'customers/5556667777',
-									manager: false
-								}
-							}
-						]
-					}
-				]);
+			if (url.includes('/customers:listAccessibleCustomers')) {
+				return jsonResponse({
+					resourceNames: ['customers/1112223333', 'customers/5556667777']
+				});
 			}
 			if (url.includes('/customers/5556667777/googleAds:searchStream')) {
 				return jsonResponse([
@@ -187,6 +176,9 @@ describe('GoogleAdsAdapter', () => {
 						]
 					}
 				]);
+			}
+			if (url.includes('/customers/1112223333/googleAds:searchStream')) {
+				return jsonResponse({ error: { message: 'manager denied' } }, 403);
 			}
 			throw new Error(`unexpected URL: ${url}`);
 		};
@@ -205,6 +197,34 @@ describe('GoogleAdsAdapter', () => {
 
 		expect(rows).toHaveLength(1);
 		expect(rows[0]?.campaignId).toBe('99');
-		expect(calls.some((u) => u.includes('/customers/5556667777/'))).toBe(true);
+	});
+
+	it('uses GOOGLE_ADS_CUSTOMER_ID override when set', async () => {
+		const fetchFn: FetchFn = async (input) => {
+			const url = String(input);
+			if (url === 'https://oauth2.googleapis.com/token') {
+				return jsonResponse({ access_token: 'access-fresh' });
+			}
+			if (url.includes('/customers:listAccessibleCustomers')) {
+				throw new Error('should not list when customerId override is set');
+			}
+			if (url.includes('/customers/5556667777/googleAds:searchStream')) {
+				return jsonResponse([]);
+			}
+			throw new Error(`unexpected URL: ${url}`);
+		};
+
+		const adapter = new GoogleAdsAdapter(
+			{ ...config, loginCustomerId: '1112223333', customerId: '555-666-7777' },
+			fetchFn
+		);
+		const rows = await adapter.pullDailyMetrics({
+			secret: JSON.stringify({
+				refreshToken: 'refresh-xyz',
+				customerId: '1112223333'
+			}),
+			since: '2026-07-01'
+		});
+		expect(rows).toEqual([]);
 	});
 });
