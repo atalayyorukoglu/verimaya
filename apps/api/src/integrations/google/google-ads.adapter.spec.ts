@@ -75,6 +75,9 @@ describe('GoogleAdsAdapter', () => {
 				expect(String(init?.body ?? '')).toContain('grant_type=refresh_token');
 				return jsonResponse({ access_token: 'access-fresh' });
 			}
+			if (url.includes('/customers:listAccessibleCustomers')) {
+				return jsonResponse({ resourceNames: ['customers/9876543210'] });
+			}
 			if (url.includes('/googleAds:searchStream')) {
 				expect(url).toContain('/customers/9876543210/');
 				expect(init?.headers).toMatchObject({
@@ -128,6 +131,9 @@ describe('GoogleAdsAdapter', () => {
 			const url = String(input);
 			if (url === 'https://oauth2.googleapis.com/token') {
 				return jsonResponse({ access_token: 'access-fresh' });
+			}
+			if (url.includes('/customers:listAccessibleCustomers')) {
+				return jsonResponse({ resourceNames: ['customers/9876543210'] });
 			}
 			if (url.includes('/googleAds:searchStream')) {
 				expect(init?.headers).toMatchObject({
