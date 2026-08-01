@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { PUBLIC_SITE_URL } from '$lib/env';
 
 	const title = 'KVKK Aydınlatma Metni — Verimaya';
@@ -18,7 +19,10 @@
 
 <div class="flex min-h-dvh flex-col bg-bg text-text">
 	<header class="flex items-center justify-between px-6 py-6 sm:px-10">
-		<a href="/vitrin/" class="text-sm font-semibold tracking-tight text-text">Verimaya</a>
+		<a href="/vitrin/" class="flex items-center gap-2 text-text">
+			<BrandMark class="h-6 w-6" title="" />
+			<span class="text-sm font-semibold tracking-tight">Verimaya</span>
+		</a>
 		<a
 			href="/yapay-zeka-karnesi/"
 			class="text-sm font-medium text-text-muted transition-colors hover:text-text"

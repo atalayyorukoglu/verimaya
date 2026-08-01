@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { PUBLIC_SITE_URL } from '$lib/env';
 
 	// Always visible so prerendered HTML and no-JS users see content (not opacity:0).
@@ -57,7 +58,10 @@
 		class:vitrin-in={visible}
 		style="--delay: 0ms"
 	>
-		<span class="text-sm font-semibold tracking-tight text-text">Verimaya</span>
+		<a href="/vitrin/" class="flex items-center gap-2 text-text">
+			<BrandMark class="h-6 w-6" title="" />
+			<span class="text-sm font-semibold tracking-tight">Verimaya</span>
+		</a>
 		<a
 			href="/login"
 			class="text-sm font-medium text-text-muted transition-colors hover:text-text"
@@ -69,13 +73,16 @@
 	<main
 		class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-4 text-center sm:px-10"
 	>
-		<p
-			class="vitrin-brand text-[clamp(2.75rem,8vw,5.5rem)] font-semibold tracking-tight text-text"
+		<div
+			class="vitrin-brand flex flex-col items-center gap-5"
 			class:vitrin-in={visible}
 			style="--delay: 80ms"
 		>
-			Verimaya
-		</p>
+			<BrandMark class="h-14 w-14 text-text sm:h-16 sm:w-16" />
+			<p class="text-[clamp(2.75rem,8vw,5.5rem)] font-semibold tracking-tight text-text">
+				Verimaya
+			</p>
+		</div>
 		<h1
 			class="mt-5 max-w-2xl text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold tracking-tight text-text"
 			class:vitrin-in={visible}

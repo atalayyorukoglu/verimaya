@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { cn } from '$lib/utils';
 
 	/**
@@ -27,9 +28,7 @@
 		className
 	)}
 >
-	<div class="flex h-8 w-8 shrink-0 items-center justify-center" aria-hidden="true">
-		<span class="text-base leading-none font-semibold text-text">V</span>
-	</div>
+	<BrandMark class="h-8 w-8 text-text" title="" />
 	{#if showText}
 		<div
 			class={cn(

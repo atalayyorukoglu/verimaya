@@ -3,7 +3,7 @@
 // navigate requests fall back to /offline.html when offline.
 // NEVER registered while MSW is active (see +layout.svelte) — MSW installs its own worker.
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `verimaya-shell-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 const SHELL_ASSETS = [
@@ -12,7 +12,8 @@ const SHELL_ASSETS = [
 	OFFLINE_URL,
 	'/icon.svg',
 	'/icon-192.png',
-	'/icon-512.png'
+	'/icon-512.png',
+	'/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
