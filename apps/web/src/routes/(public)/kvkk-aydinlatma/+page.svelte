@@ -19,7 +19,7 @@
 
 <div class="flex min-h-dvh flex-col bg-bg text-text">
 	<header class="flex items-center justify-between px-6 py-6 sm:px-10">
-		<a href="/vitrin/" class="flex items-center gap-2 text-text">
+		<a href="/" class="flex items-center gap-2 text-text">
 			<BrandMark class="h-6 w-6" title="" />
 			<span class="text-sm font-semibold tracking-tight">Verimaya</span>
 		</a>

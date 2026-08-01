@@ -9,6 +9,7 @@
 	import AppShell from '$lib/components/AppShell.svelte';
 	import DevToolbar from '$lib/components/DevToolbar.svelte';
 	import { runAuthGate, isPublicPath } from '$lib/auth-gate';
+	import { isMarketingHost } from '$lib/host';
 	import { USE_MSW } from '$lib/env';
 
 	let { children } = $props();
@@ -19,11 +20,12 @@
 	let appReady = $state(!browser || !USE_MSW || !import.meta.env.DEV);
 	/** Auth gate finished (or skipped). Prevents flashing panel before redirect. */
 	let authReady = $state(!browser || USE_MSW);
-	// Public routes also render under this root layout; skip AppShell for bare surfaces.
+	// Public routes + marketing apex `/` — skip AppShell.
 	const isBareRoute = $derived(isPublicPath(page.url.pathname));
-	/** Marketing prerender surfaces only — panel + login stay noindex. */
+	/** Marketing hub + public prerender surfaces — indexable. */
 	const isIndexablePublic = $derived(
-		page.url.pathname.startsWith('/vitrin') ||
+		(page.url.pathname === '/' && isMarketingHost()) ||
+			page.url.pathname.startsWith('/vitrin') ||
 			page.url.pathname.startsWith('/yapay-zeka-karnesi') ||
 			page.url.pathname.startsWith('/kvkk-aydinlatma')
 	);

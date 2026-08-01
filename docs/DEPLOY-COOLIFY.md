@@ -93,14 +93,11 @@ Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /i
 
 | Host | Rol |
 |---|---|
-| `verimaya.com` | Pazarlama hub’ı (`/vitrin`: App Verimaya + CRM Verimaya) |
+| `verimaya.com` | Pazarlama hub’ı (`/`: App Verimaya + CRM Verimaya) |
 | `app.verimaya.com` | Panel + `/login` (oturum yoksa login, varsa panel) |
 | `crm.verimaya.com` | GHL white-label — **Verimaya kodu yok**; DNS CNAME → GHL |
 
-**Cloudflare (apex `/` → hub):** Static SPA’de `build/index.html` panel kabuğudur. Apex kökü için edge’de **302** (JS redirect değil):
-
-- `verimaya.com/` → `https://verimaya.com/vitrin/` (302)
-- İsteğe bağlı: `www.verimaya.com` → apex
+**nginx (imaj içi):** Apex/www host’ta `/` → `hub.html` (prerender hub); app host’ta `/` → SPA `index.html`. Eski `/vitrin` → `301 /`. Cloudflare’de ayrıca `/`→`/vitrin` redirect **gerekmez**.
 
 API CORS / auth:
 
@@ -235,15 +232,14 @@ curl -sfS "$API/v1/health/ready"
 # Panel SPA (noindex kabuk) — app host
 curl -sS "$APP/" | grep -q noindex && echo "spa noindex ok"
 
-# Hub prerender (SEO) — apex veya aynı imajdaki /vitrin
-curl -sS "$SITE/vitrin/" | grep -q "App Verimaya" && echo "hub App CTA ok"
-curl -sS "$SITE/vitrin/" | grep -q "CRM Verimaya" && echo "hub CRM CTA ok"
-curl -sS "$SITE/vitrin/" | grep -q "Hasta yolculuğunu" && echo "vitrin prerender ok"
+# Hub prerender (SEO) — apex kökü
+curl -sS "$SITE/" | grep -q "App Verimaya" && echo "hub App CTA ok"
+curl -sS "$SITE/" | grep -q "CRM Verimaya" && echo "hub CRM CTA ok"
+curl -sS "$SITE/" | grep -q "Hasta yolculuğunu" && echo "hub prerender ok"
 curl -sS "$SITE/yapay-zeka-karnesi/" | grep -qiE "karne|yapay.?zeka" && echo "karne prerender ok"
-! curl -sS "$SITE/vitrin/" | grep -q noindex && echo "vitrin indexable ok"
-
-# Apex kök → hub (Cloudflare 302)
-curl -sSI "$SITE/" | grep -qiE 'location:.*/vitrin' && echo "apex redirect to vitrin ok"
+! curl -sS "$SITE/" | grep -q noindex && echo "hub indexable ok"
+# Eski path → kök
+curl -sSI "$SITE/vitrin/" | grep -qiE 'location:.*/$' && echo "vitrin 301 to root ok"
 ```
 
 Ek:

@@ -118,7 +118,7 @@
 			</p>
 			<div class="mt-4 flex flex-col gap-3 sm:flex-row">
 				<a
-					href="/vitrin/"
+					href="/"
 					class="inline-flex h-11 items-center justify-center rounded-[6px] border border-border bg-surface px-5 text-sm font-medium text-text transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 				>
 					Vitrine dön

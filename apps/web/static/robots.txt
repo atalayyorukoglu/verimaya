@@ -2,8 +2,7 @@
 # Public marketing surfaces are indexable; the SPA panel is not.
 
 User-agent: *
-Allow: /vitrin
-Allow: /vitrin/
+Allow: /
 Allow: /yapay-zeka-karnesi
 Allow: /yapay-zeka-karnesi/
 Allow: /kvkk-aydinlatma

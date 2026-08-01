@@ -294,7 +294,7 @@
 
 		<p class="mt-6 text-center text-sm text-text-muted">
 			<a
-				href={`${PUBLIC_SITE_URL}/vitrin/`}
+				href={PUBLIC_SITE_URL}
 				class="text-text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
 			>
 				Verimaya nedir?
