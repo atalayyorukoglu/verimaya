@@ -72,6 +72,7 @@ export const apiPaths = {
 		return `${url.pathname}${url.search}`;
 	},
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
+	adMetricsSync: `${API_V1_PREFIX}/ad-metrics/sync`,
 	apiKeys: `${API_V1_PREFIX}/api-keys`,
 	apiKey: (id: string) => `${API_V1_PREFIX}/api-keys/${id}`,
 	webhookSubscriptions: `${API_V1_PREFIX}/webhook-subscriptions`,
@@ -127,7 +128,7 @@ import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-c
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
-import { adMetricSchema } from './ad-metrics.js';
+import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
 import {
 	reportByCategoryDetailSchema,
@@ -267,6 +268,9 @@ export const apiContract = {
 	},
 	'GET /v1/ad-metrics': {
 		response: z.object({ items: z.array(adMetricSchema) })
+	},
+	'POST /v1/ad-metrics/sync': {
+		response: adMetricsSyncResultSchema
 	},
 	'GET /v1/api-keys': {
 		response: z.object({ items: z.array(apiKeySchema) })

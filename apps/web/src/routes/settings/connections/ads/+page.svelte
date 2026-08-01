@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { AdConnectionsResponse, AdConnectionStatus, AdProvider } from '@verimaya/shared';
+	import {
+		apiPaths,
+		type AdConnectionsResponse,
+		type AdConnectionStatus,
+		type AdMetricsSyncResult,
+		type AdProvider
+	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { PUBLIC_API_URL } from '$lib/env';
 	import { formatDate } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import IntegrationCard from '$lib/components/IntegrationCard.svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	const queryClient = useQueryClient();
 	const apiOrigin = PUBLIC_API_URL.replace(/\/$/, '');
@@ -25,6 +33,10 @@
 
 	const flashLabel = $derived(adsFlash === 'meta' ? 'Meta' : adsFlash === 'google' ? 'Google' : '');
 
+	const anyConnected = $derived(
+		Boolean(statusQuery.data?.items.some((i) => i.connected))
+	);
+
 	function itemFor(provider: AdProvider): AdConnectionStatus | undefined {
 		return statusQuery.data?.items.find((i) => i.provider === provider);
 	}
@@ -36,15 +48,17 @@
 	function cardMeta(item: AdConnectionStatus | undefined): { label: string; value: string }[] {
 		return [
 			{
-				label: 'Durum',
-				value: item?.connected ? 'Bağlı' : 'Bağlı değil'
+				label: t('settings.ads.statusLabel'),
+				value: item?.connected
+					? t('settings.ads.statusConnected')
+					: t('settings.ads.statusDisconnected')
 			},
 			{
-				label: 'Son senkron',
+				label: t('settings.ads.lastSyncLabel'),
 				value: item?.last_sync_date ? formatDate(item.last_sync_date) : '—'
 			},
 			{
-				label: 'Anahtar sürümü',
+				label: t('settings.ads.keyVersionLabel'),
 				value: item?.key_version != null ? String(item.key_version) : '—'
 			}
 		];
@@ -56,6 +70,9 @@
 
 	let disconnecting = $state<AdProvider | null>(null);
 	let disconnectError = $state<string | null>(null);
+	let syncing = $state(false);
+	let syncError = $state<string | null>(null);
+	let syncOk = $state<string | null>(null);
 
 	async function disconnect(provider: AdProvider) {
 		disconnecting = provider;
@@ -64,30 +81,45 @@
 			await apiSend(`/v1/integrations/ads/${provider}`, 'DELETE');
 			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ads', 'status'] });
 		} catch (err) {
-			disconnectError = err instanceof Error ? err.message : 'Bağlantı kesilemedi';
+			disconnectError = err instanceof Error ? err.message : t('settings.ads.disconnectError');
 		} finally {
 			disconnecting = null;
+		}
+	}
+
+	async function syncNow() {
+		syncing = true;
+		syncError = null;
+		syncOk = null;
+		try {
+			const result = await apiSend<AdMetricsSyncResult>(apiPaths.adMetricsSync, 'POST');
+			syncOk = t('settings.ads.syncOk', {
+				count: String(result.upserted),
+				mode: result.mode
+			});
+			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ads', 'status'] });
+		} catch (err) {
+			syncError = err instanceof Error ? err.message : t('settings.ads.syncError');
+		} finally {
+			syncing = false;
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Reklamlar · Ayarlar · Verimaya</title>
+	<title>{t('settings.ads.title')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
-	<PageHeader
-		title="Reklamlar"
-		description="Meta ve Google Ads harcama/lead verisi — kampanya bazında maliyet raporları için."
-	/>
+	<PageHeader title={t('settings.ads.title')} description={t('settings.ads.description')} />
 
 	{#if adsFlash}
 		<div
 			class="mb-4 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
 			role="status"
 		>
-			{flashLabel} bağlantısı tamamlandı.
+			{t('settings.ads.flash', { provider: flashLabel })}
 		</div>
 	{/if}
 
@@ -97,20 +129,35 @@
 		</div>
 	{/if}
 
+	{#if syncOk}
+		<div
+			class="mb-4 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
+			role="status"
+		>
+			{syncOk}
+		</div>
+	{/if}
+
+	{#if syncError}
+		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+			{syncError}
+		</div>
+	{/if}
+
 	{#if statusQuery.isPending}
-		<p class="text-sm text-text-muted">Bağlantı durumu yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('settings.ads.loading')}</p>
 	{:else if statusQuery.isError}
-		<p class="text-sm text-danger">Bağlantı durumu yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('settings.ads.loadError')}</p>
 	{:else}
 		{@const metaItem = itemFor('meta')}
 		{@const googleItem = itemFor('google')}
 		<div class="space-y-4">
 			<IntegrationCard
-				name="Meta Ads"
-				description="Lead form gönderimlerini webhook ile alır; kampanya harcamasını günlük çeker ve hasta kaynağıyla eşler."
+				name={t('settings.ads.meta.name')}
+				description={t('settings.ads.meta.description')}
 				status={cardStatus(metaItem)}
 				meta={cardMeta(metaItem)}
-				actionLabel={metaItem?.connected ? undefined : "Meta'ya bağlan"}
+				actionLabel={metaItem?.connected ? undefined : t('settings.ads.connectMeta')}
 				actionHref={metaItem?.connected ? undefined : authorizeHref('meta')}
 				onDisconnect={metaItem?.connected && disconnecting !== 'meta'
 					? () => void disconnect('meta')
@@ -118,31 +165,34 @@
 			/>
 
 			<IntegrationCard
-				name="Google Ads"
-				description="Kampanya harcaması ve dönüşüm verisini çeker; offline conversion geri bildirimi planlanıyor."
+				name={t('settings.ads.google.name')}
+				description={t('settings.ads.google.description')}
 				status={cardStatus(googleItem)}
 				meta={cardMeta(googleItem)}
-				actionLabel={googleItem?.connected ? undefined : "Google'a bağlan"}
+				actionLabel={googleItem?.connected ? undefined : t('settings.ads.connectGoogle')}
 				actionHref={googleItem?.connected ? undefined : authorizeHref('google')}
 				onDisconnect={googleItem?.connected && disconnecting !== 'google'
 					? () => void disconnect('google')
 					: undefined}
 			/>
 
+			{#if anyConnected}
+				<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
+					<p class="text-sm text-text-muted">{t('settings.ads.syncHint')}</p>
+					<div class="mt-3">
+						<Button type="button" size="sm" disabled={syncing} onclick={() => void syncNow()}>
+							{syncing ? t('settings.ads.syncing') : t('settings.ads.sync')}
+						</Button>
+					</div>
+				</div>
+			{/if}
+
 			<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
-				<h2 class="text-sm font-semibold text-text">Geliştirme / demo verisi</h2>
-				<p class="mt-2 text-sm leading-relaxed text-text-muted">
-					OAuth bağlantısı olmadan <code class="text-xs">ad_metrics.sync</code> işi tenant için
-					birkaç örnek satır yazar; <code class="text-xs">GET /v1/ad-metrics</code> bunları döner.
-					Periyodik 6 saatlik kuyruk için API'de
-					<code class="text-xs">ENABLE_INTEGRATION_SCHEDULERS=true</code> gerekir (yerelde varsayılan
-					kapalı).
-				</p>
+				<h2 class="text-sm font-semibold text-text">{t('settings.ads.dev.heading')}</h2>
+				<p class="mt-2 text-sm leading-relaxed text-text-muted">{t('settings.ads.dev.body')}</p>
 			</div>
 
-			<p class="text-xs text-text-faint">
-				Bağlantı sonrası "hasta başına maliyet" Raporlar sayfasında kaynak bazında görünecek.
-			</p>
+			<p class="text-xs text-text-faint">{t('settings.ads.footnote')}</p>
 		</div>
 	{/if}
 </div>

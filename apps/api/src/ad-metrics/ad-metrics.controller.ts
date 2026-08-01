@@ -1,14 +1,18 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { adMetricsListParams } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
 import { AdMetricsService } from './ad-metrics.service';
+import { AdMetricsSyncService } from './ad-metrics.sync.service';
 
 @Controller('ad-metrics')
 @UseGuards(SessionGuard, ActiveOrgGuard)
 export class AdMetricsController {
-	constructor(private readonly adMetricsService: AdMetricsService) {}
+	constructor(
+		private readonly adMetricsService: AdMetricsService,
+		private readonly adMetricsSyncService: AdMetricsSyncService
+	) {}
 
 	@Get()
 	list(
@@ -19,5 +23,12 @@ export class AdMetricsController {
 	) {
 		const params = adMetricsListParams.parse({ from, to, provider });
 		return this.adMetricsService.list(getActiveOrgId(req), params);
+	}
+
+	/** One-shot pull (no scheduler). Runs sync inline and returns upsert counts. */
+	@Post('sync')
+	@HttpCode(200)
+	sync(@Req() req: FastifyRequest) {
+		return this.adMetricsSyncService.sync(getActiveOrgId(req));
 	}
 }

@@ -22,3 +22,9 @@ export const adMetricsListParams = z.object({
 	provider: adProviderSchema.optional()
 });
 export type AdMetricsListParams = z.infer<typeof adMetricsListParams>;
+
+export const adMetricsSyncResultSchema = z.object({
+	mode: z.enum(['fixture', 'oauth']),
+	upserted: z.number().int().nonnegative()
+});
+export type AdMetricsSyncResult = z.infer<typeof adMetricsSyncResultSchema>;

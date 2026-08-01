@@ -686,6 +686,10 @@ export const handlers = [
 		return new HttpResponse(null, { status: 204 });
 	}),
 
+	http.post('/v1/ad-metrics/sync', () => {
+		return HttpResponse.json({ mode: 'oauth', upserted: 3 });
+	}),
+
 	http.post('/v1/transactions', async ({ request }) => {
 		const body = await request.json();
 		const parsed = transactionCreateSchema.safeParse(body);

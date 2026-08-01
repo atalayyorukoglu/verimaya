@@ -30,6 +30,11 @@ export function setLocale(locale: Locale): void {
 }
 
 /** Anahtarı aktif dile çevirir; eksikse varsayılan dile, o da yoksa anahtarın kendisine düşer. */
-export function t(key: MessageKey): string {
-	return messages[currentLocale][key] ?? messages[defaultLocale][key] ?? key;
+export function t(key: MessageKey, vars?: Record<string, string | number>): string {
+	const template = messages[currentLocale][key] ?? messages[defaultLocale][key] ?? key;
+	if (!vars) return template;
+	return template.replace(/\{(\w+)\}/g, (match, name: string) => {
+		const value = vars[name];
+		return value === undefined ? match : String(value);
+	});
 }

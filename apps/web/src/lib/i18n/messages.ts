@@ -148,7 +148,39 @@ const tr = {
 	'settings.ghl.dev.body':
 		"OAuth olmadan gelen GHL webhook'ları kuyrukta işlenir; contact alanları yeterliyse tenant içinde hasta upsert edilir (source=ghl). Sync özeti jobs ledger'ına yazılır. 6 saatlik ghl.reconcile için ENABLE_INTEGRATION_SCHEDULERS=true gerekir.",
 	'settings.ghl.footnote':
-		'Token AES-GCM ile saklanır. Refresh Adım 41 HTTP istemcisinde kullanılır; access ~24s, refresh kullanıma kadar ~1 yıl.'
+		'Token AES-GCM ile saklanır. Refresh Adım 41 HTTP istemcisinde kullanılır; access ~24s, refresh kullanıma kadar ~1 yıl.',
+
+	'settings.ads.title': 'Reklamlar',
+	'settings.ads.description':
+		'Meta ve Google Ads harcama/lead verisi — kampanya bazında maliyet raporları için.',
+	'settings.ads.flash': '{provider} bağlantısı tamamlandı.',
+	'settings.ads.meta.name': 'Meta Ads',
+	'settings.ads.meta.description':
+		'Lead form gönderimlerini webhook ile alır; kampanya harcamasını günlük çeker ve hasta kaynağıyla eşler.',
+	'settings.ads.google.name': 'Google Ads',
+	'settings.ads.google.description':
+		'Kampanya harcaması ve dönüşüm verisini çeker; offline conversion geri bildirimi planlanıyor.',
+	'settings.ads.connectMeta': "Meta'ya bağlan",
+	'settings.ads.connectGoogle': "Google'a bağlan",
+	'settings.ads.statusLabel': 'Durum',
+	'settings.ads.statusConnected': 'Bağlı',
+	'settings.ads.statusDisconnected': 'Bağlı değil',
+	'settings.ads.lastSyncLabel': 'Son senkron',
+	'settings.ads.keyVersionLabel': 'Anahtar sürümü',
+	'settings.ads.loading': 'Bağlantı durumu yükleniyor…',
+	'settings.ads.loadError': 'Bağlantı durumu yüklenemedi.',
+	'settings.ads.disconnectError': 'Bağlantı kesilemedi',
+	'settings.ads.sync': 'Metrikleri şimdi çek',
+	'settings.ads.syncing': 'Çekiliyor…',
+	'settings.ads.syncOk': 'Senkron tamam: {count} satır ({mode}).',
+	'settings.ads.syncError': 'Senkron başarısız.',
+	'settings.ads.syncHint':
+		'Otomatik zamanlayıcı kapalıdır. Veriler yalnızca bu düğmeyle çekilir.',
+	'settings.ads.dev.heading': 'Geliştirme / demo verisi',
+	'settings.ads.dev.body':
+		'OAuth yokken senkron örnek satır yazar. Otomatik 6s kuyruk için ENABLE_INTEGRATION_SCHEDULERS=true gerekir — prod’da kapalı tutuyoruz.',
+	'settings.ads.footnote':
+		'Bağlantı sonrası "hasta başına maliyet" Raporlar sayfasında kaynak bazında görünecek.'
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -282,7 +314,38 @@ const en: Record<MessageKey, string> = {
 	'settings.ghl.dev.body':
 		'GHL webhooks without OAuth are still processed; clean contacts upsert patients (source=ghl). Sync summary goes to the jobs ledger. 6h ghl.reconcile needs ENABLE_INTEGRATION_SCHEDULERS=true.',
 	'settings.ghl.footnote':
-		'Tokens are stored with AES-GCM. Refresh is used by the Adım 41 HTTP client; access ~24h, refresh ~1y until used.'
+		'Tokens are stored with AES-GCM. Refresh is used by the Adım 41 HTTP client; access ~24h, refresh ~1y until used.',
+
+	'settings.ads.title': 'Ads',
+	'settings.ads.description':
+		'Meta and Google Ads spend/lead data — for campaign-level cost reports.',
+	'settings.ads.flash': '{provider} connection completed.',
+	'settings.ads.meta.name': 'Meta Ads',
+	'settings.ads.meta.description':
+		'Receives lead form submissions via webhook; pulls daily campaign spend and matches patient sources.',
+	'settings.ads.google.name': 'Google Ads',
+	'settings.ads.google.description':
+		'Pulls campaign spend and conversions; offline conversion feedback is planned.',
+	'settings.ads.connectMeta': 'Connect Meta',
+	'settings.ads.connectGoogle': 'Connect Google',
+	'settings.ads.statusLabel': 'Status',
+	'settings.ads.statusConnected': 'Connected',
+	'settings.ads.statusDisconnected': 'Not connected',
+	'settings.ads.lastSyncLabel': 'Last sync',
+	'settings.ads.keyVersionLabel': 'Key version',
+	'settings.ads.loading': 'Loading connection status…',
+	'settings.ads.loadError': 'Could not load connection status.',
+	'settings.ads.disconnectError': 'Could not disconnect',
+	'settings.ads.sync': 'Pull metrics now',
+	'settings.ads.syncing': 'Pulling…',
+	'settings.ads.syncOk': 'Sync done: {count} rows ({mode}).',
+	'settings.ads.syncError': 'Sync failed.',
+	'settings.ads.syncHint': 'Automatic scheduler is off. Data is pulled only via this button.',
+	'settings.ads.dev.heading': 'Development / demo data',
+	'settings.ads.dev.body':
+		'Without OAuth, sync writes sample rows. Periodic 6h queue needs ENABLE_INTEGRATION_SCHEDULERS=true — we keep it off in prod.',
+	'settings.ads.footnote':
+		'After connecting, cost-per-patient appears on Reports by source.'
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { tr, en };
