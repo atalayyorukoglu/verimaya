@@ -65,13 +65,17 @@ export async function apiSend<T>(
 	body?: unknown,
 	init?: RequestInit
 ): Promise<T> {
+	const headers: Record<string, string> = {
+		...(init?.headers as Record<string, string> | undefined)
+	};
+	if (body !== undefined) {
+		headers['Content-Type'] = 'application/json';
+	}
+
 	const res = await apiFetch(path, {
 		...init,
 		method,
-		headers: {
-			'Content-Type': 'application/json',
-			...init?.headers
-		},
+		headers,
 		body: body === undefined ? undefined : JSON.stringify(body)
 	});
 
