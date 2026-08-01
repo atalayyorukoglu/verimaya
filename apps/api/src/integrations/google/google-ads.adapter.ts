@@ -73,7 +73,7 @@ function formBody(params: Record<string, string>): string {
 	return new URLSearchParams(params).toString();
 }
 
-async function readJsonBody<T extends object>(res: Response, label: string): Promise<T> {
+async function readJsonBody<T>(res: Response, label: string): Promise<T> {
 	const text = await res.text();
 	const ctype = res.headers.get('content-type') ?? '';
 	if (!ctype.includes('json') && text.trimStart().startsWith('<')) {
