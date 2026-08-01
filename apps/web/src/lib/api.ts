@@ -38,6 +38,14 @@ async function parseError(res: Response): Promise<never> {
 	} catch {
 		/* ignore */
 	}
+	if (
+		res.status === 401 &&
+		!USE_MSW &&
+		typeof window !== 'undefined' &&
+		!window.location.pathname.startsWith('/login')
+	) {
+		window.location.assign('/login');
+	}
 	throw new ApiRequestError(res.status, body);
 }
 

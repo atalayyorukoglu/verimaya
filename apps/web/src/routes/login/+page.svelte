@@ -3,6 +3,7 @@
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { authClient } from '$lib/auth';
+	import { PUBLIC_SITE_URL } from '$lib/env';
 	import {
 		checkOrganizationGate,
 		createOrganization,
@@ -293,7 +294,7 @@
 
 		<p class="mt-6 text-center text-sm text-text-muted">
 			<a
-				href="/vitrin"
+				href={`${PUBLIC_SITE_URL}/vitrin/`}
 				class="text-text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
 			>
 				Verimaya nedir?

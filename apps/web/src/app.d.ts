@@ -13,6 +13,8 @@ declare global {
 interface ImportMetaEnv {
 	readonly PUBLIC_API_URL: string;
 	readonly PUBLIC_SITE_URL: string;
+	readonly PUBLIC_APP_URL: string;
+	readonly PUBLIC_CRM_URL: string;
 	readonly PUBLIC_USE_MSW: string;
 	/** Override karne telemetry: "true" | "false". Unset → off in dev, on in prod. */
 	readonly PUBLIC_KARNE_TELEMETRY?: string;

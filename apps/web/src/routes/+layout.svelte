@@ -8,6 +8,7 @@
 	import { createQueryClient } from '$lib/query-client';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import DevToolbar from '$lib/components/DevToolbar.svelte';
+	import { runAuthGate, isPublicPath } from '$lib/auth-gate';
 	import { USE_MSW } from '$lib/env';
 
 	let { children } = $props();
@@ -16,13 +17,10 @@
 	// SSR/prerender must render real content — never the "Yükleniyor…" placeholder.
 	// In the browser, wait for MSW only when the mock worker is active in dev.
 	let appReady = $state(!browser || !USE_MSW || !import.meta.env.DEV);
+	/** Auth gate finished (or skipped). Prevents flashing panel before redirect. */
+	let authReady = $state(!browser || USE_MSW);
 	// Public routes also render under this root layout; skip AppShell for bare surfaces.
-	const isBareRoute = $derived(
-		page.url.pathname.startsWith('/login') ||
-			page.url.pathname.startsWith('/vitrin') ||
-			page.url.pathname.startsWith('/yapay-zeka-karnesi') ||
-			page.url.pathname.startsWith('/kvkk-aydinlatma')
-	);
+	const isBareRoute = $derived(isPublicPath(page.url.pathname));
 	/** Marketing prerender surfaces only — panel + login stay noindex. */
 	const isIndexablePublic = $derived(
 		page.url.pathname.startsWith('/vitrin') ||
@@ -40,6 +38,22 @@
 		}
 		appReady = true;
 	});
+
+	$effect(() => {
+		if (!browser || !appReady || USE_MSW) {
+			authReady = true;
+			return;
+		}
+		const pathname = page.url.pathname;
+		let cancelled = false;
+		authReady = false;
+		void runAuthGate(pathname).finally(() => {
+			if (!cancelled) authReady = true;
+		});
+		return () => {
+			cancelled = true;
+		};
+	});
 </script>
 
 <svelte:head>
@@ -50,7 +64,7 @@
 	{/if}
 </svelte:head>
 
-{#if appReady}
+{#if appReady && authReady}
 	<QueryClientProvider client={queryClient}>
 		{#if isBareRoute}
 			{@render children()}

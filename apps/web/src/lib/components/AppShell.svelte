@@ -15,11 +15,13 @@
 	import { changelog } from '@verimaya/shared';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import SiteLogo from '$lib/components/SiteLogo.svelte';
+	import BrandMark from '$lib/components/BrandMark.svelte';
+	import LogoHorizontal from '$lib/components/LogoHorizontal.svelte';
 	import SidebarVersionFooter from '$lib/components/SidebarVersionFooter.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
+	import { authClient } from '$lib/auth';
 	import { USE_MSW } from '$lib/env';
 
 	type BeforeInstallPromptEvent = Event & {
@@ -131,6 +133,14 @@
 		accountOpen = false;
 	}
 
+	async function signOut() {
+		closeAccount();
+		if (!USE_MSW) {
+			await authClient.signOut();
+		}
+		await goto('/login');
+	}
+
 	/** TickPort: thin scrollbar only while scrolling */
 	function bindSidebarScroll(el: HTMLElement) {
 		let hideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -226,9 +236,9 @@
 	<aside
 		class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex"
 	>
-		<div class="flex h-14 shrink-0 items-center border-b border-border bg-bg px-4">
-			<a href="/" class="block min-w-0 rounded-md">
-				<SiteLogo description={tenantName} />
+		<div class="flex h-14 shrink-0 items-center justify-center border-b border-border bg-bg px-4">
+			<a href="/" class="rounded-md" aria-label="Verimaya — {tenantName}">
+				<LogoHorizontal />
 			</a>
 		</div>
 
@@ -294,10 +304,15 @@
 			class="fixed inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-border bg-bg md:hidden"
 		>
 			<div
-				class="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-bg px-4"
+				class="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-bg px-3"
 			>
-				<a href="/" class="block min-w-0 rounded-md" onclick={closeMobile}>
-					<SiteLogo description={tenantName} />
+				<a
+					href="/"
+					class="flex min-w-0 flex-1 items-center justify-center rounded-md pe-1"
+					aria-label="Verimaya — {tenantName}"
+					onclick={closeMobile}
+				>
+					<LogoHorizontal class="max-w-full" />
 				</a>
 				<button
 					type="button"
@@ -365,6 +380,13 @@
 		<header
 			class="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-bg/95 px-3 backdrop-blur sm:px-4 md:static"
 		>
+			<a
+				href="/"
+				class="shrink-0 rounded-md text-text md:hidden"
+				aria-label="Verimaya — {tenantName}"
+			>
+				<BrandMark class="h-7 w-7" title="" />
+			</a>
 			<CommandPalette />
 
 			<div class="ml-auto flex shrink-0 items-center gap-1">
@@ -438,9 +460,13 @@
 							>
 								Destek
 							</button>
-							<p class="border-t border-border px-3 py-2 text-xs text-text-faint">
-								Demo ortamında oturum kapatma yok.
-							</p>
+							<button
+								type="button"
+								class="block w-full border-t border-border px-3 py-2 text-left text-sm text-danger hover:bg-surface-2"
+								onclick={() => void signOut()}
+							>
+								Çıkış yap
+							</button>
 						</div>
 					{/if}
 				</div>

@@ -84,10 +84,28 @@ Volume: `UPLOAD_DIR` mount (local driver veya `local://` legacy satırlar için)
 |---|---|
 | Build | `pnpm install --frozen-lockfile && pnpm --filter @verimaya/web build` |
 | Publish | `apps/web/build` |
-| Domain | örn. `app.verimaya.com` veya apex `verimaya.com` |
-| Env (build-time) | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_USE_MSW=false` |
+| Domain | **`verimaya.com` + `app.verimaya.com`** (aynı servis) |
+| Env (build-time) | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false` |
 
 Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /index.html;`
+
+#### Domain ayrımı
+
+| Host | Rol |
+|---|---|
+| `verimaya.com` | Pazarlama hub’ı (`/vitrin`: App Verimaya + CRM Verimaya) |
+| `app.verimaya.com` | Panel + `/login` (oturum yoksa login, varsa panel) |
+| `crm.verimaya.com` | GHL white-label — **Verimaya kodu yok**; DNS CNAME → GHL |
+
+**Cloudflare (apex `/` → hub):** Static SPA’de `build/index.html` panel kabuğudur. Apex kökü için edge’de **302** (JS redirect değil):
+
+- `verimaya.com/` → `https://verimaya.com/vitrin/` (302)
+- İsteğe bağlı: `www.verimaya.com` → apex
+
+API CORS / auth:
+
+- `TRUSTED_ORIGINS`: `https://verimaya.com,https://app.verimaya.com` (gerekirse `www`)
+- `WEB_PUBLIC_URL`: tercihen `https://verimaya.com` (OAuth return + karne); panel cookie origin `app` ise better-auth `trustedOrigins` her iki hostu kapsamalı
 
 ## Ortam değişkenleri (API — zorunlu prod)
 
@@ -117,8 +135,10 @@ Web build:
 
 | Key | Not |
 |---|---|
-| `PUBLIC_API_URL` | `https://api…` |
-| `PUBLIC_SITE_URL` | `https://…` (canonical / OG) |
+| `PUBLIC_API_URL` | `https://api.verimaya.com` |
+| `PUBLIC_SITE_URL` | `https://verimaya.com` (canonical / OG / hub) |
+| `PUBLIC_APP_URL` | `https://app.verimaya.com` (hub → App CTA) |
+| `PUBLIC_CRM_URL` | `https://crm.verimaya.com` (hub → CRM CTA; GHL) |
 | `PUBLIC_USE_MSW` | `false` |
 
 ## Cloudflare R2 (dosya depolama)
@@ -204,21 +224,26 @@ psql … -c "select max(created_at) from audit_logs;"
 Host’ları kendi domain’inle değiştir:
 
 ```bash
-API=https://api.example.com
-WEB=https://app.example.com
+API=https://api.verimaya.com
+APP=https://app.verimaya.com
+SITE=https://verimaya.com
 
 # API
 curl -sfS "$API/v1/health" | tee /tmp/vm-health.json
 curl -sfS "$API/v1/health/ready"
 
-# Panel SPA (noindex kabuk)
-curl -sS "$WEB/" | grep -q noindex && echo "spa noindex ok"
+# Panel SPA (noindex kabuk) — app host
+curl -sS "$APP/" | grep -q noindex && echo "spa noindex ok"
 
-# Public prerender (SEO içerik — SPA kabuğu değil)
-curl -sS "$WEB/vitrin" | grep -q "Hasta yolculuğunu" && echo "vitrin prerender ok"
-curl -sS "$WEB/yapay-zeka-karnesi" | grep -qiE "karne|yapay.?zeka" && echo "karne prerender ok"
-# prerender dosyasında noindex olmamalı:
-! curl -sS "$WEB/vitrin" | grep -q noindex && echo "vitrin indexable ok"
+# Hub prerender (SEO) — apex veya aynı imajdaki /vitrin
+curl -sS "$SITE/vitrin/" | grep -q "App Verimaya" && echo "hub App CTA ok"
+curl -sS "$SITE/vitrin/" | grep -q "CRM Verimaya" && echo "hub CRM CTA ok"
+curl -sS "$SITE/vitrin/" | grep -q "Hasta yolculuğunu" && echo "vitrin prerender ok"
+curl -sS "$SITE/yapay-zeka-karnesi/" | grep -qiE "karne|yapay.?zeka" && echo "karne prerender ok"
+! curl -sS "$SITE/vitrin/" | grep -q noindex && echo "vitrin indexable ok"
+
+# Apex kök → hub (Cloudflare 302)
+curl -sSI "$SITE/" | grep -qiE 'location:.*/vitrin' && echo "apex redirect to vitrin ok"
 ```
 
 Ek:

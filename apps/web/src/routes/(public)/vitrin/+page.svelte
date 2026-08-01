@@ -1,6 +1,6 @@
 <script lang="ts">
 	import BrandMark from '$lib/components/BrandMark.svelte';
-	import { PUBLIC_SITE_URL } from '$lib/env';
+	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
 
 	// Always visible so prerendered HTML and no-JS users see content (not opacity:0).
 	const visible = true;
@@ -63,10 +63,10 @@
 			<span class="text-sm font-semibold tracking-tight">Verimaya</span>
 		</a>
 		<a
-			href="/login"
+			href={PUBLIC_APP_URL}
 			class="text-sm font-medium text-text-muted transition-colors hover:text-text"
 		>
-			Giriş
+			App
 		</a>
 	</header>
 
@@ -98,26 +98,42 @@
 			Lead’den randevuya, finanstan WhatsApp işlem aktarımına — sağlık turizmi operasyonları için
 			çok kiracılı B2B platform.
 		</p>
-		<div class:vitrin-in={visible} style="--delay: 380ms" class="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+		<div
+			class:vitrin-in={visible}
+			style="--delay: 380ms"
+			class="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:justify-center"
+		>
 			<a
-				href="/login"
+				href={PUBLIC_APP_URL}
 				class="vitrin-cta inline-flex h-11 min-w-44 items-center justify-center rounded-[6px] bg-brand px-8 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98]"
 			>
-				Giriş yap
+				App Verimaya
 			</a>
 			<a
-				href="/yapay-zeka-karnesi/"
+				href={PUBLIC_CRM_URL}
 				class="inline-flex h-11 min-w-44 items-center justify-center rounded-[6px] border border-border bg-surface px-6 text-sm font-medium text-text transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			>
+				CRM Verimaya
+			</a>
+		</div>
+		<p
+			class:vitrin-in={visible}
+			style="--delay: 480ms"
+			class="mt-6 text-sm text-text-muted"
+		>
+			<a
+				href="/yapay-zeka-karnesi/"
+				class="underline-offset-4 transition-colors hover:text-text hover:underline"
 			>
 				5 dakikada yapay zeka karnenizi alın
 			</a>
-		</div>
+		</p>
 	</main>
 
 	<footer
 		class="relative z-10 px-6 py-8 text-center text-xs text-text-faint sm:px-10"
 		class:vitrin-in={visible}
-		style="--delay: 480ms"
+		style="--delay: 560ms"
 	>
 		© {new Date().getFullYear()} Verimaya
 	</footer>

@@ -43,13 +43,15 @@ Coolify **Application** (önerilen — `try_files` sırası garantili):
 | Dockerfile | `apps/web/Dockerfile` |
 | Build context | monorepo kökü |
 | Port | `80` |
-| Domain | `app.verimaya.com` (veya apex) |
-| Build args | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_USE_MSW=false` |
+| Domain | `verimaya.com` + `app.verimaya.com` (aynı imaj); apex `/` → `/vitrin/` Cloudflare 302 |
+| Build args | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false` |
 
 ```bash
 docker build -f apps/web/Dockerfile \
   --build-arg PUBLIC_API_URL=https://api.verimaya.com \
-  --build-arg PUBLIC_SITE_URL=https://app.verimaya.com \
+  --build-arg PUBLIC_SITE_URL=https://verimaya.com \
+  --build-arg PUBLIC_APP_URL=https://app.verimaya.com \
+  --build-arg PUBLIC_CRM_URL=https://crm.verimaya.com \
   --build-arg PUBLIC_USE_MSW=false \
   .
 ```
