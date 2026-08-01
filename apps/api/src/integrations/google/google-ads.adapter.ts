@@ -68,7 +68,13 @@ function googleErrorMessage(prefix: string, body: unknown, status: number): stri
 	const b = body as {
 		error?: string | {
 			message?: string;
-			details?: Array<{ errors?: Array<{ message?: string }> }>;
+			status?: string;
+			details?: Array<{
+				errors?: Array<{
+					message?: string;
+					errorCode?: Record<string, string>;
+				}>;
+			}>;
 		};
 		error_description?: string;
 	};
@@ -76,12 +82,33 @@ function googleErrorMessage(prefix: string, body: unknown, status: number): stri
 		const detail = b.error_description?.trim() || b.error;
 		return `${prefix}: ${detail}`;
 	}
-	const nested = b.error?.details
-		?.flatMap((d) => d.errors ?? [])
-		.map((e) => e.message?.trim())
+
+	const adsErrors = b.error?.details?.flatMap((d) => d.errors ?? []) ?? [];
+	const coded = adsErrors
+		.map((e) => {
+			const code = e.errorCode ? Object.values(e.errorCode).find(Boolean) : undefined;
+			const msg = e.message?.trim();
+			if (code && msg) return `${code}: ${msg}`;
+			return code || msg;
+		})
 		.find(Boolean);
-	const detail = nested || b.error?.message?.trim();
+
+	const detail = coded || b.error?.message?.trim() || b.error?.status?.trim();
 	return detail ? `${prefix}: ${detail}` : `${prefix} (HTTP ${status})`;
+}
+
+function googlePullGuidance(failureText: string): string {
+	const upper = failureText.toUpperCase();
+	if (upper.includes('DEVELOPER_TOKEN_NOT_APPROVED')) {
+		return 'Developer token is Test-only — apply for Basic/Standard in Google Ads API Center, or use a test client account.';
+	}
+	if (upper.includes('USER_PERMISSION_DENIED')) {
+		return 'OAuth user cannot access this client — add the user on the client account, or confirm MCC login-customer-id.';
+	}
+	if (upper.includes('CUSTOMER_NOT_ENABLED') || upper.includes('NOT_ADS_USER')) {
+		return 'That customer id is not an active Google Ads account under your MCC.';
+	}
+	return 'Check API Center access level, MCC link, and that the saved client id belongs to this manager.';
 }
 
 function formBody(params: Record<string, string>): string {
@@ -253,9 +280,9 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		}
 
 		if (out.length === 0 && failures.length > 0) {
+			const joined = failures.join(' | ');
 			throw new Error(
-				`Google Ads pull failed for all candidate accounts. ${failures.join(' | ')}. ` +
-					'If you use an MCC, set GOOGLE_ADS_CUSTOMER_ID to a client account id (digits only) and restart the API.'
+				`Google Ads pull failed for all candidate accounts. ${joined}. ${googlePullGuidance(joined)}`
 			);
 		}
 

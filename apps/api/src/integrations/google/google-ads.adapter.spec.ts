@@ -233,4 +233,51 @@ describe('GoogleAdsAdapter', () => {
 		});
 		expect(rows).toEqual([]);
 	});
+
+	it('surfaces Google Ads authorizationError codes in pull failures', async () => {
+		const fetchFn: FetchFn = async (input) => {
+			const url = String(input);
+			if (url === 'https://oauth2.googleapis.com/token') {
+				return jsonResponse({ access_token: 'access-fresh' });
+			}
+			if (url.includes('/googleAds:searchStream')) {
+				return jsonResponse(
+					{
+						error: {
+							code: 403,
+							message: 'The caller does not have permission',
+							status: 'PERMISSION_DENIED',
+							details: [
+								{
+									errors: [
+										{
+											errorCode: { authorizationError: 'DEVELOPER_TOKEN_NOT_APPROVED' },
+											message:
+												'The developer token is not approved. Non-approved developer tokens can only be used with test accounts.'
+										}
+									]
+								}
+							]
+						}
+					},
+					403
+				);
+			}
+			throw new Error(`unexpected URL: ${url}`);
+		};
+
+		const adapter = new GoogleAdsAdapter(
+			{ ...config, customerId: '5556667777' },
+			fetchFn
+		);
+		await expect(
+			adapter.pullDailyMetrics({
+				secret: JSON.stringify({
+					refreshToken: 'refresh-xyz',
+					customerId: '5556667777'
+				}),
+				since: '2026-07-01'
+			})
+		).rejects.toThrow(/DEVELOPER_TOKEN_NOT_APPROVED/);
+	});
 });
