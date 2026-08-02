@@ -44,6 +44,26 @@ const tr = {
 	'nav.changelog': 'Yenilikler',
 	'nav.developer': 'Geliştirici',
 
+	// Ücretsiz karne — sonuç ve lead kapısı (LEG-01)
+	'karne.result.gate.eyebrow': 'Sonuç hazır',
+	'karne.result.gate.title': 'Detaylı özeti e-posta ile alın',
+	'karne.result.gate.description': 'Karneniz hazır. E-posta bırakırsanız özeti size iletiriz.',
+	'karne.result.eyebrow': 'Sonuç',
+	'karne.result.zeroSummary': "{total} sorudan {zeros}'inde kanıtınız yok.",
+	'karne.result.weakHeading': 'En kritik üçü',
+	'karne.result.strongHeading': 'İyi çıkan alan',
+	'karne.result.strongRefs.two': '{first} ve {second}',
+	'karne.result.strongRefs.many': '{leading} ve {last}',
+	'karne.result.strongStatus': "{refs}'te durumunuz iyi:",
+	'karne.result.euNoticePrefix':
+		"İngiltere/AB'de yaşayan hastalarınız olduğu için yapay zeka şeffaflığı yükümlülüğü",
+	'karne.result.euEffectiveDate': '2 Ağustos 2026',
+	'karne.result.euNoticeSuffix': "'dan itibaren sizi kapsıyor.",
+	'karne.result.productBlurb':
+		'Verimaya, hasta yolculuğunu tek panelde toplar — lead’den randevuya, finanstan WhatsApp aktarımına.',
+	'karne.result.backToShowcase': 'Vitrine dön',
+	'karne.result.demoLogin': 'Demo için giriş',
+
 	// Ayarlar · AI
 	'settings.ai.title': 'AI ayarları',
 	'settings.ai.description':
@@ -217,6 +237,26 @@ const en: Record<MessageKey, string> = {
 	'nav.features': 'Features',
 	'nav.changelog': "What's new",
 	'nav.developer': 'Developer',
+
+	'karne.result.gate.eyebrow': 'Result ready',
+	'karne.result.gate.title': 'Get the detailed summary by email',
+	'karne.result.gate.description':
+		'Your scorecard is ready. Leave your email and we will send you the summary.',
+	'karne.result.eyebrow': 'Result',
+	'karne.result.zeroSummary': 'You have no evidence for {zeros} of {total} questions.',
+	'karne.result.weakHeading': 'Top three critical areas',
+	'karne.result.strongHeading': 'Area doing well',
+	'karne.result.strongRefs.two': '{first} and {second}',
+	'karne.result.strongRefs.many': '{leading}, and {last}',
+	'karne.result.strongStatus': 'Your status is good for {refs}:',
+	'karne.result.euNoticePrefix':
+		'Because you have patients living in the UK/EU, AI transparency obligations apply to you from',
+	'karne.result.euEffectiveDate': '2 August 2026',
+	'karne.result.euNoticeSuffix': '.',
+	'karne.result.productBlurb':
+		'Verimaya brings the patient journey into one panel — from lead to appointment, finance to WhatsApp transfer.',
+	'karne.result.backToShowcase': 'Back to the website',
+	'karne.result.demoLogin': 'Sign in for demo',
 
 	'settings.ai.title': 'AI settings',
 	'settings.ai.description':

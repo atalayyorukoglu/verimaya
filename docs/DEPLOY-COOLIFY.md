@@ -85,7 +85,7 @@ Volume: `UPLOAD_DIR` mount (local driver veya `local://` legacy satırlar için)
 | Build | `pnpm install --frozen-lockfile && pnpm --filter @verimaya/web build` |
 | Publish | `apps/web/build` |
 | Domain | **`verimaya.com` + `app.verimaya.com`** (aynı servis) |
-| Env (build-time) | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false` |
+| Env (build-time) | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false`, `PUBLIC_KARNE_LEADS_ENABLED=false` |
 
 Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /index.html;`
 
@@ -124,6 +124,7 @@ API CORS / auth:
 | `ADMIN_QUEUE_TOKEN` | Bull Board; boş bırakma |
 | `ENABLE_INTEGRATION_SCHEDULERS` | Pilot sonrası `true` (6h sync + günlük files sweep) |
 | `FILES_SWEEP_DRY_RUN` | İlk hafta `true`, sonra kapat |
+| `KARNE_LEADS_ENABLED` | Hukuk/KVKK onayına kadar `false`; yalnız web bayrağıyla birlikte aç |
 
 Opsiyonel: `LLM_*`, Ads OAuth (`META_*`, `GOOGLE_ADS_*`), webhook secret’ları.
 Meta Ads canlı: `docs/ADS-META-GOLIVE.md` (redirect URI = `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`).
@@ -137,6 +138,7 @@ Web build:
 | `PUBLIC_APP_URL` | `https://app.verimaya.com` (hub → App CTA) |
 | `PUBLIC_CRM_URL` | `https://crm.verimaya.com` (hub → CRM CTA; GHL) |
 | `PUBLIC_USE_MSW` | `false` |
+| `PUBLIC_KARNE_LEADS_ENABLED` | Hukuk/KVKK onayına kadar `false`; API bayrağıyla birlikte aç |
 
 ## Cloudflare R2 (dosya depolama)
 

@@ -4,7 +4,7 @@
  */
 import { browser } from '$app/environment';
 import type { IntakeBandId, IntakeEuId, KarneQuestionId } from '$lib/karne/questions';
-import { KARNE_TELEMETRY_ENABLED, PUBLIC_API_URL } from '$lib/env';
+import { KARNE_LEADS_ENABLED, KARNE_TELEMETRY_ENABLED, PUBLIC_API_URL } from '$lib/env';
 
 const SESSION_ID_KEY = 'verimaya:karne-telemetry-session-id';
 
@@ -253,6 +253,8 @@ export async function submitKarneLead(
 	input: SubmitKarneLeadInput
 ): Promise<SubmitKarneLeadResult> {
 	if (!browser) return { ok: false, reason: 'network' };
+	// LEG-01: fail-closed until legal approval enables PUBLIC_KARNE_LEADS_ENABLED=true
+	if (!KARNE_LEADS_ENABLED) return { ok: false, reason: 'network' };
 	if (input.website.trim() !== '') {
 		// Trip honeypot client-side: pretend success so bots don't retry.
 		return { ok: true };

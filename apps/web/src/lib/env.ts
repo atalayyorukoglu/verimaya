@@ -32,3 +32,9 @@ export const KARNE_TELEMETRY_ENABLED = (() => {
 	if (flag === 'true') return true;
 	return import.meta.env.PROD;
 })();
+
+/**
+ * Karne email / lead capture. Fail-closed until KVKK/legal approval:
+ * only `PUBLIC_KARNE_LEADS_ENABLED=true` turns the form and POST /leads on.
+ */
+export const KARNE_LEADS_ENABLED = (env.PUBLIC_KARNE_LEADS_ENABLED ?? 'false') === 'true';

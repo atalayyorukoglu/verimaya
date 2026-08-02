@@ -18,6 +18,8 @@ interface ImportMetaEnv {
 	readonly PUBLIC_USE_MSW: string;
 	/** Override karne telemetry: "true" | "false". Unset → off in dev, on in prod. */
 	readonly PUBLIC_KARNE_TELEMETRY?: string;
+	/** Enable karne lead capture only when explicitly set to "true". */
+	readonly PUBLIC_KARNE_LEADS_ENABLED?: string;
 }
 
 interface ImportMeta {
