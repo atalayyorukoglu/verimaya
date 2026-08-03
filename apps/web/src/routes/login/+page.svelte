@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { authClient } from '$lib/auth';
@@ -27,7 +28,19 @@
 	let orgName = $state('');
 	let orgSlug = $state('');
 
+	const queryClient = useQueryClient();
+
+	/**
+	 * Clear all cached queries before entering the panel — a browser tab may
+	 * have stale data from a previous session/organization (AUTH-01E). GET
+	 * /v1/me and every tenant-scoped query must refetch under the new session.
+	 */
+	function clearSessionCache() {
+		queryClient.clear();
+	}
+
 	async function finishAuth() {
+		clearSessionCache();
 		const gate = await checkOrganizationGate();
 		if (gate.action === 'proceed') {
 			await goto('/');
@@ -92,6 +105,7 @@
 		error = null;
 		try {
 			await setActiveOrganization(selectedOrgId);
+			clearSessionCache();
 			await goto('/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Organizasyon seçilemedi';
@@ -113,6 +127,7 @@
 		try {
 			const org = await createOrganization(name, slug);
 			await setActiveOrganization(org.id);
+			clearSessionCache();
 			await goto('/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Organizasyon oluşturulamadı';

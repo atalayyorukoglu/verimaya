@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { createQuery } from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { Tenant } from '@verimaya/shared';
 	import { cn } from '$lib/utils';
 	import { apiGet } from '$lib/api';
@@ -53,6 +53,7 @@
 
 	const meQuery = createQuery(meQueryOptions);
 	const role = $derived(meQuery.data?.role ?? DEFAULT_ROLE);
+	const queryClient = useQueryClient();
 
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
 
@@ -141,6 +142,9 @@
 		if (!USE_MSW) {
 			await authClient.signOut();
 		}
+		// AUTH-01E: drop every cached query (role, tenant, patients, …) so a
+		// subsequent sign-in in the same tab never serves stale/cross-session data.
+		queryClient.clear();
 		await goto('/login');
 	}
 
