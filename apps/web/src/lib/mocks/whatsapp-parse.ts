@@ -1,4 +1,5 @@
 import type { Patient, SupportedCurrency, TransactionDraft } from '@verimaya/shared';
+import { toTenantDayKey } from '@verimaya/shared';
 
 const CURRENCY_PATTERN = /\b(\d[\d.,]*)\s*(TRY|GBP|EUR|USD|₺|£|€|\$)\b/gi;
 const INCOME_HINTS = /alındı|tahsilat|ödeme alındı|received|deposit|gelir/i;
@@ -20,7 +21,7 @@ function normalizeCurrency(token: string): SupportedCurrency {
 }
 
 function today(): string {
-	return new Date().toISOString().slice(0, 10);
+	return toTenantDayKey(new Date(), 'Europe/Istanbul');
 }
 
 function guessKind(text: string): 'income' | 'expense' {

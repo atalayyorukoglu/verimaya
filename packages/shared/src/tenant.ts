@@ -1,6 +1,18 @@
 import { z } from 'zod';
 import { isoDateTime, supportedCurrencySchema, uuid } from './common.js';
 
+/** IANA timezones exposed in tenant settings (expand as needed). */
+export const TENANT_TIMEZONES = [
+	'Europe/Istanbul',
+	'Asia/Riyadh',
+	'Europe/London',
+	'UTC'
+] as const;
+
+export const tenantTimezoneSchema = z.enum(TENANT_TIMEZONES);
+
+export type TenantTimezone = z.infer<typeof tenantTimezoneSchema>;
+
 export const tenantSchema = z.object({
 	id: uuid,
 	name: z.string().min(1).max(255),
@@ -8,6 +20,7 @@ export const tenantSchema = z.object({
 	base_currency: supportedCurrencySchema.default('TRY'),
 	/** UI label for the patient/case section (legacy: cases_section_label) */
 	patients_section_label: z.string().min(1).max(80).default('Hastalar'),
+	timezone: tenantTimezoneSchema.default('Europe/Istanbul'),
 	created_at: isoDateTime
 });
 

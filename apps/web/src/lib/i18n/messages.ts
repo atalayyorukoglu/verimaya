@@ -88,6 +88,15 @@ const tr = {
 	'settings.ai.prompt.footnote':
 		'Prompt demo: localStorage. Gerçek tenant prompt’u ayrı iş; ifşa ayarı API’de saklanır.',
 
+	// Ayarlar · Organizasyon
+	'settings.organization.timezone': 'Saat dilimi',
+	'settings.organization.timezoneHint':
+		'Takvim günleri ve randevu filtreleri bu saat dilimine göre hesaplanır.',
+	'settings.organization.tzEuropeIstanbul': 'Europe/Istanbul (Türkiye)',
+	'settings.organization.tzAsiaRiyadh': 'Asia/Riyadh (Suudi Arabistan)',
+	'settings.organization.tzEuropeLondon': 'Europe/London (İngiltere)',
+	'settings.organization.tzUtc': 'UTC',
+
 	// Ürün içi karne (Adım 36)
 	'scorecard.title': 'Yapay zeka karnesi',
 	'scorecard.description':
@@ -330,6 +339,14 @@ const en: Record<MessageKey, string> = {
 	'settings.ai.prompt.saved': 'Saved.',
 	'settings.ai.prompt.footnote':
 		'Prompt is demo localStorage. Real tenant prompt is separate; disclosure is stored via API.',
+
+	'settings.organization.timezone': 'Timezone',
+	'settings.organization.timezoneHint':
+		'Calendar days and appointment filters are computed in this timezone.',
+	'settings.organization.tzEuropeIstanbul': 'Europe/Istanbul (Turkey)',
+	'settings.organization.tzAsiaRiyadh': 'Asia/Riyadh (Saudi Arabia)',
+	'settings.organization.tzEuropeLondon': 'Europe/London (UK)',
+	'settings.organization.tzUtc': 'UTC',
 
 	'scorecard.title': 'AI scorecard',
 	'scorecard.description':

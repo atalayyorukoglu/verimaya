@@ -49,6 +49,7 @@ export const demoTenant: Tenant = {
 	slug: 'demo-klinik',
 	base_currency: 'TRY',
 	patients_section_label: 'Hastalar',
+	timezone: 'Europe/Istanbul',
 	created_at: '2026-01-15T10:00:00.000Z'
 };
 
@@ -385,6 +386,7 @@ function makeExtraTenants(): Tenant[] {
 		slug: s.slug,
 		base_currency: 'TRY' as const,
 		patients_section_label: 'Hastalar',
+		timezone: 'Europe/Istanbul' as const,
 		created_at: iso(faker.date.past({ years: 1 }))
 	}));
 }

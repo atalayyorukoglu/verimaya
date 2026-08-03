@@ -29,6 +29,7 @@ import {
 	approveDraftsRequestSchema,
 	trustScoreSettings,
 	compareByCreatedAtDesc,
+	tenantDayRange,
 	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
@@ -670,8 +671,15 @@ export const handlers = [
 		let items = [...store.appointments];
 		const { patient_id: patientId, from, to } = parsed.data;
 		if (patientId) items = items.filter((a) => a.patient_id === patientId);
-		if (from) items = items.filter((a) => a.starts_at >= from);
-		if (to) items = items.filter((a) => a.starts_at <= to);
+		const tz = store.tenant.timezone;
+		if (from) {
+			const { start } = tenantDayRange(from, tz);
+			items = items.filter((a) => a.starts_at >= start.toISOString());
+		}
+		if (to) {
+			const { endExclusive } = tenantDayRange(to, tz);
+			items = items.filter((a) => a.starts_at < endExclusive.toISOString());
+		}
 		// CONTRACT-02: match the real API's order (created_at desc) — the calendar UI
 		// re-sorts by starts_at client-side regardless, so this doesn't change behavior.
 		items.sort(compareByCreatedAtDesc);
@@ -1780,6 +1788,7 @@ export const handlers = [
 			slug,
 			base_currency: 'TRY',
 			patients_section_label: 'Hastalar',
+			timezone: 'Europe/Istanbul',
 			created_at: now
 		};
 		store.tenants.push(tenant);

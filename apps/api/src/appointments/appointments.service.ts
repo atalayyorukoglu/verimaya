@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lt, type SQL } from 'drizzle-orm';
 import type { AppointmentCreate, AppointmentListQuery, AppointmentUpdate } from '@verimaya/shared';
-import { appointments, patients } from '../db/schema';
+import { tenantDayRange } from '@verimaya/shared';
+import { appointments, patients, tenants } from '../db/schema';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toAppointment } from '../common/mappers';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -12,6 +13,7 @@ export class AppointmentsService {
 
 	async list(tenantId: string, params: AppointmentListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const timezone = await this.getTenantTimezone(db, tenantId);
 			const filters: SQL[] = [];
 			const cursorCond = createdAtCursorCondition(
 				appointments.createdAt,
@@ -20,9 +22,14 @@ export class AppointmentsService {
 			);
 			if (cursorCond) filters.push(cursorCond);
 			if (params.patient_id) filters.push(eq(appointments.patientId, params.patient_id));
-			// CONTRACT-01: inclusive range over starts_at (raw UTC instant — see list-query.ts doc).
-			if (params.from) filters.push(gte(appointments.startsAt, new Date(params.from)));
-			if (params.to) filters.push(lte(appointments.startsAt, new Date(params.to)));
+			if (params.from) {
+				const { start } = tenantDayRange(params.from, timezone);
+				filters.push(gte(appointments.startsAt, start));
+			}
+			if (params.to) {
+				const { endExclusive } = tenantDayRange(params.to, timezone);
+				filters.push(lt(appointments.startsAt, endExclusive));
+			}
 
 			const rows = await db
 				.select()
@@ -121,6 +128,20 @@ export class AppointmentsService {
 			.returning();
 
 		return toAppointment(row!);
+	}
+
+	private async getTenantTimezone(db: TenantDb, tenantId: string) {
+		const [row] = await db
+			.select({ timezone: tenants.timezone })
+			.from(tenants)
+			.where(eq(tenants.id, tenantId))
+			.limit(1);
+		if (!row) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Tenant not found' }
+			});
+		}
+		return row.timezone;
 	}
 
 	private async findRow(db: TenantDb, id: string) {

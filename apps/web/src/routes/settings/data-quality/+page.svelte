@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { Transaction } from '@verimaya/shared';
+	import type { Tenant, Transaction } from '@verimaya/shared';
+	import { toTenantDayKey } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
@@ -9,19 +10,28 @@
 
 	type TxPage = { items: Transaction[]; next_cursor: string | null };
 
+	const { keys, ready } = useQueryScope();
+
+	const tenantQuery = createQuery(() => ({
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		enabled: ready
+	}));
+
+	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
+
 	function daysAgoIso(days: number): string {
 		const d = new Date();
 		d.setDate(d.getDate() - days);
-		return d.toISOString().slice(0, 10);
+		return toTenantDayKey(d, tenantTimezone);
 	}
 
-	const from = daysAgoIso(7);
-	const { keys, ready } = useQueryScope();
+	const from = $derived(daysAgoIso(7));
 
 	const txQuery = createQuery(() => ({
 		queryKey: keys.transactions.list({ for: 'data-quality', from }),
 		queryFn: () => apiGet<TxPage>(listUrl('transactions', { limit: 100, from })),
-		enabled: ready
+		enabled: ready && !!tenantQuery.data
 	}));
 
 	const report = $derived.by(() => {

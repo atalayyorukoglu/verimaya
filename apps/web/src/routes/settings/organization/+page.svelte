@@ -1,13 +1,25 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { Tenant, TenantUpdate, SupportedCurrency } from '@verimaya/shared';
-	import { SUPPORTED_CURRENCIES } from '@verimaya/shared';
+	import type { Tenant, TenantUpdate, SupportedCurrency, TenantTimezone } from '@verimaya/shared';
+	import { SUPPORTED_CURRENCIES, TENANT_TIMEZONES } from '@verimaya/shared';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import type { MessageKey } from '$lib/i18n/messages';
+
+	function timezoneOptionLabel(tz: TenantTimezone): string {
+		const key: Record<TenantTimezone, MessageKey> = {
+			'Europe/Istanbul': 'settings.organization.tzEuropeIstanbul',
+			'Asia/Riyadh': 'settings.organization.tzAsiaRiyadh',
+			'Europe/London': 'settings.organization.tzEuropeLondon',
+			UTC: 'settings.organization.tzUtc'
+		};
+		return t(key[tz]);
+	}
 
 	const queryClient = useQueryClient();
 	const { keys, ready } = useQueryScope();
@@ -21,6 +33,7 @@
 	let name = $state('');
 	let baseCurrency = $state<SupportedCurrency>('TRY');
 	let patientsLabel = $state('Hastalar');
+	let timezone = $state<TenantTimezone>('Europe/Istanbul');
 	let hydratedFor = $state<string | null>(null);
 
 	$effect(() => {
@@ -29,6 +42,7 @@
 			name = t.name;
 			baseCurrency = t.base_currency;
 			patientsLabel = t.patients_section_label;
+			timezone = t.timezone;
 			hydratedFor = t.id;
 		}
 	});
@@ -45,7 +59,8 @@
 		const payload: TenantUpdate = {
 			name: name.trim(),
 			base_currency: baseCurrency,
-			patients_section_label: patientsLabel.trim() || 'Hastalar'
+			patients_section_label: patientsLabel.trim() || 'Hastalar',
+			timezone
 		};
 		try {
 			await apiSend<Tenant>('/v1/tenants/current', 'PATCH', payload);
@@ -86,6 +101,16 @@
 							<option value={c}>{c}</option>
 						{/each}
 					</select>
+				</div>
+
+				<div>
+					<label class={labelClass} for="tenant-timezone">{t('settings.organization.timezone')}</label>
+					<select id="tenant-timezone" class={fieldClass} bind:value={timezone}>
+						{#each TENANT_TIMEZONES as tz (tz)}
+							<option value={tz}>{timezoneOptionLabel(tz)}</option>
+						{/each}
+					</select>
+					<p class="mt-1 text-xs text-text-faint">{t('settings.organization.timezoneHint')}</p>
 				</div>
 
 				<div>

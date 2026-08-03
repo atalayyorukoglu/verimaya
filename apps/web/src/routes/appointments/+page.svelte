@@ -6,9 +6,10 @@
 		Appointment,
 		AppointmentCreate,
 		AppointmentUpdate,
-		ContractResponse
+		ContractResponse,
+		Tenant
 	} from '@verimaya/shared';
-	import { apiPaths, appointmentStatusLabels, listUrl } from '@verimaya/shared';
+	import { apiPaths, appointmentStatusLabels, listUrl, toTenantDayKey } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatTime } from '$lib/format';
@@ -58,7 +59,19 @@
 	}
 
 	const rangeStart = $derived(view === 'day' ? startOfDay(anchor) : startOfWeek(anchor));
-	const rangeEnd = $derived(view === 'day' ? addDays(rangeStart, 1) : addDays(rangeStart, 7));
+
+	const tenantQuery = createQuery(() => ({
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		enabled: ready
+	}));
+
+	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
+
+	const rangeFromDay = $derived(toTenantDayKey(rangeStart, tenantTimezone));
+	const rangeToDay = $derived(
+		toTenantDayKey(view === 'day' ? rangeStart : addDays(rangeStart, 6), tenantTimezone)
+	);
 
 	const days = $derived(
 		view === 'day' ? [rangeStart] : Array.from({ length: 7 }, (_, i) => addDays(rangeStart, i))
@@ -66,20 +79,20 @@
 
 	const appointmentsQuery = createQuery(() => ({
 		queryKey: keys.appointments.list({
-			from: rangeStart.toISOString(),
-			to: rangeEnd.toISOString(),
+			from: rangeFromDay,
+			to: rangeToDay,
 			patient_id: patientFilterId
 		}),
 		queryFn: () =>
 			apiGet<AppointmentsPage>(
 				listUrl('appointments', {
 					limit: 100,
-					from: rangeStart.toISOString(),
-					to: rangeEnd.toISOString(),
+					from: rangeFromDay,
+					to: rangeToDay,
 					patient_id: patientFilterId
 				})
 			),
-		enabled: ready
+		enabled: ready && !!tenantQuery.data
 	}));
 
 	const patientsQuery = createQuery(() => ({
@@ -95,10 +108,10 @@
 	const byDay = $derived.by(() => {
 		const map = new Map<string, Appointment[]>();
 		for (const day of days) {
-			map.set(day.toISOString().slice(0, 10), []);
+			map.set(toTenantDayKey(day, tenantTimezone), []);
 		}
 		for (const appt of appointmentsQuery.data?.items ?? []) {
-			const key = new Date(appt.starts_at).toISOString().slice(0, 10);
+			const key = toTenantDayKey(new Date(appt.starts_at), tenantTimezone);
 			const list = map.get(key);
 			if (list) list.push(appt);
 		}
@@ -247,9 +260,9 @@
 	{:else}
 		<div class="grid min-w-0 gap-3 {view === 'week' ? 'md:grid-cols-7' : 'grid-cols-1'}">
 			{#each days as day (day.toISOString())}
-				{@const key = day.toISOString().slice(0, 10)}
+				{@const key = toTenantDayKey(day, tenantTimezone)}
 				{@const items = byDay.get(key) ?? []}
-				{@const isToday = key === new Date().toISOString().slice(0, 10)}
+				{@const isToday = key === toTenantDayKey(new Date(), tenantTimezone)}
 				<section
 					class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface {isToday
 						? 'ring-1 ring-brand/40'

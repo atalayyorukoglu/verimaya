@@ -17,6 +17,7 @@
 		apiPaths,
 		invoiceStatusLabels,
 		SUPPORTED_CURRENCIES,
+		toTenantDayKey,
 		transactionKindLabels,
 		transactionStatusLabels
 	} from '@verimaya/shared';
@@ -68,6 +69,7 @@
 	}));
 
 	const tenantBase = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
+	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
 
 	let kind = $state<TransactionKind>('income');
 	let title = $state('');
@@ -103,7 +105,7 @@
 		title = transaction?.title ?? '';
 		subtitle = transaction?.subtitle ?? '';
 		category = transaction?.category ?? '';
-		occurred_on = transaction?.occurred_on ?? new Date().toISOString().slice(0, 10);
+		occurred_on = transaction?.occurred_on ?? toTenantDayKey(new Date(), tenantTimezone);
 		status = transaction?.status ?? 'unpaid';
 		invoice_status = transaction?.invoice_status ?? 'none';
 		currency = transaction?.currency ?? tenantBase;

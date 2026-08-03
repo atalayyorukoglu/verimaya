@@ -216,6 +216,7 @@ export function toTenant(row: TenantRow): Tenant {
 		slug: row.slug,
 		base_currency: row.baseCurrency as Tenant['base_currency'],
 		patients_section_label: row.patientsSectionLabel,
+		timezone: row.timezone as Tenant['timezone'],
 		created_at: toIsoDateTime(row.createdAt)
 	};
 }

@@ -20,6 +20,7 @@
 		marketingReportUrl,
 		patientStatusLabels,
 		reportUrl,
+		toTenantDayKey,
 		transactionKindLabels,
 		transactionStatusLabels
 	} from '@verimaya/shared';
@@ -54,19 +55,31 @@
 	const queryClient = useQueryClient();
 	const { keys, ready } = useQueryScope();
 
-	function pad2(n: number) {
-		return String(n).padStart(2, '0');
-	}
+	const tenantQuery = createQuery(() => ({
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		enabled: ready
+	}));
 
-	function isoDay(d: Date) {
-		return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-	}
+	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
 
-	function monthRange(offsetMonths: number): { from: string; to: string } {
-		const now = new Date();
-		const first = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);
-		const last = new Date(now.getFullYear(), now.getMonth() + offsetMonths + 1, 0);
-		return { from: isoDay(first), to: isoDay(last) };
+	function monthRangeInTz(offsetMonths: number, timeZone: string): { from: string; to: string } {
+		const todayKey = toTenantDayKey(new Date(), timeZone);
+		const [year, month] = todayKey.split('-').map(Number);
+		let targetYear = year;
+		let targetMonth = month + offsetMonths;
+		while (targetMonth < 1) {
+			targetMonth += 12;
+			targetYear--;
+		}
+		while (targetMonth > 12) {
+			targetMonth -= 12;
+			targetYear++;
+		}
+		const from = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
+		const lastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
+		const to = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+		return { from, to };
 	}
 
 	function periodLabel(key: PeriodKey, from: string, to: string): string {
@@ -101,10 +114,19 @@
 	});
 
 	let periodKey = $state<PeriodKey>('bu-ay');
-	let customFrom = $state(monthRange(0).from);
-	let customTo = $state(monthRange(0).to);
+	let customFrom = $state('2026-01-01');
+	let customTo = $state('2026-01-31');
 	let kindFilter = $state<'all' | 'income' | 'expense'>('all');
 	let drill = $state<Drill>(null);
+
+	let customRangeHydrated = $state(false);
+	$effect(() => {
+		if (customRangeHydrated || !tenantQuery.data) return;
+		const r = monthRangeInTz(0, tenantTimezone);
+		customFrom = r.from;
+		customTo = r.to;
+		customRangeHydrated = true;
+	});
 
 	let txFormOpen = $state(false);
 	let editingTx = $state<Transaction | null>(null);
@@ -112,8 +134,9 @@
 	let txFormError = $state<string | null>(null);
 
 	const dateRange = $derived.by(() => {
-		if (periodKey === 'bu-ay') return monthRange(0);
-		if (periodKey === 'gecen-ay') return monthRange(-1);
+		const tz = tenantTimezone;
+		if (periodKey === 'bu-ay') return monthRangeInTz(0, tz);
+		if (periodKey === 'gecen-ay') return monthRangeInTz(-1, tz);
 		if (periodKey === 'ozel') return { from: customFrom, to: customTo };
 		return { from: null as string | null, to: null as string | null };
 	});
@@ -178,9 +201,17 @@
 	}));
 
 	const monthlyRange = $derived.by(() => {
-		const now = new Date();
-		const from = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-		return { from: isoDay(from), to: isoDay(now) };
+		const tz = tenantTimezone;
+		const to = toTenantDayKey(new Date(), tz);
+		const [year, month] = to.split('-').map(Number);
+		let fromYear = year;
+		let fromMonth = month - 5;
+		while (fromMonth < 1) {
+			fromMonth += 12;
+			fromYear--;
+		}
+		const from = `${fromYear}-${String(fromMonth).padStart(2, '0')}-01`;
+		return { from, to };
 	});
 
 	const monthlyQuery = createQuery(() => ({
@@ -193,12 +224,6 @@
 		queryKey: keys.reports.marketing({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<MarketingReport>(marketingReportUrl({ from: dateRange.from, to: dateRange.to })),
-		enabled: ready
-	}));
-
-	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
-		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
 		enabled: ready
 	}));
 
@@ -509,7 +534,7 @@
 		periodKey = next;
 		drill = null;
 		if (next === 'ozel') {
-			const r = monthRange(0);
+			const r = monthRangeInTz(0, tenantTimezone);
 			customFrom = r.from;
 			customTo = r.to;
 		}

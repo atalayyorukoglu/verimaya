@@ -15,6 +15,7 @@ export const tenants = pgTable(
 		slug: text('slug').notNull(),
 		baseCurrency: text('base_currency').notNull().default('TRY'),
 		patientsSectionLabel: text('patients_section_label').notNull().default('Hastalar'),
+		timezone: text('timezone').notNull().default('Europe/Istanbul'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
 			.defaultNow()

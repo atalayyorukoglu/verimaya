@@ -65,18 +65,25 @@ describe('tenants current (get/update)', () => {
 		expect(tenant.name).toBe('Test Tenant');
 		expect(tenant.base_currency).toBe('TRY');
 		expect(tenant.patients_section_label).toBe('Hastalar');
+		expect(tenant.timezone).toBe('Europe/Istanbul');
 	});
 
-	it('updates name, base_currency and patients_section_label', async () => {
+	it('updates name, base_currency, timezone and patients_section_label', async () => {
 		const updated = await tenantsService.update(
 			tenantId,
-			{ name: 'Renamed Tenant', base_currency: 'USD', patients_section_label: 'Misafirler' },
+			{
+				name: 'Renamed Tenant',
+				base_currency: 'USD',
+				patients_section_label: 'Misafirler',
+				timezone: 'Asia/Riyadh'
+			},
 			actor
 		);
 
 		expect(updated.name).toBe('Renamed Tenant');
 		expect(updated.base_currency).toBe('USD');
 		expect(updated.patients_section_label).toBe('Misafirler');
+		expect(updated.timezone).toBe('Asia/Riyadh');
 
 		const reloaded = await tenantsService.get(tenantId);
 		expect(reloaded.name).toBe('Renamed Tenant');

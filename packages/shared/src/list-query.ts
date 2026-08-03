@@ -10,21 +10,18 @@ import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.
  * web/MSW send, and no unknown query parameter may be silently ignored (`.strict()`
  * rejects it, callers should turn that into an HTTP 400).
  *
- * Date-range semantics (`from`/`to`) are **inclusive**. Until Faz 3.3 (TIME-01) lands
- * tenant-timezone-aware calendar-day helpers, ranges are interpreted as-is:
- * - `transactions.from`/`to` filter the naive `occurred_on` date column (already a
- *   calendar day, no timezone conversion needed — string comparison is correct).
- * - `appointments.from`/`to` filter the `starts_at` timestamptz column as raw UTC
- *   instants (the web client already sends `Date#toISOString()` of the browser's
- *   local day boundary, so this is correct today; Faz 3.3 will make the tenant
- *   timezone explicit instead of relying on the browser's local clock).
+ * Date-range semantics (`from`/`to`) are **inclusive** calendar days (YYYY-MM-DD):
+ * - `transactions.from`/`to` filter the naive `occurred_on` date column (string
+ *   comparison is correct — no timezone conversion).
+ * - `appointments.from`/`to` are tenant-timezone calendar days; the API converts
+ *   each to UTC `[start, endExclusive)` bounds on `starts_at` (TIME-01).
  */
 
 export const appointmentListQuerySchema = cursorPageParams
 	.extend({
 		patient_id: uuid.optional(),
-		from: z.string().datetime().optional(),
-		to: z.string().datetime().optional()
+		from: isoDate.optional(),
+		to: isoDate.optional()
 	})
 	.strict();
 

@@ -660,7 +660,7 @@ ayrı iş. Contact_label-only P2P işlemler bakiye ekranından düşer (bilinçl
 ---
 
 ### 3.3 — TIME-01: Tenant timezone modeli ve calendar-day yardımcıları
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `apps/web/src/routes/appointments/+page.svelte:40-64,97-110` yerel gece yarısı üretip
 `toISOString().slice(0,10)` ile gün anahtarına çeviriyor. Europe/Istanbul'da yerel pazartesi 00:00,
@@ -683,7 +683,15 @@ Yap:
   repoda kalmamış.
 - **Model:** GPT-5.6 Terra · orta reasoning · orta context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** Migration `0020_tenant_timezone` (default `Europe/Istanbul`) uygulandı. Shared
+`calendar-day.ts`: `toTenantDayKey` / `tenantDayRange` (Intl only); 10 unit test (Istanbul DST +
+Riyadh + ay sonu). Appointments `from`/`to` artık `isoDate` calendar-day; API tenant TZ ile
+`[start, endExclusive)` UTC aralığına çeviriyor. Web randevu/rapor/organizasyon/data-quality/
+TransactionFormDialog gün anahtarı üretimi helper'a geçti; Ayarlar > Organizasyon'da TZ seçici
+(4 seçenek). CONTRACT-01 list-query notu kapatıldı. **Varsayım:** Ad-metrics adaptörleri UTC
+`toISOString().slice` tarih anahtarını bilinçli tutuyor (provider sözleşmesi). Heuristic parse
+varsayılanı Europe/Istanbul. Randevu UI anchor'ı tarayıcı-local; bucket/filtre tenant TZ.
+patients.service satır etiketindeki slice kapsam dışı bırakıldı.
 
 ---
 
