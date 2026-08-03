@@ -23,6 +23,10 @@ import { WhatsappController } from '../whatsapp/whatsapp.controller';
 import { AdsController } from '../integrations/ads/ads.controller';
 import { GhlController } from '../integrations/ghl/ghl.controller';
 import { ScorecardController } from '../scorecard/scorecard.controller';
+import { HealthController } from '../health/health.controller';
+import { KarneController } from '../karne/karne.controller';
+import { WebhooksController } from '../webhooks/webhooks.controller';
+import { MeController } from '../auth/me.controller';
 import { ActiveOrgGuard } from './active-org.guard';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { OrgPermissionGuard } from './org-permission.guard';
@@ -310,6 +314,27 @@ describe('remaining authenticated controller organization permission metadata', 
 				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, GhlController.prototype[method])
 			).toEqual(requirement);
 		}
+	});
+
+	it('leaves public/health/webhook/callback-adjacent controllers without an org guard', () => {
+		// Health checks, the public Karne funnel, and signature-verified webhooks
+		// are load-bearing public surfaces (AUTH-01C7) — they must never gain
+		// AuthOrApiKeyGuard/ActiveOrgGuard/OrgPermissionGuard by accident.
+		expect(Reflect.getMetadata(GUARDS_METADATA, HealthController)).toBeUndefined();
+		expect(Reflect.getMetadata(GUARDS_METADATA, HealthController.prototype.check)).toBeUndefined();
+		expect(Reflect.getMetadata(GUARDS_METADATA, HealthController.prototype.ready)).toBeUndefined();
+
+		expect(Reflect.getMetadata(GUARDS_METADATA, KarneController)).toBeUndefined();
+
+		expect(Reflect.getMetadata(GUARDS_METADATA, WebhooksController)).toBeUndefined();
+
+		// /me is session-only (own profile, not a tenant-scoped org resource) —
+		// intentionally has no OrgPermissionGuard/RequireOrgPermission.
+		expect(Reflect.getMetadata(GUARDS_METADATA, MeController)).toBeUndefined();
+		expect(Reflect.getMetadata(GUARDS_METADATA, MeController.prototype.me)).toEqual([SessionGuard]);
+		expect(
+			Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, MeController.prototype.me)
+		).toBeUndefined();
 	});
 
 	it('leaves the OAuth callback endpoints unguarded', () => {
