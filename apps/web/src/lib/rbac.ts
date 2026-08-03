@@ -1,6 +1,4 @@
-import { type UserRole, userRoleLabels, userRoleSchema } from '@verimaya/shared';
-
-const STORAGE_KEY = 'verimaya:demo-role';
+import { type UserRole, userRoleLabels } from '@verimaya/shared';
 
 /** Nav href → roles that can see it. */
 const NAV_ACCESS: Record<string, UserRole[]> = {
@@ -21,16 +19,8 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 
 export const roleLabels = userRoleLabels;
 
-export function getDemoRole(): UserRole {
-	if (typeof sessionStorage === 'undefined') return 'owner';
-	const raw = sessionStorage.getItem(STORAGE_KEY);
-	const parsed = userRoleSchema.safeParse(raw);
-	return parsed.success ? parsed.data : 'owner';
-}
-
-export function setDemoRole(role: UserRole) {
-	sessionStorage.setItem(STORAGE_KEY, role);
-}
+/** Safest default while GET /v1/me is loading or unavailable — least privilege. */
+export const DEFAULT_ROLE: UserRole = 'readonly';
 
 export function canSeeNav(href: string, role: UserRole): boolean {
 	return canAccessPath(href, role);

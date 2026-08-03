@@ -6,14 +6,16 @@
 	import { USE_MSW } from '$lib/env';
 	import { formatDateTime, formatMoney, formatTime, isSameLocalDay } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
-	import { canAccessPath, getDemoRole } from '$lib/rbac';
+	import { canAccessPath, DEFAULT_ROLE } from '$lib/rbac';
+	import { meQueryOptions } from '$lib/me-query';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
 	type Page<T> = { items: T[]; next_cursor: string | null };
 
-	const role = getDemoRole();
-	const canFinance = canAccessPath('/finance/ai-transaction', role);
+	const meQuery = createQuery(meQueryOptions);
+	const role = $derived(meQuery.data?.role ?? DEFAULT_ROLE);
+	const canFinance = $derived(canAccessPath('/finance/ai-transaction', role));
 
 	function pad2(n: number) {
 		return String(n).padStart(2, '0');

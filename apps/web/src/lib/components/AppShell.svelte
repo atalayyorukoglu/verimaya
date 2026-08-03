@@ -7,7 +7,8 @@
 	import { apiGet } from '$lib/api';
 	import { mobileTabItems, navGroups } from '$lib/navigation';
 	import { t } from '$lib/i18n/locale.svelte';
-	import { canAccessPath, canSeeNav, getDemoRole, roleLabels } from '$lib/rbac';
+	import { canAccessPath, canSeeNav, DEFAULT_ROLE, roleLabels } from '$lib/rbac';
+	import { meQueryOptions } from '$lib/me-query';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Menu from '@lucide/svelte/icons/menu';
@@ -34,7 +35,6 @@
 	let { children }: { children: Snippet } = $props();
 
 	let mobileOpen = $state(false);
-	let role = $state(getDemoRole());
 	let hasUnreadChangelog = $state(false);
 	let supportOpen = $state(false);
 	let accountOpen = $state(false);
@@ -50,6 +50,9 @@
 		queryKey: ['tenants', 'current'],
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
 	}));
+
+	const meQuery = createQuery(meQueryOptions);
+	const role = $derived(meQuery.data?.role ?? DEFAULT_ROLE);
 
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
 
@@ -101,7 +104,7 @@
 	}
 
 	$effect(() => {
-		role = getDemoRole();
+		if (meQuery.isPending) return;
 		const path = page.url.pathname;
 		if (!canAccessPath(path, role)) {
 			void goto('/');
