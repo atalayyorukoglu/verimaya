@@ -116,7 +116,7 @@ initializer'sız) gerçekten her code path'te atandığını bağımsız doğrul
 ---
 
 ### 0.3 — FINAL-DB: DB gerektiren test paketini yerelde çalıştır
-- [ ] Yapıldı
+- [ ] Yapıldı (bloke — bkz. Görüş)
 
 Önceki oturumda Postgres kurulamadığı için `org-permission.guard.spec.ts`,
 `auth-or-api-key.isolation.spec.ts` dahil 38 suite çalıştırılamadı; AUTH-01 kodu tamam ama
@@ -127,7 +127,20 @@ testlerini koştur. Kırmızı çıkan varsa düzelt.
 - **Kabul:** `pnpm --filter @verimaya/api test` tamamı yeşil; sayı Görüş'e yazılır (denetim anı: 52 spec / 170 test).
 - **Model:** Composer 2.5 Standard · orta reasoning · dar context (yalnız failing suite + log)
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** **Yapılamadı — ortam kısıtı.** Bu adımı çalıştıran ajan (Sonnet) bir sandbox içinde
+çalışıyor: `docker` komutu yok (`command not found`), `apt-get` root olmadığı için paket kuramıyor
+(`sudo` da "no new privileges" bayrağı yüzünden kapalı), yani Postgres/Redis'i ne container'la ne de
+doğrudan paket kurarak ayağa kaldırabildim. Dolayısıyla `pnpm --filter @verimaya/api db:migrate` ve
+`pnpm --filter @verimaya/api test` hiç çalıştırılamadı — bu adımın amacı olan "AUTH-01 doğrulaması"
+hâlâ **doğrulanmamış** durumda, denetim anındaki riskle aynı. Bu, kodun yanlış olduğu anlamına
+gelmiyor — sadece test edilemedi. **Atalay'ın (veya Docker'ı olan bir ortamın) yapması gereken:**
+```
+docker compose up -d
+pnpm --filter @verimaya/api db:migrate
+pnpm --filter @verimaya/api test
+```
+kırmızı çıkan olursa suite adı + hata mesajıyla bildirilirse düzeltilir. Bu adım tamamlanmadan
+**1.1 başlayamaz** (Faz haritasında 1.1'in bağımlılığı 0.3).
 
 ---
 
