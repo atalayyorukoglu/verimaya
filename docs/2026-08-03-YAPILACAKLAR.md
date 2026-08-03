@@ -132,7 +132,7 @@ testlerini koştur. Kırmızı çıkan varsa düzelt.
 ---
 
 ### 0.4 — Sır sızıntısı için CI taraması ekle
-- [ ] Yapıldı
+- [~] Yapıldı (kısmi — bkz. Görüş)
 
 SEC-01'in kod tarafındaki tek kalıcı önlemi: CI'a `gitleaks` (veya eşdeğeri) adımı ekle; PR'da
 private key / token deseni yakalanırsa build kırılsın. Mevcut geçmişte bulunan sırların
@@ -142,7 +142,18 @@ rotasyonu kullanıcı işi (Faz 8), burada **yalnız gelecekteki sızıntı enge
 - **Kabul:** CI'da secret-scan job'ı var; bilerek eklenmiş sahte bir anahtarla lokal denemede kırılıyor (deneme commit'lenmez).
 - **Model:** Composer 2.5 Standard · düşük reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `.github/workflows/ci.yml`'e ayrı bir `secret-scan` job'ı eklendi (`gitleaks/gitleaks-action@v2`,
+`.gitleaks.toml` konfigürasyonuyla, `useDefault = true` + repo'ya özgü zararsız yol/regex allowlist'i:
+lockfile, bu config dosyasının kendisi, CI'daki sabit test secret'ı). **Varsayım/kısıt:** bu sandbox
+ortamında GitHub'ın release indirme uç noktalarına (ve GitHub API'sine) proxy 403 ile erişim
+engelli olduğu için gitleaks binary'sini indirip **gerçek bir lokal deneme çalıştıramadım.** Bunun
+yerine `.gitleaks.toml`'ın geçerli TOML olduğunu (`python3 -m toml` ile parse) ve gitleaks'ın
+varsayılan AWS-access-key desenine (`AKIA[0-9A-Z]{16}`) karşı bilinen sahte örnek anahtarın
+(`AKIAIOSFODNN7EXAMPLE`) eşleştiğini doğruladım — ama bu, gerçek `gitleaks` CLI'ının çalıştığının
+kanıtı değil, yalnızca desenin mantığının doğru olduğunun kanıtı. **Opus'un veya Atalay'ın
+bakması gereken yer:** ilk PR/push'ta bu job'ın gerçekten çalıştığını ve CI ortamında bilerek
+eklenmiş sahte bir anahtarla kırıldığını GitHub Actions'ta doğrulaman gerekiyor — kabul kriteri
+tam anlamıyla henüz doğrulanmadı, bu yüzden kutuyu `[~]` işaretledim.
 
 ---
 

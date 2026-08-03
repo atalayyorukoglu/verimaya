@@ -1,0 +1,18 @@
+title = "verimaya gitleaks config"
+
+# Varsayılan gitleaks kural setini genişletiyoruz (kapsamlı token/anahtar desenleri).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Bilinen zararsız yollar ve test/demo verisi"
+paths = [
+  '''pnpm-lock\.yaml''',
+  '''\.gitleaks\.toml''',
+  '''docs/CHANGELOG-KURALLARI\.md''',
+]
+
+regexes = [
+  # CI iş akışındaki test amaçlı sabit sırlar; gerçek bir gizli veri değil.
+  '''ci-test-secret-must-be-at-least-32-chars''',
+]
