@@ -190,4 +190,25 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 		expect(await countInbound(externalId)).toBe(1);
 		expect(enqueueSpy).toHaveBeenCalledTimes(1);
 	});
+
+	it('EVENT-01 (4.2): concurrent duplicate deliveries race safely — no 500, only 1 row', async () => {
+		const externalId = `evt-race-${randomUUID()}`;
+		enqueueSpy.mockClear();
+		const payload = {
+			event: 'message',
+			payload: { id: externalId, body: 'race body' }
+		};
+
+		const [a, b] = await Promise.all([
+			controller.ingestWaha(buildWahaRequest({ tenantId, externalEventId: externalId, payload })),
+			controller.ingestWaha(buildWahaRequest({ tenantId, externalEventId: externalId, payload }))
+		]);
+
+		expect(a.accepted).toBe(true);
+		expect(b.accepted).toBe(true);
+		expect(a.inbound_message_id).toBe(b.inbound_message_id);
+		expect([a.duplicate, b.duplicate].sort()).toEqual([false, true]);
+		expect(await countInbound(externalId)).toBe(1);
+		expect(enqueueSpy).toHaveBeenCalledTimes(1);
+	});
 });

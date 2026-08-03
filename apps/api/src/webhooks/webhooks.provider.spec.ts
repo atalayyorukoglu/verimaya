@@ -191,6 +191,83 @@ describe('generic webhook HMAC ingest (Adım 23b)', () => {
 		expect(await countEvents(externalEventId)).toBe(1);
 		expect(enqueueSpy).toHaveBeenCalledTimes(1);
 	});
+
+	it('EVENT-01 (4.2): cross-tenant same external_event_id — two independent rows, no 500', async () => {
+		const otherTenantId = randomUUID();
+		const { sql } = getDb(databaseUrl);
+		await sql`
+			insert into organization (id, name, slug, created_at)
+			values (${otherTenantId}, 'GHL HMAC Test B', ${`ghl-b-${otherTenantId.slice(0, 8)}`}, now())
+		`;
+		await sql`
+			insert into tenants (id, name, slug)
+			values (${otherTenantId}, 'GHL HMAC Test B', ${`ghl-b-${otherTenantId.slice(0, 8)}`})
+		`;
+
+		try {
+			const externalEventId = `evt-cross-${randomUUID()}`;
+			const payload = { type: 'contact.created', id: externalEventId };
+			enqueueSpy.mockClear();
+
+			// Before EVENT-01: the second call's SELECT (RLS-scoped to otherTenantId) never sees
+			// tenant A's row, so it proceeds to INSERT and collides with the old *global*
+			// (provider, external_event_id) unique index -> uncaught 23505 -> 500.
+			const a = await controller.ingest(
+				PROVIDER,
+				buildRequest({ tenantId, externalEventId, payload })
+			);
+			const b = await controller.ingest(
+				PROVIDER,
+				buildRequest({ tenantId: otherTenantId, externalEventId, payload })
+			);
+
+			expect(a.accepted).toBe(true);
+			expect(a.duplicate).toBe(false);
+			expect(b.accepted).toBe(true);
+			expect(b.duplicate).toBe(false); // NOT a duplicate — different tenant
+			expect(a.integration_event_id).not.toBe(b.integration_event_id);
+			expect(await countEvents(externalEventId)).toBe(1);
+
+			const bCount = await withTenantSession(otherTenantId, async () => {
+				const [row] = await sql`
+					select count(*)::int as n
+					from integration_events
+					where tenant_id = ${otherTenantId}
+						and provider = ${PROVIDER}
+						and external_event_id = ${externalEventId}
+				`;
+				return Number(row?.n ?? 0);
+			});
+			expect(bCount).toBe(1);
+			expect(enqueueSpy).toHaveBeenCalledTimes(2);
+		} finally {
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${otherTenantId}, true)`;
+				await tx`delete from jobs where tenant_id = ${otherTenantId}`;
+				await tx`delete from integration_events where tenant_id = ${otherTenantId}`;
+			});
+			await sql`delete from tenants where id = ${otherTenantId}`;
+			await sql`delete from organization where id = ${otherTenantId}`;
+		}
+	});
+
+	it('EVENT-01 (4.2): concurrent duplicate deliveries (same tenant) race safely — no 500, only 1 row', async () => {
+		const externalEventId = `evt-race-${randomUUID()}`;
+		const payload = { type: 'contact.created', id: externalEventId };
+		enqueueSpy.mockClear();
+
+		const [a, b] = await Promise.all([
+			controller.ingest(PROVIDER, buildRequest({ tenantId, externalEventId, payload })),
+			controller.ingest(PROVIDER, buildRequest({ tenantId, externalEventId, payload }))
+		]);
+
+		expect(a.accepted).toBe(true);
+		expect(b.accepted).toBe(true);
+		expect(a.integration_event_id).toBe(b.integration_event_id);
+		expect([a.duplicate, b.duplicate].sort()).toEqual([false, true]);
+		expect(await countEvents(externalEventId)).toBe(1);
+		expect(enqueueSpy).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe('providerWebhookSecretEnvKey', () => {

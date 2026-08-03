@@ -811,7 +811,7 @@ geldiği — dosya bilerek iki commit'e bölündü (aşağıda 4.2 Görüş'ünd
 ---
 
 ### 4.2 — EVENT-01: `integration_events` tekilliğini tenant kapsamına al
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `apps/api/src/db/schema/queue.ts:37-42` unique index `(provider, external_event_id)` — **global.**
 Duplicate araması ise RLS yüzünden tenant-scoped (`webhooks.controller.ts:223-241`). İki tenant aynı
@@ -830,7 +830,76 @@ Yap:
 - **Kabul:** Yukarıdaki iki test geçiyor; queue-first akış değişmemiş.
 - **Model:** Claude Opus 5 · yüksek reasoning · dar kanıt paketi
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `db/schema/queue.ts`'teki `integration_events` unique index'i genişletildi:
+`integration_events_provider_external_uidx (provider, external_event_id)` →
+`integration_events_tenant_provider_external_uidx (tenant_id, provider, external_event_id)`
+(migration `0022_integration_events_tenant_scope.sql`). **Geri dönük strateji (madde 1):** 4.1'deki
+aynı mantık — yeni index eskisinin **üst kümesi** (bir kolon eklendi, çıkarılmadı), yani eski index'i
+ihlal etmeyen hiçbir satır yeni, daha dar-olmayan index'i de ihlal edemez; migration mevcut veriyle
+asla çakışmaz, temizlik gerekmez (migration dosyasının içindeki yorumda da belgeledim). `inbound_messages`
+tablosu (`db/schema/inbound-messages.ts:29-33`) zaten `(tenant_id, provider, external_id)` üzerine
+kuruluydu — doğruladım, bu tarafta şema/migration değişikliği **yok**, yalnız aşağıdaki race-catch
+eklendi (bkz. "kapsam dışı" not).
+
+**23505 yakalama + idempotent 202 (madde 2):** `webhooks.controller.ts`'in `ingest()`'i artık
+select-then-insert'i `try/catch` ile sarıyor: iki eşzamanlı istek aynı tenant+provider+external_event_id
+ile SELECT'te ikisi de "yok" görüp INSERT'e girerse, kaybedenin INSERT'i yeni unique index'te `23505`
+alır (`isUniqueViolation(err, 'integration_events_tenant_provider_external_uidx')` —
+4.1'de eklenen paylaşılan `common/postgres-errors.ts` yardımcısı, aynı desen). `withTenant()` zaten tüm
+handler'ı tek transaction'a sarıyor, yani Postgres kaybedenin INSERT'ini (hem `integration_events` hem
+`jobs` satırını) otomatik geri almış oluyor; `catch` bloğu yalnız kazananın satırını tekrar okuyup
+`duplicate: true` ile **202** döndürüyor, ham 500 yerine — `@HttpCode(202)` zaten sabit, hata artık hiç
+fırlamıyor. Cross-tenant çakışma ile eşzamanlı-aynı-tenant yarışı **farklı bug'lar**: index genişletmek
+birinciyi (iki farklı tenant artık hiç çakışmıyor, index'te tenant_id de var), 23505-yakalama ikinciyi
+çözüyor (aynı tenant'ın iki isteği hâlâ aynı satır için yarışabilir, index onu engellemez/engellememeli —
+engellenmesi gereken tek şey ham 500).
+
+**Payload-hash fallback (madde 3):** `extractExternalEventId`/`extractWahaExternalId`
+(`webhooks.controller.ts:41-58`, `whatsapp/inbound-mapper.ts`) `payloadHash`'i yalnız
+`external_event_id`/`external_id` **değeri** için fallback olarak kullanıyor (header veya payload'da id
+yoksa) — `payload_hash` kolonunun kendi üzerinde ayrı bir global unique constraint olmadığını
+doğruladım (`queue.ts` şemasında yok). Yani fallback path otomatik olarak tenant-scoped: hash, tenant-scoped
+index'in kapsadığı aynı `external_event_id` kolonuna yazılıyor, ayrı bir sabitleme gerekmedi.
+
+**Testler (madde 4):** `webhooks.provider.spec.ts`'e iki yeni test: "cross-tenant same
+external_event_id — iki bağımsız satır, 500 yok" (iki farklı tenant, aynı `externalEventId`, ikisi de
+`duplicate:false`, farklı `integration_event_id`, `enqueueSpy` 2 kez) ve "concurrent duplicate
+deliveries (same tenant) race safely" (`Promise.all` ile iki eşzamanlı `ingest()`, tek satır, biri
+`duplicate:false`/biri `true`, `enqueueSpy` 1 kez). **Kapsam dışına eklenen bir sağlamlaştırma:**
+`webhooks.waha.spec.ts`'e de aynı eşzamanlı-yarış testi eklendi (`ingestWaha()` için) — bu, görevin
+`Dosyalar:` listesinde açıkça istenmiyordu (`inbound_messages` zaten tenant-scoped'du, şema değişikliği
+gerekmiyordu) ama **aynı dosyada, aynı fonksiyon şeklinde, aynı select-then-insert yarış hatası** zaten
+oradaydı (index tenant-scoped olsa da, aynı tenant'ın iki eşzamanlı isteği hâlâ 23505'e çarpabilir);
+madem dosya zaten kapsamdaydı ve 4.1'in aynı deseni (`isUniqueViolation` + re-select) burada da
+uygulanabilir haldeydi, tutarlılık için uyguladım. Queue-first akış (job satırı, aynı transaction
+içinde insert; kazanandan sonra `enqueueDefaultJob` + `bullmqJobId` update) her iki handler'da da
+değişmedi — yalnız hata yolunda re-select eklendi.
+
+**Doğrulama:** `apps/api` `tsc --noEmit` **temiz** (restore edilen `webhooks.controller.ts` dahil).
+Tüm `apps/api` paketi: **110 test yeşil** — 4.1 commit'inden sonraki sayıyla birebir aynı, yani
+`webhooks.controller.ts`'i son EVENT-01 haline geri getirmek ve `_journal.json`'a 0022 girişini
+eklemek **hiçbir regresyona yol açmadı**. Kalan tüm hatalar ya `ECONNREFUSED` (DB yok, bu sandbox'ta
+beklenen — bkz. 0.3) ya da `karne.isolation.spec.ts`'teki 2 önceden-var-olan hata (bu dosya Faz 4
+kapsamında hiç değişmedi, aynı hata 4.1 commit'inin log'unda da vardı). Yeni eklenen dört test
+(`webhooks.provider.spec.ts`'teki iki EVENT-01 testi, `webhooks.waha.spec.ts`'teki bir tane, artı
+zaten var olan testler) syntax/import hatası vermeden `ECONNREFUSED`'te duruyor — mantık doğru ama
+gerçek Postgres'e karşı koşulmadı. **Doğrulanamayan:** migration'ın gerçek şemaya karşı temiz
+uygulandığı; eşzamanlı yarış testlerinin (`Promise.all`, gecikme yok) gerçek connection pool'da
+(postgres.js, varsayılan pool boyutu) iki isteğin gerçekten aynı anda select-then-insert penceresine
+girdiğini garanti edip etmediği — IDEM-01'in eşzamanlı testi 50ms'lik yapay gecikme kullanıyordu, bu
+testler kullanmıyor (gerçek HTTP round-trip + `Promise.all` yeterli sayıldı, ama DB'siz doğrulanamaz).
+**Opus'un bakması gereken yer:** (1) yarış testlerine 4.1'deki gibi yapay bir gecikme eklemek daha
+güvenilir olur muydu, yoksa mevcut hali (gecikmesiz) yeterince gerçekçi mi; (2) `inbound_messages`
+tarafına yapılan kapsam-dışı genişletmenin (madde "kapsam dışına eklenen") kabul edilebilir olup
+olmadığı — şema değişikliği yok, yalnız davranış eklendi, ama görev metninin `Dosyalar:` listesinde
+açıkça yoktu.
+
+`apps/web` bu adımda hiç dokunulmadı. Grep ile doğruladım: `integration_events` index adı hiçbir web
+dosyasında yok; `inbound_message_id` yalnız `lib/mocks/handlers.ts`'te bir kez geçiyor ama o
+`AiCorrection` mock'undaki alakasız bir alan (whatsapp correction akışı, ai_corrections tablosunun
+foreign key'i) — `webhooks.controller.ts`'in ingest response şekliyle (`inbound_message_id`,
+`integration_event_id`) bağlantısı yok, isim çakışması. O yüzden `pnpm --filter @verimaya/web check`
+bu adım için koşulmadı.
 
 ---
 

@@ -35,7 +35,16 @@ export const integrationEvents = pgTable(
 			.defaultNow()
 	},
 	(table) => [
-		uniqueIndex('integration_events_provider_external_uidx').on(
+		/**
+		 * EVENT-01 (Faz 4.2): scoped to tenant_id — provider event ids are only guaranteed
+		 * unique *within* a provider's own account/location, not globally across every tenant
+		 * we host. The old (provider, external_event_id) index let two tenants racing the same
+		 * event id collide: the duplicate-lookup in webhooks.controller.ts is tenant-scoped via
+		 * RLS, so tenant A's SELECT never saw tenant B's row, and the INSERT then hit the global
+		 * unique constraint and 500'd instead of proceeding.
+		 */
+		uniqueIndex('integration_events_tenant_provider_external_uidx').on(
+			table.tenantId,
 			table.provider,
 			table.externalEventId
 		),
