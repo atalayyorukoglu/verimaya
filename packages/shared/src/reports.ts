@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { isoDate, moneyMinor } from './common.js';
+import { isoDate, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
+import { patientStatusSchema } from './patient.js';
 
 export const reportPeriodParams = z.object({
 	from: isoDate.optional(),
@@ -18,9 +19,48 @@ export const reportSummarySchema = z.object({
 	income_base: moneyMinor,
 	expense_base: moneyMinor,
 	net_base: moneyMinor,
+	/** Unpaid income in tenant base (income amount − paid, clamped ≥ 0 per row). */
+	pending_base: moneyMinor,
 	transaction_count: z.number().int().nonnegative()
 });
 export type ReportSummary = z.infer<typeof reportSummarySchema>;
+
+export const reportPatientStatusCountSchema = z.object({
+	status: patientStatusSchema,
+	count: z.number().int().nonnegative()
+});
+export type ReportPatientStatusCount = z.infer<typeof reportPatientStatusCountSchema>;
+
+export const reportPatientSourceCountSchema = z.object({
+	source: z.string(),
+	count: z.number().int().nonnegative()
+});
+export type ReportPatientSourceCount = z.infer<typeof reportPatientSourceCountSchema>;
+
+export const reportPatientDistributionSchema = z.object({
+	period: reportPeriodSchema,
+	by_status: z.array(reportPatientStatusCountSchema),
+	by_source: z.array(reportPatientSourceCountSchema),
+	total: z.number().int().nonnegative()
+});
+export type ReportPatientDistribution = z.infer<typeof reportPatientDistributionSchema>;
+
+export const reportBalanceRowSchema = z.object({
+	contact_id: uuid,
+	contact_label: z.string(),
+	currency: supportedCurrencySchema,
+	/** Signed open balance: income positive, expense negative. */
+	open_amount: moneyMinor,
+	/** Signed collected amount: income positive, expense negative. */
+	collected_amount: moneyMinor,
+	transaction_count: z.number().int().nonnegative()
+});
+export type ReportBalanceRow = z.infer<typeof reportBalanceRowSchema>;
+
+export const reportBalancesSchema = z.object({
+	items: z.array(reportBalanceRowSchema)
+});
+export type ReportBalances = z.infer<typeof reportBalancesSchema>;
 
 export const reportCategoryRowSchema = z.object({
 	category_name: z.string(),
@@ -78,9 +118,17 @@ export const reportMonthlySchema = z.object({
 });
 export type ReportMonthly = z.infer<typeof reportMonthlySchema>;
 
+export type ReportUrlPath =
+	| 'summary'
+	| 'by-category'
+	| 'monthly'
+	| 'by-category-detail'
+	| 'patient-distribution'
+	| 'balances';
+
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(
-	path: 'summary' | 'by-category' | 'monthly' | 'by-category-detail',
+	path: ReportUrlPath,
 	params?: { from?: string | null; to?: string | null; category?: string | null }
 ): string {
 	const url = new URL(`/v1/reports/${path}`, 'http://local');

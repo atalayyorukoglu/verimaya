@@ -1,19 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq, gte, isNull, lt, lte } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, isNull, lt, lte } from 'drizzle-orm';
 import {
 	calculateRealRoas,
 	type MarketingReport,
 	type MarketingReportParams,
 	type MarketingSourceRow,
+	type ReportBalances,
+	type ReportBalanceRow,
 	type ReportByCategory,
 	type ReportByCategoryDetail,
 	type ReportByCategoryDetailParams,
 	type ReportMonthly,
+	type ReportPatientDistribution,
 	type ReportPeriodParams,
 	type ReportSummary
 } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
-import { adMetricsDaily, patients, tenants, transactions } from '../db/schema';
+import { adMetricsDaily, contacts, patients, tenants, transactions } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
@@ -38,9 +41,18 @@ type IncomeWithSourceRow = {
 	source: string | null;
 };
 
+function signedMinor(kind: string, amount: number): number {
+	return kind === 'income' ? amount : -amount;
+}
+
 type PatientCohortRow = {
 	source: string | null;
 	status: string;
+};
+
+type PatientDistributionRow = {
+	status: string;
+	source: string | null;
 };
 
 function categoryLabel(category: string | null): string {
@@ -80,12 +92,18 @@ export class ReportsService {
 
 			let incomeBase = 0;
 			let expenseBase = 0;
+			let pendingBase = 0;
 
 			for (const row of rows) {
 				const base = resolveBaseAmount(row, tenantBase);
 				if (base == null) continue;
-				if (row.kind === 'income') incomeBase += base;
-				else expenseBase += base;
+				if (row.kind === 'income') {
+					incomeBase += base;
+					const paidBase = resolvePaidBaseAmount(row, tenantBase) ?? 0;
+					pendingBase += Math.max(0, base - paidBase);
+				} else {
+					expenseBase += base;
+				}
 			}
 
 			return {
@@ -93,8 +111,110 @@ export class ReportsService {
 				income_base: incomeBase,
 				expense_base: expenseBase,
 				net_base: incomeBase - expenseBase,
+				pending_base: pendingBase,
 				transaction_count: rows.length
 			};
+		});
+	}
+
+	async patientDistribution(
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<ReportPatientDistribution> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await this.fetchPatientsForPeriod(db, params);
+
+			const statusCounts = new Map<string, number>();
+			const sourceCounts = new Map<string, number>();
+
+			for (const row of rows) {
+				statusCounts.set(row.status, (statusCounts.get(row.status) ?? 0) + 1);
+				const label = sourceLabel(row.source);
+				sourceCounts.set(label, (sourceCounts.get(label) ?? 0) + 1);
+			}
+
+			const by_status = [...statusCounts.entries()]
+				.map(([status, count]) => ({
+					status: status as ReportPatientDistribution['by_status'][number]['status'],
+					count
+				}))
+				.sort((a, b) => b.count - a.count);
+
+			const by_source = [...sourceCounts.entries()]
+				.map(([source, count]) => ({ source, count }))
+				.sort((a, b) => b.count - a.count);
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				by_status,
+				by_source,
+				total: rows.length
+			};
+		});
+	}
+
+	async balances(tenantId: string): Promise<ReportBalances> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await db
+				.select({
+					contactId: transactions.contactId,
+					contactLabel: transactions.contactLabel,
+					contactDisplayName: contacts.displayName,
+					kind: transactions.kind,
+					amount: transactions.amount,
+					paidAmount: transactions.paidAmount,
+					currency: transactions.currency
+				})
+				.from(transactions)
+				.leftJoin(contacts, eq(transactions.contactId, contacts.id))
+				.where(isNotNull(transactions.contactId));
+
+			const map = new Map<
+				string,
+				{
+					contact_id: string;
+					contact_label: string;
+					currency: ReportBalanceRow['currency'];
+					open_amount: number;
+					collected_amount: number;
+					transaction_count: number;
+				}
+			>();
+
+			for (const row of rows) {
+				if (!row.contactId) continue;
+				const contactId = row.contactId;
+				const currency = row.currency as ReportBalanceRow['currency'];
+				const key = `${contactId}\0${currency}`;
+				const paid = row.paidAmount ?? 0;
+				const openDelta = signedMinor(row.kind, row.amount - paid);
+				const collectedDelta = signedMinor(row.kind, paid);
+
+				const label =
+					(row.contactLabel ?? '').trim() ||
+					(row.contactDisplayName ?? '').trim() ||
+					'Bilinmeyen';
+
+				const cur = map.get(key) ?? {
+					contact_id: contactId,
+					contact_label: label,
+					currency,
+					open_amount: 0,
+					collected_amount: 0,
+					transaction_count: 0
+				};
+				cur.open_amount += openDelta;
+				cur.collected_amount += collectedDelta;
+				cur.transaction_count += 1;
+				if (!cur.contact_label && label) cur.contact_label = label;
+				map.set(key, cur);
+			}
+
+			const items = [...map.values()]
+				.filter((row) => row.open_amount !== 0 || row.collected_amount !== 0)
+				.sort((a, b) => Math.abs(b.open_amount) - Math.abs(a.open_amount));
+
+			return { items };
 		});
 	}
 
@@ -327,6 +447,27 @@ export class ReportsService {
 			})
 			.from(transactions)
 			.where(conditions.length ? and(...conditions) : undefined);
+	}
+
+	private async fetchPatientsForPeriod(
+		db: TenantDb,
+		params: ReportPeriodParams
+	): Promise<PatientDistributionRow[]> {
+		const conditions = [isNull(patients.deletedAt)];
+		if (params.from) {
+			conditions.push(gte(patients.createdAt, startOfDayUtc(params.from)));
+		}
+		if (params.to) {
+			conditions.push(lt(patients.createdAt, dayAfterUtc(params.to)));
+		}
+
+		return db
+			.select({
+				status: patients.status,
+				source: patients.source
+			})
+			.from(patients)
+			.where(and(...conditions));
 	}
 
 	/**

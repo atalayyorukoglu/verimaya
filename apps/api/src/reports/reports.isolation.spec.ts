@@ -22,6 +22,9 @@ async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Pro
 describe('reports summary tenant isolation', () => {
 	const tenantA = randomUUID();
 	const tenantB = randomUUID();
+	const contactA1 = randomUUID();
+	const contactA2 = randomUUID();
+	let contactTypeA = '';
 	const period = { from: '2026-01-01', to: '2026-01-31' };
 	let reportsService: ReportsService;
 
@@ -43,23 +46,37 @@ describe('reports summary tenant isolation', () => {
 		`;
 
 		await withTenantSession(tenantA, async () => {
+			const [typeRow] = await sql`
+				insert into contact_types (tenant_id, name) values (${tenantA}, 'Klinik') returning id
+			`;
+			contactTypeA = typeRow!.id as string;
+			await sql`
+				insert into contacts (id, tenant_id, contact_type_id, contact_type_name, display_name)
+				values
+					(${contactA1}, ${tenantA}, ${contactTypeA}, 'Klinik', 'Acme Clinic'),
+					(${contactA2}, ${tenantA}, ${contactTypeA}, 'Klinik', 'Acme Clinic')
+			`;
 			await sql`
 				insert into transactions (
-					tenant_id, kind, title, category, subtitle, occurred_on, status, amount, amount_base, currency
+					tenant_id, kind, title, category, subtitle, occurred_on, status, amount, amount_base, paid_amount, currency, contact_id, contact_label
 				)
 				values
-					(${tenantA}, 'income', 'Tenant A income', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'paid', 10000, 10000, 'TRY'),
-					(${tenantA}, 'expense', 'Tenant A expense', 'Saç Ekimi', 'Malzeme', ${period.from}, 'paid', 3000, 3000, 'TRY')
+					(${tenantA}, 'income', 'Tenant A income', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'paid', 10000, 10000, 10000, 'TRY', null, null),
+					(${tenantA}, 'expense', 'Tenant A expense', 'Saç Ekimi', 'Malzeme', ${period.from}, 'paid', 3000, 3000, 3000, 'TRY', null, null),
+					(${tenantA}, 'income', 'Partial income 1', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'partial', 5000, 5000, 2000, 'TRY', null, null),
+					(${tenantA}, 'income', 'Partial income 2', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'partial', 4000, 4000, 1000, 'TRY', null, null),
+					(${tenantA}, 'income', 'Contact 1 open', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'partial', 8000, 8000, 3000, 'TRY', ${contactA1}, 'Acme Clinic'),
+					(${tenantA}, 'expense', 'Contact 2 owed', 'Saç Ekimi', 'Malzeme', ${period.from}, 'unpaid', 2000, 2000, 0, 'TRY', ${contactA2}, 'Acme Clinic')
 			`;
 		});
 
 		await withTenantSession(tenantB, async () => {
 			await sql`
 				insert into transactions (
-					tenant_id, kind, title, category, subtitle, occurred_on, status, amount, amount_base, currency
+					tenant_id, kind, title, category, subtitle, occurred_on, status, amount, amount_base, paid_amount, currency
 				)
 				values
-					(${tenantB}, 'income', 'Tenant B income', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'paid', 50000, 50000, 'TRY')
+					(${tenantB}, 'income', 'Tenant B income', 'Saç Ekimi', 'Konsültasyon', ${period.from}, 'paid', 50000, 50000, 50000, 'TRY')
 			`;
 		});
 
@@ -75,6 +92,8 @@ describe('reports summary tenant isolation', () => {
 		const { sql } = getDb(databaseUrl);
 		await withTenantSession(tenantA, async () => {
 			await sql`delete from transactions where tenant_id = ${tenantA}`;
+			await sql`delete from contacts where tenant_id = ${tenantA}`;
+			await sql`delete from contact_types where tenant_id = ${tenantA}`;
 		});
 		await withTenantSession(tenantB, async () => {
 			await sql`delete from transactions where tenant_id = ${tenantB}`;
@@ -87,10 +106,11 @@ describe('reports summary tenant isolation', () => {
 	it('Tenant A summary excludes Tenant B transactions', async () => {
 		const summary = await reportsService.summary(tenantA, period);
 
-		expect(summary.income_base).toBe(10000);
-		expect(summary.expense_base).toBe(3000);
-		expect(summary.net_base).toBe(7000);
-		expect(summary.transaction_count).toBe(2);
+		expect(summary.income_base).toBe(27000);
+		expect(summary.expense_base).toBe(5000);
+		expect(summary.net_base).toBe(22000);
+		expect(summary.pending_base).toBe(11000);
+		expect(summary.transaction_count).toBe(6);
 	});
 
 	it('Tenant B summary excludes Tenant A transactions', async () => {
@@ -99,7 +119,34 @@ describe('reports summary tenant isolation', () => {
 		expect(summary.income_base).toBe(50000);
 		expect(summary.expense_base).toBe(0);
 		expect(summary.net_base).toBe(50000);
+		expect(summary.pending_base).toBe(0);
 		expect(summary.transaction_count).toBe(1);
+	});
+
+	it('pending_base clamps per-row unpaid at zero when overpaid', async () => {
+		const summary = await reportsService.summary(tenantA, period);
+		expect(summary.pending_base).toBe(11000);
+	});
+
+	it('balances groups by contact_id not label — same label stays separate', async () => {
+		const report = await reportsService.balances(tenantA);
+
+		const tryRows = report.items.filter((row) => row.currency === 'TRY');
+		expect(tryRows).toHaveLength(2);
+		expect(tryRows.map((row) => row.contact_id).sort()).toEqual([contactA1, contactA2].sort());
+		expect(tryRows.every((row) => row.contact_label === 'Acme Clinic')).toBe(true);
+
+		const contact1 = tryRows.find((row) => row.contact_id === contactA1);
+		const contact2 = tryRows.find((row) => row.contact_id === contactA2);
+		expect(contact1?.open_amount).toBe(5000);
+		expect(contact1?.collected_amount).toBe(3000);
+		expect(contact2?.open_amount).toBe(-2000);
+		expect(contact2?.collected_amount).toBe(0);
+	});
+
+	it('Tenant B balances exclude Tenant A contacts', async () => {
+		const report = await reportsService.balances(tenantB);
+		expect(report.items).toEqual([]);
 	});
 
 	it('Tenant A monthly report excludes Tenant B transactions', async () => {
@@ -108,10 +155,10 @@ describe('reports summary tenant isolation', () => {
 		expect(monthly.items).toEqual([
 			{
 				month: '2026-01',
-				income_base: 10000,
-				expense_base: 3000,
-				net_base: 7000,
-				transaction_count: 2
+				income_base: 27000,
+				expense_base: 5000,
+				net_base: 22000,
+				transaction_count: 6
 			}
 		]);
 	});
@@ -140,17 +187,17 @@ describe('reports summary tenant isolation', () => {
 		expect(detail.items).toEqual([
 			{
 				subtitle_name: 'Konsültasyon',
-				income_base: 10000,
+				income_base: 27000,
 				expense_base: 0,
-				net_base: 10000,
-				transaction_count: 1
+				net_base: 27000,
+				transaction_count: 4
 			},
 			{
 				subtitle_name: 'Malzeme',
 				income_base: 0,
-				expense_base: 3000,
-				net_base: -3000,
-				transaction_count: 1
+				expense_base: 5000,
+				net_base: -5000,
+				transaction_count: 2
 			}
 		]);
 	});

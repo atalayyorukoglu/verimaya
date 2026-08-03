@@ -622,7 +622,7 @@ manuel-paste kısıtı.
 ---
 
 ### 3.2 — MONEY-02: Raporlar tek kaynaktan; bakiye semantiğini tanımla
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** 3.1
 
 `apps/web/src/routes/reports/+page.svelte` bugün karışık: kategori kartı server aggregate'ten,
@@ -646,7 +646,16 @@ Yap:
   hero ve pending doğru. Bakiye ekranı iki kişi aynı isimdeyken karışmıyor.
 - **Model:** Claude Opus 5 veya GPT-5.6 Sol · yüksek reasoning · şema + sorgu + test
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `reportSummarySchema`'ya `pending_base` eklendi (gelir satırlarında
+`max(0, base−paid_base)` toplamı). Yeni endpoint'ler: `GET /v1/reports/patient-distribution`
+(status/source sayımı, `created_at` dönem filtresi) ve `GET /v1/reports/balances`
+(`contact_id+currency`; açık = signed `amount−paid_amount`, tahsil = signed `paid_amount`;
+`contact_id` olmayanlar hariç). Web rapor hero'su server `pending_base` kullanıyor; hasta dağılımı
+server'dan; bakiyeler sayfası artık client infinite-scroll toplamı değil. `docs/MIMARI.md`'ye
+"Finans ve bakiye semantiği" bölümü yazıldı. Isolation: 9 test yeşil (pending clamp, aynı
+etiketli iki contact_id ayrımı dahil). **Varsayım:** Kategori drill-down hero hâlâ lokal
+`limit:100` listeden (ayrı aggregate yok — kapsam notu); export aynı aggregate'e bağlı değilse
+ayrı iş. Contact_label-only P2P işlemler bakiye ekranından düşer (bilinçli).
 
 ---
 

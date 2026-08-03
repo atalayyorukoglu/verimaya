@@ -72,4 +72,21 @@ export class ReportsController {
 		const params = marketingReportParams.parse({ from, to, provider });
 		return this.reportsService.marketing(getActiveOrgId(req), params);
 	}
+
+	@Get('patient-distribution')
+	@RequireOrgPermission('finance', 'read')
+	patientDistribution(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		return this.reportsService.patientDistribution(getActiveOrgId(req), params);
+	}
+
+	@Get('balances')
+	@RequireOrgPermission('finance', 'read')
+	balances(@Req() req: FastifyRequest) {
+		return this.reportsService.balances(getActiveOrgId(req));
+	}
 }

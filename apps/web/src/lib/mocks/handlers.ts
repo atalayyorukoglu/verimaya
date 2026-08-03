@@ -277,19 +277,104 @@ function buildReportSummary(
 	const rows = filterTransactionsByPeriod(store.transactions, from, to);
 	let incomeBase = 0;
 	let expenseBase = 0;
+	let pendingBase = 0;
 	for (const t of rows) {
 		const amount = amountInBaseMock(t, base);
 		if (amount == null) continue;
-		if (t.kind === 'income') incomeBase += amount;
-		else expenseBase += amount;
+		if (t.kind === 'income') {
+			incomeBase += amount;
+			pendingBase += Math.max(0, amount - paidInBaseMock(t, base));
+		} else {
+			expenseBase += amount;
+		}
 	}
 	return {
 		period: { from, to },
 		income_base: incomeBase,
 		expense_base: expenseBase,
 		net_base: incomeBase - expenseBase,
+		pending_base: pendingBase,
 		transaction_count: rows.length
 	};
+}
+
+function buildReportPatientDistribution(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+) {
+	let patients = store.patients;
+	if (from) {
+		patients = patients.filter((p) => patientCreatedDay(p.created_at) >= from);
+	}
+	if (to) {
+		patients = patients.filter((p) => patientCreatedDay(p.created_at) <= to);
+	}
+
+	const statusCounts = new Map<string, number>();
+	const sourceCounts = new Map<string, number>();
+	for (const p of patients) {
+		statusCounts.set(p.status, (statusCounts.get(p.status) ?? 0) + 1);
+		const label = sourceLabel(p.source);
+		sourceCounts.set(label, (sourceCounts.get(label) ?? 0) + 1);
+	}
+
+	const by_status = [...statusCounts.entries()]
+		.map(([status, count]) => ({ status, count }))
+		.sort((a, b) => b.count - a.count);
+	const by_source = [...sourceCounts.entries()]
+		.map(([source, count]) => ({ source, count }))
+		.sort((a, b) => b.count - a.count);
+
+	return {
+		period: { from, to },
+		by_status,
+		by_source,
+		total: patients.length
+	};
+}
+
+function buildReportBalances(store: ReturnType<typeof getStore>) {
+	const map = new Map<
+		string,
+		{
+			contact_id: string;
+			contact_label: string;
+			currency: string;
+			open_amount: number;
+			collected_amount: number;
+			transaction_count: number;
+		}
+	>();
+
+	for (const t of store.transactions) {
+		if (!t.contact_id) continue;
+		const key = `${t.contact_id}\0${t.currency}`;
+		const paid = t.paid_amount ?? 0;
+		const sign = t.kind === 'income' ? 1 : -1;
+		const openDelta = sign * (t.amount - paid);
+		const collectedDelta = sign * paid;
+		const label = (t.contact_label ?? '').trim() || 'Bilinmeyen';
+
+		const cur = map.get(key) ?? {
+			contact_id: t.contact_id,
+			contact_label: label,
+			currency: t.currency,
+			open_amount: 0,
+			collected_amount: 0,
+			transaction_count: 0
+		};
+		cur.open_amount += openDelta;
+		cur.collected_amount += collectedDelta;
+		cur.transaction_count += 1;
+		map.set(key, cur);
+	}
+
+	const items = [...map.values()]
+		.filter((row) => row.open_amount !== 0 || row.collected_amount !== 0)
+		.sort((a, b) => Math.abs(b.open_amount) - Math.abs(a.open_amount));
+
+	return { items };
 }
 
 function buildReportByCategory(
@@ -673,6 +758,19 @@ export const handlers = [
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
 		return HttpResponse.json(buildReportSummary(store, from, to));
+	}),
+
+	http.get('/v1/reports/patient-distribution', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildReportPatientDistribution(store, from, to));
+	}),
+
+	http.get('/v1/reports/balances', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(buildReportBalances(store));
 	}),
 
 	http.get('/v1/reports/by-category', ({ request }) => {

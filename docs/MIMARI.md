@@ -105,3 +105,22 @@ OAuth: `AdsOAuthStateService` state’i `CryptoService` ile şifreler (tenantId+
 Attribution V1: `patient.source`. Kampanya kırılımı V2.
 
 Kritik formüller UI'da yeniden yazılmaz; shared'dan import.
+
+## Finans ve bakiye semantiği
+
+Rapor kartları ve bakiye ekranı **yalnız sunucu aggregate endpoint'lerinden** beslenir; istemci kısmi liste toplamaz.
+
+**Bakiye anahtarı:** `contact_id` + `currency` (para birimi). Aynı etiketli (`contact_label`) farklı kişiler birleştirilmez. `contact_id` olmayan işlemler bakiye raporuna dahil edilmez.
+
+**İşlem bazında (orijinal para biriminde):**
+
+- **Açık tutar** (`open_amount`) = `amount − (paid_amount ?? 0)`, işlem türüne göre işaretli: gelir (+), gider (−).
+- **Tahsil edilmiş** (`collected_amount`) = `paid_amount ?? 0`, aynı işaret kuralı.
+
+Satır gösterim eşiği: `open_amount !== 0` veya `collected_amount !== 0`.
+
+**Özet rapor (`/v1/reports/summary`):**
+
+- `pending_base`: yalnız gelir satırları; tenant baz para biriminde `max(0, amount_base − paid_base)` toplamı (satır başına clamp).
+
+**Hasta dağılımı (`/v1/reports/patient-distribution`):** Dönem filtresi hasta `created_at` üzerinden; durum ve kaynak sayıları sunucuda aggregate.

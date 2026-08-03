@@ -8,6 +8,7 @@
 		ReportByCategory,
 		ReportByCategoryDetail,
 		ReportMonthly,
+		ReportPatientDistribution,
 		ReportSummary,
 		SupportedCurrency,
 		Tenant,
@@ -136,7 +137,16 @@
 		queryKey: keys.reports.summary({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<ReportSummary>(reportUrl('summary', { from: dateRange.from, to: dateRange.to })),
-		enabled: !USE_MSW && ready
+		enabled: ready
+	}));
+
+	const patientDistributionQuery = createQuery(() => ({
+		queryKey: keys.reports.patientDistribution({ from: dateRange.from, to: dateRange.to }),
+		queryFn: () =>
+			apiGet<ReportPatientDistribution>(
+				reportUrl('patient-distribution', { from: dateRange.from, to: dateRange.to })
+			),
+		enabled: ready
 	}));
 
 	const byCategoryQuery = createQuery(() => ({
@@ -193,13 +203,12 @@
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: keys.patients.list({ limit: 100, for: 'reports' }),
+		queryKey: keys.patients.list({ limit: 100, for: 'reports-form' }),
 		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
-		enabled: ready
+		enabled: ready && txFormOpen
 	}));
 
 	const transactions = $derived(txQuery.data?.items ?? []);
-	const patients = $derived(patientsQuery.data?.items ?? []);
 	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	const filteredTx = $derived(
@@ -218,7 +227,7 @@
 			if (t.kind === 'income') {
 				income += base;
 				const paid = paidAmountInBase(t, baseCurrency) ?? 0;
-				pending += base - paid;
+				pending += Math.max(0, base - paid);
 			} else {
 				expense += base;
 			}
@@ -227,12 +236,12 @@
 	});
 
 	const totals = $derived.by(() => {
-		if (!USE_MSW && summaryQuery.data) {
+		if (summaryQuery.data) {
 			return {
 				income: summaryQuery.data.income_base,
 				expense: summaryQuery.data.expense_base,
 				net: summaryQuery.data.net_base,
-				pending: clientTotals.pending,
+				pending: summaryQuery.data.pending_base,
 				count: summaryQuery.data.transaction_count
 			};
 		}
@@ -284,24 +293,24 @@
 	});
 
 	const statusDist = $derived.by(() => {
-		const counts = new Map<Patient['status'], number>();
-		for (const p of patients) counts.set(p.status, (counts.get(p.status) ?? 0) + 1);
-		const total = patients.length || 1;
-		return [...counts.entries()]
-			.sort((a, b) => b[1] - a[1])
-			.map(([status, count]) => ({ status, count, pct: Math.round((count / total) * 100) }));
+		const distribution = patientDistributionQuery.data;
+		if (!distribution || distribution.total === 0) return [];
+		return distribution.by_status.map(({ status, count }) => ({
+			status,
+			count,
+			pct: Math.round((count / distribution.total) * 100)
+		}));
 	});
 
 	const sourceDist = $derived.by(() => {
-		const counts = new Map<string, number>();
-		for (const p of patients) {
-			const key = p.source ?? 'Bilinmiyor';
-			counts.set(key, (counts.get(key) ?? 0) + 1);
-		}
-		const max = Math.max(1, ...counts.values());
-		return [...counts.entries()]
-			.sort((a, b) => b[1] - a[1])
-			.map(([source, count]) => ({ source, count, pct: Math.round((count / max) * 100) }));
+		const distribution = patientDistributionQuery.data;
+		if (!distribution || distribution.by_source.length === 0) return [];
+		const max = Math.max(1, ...distribution.by_source.map((row) => row.count));
+		return distribution.by_source.map(({ source, count }) => ({
+			source,
+			count,
+			pct: Math.round((count / max) * 100)
+		}));
 	});
 
 	type ConsistencyIssue = {
@@ -474,15 +483,17 @@
 
 	const loading = $derived(
 		txQuery.isPending ||
-			patientsQuery.isPending ||
+			summaryQuery.isPending ||
+			patientDistributionQuery.isPending ||
 			marketingQuery.isPending ||
-			(!USE_MSW && (summaryQuery.isPending || byCategoryQuery.isPending || monthlyQuery.isPending))
+			(!USE_MSW && (byCategoryQuery.isPending || monthlyQuery.isPending))
 	);
 	const failed = $derived(
 		txQuery.isError ||
-			patientsQuery.isError ||
+			summaryQuery.isError ||
+			patientDistributionQuery.isError ||
 			marketingQuery.isError ||
-			(!USE_MSW && (summaryQuery.isError || byCategoryQuery.isError || monthlyQuery.isError)) ||
+			(!USE_MSW && (byCategoryQuery.isError || monthlyQuery.isError)) ||
 			(!USE_MSW && drillCategoryLabel != null && byCategoryDetailQuery.isError)
 	);
 
@@ -1104,13 +1115,8 @@
 	{/if}
 
 	<p class="mt-4 text-xs text-text-faint">
-		{#if USE_MSW}
-			Demo: dönem filtresi MSW üzerinden; özet/kategori istemcide, pazarlama raporu mock
-			endpoint’ten.
-		{:else}
-			Özet, kategori ve pazarlama toplamları sunucu aggregate endpoint'lerinden gelir; grafik ve
-			drill-down için işlem listesi ayrıca yüklenir.
-		{/if}
+		Özet, hasta dağılımı, kategori ve pazarlama toplamları sunucu aggregate endpoint'lerinden gelir;
+		grafik ve drill-down için işlem listesi ayrıca yüklenir.
 	</p>
 </div>
 
