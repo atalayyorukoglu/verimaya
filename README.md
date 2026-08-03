@@ -4,7 +4,13 @@ Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (m
 
 ## Durum
 
-**CURSOR-PLAN** (Adım 1–44) kod olarak kapandı (`docs/CURSOR-PLAN.md`). Açık kalanlar canlı ops: Coolify/yedek (31), pilot (32), Meta/Google Ads go-live (38–39). Yol haritası: `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` — mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
+Kod kapsamı pilot seviyesine yakın; güvenlik, veri doğruluğu ve canlı kabul kapıları kapatılıyor. Dahili pilot henüz resmi olarak başlamadı.
+
+**Aktif yapılacaklar listesi (tek kaynak):** [`docs/2026-08-03-YAPILACAKLAR.md`](./docs/2026-08-03-YAPILACAKLAR.md) — fazlı, kabul kriterli.
+Gerçek durum ve açık riskler: [`docs/2026-08-02-PROJE-DEGERLENDIRMESI.md`](./docs/2026-08-02-PROJE-DEGERLENDIRMESI.md).
+**CURSOR-PLAN** (Adım 1–44) kod olarak kapandı ve arşive alındı: [`docs/CURSOR-PLAN.md`](./docs/CURSOR-PLAN.md).
+
+Mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
 
 ## Stack
 

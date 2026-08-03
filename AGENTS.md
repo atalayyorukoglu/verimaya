@@ -54,6 +54,8 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 
 ## Süreç
 
-- Yol haritası Obsidian'da: `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` (2026-07-30'dan itibaren tek kaynak; repo içi `docs/YOL-HARITASI.md` kaldırıldı). Fazların dışına çıkan işlere başlamadan kullanıcıya sor.
+- **Aktif yapılacaklar listesi: `docs/2026-08-03-YAPILACAKLAR.md` — tek kaynak.** Fazlı; her adımın kabul kriteri, dokunulacak dosyaları ve model önerisi orada. Adım bitince o dosyadaki kutuyu işaretle ve **Görüş** satırını doldur. Listenin dışına çıkan işe başlama.
+- Obsidian yol haritası (`SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`) 2026-08-03'te boşaltıldı; eski hali `Arşiv/2026-07-30-yol-haritasi.md`. Aktif listenin 6.2 adımı onu yeniden yazacak — o zamana kadar karar kaynağı değil.
+- Ürünün kanıta dayalı gerçek durumu: `docs/2026-08-02-PROJE-DEGERLENDIRMESI.md`.
 - Önemli mimari kararlar `docs/MIMARI.md`'ye işlenir; proje takibi Obsidian'dadır (`SecondBrain-Remote/03-Areas/Verimaya`), oturum sonunda kullanıcıya log'a düşülecek 1-2 satır özet ver.
 - Faz 0a tamamlandı (MSW demo). Faz 0b'de `apps/api` gerçek Postgres/Redis üzerine kurulur; web MSW kapanana kadar paralel kalır.
