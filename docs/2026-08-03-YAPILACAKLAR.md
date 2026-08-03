@@ -520,7 +520,7 @@ iddia da yalnız kod okuması ile doğrulandı, runtime'da değil.
 ---
 
 ### 2.4 — TEST-01: Contacts / appointments / transactions izolasyon testleri
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** 2.1
 
 `patients`, `members`, `karne`, `reports` vb. için izolasyon spec'i var; **contacts, appointments,
@@ -534,7 +534,42 @@ kaydına `GET`/`PATCH`/`DELETE` ve list filtreleri sınansın.
   sızdıramıyor (ör. `patient_id` B'nin hastasını gösterse bile 404).
 - **Model:** Composer 2.5 Standard · orta reasoning · dar context (mevcut `patients.isolation.spec.ts` şablon)
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** Üç yeni dosya yazıldı — `apps/api/src/{contacts,appointments,transactions}/*.isolation.spec.ts`
+— ama şablon olarak `patients.isolation.spec.ts`'in raw-SQL RLS testinden çok, 2.2'de kurulan
+`webhook-subscriptions.isolation.spec.ts` / `contract-parity.isolation.spec.ts` deseni izlendi:
+servis sınıfları gerçek `TenantContextService` yerine sahte bir `withTenant` (→ `SET LOCAL
+app.current_tenant_id` + gerçek Postgres RLS) ile doğrudan örnekleniyor. Bunu seçme sebebi: asıl
+risk yüzeyi `updateWithDb(db, id, ...)` gibi metotların `id`'yi **hiç tenant filtresiyle
+sorgulamaması** (`where eq(contacts.id, id)` — tenant_id yok) — izolasyonun tamamı RLS'e
+dayanıyor, ve bunu test etmenin en dürüst yolu gerçek servis metotlarını gerçek RLS oturumu
+altında çağırmak, app kodunda kendi "where tenant_id = " kontrolümü yazmak değil.
+
+**Kapsam sapması (varsayım):** Kabul kriteri "list/get/update/delete" diyor, ama kod okunduğunda
+üç kaynaktan **hiçbirinde `DELETE` endpoint'i / `remove()` metodu yok**, ve `appointments` ile
+`transactions`'ın `GET /:id` (`get()` metodu) de yok — yalnız `contacts`'ta var. Bu, planın kod
+yazılmadan önce hazırlanmış olmasından kaynaklanan bir farktır, WEBHOOK-01/2.1 bağımlılık
+çakışmasıyla aynı sınıf. Var olmayan bir uç noktayı test edemeyeceğim için her dosyanın başına
+bunu **açıkça belgeleyen bir not** koydum ve gerçekte var olan her şeyi test ettim: `contacts`
+için list + get-by-id (404) + update + type_id filtre sızıntısı; `appointments`/`transactions`
+için list + update + patient_id/contact_id filtre sızıntısı (get yok, dolayısıyla "B'nin hastasını
+gösterse bile 404" senaryosu yerine "filtre sonucu boş dönüyor, sızdırmıyor" doğrulandı — pratikte
+aynı güvenlik özelliği, farklı HTTP şekli). DELETE'in üçünde de gelecekte eklenmesi durumunda bu
+dosyalara birer test eklenmesi gerekecek — bu bir TODO olarak burada not düşülüyor, yeni bir adım
+açmadım (kapsam dışı, plan bunu istemiyor).
+
+**Doğrulama (bu sandbox'ta docker/Postgres yok — bkz. 0.3):** Üç dosya da yalnız `ECONNREFUSED
+127.0.0.1:5433` ile duruyor — söz dizimi/import/tip hatası yok, 2.1/2.2'nin aynı standardı.
+`apps/api` `tsc --noEmit -p tsconfig.json` temiz (not: `tsconfig.json` `src/**/*.spec.ts`'i
+typecheck'ten hariç tutuyor — bu önceden bilinen bir repo kısıtı, bkz. 0.2/2.2, benim seçimim
+değil). Tüm `apps/api` vitest paketi çalıştırıldı: 18/60 dosya (DB gerektirmeyenler) ve 105/242 test
+yeşil, kalan 42 dosya/135 test aynı `ECONNREFUSED` ile bekliyor (üçü benim yeni dosyalarım, 39'u
+önceden zaten DB'siz koşamayan dosyalar) — yeni dosyalarımın var olan hiçbir testi kırmadığı
+doğrulandı. `karne.isolation.spec.ts`'teki 2 "gerçek" (ECONNREFUSED değil farklı) test hatası
+benim değişikliklerimden önce de vardı, dokunmadığım bir dosya. **Doğrulanamayan:** RLS
+politikalarının/`updateWithDb`'nin gerçek Postgres üzerinde iddia ettiğim gibi davrandığı — Opus'un/
+Atalay'ın DB'li ortamda `pnpm --filter @verimaya/api test src/contacts/contacts.isolation.spec.ts
+src/appointments/appointments.isolation.spec.ts src/transactions/transactions.isolation.spec.ts`
+çalıştırması gerekiyor.
 
 ---
 
