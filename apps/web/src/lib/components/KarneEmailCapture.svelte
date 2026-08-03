@@ -62,16 +62,13 @@
 	{:else}
 		<form class="relative space-y-4" onsubmit={onSubmit}>
 			<!-- honeypot -->
-			<div class="pointer-events-none absolute -left-[9999px] h-px w-px overflow-hidden opacity-0" aria-hidden="true">
+			<div
+				class="pointer-events-none absolute -left-[9999px] h-px w-px overflow-hidden opacity-0"
+				aria-hidden="true"
+			>
 				<label>
 					Website
-					<input
-						type="text"
-						name="website"
-						tabindex="-1"
-						autocomplete="off"
-						bind:value={website}
-					/>
+					<input type="text" name="website" tabindex="-1" autocomplete="off" bind:value={website} />
 				</label>
 			</div>
 

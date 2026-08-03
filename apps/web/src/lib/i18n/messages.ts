@@ -114,8 +114,7 @@ const tr = {
 	'scorecard.maturity.parcali': 'Parçalı',
 	'scorecard.maturity.tutarli': 'Tutarlı',
 	'scorecard.maturity.olgun': 'Olgun',
-	'scorecard.maturity.temporary':
-		'Olgunluk eşikleri geçicidir; saha testinden önce kesinleşmez.',
+	'scorecard.maturity.temporary': 'Olgunluk eşikleri geçicidir; saha testinden önce kesinleşmez.',
 	'scorecard.headcount': 'Ölçek bandı',
 	'scorecard.autoFill': 'Sistem cevaplarını doldur',
 	'scorecard.autoFilling': 'Dolduruluyor…',
@@ -133,7 +132,8 @@ const tr = {
 	'scorecard.newMeasurement': 'Yeni ölçüm başlat',
 	'scorecard.compare.link': 'Ölçümleri karşılaştır',
 	'scorecard.compare.title': 'Ölçüm karşılaştırması',
-	'scorecard.compare.description': 'Aynı profildeki iki tamamlanmış ölçüm — birincil gösterge kapanan sıfırlar.',
+	'scorecard.compare.description':
+		'Aynı profildeki iki tamamlanmış ölçüm — birincil gösterge kapanan sıfırlar.',
 	'scorecard.compare.primary': '{prev} sıfırdan {closed} kapandı',
 	'scorecard.compare.blocked': 'Kıyaslama yapılamıyor',
 	'scorecard.compare.back': 'Karneye dön',
@@ -144,8 +144,7 @@ const tr = {
 	'scorecard.history.row': '{date} · {zeros} sıfır · {pct}',
 
 	'settings.ghl.title': 'GoHighLevel',
-	'settings.ghl.description':
-		'Lead ve iletişim senkronu — webhook-first, alan sahipliği kurallı.',
+	'settings.ghl.description': 'Lead ve iletişim senkronu — webhook-first, alan sahipliği kurallı.',
 	'settings.ghl.card.name': 'GHL hesabı',
 	'settings.ghl.card.description':
 		"Contact ve opportunity webhook'ları kuyruğa yazılır, worker'da işlenir; Verimaya sahibi olduğu alanları GHL'e geri yazar.",
@@ -306,8 +305,7 @@ const en: Record<MessageKey, string> = {
 	'scorecard.maturity.parcali': 'Partial',
 	'scorecard.maturity.tutarli': 'Consistent',
 	'scorecard.maturity.olgun': 'Mature',
-	'scorecard.maturity.temporary':
-		'Maturity thresholds are temporary until field testing.',
+	'scorecard.maturity.temporary': 'Maturity thresholds are temporary until field testing.',
 	'scorecard.headcount': 'Headcount band',
 	'scorecard.autoFill': 'Fill system-known answers',
 	'scorecard.autoFilling': 'Filling…',
@@ -337,8 +335,7 @@ const en: Record<MessageKey, string> = {
 	'scorecard.history.row': '{date} · {zeros} zeros · {pct}',
 
 	'settings.ghl.title': 'GoHighLevel',
-	'settings.ghl.description':
-		'Lead and contact sync — webhook-first, field ownership rules.',
+	'settings.ghl.description': 'Lead and contact sync — webhook-first, field ownership rules.',
 	'settings.ghl.card.name': 'GHL account',
 	'settings.ghl.card.description':
 		'Contact and opportunity webhooks are queued and processed by workers; Verimaya writes back fields it owns.',
@@ -399,8 +396,7 @@ const en: Record<MessageKey, string> = {
 	'settings.ads.dev.heading': 'Development / demo data',
 	'settings.ads.dev.body':
 		'Without OAuth, sync writes sample rows. Periodic 6h queue needs ENABLE_INTEGRATION_SCHEDULERS=true — we keep it off in prod.',
-	'settings.ads.footnote':
-		'After connecting, cost-per-patient appears on Reports by source.'
+	'settings.ads.footnote': 'After connecting, cost-per-patient appears on Reports by source.'
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { tr, en };

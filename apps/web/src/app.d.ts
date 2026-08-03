@@ -22,6 +22,7 @@ interface ImportMetaEnv {
 	readonly PUBLIC_KARNE_LEADS_ENABLED?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- ambient declaration merging with the global ImportMeta type, not a local unused symbol
 interface ImportMeta {
 	readonly env: ImportMetaEnv;
 }

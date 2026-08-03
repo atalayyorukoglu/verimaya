@@ -92,8 +92,7 @@
 			platformExtraFeePercent
 		});
 
-		const ok =
-			result.profitStatus === 'profitable' || result.profitStatus === 'break_even';
+		const ok = result.profitStatus === 'profitable' || result.profitStatus === 'break_even';
 		return {
 			tone: (ok ? 'ok' : 'fail') as CheckTone,
 			detail:
@@ -235,10 +234,12 @@
 				class={textareaClass}
 				bind:value={copyText}
 				rows={6}
-				placeholder="Metni yapıştırın…"
-			></textarea>
+				placeholder="Metni yapıştırın…"></textarea>
 			<p class="mt-2 text-xs text-text-muted">{compliance.detail}</p>
-			<a href="/marketing/compliance" class="mt-3 inline-block text-xs font-medium text-brand hover:underline">
+			<a
+				href="/marketing/compliance"
+				class="mt-3 inline-block text-xs font-medium text-brand hover:underline"
+			>
 				Uyumluluk aracına git
 			</a>
 		</section>
@@ -251,7 +252,12 @@
 			<div class="grid gap-2">
 				<div>
 					<label class={labelClass} for="pc-roas">Platform ROAS</label>
-					<input id="pc-roas" class={fieldClass} bind:value={platformRoasText} inputmode="decimal" />
+					<input
+						id="pc-roas"
+						class={fieldClass}
+						bind:value={platformRoasText}
+						inputmode="decimal"
+					/>
 				</div>
 				<div>
 					<label class={labelClass} for="pc-sale">Satış fiyatı (TL)</label>
@@ -281,7 +287,10 @@
 					· Gerçek ROAS {formatRatio(economics.realRoas)}
 				{/if}
 			</p>
-			<a href="/marketing/calculator" class="mt-3 inline-block text-xs font-medium text-brand hover:underline">
+			<a
+				href="/marketing/calculator"
+				class="mt-3 inline-block text-xs font-medium text-brand hover:underline"
+			>
 				Hesap aracına git
 			</a>
 		</section>
@@ -303,7 +312,10 @@
 			{:else}
 				<p class="text-sm text-text-muted">{measurement.detail}</p>
 			{/if}
-			<a href="/marketing/measurement" class="mt-3 inline-block text-xs font-medium text-brand hover:underline">
+			<a
+				href="/marketing/measurement"
+				class="mt-3 inline-block text-xs font-medium text-brand hover:underline"
+			>
 				Ölçümü düzenle
 			</a>
 		</section>

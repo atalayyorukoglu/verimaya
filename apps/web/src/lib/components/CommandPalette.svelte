@@ -155,11 +155,7 @@
 										type="button"
 										class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm hover:bg-surface-2"
 										onclick={() =>
-											navigate(
-												a.patient_id
-													? `/patients/${a.patient_id}`
-													: '/appointments'
-											)}
+											navigate(a.patient_id ? `/patients/${a.patient_id}` : '/appointments')}
 									>
 										<Calendar class="size-4 shrink-0 text-text-muted" />
 										<span class="min-w-0 flex-1 truncate text-text">
@@ -184,11 +180,7 @@
 										type="button"
 										class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm hover:bg-surface-2"
 										onclick={() =>
-											navigate(
-												t.patient_id
-													? `/finance?hasta=${t.patient_id}`
-													: '/finance'
-											)}
+											navigate(t.patient_id ? `/finance?hasta=${t.patient_id}` : '/finance')}
 									>
 										<Wallet class="size-4 shrink-0 text-text-muted" />
 										<span class="min-w-0 flex-1 truncate text-text">{t.title}</span>

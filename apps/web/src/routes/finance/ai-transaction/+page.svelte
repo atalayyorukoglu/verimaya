@@ -221,7 +221,7 @@
 		const stubRate =
 			currency === 'GBP' ? 43 : currency === 'EUR' ? 36 : currency === 'USD' ? 34 : 1;
 		let amount_base = draft.counterparty_amount ?? null;
-		let fx_rate: number | null = null;
+		let fx_rate: number | null;
 		if (currency === tenantBase) {
 			amount_base = draft.amount;
 			fx_rate = 1;

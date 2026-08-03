@@ -1,12 +1,14 @@
 <script lang="ts">
-	import { DEFAULT_BANNED_TERMS, scanLandingCopy, type ComplianceScanResult } from '@verimaya/shared';
+	import {
+		DEFAULT_BANNED_TERMS,
+		scanLandingCopy,
+		type ComplianceScanResult
+	} from '@verimaya/shared';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { labelClass, textareaClass } from '$lib/api';
 
-	let text = $state(
-		'Tedavide kesin sonuç vaat ediyoruz. Mucize çözüm ile ücretsiz ön görüşme.'
-	);
+	let text = $state('Tedavide kesin sonuç vaat ediyoruz. Mucize çözüm ile ücretsiz ön görüşme.');
 	let termsOpen = $state(false);
 
 	const result = $derived.by((): ComplianceScanResult | null => {
@@ -37,8 +39,7 @@
 				class={textareaClass}
 				bind:value={text}
 				rows={12}
-				placeholder="Metni buraya yapıştırın…"
-			></textarea>
+				placeholder="Metni buraya yapıştırın…"></textarea>
 		</section>
 
 		<section class="rounded-lg border border-border bg-surface p-5">
@@ -95,7 +96,9 @@
 		{#if termsOpen}
 			<ul class="mt-3 space-y-1.5 text-sm">
 				{#each DEFAULT_BANNED_TERMS as term (term.term)}
-					<li class="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-1.5">
+					<li
+						class="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-1.5"
+					>
 						<span class="text-text">{term.term}</span>
 						{#if term.severity === 'block'}
 							<StatusBadge label="Yasaklı" tone="danger" />

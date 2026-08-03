@@ -6,8 +6,7 @@
 		Appointment,
 		AppointmentCreate,
 		AppointmentUpdate,
-		ContractResponse,
-		Patient
+		ContractResponse
 	} from '@verimaya/shared';
 	import { apiPaths, appointmentStatusLabels, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
@@ -89,9 +88,7 @@
 	}));
 
 	const filterPatient = $derived(
-		patientFilterId
-			? (patientsQuery.data?.items ?? []).find((p) => p.id === patientFilterId)
-			: null
+		patientFilterId ? (patientsQuery.data?.items ?? []).find((p) => p.id === patientFilterId) : null
 	);
 
 	const byDay = $derived.by(() => {
@@ -117,7 +114,9 @@
 	);
 
 	const rangeAppointments = $derived(
-		[...(appointmentsQuery.data?.items ?? [])].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+		[...(appointmentsQuery.data?.items ?? [])].sort((a, b) =>
+			a.starts_at.localeCompare(b.starts_at)
+		)
 	);
 
 	function openCreate() {

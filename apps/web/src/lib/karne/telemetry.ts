@@ -170,8 +170,7 @@ export function trackAnswered(
 			if (!browser || !isKarneTelemetryEnabled()) return;
 			const started = viewedAt.get(questionId);
 			const dwell =
-				dwellMs ??
-				(started !== undefined ? Math.max(0, Date.now() - started) : undefined);
+				dwellMs ?? (started !== undefined ? Math.max(0, Date.now() - started) : undefined);
 			const session_id = await ensureSessionId();
 			if (!session_id) return;
 			postBeacon('events', {
@@ -206,9 +205,7 @@ export function trackComplete(zeroCount: number): void {
 /**
  * Ensure a karne session exists for lead capture (works even when event telemetry is off).
  */
-export async function ensureSessionForLead(
-	input: KarneSessionStartInput
-): Promise<string | null> {
+export async function ensureSessionForLead(input: KarneSessionStartInput): Promise<string | null> {
 	if (!browser) return null;
 	const existing = getStoredSessionId();
 	if (existing) return existing;
@@ -244,14 +241,10 @@ export type SubmitKarneLeadInput = {
 	eu_exposure: IntakeEuId;
 };
 
-export type SubmitKarneLeadResult =
-	| { ok: true }
-	| { ok: false; reason: 'validation' | 'network' };
+export type SubmitKarneLeadResult = { ok: true } | { ok: false; reason: 'validation' | 'network' };
 
 /** POST /leads — returns structured result for the form UI (not fire-and-forget). */
-export async function submitKarneLead(
-	input: SubmitKarneLeadInput
-): Promise<SubmitKarneLeadResult> {
+export async function submitKarneLead(input: SubmitKarneLeadInput): Promise<SubmitKarneLeadResult> {
 	if (!browser) return { ok: false, reason: 'network' };
 	// LEG-01: fail-closed until legal approval enables PUBLIC_KARNE_LEADS_ENABLED=true
 	if (!KARNE_LEADS_ENABLED) return { ok: false, reason: 'network' };

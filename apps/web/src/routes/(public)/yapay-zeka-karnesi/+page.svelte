@@ -149,10 +149,7 @@
 			<BrandMark class="h-6 w-6" title="" />
 			<span class="text-sm font-semibold tracking-tight">Verimaya</span>
 		</a>
-		<a
-			href="/login"
-			class="text-sm font-medium text-text-muted transition-colors hover:text-text"
-		>
+		<a href="/login" class="text-sm font-medium text-text-muted transition-colors hover:text-text">
 			Giriş
 		</a>
 	</header>
@@ -272,7 +269,7 @@
 				</button>
 			</div>
 		{:else if intakeBand && intakeEu}
-			<KarneResult result={result} band={intakeBand} eu={intakeEu} />
+			<KarneResult {result} band={intakeBand} eu={intakeEu} />
 		{/if}
 	</main>
 </div>

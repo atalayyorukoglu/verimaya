@@ -93,9 +93,8 @@
 		{ value: 100, label: 'Tam' }
 	];
 
-	const result = $derived.by(
-		(): TrustScoreResult =>
-			calculateTrustScore(checks.map((c) => ({ id: c.id, score: c.score })))
+	const result = $derived.by((): TrustScoreResult =>
+		calculateTrustScore(checks.map((c) => ({ id: c.id, score: c.score })))
 	);
 
 	const needsPriority = $derived(result.grade === 'F' || result.grade === 'D');
@@ -153,7 +152,12 @@
 		description="Veri/izleme kurulumunuzu puanlayın; tenant bazında kaydedilir. Zayıf halkaları görün."
 	>
 		{#snippet actions()}
-			<Button type="button" size="sm" disabled={saving || settingsQuery.isPending} onclick={() => void save()}>
+			<Button
+				type="button"
+				size="sm"
+				disabled={saving || settingsQuery.isPending}
+				onclick={() => void save()}
+			>
 				{saving ? 'Kaydediliyor…' : 'Kaydet'}
 			</Button>
 		{/snippet}

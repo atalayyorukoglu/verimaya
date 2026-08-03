@@ -42,7 +42,8 @@
 	<meta name="twitter:description" content={description} />
 	<meta name="twitter:image" content={ogImage} />
 
-	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd)}</script>`}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags, no-useless-escape -- statik JSON-LD (kullanıcı girdisi yok, XSS riski yok); </script> kaçışı parser'ın string'i erken kapatmasını önlüyor -->
+	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd)}<\/script>`}
 </svelte:head>
 
 <div class="vitrin relative flex min-h-dvh flex-col overflow-hidden bg-bg text-text">
@@ -71,7 +72,7 @@
 	</header>
 
 	<main
-		class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-4 text-center sm:px-10"
+		class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pt-4 pb-24 text-center sm:px-10"
 	>
 		<div
 			class="vitrin-brand flex flex-col items-center gap-5"
@@ -116,11 +117,7 @@
 				CRM Verimaya
 			</a>
 		</div>
-		<p
-			class:vitrin-in={visible}
-			style="--delay: 480ms"
-			class="mt-6 text-sm text-text-muted"
-		>
+		<p class:vitrin-in={visible} style="--delay: 480ms" class="mt-6 text-sm text-text-muted">
 			<a
 				href="/yapay-zeka-karnesi/"
 				class="underline-offset-4 transition-colors hover:text-text hover:underline"
@@ -142,13 +139,21 @@
 <style>
 	.vitrin-wash {
 		background:
-			radial-gradient(ellipse 80% 55% at 50% -10%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 70%),
+			radial-gradient(
+				ellipse 80% 55% at 50% -10%,
+				color-mix(in srgb, var(--brand) 22%, transparent),
+				transparent 70%
+			),
 			linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, #f0ebe6) 0%, var(--bg) 55%);
 	}
 
 	:global(.dark) .vitrin-wash {
 		background:
-			radial-gradient(ellipse 80% 55% at 50% -10%, color-mix(in srgb, var(--brand) 28%, transparent), transparent 70%),
+			radial-gradient(
+				ellipse 80% 55% at 50% -10%,
+				color-mix(in srgb, var(--brand) 28%, transparent),
+				transparent 70%
+			),
 			linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, #2a2420) 0%, var(--bg) 60%);
 	}
 

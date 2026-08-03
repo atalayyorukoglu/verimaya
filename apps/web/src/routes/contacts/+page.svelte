@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
-	import type { Contact, ContactCreate, ContactType, ContactUpdate, ContractResponse } from '@verimaya/shared';
+	import type {
+		Contact,
+		ContactCreate,
+		ContactType,
+		ContactUpdate,
+		ContractResponse
+	} from '@verimaya/shared';
 	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -102,12 +108,12 @@
 
 	<form class="mb-4 flex flex-col gap-2 sm:flex-row" onsubmit={submitSearch}>
 		<input
-			class="border-border bg-surface text-text placeholder:text-text-faint h-9 min-w-0 flex-1 rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40"
+			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40"
 			placeholder="Ad, telefon veya e-posta…"
 			bind:value={q}
 		/>
 		<select
-			class="border-border bg-surface text-text h-9 rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40 sm:w-44"
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:w-44"
 			bind:value={typeId}
 		>
 			<option value="">Tüm türler</option>

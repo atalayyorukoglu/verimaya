@@ -54,10 +54,7 @@ export const intakeQuestions = [
 			{ id: 'emin-degilim', label: 'Emin değilim' }
 		]
 	}
-] as const satisfies readonly [
-	IntakeQuestion<IntakeBandId>,
-	IntakeQuestion<IntakeEuId>
-];
+] as const satisfies readonly [IntakeQuestion<IntakeBandId>, IntakeQuestion<IntakeEuId>];
 
 export const karneQuestions: readonly KarneQuestion[] = [
 	{
@@ -163,8 +160,7 @@ export const karneQuestions: readonly KarneQuestion[] = [
 	{
 		id: 's9',
 		criterion: '8.3',
-		title:
-			'Yapay zekayı kullanmaya başlamadan önce, işlerin ne kadar sürdüğünü ölçmüş müydünüz?',
+		title: 'Yapay zekayı kullanmaya başlamadan önce, işlerin ne kadar sürdüğünü ölçmüş müydünüz?',
 		weakLabel: 'Yapay zeka öncesi iş süreleri ölçülmemiş',
 		choices: [
 			{ id: 's9-a', label: 'Evet, öncesi elimizde', score: 4 },

@@ -3,12 +3,7 @@ import { authClient } from '$lib/auth';
 import { USE_MSW } from '$lib/env';
 import { isMarketingHost } from '$lib/host';
 
-const PUBLIC_PREFIXES = [
-	'/login',
-	'/vitrin',
-	'/yapay-zeka-karnesi',
-	'/kvkk-aydinlatma'
-] as const;
+const PUBLIC_PREFIXES = ['/login', '/vitrin', '/yapay-zeka-karnesi', '/kvkk-aydinlatma'] as const;
 
 export function isPublicPath(pathname: string): boolean {
 	if (pathname === '/' || pathname === '') {

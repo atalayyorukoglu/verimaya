@@ -992,7 +992,7 @@ export const handlers = [
 		const contentType = request.headers.get('content-type') ?? '';
 		let filename = 'upload.bin';
 		let mime_type = 'application/octet-stream';
-		let size_bytes = 0;
+		let size_bytes: number;
 		let appointmentId: string | null = null;
 
 		if (contentType.includes('multipart/form-data')) {
@@ -1003,8 +1003,7 @@ export const handlers = [
 			mime_type = uploaded.type || mime_type;
 			size_bytes = uploaded.size;
 			const apptRaw = form.get('appointment_id');
-			appointmentId =
-				typeof apptRaw === 'string' && apptRaw.length > 0 ? apptRaw : null;
+			appointmentId = typeof apptRaw === 'string' && apptRaw.length > 0 ? apptRaw : null;
 		} else {
 			const body = await request.json();
 			const parsed = patientFileCreateSchema.safeParse(body);

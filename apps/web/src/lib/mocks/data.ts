@@ -374,16 +374,6 @@ export type DemoStore = {
 	trustScore: TrustScoreSettings;
 };
 
-function slugify(name: string): string {
-	return (
-		name
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-')
-			.replace(/^-|-$/g, '')
-			.slice(0, 48) || 'org'
-	);
-}
-
 function makeExtraTenants(): Tenant[] {
 	const seeds = [
 		{ id: '33333333-3333-4333-8333-333333333333', name: 'Gee Smile', slug: 'gee-smile' },
@@ -677,8 +667,8 @@ function makeAdMetricsDaily(): AdMetric[] {
 	];
 	// Deterministic-ish spends so "Bu ay" totals look realistic (~4–6 bin ₺).
 	const spendPattern = [
-		42_500, 38_000, 55_000, 29_500, 61_000, 47_200, 33_800, 52_400, 44_100, 36_700, 58_900,
-		41_200, 49_600, 27_300, 53_000
+		42_500, 38_000, 55_000, 29_500, 61_000, 47_200, 33_800, 52_400, 44_100, 36_700, 58_900, 41_200,
+		49_600, 27_300, 53_000
 	];
 
 	for (let i = 0; i < spendPattern.length; i++) {

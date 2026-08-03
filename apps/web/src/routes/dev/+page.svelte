@@ -29,8 +29,7 @@
 
 	const usersQuery = createQuery(() => ({
 		queryKey: ['dev', 'tenants', targetTenantId, 'users'],
-		queryFn: () =>
-			apiGet<{ items: MembershipUser[] }>(`/v1/dev/tenants/${targetTenantId}/users`),
+		queryFn: () => apiGet<{ items: MembershipUser[] }>(`/v1/dev/tenants/${targetTenantId}/users`),
 		enabled: !!targetTenantId
 	}));
 
@@ -157,7 +156,10 @@
 	/>
 
 	{#if error}
-		<p class="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+		<p
+			class="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger"
+			role="alert"
+		>
 			{error}
 		</p>
 	{/if}
@@ -328,7 +330,7 @@
 	</section>
 
 	<p class="text-xs text-text-faint">
-		Tracker: <code class="text-text-muted">/dev-users</code> — yalnızca platform dev e-postası.
-		Verimaya’da gerçek erişim Faz 0b’de süper-admin / allowlist ile sınırlanır.
+		Tracker: <code class="text-text-muted">/dev-users</code> — yalnızca platform dev e-postası. Verimaya’da
+		gerçek erişim Faz 0b’de süper-admin / allowlist ile sınırlanır.
 	</p>
 </div>

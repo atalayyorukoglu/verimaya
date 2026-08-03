@@ -23,9 +23,7 @@
 		expanded = { ...expanded, [id]: !expanded[id] };
 	}
 
-	const sorted = $derived(
-		[...appointments].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-	);
+	const sorted = $derived([...appointments].sort((a, b) => a.starts_at.localeCompare(b.starts_at)));
 </script>
 
 {#if sorted.length === 0}
@@ -70,7 +68,9 @@
 					<PatientCaseNotesThread patientId={appt.patient_id} variant="card" />
 
 					{#if open}
-						<dl class="grid gap-2 rounded-[6px] border border-border bg-surface-2/30 px-3 py-2.5 text-sm">
+						<dl
+							class="grid gap-2 rounded-[6px] border border-border bg-surface-2/30 px-3 py-2.5 text-sm"
+						>
 							<div class="grid gap-0.5 sm:grid-cols-[7rem_1fr]">
 								<dt class="text-xs text-text-muted">Klinik</dt>
 								<dd class="text-text">{appt.clinic_name ?? '—'}</dd>

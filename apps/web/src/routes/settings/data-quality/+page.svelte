@@ -76,23 +76,23 @@
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 			<div class="rounded-lg border border-border bg-surface p-3">
 				<p class="text-xs text-text-muted">Kayıt</p>
-				<p class="mt-1 text-lg font-semibold tabular-nums text-text">{report.count}</p>
+				<p class="mt-1 text-lg font-semibold text-text tabular-nums">{report.count}</p>
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-3">
 				<p class="text-xs text-text-muted">Gelir</p>
-				<p class="mt-1 text-lg font-semibold tabular-nums text-success">
+				<p class="mt-1 text-lg font-semibold text-success tabular-nums">
 					{formatMoney(report.income)}
 				</p>
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-3">
 				<p class="text-xs text-text-muted">Gider</p>
-				<p class="mt-1 text-lg font-semibold tabular-nums text-text">
+				<p class="mt-1 text-lg font-semibold text-text tabular-nums">
 					{formatMoney(report.expense)}
 				</p>
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-3">
 				<p class="text-xs text-text-muted">Eksik kategori</p>
-				<p class="mt-1 text-lg font-semibold tabular-nums text-warning">
+				<p class="mt-1 text-lg font-semibold text-warning tabular-nums">
 					{report.missingCategory.length}
 				</p>
 			</div>
@@ -128,7 +128,7 @@
 								{d.sample.title}
 								<span class="text-text-faint"> · {d.count} kayıt</span>
 							</span>
-							<span class="shrink-0 tabular-nums text-text-muted">
+							<span class="shrink-0 text-text-muted tabular-nums">
 								{formatMoney(d.sample.amount, d.sample.currency)}
 							</span>
 						</li>
@@ -149,8 +149,8 @@
 		</section>
 
 		<p class="mt-3 text-xs text-text-faint">
-			<a href="/reports" class="text-brand hover:underline">Raporlar → tutarlılık</a> ile örtüşür;
-			ileride tek “kalite” yüzeyi olabilir.
+			<a href="/reports" class="text-brand hover:underline">Raporlar → tutarlılık</a> ile örtüşür; ileride
+			tek “kalite” yüzeyi olabilir.
 		</p>
 	{/if}
 </div>

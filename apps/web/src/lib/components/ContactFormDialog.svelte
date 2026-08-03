@@ -1,11 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type {
-		Contact,
-		ContactCreate,
-		ContactType,
-		ContactUpdate
-	} from '@verimaya/shared';
+	import type { Contact, ContactCreate, ContactType, ContactUpdate } from '@verimaya/shared';
 	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
 	import Dialog from '$lib/components/Dialog.svelte';

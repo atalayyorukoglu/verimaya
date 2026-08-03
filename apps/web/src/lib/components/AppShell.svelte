@@ -217,7 +217,7 @@
 >
 	{#if showInstallPrompt}
 		<div
-			class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 mx-3 mb-2 rounded-[8px] border border-border bg-surface p-3 shadow-lg md:bottom-4 md:left-auto md:right-4 md:mx-0 md:w-[22rem]"
+			class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 mx-3 mb-2 rounded-[8px] border border-border bg-surface p-3 shadow-lg md:right-4 md:bottom-4 md:left-auto md:mx-0 md:w-[22rem]"
 			role="status"
 		>
 			<p class="text-sm font-medium text-text">Verimaya’yı ana ekrana ekle</p>
@@ -240,9 +240,7 @@
 	{/if}
 
 	<!-- Desktop sidebar — TickPort: full viewport height, footer pinned -->
-	<aside
-		class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex"
-	>
+	<aside class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex">
 		<div class="flex h-14 shrink-0 items-center justify-center border-b border-border bg-bg px-4">
 			<a href="/" class="rounded-md" aria-label="Verimaya — {tenantName}">
 				<LogoHorizontal />
@@ -256,9 +254,7 @@
 		>
 			{#each visibleGroups as group, gi (group.labelKey)}
 				<div class={gi === 0 ? '' : 'mt-4'}>
-					<p
-						class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase"
-					>
+					<p class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase">
 						{t(group.labelKey)}
 					</p>
 					<ul class="space-y-0.5">
@@ -310,9 +306,7 @@
 		<aside
 			class="fixed inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-border bg-bg md:hidden"
 		>
-			<div
-				class="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-bg px-3"
-			>
+			<div class="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-bg px-3">
 				<a
 					href="/"
 					class="flex min-w-0 flex-1 items-center justify-center rounded-md pe-1"
@@ -529,11 +523,15 @@
 	</nav>
 </div>
 
-<Dialog bind:open={supportOpen} title="Destek" description="Demo ortamı — gerçek destek kanalı yok.">
+<Dialog
+	bind:open={supportOpen}
+	title="Destek"
+	description="Demo ortamı — gerçek destek kanalı yok."
+>
 	<div class="space-y-3 text-sm text-text-muted">
 		<p>
-			Sorun veya geri bildirim için geliştiriciye yazın. Üretimde bu ekran ticket / e-posta
-			formuna bağlanacak.
+			Sorun veya geri bildirim için geliştiriciye yazın. Üretimde bu ekran ticket / e-posta formuna
+			bağlanacak.
 		</p>
 		<p>
 			<a class="font-medium text-brand hover:underline" href="mailto:destek@verimaya.app"

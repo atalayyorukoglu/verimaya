@@ -65,9 +65,7 @@
 		enabled: open
 	}));
 
-	const tenantBase = $derived(
-		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
-	);
+	const tenantBase = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	let kind = $state<TransactionKind>('income');
 	let title = $state('');
@@ -108,11 +106,9 @@
 		invoice_status = transaction?.invoice_status ?? 'none';
 		currency = transaction?.currency ?? tenantBase;
 		amountMajor = transaction ? String(transaction.amount / 100) : '';
-		amountBaseMajor =
-			transaction?.amount_base != null ? String(transaction.amount_base / 100) : '';
+		amountBaseMajor = transaction?.amount_base != null ? String(transaction.amount_base / 100) : '';
 		fxRate = transaction?.fx_rate != null ? String(transaction.fx_rate) : '';
-		paidMajor =
-			transaction?.paid_amount != null ? String(transaction.paid_amount / 100) : '';
+		paidMajor = transaction?.paid_amount != null ? String(transaction.paid_amount / 100) : '';
 		patient_id = transaction?.patient_id ?? defaultPatientId ?? '';
 		contact_id = transaction?.contact_id ?? '';
 		contact_label = transaction?.contact_label ?? '';
@@ -136,8 +132,8 @@
 			paid_amount = Math.min(paid, amount);
 		}
 
-		let amount_base: number | null = null;
-		let fx_rate: number | null = null;
+		let amount_base: number | null;
+		let fx_rate: number | null;
 		if (!needsFx) {
 			amount_base = amount;
 			fx_rate = 1;
@@ -233,7 +229,9 @@
 			</div>
 		</div>
 		{#if needsFx}
-			<div class="grid gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2">
+			<div
+				class="grid gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2"
+			>
 				<div>
 					<label class={labelClass} for="tx-base">Baz tutar ({tenantBase})</label>
 					<input

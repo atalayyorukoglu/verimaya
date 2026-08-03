@@ -75,11 +75,10 @@ Kurallar:
 		disclosureSaving = true;
 		disclosureError = null;
 		try {
-			const saved = await apiSend<WhatsappAiDisclosure>(
-				apiPaths.settingsAiDisclosure,
-				'PUT',
-				{ enabled: disclosureEnabled, text: disclosureText }
-			);
+			const saved = await apiSend<WhatsappAiDisclosure>(apiPaths.settingsAiDisclosure, 'PUT', {
+				enabled: disclosureEnabled,
+				text: disclosureText
+			});
 			disclosureEnabled = saved.enabled;
 			disclosureText = saved.text;
 			await queryClient.invalidateQueries({ queryKey: ['settings', 'ai-disclosure'] });
@@ -121,12 +120,15 @@ Kurallar:
 				class="{textareaClass} min-h-28 text-sm"
 				bind:value={disclosureText}
 				maxlength={2000}
-				disabled={disclosureQuery.isPending}
-			></textarea>
+				disabled={disclosureQuery.isPending}></textarea>
 		</label>
 
 		<div class="mt-4 flex flex-wrap items-center gap-2">
-			<Button type="button" onclick={saveDisclosure} disabled={disclosureSaving || disclosureQuery.isPending}>
+			<Button
+				type="button"
+				onclick={saveDisclosure}
+				disabled={disclosureSaving || disclosureQuery.isPending}
+			>
 				{disclosureSaving ? t('settings.ai.disclosure.saving') : t('settings.ai.disclosure.save')}
 			</Button>
 			{#if disclosureSavedOk}
@@ -150,7 +152,7 @@ Kurallar:
 					<span class="font-normal text-text-faint">({t('settings.ai.prompt.default')})</span>
 				{/if}
 			</span>
-			<textarea class="{textareaClass} min-h-48 font-mono text-xs" bind:value={value}></textarea>
+			<textarea class="{textareaClass} min-h-48 font-mono text-xs" bind:value></textarea>
 		</label>
 		<div class="mt-4 flex flex-wrap items-center gap-2">
 			<Button type="button" onclick={savePrompt}>{t('settings.ai.prompt.save')}</Button>

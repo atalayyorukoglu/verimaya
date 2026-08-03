@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { calculateTruthMetrics, type ProfitStatus, type TruthCalculatorResult } from '@verimaya/shared';
+	import {
+		calculateTruthMetrics,
+		type ProfitStatus,
+		type TruthCalculatorResult
+	} from '@verimaya/shared';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { fieldClass, labelClass } from '$lib/api';

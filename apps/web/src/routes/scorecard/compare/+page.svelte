@@ -31,8 +31,7 @@
 	const compareQuery = createQuery(() => ({
 		queryKey: ['scorecard', 'compare', previousId, currentId],
 		enabled: Boolean(previousId && currentId),
-		queryFn: () =>
-			apiGet<CompareDto>(apiPaths.scorecardCompare(previousId, currentId))
+		queryFn: () => apiGet<CompareDto>(apiPaths.scorecardCompare(previousId, currentId))
 	}));
 
 	const primaryLine = $derived.by(() => {
@@ -45,10 +44,7 @@
 </script>
 
 <div class="mx-auto max-w-3xl min-w-0">
-	<PageHeader
-		title={t('scorecard.compare.title')}
-		description={t('scorecard.compare.description')}
-	>
+	<PageHeader title={t('scorecard.compare.title')} description={t('scorecard.compare.description')}>
 		{#snippet actions()}
 			<a href="/scorecard" class="text-sm font-medium text-brand hover:underline">
 				{t('scorecard.compare.back')}
@@ -63,10 +59,7 @@
 	{:else if compareQuery.isError}
 		<p class="text-sm text-destructive">{t('scorecard.compare.loadError')}</p>
 	{:else if compareQuery.data && !compareQuery.data.comparable}
-		<section
-			class="rounded-lg border border-border bg-surface p-5"
-			role="alert"
-		>
+		<section class="rounded-lg border border-border bg-surface p-5" role="alert">
 			<h2 class="text-base font-semibold text-text">{t('scorecard.compare.blocked')}</h2>
 			<p class="mt-2 text-sm text-text">{compareQuery.data.warning}</p>
 		</section>
@@ -92,7 +85,7 @@
 					</div>
 					{#if row.closed_zero}
 						<span
-							class="mt-2 inline-block rounded border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-text-muted"
+							class="mt-2 inline-block rounded border border-border px-1.5 py-0.5 text-[10px] tracking-wide text-text-muted uppercase"
 						>
 							{t('scorecard.compare.closedBadge')}
 						</span>

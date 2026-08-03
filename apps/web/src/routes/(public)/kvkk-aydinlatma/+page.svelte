@@ -41,16 +41,15 @@
 			role="note"
 		>
 			<strong class="font-semibold text-text">Taslak — hukukçu onayı bekleniyor.</strong>
-			Bu metin yayına çıkmadan önce gözden geçirilmelidir; onaylanmadan üretimde e-posta
-			toplamayın.
+			Bu metin yayına çıkmadan önce gözden geçirilmelidir; onaylanmadan üretimde e-posta toplamayın.
 		</p>
 
 		<div class="mt-10 space-y-8 text-sm leading-relaxed text-text">
 			<section class="space-y-2">
 				<h2 class="text-base font-semibold tracking-tight">1. Veri sorumlusu</h2>
 				<p class="text-text-muted">
-					Verimaya (iletişim: destek için paneldeki iletişim kanalları) ücretsiz yapay zeka
-					karnesi kapsamında kişisel verilerinizi aşağıda belirtilen amaçlarla işler.
+					Verimaya (iletişim: destek için paneldeki iletişim kanalları) ücretsiz yapay zeka karnesi
+					kapsamında kişisel verilerinizi aşağıda belirtilen amaçlarla işler.
 				</p>
 			</section>
 
@@ -59,8 +58,8 @@
 				<ul class="list-disc space-y-1 pl-5 text-text-muted">
 					<li>E-posta adresi (sizin girdiğiniz)</li>
 					<li>
-						Anonim karne oturumu meta verisi (klinik büyüklük bandı, AB/İngiltere maruziyeti
-						cevabı, soru etkileşimleri) — IP adresi saklanmaz
+						Anonim karne oturumu meta verisi (klinik büyüklük bandı, AB/İngiltere maruziyeti cevabı,
+						soru etkileşimleri) — IP adresi saklanmaz
 					</li>
 				</ul>
 			</section>
@@ -86,8 +85,8 @@
 				<h2 class="text-base font-semibold tracking-tight">5. Haklarınız</h2>
 				<p class="text-text-muted">
 					KVKK m.11 kapsamındaki haklarınızı (bilgi talep, düzeltme, silme, itiraz vb.) Verimaya
-					iletişim kanalları üzerinden kullanabilirsiniz. Rızanızı istediğiniz zaman
-					geri çekebilirsiniz; geri çekme, önceki işlemlerin hukuka uygunluğunu etkilemez.
+					iletişim kanalları üzerinden kullanabilirsiniz. Rızanızı istediğiniz zaman geri
+					çekebilirsiniz; geri çekme, önceki işlemlerin hukuka uygunluğunu etkilemez.
 				</p>
 			</section>
 		</div>

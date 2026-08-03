@@ -85,9 +85,7 @@
 			...(maxMonthlyBudget !== null ? { maxMonthlyBudget } : {}),
 			...(monthlyClickVolume !== null ? { monthlyClickVolume } : {}),
 			...(targetSales !== null ? { targetSales } : {}),
-			...(maxAdShareOfContributionPercent !== null
-				? { maxAdShareOfContributionPercent }
-				: {})
+			...(maxAdShareOfContributionPercent !== null ? { maxAdShareOfContributionPercent } : {})
 		});
 	});
 
@@ -178,7 +176,7 @@
 					/>
 				</div>
 
-				<div class="sm:col-span-2 border-t border-border pt-3">
+				<div class="border-t border-border pt-3 sm:col-span-2">
 					<p class="mb-3 text-xs font-medium text-text-muted">Opsiyonel ölçek / hedef</p>
 					<div class="grid gap-3 sm:grid-cols-2">
 						<div>
@@ -258,21 +256,17 @@
 						</div>
 						<div class="flex items-baseline justify-between gap-3">
 							<dt class="text-text-muted">Reklam sonrası katkı</dt>
-							<dd class="font-medium text-text"
-								>{formatMoneyOrDash(result.contributionAfterAds)}</dd
-							>
+							<dd class="font-medium text-text">
+								{formatMoneyOrDash(result.contributionAfterAds)}
+							</dd>
 						</div>
 						<div class="flex items-baseline justify-between gap-3">
 							<dt class="text-text-muted">Zarar eşiği</dt>
-							<dd class="font-medium text-text"
-								>{formatPercent(result.lossThresholdRate, 2)}</dd
-							>
+							<dd class="font-medium text-text">{formatPercent(result.lossThresholdRate, 2)}</dd>
 						</div>
 						<div class="flex items-baseline justify-between gap-3">
 							<dt class="text-text-muted">Sağlıklı hedef oranı</dt>
-							<dd class="font-medium text-text"
-								>{formatPercent(result.healthyTargetRate, 2)}</dd
-							>
+							<dd class="font-medium text-text">{formatPercent(result.healthyTargetRate, 2)}</dd>
 						</div>
 						<div class="flex items-baseline justify-between gap-3">
 							<dt class="text-text-muted">Uygulanabilir mi?</dt>
@@ -288,15 +282,11 @@
 						</div>
 						<div class="flex items-baseline justify-between gap-3">
 							<dt class="text-text-muted">Gerekli aylık tık</dt>
-							<dd class="font-medium text-text"
-								>{formatCount(result.requiredMonthlyClicks, 0)}</dd
-							>
+							<dd class="font-medium text-text">{formatCount(result.requiredMonthlyClicks, 0)}</dd>
 						</div>
 						<div class="flex items-baseline justify-between gap-3">
 							<dt class="text-text-muted">Gerekli günlük tık</dt>
-							<dd class="font-medium text-text"
-								>{formatCount(result.requiredDailyClicks, 0)}</dd
-							>
+							<dd class="font-medium text-text">{formatCount(result.requiredDailyClicks, 0)}</dd>
 						</div>
 					</dl>
 				</section>
@@ -326,9 +316,7 @@
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Başabaş erişilebilir mi?</dt>
-								<dd class="font-medium text-text"
-									>{scale.breakEvenReachable ? 'Evet' : 'Hayır'}</dd
-								>
+								<dd class="font-medium text-text">{scale.breakEvenReachable ? 'Evet' : 'Hayır'}</dd>
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Bütçe tavanı (satış)</dt>
@@ -366,33 +354,25 @@
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Gerekli lead/ay</dt>
-								<dd class="font-medium text-text"
-									>{formatCount(target.requiredLeadsMonthly, 0)}</dd
-								>
+								<dd class="font-medium text-text">{formatCount(target.requiredLeadsMonthly, 0)}</dd>
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Gerekli tık/ay</dt>
-								<dd class="font-medium text-text"
-									>{formatCount(target.requiredClicksMonthly, 0)}</dd
-								>
+								<dd class="font-medium text-text">
+									{formatCount(target.requiredClicksMonthly, 0)}
+								</dd>
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Gerekli tık/gün</dt>
-								<dd class="font-medium text-text"
-									>{formatCount(target.requiredClicksDaily, 0)}</dd
-								>
+								<dd class="font-medium text-text">{formatCount(target.requiredClicksDaily, 0)}</dd>
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Gerekli bütçe/ay</dt>
-								<dd class="font-medium text-text"
-									>{formatMoney(target.requiredBudgetMonthly)}</dd
-								>
+								<dd class="font-medium text-text">{formatMoney(target.requiredBudgetMonthly)}</dd>
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Gerekli bütçe/gün</dt>
-								<dd class="font-medium text-text"
-									>{formatMoney(target.requiredBudgetDaily)}</dd
-								>
+								<dd class="font-medium text-text">{formatMoney(target.requiredBudgetDaily)}</dd>
 							</div>
 							<div class="flex items-baseline justify-between gap-3">
 								<dt class="text-text-muted">Reklam maliyeti tavanı</dt>
@@ -404,11 +384,7 @@
 							</div>
 							<div class="flex items-baseline justify-between gap-3 border-t border-border pt-3">
 								<dt class="text-text-muted">Aylık net kâr</dt>
-								<dd
-									class="font-medium {target.monthlyProfit < 0
-										? 'text-danger'
-										: 'text-text'}"
-								>
+								<dd class="font-medium {target.monthlyProfit < 0 ? 'text-danger' : 'text-text'}">
 									{formatMoney(target.monthlyProfit)}
 								</dd>
 							</div>

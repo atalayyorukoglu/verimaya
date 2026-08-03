@@ -88,9 +88,7 @@
 
 	const transactions = $derived(txQuery.data?.items ?? []);
 	const appointments = $derived(apptQuery.data?.items ?? []);
-	const baseCurrency = $derived(
-		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
-	);
+	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	const finance = $derived.by(() => {
 		const byCurrency = new Map<string, { income: number; expense: number }>();

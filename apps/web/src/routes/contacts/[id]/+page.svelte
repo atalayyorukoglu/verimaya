@@ -1,13 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type {
-		Appointment,
-		Contact,
-		ContactUpdate,
-		Patient,
-		Transaction
-	} from '@verimaya/shared';
+	import type { Appointment, Contact, ContactUpdate, Patient, Transaction } from '@verimaya/shared';
 	import { apiPaths, transactionKindLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { formatDate, formatMoney, formatTime } from '$lib/format';
@@ -53,10 +47,7 @@
 
 	const relatedAppointments = $derived(
 		(apptQuery.data?.items ?? []).filter(
-			(a) =>
-				a.clinic_contact_id === id ||
-				a.hotel_contact_id === id ||
-				a.transfer_contact_id === id
+			(a) => a.clinic_contact_id === id || a.hotel_contact_id === id || a.transfer_contact_id === id
 		)
 	);
 
@@ -104,13 +95,13 @@
 				{#if contact.is_internal}
 					<StatusBadge label="İç personel" tone="info" />
 				{/if}
-				<Button type="button" variant="secondary" onclick={() => (formOpen = true)}
-					>Düzenle</Button
-				>
+				<Button type="button" variant="secondary" onclick={() => (formOpen = true)}>Düzenle</Button>
 			{/snippet}
 		</PageHeader>
 
-		<dl class="mb-4 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+		<dl
+			class="mb-4 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
+		>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr]">
 				<dt class="text-xs font-medium text-text-muted">Telefon</dt>
 				<dd class="text-sm tabular-nums">{contact.phone ?? '—'}</dd>
@@ -132,7 +123,10 @@
 		{#if linkedPatient}
 			<section class="mb-4 rounded-lg border border-border bg-surface p-4">
 				<h2 class="mb-2 text-sm font-semibold">Bağlı hasta</h2>
-				<a href={`/patients/${linkedPatient.id}`} class="text-sm font-medium text-brand hover:underline">
+				<a
+					href={`/patients/${linkedPatient.id}`}
+					class="text-sm font-medium text-brand hover:underline"
+				>
 					{linkedPatient.full_name} →
 				</a>
 			</section>
@@ -141,7 +135,7 @@
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between gap-2">
 				<h2 class="text-sm font-semibold">Finans özeti</h2>
-				<a href={`/finance/balances`} class="text-xs text-brand hover:underline">Bakiyeler →</a>
+				<a href="/finance/balances" class="text-xs text-brand hover:underline">Bakiyeler →</a>
 			</div>
 			{#if txQuery.isPending}
 				<p class="text-sm text-text-muted">Yükleniyor…</p>

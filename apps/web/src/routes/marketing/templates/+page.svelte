@@ -196,7 +196,9 @@
 					</div>
 				</div>
 			{:else}
-				<p class="text-sm text-text-muted">Geçerli bir bütçe girildiğinde dağılım burada görünür.</p>
+				<p class="text-sm text-text-muted">
+					Geçerli bir bütçe girildiğinde dağılım burada görünür.
+				</p>
 			{/if}
 		</section>
 	</div>

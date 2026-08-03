@@ -16,11 +16,11 @@ Doğru sıra (prerender önce, fallback en sonda):
 try_files $uri $uri/index.html $uri/ /index.html;
 ```
 
-| İstek | Eşleşme |
-|---|---|
+| İstek                     | Eşleşme                                 |
+| ------------------------- | --------------------------------------- |
 | `/vitrin` veya `/vitrin/` | `$uri/index.html` → `vitrin/index.html` |
-| `/patients` | dosya yok → `/index.html` (SPA) |
-| `/robots.txt` | `$uri` → `robots.txt` |
+| `/patients`               | dosya yok → `/index.html` (SPA)         |
+| `/robots.txt`             | `$uri` → `robots.txt`                   |
 
 `npx serve … -s` bu sırayı garanti etmez; lokal doğrulama için aşağıdaki nginx
 örneğini veya `pnpm --filter @verimaya/web preview` kullan.
@@ -38,13 +38,13 @@ try_files $uri $uri/index.html $uri/ /index.html;
 
 Coolify **Application** (önerilen — `try_files` sırası garantili):
 
-| Ayar | Değer |
-|---|---|
-| Dockerfile | `apps/web/Dockerfile` |
-| Build context | monorepo kökü |
-| Port | `80` |
-| Domain | `verimaya.com` + `app.verimaya.com` (aynı imaj); nginx apex `/` → hub.html |
-| Build args | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false` |
+| Ayar          | Değer                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| Dockerfile    | `apps/web/Dockerfile`                                                                           |
+| Build context | monorepo kökü                                                                                   |
+| Port          | `80`                                                                                            |
+| Domain        | `verimaya.com` + `app.verimaya.com` (aynı imaj); nginx apex `/` → hub.html                      |
+| Build args    | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false` |
 
 ```bash
 docker build -f apps/web/Dockerfile \

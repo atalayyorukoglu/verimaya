@@ -123,8 +123,7 @@
 						<div class="flex flex-wrap items-center gap-2">
 							<p class="font-medium text-text">{cat.name}</p>
 							<span
-								class="rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold {cat.kind ===
-								'income'
+								class="rounded-[4px] px-1.5 py-0.5 text-[10px] font-semibold {cat.kind === 'income'
 									? 'bg-success/15 text-success'
 									: 'bg-surface-2 text-text-muted'}"
 							>
@@ -163,8 +162,8 @@
 	{/if}
 
 	<p class="mt-4 text-xs text-text-faint">
-		Raporlar → Kategori sekmesi bu sözlüğü kullanacak (Faz 1’de sunucu tarafı bağlanır). Demo’da işlem
-		`subtitle` alanları bu alt kategorilerle uyumlu seed edildi.
+		Raporlar → Kategori sekmesi bu sözlüğü kullanacak (Faz 1’de sunucu tarafı bağlanır). Demo’da
+		işlem `subtitle` alanları bu alt kategorilerle uyumlu seed edildi.
 	</p>
 </div>
 
@@ -189,8 +188,7 @@
 			<textarea
 				class="min-h-20 w-full rounded-[6px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
 				bind:value={formSubs}
-				placeholder="Virgülle ayır: Saç ekimi, İmplant, Genel"
-			></textarea>
+				placeholder="Virgülle ayır: Saç ekimi, İmplant, Genel"></textarea>
 		</label>
 		<div class="mt-2 flex justify-end gap-2">
 			<Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>İptal</Button>

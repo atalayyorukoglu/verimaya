@@ -93,7 +93,9 @@
 		{:else}
 			{#each items as note (note.id)}
 				<div class="rounded-[6px] border border-border bg-surface px-3 py-2 text-sm shadow-sm">
-					<div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs text-text-faint">
+					<div
+						class="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs text-text-faint"
+					>
 						<span class="min-w-0 font-medium text-text-muted">{note.author_display_name}</span>
 						<div class="flex shrink-0 items-center gap-1.5">
 							<time datetime={note.created_at} class="tabular-nums">

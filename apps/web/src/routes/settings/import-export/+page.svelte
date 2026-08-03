@@ -13,11 +13,11 @@
 		title="İçe / dışa aktar"
 		description="Contacts, hastalar, randevular, işlemler — önizle sonra uygula."
 	/>
-	<div class="rounded-lg border border-border bg-surface p-6 sm:p-8 text-center">
+	<div class="rounded-lg border border-border bg-surface p-6 text-center sm:p-8">
 		<p class="text-sm font-medium text-text">Faz 8’de</p>
 		<p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-text-muted">
-			Tracker’daki import/export/delete Ayarlar’a gömülüydü ve toplu silme riskliydi. Verimaya’da ETL
-			+ kontrollü migrasyon; bu ekran şimdilik yer tutucu.
+			Tracker’daki import/export/delete Ayarlar’a gömülüydü ve toplu silme riskliydi. Verimaya’da
+			ETL + kontrollü migrasyon; bu ekran şimdilik yer tutucu.
 		</p>
 		<a
 			href="/features"

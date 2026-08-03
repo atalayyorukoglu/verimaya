@@ -93,7 +93,11 @@ export async function apiSend<T>(
 }
 
 /** Multipart upload (do not set Content-Type — browser sets boundary). */
-export async function apiUpload<T>(path: string, formData: FormData, init?: RequestInit): Promise<T> {
+export async function apiUpload<T>(
+	path: string,
+	formData: FormData,
+	init?: RequestInit
+): Promise<T> {
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
 		...(mockHeaders() as Record<string, string>)

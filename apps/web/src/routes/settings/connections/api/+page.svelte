@@ -143,7 +143,8 @@
 	}
 
 	async function removeWebhook(subscription: WebhookSubscription) {
-		if (!confirm(`“${subscription.url}” için abonelik silinsin mi? Bu işlem geri alınamaz.`)) return;
+		if (!confirm(`“${subscription.url}” için abonelik silinsin mi? Bu işlem geri alınamaz.`))
+			return;
 		await apiSend(apiPaths.webhookSubscription(subscription.id), 'DELETE');
 		await queryClient.invalidateQueries({ queryKey: ['settings', 'webhook-subscriptions'] });
 	}
@@ -173,7 +174,8 @@
 				<div class="min-w-0">
 					<h2 class="text-sm font-semibold text-text">API anahtarları</h2>
 					<p class="mt-1 text-sm leading-relaxed text-text-muted">
-						Tenant'a özel, scope'lu anahtarlar. Anahtar yalnızca oluşturma anında bir kez gösterilir.
+						Tenant'a özel, scope'lu anahtarlar. Anahtar yalnızca oluşturma anında bir kez
+						gösterilir.
 					</p>
 				</div>
 			</div>
@@ -190,7 +192,8 @@
 						<KeyRound class="size-5" />
 					</span>
 					<p class="text-sm font-medium text-text">Henüz aktif anahtar yok</p>
-					<Button class="mt-2" type="button" size="sm" onclick={openCreate}>İlk anahtarı oluştur</Button
+					<Button class="mt-2" type="button" size="sm" onclick={openCreate}
+						>İlk anahtarı oluştur</Button
 					>
 				</div>
 			{:else}

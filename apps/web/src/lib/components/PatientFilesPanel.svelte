@@ -36,7 +36,11 @@
 
 	const files = $derived(filesQuery.data?.items ?? []);
 
-	function putWithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+	function putWithProgress(
+		url: string,
+		file: File,
+		onProgress: (pct: number) => void
+	): Promise<void> {
 		return new Promise((resolve, reject) => {
 			const xhr = new XMLHttpRequest();
 			xhr.open('PUT', url);

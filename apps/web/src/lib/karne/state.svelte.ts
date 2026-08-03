@@ -59,11 +59,7 @@ export function hydrateKarneFromSession(): void {
 	intakeIndex = Math.min(Math.max(saved.intakeIndex, 0), intakeQuestions.length - 1);
 	questionIndex = Math.min(Math.max(saved.questionIndex ?? 0, 0), karneQuestions.length - 1);
 	answers = { ...(saved.answers ?? {}) };
-	if (
-		saved.step === 'intake' ||
-		saved.step === 'questions' ||
-		saved.step === 'result'
-	) {
+	if (saved.step === 'intake' || saved.step === 'questions' || saved.step === 'result') {
 		step = saved.step;
 	}
 }

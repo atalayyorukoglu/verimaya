@@ -81,7 +81,7 @@ Opus'un bakması gereken bir yer yok.
 ---
 
 ### 0.2 — Lint ve format borcunu kapat
-- [ ] Yapıldı
+- [x] Yapıldı
 
 Denetim anında 10 ESLint hatası ve 46 dosyada Prettier farkı vardı. Bunları **tek ve ayrı** bir
 commit'te kapat — davranış değiştiren hiçbir düzeltme bu commit'e girmesin. ESLint hatası ancak
@@ -91,7 +91,27 @@ davranış değiştirerek kapanıyorsa o dosyayı atla ve Görüş'te listele.
 - **Kabul:** `pnpm lint` ve `pnpm format:check` (yoksa `prettier --check .`) sıfır hata.
 - **Model:** Composer 2.5 Standard · düşük reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** Repo genelinde yalnız `apps/web`'in `lint` script'i gerçek Prettier+ESLint çalıştırıyor
+(`prettier --check . && eslint .`); `apps/api`'nin `lint`'i `tsc --noEmit`, `packages/shared`'da hiç
+`lint`/`format` script'i yok — dolayısıyla "10 ESLint hatası / 46 dosyada Prettier farkı" tamamen
+`apps/web` kapsamındaymış (doğrulandı: 10 ESLint hatası, 45 dosyada Prettier farkı — sayı çok yakın,
+muhtemelen denetim sonrası küçük bir dosya değişikliğinden). Tüm düzeltmeler davranış değiştirmeden
+yapıldı: kullanılmayan import/değişken/atama temizliği, `TransactionFormDialog.svelte` ve
+`finance/ai-transaction/+page.svelte`'de her koşul dalında yeniden atanan değişkenlerin gereksiz
+`= null` başlangıç değerleri kaldırıldı (control-flow her durumda kullanımdan önce atıyor).
+`HubHome.svelte`'de gerçek bir parse hatası vardı: `{@html}` içindeki JSON-LD `<script>` template
+literal'inde ham `</script>` dizisi Svelte parser'ını kilitliyordu; `<\/script>` kaçışıyla çözüldü —
+bu üretilen string'i **değiştirmiyor** (JS'te `\/` == `/`), yalnız parser'ı doğru yönlendiriyor.
+Ortaya çıkan iki ek kural (svelte/no-at-html-tags, no-useless-escape) gerekçeli
+`eslint-disable-next-line` ile kapatıldı (statik JSON-LD, kullanıcı girdisi yok → XSS riski yok).
+Kalan diff tamamen Prettier'ın deterministik SVG/attribute biçimlendirmesi (ör.
+`LogoHorizontal.svelte`'deki büyük görünen diff, satır kırılımı dışında birebir aynı whitespace).
+Node_modules kurulumu ve `pnpm`/`turbo` komutları bu oturumda mounted proje klasöründe SQLite
+"readonly database" hatasıyla çalışmadı (muhtemelen bind-mount sınırlamaları); iş `/tmp` üzerinde
+hızlı bir kopya ile yapıldı, sonuçlar yalnız değişen dosyalarla mounted repoya geri kopyalandı.
+Opus'un bakması gereken yer: `HubHome.svelte`'deki eslint-disable gerekçesi ve
+`TransactionFormDialog`/`ai-transaction` sayfasındaki tip daraltmalarının (`let x: T | null;`
+initializer'sız) gerçekten her code path'te atandığını bağımsız doğrulamak.
 
 ---
 

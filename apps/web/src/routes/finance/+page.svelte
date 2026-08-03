@@ -4,12 +4,16 @@
 	import type {
 		ContractResponse,
 		InboundMessage,
-		Patient,
 		Transaction,
 		TransactionCreate,
 		TransactionUpdate
 	} from '@verimaya/shared';
-	import { apiPaths, listUrl, transactionKindLabels, transactionStatusLabels } from '@verimaya/shared';
+	import {
+		apiPaths,
+		listUrl,
+		transactionKindLabels,
+		transactionStatusLabels
+	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { transactionStatusTone } from '$lib/status-tone';

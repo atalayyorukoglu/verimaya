@@ -197,7 +197,7 @@
 	{:else if currentQuery.isError}
 		<p class="text-sm text-destructive">{t('scorecard.loadError')}</p>
 	{:else if !currentQuery.data?.profile}
-		<section class="rounded-lg border border-border bg-surface p-5 space-y-4">
+		<section class="space-y-4 rounded-lg border border-border bg-surface p-5">
 			<h2 class="text-base font-semibold text-text">{t('scorecard.setup.title')}</h2>
 			<label class="block text-sm text-text">
 				<span class="text-text-muted">{t('scorecard.setup.band')}</span>
@@ -210,11 +210,7 @@
 					{/each}
 				</select>
 			</label>
-			{#each [
-				{ key: 's1' as const, get: () => setupS1, set: (v: boolean) => (setupS1 = v), label: 'scorecard.setup.s1' as MessageKey },
-				{ key: 's2' as const, get: () => setupS2, set: (v: boolean) => (setupS2 = v), label: 'scorecard.setup.s2' as MessageKey },
-				{ key: 's3' as const, get: () => setupS3, set: (v: boolean) => (setupS3 = v), label: 'scorecard.setup.s3' as MessageKey }
-			] as q (q.key)}
+			{#each [{ key: 's1' as const, get: () => setupS1, set: (v: boolean) => (setupS1 = v), label: 'scorecard.setup.s1' as MessageKey }, { key: 's2' as const, get: () => setupS2, set: (v: boolean) => (setupS2 = v), label: 'scorecard.setup.s2' as MessageKey }, { key: 's3' as const, get: () => setupS3, set: (v: boolean) => (setupS3 = v), label: 'scorecard.setup.s3' as MessageKey }] as q (q.key)}
 				<fieldset class="text-sm">
 					<legend class="text-text-muted">{t(q.label)}</legend>
 					<div class="mt-2 flex gap-3">
@@ -263,7 +259,7 @@
 
 		<!-- 1. Primary: zeros -->
 		<section class="mb-6 rounded-lg border border-border bg-surface p-6">
-			<p class="text-xs font-medium uppercase tracking-wide text-text-muted">
+			<p class="text-xs font-medium tracking-wide text-text-muted uppercase">
 				{t('scorecard.zeros.heading')}
 			</p>
 			<p class="mt-2 text-3xl font-semibold tracking-tight text-text sm:text-4xl">
@@ -319,7 +315,7 @@
 		<!-- 3. Secondary: percentage (small) -->
 		<section class="mb-8 rounded-lg border border-border bg-surface px-4 py-3">
 			<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-				<span class="text-xs font-medium uppercase tracking-wide text-text-muted">
+				<span class="text-xs font-medium tracking-wide text-text-muted uppercase">
 					{t('scorecard.percentage.label')}
 				</span>
 				<span class="text-sm font-medium text-text">
@@ -359,21 +355,21 @@
 								<div class="mt-2 flex flex-wrap gap-2">
 									{#if ans?.source === 'auto'}
 										<span
-											class="rounded border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-text-muted"
+											class="rounded border border-border px-1.5 py-0.5 text-[10px] tracking-wide text-text-muted uppercase"
 										>
 											{t('scorecard.autoFilledBadge')}
 										</span>
 									{/if}
 									{#if showNa}
 										<span
-											class="rounded border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-text-muted"
+											class="rounded border border-border px-1.5 py-0.5 text-[10px] tracking-wide text-text-muted uppercase"
 										>
 											{t('scorecard.naBadge')}
 										</span>
 									{/if}
 								</div>
 								{#if ans?.evidence_note}
-									<p class="mt-2 break-words text-xs text-text-muted">{ans.evidence_note}</p>
+									<p class="mt-2 text-xs break-words text-text-muted">{ans.evidence_note}</p>
 								{/if}
 								{#if criterion.id === '7.6'}
 									<a
@@ -386,7 +382,7 @@
 							</div>
 							{#if inDenom && !data.assessment.completed_at}
 								<div class="shrink-0">
-									<p class="mb-1 text-[10px] uppercase tracking-wide text-text-muted">
+									<p class="mb-1 text-[10px] tracking-wide text-text-muted uppercase">
 										{t('scorecard.scoreLabel')}
 									</p>
 									<div class="flex gap-1">

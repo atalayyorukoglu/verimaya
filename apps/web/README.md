@@ -6,10 +6,10 @@ SvelteKit SPA (Svelte 5 runes). Varsayılan olarak gerçek NestJS API'ye bağlan
 
 `apps/web/.env.example` dosyasını `.env` olarak kopyalayın:
 
-| Değişken | Varsayılan | Açıklama |
-|---|---|---|
-| `PUBLIC_API_URL` | `http://localhost:3000` | NestJS API kökeni |
-| `PUBLIC_USE_MSW` | `false` | `false`: gerçek API; `true`: API'siz demo — dev'de MSW mock açılır |
+| Değişken         | Varsayılan              | Açıklama                                                           |
+| ---------------- | ----------------------- | ------------------------------------------------------------------ |
+| `PUBLIC_API_URL` | `http://localhost:3000` | NestJS API kökeni                                                  |
+| `PUBLIC_USE_MSW` | `false`                 | `false`: gerçek API; `true`: API'siz demo — dev'de MSW mock açılır |
 
 ## API'siz demo (MSW)
 

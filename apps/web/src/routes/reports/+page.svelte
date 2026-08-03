@@ -115,9 +115,7 @@
 		return { from: null as string | null, to: null as string | null };
 	});
 
-	const periodText = $derived(
-		periodLabel(periodKey, dateRange.from ?? '', dateRange.to ?? '')
-	);
+	const periodText = $derived(periodLabel(periodKey, dateRange.from ?? '', dateRange.to ?? ''));
 
 	const txQuery = createQuery(() => ({
 		queryKey: ['transactions', { for: 'reports', from: dateRange.from, to: dateRange.to }],
@@ -134,9 +132,7 @@
 	const summaryQuery = createQuery(() => ({
 		queryKey: ['reports', 'summary', { from: dateRange.from, to: dateRange.to }],
 		queryFn: () =>
-			apiGet<ReportSummary>(
-				reportUrl('summary', { from: dateRange.from, to: dateRange.to })
-			),
+			apiGet<ReportSummary>(reportUrl('summary', { from: dateRange.from, to: dateRange.to })),
 		enabled: !USE_MSW
 	}));
 
@@ -176,17 +172,14 @@
 
 	const monthlyQuery = createQuery(() => ({
 		queryKey: ['reports', 'monthly', monthlyRange],
-		queryFn: () =>
-			apiGet<ReportMonthly>(reportUrl('monthly', monthlyRange)),
+		queryFn: () => apiGet<ReportMonthly>(reportUrl('monthly', monthlyRange)),
 		enabled: !USE_MSW
 	}));
 
 	const marketingQuery = createQuery(() => ({
 		queryKey: ['reports', 'marketing', { from: dateRange.from, to: dateRange.to }],
 		queryFn: () =>
-			apiGet<MarketingReport>(
-				marketingReportUrl({ from: dateRange.from, to: dateRange.to })
-			)
+			apiGet<MarketingReport>(marketingReportUrl({ from: dateRange.from, to: dateRange.to }))
 	}));
 
 	const tenantQuery = createQuery(() => ({
@@ -201,9 +194,7 @@
 
 	const transactions = $derived(txQuery.data?.items ?? []);
 	const patients = $derived(patientsQuery.data?.items ?? []);
-	const baseCurrency = $derived(
-		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
-	);
+	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	const filteredTx = $derived(
 		kindFilter === 'all' ? transactions : transactions.filter((t) => t.kind === kindFilter)
@@ -591,12 +582,7 @@
 			<p class="text-xs font-semibold text-text">{periodText}</p>
 		</div>
 		<div class="mt-2 flex flex-wrap gap-1.5">
-			{#each [
-				{ key: 'bu-ay', label: 'Bu ay' },
-				{ key: 'gecen-ay', label: 'Geçen ay' },
-				{ key: 'tum', label: 'Tüm zamanlar' },
-				{ key: 'ozel', label: 'Özel' }
-			] as opt (opt.key)}
+			{#each [{ key: 'bu-ay', label: 'Bu ay' }, { key: 'gecen-ay', label: 'Geçen ay' }, { key: 'tum', label: 'Tüm zamanlar' }, { key: 'ozel', label: 'Özel' }] as opt (opt.key)}
 				<button
 					type="button"
 					class="cursor-pointer rounded-[6px] px-2.5 py-1.5 text-xs font-medium transition-colors {periodKey ===
@@ -855,7 +841,7 @@
 				{#if marketing.by_source.length === 0}
 					<p class="mt-4 text-sm text-text-muted">Veri yok.</p>
 				{:else}
-					<div class="mt-4 -mx-1 overflow-x-auto">
+					<div class="-mx-1 mt-4 overflow-x-auto">
 						<table class="w-full min-w-[28rem] text-left text-sm">
 							<thead>
 								<tr class="border-b border-border text-xs text-text-muted">
@@ -869,13 +855,13 @@
 								{#each marketing.by_source as row (row.source)}
 									<tr>
 										<td class="px-1 py-2.5 font-medium text-text">{row.source}</td>
-										<td class="px-1 py-2.5 text-right tabular-nums text-text">
+										<td class="px-1 py-2.5 text-right text-text tabular-nums">
 											{row.leads}
 										</td>
-										<td class="px-1 py-2.5 text-right tabular-nums text-text">
+										<td class="px-1 py-2.5 text-right text-text tabular-nums">
 											{row.closed}
 										</td>
-										<td class="px-1 py-2.5 text-right tabular-nums text-text">
+										<td class="px-1 py-2.5 text-right text-text tabular-nums">
 											{formatMoney(row.revenue_base, baseCurrency)}
 										</td>
 									</tr>
@@ -1070,9 +1056,7 @@
 
 			<ul class="space-y-2">
 				{#each subcategoryRows as tx (tx.id)}
-					<li
-						class="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-surface p-3"
-					>
+					<li class="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-surface p-3">
 						<div class="min-w-0 flex-1">
 							<p class="truncate text-sm font-medium text-text">{tx.title}</p>
 							<p class="mt-0.5 text-xs text-text-faint">
@@ -1115,7 +1099,8 @@
 
 	<p class="mt-4 text-xs text-text-faint">
 		{#if USE_MSW}
-			Demo: dönem filtresi MSW üzerinden; özet/kategori istemcide, pazarlama raporu mock endpoint’ten.
+			Demo: dönem filtresi MSW üzerinden; özet/kategori istemcide, pazarlama raporu mock
+			endpoint’ten.
 		{:else}
 			Özet, kategori ve pazarlama toplamları sunucu aggregate endpoint'lerinden gelir; grafik ve
 			drill-down için işlem listesi ayrıca yüklenir.

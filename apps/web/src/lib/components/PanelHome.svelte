@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { Appointment, InboundMessage, Patient, ReportSummary, Tenant } from '@verimaya/shared';
+	import type {
+		Appointment,
+		InboundMessage,
+		Patient,
+		ReportSummary,
+		Tenant
+	} from '@verimaya/shared';
 	import { patientStatusLabels, reportUrl } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { USE_MSW } from '$lib/env';
@@ -217,22 +223,7 @@
 	<section>
 		<h2 class="mb-3 text-sm font-semibold text-text">Özet metrikler</h2>
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [
-				{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' },
-				{ label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' },
-				{ label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' },
-				{
-					label: 'Net (bu ay)',
-					value:
-						!USE_MSW && canFinance && summaryQuery.data
-							? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY')
-							: tenantQuery.data?.base_currency ?? '—',
-					hint:
-						!USE_MSW && canFinance
-							? 'Sunucu aggregate'
-							: (tenantQuery.data?.name ?? 'Organizasyon')
-				}
-			] as card (card.label)}
+			{#each [{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' }, { label: 'Net (bu ay)', value: !USE_MSW && canFinance && summaryQuery.data ? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY') : (tenantQuery.data?.base_currency ?? '—'), hint: !USE_MSW && canFinance ? 'Sunucu aggregate' : (tenantQuery.data?.name ?? 'Organizasyon') }] as card (card.label)}
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{card.label}</p>
 					<p class="mt-1 text-2xl font-semibold tracking-tight text-text">{card.value}</p>
