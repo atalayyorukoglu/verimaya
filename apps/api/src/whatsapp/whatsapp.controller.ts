@@ -23,6 +23,7 @@ import {
 	getIdempotencyKey
 } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
+import { Idempotent, IdempotencyExempt } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -41,6 +42,9 @@ export class WhatsappController {
 
 	@Post('parse')
 	@RequireOrgPermission('patient', 'create')
+	@IdempotencyExempt(
+		'Stateless LLM preview parse — returns draft suggestions without persisting a domain record (only a best-effort usage ledger write); nothing for a retry to duplicate.'
+	)
 	async parse(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const { message } = parseBody(whatsappParseRequestSchema, body, req);
 		const records = await this.whatsappService.parseMessage(getActiveOrgId(req), message);
@@ -66,18 +70,27 @@ export class WhatsappController {
 
 	@Post('inbox/process')
 	@RequireOrgPermission('patient', 'update')
+	@IdempotencyExempt(
+		"Naturally idempotent by query, not by key: only status='new' rows are parsed (see WhatsappService.processInbox), so re-running after a partial/retried call just skips rows already moved past 'new'."
+	)
 	processInbox(@Req() req: FastifyRequest) {
 		return this.whatsappService.processInbox(getActiveOrgId(req));
 	}
 
 	@Post('inbox/:id/parse')
 	@RequireOrgPermission('patient', 'update')
+	@IdempotencyExempt(
+		'Re-parse overwrites the same inbox row\'s payload.parsed_records in place — no new resource is created, so a retry cannot duplicate anything (it can only re-run the LLM call).'
+	)
 	parseInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.parseInboxItem(getActiveOrgId(req), id);
 	}
 
 	@Post('inbox/:id/approve')
 	@RequireOrgPermission('patient', 'update')
+	@IdempotencyExempt(
+		"Sets inbox status to a fixed value ('approved'); PUT-like semantics — repeat calls converge to the same state. (Not the money path: that's approve-drafts below.)"
+	)
 	approveInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.approveInboxItem(getActiveOrgId(req), id);
 	}
@@ -88,6 +101,7 @@ export class WhatsappController {
 	 */
 	@Post('inbox/:id/approve-drafts')
 	@RequireOrgPermission('finance', 'create')
+	@Idempotent()
 	async approveDrafts(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -101,7 +115,7 @@ export class WhatsappController {
 			tenantId,
 			getIdempotencyKey(req),
 			'POST',
-			`/v1/whatsapp/inbox/${id}/approve-drafts`,
+			'/v1/whatsapp/inbox/:id/approve-drafts',
 			async (db) => ({
 				statusCode: 201,
 				body: await this.whatsappService.approveDraftsWithDb(
@@ -119,12 +133,18 @@ export class WhatsappController {
 
 	@Post('inbox/:id/ignore')
 	@RequireOrgPermission('patient', 'update')
+	@IdempotencyExempt(
+		"Sets inbox status to a fixed value ('ignored'); PUT-like semantics — repeat calls converge to the same state."
+	)
 	ignoreInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.ignoreInboxItem(getActiveOrgId(req), id);
 	}
 
 	@Post('corrections')
 	@RequireOrgPermission('patient', 'create')
+	@IdempotencyExempt(
+		'Standalone correction-log write, not called by the web client today (corrections are created atomically inside approve-drafts — MONEY-01); reachable only via direct API/API-key access. ai_corrections is a diff/analytics log, not a financial or domain record, so a duplicate row on retry is a data-quality nit, not a customer-facing risk. Wire this like createFinanceCategory (below) if/when a real caller appears.'
+	)
 	createCorrection(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const input = parseBody(aiCorrectionCreateSchema, body, req);
 		const actor = getActorFromRequest(req);

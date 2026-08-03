@@ -23,6 +23,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { max, eq } from 'drizzle-orm';
 import { ActiveOrgGuard, getActiveOrgId } from '../../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../../common/auth-or-api-key.guard';
+import { IdempotencyExempt } from '../../common/idempotent.decorator';
 import { OrgPermissionGuard } from '../../common/org-permission.guard';
 import { RequireOrgPermission } from '../../common/require-org-permission.decorator';
 import { adMetricsDaily } from '../../db/schema';
@@ -87,6 +88,9 @@ export class AdsController {
 	@Patch('google/customer-id')
 	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'Re-stores the credential with the given customer_id via storeCredential (upsert-by-provider); repeat calls converge to the same stored value — PUT-like semantics despite the PATCH verb.'
+	)
 	async updateGoogleCustomerId(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown
@@ -159,6 +163,9 @@ export class AdsController {
 	@HttpCode(204)
 	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE-by-provider; deleting an already-removed credential is a silent 0-row no-op, not an error — naturally idempotent.'
+	)
 	async disconnect(@Req() req: FastifyRequest, @Param('provider') providerParam: string) {
 		const provider = this.registry.parseProvider(providerParam);
 		await this.settings.deleteCredential(getActiveOrgId(req), provider);

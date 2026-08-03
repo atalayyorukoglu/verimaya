@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
+import { IdempotencyExempt } from '../common/idempotent.decorator';
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { integrationEvents, jobs } from '../db/schema/queue';
 import { DEFAULT_QUEUE_NAME, QueueService } from '../queue/queue.service';
@@ -111,7 +112,17 @@ function validateHmacWebhookRequest(
 	};
 }
 
+/**
+ * Inbound provider webhook receivers — HMAC-signed, no Idempotency-Key header (providers don't
+ * send one). Dedup is via provider event id against integration_events/inbound_messages unique
+ * constraints, not IdempotencyService — see the class decorator below (IDEM-01, Faz 4.1's
+ * mandatory-coverage inventory, idempotency-coverage.spec.ts) and EVENT-01 (Faz 4.2, this
+ * file's race-safety fix) for the two different but related concerns.
+ */
 @Controller('webhooks')
+@IdempotencyExempt(
+	'Inbound provider webhook receiver — providers never send our Idempotency-Key header. Dedup is via provider event id (integration_events/inbound_messages unique constraints), not IdempotencyService.'
+)
 export class WebhooksController {
 	constructor(
 		private readonly config: ConfigService,

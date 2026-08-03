@@ -126,7 +126,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			tenantId,
 			key,
 			'POST',
-			`/v1/whatsapp/inbox/${inboxId}/approve-drafts`,
+			'/v1/whatsapp/inbox/:id/approve-drafts',
 			async (db) => ({
 				statusCode: 201,
 				body: await whatsappService.approveDraftsWithDb(db, tenantId, inboxId, input, null)
@@ -141,7 +141,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			tenantId,
 			key,
 			'POST',
-			`/v1/whatsapp/inbox/${inboxId}/approve-drafts`,
+			'/v1/whatsapp/inbox/:id/approve-drafts',
 			async (db) => ({
 				statusCode: 201,
 				body: await whatsappService.approveDraftsWithDb(db, tenantId, inboxId, input, null)
@@ -194,7 +194,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 				tenantId,
 				`money01-rb-${randomUUID()}`,
 				'POST',
-				`/v1/whatsapp/inbox/${freshInbox}/approve-drafts`,
+				'/v1/whatsapp/inbox/:id/approve-drafts',
 				async (db) => ({
 					statusCode: 201,
 					body: await whatsappService.approveDraftsWithDb(

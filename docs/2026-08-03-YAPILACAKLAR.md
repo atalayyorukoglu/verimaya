@@ -698,7 +698,7 @@ patients.service satır etiketindeki slice kapsam dışı bırakıldı.
 ## Faz 4 — Platform sağlamlığı
 
 ### 4.1 — IDEM-01: Idempotency kimliğini düzelt, tüm mutation'ları kapsa
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `apps/api/src/common/idempotency.service.ts:23-37` replay lookup'ı **yalnız `key`** ile yapıyor;
 `method` ve `path` kaydediliyor ama sorguya girmiyor. Aynı tenant'ta aynı key farklı endpoint'te
@@ -719,7 +719,94 @@ Yap:
   endpoint ya idempotent ya da gerekçeli istisna.
 - **Model:** Claude Opus 5 · yüksek reasoning · dar kanıt paketi (migration + geri dönüşsüz karar)
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `idempotency.service.ts`'in lookup'ı artık `tenant_id + key + method + normalizedPath`
+ile sorguluyor (`and(eq(key), eq(method), eq(normalizedPath))`); şema kolonu `path` →
+`normalized_path` olarak yeniden adlandırıldı ve unique index
+`idempotency_keys_tenant_key_uidx (tenant_id, key)` → `idempotency_keys_tenant_key_method_path_uidx
+(tenant_id, key, method, normalized_path)` genişletildi (migration `0021_idempotency_key_scope.sql`).
+`normalized_path` her zaman **route şablonu** (`/v1/patients/:id`), hiçbir zaman gerçek id'li
+çözümlenmiş yol değil — her çağrı noktası artık literal şablon string'i geçiyor (önceden bazıları
+`` `/v1/patients/${id}` `` gibi id'yi gömüyordu). Bunun güvenli olduğunun gerekçesi:
+`apps/web/src/lib/api.ts`'teki `newIdempotencyKey()` her mutation'da **taze bir UUID** üretiyor
+(3.1'de eklendi, doğruladım) — yani aynı key'in iki **farklı kaynağa** (ör. hasta A ve hasta B)
+kasıtlı olarak yeniden kullanılması zaten olmuyor; şablon-tabanlı kapsam yalnız "aynı key yanlış
+endpoint'e karşı replay edilsin" sınıfı hatayı kapatıyor, "aynı key farklı kaynağa" senaryosunu
+zaten üretmeyen bir istemci davranışına dayanıyor. **Migration/geri dönük strateji (madde 2):**
+**truncate etmedim.** Eski unique index zaten `(tenant_id, key)` idi, yani hiçbir eski satır yeni,
+daha geniş `(tenant_id, key, method, normalized_path)` index'ini ihlal edemez — migration eski
+veriyle asla çakışmaz. Eski satırlar yeniden adlandırılan kolonda eski-stil çözümlenmiş yol
+tutmaya devam eder ama bu zararsızdır: idempotency key'leri tek kullanımlık, taze üretilen
+token'lar olduğu için hiçbir gelecekteki istek eski bir key değerini tekrar sunup o satırla
+eşleşmeyecek. Temiz bir tablo isteniyorsa `TRUNCATE TABLE idempotency_keys;` her zaman güvenli
+bir manuel adım.
+
+**Kapsam dışına eklenen bir sağlamlaştırma:** `run()`'ı artık bir `try/catch` sarıyor —
+eşzamanlı iki istek aynı tenant+key+method+path ile select-then-insert yarışını kaybederse
+(ikisi de "yok" görüp handler'ı çalıştırırsa), kaybedenin INSERT'i yeni unique index'te `23505`
+alır; Postgres o transaction'ı (handler'ın tüm yan etkileriyle birlikte — ör. MONEY-01'in yazdığı
+transaction'lar) zaten geri almış oluyor, ben yalnız hatayı yutup kazananın satırını tekrar
+okuyup `replayed: true` döndürüyorum, ham 500 yerine. Bunu istendi diye değil, "idempotent"
+iddiasının eşzamanlılık altında da doğru olması için ekledim — aynı sınıf risk EVENT-01'in
+(4.2) tam olarak kapattığı şeyle aynı, aynı dosyada (`common/postgres-errors.ts`, yeni,
+`isUniqueViolation()`) paylaşılan bir yardımcıyla.
+
+**Envanter + "zorunlu" mekanizması (madde 3):** Yeni `common/idempotent.decorator.ts`:
+`@Idempotent()` / `@IdempotencyExempt('gerekçe')`, metod veya sınıf seviyesinde uygulanabilir
+(metod önceliği var). Yeni `common/idempotency-coverage.spec.ts` (DB'siz, `controller-permissions
+.spec.ts`'in Reflect-tabanlı desenini izliyor ama envanteri **elle listelemek yerine** Nest'in
+kendi route metadata'sından — `METHOD_METADATA` — **programatik olarak** çıkarıyor): API'deki
+15 controller'ın tamamını tarayıp POST/PUT/PATCH/DELETE olan her handler'ı buluyor (**53 tane**)
+ve her birinin ya `enforced` ya da (boş olmayan gerekçeli) `exempt` işaretli olduğunu doğruluyor —
+gelecekte gerekçesiz bir mutating endpoint eklenirse bu test kırılır, "zorunlu" olan kısım bu.
+21'i `enforced` (7 controller zaten `idempotency.run()` kullanıyordu — patients/contacts/
+transactions/appointments/webhook-subscriptions/api-keys/whatsapp'ın approve-drafts'ı; ben
+`settings.createFinanceCategory` ve `settings.createContactType`'ı da bu listeye kattım —
+"settings... bu servisi hiç kullanmıyor" bulgusundaki en gerçek çift risk, sessiz/az-korunan
+insert'ler; `settingsService`'e `createFinanceCategoryWithDb`/`createContactTypeWithDb`
+eklendi, mevcut public metodlar bunlara delege ediyor — patients.service.ts'teki
+`create`/`createWithDb` deseniyle birebir). Kalan 32'si `exempt`, kategorik olarak: (a) doğası
+gereği idempotent — PUT/upsert semantiği (`putCredential`, `putTrustScore`, `putAiDisclosure`,
+`upsertAnswer`, `ads.updateGoogleCustomerId`) veya sabit-duruma-yakınsayan durum geçişleri
+(whatsapp `approveInboxItem`/`ignoreInboxItem`, scorecard `startAssessment`/`completeAssessment`
+zaten kod içinde "zaten açık/tamamlanmışsa aynını döndür" deseninde); (b) tasarım gereği tekrar
+üretemez (whatsapp `parseInboxItem`/`processInbox` — aynı satırı üzerine yazar, yeni kayıt
+yaratmaz; `patients.putFileContent` — aynı fileId'ye aynı byte'lar, storage nesnesi üzerine
+yazılır); (c) genel-amaçlı public/tenant-siz yüzeyler — `karne` (sınıf-seviyeli, dört endpoint
+birden) ve `webhooks` (sınıf-seviyeli — kendi EVENT-01 mekanizması var, bkz 4.2); (d) **dürüst,
+kapatılmamış boşluklar** — `whatsapp.createCorrection` (web istemcisi hiç çağırmıyor, corrections
+artık approve-drafts içinde atomik yaratılıyor — MONEY-01; yalnız doğrudan API erişimiyle
+ulaşılabilir, `ai_corrections` finansal değil analytics/diff log'u) ve
+`scorecard.startBaseline` (nadiren çağrılan, owner/admin-only, `startAssessment`'ın aksine
+"zaten açık" koruması yok) — ikisi de kod içi yorumda "createFinanceCategory gibi bağlanabilir,
+gerçek bir çağıran/sızıntı görülürse" notuyla bırakıldı, TODO olarak, kapatılmış gibi
+göstermedim. `settings`'in DELETE'leri (`removeFinanceCategory`/`removeContactType`) de exempt —
+ikinci silme 404 alır (sessiz tekrar değil), düşük riskli config verisi.
+
+**Doğrulama (bu sandbox'ta docker/Postgres yok — bkz. 0.3):** Bu oturumda önceki oturumlardan
+farklı olarak `/tmp` altında pnpm install'ı **gerçekten çalıştırabildim** (mounted repo kökündeki
+`.pnpm-store`'u değil, temiz bir store-dir kullanarak — mounted repo'nun kendi pnpm store'u hâlâ
+salt-okunur/sorunlu görünüyor, 0.2/1.2 bulgusuyla tutarlı, ama `/tmp`'e taşınan bir kopyada engel
+yok). `apps/api` `tsc --noEmit` (== `check`/`lint` script'i) **temiz**, tüm controller/service
+değişiklikleri dahil. `idempotency-coverage.spec.ts`: **5/5 yeşil** (53 handler bulundu, hepsi
+politikalı). `controller-permissions.spec.ts` (33 test) hâlâ **yeşil** — yeni decoratörlerin
+mevcut guard/permission metadata testleriyle çakışmadığını doğruluyor. Tüm `apps/api` paketi:
+**110 test yeşil** (önceki oturumun 105'inden +5, tam olarak yeni DB'siz coverage testleri kadar),
+kalan hepsi ECONNREFUSED (DB yok) veya 2 önceden-var-olan karne.isolation.spec.ts hatası (benim
+değişikliklerimden bağımsız, aynı hata bu oturumdan önceki log'da da var). Yeni yazılan
+`idempotency.isolation.spec.ts` (5 test: aynı key/method/path replay eder; farklı path replay
+**etmez**; farklı method replay **etmez**; farklı tenant birbirini etkilemez; eşzamanlı yarış
+500 vermez) ve güncellenen `approve-drafts.isolation.spec.ts` (path artık şablon) — ikisi de
+`ECONNREFUSED` ile duruyor, syntax/import hatası yok. **Doğrulanamayan:** migration'ın gerçek
+Postgres'e karşı çalıştığı, `idempotency.isolation.spec.ts`'in eşzamanlı yarış testinin
+connection pool'da (max 10) gerçek bir race'i tetikleyip tetiklemediği (kod doğru ama bu iddia
+yalnız DB'li ortamda kanıtlanabilir). **Opus'un bakması gereken yer:** (1) `scorecard.
+startBaseline` ve `whatsapp.createCorrection`'ın "ertelendi" kararının kabul edilebilir olup
+olmadığı — ikisi de gerçek, kapatılmamış duplicate-on-retry riski taşıyor, düşük öncelik
+gerekçesiyle bırakıldı; (2) `settings.controller.ts`'e eklenen `IdempotencyService` enjeksiyonunun
+`SettingsModule`'da zaten `CommonModule` import edildiği için modül grafiği değişmeden çalıştığı
+(doğru görünüyor, DB'siz doğrulandı); (3) `webhooks.controller.ts`'in bu commit'te yalnız
+sınıf-seviyeli `@IdempotencyExempt` decoratörünü aldığı, asıl EVENT-01 mantığının 4.2 commit'inde
+geldiği — dosya bilerek iki commit'e bölündü (aşağıda 4.2 Görüş'ünde neden).
 
 ---
 

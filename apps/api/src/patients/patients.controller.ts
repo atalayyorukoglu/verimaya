@@ -24,6 +24,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
+import { Idempotent, IdempotencyExempt } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -73,6 +74,7 @@ export class PatientsController {
 
 	@Post('merge')
 	@RequireOrgPermission('patient', 'delete')
+	@Idempotent()
 	async merge(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -134,6 +136,7 @@ export class PatientsController {
 
 	@Post(':id/files/presign')
 	@RequireOrgPermission('patient', 'update')
+	@Idempotent()
 	async presignFile(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -147,7 +150,7 @@ export class PatientsController {
 			tenantId,
 			getIdempotencyKey(req),
 			'POST',
-			`/v1/patients/${id}/files/presign`,
+			'/v1/patients/:id/files/presign',
 			async (db) => ({
 				statusCode: 201,
 				body: await this.patientsService.presignFileWithDb(db, tenantId, id, input, {
@@ -162,6 +165,9 @@ export class PatientsController {
 
 	@Put(':id/files/:fileId/content')
 	@RequireOrgPermission('patient', 'update')
+	@IdempotencyExempt(
+		'PUT of raw bytes onto an already-allocated fileId (from presign+confirm); re-uploading the same bytes overwrites the identical storage object — no duplicate-resource risk.'
+	)
 	async putFileContent(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -190,6 +196,7 @@ export class PatientsController {
 
 	@Post(':id/files/:fileId/confirm')
 	@RequireOrgPermission('patient', 'update')
+	@Idempotent()
 	async confirmFile(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -201,7 +208,7 @@ export class PatientsController {
 			tenantId,
 			getIdempotencyKey(req),
 			'POST',
-			`/v1/patients/${id}/files/${fileId}/confirm`,
+			'/v1/patients/:id/files/:fileId/confirm',
 			async (_db) => ({
 				statusCode: 200,
 				body: await this.patientsService.confirmFile(tenantId, id, fileId)
@@ -213,6 +220,7 @@ export class PatientsController {
 
 	@Post(':id/files')
 	@RequireOrgPermission('patient', 'update')
+	@Idempotent()
 	async createFile(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -245,7 +253,7 @@ export class PatientsController {
 				tenantId,
 				getIdempotencyKey(req),
 				'POST',
-				`/v1/patients/${id}/files`,
+				'/v1/patients/:id/files',
 				async (db) => ({
 					statusCode: 201,
 					body: await this.patientsService.uploadLocalFileWithDb(
@@ -295,6 +303,7 @@ export class PatientsController {
 
 	@Post()
 	@RequireOrgPermission('patient', 'create')
+	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -326,6 +335,7 @@ export class PatientsController {
 
 	@Patch(':id')
 	@RequireOrgPermission('patient', 'update')
+	@Idempotent()
 	async update(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -338,7 +348,7 @@ export class PatientsController {
 			tenantId,
 			getIdempotencyKey(req),
 			'PATCH',
-			`/v1/patients/${id}`,
+			'/v1/patients/:id',
 			async (db) => ({
 				statusCode: 200,
 				body: await this.patientsService.updateWithDb(db, id, input)
@@ -350,6 +360,7 @@ export class PatientsController {
 
 	@Delete(':id')
 	@RequireOrgPermission('patient', 'delete')
+	@Idempotent()
 	async remove(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -360,7 +371,7 @@ export class PatientsController {
 			tenantId,
 			getIdempotencyKey(req),
 			'DELETE',
-			`/v1/patients/${id}`,
+			'/v1/patients/:id',
 			async (db) => ({
 				statusCode: 200,
 				body: await this.patientsService.softDeleteWithDb(db, id)

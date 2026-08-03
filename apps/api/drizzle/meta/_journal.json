@@ -148,6 +148,13 @@
 			"when": 1753905000000,
 			"tag": "0020_tenant_timezone",
 			"breakpoints": true
+		},
+		{
+			"idx": 21,
+			"version": "7",
+			"when": 1753906000000,
+			"tag": "0021_idempotency_key_scope",
+			"breakpoints": true
 		}
 	]
 }

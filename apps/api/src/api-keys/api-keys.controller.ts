@@ -17,6 +17,7 @@ import {
 	getActiveOrgId,
 	getIdempotencyKey
 } from '../common/active-org.guard';
+import { Idempotent } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -39,6 +40,7 @@ export class ApiKeysController {
 
 	@Post()
 	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -62,6 +64,7 @@ export class ApiKeysController {
 
 	@Delete(':id')
 	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
 	async revoke(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -72,7 +75,7 @@ export class ApiKeysController {
 			tenantId,
 			getIdempotencyKey(req),
 			'DELETE',
-			`/v1/api-keys/${id}`,
+			'/v1/api-keys/:id',
 			async (db) => ({
 				statusCode: 200,
 				body: await this.apiKeysService.revokeWithDb(db, id)

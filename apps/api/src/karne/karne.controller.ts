@@ -7,6 +7,7 @@ import {
 	ServiceUnavailableException
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
+import { IdempotencyExempt } from '../common/idempotent.decorator';
 import { parseBody } from '../common/mappers';
 import {
 	karneCompleteSchema,
@@ -25,6 +26,9 @@ function karneLeadsEnabled(): boolean {
  * No AuthOrApiKeyGuard, no tenant context — writes only `karne_*` tables.
  */
 @Controller('public/karne')
+@IdempotencyExempt(
+	'Public, unauthenticated karne funnel — no tenant context. IdempotencyService is tenant-scoped (keys live in idempotency_keys under tenant_id RLS) and structurally does not apply here; LEG-02/1.2 already gate the higher-stakes leads endpoint separately.'
+)
 export class KarneController {
 	constructor(private readonly karne: KarneService) {}
 

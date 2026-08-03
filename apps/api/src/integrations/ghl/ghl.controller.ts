@@ -12,6 +12,7 @@ import { ghlOAuthCallbackQuery, type GhlConnectionStatus } from '@verimaya/share
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId } from '../../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../../common/auth-or-api-key.guard';
+import { IdempotencyExempt } from '../../common/idempotent.decorator';
 import { OrgPermissionGuard } from '../../common/org-permission.guard';
 import { RequireOrgPermission } from '../../common/require-org-permission.decorator';
 import { SettingsService } from '../../settings/settings.service';
@@ -121,6 +122,9 @@ export class GhlController {
 	@HttpCode(204)
 	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE-by-provider; deleting an already-removed credential is a silent 0-row no-op, not an error — naturally idempotent.'
+	)
 	async disconnect(@Req() req: FastifyRequest) {
 		await this.settings.deleteCredential(getActiveOrgId(req), GHL_OAUTH_PROVIDER);
 	}

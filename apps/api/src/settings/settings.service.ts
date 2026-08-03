@@ -93,26 +93,39 @@ export class SettingsService {
 	}
 
 	async createFinanceCategory(tenantId: string, input: FinanceCategoryCreate) {
-		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const [maxRow] = await db
-				.select({ sortOrder: financeCategories.sortOrder })
-				.from(financeCategories)
-				.orderBy(desc(financeCategories.sortOrder))
-				.limit(1);
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.createFinanceCategoryWithDb(db, tenantId, input)
+		);
+	}
 
-			const [row] = await db
-				.insert(financeCategories)
-				.values({
-					tenantId,
-					kind: input.kind,
-					name: input.name,
-					sortOrder: (maxRow?.sortOrder ?? -1) + 1,
-					subcategories: input.subcategories ?? []
-				})
-				.returning();
+	/**
+	 * IDEM-01 (Faz 4.1): plain insert, no dedup — a network retry without this would create a
+	 * duplicate-named category. Split out so SettingsController can run it through
+	 * IdempotencyService.run() (same tenantContext.withTenant transaction, caller-supplied `db`).
+	 */
+	async createFinanceCategoryWithDb(
+		db: TenantDb,
+		tenantId: string,
+		input: FinanceCategoryCreate
+	) {
+		const [maxRow] = await db
+			.select({ sortOrder: financeCategories.sortOrder })
+			.from(financeCategories)
+			.orderBy(desc(financeCategories.sortOrder))
+			.limit(1);
 
-			return toFinanceCategory(row!);
-		});
+		const [row] = await db
+			.insert(financeCategories)
+			.values({
+				tenantId,
+				kind: input.kind,
+				name: input.name,
+				sortOrder: (maxRow?.sortOrder ?? -1) + 1,
+				subcategories: input.subcategories ?? []
+			})
+			.returning();
+
+		return toFinanceCategory(row!);
 	}
 
 	async updateFinanceCategory(tenantId: string, id: string, input: FinanceCategoryUpdate) {
@@ -143,29 +156,34 @@ export class SettingsService {
 	}
 
 	async createContactType(tenantId: string, input: ContactTypeCreate) {
-		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const name = input.name.trim();
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.createContactTypeWithDb(db, tenantId, input)
+		);
+	}
 
-			const existingRows = await db.select({ name: contactTypes.name }).from(contactTypes);
-			if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
-				throw new BadRequestException({
-					error: { code: 'validation_error', message: 'Bu tür zaten var' }
-				});
-			}
+	/** IDEM-01 (Faz 4.1): see createFinanceCategoryWithDb — same split, same reason. */
+	async createContactTypeWithDb(db: TenantDb, tenantId: string, input: ContactTypeCreate) {
+		const name = input.name.trim();
 
-			const [maxRow] = await db
-				.select({ sortOrder: contactTypes.sortOrder })
-				.from(contactTypes)
-				.orderBy(desc(contactTypes.sortOrder))
-				.limit(1);
+		const existingRows = await db.select({ name: contactTypes.name }).from(contactTypes);
+		if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+			throw new BadRequestException({
+				error: { code: 'validation_error', message: 'Bu tür zaten var' }
+			});
+		}
 
-			const [row] = await db
-				.insert(contactTypes)
-				.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
-				.returning();
+		const [maxRow] = await db
+			.select({ sortOrder: contactTypes.sortOrder })
+			.from(contactTypes)
+			.orderBy(desc(contactTypes.sortOrder))
+			.limit(1);
 
-			return toContactType(row!);
-		});
+		const [row] = await db
+			.insert(contactTypes)
+			.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
+			.returning();
+
+		return toContactType(row!);
 	}
 
 	async deleteContactType(tenantId: string, id: string) {

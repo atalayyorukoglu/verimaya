@@ -13,6 +13,7 @@ import { webhookSubscriptionCreateSchema } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { Idempotent } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -39,6 +40,7 @@ export class WebhookSubscriptionsController {
 
 	@Post()
 	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -62,6 +64,7 @@ export class WebhookSubscriptionsController {
 
 	@Delete(':id')
 	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
 	async remove(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -72,7 +75,7 @@ export class WebhookSubscriptionsController {
 			tenantId,
 			getIdempotencyKey(req),
 			'DELETE',
-			`/v1/webhook-subscriptions/${id}`,
+			'/v1/webhook-subscriptions/:id',
 			async (db) => ({
 				statusCode: 200,
 				body: await this.webhookSubscriptionsService.removeWithDb(db, tenantId, id)

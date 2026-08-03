@@ -18,6 +18,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
+import { Idempotent } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -43,6 +44,7 @@ export class TransactionsController {
 
 	@Post()
 	@RequireOrgPermission('finance', 'create')
+	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -74,6 +76,7 @@ export class TransactionsController {
 
 	@Patch(':id')
 	@RequireOrgPermission('finance', 'update')
+	@Idempotent()
 	async update(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -86,7 +89,7 @@ export class TransactionsController {
 			tenantId,
 			getIdempotencyKey(req),
 			'PATCH',
-			`/v1/transactions/${id}`,
+			'/v1/transactions/:id',
 			async (db) => ({
 				statusCode: 200,
 				body: await this.transactionsService.updateWithDb(db, tenantId, id, input)

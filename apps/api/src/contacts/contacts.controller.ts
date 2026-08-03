@@ -19,6 +19,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
+import { Idempotent } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -48,6 +49,7 @@ export class ContactsController {
 
 	@Post('merge')
 	@RequireOrgPermission('patient', 'delete')
+	@Idempotent()
 	async merge(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -78,6 +80,7 @@ export class ContactsController {
 
 	@Post()
 	@RequireOrgPermission('patient', 'create')
+	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -101,6 +104,7 @@ export class ContactsController {
 
 	@Patch(':id')
 	@RequireOrgPermission('patient', 'update')
+	@Idempotent()
 	async update(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -113,7 +117,7 @@ export class ContactsController {
 			tenantId,
 			getIdempotencyKey(req),
 			'PATCH',
-			`/v1/contacts/${id}`,
+			'/v1/contacts/:id',
 			async (db) => ({
 				statusCode: 200,
 				body: await this.contactsService.updateWithDb(db, id, input)

@@ -12,6 +12,7 @@ import { adMetricsListParams } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
+import { IdempotencyExempt } from '../common/idempotent.decorator';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { AdMetricsService } from './ad-metrics.service';
@@ -41,6 +42,9 @@ export class AdMetricsController {
 	@Post('sync')
 	@HttpCode(200)
 	@RequireOrgPermission('finance', 'update')
+	@IdempotencyExempt(
+		'Upserts into ad_metrics_daily keyed by (tenant_id, provider, date) — a repeat sync overwrites the same day rows with the latest pulled totals. OPS-02 (Faz 8) already requires idempotent-second-sync as a go-live gate.'
+	)
 	async sync(@Req() req: FastifyRequest) {
 		try {
 			return await this.adMetricsSyncService.sync(getActiveOrgId(req));

@@ -10,7 +10,14 @@ export const idempotencyKeys = pgTable(
 			.references(() => tenants.id, { onDelete: 'cascade' }),
 		key: text('key').notNull(),
 		method: text('method').notNull(),
-		path: text('path').notNull(),
+		/**
+		 * IDEM-01 (Faz 4.1): route *template*, not the resolved path (e.g. `/v1/patients/:id`,
+		 * never `/v1/patients/<uuid>`). Every call site passes a literal template string — see
+		 * idempotency.service.ts. This is what makes the identity endpoint-shaped instead of
+		 * resource-shaped; callers mint a fresh key per logical action (apps/web `apiSend`), so
+		 * two different resources never legitimately share a key.
+		 */
+		normalizedPath: text('normalized_path').notNull(),
 		statusCode: integer('status_code').notNull(),
 		responseBody: jsonb('response_body').notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
@@ -18,7 +25,12 @@ export const idempotencyKeys = pgTable(
 			.defaultNow()
 	},
 	(table) => [
-		uniqueIndex('idempotency_keys_tenant_key_uidx').on(table.tenantId, table.key),
+		uniqueIndex('idempotency_keys_tenant_key_method_path_uidx').on(
+			table.tenantId,
+			table.key,
+			table.method,
+			table.normalizedPath
+		),
 		index('idempotency_keys_tenant_id_idx').on(table.tenantId)
 	]
 );
