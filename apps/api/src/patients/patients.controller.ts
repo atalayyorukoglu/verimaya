@@ -18,14 +18,14 @@ import {
 	patientCreateSchema,
 	patientFileCreateSchema,
 	patientFilePresignSchema,
-	patientUpdateSchema,
-	searchableListParams
+	patientListQuerySchema,
+	patientUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
-import { parseBody } from '../common/mappers';
+import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
@@ -60,13 +60,8 @@ export class PatientsController {
 
 	@Get()
 	@RequireOrgPermission('patient', 'read')
-	list(
-		@Req() req: FastifyRequest,
-		@Query('cursor') cursor?: string,
-		@Query('limit') limit?: string,
-		@Query('q') q?: string
-	) {
-		const params = searchableListParams.parse({ cursor, limit, q });
+	list(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(patientListQuerySchema, query, req);
 		return this.patientsService.list(getActiveOrgId(req), params);
 	}
 

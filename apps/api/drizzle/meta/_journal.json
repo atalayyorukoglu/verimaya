@@ -134,6 +134,13 @@
 			"when": 1753903000000,
 			"tag": "0018_scorecard",
 			"breakpoints": true
+		},
+		{
+			"idx": 19,
+			"version": "7",
+			"when": 1753904000000,
+			"tag": "0019_transactions_contact_id_idx",
+			"breakpoints": true
 		}
 	]
 }

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, inArray } from 'drizzle-orm';
-import type { ContactCreate, ContactUpdate, MergeRecords } from '@verimaya/shared';
+import { and, desc, eq, inArray, type SQL } from 'drizzle-orm';
+import type { ContactCreate, ContactListQuery, ContactUpdate, MergeRecords } from '@verimaya/shared';
 import { findContactDuplicateGroups } from '@verimaya/shared';
 import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
@@ -13,7 +13,7 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 export class ContactsService {
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	async list(tenantId: string, params: { cursor?: string; limit: number; q?: string }) {
+	async list(tenantId: string, params: ContactListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const cursorCond = createdAtCursorCondition(
 				contacts.createdAt,
@@ -25,9 +25,10 @@ export class ContactsService {
 				contacts.email,
 				contacts.phone
 			]);
-			const filters = [];
+			const filters: SQL[] = [];
 			if (cursorCond) filters.push(cursorCond);
 			if (searchCond) filters.push(searchCond);
+			if (params.type_id) filters.push(eq(contacts.contactTypeId, params.type_id));
 
 			const rows = await db
 				.select()

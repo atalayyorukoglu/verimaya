@@ -6,6 +6,7 @@ import type {
 	PatientCreate,
 	PatientFileCreate,
 	PatientFilePresign,
+	PatientListQuery,
 	PatientUpdate
 } from '@verimaya/shared';
 import { findPatientDuplicateGroups } from '@verimaya/shared';
@@ -46,7 +47,7 @@ export class PatientsService {
 		@Inject(FILE_STORAGE) private readonly storage: FileStoragePort
 	) {}
 
-	async list(tenantId: string, params: { cursor?: string; limit: number; q?: string }) {
+	async list(tenantId: string, params: PatientListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const cursorCond = createdAtCursorCondition(
 				patients.createdAt,

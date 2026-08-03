@@ -52,6 +52,16 @@ export function parseBody<T>(schema: ParseSchema<T>, body: unknown, req: Fastify
 	return parsed.data;
 }
 
+/**
+ * CONTRACT-01 (Faz 2.1): validate a full `@Query()` object against a strict list-query
+ * schema. Unlike the old per-field `@Query('cursor')` style, this rejects unknown
+ * query parameters with 400 instead of silently ignoring them (same error shape as
+ * {@link parseBody}).
+ */
+export function parseQuery<T>(schema: ParseSchema<T>, query: unknown, req: FastifyRequest): T {
+	return parseBody(schema, query, req);
+}
+
 export function toPatient(row: PatientRow): Patient {
 	return {
 		id: row.id,

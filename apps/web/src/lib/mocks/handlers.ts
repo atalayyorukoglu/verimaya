@@ -3,10 +3,13 @@ import {
 	calculateRealRoas,
 	patientCreateSchema,
 	patientUpdateSchema,
+	patientListQuerySchema,
 	appointmentCreateSchema,
 	appointmentUpdateSchema,
+	appointmentListQuerySchema,
 	transactionCreateSchema,
 	transactionUpdateSchema,
+	transactionListQuerySchema,
 	tenantUpdateSchema,
 	whatsappParseRequestSchema,
 	patientFileCreateSchema,
@@ -15,6 +18,7 @@ import {
 	contactTypeCreateSchema,
 	contactCreateSchema,
 	contactUpdateSchema,
+	contactListQuerySchema,
 	financeCategoryCreateSchema,
 	financeCategoryUpdateSchema,
 	mergeRecordsSchema,
@@ -338,6 +342,32 @@ function limitFrom(url: URL): number {
 	return Number.isFinite(n) ? Math.min(100, Math.max(1, n)) : 25;
 }
 
+type QuerySchema<T> = {
+	safeParse: (
+		data: unknown
+	) => { success: true; data: T } | { success: false; error: { flatten: () => unknown } };
+};
+
+/**
+ * CONTRACT-01 (Faz 2.1): validate a list endpoint's query string against the same
+ * shared schema the real API uses, so MSW and the API reject/accept the exact same
+ * filters (CONTRACT-02 parity). `scenario` is a mock-only testing knob (see
+ * `scenarioFrom`), not part of the real API contract, so it's stripped before
+ * validation instead of being rejected as an unknown parameter.
+ */
+function parseListQuery<T>(
+	schema: QuerySchema<T>,
+	url: URL
+): { success: true; data: T } | { success: false; response: ReturnType<typeof badRequest> } {
+	const raw: Record<string, string> = Object.fromEntries(url.searchParams.entries());
+	delete raw.scenario;
+	const parsed = schema.safeParse(raw);
+	if (!parsed.success) {
+		return { success: false, response: badRequest('Geçersiz filtre', parsed.error.flatten()) };
+	}
+	return { success: true, data: parsed.data };
+}
+
 function badRequest(message: string, details?: unknown) {
 	return HttpResponse.json(
 		{
@@ -429,8 +459,10 @@ export const handlers = [
 
 	http.get('/v1/patients', ({ request }) => {
 		const url = new URL(request.url);
+		const parsed = parseListQuery(patientListQuerySchema, url);
+		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
-		const q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
+		const q = (parsed.data.q ?? '').trim().toLowerCase();
 		let items = store.patients;
 		if (q) {
 			items = items.filter(
@@ -440,7 +472,7 @@ export const handlers = [
 					(p.phone?.includes(q) ?? false)
 			);
 		}
-		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
+		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
 	http.get('/v1/patients/duplicate-groups', ({ request }) => {
@@ -541,16 +573,16 @@ export const handlers = [
 
 	http.get('/v1/appointments', ({ request }) => {
 		const url = new URL(request.url);
+		const parsed = parseListQuery(appointmentListQuerySchema, url);
+		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.appointments];
-		const patientId = url.searchParams.get('patient_id');
+		const { patient_id: patientId, from, to } = parsed.data;
 		if (patientId) items = items.filter((a) => a.patient_id === patientId);
-		const from = url.searchParams.get('from');
-		const to = url.searchParams.get('to');
 		if (from) items = items.filter((a) => a.starts_at >= from);
 		if (to) items = items.filter((a) => a.starts_at <= to);
 		items.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
+		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
 	http.get('/v1/appointments/:id', ({ params, request }) => {
@@ -605,18 +637,17 @@ export const handlers = [
 
 	http.get('/v1/transactions', ({ request }) => {
 		const url = new URL(request.url);
+		const parsed = parseListQuery(transactionListQuerySchema, url);
+		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.transactions];
-		const patientId = url.searchParams.get('patient_id');
+		const { patient_id: patientId, contact_id: contactId, from, to } = parsed.data;
 		if (patientId) items = items.filter((t) => t.patient_id === patientId);
-		const contactId = url.searchParams.get('contact_id');
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
-		const from = url.searchParams.get('from');
-		const to = url.searchParams.get('to');
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
 		const sorted = items.sort((a, b) => b.occurred_on.localeCompare(a.occurred_on));
-		return HttpResponse.json(paginate(sorted, url.searchParams.get('cursor'), limitFrom(url)));
+		return HttpResponse.json(paginate(sorted, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
 	http.get('/v1/transactions/:id', ({ params, request }) => {
@@ -1165,9 +1196,11 @@ export const handlers = [
 
 	http.get('/v1/contacts', ({ request }) => {
 		const url = new URL(request.url);
+		const parsed = parseListQuery(contactListQuerySchema, url);
+		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.contacts];
-		const q = url.searchParams.get('q')?.trim().toLowerCase();
+		const q = parsed.data.q?.trim().toLowerCase();
 		if (q) {
 			items = items.filter(
 				(c) =>
@@ -1176,10 +1209,10 @@ export const handlers = [
 					(c.phone?.includes(q) ?? false)
 			);
 		}
-		const typeId = url.searchParams.get('type_id');
+		const typeId = parsed.data.type_id;
 		if (typeId) items = items.filter((c) => c.contact_type_id === typeId);
 		items.sort((a, b) => a.display_name.localeCompare(b.display_name, 'tr'));
-		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
+		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
 	http.get('/v1/contacts/duplicate-groups', ({ request }) => {

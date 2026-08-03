@@ -12,15 +12,15 @@ import {
 } from '@nestjs/common';
 import {
 	contactCreateSchema,
+	contactListQuerySchema,
 	contactUpdateSchema,
-	mergeRecordsSchema,
-	searchableListParams
+	mergeRecordsSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
-import { parseBody } from '../common/mappers';
+import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { ContactsService } from './contacts.service';
@@ -35,13 +35,8 @@ export class ContactsController {
 
 	@Get()
 	@RequireOrgPermission('patient', 'read')
-	list(
-		@Req() req: FastifyRequest,
-		@Query('cursor') cursor?: string,
-		@Query('limit') limit?: string,
-		@Query('q') q?: string
-	) {
-		const params = searchableListParams.parse({ cursor, limit, q });
+	list(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(contactListQuerySchema, query, req);
 		return this.contactsService.list(getActiveOrgId(req), params);
 	}
 

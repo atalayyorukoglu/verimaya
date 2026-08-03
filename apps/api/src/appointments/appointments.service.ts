@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, isNull } from 'drizzle-orm';
-import type { AppointmentCreate, AppointmentUpdate } from '@verimaya/shared';
+import { and, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import type { AppointmentCreate, AppointmentListQuery, AppointmentUpdate } from '@verimaya/shared';
 import { appointments, patients } from '../db/schema';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toAppointment } from '../common/mappers';
@@ -10,17 +10,24 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 export class AppointmentsService {
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	async list(tenantId: string, params: { cursor?: string; limit: number }) {
+	async list(tenantId: string, params: AppointmentListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const filters: SQL[] = [];
 			const cursorCond = createdAtCursorCondition(
 				appointments.createdAt,
 				appointments.id,
 				params.cursor
 			);
+			if (cursorCond) filters.push(cursorCond);
+			if (params.patient_id) filters.push(eq(appointments.patientId, params.patient_id));
+			// CONTRACT-01: inclusive range over starts_at (raw UTC instant — see list-query.ts doc).
+			if (params.from) filters.push(gte(appointments.startsAt, new Date(params.from)));
+			if (params.to) filters.push(lte(appointments.startsAt, new Date(params.to)));
+
 			const rows = await db
 				.select()
 				.from(appointments)
-				.where(cursorCond)
+				.where(filters.length > 0 ? and(...filters) : undefined)
 				.orderBy(desc(appointments.createdAt), desc(appointments.id))
 				.limit(params.limit + 1);
 

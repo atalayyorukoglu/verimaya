@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, isNull } from 'drizzle-orm';
-import type { TransactionCreate, TransactionUpdate } from '@verimaya/shared';
+import { and, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from '@verimaya/shared';
 import { contacts, patients, tenants, transactions } from '../db/schema';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
@@ -10,17 +10,25 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 export class TransactionsService {
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	async list(tenantId: string, params: { cursor?: string; limit: number }) {
+	async list(tenantId: string, params: TransactionListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const filters: SQL[] = [];
 			const cursorCond = createdAtCursorCondition(
 				transactions.createdAt,
 				transactions.id,
 				params.cursor
 			);
+			if (cursorCond) filters.push(cursorCond);
+			if (params.patient_id) filters.push(eq(transactions.patientId, params.patient_id));
+			if (params.contact_id) filters.push(eq(transactions.contactId, params.contact_id));
+			// CONTRACT-01: inclusive range over the naive occurred_on date (see list-query.ts doc).
+			if (params.from) filters.push(gte(transactions.occurredOn, params.from));
+			if (params.to) filters.push(lte(transactions.occurredOn, params.to));
+
 			const rows = await db
 				.select()
 				.from(transactions)
-				.where(cursorCond)
+				.where(filters.length > 0 ? and(...filters) : undefined)
 				.orderBy(desc(transactions.createdAt), desc(transactions.id))
 				.limit(params.limit + 1);
 

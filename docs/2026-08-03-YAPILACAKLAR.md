@@ -302,7 +302,7 @@ erken bozulmuş olabilir.
 ## Faz 2 — Tenant sınırı ve sözleşme
 
 ### 2.1 — CONTRACT-01: Shared list query şemaları
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** Faz 1
 
 Web ve MSW `from`, `to`, `patient_id`, `contact_id`, `type_id` gönderiyor; gerçek controller'lar
@@ -326,7 +326,78 @@ Yap:
   hastanın kayıtlarını çekiyor.
 - **Model:** GPT-5.6 Terra · orta reasoning · orta context (domain klasörü + shared + migration)
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** **Varsayım (Bağımlı: Faz 1 hâlâ açık):** 1.1 (WEBHOOK-01) bloke — 0.3'ün ortam kısıtı
+(bu sandbox'ta docker/Postgres yok) yüzünden başlanamadı, dolayısıyla Faz 1 teknik olarak kapanmadı.
+Atalay bu oturumda açıkça "sadece Faz 2" talimatı verdi; WEBHOOK-01 (webhook tenant çözümleme) ile
+CONTRACT-01 (list query filtreleri) fonksiyonel olarak bağımsız güvenlik yüzeyleri olduğundan
+(biri inbound webhook auth, diğeri authenticated kullanıcı list endpoint'leri) bu talimatı Faz
+sıralamasının process amaçlı olduğu, teknik bir ön koşul olmadığı şeklinde yorumladım ve 2.1'i
+başlattım — kural 9 gereği (varsayım seç, uygula, burada yaz) durup sormadım.
+
+Yapılanlar: `packages/shared/src/list-query.ts` (yeni) — `appointmentListQuerySchema`
+(cursor/limit/patient_id/from/to), `transactionListQuerySchema` (+ contact_id), `contactListQuerySchema`
+(+ type_id), `patientListQuerySchema` (searchableListParams'ın strict hali) — hepsi `.strict()`, yani
+şemada olmayan bir query param'ı `safeParse` reddediyor. `index.ts`'e export eklendi.
+`apps/api/src/common/mappers.ts`'e `parseQuery()` eklendi (`parseBody` ile aynı 400 gövdesi).
+Dört controller'ın (`appointments`, `transactions`, `contacts`, `patients`) `list()` metodu artık
+tek tek `@Query('cursor')` yerine `@Query() query: Record<string, unknown>` alıp `parseQuery` ile
+doğruluyor — bilinmeyen parametre artık sessizce yutulmuyor, `400 validation_error` dönüyor.
+Servis katmanında gerçek filtreler SQL'e indi: `appointments.list` artık `patient_id` (eq) ve
+`from`/`to`'yu `starts_at` üzerinde `gte`/`lte` ile uyguluyor; `transactions.list` `patient_id`,
+`contact_id` (eq) ve `from`/`to`'yu naive `occurred_on` tarih kolonunda `gte`/`lte` ile uyguluyor;
+`contacts.list` `type_id`'yi `contact_type_id` eşitliğiyle uyguluyor. Bu, dosyanın en somut bulgusunu
+kapatıyor: `patients/[id]/+page.svelte`'in `listUrl('transactions', {patient_id: id})` çağrısı artık
+gerçekten o hastanın kayıtlarını filtreliyor — önceden controller `patient_id`'yi hiç okumadığı için
+tenant'taki TÜM işlemler/randevular dönüyordu.
+
+`from`/`to` semantiği (madde 1'deki not): transactions için `occurred_on` zaten naive bir tarih
+kolonu (timezone yok), bu yüzden string `gte`/`lte` karşılaştırması zaten doğru "calendar-day
+kapsayıcı" davranışı veriyor — TIME-01 (3.3) burada ek bir şey yapmayacak. appointments için
+`starts_at` bir `timestamptz`; web zaten `Date#toISOString()` ile tarayıcının yerel gün sınırını UTC
+instant'a çevirip gönderiyor, ben de `gte`/`lte`'yi ham instant olarak uyguladım — bugünkü davranış
+doğru, ama "tenant timezone" kavramı yok, tarayıcının yerel saat dilimine bağlı; 3.3 bunu tenant
+ayarına taşıyacak. `list-query.ts`'de bu iki farklı semantik ayrı ayrı belgelendi.
+
+DB indeksi: `transactions.contact_id` artık aktif bir filtre olduğu için (`contacts/[id]` sayfası)
+`transactions_tenant_id_contact_id_created_at_idx` eklendi (`patient_id`'nin eşleniği). **Varsayım/
+kısıt:** `drizzle-kit generate` bu sandbox'ta schema değişikliğimden bağımsız olarak çöküyor
+(`Cannot read properties of undefined (reading 'columns')`) — kök neden benim değişikliğim değil:
+`apps/api/drizzle/meta/` içinde yalnızca `0000_snapshot.json` var, migrasyonlar 0001–0018 için hiç
+ara snapshot tutulmamış (muhtemelen bu repo migrasyonları elle yazıyor, `generate`'e güvenmiyor);
+drizzle-kit'in diff motoru eksik snapshot zincirinde patlıyor. Bunu doğrulamak için index eklemeden
+önce de `generate` çalıştırdım, aynı hata — benim değişikliğimden bağımsız, ortam/repo'nun mevcut
+durumu. Bu yüzden migration SQL'ini (`0019_transactions_contact_id_idx.sql`) ve journal girdisini
+elle, mevcut migrasyonların birebir üslubuyla yazdım; snapshot dosyası oluşturmadım (zaten repo
+0001'den beri tutmuyor). **Opus'un veya Atalay'ın bakması gereken yer:** bu migration gerçek bir
+Postgres'e karşı hiç çalıştırılamadı (0.3 ile aynı ortam kısıtı) — `db:migrate` ile doğrulanmalı.
+
+MSW: `apps/web/src/lib/mocks/handlers.ts`'e `parseListQuery()` eklendi — dört list handler'ı
+(`/v1/patients`, `/v1/appointments`, `/v1/transactions`, `/v1/contacts`) artık aynı shared şemayla
+doğruluyor (CONTRACT-02 paritesi için zemin), bilinmeyen parametrede aynı `400 validation_error`
+şeklini dönüyor. MSW'nin demo-only `scenario` query param'ı şemanın parçası değil, doğrulamadan önce
+çıkarıldı (gerçek API'nin bilmediği bir test kancası). MSW'nin filtre mantığı (patient_id/contact_id/
+type_id/from/to) zaten önceden buradaydı — asıl eksik olan gerçek API'ydi; bu adım o asimetriyi
+kapattı. **Fark ettiğim ama bilerek 2.2'ye bıraktığım konu:** MSW'nin sıralama düzeni gerçek API'yle
+tutarsız (appointments MSW `starts_at` asc, gerçek API `created_at` desc; contacts MSW `display_name`
+sıralıyor, gerçek API `created_at` desc) — bu CONTRACT-02'nin (parity test paketi) tam olarak
+yakalaması gereken sınıf bir hata, orada MSW'yi gerçek API'nin sırasına hizalayacağım.
+
+Kapsam notu: 2.4'ün (`contacts/appointments/transactions.isolation.spec.ts`) hem cross-tenant
+izolasyonu hem de bu adımın "her filtre için API testi var" kabul kriterini tek dosyada karşılayacak
+şekilde tasarlıyorum (aynı tenant içinde filtre doğruluğu + farklı tenant'a filtreyle bile sızmama) —
+2.1 için ayrı bir test dosyası açmadım, bkz. 2.4 Görüş.
+
+**Doğrulama (bu sandbox'ta docker/Postgres yok — bkz. 0.3):** DB gerektiren hiçbir şey çalıştırılamadı.
+Çalıştırabildiklerim: `packages/shared` ve `apps/api` `tsc --noEmit` temiz; `apps/api`'nin
+`controller-permissions.spec.ts`'i (33 test, DB'siz) yeşil; `packages/shared` vitest paketi (36 test)
+yeşil; `apps/web`'in `tsc --noEmit -p tsconfig.json` (svelte-check değil, salt TS) temiz; `handlers.ts`
+üzerinde `eslint` temiz, `prettier --write` uygulandı. `apps/api`/`packages/shared` dosyaları repo'da
+zaten hiçbir prettier kapsamında değil (0.2'nin bulgusuyla aynı — yalnız `apps/web`'in kendi
+`prettier.config.js`'i var), bu yüzden onlara prettier uygulamadım, yalnız mevcut tab/single-quote
+üslubunu elle koruyarak yazdım. **Doğrulanamayan:** filtrelerin gerçek SQL üzerinde doğru çalıştığı
+(RLS + gerçek Postgres gerektiriyor), migration'ın gerçekten uygulandığı, web sayfalarının runtime'da
+(browser/Playwright) doğru davrandığı. Opus'un/Atalay'ın DB'li bir ortamda
+`pnpm --filter @verimaya/api db:migrate && pnpm --filter @verimaya/api test` çalıştırması gerekiyor.
 
 ---
 

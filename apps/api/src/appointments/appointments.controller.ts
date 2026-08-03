@@ -12,14 +12,14 @@ import {
 } from '@nestjs/common';
 import {
 	appointmentCreateSchema,
-	appointmentUpdateSchema,
-	cursorPageParams
+	appointmentListQuerySchema,
+	appointmentUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
-import { parseBody } from '../common/mappers';
+import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
@@ -36,12 +36,8 @@ export class AppointmentsController {
 
 	@Get()
 	@RequireOrgPermission('patient', 'read')
-	list(
-		@Req() req: FastifyRequest,
-		@Query('cursor') cursor?: string,
-		@Query('limit') limit?: string
-	) {
-		const params = cursorPageParams.parse({ cursor, limit });
+	list(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(appointmentListQuerySchema, query, req);
 		return this.appointmentsService.list(getActiveOrgId(req), params);
 	}
 
