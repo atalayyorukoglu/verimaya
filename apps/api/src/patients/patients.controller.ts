@@ -26,6 +26,8 @@ import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey 
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { MAX_UPLOAD_BYTES } from '../storage/storage.types';
 import { PatientsService } from './patients.service';
@@ -48,7 +50,7 @@ function multipartFieldString(field: unknown): string | null {
 }
 
 @Controller('patients')
-@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class PatientsController {
 	constructor(
 		private readonly patientsService: PatientsService,
@@ -57,6 +59,7 @@ export class PatientsController {
 	) {}
 
 	@Get()
+	@RequireOrgPermission('patient', 'read')
 	list(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
@@ -68,11 +71,13 @@ export class PatientsController {
 	}
 
 	@Get('duplicate-groups')
+	@RequireOrgPermission('patient', 'read')
 	duplicateGroups(@Req() req: FastifyRequest) {
 		return this.patientsService.duplicateGroups(getActiveOrgId(req));
 	}
 
 	@Post('merge')
+	@RequireOrgPermission('patient', 'delete')
 	async merge(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -96,11 +101,13 @@ export class PatientsController {
 	}
 
 	@Get(':id/files')
+	@RequireOrgPermission('patient', 'read')
 	listFiles(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.patientsService.listFiles(getActiveOrgId(req), id);
 	}
 
 	@Get(':id/files/:fileId/download')
+	@RequireOrgPermission('patient', 'read')
 	async downloadFile(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -125,11 +132,13 @@ export class PatientsController {
 	}
 
 	@Get(':id/finance-summary')
+	@RequireOrgPermission('finance', 'read')
 	financeSummary(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.patientsService.financeSummary(getActiveOrgId(req), id);
 	}
 
 	@Post(':id/files/presign')
+	@RequireOrgPermission('patient', 'update')
 	async presignFile(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -157,6 +166,7 @@ export class PatientsController {
 	}
 
 	@Put(':id/files/:fileId/content')
+	@RequireOrgPermission('patient', 'update')
 	async putFileContent(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -184,6 +194,7 @@ export class PatientsController {
 	}
 
 	@Post(':id/files/:fileId/confirm')
+	@RequireOrgPermission('patient', 'update')
 	async confirmFile(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -206,6 +217,7 @@ export class PatientsController {
 	}
 
 	@Post(':id/files')
+	@RequireOrgPermission('patient', 'update')
 	async createFile(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -281,11 +293,13 @@ export class PatientsController {
 	}
 
 	@Get(':id')
+	@RequireOrgPermission('patient', 'read')
 	get(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.patientsService.get(getActiveOrgId(req), id);
 	}
 
 	@Post()
+	@RequireOrgPermission('patient', 'create')
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -316,6 +330,7 @@ export class PatientsController {
 	}
 
 	@Patch(':id')
+	@RequireOrgPermission('patient', 'update')
 	async update(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
@@ -339,6 +354,7 @@ export class PatientsController {
 	}
 
 	@Delete(':id')
+	@RequireOrgPermission('patient', 'delete')
 	async remove(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,

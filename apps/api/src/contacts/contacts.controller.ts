@@ -21,10 +21,12 @@ import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey 
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { ContactsService } from './contacts.service';
 
 @Controller('contacts')
-@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class ContactsController {
 	constructor(
 		private readonly contactsService: ContactsService,
@@ -32,6 +34,7 @@ export class ContactsController {
 	) {}
 
 	@Get()
+	@RequireOrgPermission('patient', 'read')
 	list(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
@@ -43,11 +46,13 @@ export class ContactsController {
 	}
 
 	@Get('duplicate-groups')
+	@RequireOrgPermission('patient', 'read')
 	duplicateGroups(@Req() req: FastifyRequest) {
 		return this.contactsService.duplicateGroups(getActiveOrgId(req));
 	}
 
 	@Post('merge')
+	@RequireOrgPermission('patient', 'delete')
 	async merge(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -71,11 +76,13 @@ export class ContactsController {
 	}
 
 	@Get(':id')
+	@RequireOrgPermission('patient', 'read')
 	get(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.contactsService.get(getActiveOrgId(req), id);
 	}
 
 	@Post()
+	@RequireOrgPermission('patient', 'create')
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -98,6 +105,7 @@ export class ContactsController {
 	}
 
 	@Patch(':id')
+	@RequireOrgPermission('patient', 'update')
 	async update(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,

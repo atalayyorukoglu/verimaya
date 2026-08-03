@@ -7,6 +7,9 @@ import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { MeService } from '../auth/me.service';
 import { SessionGuard } from '../auth/session.guard';
+import { AppointmentsController } from '../appointments/appointments.controller';
+import { ContactsController } from '../contacts/contacts.controller';
+import { PatientsController } from '../patients/patients.controller';
 import { SettingsController } from '../settings/settings.controller';
 import { TransactionsController } from '../transactions/transactions.controller';
 import { ActiveOrgGuard } from './active-org.guard';
@@ -40,6 +43,38 @@ const settingsPermissions: Array<[keyof SettingsController, OrgPermissionRequire
 	['putTrustScore', { resource: 'settings', action: 'update' }],
 	['getAiDisclosure', { resource: 'settings', action: 'read' }],
 	['putAiDisclosure', { resource: 'settings', action: 'update' }]
+];
+
+const patientPermissions: Array<[keyof PatientsController, OrgPermissionRequirement]> = [
+	['list', { resource: 'patient', action: 'read' }],
+	['duplicateGroups', { resource: 'patient', action: 'read' }],
+	['merge', { resource: 'patient', action: 'delete' }],
+	['listFiles', { resource: 'patient', action: 'read' }],
+	['downloadFile', { resource: 'patient', action: 'read' }],
+	['financeSummary', { resource: 'finance', action: 'read' }],
+	['presignFile', { resource: 'patient', action: 'update' }],
+	['putFileContent', { resource: 'patient', action: 'update' }],
+	['confirmFile', { resource: 'patient', action: 'update' }],
+	['createFile', { resource: 'patient', action: 'update' }],
+	['get', { resource: 'patient', action: 'read' }],
+	['create', { resource: 'patient', action: 'create' }],
+	['update', { resource: 'patient', action: 'update' }],
+	['remove', { resource: 'patient', action: 'delete' }]
+];
+
+const contactPermissions: Array<[keyof ContactsController, OrgPermissionRequirement]> = [
+	['list', { resource: 'patient', action: 'read' }],
+	['duplicateGroups', { resource: 'patient', action: 'read' }],
+	['merge', { resource: 'patient', action: 'delete' }],
+	['get', { resource: 'patient', action: 'read' }],
+	['create', { resource: 'patient', action: 'create' }],
+	['update', { resource: 'patient', action: 'update' }]
+];
+
+const appointmentPermissions: Array<[keyof AppointmentsController, OrgPermissionRequirement]> = [
+	['list', { resource: 'patient', action: 'read' }],
+	['create', { resource: 'patient', action: 'create' }],
+	['update', { resource: 'patient', action: 'update' }]
 ];
 
 function makeContext(req: FastifyRequest, handler: () => unknown, target: object): ExecutionContext {
@@ -96,6 +131,42 @@ describe('transaction and settings organization permission metadata', () => {
 		for (const [method, permission] of settingsPermissions) {
 			expect(
 				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, SettingsController.prototype[method])
+			).toEqual(permission);
+		}
+	});
+});
+
+describe('patient-domain organization permission metadata', () => {
+	it('sets the required guard order on patient-domain controllers', () => {
+		for (const controller of [PatientsController, ContactsController, AppointmentsController]) {
+			expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toEqual([
+				AuthOrApiKeyGuard,
+				ActiveOrgGuard,
+				OrgPermissionGuard
+			]);
+		}
+	});
+
+	it('sets complete patients permission metadata', () => {
+		for (const [method, permission] of patientPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, PatientsController.prototype[method])
+			).toEqual(permission);
+		}
+	});
+
+	it('sets complete contacts permission metadata', () => {
+		for (const [method, permission] of contactPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ContactsController.prototype[method])
+			).toEqual(permission);
+		}
+	});
+
+	it('sets complete appointments permission metadata', () => {
+		for (const [method, permission] of appointmentPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AppointmentsController.prototype[method])
 			).toEqual(permission);
 		}
 	});
@@ -214,6 +285,129 @@ describe('transaction and settings organization permissions', () => {
 					SettingsController.prototype.createFinanceCategory,
 					SettingsController
 				)
+			)
+		).resolves.toBe(true);
+	});
+});
+
+describe('patient-domain organization permissions', () => {
+	const guard = createGuard({
+		readonly: 'readonly',
+		finance: 'finance',
+		agent: 'agent',
+		manager: 'manager',
+		owner: 'owner',
+		admin: 'admin'
+	});
+
+	it('allows readonly patient reads and rejects mutations', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), PatientsController.prototype.list, PatientsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), PatientsController.prototype.create, PatientsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), PatientsController.prototype.update, PatientsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), PatientsController.prototype.remove, PatientsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+	});
+
+	it('rejects agent delete and merge', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), PatientsController.prototype.remove, PatientsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), PatientsController.prototype.merge, PatientsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), ContactsController.prototype.merge, ContactsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+	});
+
+	it('rejects finance patient mutations', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('finance'), PatientsController.prototype.create, PatientsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('finance'), PatientsController.prototype.update, PatientsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('finance'), AppointmentsController.prototype.create, AppointmentsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+	});
+
+	it('allows agent patient create and update', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), PatientsController.prototype.create, PatientsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), PatientsController.prototype.update, PatientsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), AppointmentsController.prototype.update, AppointmentsController)
+			)
+		).resolves.toBe(true);
+	});
+
+	it('allows manager delete and merge', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('manager'), PatientsController.prototype.remove, PatientsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('manager'), PatientsController.prototype.merge, PatientsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('manager'), ContactsController.prototype.merge, ContactsController)
+			)
+		).resolves.toBe(true);
+	});
+
+	it('allows API-key-authenticated requests without resolving an organization role', async () => {
+		const req = {
+			id: 'request-api-key',
+			apiKeyAuth: {
+				tenantId: 'organization-a',
+				apiKeyId: 'api-key-id',
+				scopes: ['read']
+			}
+		} as unknown as FastifyRequest;
+
+		await expect(
+			guard.canActivate(
+				makeContext(req, PatientsController.prototype.update, PatientsController)
 			)
 		).resolves.toBe(true);
 	});

@@ -20,11 +20,13 @@ import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/act
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { AppointmentsService } from './appointments.service';
 
 @Controller('appointments')
-@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class AppointmentsController {
 	constructor(
 		private readonly appointmentsService: AppointmentsService,
@@ -33,6 +35,7 @@ export class AppointmentsController {
 	) {}
 
 	@Get()
+	@RequireOrgPermission('patient', 'read')
 	list(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
@@ -43,6 +46,7 @@ export class AppointmentsController {
 	}
 
 	@Post()
+	@RequireOrgPermission('patient', 'create')
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -73,6 +77,7 @@ export class AppointmentsController {
 	}
 
 	@Patch(':id')
+	@RequireOrgPermission('patient', 'update')
 	async update(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,
