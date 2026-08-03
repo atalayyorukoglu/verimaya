@@ -1002,7 +1002,7 @@ kaynak dosyanın (`(public)/vitrin`) prerender kopyası için kalmasını doğru
 ---
 
 ### 6.2 — DOC-01: Obsidian yol haritasını sıfırdan yaz + güvenlik notunu düzelt
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** 6.1
 
 2026-08-03'te eski yol haritası arşive alındı (`Arşiv/2026-07-30-yol-haritasi.md`) — kod
@@ -1028,7 +1028,12 @@ Yap:
   kullanılmamış (yalnız geçmiş referansı).
 - **Model:** Claude Sonnet 5 Thinking · orta reasoning · orta context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** Obsidian (repo dışı) `02-yol-haritasi` üç eksenli durum belgesi; “Sırada ne var” yok.
+`04-ilerleme-log` 1–3 Ağustos kaydı eklendi. `05-guvenlik-kvkk` A teknik / B hukuki-operasyonel
+ayrıldı; tamamlananlar işaretli. `Özellikler/00-Özellikler` dört durum taksonomisiyle yeniden
+yazıldı (UI 6.4’te aynı kodlara geçecek). Varsayım: pilotta özellik yok → çoğu `kod-hazir`;
+apex hub `yayinda`; Ads go-live + karne lead `harici-onay-bekliyor`. Arşiv yalnız link.
+Opus: CI/Faz 5 commit yüzeyi hâlâ kirliyse eksen 1’deki “CI ✅/~” notunu doğrulasın.
 
 ---
 
