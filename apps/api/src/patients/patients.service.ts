@@ -9,7 +9,11 @@ import type {
 	PatientListQuery,
 	PatientUpdate
 } from '@verimaya/shared';
-import { findPatientDuplicateGroups } from '@verimaya/shared';
+import {
+	DEFAULT_TENANT_TIMEZONE,
+	findPatientDuplicateGroups,
+	toTenantDayKey
+} from '@verimaya/shared';
 import {
 	appointments,
 	caseNotes,
@@ -492,11 +496,26 @@ export class PatientsService {
 				}
 			});
 		}
-		const datePart = appt.startsAt.toISOString().slice(0, 10);
+		// Faz 7 denetim bulgusu (F-06): burada `toISOString().slice(0, 10)` kullanılıyordu —
+		// `starts_at` bir timestamptz olduğu için Europe/Istanbul'da gece yarısına yakın
+		// randevular etikette **bir gün geriye** kayıyordu (yerel 4 Ağustos 01:00 = UTC
+		// 3 Ağustos 22:00). TIME-01'in kapatmayı amaçladığı hatanın aynısı; kalan tek
+		// üretim yüzeyiydi, tenant timezone'una çevrildi.
+		const timezone = await this.getTenantTimezone(db);
+		const datePart = toTenantDayKey(appt.startsAt, timezone);
 		return {
 			appointmentId,
 			appointmentLabel: `${datePart} · ${appt.title ?? 'Randevu'}`
 		};
+	}
+
+	/**
+	 * RLS `app.current_tenant_id` altında çalıştığı için tek satır döner; tenantId
+	 * parametresine gerek yok. Tenant satırı bulunamazsa TIME-01 varsayılanına düşer.
+	 */
+	private async getTenantTimezone(db: TenantDb): Promise<string> {
+		const [row] = await db.select({ timezone: tenants.timezone }).from(tenants).limit(1);
+		return row?.timezone ?? DEFAULT_TENANT_TIMEZONE;
 	}
 
 	async createWithDb(db: TenantDb, tenantId: string, input: PatientCreate) {

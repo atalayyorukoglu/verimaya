@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { FastifyAdapter as BullBoardFastifyAdapter } from '@bull-board/fastify';
@@ -28,7 +29,23 @@ function isAuthorized(request: FastifyRequest, options: BullBoardMountOptions): 
 	}
 
 	const header = request.headers[ADMIN_QUEUE_TOKEN_HEADER];
-	return typeof header === 'string' && header === expected;
+	return typeof header === 'string' && constantTimeEquals(header, expected);
+}
+
+/**
+ * F-07 (Faz 7): `docs/TEHDIT-MODELI.md` madde 3, Bull Board token'ı için "şimdi" kararı
+ * verilmişti ama kod değişmemişti — `===` erken çıkışlı, karakter karakter timing sızdırır.
+ * Uzunluk farkını da sızdırmamak için önce sabit uzunlukta SHA-256 özetlerine indirgemek
+ * yerine, uzunluk eşit değilse sahte bir karşılaştırma yapıp yine de false döndürüyoruz.
+ */
+function constantTimeEquals(a: string, b: string): boolean {
+	const bufA = Buffer.from(a, 'utf8');
+	const bufB = Buffer.from(b, 'utf8');
+	if (bufA.length !== bufB.length) {
+		timingSafeEqual(bufA, bufA);
+		return false;
+	}
+	return timingSafeEqual(bufA, bufB);
 }
 
 export async function mountBullBoard(

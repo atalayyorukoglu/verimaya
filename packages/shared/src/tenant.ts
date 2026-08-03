@@ -9,6 +9,9 @@ export const TENANT_TIMEZONES = [
 	'UTC'
 ] as const;
 
+/** TIME-01 varsayılanı — DB kolon default'u (`tenants.timezone`) ile aynı kalmalı. */
+export const DEFAULT_TENANT_TIMEZONE = 'Europe/Istanbul' as const;
+
 export const tenantTimezoneSchema = z.enum(TENANT_TIMEZONES);
 
 export type TenantTimezone = z.infer<typeof tenantTimezoneSchema>;

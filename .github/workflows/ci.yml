@@ -75,6 +75,13 @@ jobs:
       - name: Shared tests
         run: pnpm --filter @verimaya/shared test
 
+      # F-09 (Faz 7): @verimaya/shared'ın package.json exports'u production koşulunda
+      # ./dist/index.js'e çözülüyor ve dist/ gitignore'da — temiz bir CI checkout'unda
+      # "Web production build" adımı bu olmadan "failed to resolve @verimaya/shared"
+      # ile kırılır. Yerelde geçmesinin sebebi eski bir dist klasörünün duruyor olması.
+      - name: Shared build
+        run: pnpm --filter @verimaya/shared build
+
       - name: Lint and format (web)
         run: pnpm --filter @verimaya/web lint
 

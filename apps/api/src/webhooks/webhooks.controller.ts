@@ -8,7 +8,7 @@ import {
 	Req
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql as drizzleSql } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
 import { IdempotencyExempt } from '../common/idempotent.decorator';
 import { isUniqueViolation } from '../common/postgres-errors';
@@ -33,6 +33,17 @@ const INTEGRATION_EVENT_UNIQUE_INDEX = 'integration_events_tenant_provider_exter
 
 const TENANT_HEADER = 'x-tenant-id';
 const EXTERNAL_EVENT_ID_HEADER = 'x-external-event-id';
+
+/**
+ * Faz 7 denetim bulgusu (F-03): aynı olayın iki eşzamanlı teslimi select-then-insert
+ * penceresinde yarışıp ikisi de "yok" görüyordu; kaybedenin transaction'ı geri alınsa da
+ * ham 23505 yüzeye çıkıyordu. Transaction-ömürlü advisory lock ikinci teslimi birincinin
+ * commit'ine kadar bekletir — sonra duplicate satırı görür ve queue'ya ikinci kez iş
+ * basılmaz. Kilit commit/rollback ile otomatik bırakılır; kapsam yalnız bu olay kimliği.
+ */
+function eventLockIdentity(tenantId: string, provider: string, externalId: string) {
+	return ['webhook', tenantId, provider, externalId].join('|');
+}
 
 function hashPayload(rawBody: string): string {
 	return createHash('sha256').update(rawBody).digest('hex');
@@ -154,6 +165,10 @@ export class WebhooksController {
 		let result: IngestWahaResult;
 		try {
 			result = await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+				await db.execute(
+					drizzleSql`select pg_advisory_xact_lock(hashtextextended(${eventLockIdentity(tenantId, 'waha', externalId)}, 0))`
+				);
+
 				const existing = await this.findInboundMessage(db, externalId);
 				if (existing) {
 					return {
@@ -253,6 +268,10 @@ export class WebhooksController {
 		let result: IngestResult;
 		try {
 			result = await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+				await db.execute(
+					drizzleSql`select pg_advisory_xact_lock(hashtextextended(${eventLockIdentity(tenantId, normalizedProvider, externalEventId)}, 0))`
+				);
+
 				const existing = await this.findIntegrationEvent(db, normalizedProvider, externalEventId);
 				if (existing) {
 					return {

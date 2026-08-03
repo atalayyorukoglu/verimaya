@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDb, getDb } from '../db/client';
+import type { DbService } from '../db/db.service';
 import type { QueueService } from '../queue/queue.service';
-import type { TenantContextService } from '../tenant/tenant-context.service';
+import { TenantContextService } from '../tenant/tenant-context.service';
 import { WebhooksController } from './webhooks.controller';
 import {
 	formatWahaSignatureHeader,
@@ -19,14 +21,23 @@ const databaseUrl =
 
 const WAHA_SECRET = 'test-waha-webhook-secret';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
+/**
+ * Test-tarafı okuma yardımcısı. Faz 7 denetim bulgusu (F-02): burası eskiden **session**
+ * ömürlü `set_config(..., false)` kullanıyordu ve `finally` bloğunda paylaşılan havuzdaki
+ * bağlantıda tenant'ı siliyordu — eşzamanlı senaryolarda başka bir isteğin sorgusu
+ * tenant'sız bir bağlantıya düşüp RLS tarafından boş döndürülebiliyordu, yani harness
+ * üretimi sadık modellemiyordu. Artık repo'nun geri kalanıyla (ve gerçek
+ * `TenantContextService` ile) aynı şekilde transaction-ömürlü `set_config(..., true)`.
+ */
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tx: postgres.TransactionSql) => Promise<T>
+): Promise<T> {
 	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+	return sql.begin(async (tx) => {
+		await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+		return fn(tx);
+	}) as Promise<T>;
 }
 
 function buildWahaRequest(opts: {
@@ -75,12 +86,10 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 			values (${tenantId}, 'WAHA Test', ${`waha-${tenantId.slice(0, 8)}`})
 		`;
 
-		const tenantContext = {
-			withTenant: async <T>(
-				tid: string,
-				fn: (ctx: { db: typeof db }) => Promise<T>
-			) => withTenantSession(tid, () => fn({ db }))
-		} as TenantContextService;
+		// F-02: elle yazılmış sahte withTenant yerine üretimdeki servisin kendisi —
+		// gerçek transaction + `SET LOCAL app.current_tenant_id`, dolayısıyla eşzamanlı
+		// senaryolar üretimle aynı izolasyon altında koşuyor.
+		const tenantContext = new TenantContextService({ client: db, sql } as unknown as DbService);
 
 		enqueueSpy = vi.fn(async () => ({ id: 'bull-test-1' }));
 		const queue = { enqueueDefaultJob: enqueueSpy } as unknown as QueueService;
@@ -105,9 +114,8 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 	});
 
 	async function countInbound(externalId: string): Promise<number> {
-		const { sql } = getDb(databaseUrl);
-		return withTenantSession(tenantId, async () => {
-			const [row] = await sql`
+		return withTenantSession(tenantId, async (tx) => {
+			const [row] = await tx`
 				select count(*)::int as n
 				from inbound_messages
 				where tenant_id = ${tenantId}
@@ -140,9 +148,8 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 	it('invalid signature → 401 and 0 rows', async () => {
 		const externalId = `evt-bad-${randomUUID()}`;
 		enqueueSpy.mockClear();
-		const beforeJobs = await withTenantSession(tenantId, async () => {
-			const { sql } = getDb(databaseUrl);
-			const [row] = await sql`select count(*)::int as n from jobs where tenant_id = ${tenantId}`;
+		const beforeJobs = await withTenantSession(tenantId, async (tx) => {
+			const [row] = await tx`select count(*)::int as n from jobs where tenant_id = ${tenantId}`;
 			return Number(row?.n ?? 0);
 		});
 
@@ -160,9 +167,8 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 		expect(await countInbound(externalId)).toBe(0);
 		expect(enqueueSpy).not.toHaveBeenCalled();
 
-		const afterJobs = await withTenantSession(tenantId, async () => {
-			const { sql } = getDb(databaseUrl);
-			const [row] = await sql`select count(*)::int as n from jobs where tenant_id = ${tenantId}`;
+		const afterJobs = await withTenantSession(tenantId, async (tx) => {
+			const [row] = await tx`select count(*)::int as n from jobs where tenant_id = ${tenantId}`;
 			return Number(row?.n ?? 0);
 		});
 		expect(afterJobs).toBe(beforeJobs);

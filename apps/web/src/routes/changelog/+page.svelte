@@ -1,10 +1,5 @@
 <script lang="ts">
-	import {
-		changelog,
-		features,
-		featureStatusLabels,
-		type FeatureStatus
-	} from '@verimaya/shared';
+	import { changelog, features, featureStatusLabels, type FeatureStatus } from '@verimaya/shared';
 	import { formatDate } from '$lib/format';
 	import { featureStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';

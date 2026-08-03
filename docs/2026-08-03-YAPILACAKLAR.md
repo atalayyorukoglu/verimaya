@@ -1081,7 +1081,7 @@ pilot yok → `pilotta` kullanılmadı. Opus: Ads’i `kod-hazir` mi `harici-ona
 ## Faz 7 — Genel kontrol (Opus / bu oturumun denetçisi)
 
 ### 7.1 — Tüm kod bittiğinde genel denetim
-- [ ] Yapıldı
+- [x] Yapıldı — çıktı: `docs/2026-08-03-KONTROL-RAPORU.md`
 
 **Sonnet bu adımı yapmaz.** Faz 0–6 tamamlanıp tüm kutular işaretlendiğinde Atalay bu oturuma
 "Faz 7'yi başlat" der; denetim şunları kapsar:
@@ -1098,7 +1098,66 @@ pilot yok → `pilotta` kullanılmadı. Opus: Ads’i `kod-hazir` mi `harici-ona
 - Çıktı: `docs/2026-08-XX-KONTROL-RAPORU.md` + pilot readiness kararı (dört kapı: güvenlik, veri
   doğruluğu, operasyon, kullanıcı kabulü)
 
-**Görüş:** _(Opus doldurur)_
+**Görüş:** Denetimin en önemli sonucu **0.3'ün kapanmış olmasıdır.** Docker/root olmayan bu ortamda
+Postgres 16.14 npm üzerinden (`@embedded-postgres/linux-arm64@16.14.0-beta.17`) kullanıcı alanına
+kuruldu, `verimaya_app` rolü docker init script'iyle aynı şekilde yaratıldı, `drizzle-kit migrate`
+0000–0022'yi (elle yazılan 0019/0020/0021/0022 dahil) temiz uyguladı ve API test paketi **ilk kez
+uçtan uca koştu.** İlk koşuda **3 test kırmızıydı** — üçü de Sonnet'in "doğrulanamayan" diye
+işaretlediği eşzamanlılık testleri ve **gerçek bir üretim hatasını** ortaya çıkardılar (F-01):
+drizzle-orm ≥0.44 sürücü hatalarını `DrizzleQueryError` içine sarıp gerçek hatayı `cause` zincirinde
+taşıdığı için `isUniqueViolation` **hiçbir 23505'i tanımıyordu**; yani IDEM-01 ve EVENT-01'in
+eşzamanlı-yarış kurtarma blokları yazıldığı hâliyle **ölü koddu** ve ham 500 sızıyordu. Düzeltildikten
+sonra ikinci bir katman çıktı (F-03): salt select-then-insert deseninde iki eşzamanlı istek de
+handler'ı çalıştırıyordu (kaybedenin yazımları geri alınsa da DB dışı yan etkileri —
+`enqueueDefaultJob` dahil — iki kez gerçekleşiyordu); her iki yola transaction-ömürlü
+`pg_advisory_xact_lock` eklendi, 23505 yakalama ikinci savunma hattı olarak korundu. Ayrıca webhook
+spec'lerinin harness'ı üretimi sadık modellemiyordu (F-02: session-ömürlü `set_config(...,false)` +
+paylaşılan havuz) — gerçek `TenantContextService`'e geçirildi.
+
+Toplam **9 bulgu; 5'i düzeltildi, 4'ü karara bağlandı.** Düzeltilenler: F-01 ve F-03 (yukarıda),
+F-05 (`changelog/+page.svelte` Prettier'a uymuyordu — 5.1 CI'a `prettier --check` eklediği için ilk
+push'ta build kırmızı doğacaktı), F-06 (3.3'ün "kapsam dışı" bıraktığı `patients.service.ts:495`
+`toISOString().slice` — `starts_at` bir timestamptz olduğu için Europe/Istanbul'da gece yarısına
+yakın randevu etiketleri bir gün geriye kayıyordu, TIME-01'in kapatmayı amaçladığı hatanın aynısı),
+F-07 (`docs/TEHDIT-MODELI.md` madde 3'ün "şimdi" kararı hiç uygulanmamış: Bull Board token'ı
+`===` ile karşılaştırılıyordu → `timingSafeEqual`), F-09 (**CI'ın yeni "Web production build" adımı
+temiz bir checkout'ta kırılırdı**: `@verimaya/shared` production koşulunda `./dist/index.js`'e
+çözülüyor, `dist/` gitignore'da ve CI hiçbir yerde shared build çalıştırmıyordu — yerelde geçmesinin
+tek sebebi eski bir `dist/` klasörüydü; CI'a `Shared build` adımı eklendi). Açık bırakılanlar:
+**1.1 WEBHOOK-01** (hiç başlanmadı, tenant hâlâ `X-Tenant-Id`'den çözülüyor), F-08 (rapor ekranı
+"yalnız server aggregate" değil, aggregate düşerse `limit:100` listeden hesaplanmış toplamı sessizce
+gösteriyor), F-04 (`apps/api/tsconfig.json` spec dosyalarını typecheck'ten hariç tutuyor; exclude
+kaldırılınca 24 dosyada 101 tip hatası — F-02 tam da bu boşlukta yaşayabildi), 0.4 gitleaks
+(bu ortamda da doğrulanamadı).
+
+Bağımsız doğrulanan iddialar: RLS'te **25/25** tenant tablosunda politika var (gerçek şemaya
+`pg_class`/`pg_policy` sorgusu); `verimaya_app` `NOSUPERUSER`+`NOBYPASSRLS` ve better-auth
+tablolarında tam CRUD sahibi (tehdit modeli madde 2 ölçüldü, varsayım değil); 5.3'ün yedi kontrast
+oranının hepsi yeniden hesaplandı ve Görüş'teki değerlerle iki ondalığa kadar aynı çıktı; 1.2'nin
+`gate.ts` soyutlaması `bb6aca2^` sürümündeki inline koşullarla birebir eşdeğer (diff ile);
+2.3'ün kapsamsız key grep'i yalnız iki belgelenmiş istisnayı buluyor. Sonnet'in **tüm** varsayımları
+tek tek karara bağlandı (rapor §4) — ikisi reddedildi (3.3'ün patients.service kapsam dışı bırakması,
+5.1'in "kasten kırma denemesi gerekmez" gerekçesi), geri kalanı kabul veya şartlı kabul.
+
+**Kapsam sapması (bilerek):** Atalay bu oturumda Faz 5'in commit edilmemiş 13 dosyalık çalışma
+ağacını "denetle, sonra commit et" dedi; diff incelendikten sonra `b9782dc` (CI-01+CI-02) ve
+`02bf99b` (5.3 a11y) olarak ikiye ayrılıp commit edildi. Ayrıca `.git/` içinde önceki oturumlardan
+kalan 30+ artık kilit dosyası `.git/f7-trash/`'e taşındı (biri `refs/heads/main.lock.*` idi ve git'e
+"bad object" dedirtiyordu); mount üzerinden `unlink` yetkisi olmadığı için silinemedi, o klasör
+kendi makinende elle silinebilir.
+
+**Pilot readiness (dört kapı):** güvenlik **kırmızı** (WEBHOOK-01 + better-auth RLS; tek tenantta
+sarı), veri doğruluğu **yeşil**, operasyon **sarı** (CI hiç koşmadı; 5.2 smoke ve 0.4 gitleaks yalnız
+CI'da doğrulanabilir — Redis bu ortamda kurulamadı), kullanıcı kabulü **değerlendirilmedi**.
+**Karar: PILOT-01 (tek tenant) için kod tarafı hazır**, üç koşulla — (1) CI ilk push'ta yeşil
+geçmeli, (2) OPS-01 tamamlanmalı, (3) **ETL/seed sırasında ikinci bir organizasyon yaratılmamalı**
+(demo/test org'u dahil; yaratılırsa 1.3'ün "kabul edilen risk" kararı bozulur ve WEBHOOK-01 canlı
+açığa döner). **PILOT-02 ve ikinci tenant için hazır değil**; ön koşul 1.1 + better-auth RLS kararının
+yeniden değerlendirilmesi + F-08.
+
+Atalay'ın çalıştırması gerekenler (rapor §6): CI'ın üç yeni kapısının Actions'ta yeşil geçtiğini
+doğrulamak, tarayıcıda axe + Lighthouse + klavye/focus geçişi, ve gerçek oturumla tenant switch
+chaos testi — üçü de bu ortamda yapılamıyor, adım adım runbook raporda.
 
 ---
 

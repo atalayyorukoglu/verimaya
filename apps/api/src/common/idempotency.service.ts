@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql as drizzleSql } from 'drizzle-orm';
 import { idempotencyKeys } from '../db/schema';
 import { isUniqueViolation } from './postgres-errors';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -12,6 +12,14 @@ export type IdempotentResult<T> = {
 
 /** Must match the unique index name in db/schema/idempotency-keys.ts (IDEM-01, Faz 4.1). */
 const IDEMPOTENCY_UNIQUE_INDEX = 'idempotency_keys_tenant_key_method_path_uidx';
+
+/**
+ * Advisory-lock kimliği. Ayırıcı, alanların birleşiminden doğabilecek çakışmayı önler
+ * (ör. key="a" + method="bc" ile key="ab" + method="c" aynı string'i üretmesin).
+ */
+function lockIdentity(tenantId: string, key: string, method: string, normalizedPath: string) {
+	return ['idem', tenantId, key, method, normalizedPath].join('|');
+}
 
 @Injectable()
 export class IdempotencyService {
@@ -34,6 +42,16 @@ export class IdempotencyService {
 		try {
 			return await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 				if (key) {
+					// Faz 7 denetim bulgusu (F-03): salt select-then-insert altında iki eşzamanlı
+					// istek de "yok" görüp handler'ı **iki kez** çalıştırıyordu; kaybedenin yazımları
+					// geri alınsa da handler'ın DB dışı yan etkisi (dış API çağrısı, e-posta) iki kez
+					// gerçekleşirdi. Transaction-ömürlü advisory lock ile aynı kimliğe sahip ikinci
+					// istek birincinin commit'ini bekler, sonra replay satırını görür — handler
+					// gerçekten tek kez koşar. Kilit commit/rollback ile otomatik bırakılır.
+					await db.execute(
+						drizzleSql`select pg_advisory_xact_lock(hashtextextended(${lockIdentity(tenantId, key, method, normalizedPath)}, 0))`
+					);
+
 					const existing = await this.findReplay(db, key, method, normalizedPath);
 					if (existing) {
 						return {
