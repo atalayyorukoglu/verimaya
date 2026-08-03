@@ -2,6 +2,7 @@
 	import { createInfiniteQuery } from '@tanstack/svelte-query';
 	import type { Transaction } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
@@ -15,12 +16,15 @@
 		net: number;
 	};
 
+	const { keys, ready } = useQueryScope();
+
 	const txQuery = createInfiniteQuery(() => ({
-		queryKey: ['transactions', { for: 'p2p', all: true }],
+		queryKey: keys.transactions.list({ for: 'p2p', all: true }),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<TxPage>(listUrl('transactions', { limit: 100, cursor: pageParam })),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: TxPage) => last.next_cursor
+		getNextPageParam: (last: TxPage) => last.next_cursor,
+		enabled: ready
 	}));
 
 	$effect(() => {

@@ -3,6 +3,7 @@
 	import type { ContactType } from '@verimaya/shared';
 	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -10,10 +11,12 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const typesQuery = createQuery(() => ({
-		queryKey: ['settings', 'contact-types'],
-		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes)
+		queryKey: keys.settings.contactTypes(),
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
+		enabled: ready
 	}));
 
 	let newName = $state('');
@@ -33,7 +36,7 @@
 		try {
 			await apiSend(apiPaths.settingsContactTypes, 'POST', { name });
 			newName = '';
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'contact-types'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.contactTypes() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Eklenemedi';
 		} finally {
@@ -46,7 +49,7 @@
 		error = null;
 		try {
 			await apiSend(apiPaths.settingsContactType(id), 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'contact-types'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.contactTypes() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Silinemedi';
 		} finally {

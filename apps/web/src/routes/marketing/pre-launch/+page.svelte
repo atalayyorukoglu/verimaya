@@ -8,6 +8,7 @@
 		type TrustScoreSettings
 	} from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatRatio, parseMoneyInput } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -21,9 +22,12 @@
 	let commissionText = $state('50');
 	let platformExtraFeeText = $state('2');
 
+	const { keys, ready } = useQueryScope();
+
 	const trustQuery = createQuery(() => ({
-		queryKey: ['settings', 'trust-score'],
-		queryFn: () => apiGet<TrustScoreSettings>('/v1/settings/trust-score')
+		queryKey: keys.settings.trustScore(),
+		queryFn: () => apiGet<TrustScoreSettings>('/v1/settings/trust-score'),
+		enabled: ready
 	}));
 
 	function parseNumberInput(value: string): number | null {

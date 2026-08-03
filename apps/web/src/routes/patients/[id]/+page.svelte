@@ -22,6 +22,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
 	import {
@@ -41,6 +42,7 @@
 	type PageOf<T> = { items: T[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 	const id = $derived(page.params.id!);
 
 	let patientFormOpen = $state(false);
@@ -58,32 +60,35 @@
 	let apptFormError = $state<string | null>(null);
 
 	const patientQuery = createQuery(() => ({
-		queryKey: ['patients', id],
-		queryFn: () => apiGet<Patient>(apiPaths.patient(id))
+		queryKey: keys.patients.detail(id),
+		queryFn: () => apiGet<Patient>(apiPaths.patient(id)),
+		enabled: ready
 	}));
 
 	const txQuery = createQuery(() => ({
-		queryKey: ['transactions', { patient_id: id, limit: 20 }],
+		queryKey: keys.transactions.list({ patient_id: id, limit: 20 }),
 		queryFn: () =>
-			apiGet<PageOf<Transaction>>(listUrl('transactions', { limit: 20, patient_id: id }))
+			apiGet<PageOf<Transaction>>(listUrl('transactions', { limit: 20, patient_id: id })),
+		enabled: ready
 	}));
 
 	const apptQuery = createQuery(() => ({
-		queryKey: ['appointments', { patient_id: id, limit: 20 }],
+		queryKey: keys.appointments.list({ patient_id: id, limit: 20 }),
 		queryFn: () =>
-			apiGet<PageOf<Appointment>>(listUrl('appointments', { limit: 20, patient_id: id }))
+			apiGet<PageOf<Appointment>>(listUrl('appointments', { limit: 20, patient_id: id })),
+		enabled: ready
 	}));
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: ['tenants', 'current'],
+		queryKey: keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
-		enabled: !USE_MSW
+		enabled: !USE_MSW && ready
 	}));
 
 	const financeSummaryQuery = createQuery(() => ({
-		queryKey: ['patients', id, 'finance-summary'],
+		queryKey: keys.patients.financeSummary(id),
 		queryFn: () => apiGet<PatientFinanceSummary>(apiPaths.patientFinanceSummary(id)),
-		enabled: !USE_MSW
+		enabled: !USE_MSW && ready
 	}));
 
 	const transactions = $derived(txQuery.data?.items ?? []);
@@ -119,7 +124,7 @@
 		patientFormError = null;
 		try {
 			await apiSend<Patient>(apiPaths.patient(id), 'PATCH', data);
-			await queryClient.invalidateQueries({ queryKey: ['patients'] });
+			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
 			patientFormOpen = false;
 		} catch (err) {
 			patientFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
@@ -149,7 +154,7 @@
 			} else {
 				await apiSend('/v1/transactions', 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {
@@ -180,7 +185,7 @@
 			} else {
 				await apiSend('/v1/appointments', 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+			await queryClient.invalidateQueries({ queryKey: keys.appointments.all() });
 			apptFormOpen = false;
 			editingAppt = null;
 		} catch (err) {

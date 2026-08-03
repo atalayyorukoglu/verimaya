@@ -3,6 +3,7 @@
 	import type { AppointmentTypeSetting } from '@verimaya/shared';
 	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -10,10 +11,12 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const typesQuery = createQuery(() => ({
-		queryKey: ['settings', 'appointment-types'],
-		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes)
+		queryKey: keys.settings.appointmentTypes(),
+		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes),
+		enabled: ready
 	}));
 
 	const items = $derived(
@@ -33,7 +36,7 @@
 		try {
 			await apiSend(apiPaths.settingsAppointmentTypes, 'POST', { name });
 			newName = '';
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'appointment-types'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.appointmentTypes() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Eklenemedi';
 		} finally {
@@ -44,7 +47,7 @@
 	async function remove(item: AppointmentTypeSetting) {
 		if (!confirm(`“${item.name}” silinsin mi?`)) return;
 		await apiSend(apiPaths.settingsAppointmentType(item.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: ['settings', 'appointment-types'] });
+		await queryClient.invalidateQueries({ queryKey: keys.settings.appointmentTypes() });
 	}
 </script>
 

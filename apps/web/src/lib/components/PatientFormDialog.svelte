@@ -9,6 +9,7 @@
 	} from '@verimaya/shared';
 	import { patientStatusLabels } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -29,11 +30,12 @@
 	} = $props();
 
 	const statuses = Object.keys(patientStatusLabels) as PatientStatus[];
+	const { keys, ready } = useQueryScope();
 
 	const membersQuery = createQuery(() => ({
-		queryKey: ['members', { for: 'patient-form' }],
+		queryKey: keys.members.list({ for: 'patient-form' }),
 		queryFn: () => apiGet<MembersPage>(listUrl('members', { limit: 50 })),
-		enabled: open
+		enabled: open && ready
 	}));
 
 	let full_name = $state('');

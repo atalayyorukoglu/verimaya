@@ -15,6 +15,7 @@
 		transactionStatusLabels
 	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -28,6 +29,7 @@
 	type PatientsPage = ContractResponse<'GET /v1/patients'>;
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
 
@@ -37,7 +39,7 @@
 	let formError = $state<string | null>(null);
 
 	const txQuery = createInfiniteQuery(() => ({
-		queryKey: ['transactions', { patient_id: patientFilterId }],
+		queryKey: keys.transactions.list({ patient_id: patientFilterId }),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<TransactionsPage>(
 				listUrl('transactions', {
@@ -47,12 +49,14 @@
 				})
 			),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: TransactionsPage) => last.next_cursor
+		getNextPageParam: (last: TransactionsPage) => last.next_cursor,
+		enabled: ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: ['patients', { limit: 100, for: 'picker' }],
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 }))
+		queryKey: keys.patients.list({ limit: 100, for: 'picker' }),
+		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
+		enabled: ready
 	}));
 
 	const filterPatient = $derived(
@@ -60,8 +64,9 @@
 	);
 
 	const inboxQuery = createQuery(() => ({
-		queryKey: ['whatsapp', 'inbox'],
-		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox)
+		queryKey: keys.whatsapp.inbox(),
+		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox),
+		enabled: ready
 	}));
 
 	const pendingCount = $derived(
@@ -89,7 +94,7 @@
 			} else {
 				await apiSend(apiPaths.transactions, 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
 			formOpen = false;
 			editing = null;
 		} catch (err) {

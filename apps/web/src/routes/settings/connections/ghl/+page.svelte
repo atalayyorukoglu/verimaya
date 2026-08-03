@@ -3,6 +3,7 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { GhlConnectionStatus } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { PUBLIC_API_URL } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -10,12 +11,14 @@
 	import IntegrationCard from '$lib/components/IntegrationCard.svelte';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 	const apiOrigin = PUBLIC_API_URL.replace(/\/$/, '');
 	const authorizeHref = `${apiOrigin}/v1/integrations/ghl/authorize`;
 
 	const statusQuery = createQuery(() => ({
-		queryKey: ['integrations', 'ghl', 'status'],
-		queryFn: () => apiGet<GhlConnectionStatus>('/v1/integrations/ghl/status')
+		queryKey: keys.integrations.ghlStatus(),
+		queryFn: () => apiGet<GhlConnectionStatus>('/v1/integrations/ghl/status'),
+		enabled: ready
 	}));
 
 	const flashConnected = $derived(page.url.searchParams.get('ghl') === 'connected');
@@ -56,7 +59,7 @@
 		disconnectError = null;
 		try {
 			await apiSend('/v1/integrations/ghl', 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ghl', 'status'] });
+			await queryClient.invalidateQueries({ queryKey: keys.integrations.ghlStatus() });
 		} catch (err) {
 			disconnectError = err instanceof Error ? err.message : t('settings.ghl.disconnectError');
 		} finally {

@@ -11,6 +11,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, appointmentStatusLabels } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -33,18 +34,19 @@
 	} = $props();
 
 	const statuses = Object.keys(appointmentStatusLabels) as AppointmentStatus[];
+	const { keys, ready } = useQueryScope();
 
 	const typesQuery = createQuery(() => ({
-		queryKey: ['settings', 'appointment-types'],
+		queryKey: keys.settings.appointmentTypes(),
 		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes),
-		enabled: open
+		enabled: open && ready
 	}));
 
 	const contactsQuery = createQuery(() => ({
-		queryKey: ['contacts', { limit: 100, for: 'appt-form' }],
+		queryKey: keys.contacts.list({ limit: 100, for: 'appt-form' }),
 		queryFn: () =>
 			apiGet<{ items: Contact[]; next_cursor: string | null }>(listUrl('contacts', { limit: 100 })),
-		enabled: open
+		enabled: open && ready
 	}));
 
 	const typeNames = $derived(

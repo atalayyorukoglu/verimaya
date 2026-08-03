@@ -9,6 +9,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, duplicateMatchTypeLabels } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
@@ -26,6 +27,7 @@
 	} = $props();
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	let keepByGroup = $state<Record<string, string>>({});
 	let mergingKey = $state<string | null>(null);
@@ -33,13 +35,15 @@
 	let success = $state<string | null>(null);
 
 	const groupsQuery = createQuery(() => ({
-		queryKey: [kind, 'duplicate-groups'] as const,
+		queryKey:
+			kind === 'contacts' ? keys.contacts.duplicateGroups() : keys.patients.duplicateGroups(),
 		queryFn: async (): Promise<{ items: AnyGroup[] }> => {
 			if (kind === 'contacts') {
 				return apiGet<{ items: ContactDuplicateGroup[] }>(apiPaths.contactsDuplicateGroups);
 			}
 			return apiGet<{ items: PatientDuplicateGroup[] }>(apiPaths.patientsDuplicateGroups);
-		}
+		},
+		enabled: ready
 	}));
 
 	const groups = $derived(groupsQuery.data?.items ?? []);
@@ -91,9 +95,12 @@
 		try {
 			const path = kind === 'contacts' ? apiPaths.contactsMerge : apiPaths.patientsMerge;
 			await apiSend(path, 'POST', { keep_id, merge_ids });
-			await queryClient.invalidateQueries({ queryKey: [kind, 'duplicate-groups'] });
 			await queryClient.invalidateQueries({
-				queryKey: [kind === 'contacts' ? 'contacts' : 'patients']
+				queryKey:
+					kind === 'contacts' ? keys.contacts.duplicateGroups() : keys.patients.duplicateGroups()
+			});
+			await queryClient.invalidateQueries({
+				queryKey: kind === 'contacts' ? keys.contacts.all() : keys.patients.all()
 			});
 			success = `${merge_ids.length} kayıt birleştirildi.`;
 			const next = { ...keepByGroup };

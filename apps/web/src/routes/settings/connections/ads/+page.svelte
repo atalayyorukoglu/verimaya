@@ -9,6 +9,7 @@
 		type AdProvider
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { PUBLIC_API_URL } from '$lib/env';
 	import { formatDate } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -18,11 +19,13 @@
 	import { Button } from '$lib/components/ui/button';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 	const apiOrigin = PUBLIC_API_URL.replace(/\/$/, '');
 
 	const statusQuery = createQuery(() => ({
-		queryKey: ['integrations', 'ads', 'status'],
-		queryFn: () => apiGet<AdConnectionsResponse>('/v1/integrations/ads/status')
+		queryKey: keys.integrations.adsStatus(),
+		queryFn: () => apiGet<AdConnectionsResponse>('/v1/integrations/ads/status'),
+		enabled: ready
 	}));
 
 	const adsFlash = $derived.by((): AdProvider | null => {
@@ -95,7 +98,7 @@
 		disconnectError = null;
 		try {
 			await apiSend(`/v1/integrations/ads/${provider}`, 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ads', 'status'] });
+			await queryClient.invalidateQueries({ queryKey: keys.integrations.adsStatus() });
 		} catch (err) {
 			disconnectError = err instanceof Error ? err.message : t('settings.ads.disconnectError');
 		} finally {
@@ -113,7 +116,7 @@
 				customer_id: googleCustomerIdDraft
 			});
 			customerIdOk = t('settings.ads.googleCustomerId.saved');
-			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ads', 'status'] });
+			await queryClient.invalidateQueries({ queryKey: keys.integrations.adsStatus() });
 		} catch (err) {
 			customerIdError =
 				err instanceof Error ? err.message : t('settings.ads.googleCustomerId.error');
@@ -132,7 +135,7 @@
 				count: String(result.upserted),
 				mode: result.mode
 			});
-			await queryClient.invalidateQueries({ queryKey: ['integrations', 'ads', 'status'] });
+			await queryClient.invalidateQueries({ queryKey: keys.integrations.adsStatus() });
 		} catch (err) {
 			syncError = err instanceof Error ? err.message : t('settings.ads.syncError');
 		} finally {

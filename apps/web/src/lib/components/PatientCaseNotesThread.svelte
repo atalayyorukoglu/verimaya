@@ -2,6 +2,7 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { PatientCaseNote } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
@@ -17,10 +18,12 @@
 	} = $props();
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const notesQuery = createQuery(() => ({
-		queryKey: ['case-notes', patientId],
-		queryFn: () => apiGet<{ items: PatientCaseNote[] }>(`/v1/patients/${patientId}/case-notes`)
+		queryKey: keys.patients.caseNotes(patientId),
+		queryFn: () => apiGet<{ items: PatientCaseNote[] }>(`/v1/patients/${patientId}/case-notes`),
+		enabled: ready
 	}));
 
 	let draft = $state('');
@@ -45,7 +48,7 @@
 		try {
 			await apiSend<PatientCaseNote>(`/v1/patients/${patientId}/case-notes`, 'POST', { body });
 			draft = '';
-			await queryClient.invalidateQueries({ queryKey: ['case-notes', patientId] });
+			await queryClient.invalidateQueries({ queryKey: keys.patients.caseNotes(patientId) });
 			requestAnimationFrame(() => requestAnimationFrame(scrollListToBottom));
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Not gönderilemedi';
@@ -61,7 +64,7 @@
 		error = null;
 		try {
 			await apiSend(`/v1/patients/${patientId}/case-notes/${id}`, 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: ['case-notes', patientId] });
+			await queryClient.invalidateQueries({ queryKey: keys.patients.caseNotes(patientId) });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Not silinemedi';
 		} finally {

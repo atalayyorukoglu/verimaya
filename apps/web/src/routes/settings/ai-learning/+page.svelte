@@ -3,6 +3,7 @@
 	import type { AiCorrection, TransactionDraft } from '@verimaya/shared';
 	import { apiPaths } from '@verimaya/shared';
 	import { apiGet } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -29,10 +30,12 @@
 		{ field: 'occurred_on', corrections: 4, rate: '6%' }
 	];
 
+	const { keys, ready } = useQueryScope();
+
 	const correctionsQuery = createQuery(() => ({
-		queryKey: ['whatsapp', 'corrections'],
+		queryKey: keys.whatsapp.corrections(),
 		queryFn: () => apiGet<CorrectionsPage>(apiPaths.whatsappCorrectionsList({ limit: 100 })),
-		enabled: !USE_MSW
+		enabled: !USE_MSW && ready
 	}));
 
 	function fieldDiffs(a: TransactionDraft, b: TransactionDraft): Record<string, boolean> {

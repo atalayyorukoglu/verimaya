@@ -21,6 +21,7 @@
 		transactionStatusLabels
 	} from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -45,24 +46,25 @@
 	const kinds = Object.keys(transactionKindLabels) as TransactionKind[];
 	const statuses = Object.keys(transactionStatusLabels) as TransactionStatus[];
 	const invoiceStatuses = Object.keys(invoiceStatusLabels) as InvoiceStatus[];
+	const { keys, ready } = useQueryScope();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: ['tenants', 'current'],
+		queryKey: keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
-		enabled: open
+		enabled: open && ready
 	}));
 
 	const catsQuery = createQuery(() => ({
-		queryKey: ['settings', 'finance-categories'],
+		queryKey: keys.settings.financeCategories(),
 		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
-		enabled: open
+		enabled: open && ready
 	}));
 
 	const contactsQuery = createQuery(() => ({
-		queryKey: ['contacts', { limit: 100, for: 'tx-form' }],
+		queryKey: keys.contacts.list({ limit: 100, for: 'tx-form' }),
 		queryFn: () =>
 			apiGet<{ items: Contact[]; next_cursor: string | null }>(listUrl('contacts', { limit: 100 })),
-		enabled: open
+		enabled: open && ready
 	}));
 
 	const tenantBase = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);

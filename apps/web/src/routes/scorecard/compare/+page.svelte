@@ -3,6 +3,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiPaths } from '@verimaya/shared';
 	import { apiGet } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
 
@@ -27,10 +28,11 @@
 
 	const previousId = $derived(page.url.searchParams.get('previous') ?? '');
 	const currentId = $derived(page.url.searchParams.get('current') ?? '');
+	const { keys, ready } = useQueryScope();
 
 	const compareQuery = createQuery(() => ({
-		queryKey: ['scorecard', 'compare', previousId, currentId],
-		enabled: Boolean(previousId && currentId),
+		queryKey: keys.scorecard.compare(previousId, currentId),
+		enabled: Boolean(previousId && currentId) && ready,
 		queryFn: () => apiGet<CompareDto>(apiPaths.scorecardCompare(previousId, currentId))
 	}));
 

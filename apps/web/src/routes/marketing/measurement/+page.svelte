@@ -8,6 +8,7 @@
 		type TrustScoreSettings
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, labelClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -69,10 +70,12 @@
 	}
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const settingsQuery = createQuery(() => ({
-		queryKey: ['settings', 'trust-score'],
-		queryFn: () => apiGet<TrustScoreSettings>('/v1/settings/trust-score')
+		queryKey: keys.settings.trustScore(),
+		queryFn: () => apiGet<TrustScoreSettings>('/v1/settings/trust-score'),
+		enabled: ready
 	}));
 
 	let checks = $state<CheckRow[]>(mergeSaved(undefined));
@@ -132,7 +135,7 @@
 				checks: checks.map((c) => ({ id: c.id, score: c.score }))
 			};
 			await apiSend<TrustScoreSettings>('/v1/settings/trust-score', 'PUT', body);
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'trust-score'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.trustScore() });
 			saveOk = true;
 		} catch (err) {
 			saveError = err instanceof Error ? err.message : 'Kayıt başarısız';

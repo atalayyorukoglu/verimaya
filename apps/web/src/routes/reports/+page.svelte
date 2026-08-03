@@ -23,6 +23,7 @@
 		transactionStatusLabels
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatMoney, formatRatio } from '$lib/format';
 	import { amountInBase, isFxMissing, paidAmountInBase } from '$lib/money-base';
@@ -50,6 +51,7 @@
 		| { mode: 'subcategory'; categoryLabel: string; subtitleLabel: string };
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	function pad2(n: number) {
 		return String(n).padStart(2, '0');
@@ -118,7 +120,7 @@
 	const periodText = $derived(periodLabel(periodKey, dateRange.from ?? '', dateRange.to ?? ''));
 
 	const txQuery = createQuery(() => ({
-		queryKey: ['transactions', { for: 'reports', from: dateRange.from, to: dateRange.to }],
+		queryKey: keys.transactions.list({ for: 'reports', from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<TxPage>(
 				listUrl('transactions', {
@@ -126,33 +128,34 @@
 					from: dateRange.from ?? undefined,
 					to: dateRange.to ?? undefined
 				})
-			)
+			),
+		enabled: ready
 	}));
 
 	const summaryQuery = createQuery(() => ({
-		queryKey: ['reports', 'summary', { from: dateRange.from, to: dateRange.to }],
+		queryKey: keys.reports.summary({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<ReportSummary>(reportUrl('summary', { from: dateRange.from, to: dateRange.to })),
-		enabled: !USE_MSW
+		enabled: !USE_MSW && ready
 	}));
 
 	const byCategoryQuery = createQuery(() => ({
-		queryKey: ['reports', 'by-category', { from: dateRange.from, to: dateRange.to }],
+		queryKey: keys.reports.byCategory({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<ReportByCategory>(
 				reportUrl('by-category', { from: dateRange.from, to: dateRange.to })
 			),
-		enabled: !USE_MSW
+		enabled: !USE_MSW && ready
 	}));
 
 	const drillCategoryLabel = $derived(drill?.mode === 'category' ? drill.label : null);
 
 	const byCategoryDetailQuery = createQuery(() => ({
-		queryKey: [
-			'reports',
-			'by-category-detail',
-			{ from: dateRange.from, to: dateRange.to, category: drillCategoryLabel }
-		],
+		queryKey: keys.reports.byCategoryDetail({
+			from: dateRange.from,
+			to: dateRange.to,
+			category: drillCategoryLabel
+		}),
 		queryFn: () =>
 			apiGet<ReportByCategoryDetail>(
 				reportUrl('by-category-detail', {
@@ -161,7 +164,7 @@
 					category: drillCategoryLabel
 				})
 			),
-		enabled: !USE_MSW && drillCategoryLabel != null
+		enabled: !USE_MSW && drillCategoryLabel != null && ready
 	}));
 
 	const monthlyRange = $derived.by(() => {
@@ -171,25 +174,28 @@
 	});
 
 	const monthlyQuery = createQuery(() => ({
-		queryKey: ['reports', 'monthly', monthlyRange],
+		queryKey: keys.reports.monthly(monthlyRange),
 		queryFn: () => apiGet<ReportMonthly>(reportUrl('monthly', monthlyRange)),
-		enabled: !USE_MSW
+		enabled: !USE_MSW && ready
 	}));
 
 	const marketingQuery = createQuery(() => ({
-		queryKey: ['reports', 'marketing', { from: dateRange.from, to: dateRange.to }],
+		queryKey: keys.reports.marketing({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
-			apiGet<MarketingReport>(marketingReportUrl({ from: dateRange.from, to: dateRange.to }))
+			apiGet<MarketingReport>(marketingReportUrl({ from: dateRange.from, to: dateRange.to })),
+		enabled: ready
 	}));
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: ['tenants', 'current'],
-		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		enabled: ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: ['patients', { limit: 100, for: 'reports' }],
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 }))
+		queryKey: keys.patients.list({ limit: 100, for: 'reports' }),
+		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
+		enabled: ready
 	}));
 
 	const transactions = $derived(txQuery.data?.items ?? []);
@@ -510,8 +516,8 @@
 		txFormError = null;
 		try {
 			await apiSend(`/v1/transactions/${editingTx.id}`, 'PATCH', data);
-			await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-			await queryClient.invalidateQueries({ queryKey: ['reports'] });
+			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
+			await queryClient.invalidateQueries({ queryKey: keys.reports.all() });
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {

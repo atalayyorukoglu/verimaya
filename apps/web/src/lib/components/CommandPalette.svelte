@@ -3,6 +3,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import type { Appointment, Patient, Transaction } from '@verimaya/shared';
 	import { apiGet } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime, formatMoney } from '$lib/format';
 	import { portal } from '$lib/actions/portal';
 	import Search from '@lucide/svelte/icons/search';
@@ -20,10 +21,12 @@
 	let q = $state('');
 	let inputEl: HTMLInputElement | undefined = $state();
 
+	const { keys, ready } = useQueryScope();
+
 	const searchQuery = createQuery(() => ({
-		queryKey: ['search', q],
+		queryKey: keys.search.query(q),
 		queryFn: () => apiGet<SearchResult>(`/v1/search?q=${encodeURIComponent(q)}`),
-		enabled: open && q.trim().length >= 2
+		enabled: open && q.trim().length >= 2 && ready
 	}));
 
 	function openPalette() {

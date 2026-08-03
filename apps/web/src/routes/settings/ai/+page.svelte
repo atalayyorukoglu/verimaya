@@ -6,6 +6,7 @@
 		type WhatsappAiDisclosure
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, labelClass, textareaClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -31,10 +32,12 @@ Kurallar:
 	let disclosureHydrated = $state(false);
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const disclosureQuery = createQuery(() => ({
-		queryKey: ['settings', 'ai-disclosure'],
-		queryFn: () => apiGet<WhatsappAiDisclosure>(apiPaths.settingsAiDisclosure)
+		queryKey: keys.settings.aiDisclosure(),
+		queryFn: () => apiGet<WhatsappAiDisclosure>(apiPaths.settingsAiDisclosure),
+		enabled: ready
 	}));
 
 	$effect(() => {
@@ -81,7 +84,7 @@ Kurallar:
 			});
 			disclosureEnabled = saved.enabled;
 			disclosureText = saved.text;
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'ai-disclosure'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.aiDisclosure() });
 			disclosureSavedOk = true;
 			setTimeout(() => (disclosureSavedOk = false), 2000);
 		} catch (err) {

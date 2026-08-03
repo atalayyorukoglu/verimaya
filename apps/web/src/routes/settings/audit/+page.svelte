@@ -3,6 +3,7 @@
 	import type { AuditLog, ContractResponse } from '@verimaya/shared';
 	import { auditActionLabels, auditEntityLabels } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -11,12 +12,15 @@
 
 	type AuditLogsPage = ContractResponse<'GET /v1/audit-logs'>;
 
+	const { keys, ready } = useQueryScope();
+
 	const logsQuery = createInfiniteQuery(() => ({
-		queryKey: ['audit-logs'],
+		queryKey: keys.auditLogs.list(),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<AuditLogsPage>(listUrl('audit-logs', { limit: 25, cursor: pageParam })),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: AuditLogsPage) => last.next_cursor
+		getNextPageParam: (last: AuditLogsPage) => last.next_cursor,
+		enabled: ready
 	}));
 
 	const items = $derived(logsQuery.data?.pages.flatMap((p) => p.items) ?? []);

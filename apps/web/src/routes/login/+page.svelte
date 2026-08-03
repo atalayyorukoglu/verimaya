@@ -4,6 +4,7 @@
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { authClient } from '$lib/auth';
+	import { resetQueryScope } from '$lib/query-scope.svelte';
 	import { PUBLIC_SITE_URL } from '$lib/env';
 	import {
 		checkOrganizationGate,
@@ -31,16 +32,17 @@
 	const queryClient = useQueryClient();
 
 	/**
-	 * Clear all cached queries before entering the panel — a browser tab may
-	 * have stale data from a previous session/organization (AUTH-01E). GET
-	 * /v1/me and every tenant-scoped query must refetch under the new session.
+	 * Cancel in-flight queries then clear all cached queries before entering the
+	 * panel — a browser tab may have stale data from a previous session/organization
+	 * (AUTH-01E / CACHE-01). GET /v1/me and every tenant-scoped query must refetch
+	 * under the new session.
 	 */
-	function clearSessionCache() {
-		queryClient.clear();
+	async function clearSessionCache() {
+		await resetQueryScope(queryClient);
 	}
 
 	async function finishAuth() {
-		clearSessionCache();
+		await clearSessionCache();
 		const gate = await checkOrganizationGate();
 		if (gate.action === 'proceed') {
 			await goto('/');
@@ -105,7 +107,7 @@
 		error = null;
 		try {
 			await setActiveOrganization(selectedOrgId);
-			clearSessionCache();
+			await clearSessionCache();
 			await goto('/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Organizasyon seçilemedi';
@@ -127,7 +129,7 @@
 		try {
 			const org = await createOrganization(name, slug);
 			await setActiveOrganization(org.id);
-			clearSessionCache();
+			await clearSessionCache();
 			await goto('/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Organizasyon oluşturulamadı';

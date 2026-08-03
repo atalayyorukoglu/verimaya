@@ -10,6 +10,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -18,6 +19,7 @@
 	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	let q = $state('');
 	let search = $state('');
@@ -28,14 +30,15 @@
 	let formError = $state<string | null>(null);
 
 	const typesQuery = createQuery(() => ({
-		queryKey: ['settings', 'contact-types'],
-		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes)
+		queryKey: keys.settings.contactTypes(),
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
+		enabled: ready
 	}));
 
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
 
 	const contactsQuery = createInfiniteQuery(() => ({
-		queryKey: ['contacts', { q: search, type_id: typeId || null }],
+		queryKey: keys.contacts.list({ q: search, type_id: typeId || null }),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<ContactsPage>(
 				listUrl('contacts', {
@@ -46,7 +49,8 @@
 				})
 			),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: ContactsPage) => last.next_cursor
+		getNextPageParam: (last: ContactsPage) => last.next_cursor,
+		enabled: ready
 	}));
 
 	const items = $derived(contactsQuery.data?.pages.flatMap((p) => p.items) ?? []);
@@ -77,8 +81,8 @@
 			} else {
 				await apiSend(apiPaths.contacts, 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: ['contacts'] });
-			await queryClient.invalidateQueries({ queryKey: ['patients'] });
+			await queryClient.invalidateQueries({ queryKey: keys.contacts.all() });
+			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
 			formOpen = false;
 			editing = null;
 		} catch (err) {

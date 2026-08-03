@@ -3,16 +3,19 @@
 	import type { Tenant, TenantUpdate, SupportedCurrency } from '@verimaya/shared';
 	import { SUPPORTED_CURRENCIES } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: ['tenants', 'current'],
-		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		enabled: ready
 	}));
 
 	let name = $state('');
@@ -46,7 +49,7 @@
 		};
 		try {
 			await apiSend<Tenant>('/v1/tenants/current', 'PATCH', payload);
-			await queryClient.invalidateQueries({ queryKey: ['tenants', 'current'] });
+			await queryClient.invalidateQueries({ queryKey: keys.tenants.current() });
 			savedAt = Date.now();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Kaydetme başarısız';

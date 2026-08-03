@@ -9,6 +9,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, inboundMessageStatusLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -27,6 +28,7 @@
 		'Örnek:\nSandra 2900 GBP 2. vizit ödemesi + 450 GBP t-base ücretleri alındı.\nToplamda 3.350 GBP kart ile ödeme alındı.';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 	let message = $state('');
 	let parsing = $state(false);
 	let parseError = $state<string | null>(null);
@@ -39,13 +41,15 @@
 	let correctionSubmitted = $state(false);
 
 	const inboxQuery = createQuery(() => ({
-		queryKey: ['whatsapp', 'inbox'],
-		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox)
+		queryKey: keys.whatsapp.inbox(),
+		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox),
+		enabled: ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: ['patients', { limit: 100, for: 'whatsapp' }],
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 }))
+		queryKey: keys.patients.list({ limit: 100, for: 'whatsapp' }),
+		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
+		enabled: ready
 	}));
 
 	const patients = $derived(patientsQuery.data?.items ?? []);
@@ -160,7 +164,7 @@
 			if (res.records.length === 0) {
 				parseError = item.has_media ? 'Medya mesajı — metin yok.' : 'Mesajdan işlem çıkarılamadı.';
 			}
-			await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'inbox'] });
+			await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
 		} catch (err) {
 			parseError = err instanceof Error ? err.message : 'Analiz başarısız';
 			drafts = [];
@@ -174,7 +178,7 @@
 		processing = true;
 		try {
 			await apiSend(apiPaths.whatsappInboxProcess, 'POST');
-			await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'inbox'] });
+			await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
 		} finally {
 			processing = false;
 		}
@@ -188,7 +192,7 @@
 			drafts = [];
 			originalDrafts = [];
 		}
-		await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'inbox'] });
+		await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
 	}
 
 	async function approveInbox(id: string) {
@@ -198,7 +202,7 @@
 		message = '';
 		drafts = [];
 		originalDrafts = [];
-		await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'inbox'] });
+		await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
 	}
 
 	function updateDraft(index: number, patch: Partial<TransactionDraft>) {
@@ -256,7 +260,7 @@
 		try {
 			await apiSend('/v1/transactions', 'POST', payload);
 			drafts = drafts.map((d, i) => (i === index ? { ...d, _status: 'saved', _error: null } : d));
-			await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
 			if (drafts.every((d) => d._status === 'saved')) {
 				await maybeSubmitCorrection(activeInboxId);
 			}

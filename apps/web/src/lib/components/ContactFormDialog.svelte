@@ -3,6 +3,7 @@
 	import type { Contact, ContactCreate, ContactType, ContactUpdate } from '@verimaya/shared';
 	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -20,10 +21,12 @@
 		onsubmit: (data: ContactCreate | ContactUpdate) => void | Promise<void>;
 	} = $props();
 
+	const { keys, ready } = useQueryScope();
+
 	const typesQuery = createQuery(() => ({
-		queryKey: ['settings', 'contact-types'],
+		queryKey: keys.settings.contactTypes(),
 		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
-		enabled: open
+		enabled: open && ready
 	}));
 
 	let contact_type_id = $state('');

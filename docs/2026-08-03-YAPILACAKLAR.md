@@ -460,7 +460,7 @@ doğrulandı, mantık hiç koşmadı) — Opus'un/Atalay'ın DB'li ortamda
 ---
 
 ### 2.3 — CACHE-01: Tenant/kullanıcı kapsamlı query key'leri
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `apps/web/src/lib/query-client.ts` global; key'ler `['patients', ...]` gibi kapsamsız. 30 saniyelik
 stale pencerede org/kullanıcı değişince önceki kapsamın verisi görünebilir. CACHE-02 (logout/switch
@@ -479,7 +479,43 @@ Yap:
   manuel senaryo). Kapsamsız key kalmadığı grep ile gösteriliyor.
 - **Model:** Claude Sonnet 5 Thinking · orta reasoning · orta context (geniş ama mekanik refactor)
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** Planlanan gibi merkezi bir factory kuruldu: `apps/web/src/lib/query-keys.ts` (`queryKeys(scope)`,
+`scope = {tenantId, userId} | null`), her key `['app', tenantId ?? null, userId ?? null, ...]` ile
+başlıyor. `apps/web/src/lib/query-scope.svelte.ts` (yeni, `.svelte.ts` runes composable) `useQueryScope()`
+export ediyor — `$derived` ile `meQuery`'den `{tenantId, userId}` türetip `{meQuery, scope, keys, ready}`
+döndürüyor; `resetQueryScope(queryClient)` de burada — org/kullanıcı değişiminde plandaki sırayla
+(`cancelQueries()` → `clear()`) çalışıyor. `AppShell.svelte` ve `login/+page.svelte`'in `signOut`/
+`clearSessionCache` akışları buna bağlandı.
+
+~30 dosyada (10 component + ~20 route) elle yazılmış `queryKey: [...]` dizileri `keys.<kaynak>.<metod>(...)`
+çağrılarına geçirildi; her query'nin `enabled` koşuluna `&& ready` eklendi (henüz `tenantId`/`userId`
+yokken sorgu atılmasın diye — plandaki madde 3). Grep ile doğrulama: `queryKey:\s*\[` (literal dizi)
+deseni artık yalnız iki dosyada eşleşiyor, ikisi de kasıtlı istisna ve `query-keys.ts`'in başındaki
+yorumda belgelendi: `apps/web/src/lib/me-query.ts` (`['me']` — scope'u *üreten* sorgu, kendi kendini
+kapsayamaz) ve `apps/web/src/routes/dev/+page.svelte` (`['dev', 'tenants', ...]` — süper-admin paneli,
+tasarım gereği *başka* tenant'ları listeler/düzenler; "mevcut tenant'a kapsa" burada güvenlik değil hata
+olurdu).
+
+Refactor sırasında bulunan gerçek bir hata: `dev/+page.svelte`'in kullanıcı ekleme/çıkarma akışı, hedef
+org'daki değişikliği yansıtmak için `queryClient.invalidateQueries({queryKey: ['members']})` çağırıyordu
+— bu `settings/team` sayfasının kullandığı sorguyu hedefliyordu, dev-panel'in kendi (kasıtlı kapsamsız)
+sorgularını değil. CACHE-01 sonrası gerçek members sorgusu `keys.members.list(...)` altında yaşadığı
+için bu invalidation artık **hiçbir şeyi eşleştirmeyen, sessiz bir no-op** olacaktı. `keys.members.all()`
+olarak düzeltildi; `dev/+page.svelte`'e neden `['dev', 'tenants', ...]`'in kasıtlı olarak kapsamsız
+kaldığını, ama `members` invalidation'ının kapsamlı kalması gerektiğini açıklayan bir kod-içi not eklendi.
+
+**Doğrulama (bu sandbox'ta docker/Postgres yok — bkz. 0.3):** `apps/web`'de `svelte-check --tsconfig
+./tsconfig.json` → 0 hata (yalnız CACHE-01'den bağımsız, önceden var olan 10 a11y uyarısı,
+`TransactionDraftCard.svelte`); `vitest run` → 3 dosya / 23 test yeşil (2.2'deki parity paketi dahil,
+regresyon yok); `eslint .` → temiz; `prettier --check .` → bir dosyada (`DuplicateScanPanel.svelte`)
+satır-uzunluğu formatlaması kaçmıştı, düzeltildi, tekrar çalıştırıldı ve temiz çıktı.
+**Doğrulanamayan:** gerçek bir org A → org B geçişinde tarayıcıda (Playwright/manuel) A'nın hiçbir
+kaydının görünmediği — bu, çalışan bir `better-auth` oturumu + gerçek Postgres gerektiriyor, ki bu
+sandbox'ta yok. `resetQueryScope`'un mantığı (`cancelQueries` → `clear`) statik olarak CACHE-02'nin
+(`e666b28`) zaten kanıtlanmış `clear()`-tabanlı yaklaşımıyla aynı; CACHE-01'in eklediği kapsamlı key'ler
+bunun üstüne savunma derinliği katıyor (bkz. `query-keys.ts` başındaki gerekçe), tek başlarına da
+`clear()` çağrısı unutulsa/yarışsa bile çapraz-kapsam sızıntısını yapısal olarak engelliyorlar — ama bu
+iddia da yalnız kod okuması ile doğrulandı, runtime'da değil.
 
 ---
 

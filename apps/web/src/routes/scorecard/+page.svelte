@@ -11,6 +11,7 @@
 		type SetupAnswers
 	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -54,10 +55,12 @@
 	};
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const currentQuery = createQuery(() => ({
-		queryKey: ['scorecard', 'current'],
-		queryFn: () => apiGet<CurrentDto>(apiPaths.scorecardCurrent)
+		queryKey: keys.scorecard.current(),
+		queryFn: () => apiGet<CurrentDto>(apiPaths.scorecardCurrent),
+		enabled: ready
 	}));
 
 	let band = $state<ScorecardBandId>('5-15');
@@ -98,7 +101,7 @@
 				setup_s3: setupS3
 			});
 			await apiSend(apiPaths.scorecardAssessments, 'POST');
-			await queryClient.invalidateQueries({ queryKey: ['scorecard', 'current'] });
+			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		} finally {
@@ -110,7 +113,7 @@
 		actionError = null;
 		try {
 			await apiSend(apiPaths.scorecardAssessments, 'POST');
-			await queryClient.invalidateQueries({ queryKey: ['scorecard', 'current'] });
+			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		}
@@ -123,7 +126,7 @@
 		actionError = null;
 		try {
 			await apiSend(apiPaths.scorecardAssessmentAutoFill(assessmentId), 'POST');
-			await queryClient.invalidateQueries({ queryKey: ['scorecard', 'current'] });
+			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		} finally {
@@ -138,7 +141,7 @@
 		actionError = null;
 		try {
 			await apiSend(apiPaths.scorecardAssessmentComplete(assessmentId), 'POST');
-			await queryClient.invalidateQueries({ queryKey: ['scorecard', 'current'] });
+			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		} finally {
@@ -156,7 +159,7 @@
 				score,
 				na_declared: false
 			});
-			await queryClient.invalidateQueries({ queryKey: ['scorecard', 'current'] });
+			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		}

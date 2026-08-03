@@ -9,6 +9,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, webhookEventTypeSchema } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -20,6 +21,7 @@
 	import Webhook from '@lucide/svelte/icons/webhook';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 	const scopeLabels: Record<ApiKeyScope, string> = { read: 'Okuma', write: 'Yazma' };
 	const webhookEventLabels: Record<WebhookEventType, string> = {
 		'transaction.created': 'İşlem oluşturuldu',
@@ -30,15 +32,17 @@
 	const webhookEventTypes = webhookEventTypeSchema.options;
 
 	const keysQuery = createQuery(() => ({
-		queryKey: ['settings', 'api-keys'],
-		queryFn: () => apiGet<{ items: ApiKey[] }>(apiPaths.apiKeys)
+		queryKey: keys.settings.apiKeys(),
+		queryFn: () => apiGet<{ items: ApiKey[] }>(apiPaths.apiKeys),
+		enabled: ready
 	}));
 
 	const items = $derived(keysQuery.data?.items ?? []);
 
 	const webhooksQuery = createQuery(() => ({
-		queryKey: ['settings', 'webhook-subscriptions'],
-		queryFn: () => apiGet<{ items: WebhookSubscription[] }>(apiPaths.webhookSubscriptions)
+		queryKey: keys.settings.webhookSubscriptions(),
+		queryFn: () => apiGet<{ items: WebhookSubscription[] }>(apiPaths.webhookSubscriptions),
+		enabled: ready
 	}));
 
 	const webhookItems = $derived(webhooksQuery.data?.items ?? []);
@@ -76,7 +80,7 @@
 				scopes: formScopes
 			});
 			createdKey = created;
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'api-keys'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.apiKeys() });
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
 		} finally {
@@ -87,7 +91,7 @@
 	async function revoke(key: ApiKey) {
 		if (!confirm(`“${key.name}” anahtarı iptal edilsin mi? Bu işlem geri alınamaz.`)) return;
 		await apiSend(apiPaths.apiKey(key.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: ['settings', 'api-keys'] });
+		await queryClient.invalidateQueries({ queryKey: keys.settings.apiKeys() });
 	}
 
 	async function copyKey() {
@@ -134,7 +138,7 @@
 				event_types: webhookFormEventTypes
 			});
 			webhookDialogOpen = false;
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'webhook-subscriptions'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.webhookSubscriptions() });
 		} catch (err) {
 			webhookFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
 		} finally {
@@ -146,7 +150,7 @@
 		if (!confirm(`“${subscription.url}” için abonelik silinsin mi? Bu işlem geri alınamaz.`))
 			return;
 		await apiSend(apiPaths.webhookSubscription(subscription.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: ['settings', 'webhook-subscriptions'] });
+		await queryClient.invalidateQueries({ queryKey: keys.settings.webhookSubscriptions() });
 	}
 </script>
 

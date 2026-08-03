@@ -13,13 +13,13 @@
 	import { formatDateTime, formatMoney, formatTime, isSameLocalDay } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
 	import { canAccessPath, DEFAULT_ROLE } from '$lib/rbac';
-	import { meQueryOptions } from '$lib/me-query';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
 	type Page<T> = { items: T[]; next_cursor: string | null };
 
-	const meQuery = createQuery(meQueryOptions);
+	const { keys, ready, meQuery } = useQueryScope();
 	const role = $derived(meQuery.data?.role ?? DEFAULT_ROLE);
 	const canFinance = $derived(canAccessPath('/finance/ai-transaction', role));
 
@@ -39,30 +39,33 @@
 	})();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: ['tenants', 'current'],
-		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
+		enabled: ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: ['patients', { limit: 5 }],
-		queryFn: () => apiGet<Page<Patient>>(listUrl('patients', { limit: 5 }))
+		queryKey: keys.patients.list({ limit: 5 }),
+		queryFn: () => apiGet<Page<Patient>>(listUrl('patients', { limit: 5 })),
+		enabled: ready
 	}));
 
 	const appointmentsQuery = createQuery(() => ({
-		queryKey: ['appointments', { limit: 40 }],
-		queryFn: () => apiGet<Page<Appointment>>(listUrl('appointments', { limit: 40 }))
+		queryKey: keys.appointments.list({ limit: 40 }),
+		queryFn: () => apiGet<Page<Appointment>>(listUrl('appointments', { limit: 40 })),
+		enabled: ready
 	}));
 
 	const inboxQuery = createQuery(() => ({
-		queryKey: ['whatsapp', 'inbox'],
+		queryKey: keys.whatsapp.inbox(),
 		queryFn: () => apiGet<{ messages: InboundMessage[] }>('/v1/whatsapp/inbox'),
-		enabled: canFinance
+		enabled: canFinance && ready
 	}));
 
 	const summaryQuery = createQuery(() => ({
-		queryKey: ['reports', 'summary', 'dashboard', currentMonthRange],
+		queryKey: keys.reports.dashboardSummary(currentMonthRange),
 		queryFn: () => apiGet<ReportSummary>(reportUrl('summary', currentMonthRange)),
-		enabled: !USE_MSW && canFinance
+		enabled: !USE_MSW && canFinance && ready
 	}));
 
 	const todayAppointments = $derived(

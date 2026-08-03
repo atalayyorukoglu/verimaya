@@ -10,6 +10,7 @@
 	} from '@verimaya/shared';
 	import { apiPaths, appointmentStatusLabels, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatTime } from '$lib/format';
 	import { appointmentStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -26,6 +27,7 @@
 	type ViewMode = 'day' | 'week';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
 
@@ -63,14 +65,11 @@
 	);
 
 	const appointmentsQuery = createQuery(() => ({
-		queryKey: [
-			'appointments',
-			{
-				from: rangeStart.toISOString(),
-				to: rangeEnd.toISOString(),
-				patient_id: patientFilterId
-			}
-		],
+		queryKey: keys.appointments.list({
+			from: rangeStart.toISOString(),
+			to: rangeEnd.toISOString(),
+			patient_id: patientFilterId
+		}),
 		queryFn: () =>
 			apiGet<AppointmentsPage>(
 				listUrl('appointments', {
@@ -79,12 +78,14 @@
 					to: rangeEnd.toISOString(),
 					patient_id: patientFilterId
 				})
-			)
+			),
+		enabled: ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: ['patients', { limit: 100, for: 'picker' }],
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 }))
+		queryKey: keys.patients.list({ limit: 100, for: 'picker' }),
+		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
+		enabled: ready
 	}));
 
 	const filterPatient = $derived(
@@ -138,7 +139,7 @@
 			} else {
 				await apiSend(apiPaths.appointments, 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+			await queryClient.invalidateQueries({ queryKey: keys.appointments.all() });
 			formOpen = false;
 			editing = null;
 		} catch (err) {

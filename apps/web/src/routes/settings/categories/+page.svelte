@@ -3,6 +3,7 @@
 	import type { FinanceCategory, FinanceCategoryCreate } from '@verimaya/shared';
 	import { apiPaths, transactionKindLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -12,10 +13,12 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	const catsQuery = createQuery(() => ({
-		queryKey: ['settings', 'finance-categories'],
-		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories)
+		queryKey: keys.settings.financeCategories(),
+		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
+		enabled: ready
 	}));
 
 	const items = $derived(
@@ -73,7 +76,7 @@
 				const payload: FinanceCategoryCreate = { kind: formKind, name, subcategories };
 				await apiSend(apiPaths.settingsFinanceCategories, 'POST', payload);
 			}
-			await queryClient.invalidateQueries({ queryKey: ['settings', 'finance-categories'] });
+			await queryClient.invalidateQueries({ queryKey: keys.settings.financeCategories() });
 			dialogOpen = false;
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
@@ -85,7 +88,7 @@
 	async function remove(cat: FinanceCategory) {
 		if (!confirm(`“${cat.name}” silinsin mi?`)) return;
 		await apiSend(apiPaths.settingsFinanceCategory(cat.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: ['settings', 'finance-categories'] });
+		await queryClient.invalidateQueries({ queryKey: keys.settings.financeCategories() });
 	}
 </script>
 

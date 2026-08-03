@@ -4,6 +4,7 @@
 	import type { ContractResponse, Patient, PatientCreate, PatientUpdate } from '@verimaya/shared';
 	import { apiPaths, listUrl, patientStatusLabels } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -14,6 +15,7 @@
 	type PatientsPage = ContractResponse<'GET /v1/patients'>;
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 
 	let q = $state('');
 	let search = $state('');
@@ -22,13 +24,14 @@
 	let formError = $state<string | null>(null);
 
 	const patientsQuery = createInfiniteQuery(() => ({
-		queryKey: ['patients', { q: search }],
+		queryKey: keys.patients.list({ q: search }),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<PatientsPage>(
 				listUrl('patients', { limit: 25, q: search || undefined, cursor: pageParam })
 			),
 		initialPageParam: null as string | null,
-		getNextPageParam: (last: PatientsPage) => last.next_cursor
+		getNextPageParam: (last: PatientsPage) => last.next_cursor,
+		enabled: ready
 	}));
 
 	const patients = $derived(patientsQuery.data?.pages.flatMap((p) => p.items) ?? []);
@@ -43,7 +46,7 @@
 		formError = null;
 		try {
 			const created = await apiSend<Patient>(apiPaths.patients, 'POST', data);
-			await queryClient.invalidateQueries({ queryKey: ['patients'] });
+			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
 			formOpen = false;
 			await goto(`/patients/${created.id}`);
 		} catch (err) {

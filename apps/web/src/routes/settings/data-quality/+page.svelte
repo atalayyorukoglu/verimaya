@@ -2,6 +2,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import type { Transaction } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -15,10 +16,12 @@
 	}
 
 	const from = daysAgoIso(7);
+	const { keys, ready } = useQueryScope();
 
 	const txQuery = createQuery(() => ({
-		queryKey: ['transactions', { for: 'data-quality', from }],
-		queryFn: () => apiGet<TxPage>(listUrl('transactions', { limit: 100, from }))
+		queryKey: keys.transactions.list({ for: 'data-quality', from }),
+		queryFn: () => apiGet<TxPage>(listUrl('transactions', { limit: 100, from })),
+		enabled: ready
 	}));
 
 	const report = $derived.by(() => {

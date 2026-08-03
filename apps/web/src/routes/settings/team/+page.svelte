@@ -3,6 +3,7 @@
 	import type { MembershipUser, UserRole } from '@verimaya/shared';
 	import { userRoleLabels } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -11,9 +12,12 @@
 
 	type Page = { items: MembershipUser[]; next_cursor: string | null };
 
+	const { keys, ready } = useQueryScope();
+
 	const membersQuery = createQuery(() => ({
-		queryKey: ['members'],
-		queryFn: () => apiGet<Page>(listUrl('members', { limit: 50 }))
+		queryKey: keys.members.list({ limit: 50 }),
+		queryFn: () => apiGet<Page>(listUrl('members', { limit: 50 })),
+		enabled: ready
 	}));
 
 	const members = $derived(membersQuery.data?.items ?? []);

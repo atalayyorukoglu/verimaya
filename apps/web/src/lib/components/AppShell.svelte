@@ -8,7 +8,7 @@
 	import { mobileTabItems, navGroups } from '$lib/navigation';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { canAccessPath, canSeeNav, DEFAULT_ROLE, roleLabels } from '$lib/rbac';
-	import { meQueryOptions } from '$lib/me-query';
+	import { useQueryScope, resetQueryScope } from '$lib/query-scope.svelte';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Menu from '@lucide/svelte/icons/menu';
@@ -46,12 +46,13 @@
 	const pathname = $derived(page.url.pathname);
 	const showInstallPrompt = $derived(!USE_MSW && installPromptEvent != null && !installDismissed);
 
+	const { keys, meQuery } = useQueryScope();
+
 	const tenantQuery = createQuery(() => ({
-		queryKey: ['tenants', 'current'],
+		queryKey: keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
 	}));
 
-	const meQuery = createQuery(meQueryOptions);
 	const role = $derived(meQuery.data?.role ?? DEFAULT_ROLE);
 	const queryClient = useQueryClient();
 
@@ -142,9 +143,10 @@
 		if (!USE_MSW) {
 			await authClient.signOut();
 		}
-		// AUTH-01E: drop every cached query (role, tenant, patients, …) so a
-		// subsequent sign-in in the same tab never serves stale/cross-session data.
-		queryClient.clear();
+		// AUTH-01E / CACHE-01: cancel in-flight queries, then drop every cached query
+		// (role, tenant, patients, …) so a subsequent sign-in in the same tab never
+		// serves stale/cross-session data.
+		await resetQueryScope(queryClient);
 		await goto('/login');
 	}
 

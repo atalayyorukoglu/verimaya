@@ -4,6 +4,7 @@
 	import type { Appointment, Contact, ContactUpdate, Patient, Transaction } from '@verimaya/shared';
 	import { apiPaths, transactionKindLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatMoney, formatTime } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -13,6 +14,7 @@
 	type PageOf<T> = { items: T[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
+	const { keys, ready } = useQueryScope();
 	const id = $derived(page.params.id!);
 
 	let formOpen = $state(false);
@@ -20,24 +22,28 @@
 	let formError = $state<string | null>(null);
 
 	const contactQuery = createQuery(() => ({
-		queryKey: ['contacts', id],
-		queryFn: () => apiGet<Contact>(apiPaths.contact(id))
+		queryKey: keys.contacts.detail(id),
+		queryFn: () => apiGet<Contact>(apiPaths.contact(id)),
+		enabled: ready
 	}));
 
 	const txQuery = createQuery(() => ({
-		queryKey: ['transactions', { contact_id: id, limit: 20 }],
+		queryKey: keys.transactions.list({ contact_id: id, limit: 20 }),
 		queryFn: () =>
-			apiGet<PageOf<Transaction>>(listUrl('transactions', { limit: 20, contact_id: id }))
+			apiGet<PageOf<Transaction>>(listUrl('transactions', { limit: 20, contact_id: id })),
+		enabled: ready
 	}));
 
 	const apptQuery = createQuery(() => ({
-		queryKey: ['appointments', { limit: 100, for: 'contact-profile' }],
-		queryFn: () => apiGet<PageOf<Appointment>>(listUrl('appointments', { limit: 100 }))
+		queryKey: keys.appointments.list({ limit: 100, for: 'contact-profile' }),
+		queryFn: () => apiGet<PageOf<Appointment>>(listUrl('appointments', { limit: 100 })),
+		enabled: ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: ['patients', { limit: 100, for: 'contact-link' }],
-		queryFn: () => apiGet<PageOf<Patient>>(listUrl('patients', { limit: 100 }))
+		queryKey: keys.patients.list({ limit: 100, for: 'contact-link' }),
+		queryFn: () => apiGet<PageOf<Patient>>(listUrl('patients', { limit: 100 })),
+		enabled: ready
 	}));
 
 	const contact = $derived(contactQuery.data);
@@ -66,8 +72,8 @@
 		formError = null;
 		try {
 			await apiSend(apiPaths.contact(id), 'PATCH', data);
-			await queryClient.invalidateQueries({ queryKey: ['contacts'] });
-			await queryClient.invalidateQueries({ queryKey: ['patients'] });
+			await queryClient.invalidateQueries({ queryKey: keys.contacts.all() });
+			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
 			formOpen = false;
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
