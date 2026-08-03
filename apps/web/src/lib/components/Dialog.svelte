@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import X from '@lucide/svelte/icons/x';
+	import { focusTrap } from '$lib/actions/focus-trap';
 	import { portal } from '$lib/actions/portal';
 
 	let {
@@ -17,8 +18,10 @@
 		footer?: Snippet;
 	} = $props();
 
+	const titleId = crypto.randomUUID();
+
 	function onKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') open = false;
+		if (e.key === 'Escape' && open) open = false;
 	}
 </script>
 
@@ -26,21 +29,22 @@
 
 {#if open}
 	<div use:portal class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-		<button
-			type="button"
-			class="absolute inset-0 bg-black/60"
-			aria-label="Kapat"
-			onclick={() => (open = false)}
-		></button>
 		<div
+			role="presentation"
+			class="absolute inset-0 bg-black/60"
+			onclick={() => (open = false)}
+		></div>
+		<div
+			use:focusTrap
 			role="dialog"
 			aria-modal="true"
-			aria-labelledby="dialog-title"
+			aria-labelledby={titleId}
+			tabindex="-1"
 			class="relative z-10 flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[12px] border border-border bg-surface sm:max-w-lg sm:rounded-[8px]"
 		>
 			<div class="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
 				<div class="min-w-0">
-					<h2 id="dialog-title" class="text-base font-semibold text-text">{title}</h2>
+					<h2 id={titleId} class="text-base font-semibold text-text">{title}</h2>
 					{#if description}
 						<p class="mt-0.5 text-xs text-text-muted">{description}</p>
 					{/if}

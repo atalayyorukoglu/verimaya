@@ -38,6 +38,8 @@
 	);
 	const saved = $derived(draft._status === 'saved');
 	const sameCurrency = $derived(draft.currency === baseCurrency);
+	const instanceId = crypto.randomUUID();
+	const fieldId = (name: string) => `draft-${instanceId}-${name}`;
 
 	function onAmountInput(value: string) {
 		const n = Number.parseFloat(value.replace(',', '.'));
@@ -113,9 +115,9 @@
 
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div>
-			<label class={labelClass} for="draft-kind">{t('finance.ai.draft.kind')}</label>
+			<label class={labelClass} for={fieldId('kind')}>{t('finance.ai.draft.kind')}</label>
 			<select
-				id="draft-kind"
+				id={fieldId('kind')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.kind}
@@ -128,9 +130,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-amount">{t('finance.ai.draft.amount')}</label>
+			<label class={labelClass} for={fieldId('amount')}>{t('finance.ai.draft.amount')}</label>
 			<input
-				id="draft-amount"
+				id={fieldId('amount')}
 				class={fieldClass}
 				type="number"
 				min="0"
@@ -142,9 +144,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-currency">{t('finance.ai.draft.currency')}</label>
+			<label class={labelClass} for={fieldId('currency')}>{t('finance.ai.draft.currency')}</label>
 			<select
-				id="draft-currency"
+				id={fieldId('currency')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.currency}
@@ -157,9 +159,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-date">{t('finance.ai.draft.date')}</label>
+			<label class={labelClass} for={fieldId('date')}>{t('finance.ai.draft.date')}</label>
 			<input
-				id="draft-date"
+				id={fieldId('date')}
 				class={fieldClass}
 				type="date"
 				disabled={saved}
@@ -169,9 +171,9 @@
 		</div>
 
 		<div class="sm:col-span-2">
-			<label class={labelClass} for="draft-title">{t('finance.ai.draft.title')}</label>
+			<label class={labelClass} for={fieldId('title')}>{t('finance.ai.draft.title')}</label>
 			<input
-				id="draft-title"
+				id={fieldId('title')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.title}
@@ -180,9 +182,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-category">{t('finance.ai.draft.category')}</label>
+			<label class={labelClass} for={fieldId('category')}>{t('finance.ai.draft.category')}</label>
 			<input
-				id="draft-category"
+				id={fieldId('category')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.category ?? ''}
@@ -191,9 +193,10 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-method">{t('finance.ai.draft.paymentMethod')}</label>
+			<label class={labelClass} for={fieldId('method')}>{t('finance.ai.draft.paymentMethod')}</label
+			>
 			<input
-				id="draft-method"
+				id={fieldId('method')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.payment_method ?? ''}
@@ -202,9 +205,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-status">{t('finance.ai.draft.status')}</label>
+			<label class={labelClass} for={fieldId('status')}>{t('finance.ai.draft.status')}</label>
 			<select
-				id="draft-status"
+				id={fieldId('status')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.status ?? ''}
@@ -222,9 +225,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-paid">{t('finance.ai.draft.paidAmount')}</label>
+			<label class={labelClass} for={fieldId('paid')}>{t('finance.ai.draft.paidAmount')}</label>
 			<input
-				id="draft-paid"
+				id={fieldId('paid')}
 				class={fieldClass}
 				type="number"
 				min="0"
@@ -236,9 +239,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-fx">{t('finance.ai.draft.fxRate')}</label>
+			<label class={labelClass} for={fieldId('fx')}>{t('finance.ai.draft.fxRate')}</label>
 			<input
-				id="draft-fx"
+				id={fieldId('fx')}
 				class={fieldClass}
 				type="number"
 				min="0"
@@ -250,9 +253,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-base">{t('finance.ai.draft.amountBase')}</label>
+			<label class={labelClass} for={fieldId('base')}>{t('finance.ai.draft.amountBase')}</label>
 			<input
-				id="draft-base"
+				id={fieldId('base')}
 				class={fieldClass}
 				type="number"
 				min="0"
@@ -264,9 +267,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-patient">{t('finance.ai.draft.patient')}</label>
+			<label class={labelClass} for={fieldId('patient')}>{t('finance.ai.draft.patient')}</label>
 			<select
-				id="draft-patient"
+				id={fieldId('patient')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.patient_id ?? ''}
@@ -287,9 +290,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for="draft-contact">{t('finance.ai.draft.contact')}</label>
+			<label class={labelClass} for={fieldId('contact')}>{t('finance.ai.draft.contact')}</label>
 			<input
-				id="draft-contact"
+				id={fieldId('contact')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.contact_label ?? ''}
@@ -298,9 +301,9 @@
 		</div>
 
 		<div class="sm:col-span-2">
-			<label class={labelClass} for="draft-desc">{t('finance.ai.draft.description')}</label>
+			<label class={labelClass} for={fieldId('desc')}>{t('finance.ai.draft.description')}</label>
 			<textarea
-				id="draft-desc"
+				id={fieldId('desc')}
 				class={textareaClass}
 				rows={3}
 				disabled={saved}

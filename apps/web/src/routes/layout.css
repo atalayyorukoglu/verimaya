@@ -16,6 +16,8 @@
 	--brand: #d97757;
 	--brand-hover: #c46648;
 	--brand-subtle: rgba(217, 119, 87, 0.14);
+	/* AA 4.5:1 on brand-subtle (~#f9ebe4) and white */
+	--brand-text: #8f452c;
 	--gradient-hero: linear-gradient(135deg, #d97757, #e8a08a);
 
 	/* Surfaces — light (TickPort --palette-*) */
@@ -24,10 +26,10 @@
 	--surface-2: #f4f4f3;
 	--border: #e5e5e3;
 
-	/* Text — light */
+	/* Text — light; faint ≥4.5:1 on #fff and #f9f9f8 */
 	--text: #1a1a19;
 	--text-muted: #6b6b68;
-	--text-faint: #9a9a96;
+	--text-faint: #73736f;
 
 	/* Status — TickPort positive/negative + Verimaya warning/info */
 	--success: #2e7d32;
@@ -53,7 +55,7 @@
 	--muted: var(--surface-2);
 	--muted-foreground: var(--text-muted);
 	--accent: var(--brand-subtle);
-	--accent-foreground: var(--brand);
+	--accent-foreground: var(--brand-text);
 	--destructive: var(--danger);
 	--input: var(--border);
 	--ring: var(--brand);
@@ -62,7 +64,7 @@
 	--sidebar-primary: var(--brand);
 	--sidebar-primary-foreground: #ffffff;
 	--sidebar-accent: var(--brand-subtle);
-	--sidebar-accent-foreground: var(--brand);
+	--sidebar-accent-foreground: var(--brand-text);
 	--sidebar-border: var(--border);
 	--sidebar-ring: var(--brand);
 }
@@ -71,6 +73,8 @@
 	--brand: #d97757;
 	--brand-hover: #e89274;
 	--brand-subtle: rgba(217, 119, 87, 0.18);
+	/* AA 4.5:1 on dark brand-subtle (~#45332c) */
+	--brand-text: #f0b8a4;
 	--gradient-hero: linear-gradient(135deg, #d97757, #e8a08a);
 
 	--bg: #1a1a19;
@@ -79,8 +83,9 @@
 	--border: #333332;
 
 	--text: #ededec;
-	--text-muted: #8a8a87;
-	--text-faint: #6e6e6b;
+	/* muted ≥4.5:1 on #242423; faint ≥4.5:1 on #1a1a19 */
+	--text-muted: #8e8e8a;
+	--text-faint: #858582;
 
 	--success: #4caf50;
 	--warning: #d4a017;
@@ -103,6 +108,7 @@
 	--color-brand: var(--brand);
 	--color-brand-hover: var(--brand-hover);
 	--color-brand-subtle: var(--brand-subtle);
+	--color-brand-text: var(--brand-text);
 	--color-bg: var(--bg);
 	--color-surface: var(--surface);
 	--color-surface-2: var(--surface-2);

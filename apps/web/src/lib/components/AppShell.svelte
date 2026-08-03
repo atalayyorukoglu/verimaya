@@ -269,7 +269,7 @@
 									class={cn(
 										'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
 										active
-											? 'bg-brand-subtle text-brand'
+											? 'bg-brand-subtle text-brand-text'
 											: 'text-text-muted hover:bg-surface-2 hover:text-text'
 									)}
 									aria-current={active ? 'page' : undefined}
@@ -349,7 +349,7 @@
 										class={cn(
 											'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
 											active
-												? 'bg-brand-subtle text-brand'
+												? 'bg-brand-subtle text-brand-text'
 												: 'text-text-muted hover:bg-surface-2 hover:text-text'
 										)}
 										aria-current={active ? 'page' : undefined}

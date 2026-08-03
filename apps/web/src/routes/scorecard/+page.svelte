@@ -385,13 +385,23 @@
 							</div>
 							{#if inDenom && !data.assessment.completed_at}
 								<div class="shrink-0">
-									<p class="mb-1 text-[10px] tracking-wide text-text-muted uppercase">
+									<p
+										id="score-label-{criterion.id}"
+										class="mb-1 text-[10px] tracking-wide text-text-muted uppercase"
+									>
 										{t('scorecard.scoreLabel')}
 									</p>
-									<div class="flex gap-1">
+									<div
+										class="flex gap-1"
+										role="radiogroup"
+										aria-labelledby="score-label-{criterion.id}"
+									>
 										{#each [0, 1, 2, 3, 4] as s (s)}
 											<button
 												type="button"
+												role="radio"
+												aria-checked={ans?.score === s && !ans?.na_declared}
+												aria-label={t('scorecard.scoreOption', { score: s })}
 												class="h-8 w-8 rounded border text-xs {ans?.score === s && !ans?.na_declared
 													? 'border-brand bg-brand/10 font-semibold text-text'
 													: 'border-border text-text-muted hover:border-brand/50'}"

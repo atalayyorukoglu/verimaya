@@ -195,9 +195,10 @@
 							{#each maturityOptions as opt (opt.value)}
 								<button
 									type="button"
+									aria-pressed={check.score === opt.value}
 									class="h-8 rounded-[6px] border px-3 text-xs font-medium transition-colors {check.score ===
 									opt.value
-										? 'border-brand bg-brand-subtle text-brand'
+										? 'border-brand bg-brand-subtle text-brand-text'
 										: 'border-border bg-surface text-text-muted hover:bg-surface-2'}"
 									onclick={() => setScore(check.id, opt.value)}
 								>

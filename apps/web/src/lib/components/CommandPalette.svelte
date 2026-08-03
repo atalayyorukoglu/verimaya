@@ -5,6 +5,7 @@
 	import { apiGet } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime, formatMoney } from '$lib/format';
+	import { focusTrap } from '$lib/actions/focus-trap';
 	import { portal } from '$lib/actions/portal';
 	import Search from '@lucide/svelte/icons/search';
 	import User from '@lucide/svelte/icons/user';
@@ -19,7 +20,7 @@
 
 	let open = $state(false);
 	let q = $state('');
-	let inputEl: HTMLInputElement | undefined = $state();
+	let triggerEl: HTMLButtonElement | undefined = $state();
 
 	const { keys, ready } = useQueryScope();
 
@@ -32,7 +33,6 @@
 	function openPalette() {
 		open = true;
 		q = '';
-		queueMicrotask(() => inputEl?.focus());
 	}
 
 	function closePalette() {
@@ -70,6 +70,7 @@
 <svelte:window onkeydown={onGlobalKey} />
 
 <button
+	bind:this={triggerEl}
 	type="button"
 	class="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] border border-border bg-surface px-3 text-left text-sm text-text-faint transition-colors hover:border-text-faint hover:text-text-muted md:max-w-xl"
 	aria-label="Ara"
@@ -89,25 +90,22 @@
 		use:portal
 		class="fixed inset-0 z-[60] flex items-start justify-center px-3 pt-[12vh] sm:px-4"
 	>
-		<button
-			type="button"
-			class="absolute inset-0 bg-black/60"
-			aria-label="Aramayı kapat"
-			onclick={closePalette}
-		></button>
+		<div role="presentation" class="absolute inset-0 bg-black/60" onclick={closePalette}></div>
 		<div
+			use:focusTrap={{ returnFocusTo: triggerEl ?? null }}
 			role="dialog"
 			aria-modal="true"
 			aria-label="Hızlı arama"
+			tabindex="-1"
 			class="relative z-10 flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-[8px] border border-border bg-surface shadow-xl"
 		>
 			<div class="flex items-center gap-2 border-b border-border px-3">
-				<Search class="size-4 shrink-0 text-text-faint" />
+				<Search class="size-4 shrink-0 text-text-faint" aria-hidden="true" />
 				<input
-					bind:this={inputEl}
 					bind:value={q}
 					class="h-12 w-full bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
 					placeholder="Hasta, randevu veya işlem ara…"
+					aria-label="Hasta, randevu veya işlem ara"
 					autocomplete="off"
 				/>
 				<kbd
@@ -118,11 +116,13 @@
 			</div>
 			<div class="min-h-0 flex-1 overflow-y-auto p-2">
 				{#if !hasQuery}
-					<p class="px-2 py-6 text-center text-sm text-text-faint">En az 2 karakter yazın</p>
+					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">
+						En az 2 karakter yazın
+					</p>
 				{:else if searchQuery.isPending}
-					<p class="px-2 py-6 text-center text-sm text-text-faint">Aranıyor…</p>
+					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">Aranıyor…</p>
 				{:else if empty}
-					<p class="px-2 py-6 text-center text-sm text-text-faint">Sonuç yok</p>
+					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">Sonuç yok</p>
 				{:else if searchQuery.data}
 					{#if searchQuery.data.patients.length > 0}
 						<p

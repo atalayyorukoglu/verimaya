@@ -183,7 +183,7 @@
 					<button
 						type="button"
 						class="rounded-[4px] px-2.5 py-1 text-xs font-medium {view === 'day'
-							? 'bg-brand-subtle text-brand'
+							? 'bg-brand-subtle text-brand-text'
 							: 'text-text-muted'}"
 						onclick={() => (view = 'day')}
 					>
@@ -192,7 +192,7 @@
 					<button
 						type="button"
 						class="rounded-[4px] px-2.5 py-1 text-xs font-medium {view === 'week'
-							? 'bg-brand-subtle text-brand'
+							? 'bg-brand-subtle text-brand-text'
 							: 'text-text-muted'}"
 						onclick={() => (view = 'week')}
 					>

@@ -104,7 +104,9 @@
 				</div>
 
 				<div>
-					<label class={labelClass} for="tenant-timezone">{t('settings.organization.timezone')}</label>
+					<label class={labelClass} for="tenant-timezone"
+						>{t('settings.organization.timezone')}</label
+					>
 					<select id="tenant-timezone" class={fieldClass} bind:value={timezone}>
 						{#each TENANT_TIMEZONES as tz (tz)}
 							<option value={tz}>{timezoneOptionLabel(tz)}</option>

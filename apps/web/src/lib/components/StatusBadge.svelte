@@ -13,7 +13,7 @@
 
 	const tones: Record<Tone, string> = {
 		neutral: 'bg-surface-2 text-text-muted border-border',
-		brand: 'bg-brand-subtle text-brand border-transparent',
+		brand: 'bg-brand-subtle text-brand-text border-transparent',
 		success: 'bg-success/15 text-success border-transparent',
 		warning: 'bg-warning/15 text-warning border-transparent',
 		danger: 'bg-danger/15 text-danger border-transparent',
