@@ -1038,7 +1038,7 @@ Opus: CI/Faz 5 commit yüzeyi hâlâ kirliyse eksen 1’deki “CI ✅/~” notu
 ---
 
 ### 6.3 — CURSOR-PLAN'ı arşiv olarak etiketle
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `docs/CURSOR-PLAN.md` (1683 satır) artık aktif yol haritası değil; **tamamlanmış büyük uygulama
 planının arşivi.** Başına arşiv notu ekle (tarih + "aktif liste: `docs/2026-08-03-YAPILACAKLAR.md`")
@@ -1049,7 +1049,9 @@ varlıkları, Google Ads müşteri hesabı + hata yüzeyleme + sync penceresi d�
 - **Kabul:** Dosyanın ilk 10 satırında arşiv etiketi ve aktif listeye işaretçi var.
 - **Model:** Composer 2.5 Fast · düşük reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** Üstte ARŞİV + aktif liste linki; protokol arşiv notuyla sönümlendi. Sona post-44
+tablosu (hub/app host, vitrin 301, marka/PWA, Ads düzeltmeleri, AUTH/LEG/SEC, YAPILACAKLAR).
+Gövde Adım 1–44 metni değiştirilmedi. Risk yok.
 
 ---
 

@@ -1,12 +1,21 @@
 # Verimaya — Cursor Uygulama Planı
 
-Kaynak: `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` (tek yol haritası kaynağı, 2026-07-30).
-Bu dosya o yol haritasının **uygulama sırası**dır — yeni iş üretmez, işaretlenmemiş (`[ ]` / `[~]`) maddeleri
-Cursor'ın tek tek çalıştırabileceği atomik adımlara böler. Tamamlanmış (`[x]`) işlere dokunulmaz.
+> **ARŞİV — 2026-08-03.** Bu dosya artık aktif yol haritası değildir. Adım 1–44 tamamlanmış
+> büyük uygulama planının kaydıdır; yeni iş buradan üretilmez, buradaki protokol izlenmez.
+>
+> **Aktif liste:** [`docs/2026-08-03-YAPILACAKLAR.md`](./2026-08-03-YAPILACAKLAR.md)
+> Durum belgesi: Obsidian `02-yol-haritasi.md` · Kanıt: `docs/2026-08-02-PROJE-DEGERLENDIRMESI.md`
+
+Kaynak (tarihsel): `SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md` (2026-07-30 faz metni;
+şimdi arşivde). Bu dosya o yol haritasının **uygulama sırası**ydı — yeni iş üretmezdi,
+işaretlenmemiş maddeleri atomik adımlara bölerdi. Tamamlanmış (`[x]`) işlere dokunulmaz.
 
 ---
 
-## ÇALIŞMA PROTOKOLÜ — Cursor bu bloğu her adımdan önce tekrar oku
+## ÇALIŞMA PROTOKOLÜ — ~~Cursor bu bloğu her adımdan önce tekrar oku~~ (arşiv)
+
+> Aşağıdaki protokol Adım 1–44 dönemi içindir. Güncel süreç kuralları aktif listede
+> (`2026-08-03-YAPILACAKLAR.md` § Çalışma kuralları).
 
 1. Adımları sırayla yap. ASLA birden fazla adımı arka arkaya tamamlayıp ilerleme.
 2. Bir adımı bitirince DUR. Şunu yaz:
@@ -1681,3 +1690,23 @@ Plan Adım 1–44 uygulandı. Aşağıdaki maddeler **karara bağlandı** (2026-
 | 6 | Adım 24 outbound | Port iskeleti + ifşa hook (gönderim ayrı) |
 
 Kalan açık işler plan «Kullanıcıya kalan işler» + «YER ALMAYAN» bölümlerinde.
+Güncel takip: `docs/2026-08-03-YAPILACAKLAR.md` Faz 8 (kod dışı) + açık P0/P1’ler.
+
+---
+
+## Post-44 kapanış eki (2026-08-03)
+
+Plan Adım 44’ten sonra, plana işlenmeden yapılan (veya tamamlanan) işler:
+
+| Konu | Ne oldu |
+|---|---|
+| Apex marketing hub | `verimaya.com` kök `/` → nginx `hub.html` (prerender hub) |
+| App host | `app.verimaya.com` panel + auth gate |
+| Legacy `/vitrin` | **301 → `/`** (aktif rota değil) |
+| Marka / PWA | Site ve ikonlar Verimaya markasına bağlandı |
+| Google Ads | Müşteri hesabı seçimi; 403’te `authorizationError` yüzeyleme; sync penceresi ~10 yıl |
+| Meta/Google OAuth iskeleti | Kod hazır; gerçek hesap go-live hâlâ OPS-02 (Faz 8) |
+| AUTH-01 / LEG-01 / SEC-02 | Org permission, karne lead kapısı, encryption key rotasyonu (değerlendirme sonrası) |
+| Aktif liste | `docs/2026-08-03-YAPILACAKLAR.md` — bu dosyanın yerini aldı |
+
+Bu ek tarihsel kayıttır; yeni adım numarası açılmaz.
