@@ -576,7 +576,7 @@ src/appointments/appointments.isolation.spec.ts src/transactions/transactions.is
 ## Faz 3 — Para ve zaman doğruluğu
 
 ### 3.1 — MONEY-01: AI onayını tek atomik/idempotent sunucu komutuna taşı
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** Faz 2
 
 `apps/web/src/routes/finance/ai-transaction/+page.svelte:208-269` bugün: koda gömülü yaklaşık
@@ -602,7 +602,22 @@ Yap:
 - **Model:** Claude Opus 5 · yüksek reasoning · şema + sorgu + test (finansal doğruluk; farklı
   aileden ikinci görüş — GPT-5.6 Sol — diff review'da zorunlu)
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `POST /v1/whatsapp/inbox/:id/approve-drafts` eklendi — `IdempotencyService.run` içinde
+transaction insert(ler)i + isteğe bağlı `ai_corrections` + inbox `approved` aynı DB transaction'ında.
+Shared'da `approveDraftItemSchema` / `approveDraftsRequestSchema` / `approveDraftsResponseSchema`:
+status, paid_amount, fx_rate, amount_base ve karşı taraf (contact_id veya contact_label) zorunlu;
+paid/unpaid/partial tutarlılığı `superRefine` ile. Web: gömülü stub kurlar ve koşulsuz `paid`
+kaldırıldı; `TransactionDraftCard`'a ödeme/kur alanları eklendi; tek "Onayla ve kaydet" butonu
+`approveDraftItemSchema` geçmeden pasif. `apiSend` her mutation'da `Idempotency-Key` (UUID) üretir.
+MSW handler aynı sözleşmeyi + basit idempotency replay'i uygular. İzolasyon testi
+(`approve-drafts.isolation.spec.ts`): aynı key → tek set; geçersiz patient_id ile kısmi hata →
+rollback (inbox `parsed` kalır, transaction yazılmaz) — Postgres'te yeşil (2 test).
+**Varsayım:** (1) Endpoint izni `finance.create` (para yaratıyor; eski status-only approve
+`patient.update` kaldı). (2) Tenant varsayılan kur tablosu yok — kur kullanıcı girer; aynı para
+biriminde UI `fx_rate=1` / `amount_base=amount` ön-doldurur ama alanlar görünür. (3) Manuel yapıştırma
+(inbox'siz) atomik endpoint'e giremez — kuyruk seçimi zorunlu; aksi halde uyarı. (4) Karşı taraf
+şimdilik serbest metin `contact_label` (contact dizini seçimi yok). Opus: permission seçimi ve
+manuel-paste kısıtı.
 
 ---
 

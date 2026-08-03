@@ -1,12 +1,16 @@
 <script lang="ts">
-	import type { Patient, TransactionDraft } from '@verimaya/shared';
-	import { transactionKindLabels } from '@verimaya/shared';
+	import type { Patient, TransactionDraft, TransactionStatus } from '@verimaya/shared';
+	import { transactionKindLabels, transactionStatusLabels } from '@verimaya/shared';
 	import { fieldClass, labelClass, textareaClass } from '$lib/api';
 	import { formatMoney } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
-	import { Button } from '$lib/components/ui/button';
 
-	type DraftState = TransactionDraft & {
+	export type DraftApprovalState = TransactionDraft & {
+		status: TransactionStatus | null;
+		paid_amount: number | null;
+		fx_rate: number | null;
+		amount_base: number | null;
 		_status: 'idle' | 'saving' | 'saved' | 'error';
 		_error: string | null;
 	};
@@ -14,27 +18,76 @@
 	let {
 		draft,
 		patients = [],
-		saving = false,
-		onchange,
-		onsave
+		baseCurrency = 'TRY',
+		onchange
 	}: {
-		draft: DraftState;
+		draft: DraftApprovalState;
 		patients?: Patient[];
-		saving?: boolean;
-		onchange: (patch: Partial<TransactionDraft>) => void;
-		onsave: () => void | Promise<void>;
+		baseCurrency?: string;
+		onchange: (patch: Partial<DraftApprovalState>) => void;
 	} = $props();
 
 	const kinds = Object.keys(transactionKindLabels) as TransactionDraft['kind'][];
+	const statuses = Object.keys(transactionStatusLabels) as TransactionStatus[];
 	const currencies = ['TRY', 'GBP', 'USD', 'EUR'] as const;
 
 	const amountMajor = $derived(String(draft.amount / 100));
+	const paidMajor = $derived(draft.paid_amount == null ? '' : String(draft.paid_amount / 100));
+	const amountBaseMajor = $derived(
+		draft.amount_base == null ? '' : String(draft.amount_base / 100)
+	);
 	const saved = $derived(draft._status === 'saved');
-	const cardSaving = $derived(draft._status === 'saving' || saving);
+	const sameCurrency = $derived(draft.currency === baseCurrency);
 
 	function onAmountInput(value: string) {
 		const n = Number.parseFloat(value.replace(',', '.'));
-		if (Number.isFinite(n) && n > 0) onchange({ amount: Math.round(n * 100) });
+		if (!Number.isFinite(n) || n <= 0) return;
+		const amount = Math.round(n * 100);
+		const patch: Partial<DraftApprovalState> = { amount };
+		if (draft.status === 'paid') patch.paid_amount = amount;
+		if (sameCurrency) patch.amount_base = amount;
+		onchange(patch);
+	}
+
+	function onPaidInput(value: string) {
+		const n = Number.parseFloat(value.replace(',', '.'));
+		if (!Number.isFinite(n) || n < 0) return;
+		onchange({ paid_amount: Math.round(n * 100) });
+	}
+
+	function onFxInput(value: string) {
+		const n = Number.parseFloat(value.replace(',', '.'));
+		if (!Number.isFinite(n) || n <= 0) return;
+		const patch: Partial<DraftApprovalState> = { fx_rate: n };
+		if (!sameCurrency) {
+			patch.amount_base = Math.round((draft.amount / 100) * n * 100);
+		}
+		onchange(patch);
+	}
+
+	function onAmountBaseInput(value: string) {
+		const n = Number.parseFloat(value.replace(',', '.'));
+		if (!Number.isFinite(n) || n < 0) return;
+		onchange({ amount_base: Math.round(n * 100) });
+	}
+
+	function onStatusChange(status: TransactionStatus) {
+		const patch: Partial<DraftApprovalState> = { status };
+		if (status === 'paid') patch.paid_amount = draft.amount;
+		if (status === 'unpaid') patch.paid_amount = 0;
+		onchange(patch);
+	}
+
+	function onCurrencyChange(currency: (typeof currencies)[number]) {
+		const patch: Partial<DraftApprovalState> = { currency };
+		if (currency === baseCurrency) {
+			patch.fx_rate = 1;
+			patch.amount_base = draft.amount;
+		} else {
+			patch.fx_rate = null;
+			patch.amount_base = null;
+		}
+		onchange(patch);
 	}
 </script>
 
@@ -54,14 +107,15 @@
 			</span>
 		</div>
 		{#if saved}
-			<span class="text-xs font-medium text-success">Kaydedildi</span>
+			<span class="text-xs font-medium text-success">{t('finance.ai.draft.saved')}</span>
 		{/if}
 	</div>
 
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div>
-			<label class={labelClass}>Tür</label>
+			<label class={labelClass} for="draft-kind">{t('finance.ai.draft.kind')}</label>
 			<select
+				id="draft-kind"
 				class={fieldClass}
 				disabled={saved}
 				value={draft.kind}
@@ -74,8 +128,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass}>Tutar</label>
+			<label class={labelClass} for="draft-amount">{t('finance.ai.draft.amount')}</label>
 			<input
+				id="draft-amount"
 				class={fieldClass}
 				type="number"
 				min="0"
@@ -87,15 +142,13 @@
 		</div>
 
 		<div>
-			<label class={labelClass}>Para birimi</label>
+			<label class={labelClass} for="draft-currency">{t('finance.ai.draft.currency')}</label>
 			<select
+				id="draft-currency"
 				class={fieldClass}
 				disabled={saved}
 				value={draft.currency}
-				onchange={(e) =>
-					onchange({
-						currency: e.currentTarget.value as (typeof currencies)[number]
-					})}
+				onchange={(e) => onCurrencyChange(e.currentTarget.value as (typeof currencies)[number])}
 			>
 				{#each currencies as c (c)}
 					<option value={c}>{c}</option>
@@ -104,8 +157,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass}>Tarih</label>
+			<label class={labelClass} for="draft-date">{t('finance.ai.draft.date')}</label>
 			<input
+				id="draft-date"
 				class={fieldClass}
 				type="date"
 				disabled={saved}
@@ -115,8 +169,9 @@
 		</div>
 
 		<div class="sm:col-span-2">
-			<label class={labelClass}>Başlık</label>
+			<label class={labelClass} for="draft-title">{t('finance.ai.draft.title')}</label>
 			<input
+				id="draft-title"
 				class={fieldClass}
 				disabled={saved}
 				value={draft.title}
@@ -125,8 +180,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass}>Kategori</label>
+			<label class={labelClass} for="draft-category">{t('finance.ai.draft.category')}</label>
 			<input
+				id="draft-category"
 				class={fieldClass}
 				disabled={saved}
 				value={draft.category ?? ''}
@@ -135,8 +191,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass}>Ödeme yöntemi</label>
+			<label class={labelClass} for="draft-method">{t('finance.ai.draft.paymentMethod')}</label>
 			<input
+				id="draft-method"
 				class={fieldClass}
 				disabled={saved}
 				value={draft.payment_method ?? ''}
@@ -145,8 +202,71 @@
 		</div>
 
 		<div>
-			<label class={labelClass}>Hasta</label>
+			<label class={labelClass} for="draft-status">{t('finance.ai.draft.status')}</label>
 			<select
+				id="draft-status"
+				class={fieldClass}
+				disabled={saved}
+				value={draft.status ?? ''}
+				onchange={(e) => {
+					const v = e.currentTarget.value;
+					if (v) onStatusChange(v as TransactionStatus);
+					else onchange({ status: null, paid_amount: null });
+				}}
+			>
+				<option value="">{t('finance.ai.draft.statusNone')}</option>
+				{#each statuses as s (s)}
+					<option value={s}>{transactionStatusLabels[s]}</option>
+				{/each}
+			</select>
+		</div>
+
+		<div>
+			<label class={labelClass} for="draft-paid">{t('finance.ai.draft.paidAmount')}</label>
+			<input
+				id="draft-paid"
+				class={fieldClass}
+				type="number"
+				min="0"
+				step="0.01"
+				disabled={saved || draft.status === 'paid' || draft.status === 'unpaid'}
+				value={paidMajor}
+				oninput={(e) => onPaidInput(e.currentTarget.value)}
+			/>
+		</div>
+
+		<div>
+			<label class={labelClass} for="draft-fx">{t('finance.ai.draft.fxRate')}</label>
+			<input
+				id="draft-fx"
+				class={fieldClass}
+				type="number"
+				min="0"
+				step="0.0001"
+				disabled={saved || sameCurrency}
+				value={draft.fx_rate ?? ''}
+				oninput={(e) => onFxInput(e.currentTarget.value)}
+			/>
+		</div>
+
+		<div>
+			<label class={labelClass} for="draft-base">{t('finance.ai.draft.amountBase')}</label>
+			<input
+				id="draft-base"
+				class={fieldClass}
+				type="number"
+				min="0"
+				step="0.01"
+				disabled={saved || sameCurrency}
+				value={amountBaseMajor}
+				oninput={(e) => onAmountBaseInput(e.currentTarget.value)}
+			/>
+		</div>
+
+		<div>
+			<label class={labelClass} for="draft-patient">{t('finance.ai.draft.patient')}</label>
+			<select
+				id="draft-patient"
 				class={fieldClass}
 				disabled={saved}
 				value={draft.patient_id ?? ''}
@@ -159,7 +279,7 @@
 					});
 				}}
 			>
-				<option value="">— Seçiniz —</option>
+				<option value="">{t('finance.ai.draft.patientNone')}</option>
 				{#each patients as p (p.id)}
 					<option value={p.id}>{p.full_name}</option>
 				{/each}
@@ -167,8 +287,9 @@
 		</div>
 
 		<div>
-			<label class={labelClass}>Kişi / firma</label>
+			<label class={labelClass} for="draft-contact">{t('finance.ai.draft.contact')}</label>
 			<input
+				id="draft-contact"
 				class={fieldClass}
 				disabled={saved}
 				value={draft.contact_label ?? ''}
@@ -177,8 +298,9 @@
 		</div>
 
 		<div class="sm:col-span-2">
-			<label class={labelClass}>Açıklama (orijinal mesaj)</label>
+			<label class={labelClass} for="draft-desc">{t('finance.ai.draft.description')}</label>
 			<textarea
+				id="draft-desc"
 				class={textareaClass}
 				rows={3}
 				disabled={saved}
@@ -189,13 +311,5 @@
 
 	{#if draft._status === 'error' && draft._error}
 		<p class="mt-3 text-sm text-danger">{draft._error}</p>
-	{/if}
-
-	{#if !saved}
-		<div class="mt-4 flex justify-end">
-			<Button type="button" disabled={cardSaving} onclick={() => onsave()}>
-				{cardSaving ? 'Kaydediliyor…' : 'Kaydet'}
-			</Button>
-		</div>
 	{/if}
 </div>

@@ -6,6 +6,7 @@ import { HeuristicLlmClient } from '../integrations/llm';
 import { PatientsService } from '../patients/patients.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import type { TenantContextService } from '../tenant/tenant-context.service';
+import { TransactionsService } from '../transactions/transactions.service';
 import { WhatsappService } from './whatsapp.service';
 
 const databaseUrl =
@@ -89,6 +90,7 @@ describe('inbound_messages RLS isolation', () => {
 		whatsappService = new WhatsappService(
 			new PatientsService(tenantContext, new LocalFileStorage()),
 			tenantContext,
+			new TransactionsService(tenantContext),
 			new HeuristicLlmClient()
 		);
 	});

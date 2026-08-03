@@ -26,6 +26,7 @@ import {
 	apiKeyCreateSchema,
 	webhookSubscriptionCreateSchema,
 	aiCorrectionCreateSchema,
+	approveDraftsRequestSchema,
 	trustScoreSettings,
 	compareByCreatedAtDesc,
 	type AiCorrection,
@@ -33,6 +34,7 @@ import {
 	type ApiKeyCreated,
 	type Appointment,
 	type AppointmentTypeSetting,
+	type ApproveDraftsResponse,
 	type Contact,
 	type ContactType,
 	type FinanceCategory,
@@ -869,6 +871,116 @@ export const handlers = [
 		if (!item) return notFound('Mesaj bulunamadı');
 		item.status = 'approved';
 		return HttpResponse.json({ success: true, id: item.id, status: item.status });
+	}),
+
+	http.post('/v1/whatsapp/inbox/:id/approve-drafts', async ({ params, request }) => {
+		const body = await request.json();
+		const parsed = approveDraftsRequestSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz onay', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const item = store.inboundMessages.find((m) => m.id === params.id);
+		if (!item) return notFound('Mesaj bulunamadı');
+
+		const idemKey = request.headers.get('Idempotency-Key')?.trim();
+		if (idemKey) {
+			const cache = (store as { _approveDraftsIdem?: Map<string, ApproveDraftsResponse> })
+				._approveDraftsIdem;
+			const map = cache ?? new Map<string, ApproveDraftsResponse>();
+			(store as { _approveDraftsIdem?: Map<string, ApproveDraftsResponse> })._approveDraftsIdem =
+				map;
+			const hit = map.get(idemKey);
+			if (hit) return HttpResponse.json(hit, { status: 201 });
+		}
+
+		const base = store.tenant.base_currency;
+		const created: Transaction[] = [];
+		for (const draft of parsed.data.drafts) {
+			const patient = draft.patient_id
+				? store.patients.find((p) => p.id === draft.patient_id)
+				: null;
+			const now = nowIso();
+			const resolved = normalizeTxFx(
+				store,
+				resolveTxContact(store, {
+					kind: draft.kind,
+					title: draft.title.trim(),
+					subtitle: null,
+					category: draft.category ?? null,
+					occurred_on: draft.occurred_on,
+					status: draft.status,
+					invoice_status: 'none' as const,
+					payment_method: draft.payment_method ?? null,
+					amount: draft.amount,
+					paid_amount: draft.paid_amount,
+					currency: draft.currency,
+					patient_id: draft.patient_id ?? null,
+					contact_id: draft.contact_id ?? null,
+					contact_label: draft.contact_label ?? null,
+					amount_base: draft.amount_base,
+					base_currency: base,
+					fx_rate: draft.fx_rate,
+					fx_dated: draft.occurred_on,
+					description: draft.description ?? null
+				})
+			);
+			const transaction = {
+				id: crypto.randomUUID(),
+				tenant_id: DEMO_TENANT_ID,
+				patient_display_name: patient?.full_name ?? null,
+				...resolved,
+				created_at: now,
+				updated_at: now
+			} as Transaction;
+			store.transactions.unshift(transaction);
+			created.push(transaction);
+		}
+
+		let correctionId: string | null = null;
+		if (parsed.data.original_parsed && parsed.data.original_parsed.length > 0) {
+			const corrected = parsed.data.drafts.map((d) => ({
+				kind: d.kind,
+				amount: d.amount,
+				currency: d.currency,
+				counterparty_amount: d.counterparty_amount,
+				title: d.title,
+				category: d.category,
+				subcategory: d.subcategory,
+				patient_id: d.patient_id,
+				patient_display_name: d.patient_display_name,
+				contact_label: d.contact_label,
+				occurred_on: d.occurred_on,
+				payment_method: d.payment_method,
+				description: d.description
+			}));
+			if (JSON.stringify(parsed.data.original_parsed) !== JSON.stringify(corrected)) {
+				const correction: AiCorrection = {
+					id: crypto.randomUUID(),
+					tenant_id: store.tenant.id,
+					inbound_message_id: item.id,
+					original_parsed: parsed.data.original_parsed,
+					corrected,
+					created_by: DEMO_USER_ID,
+					created_at: nowIso()
+				};
+				store.aiCorrections.unshift(correction);
+				correctionId = correction.id;
+			}
+		}
+
+		item.status = 'approved';
+		refreshUsage(store);
+		const response: ApproveDraftsResponse = {
+			id: item.id,
+			status: 'approved',
+			transactions: created,
+			correction_id: correctionId
+		};
+		if (idemKey) {
+			const map = (store as { _approveDraftsIdem?: Map<string, ApproveDraftsResponse> })
+				._approveDraftsIdem!;
+			map.set(idemKey, response);
+		}
+		return HttpResponse.json(response, { status: 201 });
 	}),
 
 	http.post('/v1/whatsapp/inbox/:id/parse', async ({ params, request }) => {

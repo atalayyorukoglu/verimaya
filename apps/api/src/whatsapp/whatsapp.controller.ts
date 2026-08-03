@@ -1,8 +1,29 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { aiCorrectionCreateSchema, cursorPageParams, whatsappParseRequestSchema } from '@verimaya/shared';
-import type { FastifyRequest } from 'fastify';
-import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest } from '../common/active-org.guard';
+import {
+	Body,
+	Controller,
+	Get,
+	Param,
+	Post,
+	Query,
+	Req,
+	Res,
+	UseGuards
+} from '@nestjs/common';
+import {
+	aiCorrectionCreateSchema,
+	approveDraftsRequestSchema,
+	cursorPageParams,
+	whatsappParseRequestSchema
+} from '@verimaya/shared';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import {
+	ActiveOrgGuard,
+	getActiveOrgId,
+	getActorFromRequest,
+	getIdempotencyKey
+} from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
+import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
@@ -14,7 +35,8 @@ import { WhatsappService } from './whatsapp.service';
 export class WhatsappController {
 	constructor(
 		private readonly whatsappService: WhatsappService,
-		private readonly aiCorrectionsService: AiCorrectionsService
+		private readonly aiCorrectionsService: AiCorrectionsService,
+		private readonly idempotency: IdempotencyService
 	) {}
 
 	@Post('parse')
@@ -58,6 +80,41 @@ export class WhatsappController {
 	@RequireOrgPermission('patient', 'update')
 	approveInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.approveInboxItem(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * MONEY-01: atomic approve — transactions + optional correction + inbox status
+	 * in one DB transaction, keyed by Idempotency-Key.
+	 */
+	@Post('inbox/:id/approve-drafts')
+	@RequireOrgPermission('finance', 'create')
+	async approveDrafts(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(approveDraftsRequestSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			`/v1/whatsapp/inbox/${id}/approve-drafts`,
+			async (db) => ({
+				statusCode: 201,
+				body: await this.whatsappService.approveDraftsWithDb(
+					db,
+					tenantId,
+					id,
+					input,
+					actor.actorId
+				)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
 	}
 
 	@Post('inbox/:id/ignore')

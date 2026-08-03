@@ -67,6 +67,11 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
 	return res.json() as Promise<T>;
 }
 
+/** Fresh UUID for Idempotency-Key on every mutation (MONEY-01 / IDEM-01). */
+export function newIdempotencyKey(): string {
+	return crypto.randomUUID();
+}
+
 export async function apiSend<T>(
 	path: string,
 	method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
@@ -78,6 +83,10 @@ export async function apiSend<T>(
 	};
 	if (body !== undefined) {
 		headers['Content-Type'] = 'application/json';
+	}
+	const hasIdempotencyKey = Object.keys(headers).some((k) => k.toLowerCase() === 'idempotency-key');
+	if (!hasIdempotencyKey) {
+		headers['Idempotency-Key'] = newIdempotencyKey();
 	}
 
 	const res = await apiFetch(path, {

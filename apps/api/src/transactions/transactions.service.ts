@@ -198,13 +198,16 @@ export class TransactionsService {
 			.from(tenants)
 			.where(eq(tenants.id, tenantId))
 			.limit(1);
-		const tenantBase = tenant?.baseCurrency ?? 'TRY';
+		const tenantBase = (tenant?.baseCurrency ?? 'TRY') as TransactionCreate['currency'];
 		const currency = input.currency ?? 'TRY';
 
 		let amountBase = input.amount_base ?? null;
 		let baseCurrency = input.base_currency ?? null;
 		if (amountBase === null && currency === tenantBase) {
 			amountBase = input.amount;
+			baseCurrency = tenantBase;
+		}
+		if (amountBase !== null && baseCurrency === null) {
 			baseCurrency = tenantBase;
 		}
 

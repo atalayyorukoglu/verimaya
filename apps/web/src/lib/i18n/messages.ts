@@ -206,7 +206,58 @@ const tr = {
 	'settings.ads.dev.body':
 		'OAuth yokken senkron örnek satır yazar. Otomatik 6s kuyruk için ENABLE_INTEGRATION_SCHEDULERS=true gerekir — prod’da kapalı tutuyoruz.',
 	'settings.ads.footnote':
-		'Bağlantı sonrası "hasta başına maliyet" Raporlar sayfasında kaynak bazında görünecek.'
+		'Bağlantı sonrası "hasta başına maliyet" Raporlar sayfasında kaynak bazında görünecek.',
+
+	// Finans · AI ile işlem (MONEY-01)
+	'finance.ai.title': 'AI ile İşlem',
+	'finance.ai.description':
+		'WhatsApp grup mesajını yapıştır veya kuyruktan seç — AI işlemleri ayrıştırır, onayladıktan sonra kayıt açılır.',
+	'finance.ai.paste.heading': 'Mesajı yapıştır',
+	'finance.ai.paste.placeholder':
+		'Örnek:\nSandra 2900 GBP 2. vizit ödemesi + 450 GBP t-base ücretleri alındı.\nToplamda 3.350 GBP kart ile ödeme alındı.',
+	'finance.ai.paste.longWarning': 'Bu mesaj uzun olabilir. Daha iyi sonuç için bölerek yapıştırın.',
+	'finance.ai.paste.tryAnyway': 'Yine de dene',
+	'finance.ai.paste.cancel': 'İptal',
+	'finance.ai.analyze': 'Analiz Et',
+	'finance.ai.analyzing': 'Analiz ediliyor…',
+	'finance.ai.fromQueue': "Onay Kuyruğu'ndan seçildi",
+	'finance.ai.pending.heading': 'Bekleyenler',
+	'finance.ai.pending.process': 'Yeni mesajları işle',
+	'finance.ai.pending.processing': 'İşleniyor…',
+	'finance.ai.pending.loading': 'Yükleniyor…',
+	'finance.ai.pending.empty': 'Bekleyen mesaj yok.',
+	'finance.ai.pending.media': 'Medya',
+	'finance.ai.pending.mediaDemo': 'Dosya eki (demo)',
+	'finance.ai.pending.ignore': 'Yoksay',
+	'finance.ai.pending.emptyBody': '(boş mesaj)',
+	'finance.ai.drafts.heading': 'Taslaklar',
+	'finance.ai.drafts.approve': 'Onayla ve kaydet',
+	'finance.ai.drafts.approving': 'Onaylanıyor…',
+	'finance.ai.drafts.needInbox':
+		'Atomik onay için kuyruktan bir mesaj seçin. Manuel yapıştırma için önce kuyruğa alın.',
+	'finance.ai.drafts.footnote':
+		'AI çıktısı taslaktır; kur, ödeme durumu, ödenen tutar ve karşı taraf zorunludur. Backend sezgisel parser kullanıyor (LLM henüz yok).',
+	'finance.ai.draft.kind': 'Tür',
+	'finance.ai.draft.amount': 'Tutar',
+	'finance.ai.draft.currency': 'Para birimi',
+	'finance.ai.draft.date': 'Tarih',
+	'finance.ai.draft.title': 'Başlık',
+	'finance.ai.draft.category': 'Kategori',
+	'finance.ai.draft.paymentMethod': 'Ödeme yöntemi',
+	'finance.ai.draft.patient': 'Hasta',
+	'finance.ai.draft.patientNone': '— Seçiniz —',
+	'finance.ai.draft.contact': 'Kişi / firma',
+	'finance.ai.draft.description': 'Açıklama (orijinal mesaj)',
+	'finance.ai.draft.status': 'Ödeme durumu',
+	'finance.ai.draft.statusNone': '— Seçiniz —',
+	'finance.ai.draft.paidAmount': 'Ödenen tutar',
+	'finance.ai.draft.fxRate': 'Kur (1 birim → baz)',
+	'finance.ai.draft.amountBase': 'Baz tutar',
+	'finance.ai.draft.saved': 'Kaydedildi',
+	'finance.ai.parse.none': 'Mesajdan işlem çıkarılamadı.',
+	'finance.ai.parse.media': 'Medya mesajı — metin yok.',
+	'finance.ai.parse.failed': 'Analiz başarısız',
+	'finance.ai.approve.failed': 'Onay başarısız'
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -396,7 +447,58 @@ const en: Record<MessageKey, string> = {
 	'settings.ads.dev.heading': 'Development / demo data',
 	'settings.ads.dev.body':
 		'Without OAuth, sync writes sample rows. Periodic 6h queue needs ENABLE_INTEGRATION_SCHEDULERS=true — we keep it off in prod.',
-	'settings.ads.footnote': 'After connecting, cost-per-patient appears on Reports by source.'
+	'settings.ads.footnote': 'After connecting, cost-per-patient appears on Reports by source.',
+
+	'finance.ai.title': 'AI Transaction',
+	'finance.ai.description':
+		'Paste a WhatsApp group message or pick from the queue — AI extracts drafts; records are created only after you approve.',
+	'finance.ai.paste.heading': 'Paste message',
+	'finance.ai.paste.placeholder':
+		'Example:\nSandra 2900 GBP 2nd visit payment + 450 GBP t-base fees received.\nTotal 3,350 GBP paid by card.',
+	'finance.ai.paste.longWarning':
+		'This message may be long. For better results, paste it in parts.',
+	'finance.ai.paste.tryAnyway': 'Try anyway',
+	'finance.ai.paste.cancel': 'Cancel',
+	'finance.ai.analyze': 'Analyze',
+	'finance.ai.analyzing': 'Analyzing…',
+	'finance.ai.fromQueue': 'Selected from approval queue',
+	'finance.ai.pending.heading': 'Pending',
+	'finance.ai.pending.process': 'Process new messages',
+	'finance.ai.pending.processing': 'Processing…',
+	'finance.ai.pending.loading': 'Loading…',
+	'finance.ai.pending.empty': 'No pending messages.',
+	'finance.ai.pending.media': 'Media',
+	'finance.ai.pending.mediaDemo': 'File attachment (demo)',
+	'finance.ai.pending.ignore': 'Ignore',
+	'finance.ai.pending.emptyBody': '(empty message)',
+	'finance.ai.drafts.heading': 'Drafts',
+	'finance.ai.drafts.approve': 'Approve and save',
+	'finance.ai.drafts.approving': 'Approving…',
+	'finance.ai.drafts.needInbox':
+		'Pick a queue message for atomic approval. Manual paste must go through the queue first.',
+	'finance.ai.drafts.footnote':
+		'AI output is a draft; FX rate, payment status, paid amount and counterparty are required. Backend uses a heuristic parser (LLM not wired yet).',
+	'finance.ai.draft.kind': 'Type',
+	'finance.ai.draft.amount': 'Amount',
+	'finance.ai.draft.currency': 'Currency',
+	'finance.ai.draft.date': 'Date',
+	'finance.ai.draft.title': 'Title',
+	'finance.ai.draft.category': 'Category',
+	'finance.ai.draft.paymentMethod': 'Payment method',
+	'finance.ai.draft.patient': 'Patient',
+	'finance.ai.draft.patientNone': '— Select —',
+	'finance.ai.draft.contact': 'Contact / company',
+	'finance.ai.draft.description': 'Description (original message)',
+	'finance.ai.draft.status': 'Payment status',
+	'finance.ai.draft.statusNone': '— Select —',
+	'finance.ai.draft.paidAmount': 'Paid amount',
+	'finance.ai.draft.fxRate': 'FX rate (1 unit → base)',
+	'finance.ai.draft.amountBase': 'Base amount',
+	'finance.ai.draft.saved': 'Saved',
+	'finance.ai.parse.none': 'Could not extract transactions from the message.',
+	'finance.ai.parse.media': 'Media message — no text.',
+	'finance.ai.parse.failed': 'Analysis failed',
+	'finance.ai.approve.failed': 'Approval failed'
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { tr, en };

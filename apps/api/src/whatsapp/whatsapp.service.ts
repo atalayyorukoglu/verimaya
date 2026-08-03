@@ -1,6 +1,9 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
 import type {
+	ApproveDraftItem,
+	ApproveDraftsRequest,
+	ApproveDraftsResponse,
 	InboundMessageActionResponse,
 	InboundMessageProcessResponse,
 	InboundMessageStatus,
@@ -8,22 +11,48 @@ import type {
 	TransactionDraft
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
+import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { PatientsService } from '../patients/patients.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
-import { asRecord, extractInboundDisplayFields, mergeParsedPayload, toInboundMessage } from './inbound-mapper';
+import { TransactionsService } from '../transactions/transactions.service';
+import {
+	asRecord,
+	extractInboundDisplayFields,
+	mergeParsedPayload,
+	toInboundMessage
+} from './inbound-mapper';
 
 const PARSE_ERROR_NO_TEXT = 'Medya mesajı — metin yok';
 const PARSE_ERROR_NO_MATCH = 'Ayrıştırılamadı';
 
 export type ProcessInboundOutcome = 'parsed' | 'error' | 'skipped';
 
+function toDraftSnapshot(item: ApproveDraftItem): TransactionDraft {
+	return {
+		kind: item.kind,
+		amount: item.amount,
+		currency: item.currency,
+		counterparty_amount: item.counterparty_amount,
+		title: item.title,
+		category: item.category,
+		subcategory: item.subcategory,
+		patient_id: item.patient_id,
+		patient_display_name: item.patient_display_name,
+		contact_label: item.contact_label,
+		occurred_on: item.occurred_on,
+		payment_method: item.payment_method,
+		description: item.description
+	};
+}
+
 @Injectable()
 export class WhatsappService {
 	constructor(
 		private readonly patientsService: PatientsService,
 		private readonly tenantContext: TenantContextService,
+		private readonly transactionsService: TransactionsService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
@@ -150,6 +179,77 @@ export class WhatsappService {
 	/** Marks inbox item approved only — does not auto-create transactions (POST /v1/transactions). */
 	async approveInboxItem(tenantId: string, id: string): Promise<InboundMessageActionResponse> {
 		return this.setStatus(tenantId, id, 'approved');
+	}
+
+	/**
+	 * MONEY-01: atomically insert transactions + optional ai_correction + mark inbox approved.
+	 * Must run inside IdempotencyService.run so the whole unit shares one DB transaction.
+	 */
+	async approveDraftsWithDb(
+		db: TenantDb,
+		tenantId: string,
+		inboxId: string,
+		input: ApproveDraftsRequest,
+		createdBy: string | null
+	): Promise<ApproveDraftsResponse> {
+		await this.findRow(db, inboxId);
+
+		const created = [];
+		for (const draft of input.drafts) {
+			const tx = await this.transactionsService.createWithDb(db, tenantId, {
+				kind: draft.kind,
+				title: draft.title.trim(),
+				subtitle: null,
+				category: draft.category ?? null,
+				occurred_on: draft.occurred_on,
+				status: draft.status,
+				invoice_status: 'none',
+				payment_method: draft.payment_method ?? null,
+				amount: draft.amount,
+				paid_amount: draft.paid_amount,
+				currency: draft.currency,
+				patient_id: draft.patient_id ?? null,
+				contact_id: draft.contact_id ?? null,
+				contact_label: draft.contact_label ?? null,
+				amount_base: draft.amount_base,
+				base_currency: null,
+				fx_rate: draft.fx_rate,
+				fx_dated: draft.occurred_on,
+				description: draft.description ?? null
+			});
+			created.push(tx);
+		}
+
+		let correctionId: string | null = null;
+		const corrected = input.drafts.map(toDraftSnapshot);
+		if (input.original_parsed && input.original_parsed.length > 0) {
+			const changed = JSON.stringify(input.original_parsed) !== JSON.stringify(corrected);
+			if (changed) {
+				const [row] = await db
+					.insert(aiCorrections)
+					.values({
+						tenantId,
+						inboundMessageId: inboxId,
+						originalParsed: input.original_parsed,
+						corrected,
+						createdBy
+					})
+					.returning({ id: aiCorrections.id });
+				correctionId = row?.id ?? null;
+			}
+		}
+
+		await db
+			.update(inboundMessages)
+			.set({ status: 'approved' })
+			.where(eq(inboundMessages.id, inboxId));
+
+		return {
+			id: inboxId,
+			status: 'approved',
+			transactions: created,
+			correction_id: correctionId
+		};
 	}
 
 	async ignoreInboxItem(tenantId: string, id: string): Promise<InboundMessageActionResponse> {

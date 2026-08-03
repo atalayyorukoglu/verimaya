@@ -8,6 +8,7 @@ import { TransactionsService } from './transactions.service';
 @Module({
 	imports: [AuthModule, CommonModule, WebhookSubscriptionsModule],
 	controllers: [TransactionsController],
-	providers: [TransactionsService]
+	providers: [TransactionsService],
+	exports: [TransactionsService]
 })
 export class TransactionsModule {}

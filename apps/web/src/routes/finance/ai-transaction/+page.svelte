@@ -2,30 +2,29 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import type {
+		ApproveDraftItem,
+		ApproveDraftsResponse,
 		InboundMessage,
 		Patient,
-		TransactionCreate,
+		Tenant,
 		TransactionDraft
 	} from '@verimaya/shared';
-	import { apiPaths, inboundMessageStatusLabels } from '@verimaya/shared';
+	import { apiPaths, approveDraftItemSchema, inboundMessageStatusLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
-	import TransactionDraftCard from '$lib/components/TransactionDraftCard.svelte';
+	import TransactionDraftCard, {
+		type DraftApprovalState
+	} from '$lib/components/TransactionDraftCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 
 	type PatientsPage = { items: Patient[]; next_cursor: string | null };
-	type DraftState = TransactionDraft & {
-		_status: 'idle' | 'saving' | 'saved' | 'error';
-		_error: string | null;
-	};
-
-	const PLACEHOLDER =
-		'Örnek:\nSandra 2900 GBP 2. vizit ödemesi + 450 GBP t-base ücretleri alındı.\nToplamda 3.350 GBP kart ile ödeme alındı.';
+	type DraftState = DraftApprovalState & { contact_id: string | null };
 
 	const queryClient = useQueryClient();
 	const { keys, ready } = useQueryScope();
@@ -33,12 +32,12 @@
 	let parsing = $state(false);
 	let parseError = $state<string | null>(null);
 	let processing = $state(false);
+	let approving = $state(false);
 	let drafts = $state<DraftState[]>([]);
 	let activeInboxId = $state<string | null>(null);
 	let showLongWarning = $state(false);
-	/** AI çıktısının orijinali — kullanıcı düzelttiğinde Faz 3 correction kaydı için kıyaslanır. */
+	/** AI çıktısının orijinali — kullanıcı düzelttiğinde correction kaydı için kıyaslanır. */
 	let originalDrafts = $state<TransactionDraft[]>([]);
-	let correctionSubmitted = $state(false);
 
 	const inboxQuery = createQuery(() => ({
 		queryKey: keys.whatsapp.inbox(),
@@ -52,18 +51,42 @@
 		enabled: ready
 	}));
 
+	const tenantQuery = createQuery(() => ({
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
+		enabled: ready
+	}));
+
 	const patients = $derived(patientsQuery.data?.items ?? []);
+	const baseCurrency = $derived(tenantQuery.data?.base_currency ?? 'TRY');
 	const pendingMessages = $derived(
 		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new' || m.status === 'parsed')
 	);
 	const pendingCount = $derived(pendingMessages.filter((m) => m.status === 'new').length);
 
 	function initDrafts(records: TransactionDraft[]): DraftState[] {
-		return records.map((r) => ({ ...r, _status: 'idle', _error: null }));
+		return records.map((r) => {
+			const same = r.currency === baseCurrency;
+			return {
+				...r,
+				status: null,
+				paid_amount: null,
+				fx_rate: same ? 1 : null,
+				amount_base: same ? r.amount : (r.counterparty_amount ?? null),
+				contact_id: null,
+				_status: 'idle' as const,
+				_error: null
+			};
+		});
 	}
 
-	function stripDraftMeta(state: DraftState[]): TransactionDraft[] {
-		return state.map((d) => ({
+	function setDrafts(records: TransactionDraft[]) {
+		originalDrafts = records;
+		drafts = initDrafts(records);
+	}
+
+	function draftReady(d: DraftState): boolean {
+		const item = {
 			kind: d.kind,
 			amount: d.amount,
 			currency: d.currency,
@@ -76,36 +99,19 @@
 			contact_label: d.contact_label,
 			occurred_on: d.occurred_on,
 			payment_method: d.payment_method,
-			description: d.description
-		}));
+			description: d.description,
+			status: d.status,
+			paid_amount: d.paid_amount,
+			fx_rate: d.fx_rate,
+			amount_base: d.amount_base,
+			contact_id: d.contact_id
+		};
+		return approveDraftItemSchema.safeParse(item).success;
 	}
 
-	/** Freshly-parsed AI records become the new "original" snapshot for correction diffing. */
-	function setDrafts(records: TransactionDraft[]) {
-		originalDrafts = records;
-		correctionSubmitted = false;
-		drafts = initDrafts(records);
-	}
-
-	/**
-	 * Faz 3: kullanıcı taslakları AI çıktısından farklı kaydettiyse (veya onaylarken hâlâ
-	 * fark varsa) tek bir correction kaydı gönderir. Batch başına en fazla bir kez çalışır.
-	 */
-	async function maybeSubmitCorrection(inboxId: string | null) {
-		if (correctionSubmitted || originalDrafts.length === 0) return;
-		const current = stripDraftMeta(drafts);
-		if (JSON.stringify(current) === JSON.stringify(originalDrafts)) return;
-		correctionSubmitted = true;
-		try {
-			await apiSend(apiPaths.whatsappCorrections, 'POST', {
-				inbound_message_id: inboxId,
-				original_parsed: originalDrafts,
-				corrected: current
-			});
-		} catch {
-			/* Correction kaydı best-effort — onay/kayıt akışını bloklamaz. */
-		}
-	}
+	const canApprove = $derived(
+		Boolean(activeInboxId) && drafts.length > 0 && drafts.every(draftReady) && !approving
+	);
 
 	$effect(() => {
 		const inboxId = page.url.searchParams.get('inbox');
@@ -130,9 +136,9 @@
 				message: text
 			});
 			setDrafts(res.records);
-			if (res.records.length === 0) parseError = 'Mesajdan işlem çıkarılamadı.';
+			if (res.records.length === 0) parseError = t('finance.ai.parse.none');
 		} catch (err) {
-			parseError = err instanceof Error ? err.message : 'Analiz başarısız';
+			parseError = err instanceof Error ? err.message : t('finance.ai.parse.failed');
 			drafts = [];
 			originalDrafts = [];
 		} finally {
@@ -162,11 +168,11 @@
 			);
 			setDrafts(res.records);
 			if (res.records.length === 0) {
-				parseError = item.has_media ? 'Medya mesajı — metin yok.' : 'Mesajdan işlem çıkarılamadı.';
+				parseError = item.has_media ? t('finance.ai.parse.media') : t('finance.ai.parse.none');
 			}
 			await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
 		} catch (err) {
-			parseError = err instanceof Error ? err.message : 'Analiz başarısız';
+			parseError = err instanceof Error ? err.message : t('finance.ai.parse.failed');
 			drafts = [];
 			originalDrafts = [];
 		} finally {
@@ -195,106 +201,83 @@
 		await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
 	}
 
-	async function approveInbox(id: string) {
-		await maybeSubmitCorrection(id);
-		await apiSend(apiPaths.whatsappInboxApprove(id), 'POST');
-		activeInboxId = null;
-		message = '';
-		drafts = [];
-		originalDrafts = [];
-		await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
-	}
-
-	function updateDraft(index: number, patch: Partial<TransactionDraft>) {
+	function updateDraft(index: number, patch: Partial<DraftState>) {
 		drafts = drafts.map((d, i) => (i === index ? { ...d, ...patch } : d));
 	}
 
-	async function saveDraft(index: number) {
-		const draft = drafts[index];
-		drafts = drafts.map((d, i) => (i === index ? { ...d, _status: 'saving', _error: null } : d));
-		let tenantBase: 'TRY' | 'GBP' | 'EUR' | 'USD' = 'TRY';
+	function toApproveItem(d: DraftState): ApproveDraftItem {
+		const parsed = approveDraftItemSchema.parse({
+			kind: d.kind,
+			amount: d.amount,
+			currency: d.currency,
+			counterparty_amount: d.counterparty_amount,
+			title: d.title,
+			category: d.category,
+			subcategory: d.subcategory,
+			patient_id: d.patient_id,
+			patient_display_name: d.patient_display_name,
+			contact_label: d.contact_label,
+			occurred_on: d.occurred_on,
+			payment_method: d.payment_method,
+			description: d.description,
+			status: d.status,
+			paid_amount: d.paid_amount,
+			fx_rate: d.fx_rate,
+			amount_base: d.amount_base,
+			contact_id: d.contact_id
+		});
+		return parsed;
+	}
+
+	async function approveAll() {
+		if (!activeInboxId || !canApprove) return;
+		approving = true;
+		parseError = null;
+		drafts = drafts.map((d) => ({ ...d, _status: 'saving', _error: null }));
 		try {
-			const tenant = await apiGet<{ base_currency: 'TRY' | 'GBP' | 'EUR' | 'USD' }>(
-				'/v1/tenants/current'
+			const items = drafts.map(toApproveItem);
+			await apiSend<ApproveDraftsResponse>(
+				apiPaths.whatsappInboxApproveDrafts(activeInboxId),
+				'POST',
+				{
+					drafts: items,
+					original_parsed: originalDrafts.length > 0 ? originalDrafts : undefined
+				}
 			);
-			tenantBase = tenant.base_currency;
-		} catch {
-			/* keep TRY */
-		}
-		const currency = draft.currency;
-		const stubRate =
-			currency === 'GBP' ? 43 : currency === 'EUR' ? 36 : currency === 'USD' ? 34 : 1;
-		let amount_base = draft.counterparty_amount ?? null;
-		let fx_rate: number | null;
-		if (currency === tenantBase) {
-			amount_base = draft.amount;
-			fx_rate = 1;
-		} else if (amount_base == null) {
-			// Demo: AI henüz baz tutar vermediyse yaklaşık kur ile doldur (onay ekranında görünür olmalı ileride)
-			amount_base = Math.round((draft.amount / 100) * stubRate * 100);
-			fx_rate = stubRate;
-		} else {
-			fx_rate = stubRate;
-		}
-		const payload: TransactionCreate = {
-			kind: draft.kind,
-			title: draft.title.trim(),
-			subtitle: null,
-			category: draft.category ?? null,
-			occurred_on: draft.occurred_on,
-			status: 'paid',
-			invoice_status: 'none',
-			payment_method: draft.payment_method ?? null,
-			amount: draft.amount,
-			paid_amount: draft.amount,
-			currency,
-			patient_id: draft.patient_id ?? null,
-			contact_id: null,
-			contact_label: draft.contact_label ?? null,
-			amount_base,
-			base_currency: tenantBase,
-			fx_rate,
-			fx_dated: draft.occurred_on,
-			description: draft.description ?? null
-		};
-		try {
-			await apiSend('/v1/transactions', 'POST', payload);
-			drafts = drafts.map((d, i) => (i === index ? { ...d, _status: 'saved', _error: null } : d));
+			drafts = drafts.map((d) => ({ ...d, _status: 'saved', _error: null }));
 			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
-			if (drafts.every((d) => d._status === 'saved')) {
-				await maybeSubmitCorrection(activeInboxId);
-			}
-			if (activeInboxId && drafts.every((d) => d._status === 'saved')) {
-				await approveInbox(activeInboxId);
-			}
+			await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
+			activeInboxId = null;
+			message = '';
+			drafts = [];
+			originalDrafts = [];
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'Kayıt başarısız';
-			drafts = drafts.map((d, i) => (i === index ? { ...d, _status: 'error', _error: msg } : d));
+			const msg = err instanceof Error ? err.message : t('finance.ai.approve.failed');
+			parseError = msg;
+			drafts = drafts.map((d) => ({ ...d, _status: 'error', _error: msg }));
+		} finally {
+			approving = false;
 		}
 	}
 
 	function previewBody(item: InboundMessage): string {
 		if (item.body?.trim()) return item.body;
-		return item.has_media ? '(boş mesaj)' : '—';
+		return item.has_media ? t('finance.ai.pending.emptyBody') : '—';
 	}
 </script>
 
 <svelte:head>
-	<title>AI ile İşlem · Verimaya</title>
+	<title>{t('finance.ai.title')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">
-	<PageHeader
-		title="AI ile İşlem"
-		description="WhatsApp grup mesajını yapıştır veya kuyruktan seç — AI işlemleri ayrıştırır, onayladıktan sonra kayıt açılır."
-	/>
+	<PageHeader title={t('finance.ai.title')} description={t('finance.ai.description')} />
 
-	<!-- Manuel yapıştır -->
 	<section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
-		<h2 class="mb-3 text-sm font-semibold text-text">Mesajı yapıştır</h2>
+		<h2 class="mb-3 text-sm font-semibold text-text">{t('finance.ai.paste.heading')}</h2>
 		<textarea
 			class="min-h-28 w-full resize-y rounded-[6px] border border-border bg-surface-2 px-3 py-2 font-mono text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40"
-			placeholder={PLACEHOLDER}
+			placeholder={t('finance.ai.paste.placeholder')}
 			bind:value={message}
 			rows={6}></textarea>
 
@@ -304,7 +287,7 @@
 
 		{#if showLongWarning}
 			<div class="mt-3 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
-				<p class="text-text">Bu mesaj uzun olabilir. Daha iyi sonuç için bölerek yapıştırın.</p>
+				<p class="text-text">{t('finance.ai.paste.longWarning')}</p>
 				<div class="mt-2 flex gap-2">
 					<Button
 						size="sm"
@@ -314,7 +297,7 @@
 							void analyzeText(message);
 						}}
 					>
-						Yine de dene
+						{t('finance.ai.paste.tryAnyway')}
 					</Button>
 					<Button
 						size="sm"
@@ -322,7 +305,7 @@
 						type="button"
 						onclick={() => (showLongWarning = false)}
 					>
-						İptal
+						{t('finance.ai.paste.cancel')}
 					</Button>
 				</div>
 			</div>
@@ -331,19 +314,18 @@
 		<div class="mt-3 flex flex-wrap items-center gap-2">
 			<Button type="button" disabled={parsing || !message.trim()} onclick={requestAnalyze}>
 				<Sparkles class="size-4" />
-				{parsing ? 'Analiz ediliyor…' : 'Analiz Et'}
+				{parsing ? t('finance.ai.analyzing') : t('finance.ai.analyze')}
 			</Button>
 			{#if activeInboxId}
-				<span class="text-xs text-text-faint">Onay Kuyruğu'ndan seçildi</span>
+				<span class="text-xs text-text-faint">{t('finance.ai.fromQueue')}</span>
 			{/if}
 		</div>
 	</section>
 
-	<!-- Bekleyenler -->
 	<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 		<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 			<h2 class="text-sm font-semibold text-text">
-				Bekleyenler
+				{t('finance.ai.pending.heading')}
 				{#if pendingCount > 0}
 					<span class="font-normal text-text-muted">({pendingCount})</span>
 				{/if}
@@ -355,14 +337,14 @@
 				disabled={processing}
 				onclick={processNewMessages}
 			>
-				{processing ? 'İşleniyor…' : 'Yeni mesajları işle'}
+				{processing ? t('finance.ai.pending.processing') : t('finance.ai.pending.process')}
 			</Button>
 		</div>
 
 		{#if inboxQuery.isPending}
-			<p class="text-sm text-text-muted">Yükleniyor…</p>
+			<p class="text-sm text-text-muted">{t('finance.ai.pending.loading')}</p>
 		{:else if pendingMessages.length === 0}
-			<p class="text-sm text-text-muted">Bekleyen mesaj yok.</p>
+			<p class="text-sm text-text-muted">{t('finance.ai.pending.empty')}</p>
 		{:else}
 			<ul class="divide-y divide-border">
 				{#each pendingMessages as item (item.id)}
@@ -377,7 +359,7 @@
 									tone={item.status === 'new' ? 'warning' : 'info'}
 								/>
 								{#if item.has_media}
-									<StatusBadge label="Medya" tone="neutral" />
+									<StatusBadge label={t('finance.ai.pending.media')} tone="neutral" />
 								{/if}
 								<time
 									class="ml-auto text-xs whitespace-nowrap text-text-faint"
@@ -390,7 +372,7 @@
 							{#if item.has_media && item.media_path}
 								<p class="mt-1 flex items-center gap-1 text-xs text-info">
 									<Paperclip class="size-3" />
-									Dosya eki (demo)
+									{t('finance.ai.pending.mediaDemo')}
 								</p>
 							{/if}
 						</div>
@@ -401,7 +383,7 @@
 								disabled={parsing}
 								onclick={() => analyzeInboxItem(item)}
 							>
-								Analiz Et
+								{t('finance.ai.analyze')}
 							</Button>
 							<Button
 								size="sm"
@@ -409,7 +391,7 @@
 								type="button"
 								onclick={() => ignoreInbox(item.id)}
 							>
-								Yoksay
+								{t('finance.ai.pending.ignore')}
 							</Button>
 						</div>
 					</li>
@@ -418,24 +400,23 @@
 		{/if}
 	</section>
 
-	<!-- Taslaklar -->
 	{#if drafts.length > 0}
 		<section class="mt-4 space-y-3">
 			<div class="flex flex-wrap items-center justify-between gap-2">
 				<h2 class="text-sm font-semibold text-text">
-					Taslaklar <span class="font-normal text-text-muted">({drafts.length})</span>
+					{t('finance.ai.drafts.heading')}
+					<span class="font-normal text-text-muted">({drafts.length})</span>
 				</h2>
 				{#if activeInboxId}
-					<Button
-						size="sm"
-						variant="outline"
-						type="button"
-						onclick={() => approveInbox(activeInboxId!)}
-					>
-						Kuyruğu onayla
+					<Button size="sm" type="button" disabled={!canApprove} onclick={approveAll}>
+						{approving ? t('finance.ai.drafts.approving') : t('finance.ai.drafts.approve')}
 					</Button>
 				{/if}
 			</div>
+
+			{#if !activeInboxId}
+				<p class="text-sm text-warning">{t('finance.ai.drafts.needInbox')}</p>
+			{/if}
 
 			{#if parseError && activeInboxId}
 				<p class="text-sm text-danger">{parseError}</p>
@@ -445,15 +426,12 @@
 				<TransactionDraftCard
 					{draft}
 					{patients}
+					{baseCurrency}
 					onchange={(patch) => updateDraft(i, patch)}
-					onsave={() => saveDraft(i)}
 				/>
 			{/each}
 
-			<p class="text-xs text-text-faint">
-				AI çıktısı taslaktır; kaydetmeden önce alanları kontrol edin. Backend sezgisel parser
-				kullanıyor (LLM henüz yok).
-			</p>
+			<p class="text-xs text-text-faint">{t('finance.ai.drafts.footnote')}</p>
 		</section>
 	{/if}
 </div>

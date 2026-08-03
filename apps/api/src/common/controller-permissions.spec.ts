@@ -139,6 +139,7 @@ const whatsappPermissions: Array<[keyof WhatsappController, OrgPermissionRequire
 	['processInbox', { resource: 'patient', action: 'update' }],
 	['parseInboxItem', { resource: 'patient', action: 'update' }],
 	['approveInboxItem', { resource: 'patient', action: 'update' }],
+	['approveDrafts', { resource: 'finance', action: 'create' }],
 	['ignoreInboxItem', { resource: 'patient', action: 'update' }],
 	['createCorrection', { resource: 'patient', action: 'create' }],
 	['listCorrections', { resource: 'patient', action: 'read' }]

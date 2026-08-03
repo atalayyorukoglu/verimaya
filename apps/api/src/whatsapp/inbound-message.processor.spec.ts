@@ -9,6 +9,7 @@ import { TenantContextService } from '../tenant/tenant-context.service';
 import { IntegrationEventProcessor } from '../queue/integration-event.processor';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 import { DEFAULT_QUEUE_NAME } from '../queue/queue.service';
+import { TransactionsService } from '../transactions/transactions.service';
 import { InboundMessageProcessor } from './inbound-message.processor';
 import { WhatsappService } from './whatsapp.service';
 
@@ -43,6 +44,7 @@ describe('InboundMessageProcessor (Adım 24a)', () => {
 		whatsappService = new WhatsappService(
 			patientsService,
 			tenantContext,
+			new TransactionsService(tenantContext),
 			new HeuristicLlmClient()
 		);
 		processor = new InboundMessageProcessor(tenantContext, whatsappService);

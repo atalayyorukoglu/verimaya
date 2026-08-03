@@ -65,6 +65,8 @@ export const apiPaths = {
 	whatsappInboxProcess: `${API_V1_PREFIX}/whatsapp/inbox/process`,
 	whatsappInboxParse: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/parse`,
 	whatsappInboxApprove: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/approve`,
+	whatsappInboxApproveDrafts: (id: string) =>
+		`${API_V1_PREFIX}/whatsapp/inbox/${id}/approve-drafts`,
 	whatsappInboxIgnore: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/ignore`,
 	whatsappCorrections: `${API_V1_PREFIX}/whatsapp/corrections`,
 	whatsappCorrectionsList: (params?: { cursor?: string | null; limit?: number }) => {
@@ -113,6 +115,8 @@ import { patientSchema, patientFinanceSummarySchema } from './patient.js';
 import { appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
 import {
+	approveDraftsRequestSchema,
+	approveDraftsResponseSchema,
 	inboundMessageActionResponseSchema,
 	inboundMessageProcessResponseSchema,
 	inboundMessageSchema,
@@ -240,6 +244,10 @@ export const apiContract = {
 	},
 	'POST /v1/whatsapp/inbox/:id/approve': {
 		response: inboundMessageActionResponseSchema
+	},
+	'POST /v1/whatsapp/inbox/:id/approve-drafts': {
+		body: approveDraftsRequestSchema,
+		response: approveDraftsResponseSchema
 	},
 	'POST /v1/whatsapp/inbox/:id/ignore': {
 		response: inboundMessageActionResponseSchema

@@ -7,6 +7,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { SettingsService } from '../settings/settings.service';
 import { TenantModule } from '../tenant/tenant.module';
 import { TenantContextService } from '../tenant/tenant-context.service';
+import { TransactionsModule } from '../transactions/transactions.module';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { InboundMessageProcessor } from './inbound-message.processor';
 import { DisclosingOutboundMessagePort } from './outbound/disclosing-outbound.port';
@@ -16,7 +17,15 @@ import { WhatsappController } from './whatsapp.controller';
 import { WhatsappService } from './whatsapp.service';
 
 @Module({
-	imports: [AuthModule, CommonModule, LlmModule, PatientsModule, SettingsModule, TenantModule],
+	imports: [
+		AuthModule,
+		CommonModule,
+		LlmModule,
+		PatientsModule,
+		SettingsModule,
+		TenantModule,
+		TransactionsModule
+	],
 	controllers: [WhatsappController],
 	providers: [
 		WhatsappService,

@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
-import { transactionKindSchema } from './transaction.js';
+import {
+	transactionKindSchema,
+	transactionSchema,
+	transactionStatusSchema
+} from './transaction.js';
 
 /** WAHA webhook ile gelen grup mesajı durumu. */
 export const inboundMessageStatusSchema = z.enum(['new', 'parsed', 'approved', 'ignored']);
@@ -29,6 +33,70 @@ export const transactionDraftSchema = z.object({
 
 export type TransactionDraft = z.infer<typeof transactionDraftSchema>;
 
+/**
+ * MONEY-01: human approval payload for one AI draft.
+ * Payment status, paid_amount, FX, and counterparty are required — no silent defaults.
+ */
+export const approveDraftItemSchema = transactionDraftSchema
+	.extend({
+		status: transactionStatusSchema,
+		paid_amount: moneyMinor.nonnegative(),
+		/** 1 major unit of draft currency = fx_rate major units of tenant base. */
+		fx_rate: z.number().positive(),
+		/** Amount in tenant base currency (minor units). */
+		amount_base: moneyMinor.nonnegative(),
+		contact_id: uuid.nullable().default(null)
+	})
+	.superRefine((item, ctx) => {
+		const hasCounterparty = item.contact_id != null || Boolean(item.contact_label?.trim());
+		if (!hasCounterparty) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: 'Counterparty (contact_id or contact_label) is required',
+				path: ['contact_label']
+			});
+		}
+		if (item.status === 'unpaid' && item.paid_amount !== 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: 'paid_amount must be 0 when status is unpaid',
+				path: ['paid_amount']
+			});
+		}
+		if (item.status === 'paid' && item.paid_amount !== item.amount) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: 'paid_amount must equal amount when status is paid',
+				path: ['paid_amount']
+			});
+		}
+		if (item.status === 'partial' && (item.paid_amount <= 0 || item.paid_amount >= item.amount)) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: 'paid_amount must be between 0 and amount (exclusive) when status is partial',
+				path: ['paid_amount']
+			});
+		}
+	});
+
+export type ApproveDraftItem = z.infer<typeof approveDraftItemSchema>;
+
+export const approveDraftsRequestSchema = z.object({
+	drafts: z.array(approveDraftItemSchema).min(1),
+	/** AI original drafts; when present and different from submitted drafts, an ai_correction is written. */
+	original_parsed: z.array(transactionDraftSchema).optional()
+});
+
+export type ApproveDraftsRequest = z.infer<typeof approveDraftsRequestSchema>;
+
+export const approveDraftsResponseSchema = z.object({
+	id: uuid,
+	status: z.literal('approved'),
+	transactions: z.array(transactionSchema),
+	correction_id: uuid.nullable()
+});
+
+export type ApproveDraftsResponse = z.infer<typeof approveDraftsResponseSchema>;
 export const inboundMessageSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
