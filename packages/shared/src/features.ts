@@ -1,4 +1,4 @@
-export type FeatureStatus = 'yayinda' | 'gelistiriliyor' | 'planlandi';
+export type FeatureStatus = 'kod-hazir' | 'pilotta' | 'yayinda' | 'harici-onay-bekliyor';
 
 export type FeatureModule =
 	| 'Hasta Takibi'
@@ -23,6 +23,7 @@ export type Feature = {
 
 /**
  * Tek kaynak: /features sayfası buradan render edilir.
+ * Durum taksonomisi: docs/CHANGELOG-KURALLARI.md § Özellik durumu.
  * "Yayında"ya geçen özellik aynı commit'te changelog.ts'e de yazılır.
  */
 export const features: Feature[] = [
@@ -32,7 +33,7 @@ export const features: Feature[] = [
 		title: 'Hasta listesi ve detay',
 		description:
 			'Lead ve hasta kayıtlarını listeleyin, durumlarını takip edin, not ve iletişim bilgilerine tek ekrandan ulaşın.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-17',
 		version: '0.1.0'
 	},
@@ -42,7 +43,7 @@ export const features: Feature[] = [
 		title: 'Randevu takvimi',
 		description:
 			'Klinik, otel ve transfer notlarıyla birlikte randevuları gün/hafta görünümünde yönetin.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-17',
 		version: '0.1.0'
 	},
@@ -52,7 +53,7 @@ export const features: Feature[] = [
 		title: 'Gelir-gider işlemleri',
 		description:
 			'Tahsilat ve ödemeleri hasta bağlantısı, ödeme durumu ve fatura bilgisiyle kaydedin.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-17',
 		version: '0.1.0'
 	},
@@ -62,7 +63,7 @@ export const features: Feature[] = [
 		title: 'AI ile WhatsApp işlem aktarımı',
 		description:
 			'Grup mesajını yapıştırın veya WAHA kuyruğundan seçin; AI işlemleri ayrıştırır, onay sonrası kayıt açılır.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-20',
 		version: '0.1.0'
 	},
@@ -72,7 +73,7 @@ export const features: Feature[] = [
 		title: 'GoHighLevel senkronu',
 		description:
 			'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Verimaya ile eşleştirin.',
-		status: 'gelistiriliyor'
+		status: 'kod-hazir'
 	},
 	{
 		id: 'ads-metrics',
@@ -80,7 +81,7 @@ export const features: Feature[] = [
 		title: 'Meta ve Google Ads metrikleri',
 		description:
 			'Reklam harcaması ve dönüşümleri günlük özet olarak panele çekin.',
-		status: 'gelistiriliyor'
+		status: 'harici-onay-bekliyor'
 	},
 	{
 		id: 'ads-connect',
@@ -88,7 +89,7 @@ export const features: Feature[] = [
 		title: 'Meta & Google Ads bağlantısı',
 		description:
 			'Reklam hesabınızı bağlayın; kampanya harcaması günlük çekilir ve Gerçek ROAS raporunu besler.',
-		status: 'gelistiriliyor'
+		status: 'harici-onay-bekliyor'
 	},
 	{
 		id: 'n8n-api',
@@ -96,7 +97,7 @@ export const features: Feature[] = [
 		title: 'n8n ve dış API',
 		description:
 			'Scope’lu API anahtarı ve imzalı webhook’larla otomasyonları bağlayın.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-20',
 		version: '0.1.0'
 	},
@@ -106,7 +107,7 @@ export const features: Feature[] = [
 		title: 'Özet raporlar ve dashboard',
 		description:
 			'Lead, dönüşüm, tahsilat ve mesaj hacmini dönemsel kartlarda görün.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-20',
 		version: '0.1.0'
 	},
@@ -116,7 +117,7 @@ export const features: Feature[] = [
 		title: 'Gerçek ROAS raporu',
 		description:
 			'Reklam harcamanızı dönem tahsilatıyla kıyaslayın; hasta başına maliyet ve kaynak kırılımı.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-22',
 		version: '0.3.0'
 	},
@@ -126,7 +127,7 @@ export const features: Feature[] = [
 		title: 'Gerçek ROAS hesabı',
 		description:
 			'Platform ROAS’ını katkı payı ve maliyetlerle gerçek kâra çevirin; başabaş ve hasta başı reklam tavanını görün.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-22',
 		version: '0.2.0'
 	},
@@ -136,7 +137,7 @@ export const features: Feature[] = [
 		title: 'Reklam matematiği simülatörü',
 		description:
 			'CPC, dönüşüm ve satış oranıyla satış başı maliyet, trafik ışığı ve ölçek tavanını hesaplayın.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-22',
 		version: '0.2.0'
 	},
@@ -146,7 +147,7 @@ export const features: Feature[] = [
 		title: 'Reklam uyumluluk taraması',
 		description:
 			'Reklam veya landing metnindeki yasaklı / riskli sağlık vaatlerini tarayın.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-22',
 		version: '0.2.0'
 	},
@@ -156,7 +157,7 @@ export const features: Feature[] = [
 		title: 'UTM ve bütçe şablonları',
 		description:
 			'UTM linki üretin; 3:2:2 kreatif ve 60/30/10 bütçe bölüşümünü hızlıca çıkarın.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-22',
 		version: '0.2.0'
 	},
@@ -166,7 +167,7 @@ export const features: Feature[] = [
 		title: 'Ölçüm olgunluğu (Trust Score)',
 		description:
 			'Consent, CAPI, enhanced conversions ve CRM geri bildirim checklist’iyle ölçüm skorunu görün.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-22',
 		version: '0.2.0'
 	},
@@ -176,7 +177,7 @@ export const features: Feature[] = [
 		title: 'Yayın öncesi kontrol',
 		description:
 			'Kampanyayı yayınlamadan önce uyumluluk, birim ekonomi ve ölçüm eşiğini tek ekranda kontrol edin.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-22',
 		version: '0.4.0'
 	},
@@ -186,7 +187,7 @@ export const features: Feature[] = [
 		title: 'Kişi ve hasta çift kayıt',
 		description:
 			'Telefon, e-posta veya ada göre mükerrerleri tarayın; kayıtları birleştirin.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-20',
 		version: '0.1.0'
 	},
@@ -196,7 +197,7 @@ export const features: Feature[] = [
 		title: 'Çok kiracılı organizasyon',
 		description:
 			'Her klinik/acente kendi verisini görür; ekip rolleriyle erişim sınırlanır.',
-		status: 'gelistiriliyor'
+		status: 'kod-hazir'
 	},
 	{
 		id: 'free-ai-scorecard',
@@ -214,7 +215,7 @@ export const features: Feature[] = [
 		title: 'Ürün içi yapay zeka karnesi',
 		description:
 			'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması — panel /scorecard.',
-		status: 'yayinda',
+		status: 'kod-hazir',
 		released_at: '2026-07-30',
 		version: '0.6.0'
 	}

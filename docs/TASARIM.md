@@ -129,12 +129,13 @@ Tek uzun sayfa (`HubHome`): App + CRM CTA'ları → değer vaadi → özellik bl
 Tek sayfada mevcut + gelecek özellikler; hem kullanıcı için öğrenme noktası hem bizim için yol haritası özeti. Login gerektirmez (hub'dan linklenir), panel içinden de erişilir.
 
 - Veri kaynağı: `packages/shared/src/features.ts` (tipli liste). Elle HTML yazılmaz; sayfa bu listeden render edilir.
-- Her özellik: modül, başlık, 1-2 cümle açıklama, durum rozeti:
-  - 🟢 **Yayında** (`--success`) — yanında sürüm/tarih, changelog kaydına link
-  - 🟠 **Geliştiriliyor** (`--warning`)
-  - ⚪ **Planlandı** (`--text-muted`)
+- Her özellik: modül, başlık, 1-2 cümle açıklama, durum rozeti (`docs/CHANGELOG-KURALLARI.md`):
+  - 🟢 **Yayında** (`yayinda`, `--success`) — yanında sürüm/tarih, changelog kaydına link
+  - 🔵 **Pilotta** (`pilotta`, brand)
+  - ⚪ **Kod hazır** (`kod-hazir`, `--info`)
+  - 🟠 **Harici onay bekliyor** (`harici-onay-bekliyor`, `--warning`)
 - Gruplama modüle göre; üstte duruma göre filtre.
-- Kural: bir özellik "Yayında"ya geçtiğinde aynı commit'te changelog kaydı da eklenir.
+- Kural: bir özellik "Yayında"ya geçtiğinde aynı commit'te changelog kaydı da eklenir; GHL/Ads gibi maddelerde `/features` ve `/changelog` aynı durumu anlatır.
 
 ## Yenilikler sayfası (`/changelog`)
 

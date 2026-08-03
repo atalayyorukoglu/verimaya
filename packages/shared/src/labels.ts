@@ -52,9 +52,10 @@ export const inboundMessageStatusLabels: Record<InboundMessageStatus, string> = 
 };
 
 export const featureStatusLabels: Record<FeatureStatus, string> = {
+	'kod-hazir': 'Kod hazır',
+	pilotta: 'Pilotta',
 	yayinda: 'Yayında',
-	gelistiriliyor: 'Geliştiriliyor',
-	planlandi: 'Planlandı'
+	'harici-onay-bekliyor': 'Harici onay bekliyor'
 };
 
 export const auditActionLabels: Record<AuditAction, string> = {

@@ -27,7 +27,7 @@ export const changelog: ChangelogEntry[] = [
 			{
 				type: 'eklendi',
 				module: 'Entegrasyonlar',
-				text: 'Ayarlar’dan GoHighLevel hesabınızı bağlayıp kesebilirsiniz; senkron alan sahipliği kurallarına uyar.',
+				text: 'Ayarlar’dan GoHighLevel hesabını bağlama ekranı ve alan sahipliği kuralları hazır (durum: kod hazır). Gerçek tenant go-live kabulü ayrıdır.',
 				featureId: 'ghl-sync'
 			},
 			{
@@ -39,7 +39,7 @@ export const changelog: ChangelogEntry[] = [
 			{
 				type: 'eklendi',
 				module: 'Entegrasyonlar',
-				text: 'Meta ve Google Ads OAuth akışı hazır; hesabınızı bağladığınızda günlük harcama panele düşer.',
+				text: 'Meta ve Google Ads OAuth ve günlük metrik çekimi kodda hazır; gerçek hesap go-live kabulü (7 gün veri, idempotent sync) bekliyor.',
 				featureId: 'ads-connect'
 			}
 		]

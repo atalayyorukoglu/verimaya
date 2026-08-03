@@ -42,18 +42,18 @@
 			type="button"
 			class="rounded-[6px] border px-3 py-1.5 text-xs font-medium transition-colors {statusFilter ===
 			'all'
-				? 'border-brand bg-brand-subtle text-brand'
+				? 'border-brand bg-brand-subtle text-brand-text'
 				: 'border-border text-text-muted hover:bg-surface-2'}"
 			onclick={() => (statusFilter = 'all')}
 		>
 			Tümü
 		</button>
-		{#each ['yayinda', 'gelistiriliyor', 'planlandi'] as const as status (status)}
+		{#each ['kod-hazir', 'pilotta', 'yayinda', 'harici-onay-bekliyor'] as const as status (status)}
 			<button
 				type="button"
 				class="rounded-[6px] border px-3 py-1.5 text-xs font-medium transition-colors {statusFilter ===
 				status
-					? 'border-brand bg-brand-subtle text-brand'
+					? 'border-brand bg-brand-subtle text-brand-text'
 					: 'border-border text-text-muted hover:bg-surface-2'}"
 				onclick={() => (statusFilter = status)}
 			>

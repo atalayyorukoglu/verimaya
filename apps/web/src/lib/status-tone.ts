@@ -57,9 +57,11 @@ export function featureStatusTone(status: FeatureStatus): Tone {
 	switch (status) {
 		case 'yayinda':
 			return 'success';
-		case 'gelistiriliyor':
+		case 'pilotta':
+			return 'brand';
+		case 'kod-hazir':
+			return 'info';
+		case 'harici-onay-bekliyor':
 			return 'warning';
-		case 'planlandi':
-			return 'neutral';
 	}
 }

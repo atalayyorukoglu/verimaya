@@ -1056,7 +1056,7 @@ Gövde Adım 1–44 metni değiştirilmedi. Risk yok.
 ---
 
 ### 6.4 — DOC-03: Özellik durum taksonomisi
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `/features` sayfası GHL/Ads'i "geliştiriliyor" diyor, `/changelog` aynı şeyi kullanıcıya eklenmiş ve
 çalışır gibi anlatıyor. `apps/web/src/lib/status-tone.ts` içindeki `gelistiriliyor/yayinda` ikilisi
@@ -1068,7 +1068,13 @@ Tüm özellikleri yeniden etiketle; kuralı `docs/CHANGELOG-KURALLARI.md`'ye yaz
 - **Kabul:** Her özellik dört durumdan birinde; GHL/Ads iki dosyada aynı durumu gösteriyor.
 - **Model:** Composer 2.5 Standard · düşük reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `FeatureStatus` dört kod; etiketler + `featureStatusTone` + filtreler güncellendi.
+Çoğu özellik `kod-hazir`; ücretsiz karne `yayinda`; Ads `harici-onay-bekliyor`; GHL `kod-hazir`.
+Changelog 0.6.0 GHL/Ads metinleri durumla uyumlu; `/changelog` `featureId` rozeti gösteriyor.
+Kapsam dışı ama zorunlu: `packages/shared` `features.ts`/`labels.ts`/`changelog.ts` +
+`TASARIM.md` rozet listesi + Obsidian Özellikler Ads satırı. `svelte-check` 0. Varsayım: dahili
+pilot yok → `pilotta` kullanılmadı. Opus: Ads’i `kod-hazir` mi `harici-onay-bekliyor` mı tercih
+(OAuth kodu hazır, go-live değil).
 
 ---
 
