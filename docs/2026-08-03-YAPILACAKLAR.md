@@ -199,12 +199,19 @@ Yap:
 - **Model:** Claude Opus 5 · yüksek reasoning · dar kanıt paketi (bu adım güvenlik sınırı; Sonnet
   uygular, Opus 5 ile plan/diff review yaptır)
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** **Başlanmadı — bağımlılık kapalı değil.** Bu adımın `Bağımlı:` alanı 0.3'ü işaret
+ediyor ve çalışma kuralları (madde 1) "bağımlılığı bitmeden başlatılmaz" diyor; 0.3 hâlâ `[ ]`
+(bloke, Görüş'ünde açıklandığı gibi bu sandbox'ta docker/Postgres kurulamıyor). WEBHOOK-01 tam
+olarak "geçerli body imzası + değiştirilmiş `X-Tenant-Id` ile tenant'a yazılamıyor" gibi negatif
+testlerle kanıtlanması gereken bir güvenlik sınırı; migration + RLS + gerçek DB'ye karşı testler
+olmadan "tamam" diyemem — yarım bırakılmış bir tenant-çözümleme değişikliği hiç yapılmamasından
+daha risklidir (yanlış bir izlenim yaratır). Atalay (veya Docker'ı olan bir ortam) 0.3'ü
+tamamlayınca bu adım açılabilir. Kod tarafında hiçbir şey değiştirilmedi.
 
 ---
 
 ### 1.2 — Karne lead kapısını testle sabitle
-- [ ] Yapıldı
+- [x] Yapıldı
 
 LEG-01 canlıda kapalı (`720593e`) ama **regresyon testi yok**; biri flag'i yanlışlıkla açarsa
 sessizce e-posta toplamaya başlar. `KARNE_LEADS_ENABLED` yokken/false iken endpoint'in
@@ -219,12 +226,48 @@ açabildiği yol kapatılsın.
   üç durum da testli.
 - **Model:** GPT-5.6 Terra · orta reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** API tarafındaki regresyon testi zaten `720593e`'de vardı
+(`karne.controller.spec.ts` — flag yokken 503, flag `true`'yken kabul); ben buna flag **açıkça
+`false`** olduğu durumu, tipik bir `TRUE` yazım hatasını ve tam hata payload'ının
+(`karne_leads_disabled`) doğrulandığı iki test daha ekledim (toplam 2 → 5 test). Web tarafında
+"formun DOM'da olmadığını" doğrudan mount ederek test edecek bir altyapı **yok** — repo'da hiçbir
+Svelte component testi yok, `apps/web/vitest.config.ts` bilinçli olarak `environment: 'node'` ve
+SvelteKit plugin'siz ("sveltekit() adım testlerinde yüklenmesin" diye yorumlanmış), yani
+`$app/environment` / `$env/dynamic/public` bu test ortamında hiç çözülmüyor. Yeni bir DOM/component
+test altyapısı (`@testing-library/svelte` + jsdom + vitest ortam değişikliği) kurmak bu adımın
+`Dosyalar:` kapsamının fazlasıyla dışına taşardı ve bu oturumda pnpm install'ın ancak `/tmp`'e
+kopyalayıp özel bir `--store-dir` ile çalıştığı görüldü (bkz. altta) — riskli bir genişleme.
+**Varsayım:** Bunun yerine `KarneResult.svelte`'deki gate/render kararını saf, `$env`'den
+bağımsız bir modüle (`apps/web/src/lib/karne/gate.ts`: `showsBlockingGate`,
+`showsInlineCapture`, `initialGateUnlocked`) çıkardım ve component'i bu fonksiyonları çağıracak
+şekilde güncelledim (davranış birebir aynı — sadece inline koşul yerine adlandırılmış fonksiyon).
+`gate.spec.ts` (9 test) artık "leads kapalıyken hiçbir pozisyonda/hiçbir kilit durumunda kapı
+veya inline form render edilmez" iddiasını doğrudan ve gerçek DOM'a ihtiyaç duymadan kanıtlıyor.
+Ayrıca `apps/web/src/lib/karne/telemetry.ts`'de istenen ikinci düzeltmeyi yaptım:
+`ensureSessionForLead` artık `isKarneTelemetryEnabled()` kontrolü olmadan session açmıyor —
+önceden telemetry kapalıyken bile (yalnız `browser` kontrolüyle) yeni bir oturum kaydı
+oluşturabiliyordu; bu satır eklenmeden `KARNE_TELEMETRY_ENABLED=false` olsa da lead formu sessizce
+bir DB kaydı açabiliyordu. Bu path için de doğrudan bir test yazamadım (aynı `$app`/`$env`
+çözümleme kısıtı) — üretim kodundaki tek satırlık düzeltme mevcut guard deseniyle (dosyadaki diğer
+fonksiyonlar zaten aynı kontrolü yapıyor) tutarlı, ama regresyonu **kanıtlayan** bir test yok.
+Tüm değişiklikleri doğrulamak için: repo'yu `/tmp`'e kopyalayıp `pnpm install --store-dir
+<yazılabilir-yol>` çalıştırdım (mounted proje klasöründeki pnpm store'un sqlite index'i salt
+okunur — 0.2/0.3'teki bulgunun aynısı, ama farklı bir çözüm: store'u `/tmp` altında **yeni** bir
+dizine yönlendirmek işe yaradı, `/tmp/pnpm-store` gibi önceden var olan paylaşılan dizinler
+başka bir kullanıcıya ait olduğundan yazılamıyor). Sonuç: `pnpm --filter @verimaya/web test`
+(2 dosya, 14 test yeşil), `pnpm --filter @verimaya/api` için tek dosya
+(`karne.controller.spec.ts`, 5 test yeşil — API'nin geri kalanı hâlâ 0.3'teki DB kısıtına takılı,
+bu dosya DB gerektirmiyor), `pnpm --filter @verimaya/web check` (svelte-check: 0 hata, 10 uyarı —
+hepsi `TransactionDraftCard.svelte`'deki önceden bilinen a11y uyarıları, 5.3'ün kapsamı, bu
+adımda dokunulmadı), `prettier --check` ve `eslint` değişen dosyalarda temiz. **Opus'un bakması
+gereken yer:** `gate.ts` soyutlamasının `KarneResult.svelte`'deki orijinal inline koşullarla
+davranışsal olarak birebir eşdeğer olduğunu bağımsız doğrulamak, ve telemetry.ts'deki tek satırlık
+guard'ın (test edilemediği için) doğru yerde olduğunu teyit etmek.
 
 ---
 
 ### 1.3 — Auth tabloları ve ops yüzeyi için tehdit modeli notu
-- [ ] Yapıldı
+- [x] Yapıldı
 
 Kod değil, kısa bir belge — ama Faz 1'de olması gerekiyor çünkü sonraki kararları belirliyor.
 `docs/TEHDIT-MODELI.md` yaz: better-auth tablolarında domain RLS deseninin olmaması,
@@ -236,7 +279,23 @@ mevcut durum, gerçekçi saldırı senaryosu, önerilen kontrol, karar (şimdi/p
 - **Kabul:** Dört başlığın her biri için karar satırı var; "araştırılacak" cevabı yok.
 - **Model:** Claude Sonnet 5 Thinking · orta/yüksek reasoning · orta context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `docs/TEHDIT-MODELI.md` yazıldı — dört başlığın dördü de (better-auth RLS eksikliği,
+`verimaya_app` rolünün auth tablolarına tam CRUD kapsamı, prod'da OpenAPI/Scalar + Bull Board
+erişimi, GHL client'ının process-local throttle'ı) mevcut durum/saldırı senaryosu/önerilen
+kontrol/karar dörtlüsüyle yazıldı; her biri kod içi somut satır referanslarıyla (ör.
+`ghl.client.http.ts:87,231-238`, `bull-board.mount.ts:31`, `0003_app_role.sql:14`) destekleniyor.
+Kararlar: madde 1 ve 2 "kabul edilen risk" (tek tenant/pilot aşamasında hasar yüzeyi sınırlı,
+çok-tenant pilotu öncesi yeniden değerlendirilecek); madde 3 ikiye bölündü — Bull Board'un
+sabit-olmayan token karşılaştırması "şimdi" (ucuz, ayrı bir fix olarak öneriliyor, **bu adımda kod
+değiştirilmedi** çünkü kapsam yalnızca belge), OpenAPI/Scalar'ın prod'da açık kalması "pilot
+sonrası"; madde 4 (rate-limit) "pilot sonrası" ama replica sayısı 1'i geçmeden **önce** zorunlu ön
+koşul olarak işaretlendi. **Varsayım:** "araştırılacak" cevabı yok kuralına uyarak her madde için
+somut bir karar yazdım; en tartışmalı karar muhtemelen madde 1/2'nin "kabul edilen risk" olması —
+bunun gerekçesi tek-tenant olmamız, ikinci gerçek tenant eklenmeden RLS eksikliğinin sömürülebilir
+olmaması. **Opus'un bakması gereken yer:** madde 1/2'deki "kabul edilen risk" kararının, PILOT-01
+(kendi firmamız ilk tenant, Faz 8) sonrasında hâlâ tek-tenant sayılıp sayılmayacağını netleştirmek
+— eğer PILOT-01 sırasında ikinci bir organizasyon (ör. demo/test org'u) DB'de yaşıyorsa bu karar
+erken bozulmuş olabilir.
 
 ---
 
