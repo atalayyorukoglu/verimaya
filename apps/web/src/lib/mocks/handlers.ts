@@ -27,6 +27,7 @@ import {
 	webhookSubscriptionCreateSchema,
 	aiCorrectionCreateSchema,
 	trustScoreSettings,
+	compareByCreatedAtDesc,
 	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
@@ -472,6 +473,9 @@ export const handlers = [
 					(p.phone?.includes(q) ?? false)
 			);
 		}
+		// CONTRACT-02: newly created patients are unshifted, so insertion order already
+		// matches created_at desc — sort explicitly anyway so this doesn't silently rot.
+		items = [...items].sort(compareByCreatedAtDesc);
 		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
@@ -581,7 +585,9 @@ export const handlers = [
 		if (patientId) items = items.filter((a) => a.patient_id === patientId);
 		if (from) items = items.filter((a) => a.starts_at >= from);
 		if (to) items = items.filter((a) => a.starts_at <= to);
-		items.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+		// CONTRACT-02: match the real API's order (created_at desc) — the calendar UI
+		// re-sorts by starts_at client-side regardless, so this doesn't change behavior.
+		items.sort(compareByCreatedAtDesc);
 		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
@@ -646,7 +652,9 @@ export const handlers = [
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
-		const sorted = items.sort((a, b) => b.occurred_on.localeCompare(a.occurred_on));
+		// CONTRACT-02: the real API orders by created_at desc, not occurred_on — finance/
+		// reports pages don't re-sort client-side, so this was a real visible MSW/API drift.
+		const sorted = items.sort(compareByCreatedAtDesc);
 		return HttpResponse.json(paginate(sorted, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
@@ -1211,7 +1219,9 @@ export const handlers = [
 		}
 		const typeId = parsed.data.type_id;
 		if (typeId) items = items.filter((c) => c.contact_type_id === typeId);
-		items.sort((a, b) => a.display_name.localeCompare(b.display_name, 'tr'));
+		// CONTRACT-02: the real API orders by created_at desc, not display_name — the
+		// contacts list page doesn't re-sort client-side, so this was a real MSW/API drift.
+		items.sort(compareByCreatedAtDesc);
 		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 

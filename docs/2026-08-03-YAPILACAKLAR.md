@@ -402,7 +402,7 @@ zaten hiçbir prettier kapsamında değil (0.2'nin bulgusuyla aynı — yalnız 
 ---
 
 ### 2.2 — CONTRACT-02: MSW ↔ API parity test paketi
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** 2.1
 
 Aynı fixture ve aynı senaryo, iki backend'e karşı: MSW ve gerçek API. Filtre, sıralama, cursor
@@ -415,7 +415,47 @@ sınıfı hataların kalıcı panzehiri.
   senaryosu iki backend'de aynı sonucu veriyor.
 - **Model:** Composer 2.5 Standard · orta reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** Gerçek API bu sandbox'ta hiç erişilebilir değil (docker/Postgres yok, bkz 0.3), yani
+"iki backend'e karşı aynı fixture" kelimenin tam anlamıyla **çalıştırılıp karşılaştırılamadı.**
+Bunun yerine paritenin iki yarısını ayrı dosyalarda, aynı paylaşılan sözleşmeye (`packages/shared/src/
+list-query.ts`) karşı yazdım: `apps/web/src/lib/mocks/contract-parity.spec.ts` (MSW yarısı — **bu
+sandbox'ta gerçekten çalıştı ve yeşil**, DB gerektirmiyor) ve `apps/api/src/common/contract-parity.
+isolation.spec.ts` (API yarısı — gerçek Postgres'e karşı yazıldı, DB yokluğunda sadece `ECONNREFUSED`
+ile durduğu doğrulandı — yani dosya söz dizimi/importlar doğru, mantık DB'siz koşulamadı).
+
+Kapsam kararları:
+1. **Dosya yolu sapması:** Plan `apps/api/test/contract-parity.spec.ts` öneriyordu; ben
+   `apps/api/src/common/contract-parity.isolation.spec.ts`'e yazdım. Neden: `apps/api/vitest.config.ts`
+   yalnız `src/**/*.spec.ts`'i topluyor — `test/` altına yazılan bir dosya **sessizce hiç çalışmazdı.**
+   Diğer tüm DB'li spec'lerle aynı `*.isolation.spec.ts` adlandırmasını kullandım.
+2. **Sıralama paritesi gerçek bir bug'dı, düzelttim:** MSW'nin appointments/transactions/contacts
+   handler'ları önceden kendi ad-hoc sıralamalarını kullanıyordu (starts_at asc, occurred_on desc,
+   display_name) — gerçek API ise her zaman `created_at desc, id desc` kullanıyor (cursor bunun
+   üzerine kurulu). `finance/+page.svelte` ve `contacts/+page.svelte` ham liste sırasını client'ta
+   yeniden sıralamıyor, yani bu MSW/API farkı **demo'da görünür bir sıralama farkına** denk geliyordu
+   (prod zaten created_at-desc gösteriyordu, demo farklı gösteriyordu). `packages/shared/src/
+   list-query.ts`'e `compareByCreatedAtDesc()` eklendi, dört MSW list handler'ı da buna geçirildi —
+   artık MSW gerçek API'nin sırasıyla birebir aynı.
+3. **Cursor token formatı kasıtlı olarak eşitlenmedi:** API'nin cursor'ı `base64(created_at+id)`,
+   MSW'ninki basit bir tam sayı offset'i (`data.ts:paginate`) — ikisi de **opak** (web istemcisi
+   `next_cursor`'ı olduğu gibi geri gönderiyor, hiç parse etmiyor), yani byte-eşitliği bir sözleşme
+   gereksinimi değil. Test ettiğim şey token'ların eşitliği değil, **davranış**: sayfalama hiç
+   tekrar/atlama yapmadan tüm kayıtları tam olarak bir kez dolaşıyor mu.
+4. **`msw/node` + relative path handler'ları çalışmıyordu, kök nedeni bulup düzelttim:**
+   `apps/web/vitest.config.ts` bilinçli olarak `environment: 'node'` (jsdom yok, bkz 1.2), ama
+   Node'da `location` global'i yok — MSW'nin `handlers.ts`'teki göreli path'leri (`/v1/appointments`)
+   çözebilmesi için buna ihtiyacı var; onsuz her istek "eşleşmeyen" sayılıp gerçek ağa (ve
+   `ECONNREFUSED`'a) düşüyordu. `server.ts`'e (yeni) yalnız Node'da devreye giren minimal bir
+   `globalThis.location` polyfill'i eklendi — tarayıcı davranışı değişmedi, yalnız test ortamı
+   MSW'yi gerçekten intercept edebilir hale geldi. Bu, `contract-parity.spec.ts`'in gerçekten
+   çalışmasını sağlayan asıl düzeltmeydi.
+
+Kanıt paketi (bu sandbox'ta çalıştırıldı): `apps/web` vitest tam paketi 3 dosya / 23 test yeşil
+(9'u yeni parity testi — 4 kaynak × filtre, 4 kaynak × cursor, + 1 "bilinmeyen param → 400" testi
+tüm kaynaklarda); `apps/web`/`packages/shared` `tsc --noEmit` temiz; `eslint`/`prettier --check`
+temiz. **Doğrulanamayan:** API yarısının gerçekten doğru sonuç verdiği (yalnız import/syntax
+doğrulandı, mantık hiç koşmadı) — Opus'un/Atalay'ın DB'li ortamda
+`pnpm --filter @verimaya/api test src/common/contract-parity.isolation.spec.ts` çalıştırması gerekiyor.
 
 ---
 
