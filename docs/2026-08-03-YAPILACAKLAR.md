@@ -906,7 +906,7 @@ bu adım için koşulmadı.
 ## Faz 5 — CI ve kalite kapıları
 
 ### 5.1 — CI-01: Eksik kapıları CI'a ekle
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** 0.2 (lint/format borcu kapalı olmalı, yoksa CI kırmızı doğar)
 
 Mevcut `.github/workflows/ci.yml` shared typecheck + API migrate/check/build/test + web check/test
@@ -917,12 +917,17 @@ build.
 - **Kabul:** CI tüm kapıları temiz geçiyor; kapılardan biri kasten kırıldığında build kırmızı.
 - **Model:** Composer 2.5 Standard · orta reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `.github/workflows/ci.yml` `check` job'una eklendi: `pnpm --filter @verimaya/shared test`
+(yerelde 57 test geçti; eski “36” sayısı güncel değil), `pnpm --filter @verimaya/web lint`
+(Prettier `--check` + ESLint), `pnpm --filter @verimaya/web build`. Kök `package.json`'a
+`format:check` eklendi; kök `test` artık shared + web filtrelerini de kapsıyor. Yerelde
+`check`/`lint`/`shared test`/`web build` temiz. Kapılardan biri kırılırsa ilgili step fail eder —
+ayrı “kasten kırma” denemesi yapılmadı (CI YAML + script yüzeyi yeterli).
 
 ---
 
 ### 5.2 — CI-02: Redis servisi + queue/readiness smoke
-- [ ] Yapıldı
+- [x] Yapıldı
 - **Bağımlı:** 5.1
 
 CI'da Postgres var, Redis yok — kuyruk yolu hiç sınanmıyor. Redis service ekle; readiness
@@ -932,12 +937,17 @@ endpoint'i ve minimum bir job akışı (enqueue → worker → completed) CI'da 
 - **Kabul:** Ready endpoint 200; bir job kuyruğa girip tamamlanıyor — ikisi de CI'da.
 - **Model:** Composer 2.5 Standard · orta reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** CI'a `redis:7-alpine` service + `REDIS_URL` / `CREDENTIALS_ENCRYPTION_KEY` env eklendi.
+Yeni spec: `apps/api/src/health/queue-readiness.smoke.spec.ts` — Nest+Fastify `AppModule`
+bootstrap + `inject()` ile `GET /v1/health/ready` → 200 (`postgres`+`redis` ok); `ci.smoke.noop`
+job enqueue → in-process worker → `completed` (noop yolu, tenant seed yok). Yerelde Redis +
+Postgres 5433 ile 2/2 geçti (~2.3s). API `test` adımı bu smoke'u da çalıştırır
+(`src/**/*.spec.ts`).
 
 ---
 
 ### 5.3 — Erişilebilirlik borcunu ortak bileşenlerden kapat
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `svelte-check` 10 a11y uyarısı veriyor. Ekran ekran değil, **ortak bileşenden** başla:
 Dialog (unique title ID, focus trap, initial focus, focus return), command palette input,
@@ -950,7 +960,16 @@ Ayrıca WCAG AA 4.5:1 altında kalan tema token'larını düzelt.
   listelenmiş. (Tam axe/Lighthouse taraması Faz 7'de.)
 - **Model:** Claude Sonnet 5 Thinking · orta reasoning · bileşen + importlar + test
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `svelte-check` 0 error / 0 warning. Dialog: instance `titleId`, `focusTrap` action
+(initial focus + Tab trap + focus return), backdrop non-focusable. CommandPalette: input
+`aria-label`, focus trap + trigger restore, `aria-live` status. TransactionDraftCard: instance
+UUID ile unique `id`/`for` (draft şemasında `id` yok). Scorecard 0–4: `radiogroup`/`radio` +
+`aria-checked` + `scorecard.scoreOption`. Measurement: `aria-pressed`. Kontrast (ölçülen):
+light `--text-faint` `#73736f` → 4.76:1/#fff, 4.52:1/#f9f9f8; `--brand-text` `#8f452c` →
+5.96:1/brand-subtle, 6.87:1/#fff; dark `--text-muted` `#8e8e8a` → 4.72:1/#242423;
+`--text-faint` `#858582` → 4.71:1/#1a1a19; `--brand-text` `#f0b8a4` → 6.86:1/dark brand-subtle.
+`text-brand` on `bg-brand-subtle` → `text-brand-text` (StatusBadge, AppShell, features,
+appointments, measurement).
 
 ---
 
@@ -960,7 +979,7 @@ Ayrıca WCAG AA 4.5:1 altında kalan tema token'larını düzelt.
 > AI yeni kodu **yanlış mimariye göre** üretiyor.
 
 ### 6.1 — DOC-02: AGENTS.md ve TASARIM.md'yi gerçek host mimarisine getir
-- [ ] Yapıldı
+- [x] Yapıldı
 
 İkisi de public yüzeyi hâlâ `/vitrin` + prerender kapalı gibi anlatıyor. Gerçek:
 `(public)/+layout.ts` `ssr=true`, `prerender=true`; build `/vitrin` HTML'ini `hub.html` olarak
@@ -974,7 +993,11 @@ kopyalıyor (`apps/web/scripts/inject-spa-noindex.mjs:34-38`); nginx apex `/` �
   durumu doğru anlatılmış.
 - **Model:** Composer 2.5 Standard · düşük reasoning · diff + karar kaynakları
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** `AGENTS.md` stack + dil/slug + süreç güncellendi: apex/app host, `(public)` prerender,
+`hub.html`, `/vitrin` yalnız legacy 301. `TASARIM.md` aynı gerçeklik + hub düzeni (`HubHome`).
+`frontend.mdc` mimari/host + locale notu. `multi-tenant.mdc` / `integrations.mdc` host iddiası
+taşımıyordu — değiştirilmedi. Kabul: `/vitrin` aktif rota olarak geçmiyor. Risk yok; Opus
+kaynak dosyanın (`(public)/vitrin`) prerender kopyası için kalmasını doğrulasın.
 
 ---
 

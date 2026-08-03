@@ -4,10 +4,10 @@
 
 Kaynak referans: TickPort `--palette-*` → Verimaya `--brand` / `--bg` / `--surface` / … eşlemesi `apps/web/src/routes/layout.css` içinde.
 
-## İki yüz
+## İki yüz + iki host
 
-1. **Vitrin (login öncesi):** sıcak nötr zemin + terracotta brand gradient hero, bol alan, büyük başlıklar, bölüm bölüm akan tek sayfa.
-2. **Panel (login sonrası):** Cloudflare dashboard düzeni — sol gruplu menü, üstte hızlı arama (⌘K), kart tabanlı içerik; **renkler TickPort paleti**.
+1. **Marketing hub (apex `verimaya.com`, login öncesi):** sıcak nötr zemin + terracotta brand gradient hero, bol alan, büyük başlıklar. Kök URL `/` — nginx `hub.html` (prerender). Public rotalar: ücretsiz karne, KVKK aydınlatma (`(public)/`, build-time prerender).
+2. **Panel (`app.verimaya.com`, login sonrası):** Cloudflare dashboard düzeni — sol gruplu menü, üstte hızlı arama (⌘K), kart tabanlı içerik; **renkler TickPort paleti**. SPA fallback `index.html`, `noindex`.
 
 Tema değiştirici üst barda (ay/güneş). Varsayılan: **açık**. Tercih `localStorage` (`verimaya:theme`) ile saklanır. Dil değiştirici arayüzde YOK — yayındaki tek dil Türkçe, ama altyapı iki dilli (aşağı bak).
 
@@ -26,8 +26,8 @@ Zamanlama gerekçesi: i18n iskelesini **şimdi** kurmak ucuz (ekran sayısı az)
 | Yüzey | Slug dili | Locale prefix | Durum |
 | --- | --- | --- | --- |
 | API (`/v1/...`) | İngilizce — değiştirilemez | yok | ✅ zaten öyleydi |
-| Panel rotası | İngilizce | **yok** — dil kullanıcı tercihi | ✅ 2026-07-26'da taşındı |
-| Vitrin | her dil kendi dilinde | ileride `/tr/` + `/en/` | ⏸ ön koşul eksik |
+| Panel (`app.verimaya.com`) | İngilizce | **yok** — dil kullanıcı tercihi | ✅ 2026-07-26'da taşındı |
+| Marketing hub (apex) | her dil kendi dilinde | ileride `/tr/` + `/en/` | ✅ prerender açık; ⏸ locale ağacı yok |
 
 Panel rotası SEO taşımaz (SPA + `noindex`), dolayısıyla slug dili bir ürün kararı değil kod tutarlılığı kararıdır: şema ve tablo adları İngilizce (`Patient`, `patients`), rota da İngilizce olmalı — aksi halde kalıcı bir çeviri katmanı doğar.
 
@@ -39,19 +39,24 @@ Panel rotası SEO taşımaz (SPA + `noindex`), dolayısıyla slug dili bir ürü
 - Yayındaki dil `defaultLocale = 'tr'`. Dil değiştirici arayüze **eklenmedi**; `setLocale()` hazır, açılması ayrı karar.
 - Mevcut ekranların Türkçe metinleri henüz kataloğa taşınmadı. Kural yeni ve dokunulan kod için bağlayıcı.
 
-### Vitrin locale ağacı neden kurulmadı
+### Host, prerender ve locale sırası
 
-`apps/web/src/routes/+layout.ts` içinde `ssr = false` ve `prerender = false` — vitrin Google'a boş `index.html` iskeleti olarak gidiyor, `<svelte:head>` içeriği hiç render edilmiyor. **Bugün hiç SEO yok**, dolayısıyla locale/slug stratejisi karşılık üretmez.
+**Gerçek host mimarisi (2026-08):**
 
-Sıra:
+- Apex `verimaya.com` / `www` → marketing hub. Nginx `/` → `hub.html` (build script'in prerender hub kopyası).
+- `app.verimaya.com` → panel + auth gate (SPA `index.html`).
+- Eski `/vitrin` → **301 `/`**; aktif kullanıcı rotası değil.
+- `(public)/+layout.ts`: `ssr = true`, `prerender = true`. Kök layout panel için `ssr = false`, `prerender = false` kalır.
+- Host yardımcıları: `apps/web/src/lib/host.ts` (`isMarketingHost` / `isAppHost`).
 
-1. Vitrini prerender edilebilir hale getir (o rota için `ssr = true` gerekir).
-2. `/tr/` ve `/en/` ağacını kur, her dil kendi slug'ıyla (`/tr/ozellikler`, `/en/features`).
-3. `/` için **Cloudflare'de uçta 302** yönlendirme + `hreflang`. JavaScript ile yönlendirme yapılmaz — SPA'da istemci yönlendirmesi SEO'yu öldürür.
+Prerender ön koşulu **karşılandı** — hub ve karne Google'a gerçek HTML gider. Locale/slug ağacı hâlâ kurulmadı; sıra:
 
-Çıplak kök (`/` = tek dil, prefix'siz) bilinçli olarak seçilmedi: ikinci dil eklenince ya mevcut linkler kırılır ya `/ozellikler` ile `/tr/ozellikler` aynı sayfayı sunar (yinelenen içerik). İkisi de prefix'li olunca "hangi dil birincil" sorusu tek satırlık bir yönlendirme kuralına iner ve her gün değiştirilebilir — segment kararı (acente / klinik) verilene kadar sabitlenmemesi gereken şey tam olarak bu.
+1. `/tr/` ve `/en/` ağacını kur, her dil kendi slug'ıyla (`/tr/ozellikler`, `/en/features`).
+2. Apex `/` için **Cloudflare'de uçta 302** yönlendirme + `hreflang`. JavaScript ile yönlendirme yapılmaz — SPA istemci yönlendirmesi SEO'yu öldürür.
 
-Pazar deseni de bunu doğruluyor: `planports.com/tr/...` ve `estesoft.com.tr/tr/...` — ikisi de her iki dili prefix'liyor, çıplak kök kullanmıyor.
+Çıplak kök (`/` = tek dil, prefix'siz) bilinçli olarak seçilmedi: ikinci dil eklenince ya mevcut linkler kırılır ya aynı sayfa iki URL'de yinelenir. İkisi de prefix'li olunca "hangi dil birincil" sorusu tek satırlık bir yönlendirme kuralına iner — segment kararı (acente / klinik) verilene kadar sabitlenmez.
+
+Pazar deseni: `planports.com/tr/...` ve `estesoft.com.tr/tr/...` — ikisi de her iki dili prefix'liyor.
 
 ## Renk token'ları (koyu tema)
 
@@ -102,7 +107,7 @@ Kontrast kuralı: terracotta büyük alanlarda değil **vurgu** olarak (buton, a
 
 - Font: **Inter** (self-host, `font-display: swap`); veri tablolarında 13-14px, gövde 14-15px, başlıklar 600 ağırlık.
 - Radius: kart 8px, kontrol 6px. Gölge yok denecek kadar az; derinlik border + zemin katmanıyla verilir.
-- Boşluk: 4px taban ölçek; kart içi 16-20px, bölüm arası 32-48px (vitrin sayfasında 80-120px).
+- Boşluk: 4px taban ölçek; kart içi 16-20px, bölüm arası 32-48px (hub sayfasında 80-120px).
 
 ## Panel iskeleti (AppShell)
 
@@ -115,13 +120,13 @@ Cloudflare dashboard **düzeni** referans; **renk** TickPort. Sidebar header/foo
 - **Üst bar:** ⌘K, Yenilikler, destek, hesap.
 - Mobil: alt sekme + çekmece aynı header/footer.
 
-## Vitrin sayfası düzeni
+## Marketing hub düzeni (apex `/`)
 
-Tek uzun sayfa: gradient hero (değer vaadi + tek CTA "Demo talep et") → güven bandı → özellik blokları → entegrasyon logoları → [Özellikler] → alt CTA → footer. Fiyat sayfası MVP'de yok; satış demo üzerinden.
+Tek uzun sayfa (`HubHome`): App + CRM CTA'ları → değer vaadi → özellik blokları → entegrasyonlar → alt CTA → footer. Fiyat sayfası MVP'de yok; satış demo üzerinden. Bileşen: `apps/web/src/lib/components/HubHome.svelte`.
 
 ## Özellikler sayfası (`/features`)
 
-Tek sayfada mevcut + gelecek özellikler; hem kullanıcı için öğrenme noktası hem bizim için yol haritası vitrini. Login gerektirmez (vitrinden linklenir), panel içinden de erişilir.
+Tek sayfada mevcut + gelecek özellikler; hem kullanıcı için öğrenme noktası hem bizim için yol haritası özeti. Login gerektirmez (hub'dan linklenir), panel içinden de erişilir.
 
 - Veri kaynağı: `packages/shared/src/features.ts` (tipli liste). Elle HTML yazılmaz; sayfa bu listeden render edilir.
 - Her özellik: modül, başlık, 1-2 cümle açıklama, durum rozeti:

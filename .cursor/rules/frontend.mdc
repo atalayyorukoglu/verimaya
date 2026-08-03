@@ -27,10 +27,11 @@ alwaysApply: false
 
 ## Mimari
 
-- Saf SPA (`adapter-static`, fallback `index.html`): `+page.server.ts`, form actions ve SvelteKit API routes **kullanılmaz**; iş mantığı ve yetki kararı NestJS API'dedir. UI, RBAC bayraklarına göre yalnız görünürlüğü kırpar.
-- Veri erişimi `@tanstack/svelte-query` üzerinden; bileşen içinde doğrudan fetch yok. Query key deseni: `[resource, params]`.
+- `adapter-static`: panel SPA (kök layout `ssr=false`, fallback `index.html`); `(public)/` grubu build-time prerender (`ssr=true`). `+page.server.ts`, form actions ve SvelteKit API routes **kullanılmaz**; iş mantığı ve yetki kararı NestJS API'dedir. UI, RBAC bayraklarına göre yalnız görünürlüğü kırpar.
+- **Host:** apex `verimaya.com` = marketing hub (nginx `/` → `hub.html`); `app.verimaya.com` = panel + auth. Eski `/vitrin` → 301 `/` (aktif rota değil). Host yardımcıları: `$lib/host` (`isMarketingHost` / `isAppHost`).
+- Veri erişimi `@tanstack/svelte-query` üzerinden; bileşen içinde doğrudan fetch yok. Query key deseni: `[resource, params]` — tenant kapsamı zorunlu (`AGENTS.md`).
 - Tipler ve şemalar `packages/shared`'dan import edilir; frontend'de API tipi elle tanımlanmaz.
-- Faz 0a: tüm API çağrıları MSW ile mock'lanır; handler'lar gerçek `/v1/...` path'lerini kullanır ve shared zod şemalarından faker ile veri üretir. Backend gelince yalnız MSW kapatılır.
+- MSW: `PUBLIC_USE_MSW` ile açılır; handler'lar gerçek `/v1/...` path'lerini kullanır. Canlıda kapalı.
 
 ## UI ve tasarım
 
@@ -58,7 +59,7 @@ Tam kural ve gerekçe: `AGENTS.md` § Dil ve slug.
 ```
 
 - **Rota, dizin ve slug daima İngilizce**: `/patients`, `/settings/connections/ads`, `/marketing/pre-launch`. Türkçe rota açılmaz.
-- **Panel rotasına locale prefix eklenmez.** `/tr/...` ve `/en/...` yalnız vitrin için (henüz kurulmadı); panelde dil kullanıcı tercihidir.
+- **Panel rotasına locale prefix eklenmez.** `/tr/...` ve `/en/...` yalnız marketing hub için planlanır (henüz kurulmadı; prerender hazır); panelde dil kullanıcı tercihidir.
 - Kullanıcıya görünen her metin `apps/web/src/lib/i18n/messages.ts` kataloğuna anahtar olarak eklenir; bileşende `t('key')` ile okunur. `tr` tip kaynağıdır, `en`'de eksik anahtar derleme hatasıdır.
 - `navigation.ts` etiketleri `labelKey: MessageKey` taşır, ham string taşımaz.
 - Modül düzeyinde `$state` gerektiren dosya `*.svelte.ts` uzantısıyla yazılır ve `.ts` olmadan import edilir (`$lib/i18n/locale.svelte`).

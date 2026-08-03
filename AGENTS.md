@@ -10,7 +10,8 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 
 - pnpm workspaces + Turborepo: `apps/api` (NestJS + Fastify + Drizzle), `apps/web` (SvelteKit + Svelte 5 + TanStack Query (svelte) + Tailwind + shadcn-svelte), `packages/shared` (zod şemaları + API sözleşmesi).
 - PostgreSQL 16 + RLS, BullMQ + Redis, better-auth (organization), Sentry + pino.
-- Deploy: Hetzner + Coolify, önde Cloudflare. Web, `adapter-static` ile SPA modunda çalışır; SSR kullanılmaz, tüm iş mantığı API'dedir. SvelteKit'in sunucu özellikleri (`+page.server.ts`, form actions, API routes) kullanılmaz.
+- Deploy: Hetzner + Coolify, önde Cloudflare. Web `adapter-static`: panel SPA (`ssr=false`, fallback `index.html`); public marketing `(public)/` grubu build-time **prerender** (`ssr=true`, `prerender=true`). İş mantığı API'dedir; `+page.server.ts`, form actions, API routes kullanılmaz.
+- **Host ayrımı:** apex `verimaya.com` (ve `www`) = marketing hub; `app.verimaya.com` = panel + auth gate. Nginx apex `/` → `hub.html` (prerender hub kopyası); eski `/vitrin` → **301** `/`. Detay: `docs/DEPLOY-COOLIFY.md`, `apps/web/nginx.conf`.
 - Svelte kodu daima **Svelte 5 runes** sözdizimiyle yazılır (`$state`, `$derived`, `$effect`, `$props`); Svelte 4 sözdizimi (`export let`, `$:` reaktif ifadeler, store auto-subscribe ile yeni state) yasaktır.
 
 ## Değişmez mimari ilkeler
@@ -41,8 +42,8 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 | Yüzey | Dil | Locale prefix | Gerekçe |
 | --- | --- | --- | --- |
 | **API yolu** (`/v1/...`) | **İngilizce** — değiştirilemez | yok | Dış `/v1` API + n8n + OpenAPI tüketicileri var; Türkçe yol yayınlanırsa geri dönüş kırıcı değişiklik olur. Tek kaynak: `packages/shared/src/api.ts` → `apiPaths`. |
-| **Panel rotası** (login arkası) | **İngilizce** | **yok** | SPA + `noindex`, SEO değeri sıfır → slug bir ürün kararı değil, kod tutarlılığı kararı. Şema/tablo/dizin adları (`Patient`, `patients`) İngilizce olduğu için Türkçe rota kalıcı bir çeviri katmanı yaratır ve AI üretiminde hata kaynağıdır. |
-| **Vitrin** (login öncesi, public) | her dil kendi dilinde | **ileride ikisi de** | SEO'nun çalıştığı tek yer; Türkçe slug Türkçe aramada avantaj. Bugün tek public sayfa `/vitrin` ve `prerender = false` → karar henüz gerekmiyor (aşağıya bak). |
+| **Panel rotası** (`app.verimaya.com`, login arkası) | **İngilizce** | **yok** | SPA + `noindex`, SEO değeri sıfır → slug bir ürün kararı değil, kod tutarlılığı kararı. Şema/tablo/dizin adları (`Patient`, `patients`) İngilizce olduğu için Türkçe rota kalıcı bir çeviri katmanı yaratır ve AI üretiminde hata kaynağıdır. |
+| **Marketing hub** (apex `verimaya.com`, login öncesi) | her dil kendi dilinde | **ileride** `/tr/` + `/en/` | SEO'nun çalıştığı yer. Bugün hub kök `/` (nginx → `hub.html`); public rotalar `(public)/` altında build-time prerender. Locale ağacı henüz yok — aşağıdaki sıraya bak. |
 
 **Panel rotaları dile göre çoğaltılmaz.** `/patients` vardır; `/tr/hastalar` + `/en/patients` yoktur. Dil kullanıcı tercihidir, URL'in parçası değildir — aksi halde rota yüzeyi ikiye katlanır ve kullanıcı dil değiştirdiğinde derin linkler kırılır.
 
@@ -50,12 +51,14 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 
 > Mevcut ekranlardaki Türkçe metinler henüz kataloğa taşınmadı (ayrı iş). Kural **yeni ve dokunulan** kod için bağlayıcıdır; eski ekran düzenlenirken o ekranın metinleri de kataloğa taşınır.
 
-**Vitrin locale ağacı bilinçli olarak kurulmadı.** Ön koşul eksik: `apps/web/src/routes/+layout.ts` içinde `ssr = false` + `prerender = false`, yani vitrin Google'a boş `index.html` iskeleti olarak gidiyor — hiçbir locale/slug stratejisi bugün karşılık üretmez. Sıra: (1) vitrini prerender edilebilir hale getir, (2) `/tr/` + `/en/` ağacını kur, (3) `/` için Cloudflare'de uçta **302** yönlendirme tanımla (JS ile yönlendirme SEO'yu öldürür), `hreflang` etiketlerini ekle. Hangi dilin birincil olacağı o yönlendirme kuralına iner — segment kararı (acente / klinik) verilene kadar sabitlenmez.
+**Host ve prerender (gerçek durum):** Kök layout (`apps/web/src/routes/+layout.ts`) panel SPA için `ssr = false` + `prerender = false`. Public grup (`(public)/+layout.ts`) `ssr = true` + `prerender = true` — hub, ücretsiz karne, KVKK aydınlatma build-time HTML üretir. Build sonrası `inject-spa-noindex.mjs` prerender hub HTML'ini `hub.html` olarak kopyalar; nginx apex `/`'yi buna verir. Eski yol `/vitrin` nginx'te **301 → `/`**; kullanıcıya aktif rota değildir (kaynak dosya yalnız prerender/legacy için kalır).
+
+**Marketing locale ağacı bilinçli olarak kurulmadı.** Prerender ön koşulu **karşılandı**; sıradaki iş locale/slug. Sıra: (1) `/tr/` + `/en/` ağacını kur (her dil kendi slug'ıyla), (2) apex `/` için Cloudflare'de uçta **302** yönlendirme + `hreflang` (JS ile yönlendirme SEO'yu öldürür). Hangi dilin birincil olacağı o yönlendirme kuralına iner — segment kararı (acente / klinik) verilene kadar sabitlenmez.
 
 ## Süreç
 
 - **Aktif yapılacaklar listesi: `docs/2026-08-03-YAPILACAKLAR.md` — tek kaynak.** Fazlı; her adımın kabul kriteri, dokunulacak dosyaları ve model önerisi orada. Adım bitince o dosyadaki kutuyu işaretle ve **Görüş** satırını doldur. Listenin dışına çıkan işe başlama.
-- Obsidian yol haritası (`SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`) 2026-08-03'te boşaltıldı; eski hali `Arşiv/2026-07-30-yol-haritasi.md`. Aktif listenin 6.2 adımı onu yeniden yazacak — o zamana kadar karar kaynağı değil.
+- Obsidian yol haritası (`SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`) durum belgesidir (öncelik sırası YAPILACAKLAR'dadır); eski faz metni `Arşiv/2026-07-30-yol-haritasi.md`.
 - Ürünün kanıta dayalı gerçek durumu: `docs/2026-08-02-PROJE-DEGERLENDIRMESI.md`.
 - Önemli mimari kararlar `docs/MIMARI.md`'ye işlenir; proje takibi Obsidian'dadır (`SecondBrain-Remote/03-Areas/Verimaya`), oturum sonunda kullanıcıya log'a düşülecek 1-2 satır özet ver.
-- Faz 0a tamamlandı (MSW demo). Faz 0b'de `apps/api` gerçek Postgres/Redis üzerine kurulur; web MSW kapanana kadar paralel kalır.
+- Faz 0a (MSW demo) ve Faz 0b (gerçek API) tamamlandı; panelde `PUBLIC_USE_MSW` ile MSW hâlâ açılabilir — canlıda kapalı.
