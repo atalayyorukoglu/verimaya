@@ -10,10 +10,11 @@
 		"lint": "turbo run lint",
 		"check": "turbo run check",
 		"format": "turbo run format",
+		"format:check": "pnpm --filter @verimaya/web exec prettier --check .",
 		"db:up": "docker compose up -d",
 		"db:down": "docker compose down",
 		"db:migrate": "pnpm --filter @verimaya/api db:migrate",
-		"test": "turbo run test --filter=@verimaya/api"
+		"test": "turbo run test --filter=@verimaya/api --filter=@verimaya/shared --filter=@verimaya/web"
 	},
 	"devDependencies": {
 		"turbo": "^2.5.4"
