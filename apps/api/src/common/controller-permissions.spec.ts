@@ -12,6 +12,16 @@ import { ContactsController } from '../contacts/contacts.controller';
 import { PatientsController } from '../patients/patients.controller';
 import { SettingsController } from '../settings/settings.controller';
 import { TransactionsController } from '../transactions/transactions.controller';
+import { AuditLogsController } from '../audit-logs/audit-logs.controller';
+import { MembersController } from '../members/members.controller';
+import { ReportsController } from '../reports/reports.controller';
+import { AdMetricsController } from '../ad-metrics/ad-metrics.controller';
+import { TenantsController } from '../tenants/tenants.controller';
+import { WebhookSubscriptionsController } from '../webhook-subscriptions/webhook-subscriptions.controller';
+import { ApiKeysController } from '../api-keys/api-keys.controller';
+import { WhatsappController } from '../whatsapp/whatsapp.controller';
+import { AdsController } from '../integrations/ads/ads.controller';
+import { GhlController } from '../integrations/ghl/ghl.controller';
 import { ActiveOrgGuard } from './active-org.guard';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { OrgPermissionGuard } from './org-permission.guard';
@@ -75,6 +85,71 @@ const appointmentPermissions: Array<[keyof AppointmentsController, OrgPermission
 	['list', { resource: 'patient', action: 'read' }],
 	['create', { resource: 'patient', action: 'create' }],
 	['update', { resource: 'patient', action: 'update' }]
+];
+
+const auditLogsPermissions: Array<[keyof AuditLogsController, OrgPermissionRequirement]> = [
+	['list', { resource: 'settings', action: 'read' }]
+];
+
+const membersPermissions: Array<[keyof MembersController, OrgPermissionRequirement]> = [
+	['list', { resource: 'settings', action: 'read' }]
+];
+
+const reportsPermissions: Array<[keyof ReportsController, OrgPermissionRequirement]> = [
+	['summary', { resource: 'finance', action: 'read' }],
+	['byCategory', { resource: 'finance', action: 'read' }],
+	['byCategoryDetail', { resource: 'finance', action: 'read' }],
+	['monthly', { resource: 'finance', action: 'read' }],
+	['marketing', { resource: 'finance', action: 'read' }]
+];
+
+const adMetricsPermissions: Array<[keyof AdMetricsController, OrgPermissionRequirement]> = [
+	['list', { resource: 'finance', action: 'read' }],
+	['sync', { resource: 'finance', action: 'update' }]
+];
+
+const tenantsPermissions: Array<[keyof TenantsController, OrgPermissionRequirement]> = [
+	['getCurrent', { resource: 'settings', action: 'read' }],
+	['updateCurrent', { resource: 'settings', action: 'update' }]
+];
+
+const webhookSubscriptionsPermissions: Array<
+	[keyof WebhookSubscriptionsController, OrgPermissionRequirement]
+> = [
+	['list', { resource: 'settings', action: 'read' }],
+	['create', { resource: 'settings', action: 'update' }],
+	['remove', { resource: 'settings', action: 'update' }]
+];
+
+const apiKeysPermissions: Array<[keyof ApiKeysController, OrgPermissionRequirement]> = [
+	['list', { resource: 'settings', action: 'read' }],
+	['create', { resource: 'settings', action: 'update' }],
+	['revoke', { resource: 'settings', action: 'update' }]
+];
+
+const whatsappPermissions: Array<[keyof WhatsappController, OrgPermissionRequirement]> = [
+	['parse', { resource: 'patient', action: 'create' }],
+	['listInbox', { resource: 'patient', action: 'read' }],
+	['getInboxItem', { resource: 'patient', action: 'read' }],
+	['processInbox', { resource: 'patient', action: 'update' }],
+	['parseInboxItem', { resource: 'patient', action: 'update' }],
+	['approveInboxItem', { resource: 'patient', action: 'update' }],
+	['ignoreInboxItem', { resource: 'patient', action: 'update' }],
+	['createCorrection', { resource: 'patient', action: 'create' }],
+	['listCorrections', { resource: 'patient', action: 'read' }]
+];
+
+const adsPermissions: Array<[keyof AdsController, OrgPermissionRequirement]> = [
+	['status', { resource: 'settings', action: 'read' }],
+	['updateGoogleCustomerId', { resource: 'settings', action: 'update' }],
+	['authorize', { resource: 'settings', action: 'update' }],
+	['disconnect', { resource: 'settings', action: 'update' }]
+];
+
+const ghlPermissions: Array<[keyof GhlController, OrgPermissionRequirement]> = [
+	['status', { resource: 'settings', action: 'read' }],
+	['authorize', { resource: 'settings', action: 'update' }],
+	['disconnect', { resource: 'settings', action: 'update' }]
 ];
 
 function makeContext(req: FastifyRequest, handler: () => unknown, target: object): ExecutionContext {
@@ -167,6 +242,114 @@ describe('patient-domain organization permission metadata', () => {
 		for (const [method, permission] of appointmentPermissions) {
 			expect(
 				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AppointmentsController.prototype[method])
+			).toEqual(permission);
+		}
+	});
+});
+
+describe('remaining authenticated controller organization permission metadata', () => {
+	it('sets the required guard order on class-level guarded controllers', () => {
+		for (const controller of [
+			AuditLogsController,
+			MembersController,
+			TenantsController,
+			WebhookSubscriptionsController,
+			ApiKeysController
+		]) {
+			expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toEqual([
+				SessionGuard,
+				ActiveOrgGuard,
+				OrgPermissionGuard
+			]);
+		}
+		for (const controller of [ReportsController, AdMetricsController, WhatsappController]) {
+			expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toEqual(
+				controller === AdMetricsController
+					? [SessionGuard, ActiveOrgGuard, OrgPermissionGuard]
+					: [AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard]
+			);
+		}
+	});
+
+	it('sets the required method-level guard order on OAuth integration controllers', () => {
+		for (const [method, requirement] of adsPermissions) {
+			expect(Reflect.getMetadata(GUARDS_METADATA, AdsController.prototype[method])).toEqual([
+				AuthOrApiKeyGuard,
+				ActiveOrgGuard,
+				OrgPermissionGuard
+			]);
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AdsController.prototype[method])
+			).toEqual(requirement);
+		}
+		for (const [method, requirement] of ghlPermissions) {
+			expect(Reflect.getMetadata(GUARDS_METADATA, GhlController.prototype[method])).toEqual([
+				AuthOrApiKeyGuard,
+				ActiveOrgGuard,
+				OrgPermissionGuard
+			]);
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, GhlController.prototype[method])
+			).toEqual(requirement);
+		}
+	});
+
+	it('leaves the OAuth callback endpoints unguarded', () => {
+		expect(Reflect.getMetadata(GUARDS_METADATA, AdsController.prototype.callback)).toBeUndefined();
+		expect(
+			Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AdsController.prototype.callback)
+		).toBeUndefined();
+		expect(Reflect.getMetadata(GUARDS_METADATA, GhlController.prototype.callback)).toBeUndefined();
+		expect(
+			Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, GhlController.prototype.callback)
+		).toBeUndefined();
+	});
+
+	it('sets complete permission metadata for audit-logs, members, reports, ad-metrics', () => {
+		for (const [method, permission] of auditLogsPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AuditLogsController.prototype[method])
+			).toEqual(permission);
+		}
+		for (const [method, permission] of membersPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, MembersController.prototype[method])
+			).toEqual(permission);
+		}
+		for (const [method, permission] of reportsPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ReportsController.prototype[method])
+			).toEqual(permission);
+		}
+		for (const [method, permission] of adMetricsPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AdMetricsController.prototype[method])
+			).toEqual(permission);
+		}
+	});
+
+	it('sets complete permission metadata for tenants, webhook-subscriptions, api-keys, whatsapp', () => {
+		for (const [method, permission] of tenantsPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, TenantsController.prototype[method])
+			).toEqual(permission);
+		}
+		for (const [method, permission] of webhookSubscriptionsPermissions) {
+			expect(
+				Reflect.getMetadata(
+					ORG_PERMISSION_METADATA_KEY,
+					WebhookSubscriptionsController.prototype[method]
+				)
+			).toEqual(permission);
+		}
+		for (const [method, permission] of apiKeysPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ApiKeysController.prototype[method])
+			).toEqual(permission);
+		}
+		for (const [method, permission] of whatsappPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, WhatsappController.prototype[method])
 			).toEqual(permission);
 		}
 	});
@@ -408,6 +591,203 @@ describe('patient-domain organization permissions', () => {
 		await expect(
 			guard.canActivate(
 				makeContext(req, PatientsController.prototype.update, PatientsController)
+			)
+		).resolves.toBe(true);
+	});
+});
+
+describe('remaining authenticated controller organization permissions', () => {
+	const guard = createGuard({
+		readonly: 'readonly',
+		finance: 'finance',
+		agent: 'agent',
+		manager: 'manager',
+		owner: 'owner',
+		admin: 'admin'
+	});
+
+	it('allows readonly reads on settings-mapped controllers and rejects mutations', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), AuditLogsController.prototype.list, AuditLogsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), MembersController.prototype.list, MembersController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), TenantsController.prototype.getCurrent, TenantsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('readonly'),
+					TenantsController.prototype.updateCurrent,
+					TenantsController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('readonly'),
+					WebhookSubscriptionsController.prototype.create,
+					WebhookSubscriptionsController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('readonly'),
+					ApiKeysController.prototype.create,
+					ApiKeysController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+	});
+
+	it('rejects agent from settings mutations (api-keys, webhook-subscriptions, tenants)', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), ApiKeysController.prototype.create, ApiKeysController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('agent'),
+					WebhookSubscriptionsController.prototype.remove,
+					WebhookSubscriptionsController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), TenantsController.prototype.updateCurrent, TenantsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+	});
+
+	it('rejects manager (settings.read only) and allows owner/admin on settings mutations', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('manager'), ApiKeysController.prototype.create, ApiKeysController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('owner'), ApiKeysController.prototype.create, ApiKeysController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('manager'),
+					WebhookSubscriptionsController.prototype.remove,
+					WebhookSubscriptionsController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('admin'),
+					WebhookSubscriptionsController.prototype.remove,
+					WebhookSubscriptionsController
+				)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('manager'), TenantsController.prototype.updateCurrent, TenantsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('owner'), TenantsController.prototype.updateCurrent, TenantsController)
+			)
+		).resolves.toBe(true);
+	});
+
+	it('allows readonly finance reads and rejects finance mutation on reports/ad-metrics', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), ReportsController.prototype.summary, ReportsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), AdMetricsController.prototype.sync, AdMetricsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('finance'), AdMetricsController.prototype.sync, AdMetricsController)
+			)
+		).resolves.toBe(true);
+	});
+
+	it('rejects finance role from patient-mapped whatsapp mutations, allows agent', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('finance'), WhatsappController.prototype.parse, WhatsappController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), WhatsappController.prototype.parse, WhatsappController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('finance'),
+					WhatsappController.prototype.processInbox,
+					WhatsappController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+	});
+
+	it('allows readonly status reads and restricts OAuth authorize/disconnect to owner/admin (settings.update)', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), AdsController.prototype.status, AdsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), AdsController.prototype.authorize, AdsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), AdsController.prototype.authorize, AdsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('manager'), AdsController.prototype.authorize, AdsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('admin'), AdsController.prototype.authorize, AdsController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), GhlController.prototype.disconnect, GhlController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('owner'), GhlController.prototype.disconnect, GhlController)
 			)
 		).resolves.toBe(true);
 	});

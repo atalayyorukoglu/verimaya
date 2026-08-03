@@ -12,6 +12,8 @@ import { ghlOAuthCallbackQuery, type GhlConnectionStatus } from '@verimaya/share
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId } from '../../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../../common/auth-or-api-key.guard';
+import { OrgPermissionGuard } from '../../common/org-permission.guard';
+import { RequireOrgPermission } from '../../common/require-org-permission.decorator';
 import { SettingsService } from '../../settings/settings.service';
 import {
 	ghlOAuthClientFromEnv,
@@ -54,7 +56,8 @@ export class GhlController {
 	}
 
 	@Get('status')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
+	@RequireOrgPermission('settings', 'read')
 	async status(@Req() req: FastifyRequest): Promise<GhlConnectionStatus> {
 		const tenantId = getActiveOrgId(req);
 		const cred = await this.settings.getCredentialStatus(tenantId, GHL_OAUTH_PROVIDER);
@@ -87,7 +90,8 @@ export class GhlController {
 	}
 
 	@Get('authorize')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
+	@RequireOrgPermission('settings', 'update')
 	async authorize(@Req() req: FastifyRequest, @Res() reply: FastifyReply) {
 		const tenantId = getActiveOrgId(req);
 		const redirectUri = ghlCallbackRedirectUri();
@@ -115,7 +119,8 @@ export class GhlController {
 
 	@Delete()
 	@HttpCode(204)
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
+	@RequireOrgPermission('settings', 'update')
 	async disconnect(@Req() req: FastifyRequest) {
 		await this.settings.deleteCredential(getActiveOrgId(req), GHL_OAUTH_PROVIDER);
 	}

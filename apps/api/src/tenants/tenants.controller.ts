@@ -4,19 +4,23 @@ import { tenantUpdateSchema } from '@verimaya/shared';
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest } from '../common/active-org.guard';
 import { parseBody } from '../common/mappers';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { TenantsService } from './tenants.service';
 
 @Controller('tenants')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(SessionGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class TenantsController {
 	constructor(private readonly tenantsService: TenantsService) {}
 
 	@Get('current')
+	@RequireOrgPermission('settings', 'read')
 	getCurrent(@Req() req: FastifyRequest) {
 		return this.tenantsService.get(getActiveOrgId(req));
 	}
 
 	@Patch('current')
+	@RequireOrgPermission('settings', 'update')
 	updateCurrent(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const input = parseBody(tenantUpdateSchema, body, req);
 		const actor = getActorFromRequest(req);

@@ -12,11 +12,13 @@ import { adMetricsListParams } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { AdMetricsService } from './ad-metrics.service';
 import { AdMetricsSyncService } from './ad-metrics.sync.service';
 
 @Controller('ad-metrics')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(SessionGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class AdMetricsController {
 	constructor(
 		private readonly adMetricsService: AdMetricsService,
@@ -24,6 +26,7 @@ export class AdMetricsController {
 	) {}
 
 	@Get()
+	@RequireOrgPermission('finance', 'read')
 	list(
 		@Req() req: FastifyRequest,
 		@Query('from') from?: string,
@@ -37,6 +40,7 @@ export class AdMetricsController {
 	/** One-shot pull (no scheduler). Runs sync inline and returns upsert counts. */
 	@Post('sync')
 	@HttpCode(200)
+	@RequireOrgPermission('finance', 'update')
 	async sync(@Req() req: FastifyRequest) {
 		try {
 			return await this.adMetricsSyncService.sync(getActiveOrgId(req));

@@ -23,6 +23,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { max, eq } from 'drizzle-orm';
 import { ActiveOrgGuard, getActiveOrgId } from '../../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../../common/auth-or-api-key.guard';
+import { OrgPermissionGuard } from '../../common/org-permission.guard';
+import { RequireOrgPermission } from '../../common/require-org-permission.decorator';
 import { adMetricsDaily } from '../../db/schema';
 import { SettingsService } from '../../settings/settings.service';
 import { TenantContextService } from '../../tenant/tenant-context.service';
@@ -72,7 +74,8 @@ export class AdsController {
 	) {}
 
 	@Get('status')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
+	@RequireOrgPermission('settings', 'read')
 	async status(@Req() req: FastifyRequest): Promise<AdConnectionsResponse> {
 		const tenantId = getActiveOrgId(req);
 		const items = await Promise.all(
@@ -82,7 +85,8 @@ export class AdsController {
 	}
 
 	@Patch('google/customer-id')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
+	@RequireOrgPermission('settings', 'update')
 	async updateGoogleCustomerId(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown
@@ -117,7 +121,8 @@ export class AdsController {
 	}
 
 	@Get(':provider/authorize')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
+	@RequireOrgPermission('settings', 'update')
 	async authorize(
 		@Req() req: FastifyRequest,
 		@Res() reply: FastifyReply,
@@ -152,7 +157,8 @@ export class AdsController {
 
 	@Delete(':provider')
 	@HttpCode(204)
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
+	@RequireOrgPermission('settings', 'update')
 	async disconnect(@Req() req: FastifyRequest, @Param('provider') providerParam: string) {
 		const provider = this.registry.parseProvider(providerParam);
 		await this.settings.deleteCredential(getActiveOrgId(req), provider);

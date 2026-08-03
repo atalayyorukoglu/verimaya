@@ -15,6 +15,8 @@ import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { WebhookSubscriptionsService } from './webhook-subscriptions.service';
 
 /**
@@ -22,7 +24,7 @@ import { WebhookSubscriptionsService } from './webhook-subscriptions.service';
  * outbound webhook destinations (Faz 6).
  */
 @Controller('webhook-subscriptions')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(SessionGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class WebhookSubscriptionsController {
 	constructor(
 		private readonly webhookSubscriptionsService: WebhookSubscriptionsService,
@@ -30,11 +32,13 @@ export class WebhookSubscriptionsController {
 	) {}
 
 	@Get()
+	@RequireOrgPermission('settings', 'read')
 	list(@Req() req: FastifyRequest) {
 		return this.webhookSubscriptionsService.list(getActiveOrgId(req));
 	}
 
 	@Post()
+	@RequireOrgPermission('settings', 'update')
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -57,6 +61,7 @@ export class WebhookSubscriptionsController {
 	}
 
 	@Delete(':id')
+	@RequireOrgPermission('settings', 'update')
 	async remove(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,

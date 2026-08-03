@@ -19,10 +19,12 @@ import {
 } from '../common/active-org.guard';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody } from '../common/mappers';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { ApiKeysService } from './api-keys.service';
 
 @Controller('api-keys')
-@UseGuards(SessionGuard, ActiveOrgGuard)
+@UseGuards(SessionGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class ApiKeysController {
 	constructor(
 		private readonly apiKeysService: ApiKeysService,
@@ -30,11 +32,13 @@ export class ApiKeysController {
 	) {}
 
 	@Get()
+	@RequireOrgPermission('settings', 'read')
 	list(@Req() req: FastifyRequest) {
 		return this.apiKeysService.list(getActiveOrgId(req));
 	}
 
 	@Post()
+	@RequireOrgPermission('settings', 'update')
 	async create(
 		@Req() req: FastifyRequest,
 		@Body() body: unknown,
@@ -57,6 +61,7 @@ export class ApiKeysController {
 	}
 
 	@Delete(':id')
+	@RequireOrgPermission('settings', 'update')
 	async revoke(
 		@Req() req: FastifyRequest,
 		@Param('id') id: string,

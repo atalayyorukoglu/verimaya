@@ -4,11 +4,13 @@ import type { FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { parseBody } from '../common/mappers';
+import { OrgPermissionGuard } from '../common/org-permission.guard';
+import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappService } from './whatsapp.service';
 
 @Controller('whatsapp')
-@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard)
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class WhatsappController {
 	constructor(
 		private readonly whatsappService: WhatsappService,
@@ -16,6 +18,7 @@ export class WhatsappController {
 	) {}
 
 	@Post('parse')
+	@RequireOrgPermission('patient', 'create')
 	async parse(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const { message } = parseBody(whatsappParseRequestSchema, body, req);
 		const records = await this.whatsappService.parseMessage(getActiveOrgId(req), message);
@@ -23,6 +26,7 @@ export class WhatsappController {
 	}
 
 	@Get('inbox')
+	@RequireOrgPermission('patient', 'read')
 	listInbox(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
@@ -33,31 +37,37 @@ export class WhatsappController {
 	}
 
 	@Get('inbox/:id')
+	@RequireOrgPermission('patient', 'read')
 	getInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.getInboxItem(getActiveOrgId(req), id);
 	}
 
 	@Post('inbox/process')
+	@RequireOrgPermission('patient', 'update')
 	processInbox(@Req() req: FastifyRequest) {
 		return this.whatsappService.processInbox(getActiveOrgId(req));
 	}
 
 	@Post('inbox/:id/parse')
+	@RequireOrgPermission('patient', 'update')
 	parseInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.parseInboxItem(getActiveOrgId(req), id);
 	}
 
 	@Post('inbox/:id/approve')
+	@RequireOrgPermission('patient', 'update')
 	approveInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.approveInboxItem(getActiveOrgId(req), id);
 	}
 
 	@Post('inbox/:id/ignore')
+	@RequireOrgPermission('patient', 'update')
 	ignoreInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.ignoreInboxItem(getActiveOrgId(req), id);
 	}
 
 	@Post('corrections')
+	@RequireOrgPermission('patient', 'create')
 	createCorrection(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const input = parseBody(aiCorrectionCreateSchema, body, req);
 		const actor = getActorFromRequest(req);
@@ -65,6 +75,7 @@ export class WhatsappController {
 	}
 
 	@Get('corrections')
+	@RequireOrgPermission('patient', 'read')
 	listCorrections(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
