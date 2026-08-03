@@ -60,7 +60,7 @@ Faz 7'de genel kontrolü yapar.
 ## Faz 0 — Zemin temizliği
 
 ### 0.1 — Çalışma ağacını ve branch'i temizle
-- [ ] Yapıldı
+- [x] Yapıldı
 
 `_tmp_21_38a74bc3f7b539d167c57b89290dafff` ve `_tmp_21_a91e16ffc5c05949a80825b348209ba5` boş artık
 dosyalar; sil. `.gitignore`'a `_tmp_*` satırı ekle. `chore/en-routes-i18n` branch'ini `main`'e
@@ -71,7 +71,12 @@ merge et (fast-forward veya merge commit, rebase etme — geçmiş korunsun) ve 
 - **Kabul:** `git status` temiz; `git branch --show-current` → `main`; `origin/main` güncel.
 - **Model:** Composer 2.5 Fast · düşük reasoning · dar context
 
-**Görüş:** _(Sonnet doldurur)_
+**Görüş:** İki `_tmp_*` dosyası silindi, `.gitignore`'a `_tmp_*` eklendi. Önceden AGENTS.md/README.md'de
+bekleyen (bu listeyi tek kaynak olarak bağlayan) commit'lenmemiş değişiklikler vardı — kapsam dışı
+ama ayrı bir `docs:` commit'inde birleştirildi, davranış/kural değişikliği içermiyorlar.
+`chore/en-routes-i18n` main'e 13 commit fast-forward ile birleşti (main hiç ilerlememiş, divergence
+yoktu — merge commit gerekmedi). `git status` temiz, aktif branch `main`, HEAD `06bdafb`. Risk yok;
+Opus'un bakması gereken bir yer yok.
 
 ---
 

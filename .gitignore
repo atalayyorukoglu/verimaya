@@ -18,3 +18,6 @@ coverage/
 # IDE
 .idea/
 *.local
+
+# geçici oturum dosyaları
+_tmp_*
