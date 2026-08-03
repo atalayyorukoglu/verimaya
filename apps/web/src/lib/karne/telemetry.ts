@@ -203,12 +203,19 @@ export function trackComplete(zeroCount: number): void {
 }
 
 /**
- * Ensure a karne session exists for lead capture (works even when event telemetry is off).
+ * Ensure a karne session exists for lead capture.
+ *
+ * Reuses an already-started session if one exists, but will NOT silently open a new one
+ * when telemetry is disabled (`KARNE_TELEMETRY_ENABLED === false`) — otherwise disabling
+ * telemetry would have no real effect: lead capture could still create a session record
+ * behind the scenes. When telemetry is off and no session exists yet, lead submission
+ * fails closed (`submitKarneLead` reports `reason: 'network'`).
  */
 export async function ensureSessionForLead(input: KarneSessionStartInput): Promise<string | null> {
 	if (!browser) return null;
 	const existing = getStoredSessionId();
 	if (existing) return existing;
+	if (!isKarneTelemetryEnabled()) return null;
 	try {
 		const res = await fetch(apiUrl('sessions'), {
 			method: 'POST',

@@ -37,6 +37,48 @@ describe('KarneController lead gate', () => {
 		expect(createLead).not.toHaveBeenCalled();
 	});
 
+	it('fails closed with the exact karne_leads_disabled payload when absent', async () => {
+		delete process.env.KARNE_LEADS_ENABLED;
+		const createLead = vi.fn();
+		const controller = new KarneController({ createLead } as unknown as KarneService);
+
+		try {
+			await controller.createLead(makeRequest());
+			expect.unreachable('expected createLead to throw');
+		} catch (err) {
+			expect(err).toBeInstanceOf(ServiceUnavailableException);
+			expect((err as ServiceUnavailableException).getResponse()).toEqual({
+				error: {
+					code: 'karne_leads_disabled',
+					message: 'Karne lead capture is disabled pending legal approval'
+				}
+			});
+		}
+		expect(createLead).not.toHaveBeenCalled();
+	});
+
+	it('fails closed when KARNE_LEADS_ENABLED is explicitly false (not just absent)', async () => {
+		process.env.KARNE_LEADS_ENABLED = 'false';
+		const createLead = vi.fn();
+		const controller = new KarneController({ createLead } as unknown as KarneService);
+
+		await expect(controller.createLead(makeRequest())).rejects.toBeInstanceOf(
+			ServiceUnavailableException
+		);
+		expect(createLead).not.toHaveBeenCalled();
+	});
+
+	it('fails closed for any non-"true" value, e.g. a truthy-looking typo', async () => {
+		process.env.KARNE_LEADS_ENABLED = 'TRUE';
+		const createLead = vi.fn();
+		const controller = new KarneController({ createLead } as unknown as KarneService);
+
+		await expect(controller.createLead(makeRequest())).rejects.toBeInstanceOf(
+			ServiceUnavailableException
+		);
+		expect(createLead).not.toHaveBeenCalled();
+	});
+
 	it('accepts leads only when KARNE_LEADS_ENABLED is explicitly true', async () => {
 		process.env.KARNE_LEADS_ENABLED = 'true';
 		const createLead = vi.fn().mockResolvedValue(undefined);

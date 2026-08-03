@@ -3,6 +3,7 @@
 	import type { KarneQuestion, IntakeBandId, IntakeEuId } from '$lib/karne/questions';
 	import { karneQuestions } from '$lib/karne/questions';
 	import { EMAIL_GATE_POSITION, KARNE_LEADS_ENABLED } from '$lib/karne/config';
+	import { initialGateUnlocked, showsBlockingGate, showsInlineCapture } from '$lib/karne/gate';
 	import KarneEmailCapture from '$lib/components/KarneEmailCapture.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
 
@@ -18,7 +19,7 @@
 
 	const totalAsked = karneQuestions.length;
 	/** before-result: unlock after successful lead submit. Disabled leads unlock immediately. */
-	let gateUnlocked = $state(!KARNE_LEADS_ENABLED || EMAIL_GATE_POSITION !== 'before-result');
+	let gateUnlocked = $state(initialGateUnlocked(KARNE_LEADS_ENABLED, EMAIL_GATE_POSITION));
 
 	const zeroSummary = $derived(
 		t('karne.result.zeroSummary', {
@@ -47,7 +48,7 @@
 	}
 </script>
 
-{#if KARNE_LEADS_ENABLED && EMAIL_GATE_POSITION === 'before-result' && !gateUnlocked}
+{#if showsBlockingGate(KARNE_LEADS_ENABLED, EMAIL_GATE_POSITION, gateUnlocked)}
 	<section class="space-y-10" aria-labelledby="karne-gate-heading">
 		<div>
 			<p class="text-sm font-medium text-brand">{t('karne.result.gate.eyebrow')}</p>
@@ -125,7 +126,7 @@
 			</p>
 		{/if}
 
-		{#if KARNE_LEADS_ENABLED && EMAIL_GATE_POSITION === 'after-result'}
+		{#if showsInlineCapture(KARNE_LEADS_ENABLED, EMAIL_GATE_POSITION)}
 			<div class="border-t border-border pt-8">
 				<KarneEmailCapture {band} {eu} />
 			</div>
