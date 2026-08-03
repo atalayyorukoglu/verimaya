@@ -5,58 +5,99 @@ import {
 	memberAc,
 	ownerAc
 } from 'better-auth/plugins/organization/access';
+import type { UserRole } from '@verimaya/shared';
 
 /**
  * Verimaya org roles (packages/shared userRoleSchema) mapped onto better-auth AC.
  * Default org resources (organization/member/invitation) kept from better-auth.
  */
-const statement = {
-	...defaultStatements,
+const organizationPermissionStatements = {
 	patient: ['create', 'read', 'update', 'delete'],
 	finance: ['create', 'read', 'update', 'delete'],
 	settings: ['read', 'update']
 } as const;
 
+const statement = {
+	...defaultStatements,
+	...organizationPermissionStatements
+} as const;
+
 export const ac = createAccessControl(statement);
+
+const organizationRolePermissions = {
+	owner: {
+		patient: ['create', 'read', 'update', 'delete'],
+		finance: ['create', 'read', 'update', 'delete'],
+		settings: ['read', 'update']
+	},
+	admin: {
+		patient: ['create', 'read', 'update', 'delete'],
+		finance: ['create', 'read', 'update', 'delete'],
+		settings: ['read', 'update']
+	},
+	manager: {
+		patient: ['create', 'read', 'update', 'delete'],
+		finance: ['create', 'read', 'update'],
+		settings: ['read']
+	},
+	agent: {
+		patient: ['create', 'read', 'update'],
+		finance: ['read'],
+		settings: ['read']
+	},
+	finance: {
+		patient: ['read'],
+		finance: ['create', 'read', 'update', 'delete'],
+		settings: ['read']
+	},
+	readonly: {
+		patient: ['read'],
+		finance: ['read'],
+		settings: ['read']
+	}
+} as const satisfies Record<
+	UserRole,
+	{ [Resource in keyof typeof organizationPermissionStatements]: readonly string[] }
+>;
+
+export type OrgPermissionResource = keyof typeof organizationPermissionStatements;
+export type OrgPermissionAction<Resource extends OrgPermissionResource> =
+	(typeof organizationPermissionStatements)[Resource][number];
+
+export function hasOrgPermission<
+	Resource extends OrgPermissionResource,
+	Action extends OrgPermissionAction<Resource>
+>(role: UserRole, resource: Resource, action: Action): boolean {
+	const allowedActions = organizationRolePermissions[role][resource] as readonly string[];
+	return allowedActions.includes(action);
+}
 
 export const owner = ac.newRole({
 	...ownerAc.statements,
-	patient: ['create', 'read', 'update', 'delete'],
-	finance: ['create', 'read', 'update', 'delete'],
-	settings: ['read', 'update']
+	...organizationRolePermissions.owner
 });
 
 export const admin = ac.newRole({
 	...adminAc.statements,
-	patient: ['create', 'read', 'update', 'delete'],
-	finance: ['create', 'read', 'update', 'delete'],
-	settings: ['read', 'update']
+	...organizationRolePermissions.admin
 });
 
 export const manager = ac.newRole({
 	...memberAc.statements,
-	patient: ['create', 'read', 'update', 'delete'],
-	finance: ['create', 'read', 'update'],
-	settings: ['read']
+	...organizationRolePermissions.manager
 });
 
 export const agent = ac.newRole({
 	...memberAc.statements,
-	patient: ['create', 'read', 'update'],
-	finance: ['read'],
-	settings: ['read']
+	...organizationRolePermissions.agent
 });
 
 export const finance = ac.newRole({
 	...memberAc.statements,
-	patient: ['read'],
-	finance: ['create', 'read', 'update', 'delete'],
-	settings: ['read']
+	...organizationRolePermissions.finance
 });
 
 export const readonly = ac.newRole({
 	...memberAc.statements,
-	patient: ['read'],
-	finance: ['read'],
-	settings: ['read']
+	...organizationRolePermissions.readonly
 });
