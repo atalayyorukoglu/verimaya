@@ -22,6 +22,7 @@ import { ApiKeysController } from '../api-keys/api-keys.controller';
 import { WhatsappController } from '../whatsapp/whatsapp.controller';
 import { AdsController } from '../integrations/ads/ads.controller';
 import { GhlController } from '../integrations/ghl/ghl.controller';
+import { ScorecardController } from '../scorecard/scorecard.controller';
 import { ActiveOrgGuard } from './active-org.guard';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { OrgPermissionGuard } from './org-permission.guard';
@@ -152,6 +153,22 @@ const ghlPermissions: Array<[keyof GhlController, OrgPermissionRequirement]> = [
 	['disconnect', { resource: 'settings', action: 'update' }]
 ];
 
+const scorecardPermissions: Array<[keyof ScorecardController, OrgPermissionRequirement]> = [
+	['getCurrent', { resource: 'settings', action: 'read' }],
+	['listAssessments', { resource: 'settings', action: 'read' }],
+	['getAssessment', { resource: 'settings', action: 'read' }],
+	['compare', { resource: 'settings', action: 'read' }],
+	['getProfile', { resource: 'settings', action: 'read' }],
+	['createProfile', { resource: 'settings', action: 'update' }],
+	['patchProfile', { resource: 'settings', action: 'update' }],
+	['startAssessment', { resource: 'settings', action: 'update' }],
+	['completeAssessment', { resource: 'settings', action: 'update' }],
+	['upsertAnswer', { resource: 'settings', action: 'update' }],
+	['startBaseline', { resource: 'settings', action: 'update' }],
+	['autoFillOpen', { resource: 'settings', action: 'update' }],
+	['autoFillAssessment', { resource: 'settings', action: 'update' }]
+];
+
 function makeContext(req: FastifyRequest, handler: () => unknown, target: object): ExecutionContext {
 	return {
 		switchToHttp: () => ({
@@ -254,7 +271,8 @@ describe('remaining authenticated controller organization permission metadata', 
 			MembersController,
 			TenantsController,
 			WebhookSubscriptionsController,
-			ApiKeysController
+			ApiKeysController,
+			ScorecardController
 		]) {
 			expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toEqual([
 				SessionGuard,
@@ -350,6 +368,14 @@ describe('remaining authenticated controller organization permission metadata', 
 		for (const [method, permission] of whatsappPermissions) {
 			expect(
 				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, WhatsappController.prototype[method])
+			).toEqual(permission);
+		}
+	});
+
+	it('sets complete permission metadata for scorecard', () => {
+		for (const [method, permission] of scorecardPermissions) {
+			expect(
+				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ScorecardController.prototype[method])
 			).toEqual(permission);
 		}
 	});
@@ -788,6 +814,41 @@ describe('remaining authenticated controller organization permissions', () => {
 		await expect(
 			guard.canActivate(
 				makeContext(sessionRequest('owner'), GhlController.prototype.disconnect, GhlController)
+			)
+		).resolves.toBe(true);
+	});
+
+	it('allows any authenticated role to read the scorecard, restricts mutations to owner/admin', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('readonly'), ScorecardController.prototype.getCurrent, ScorecardController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('readonly'),
+					ScorecardController.prototype.startAssessment,
+					ScorecardController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('manager'),
+					ScorecardController.prototype.startAssessment,
+					ScorecardController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('owner'),
+					ScorecardController.prototype.startAssessment,
+					ScorecardController
+				)
 			)
 		).resolves.toBe(true);
 	});
