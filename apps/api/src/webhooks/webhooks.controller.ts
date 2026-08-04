@@ -13,7 +13,7 @@ import { IdempotencyExempt } from '../common/idempotent.decorator';
 import { isUniqueViolation } from '../common/postgres-errors';
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { integrationEvents, jobs } from '../db/schema/queue';
-import type { DbService } from '../db/db.service';
+import { DbService } from '../db/db.service';
 import { DEFAULT_QUEUE_NAME, QueueService } from '../queue/queue.service';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';

@@ -128,7 +128,9 @@ async function bootstrap() {
 			// multipart, not JSON, so the 1 MB cap is plenty for normal API payloads.
 			bodyLimit: 1 * 1024 * 1024
 		}),
-		{ logger: false }
+		// abortOnError:false — Nest default calls process.exit(1) and swallows the
+		// message when logger is off; Coolify then only shows dotenv tips.
+		{ logger: ['error', 'warn'], abortOnError: false }
 	);
 
 	app.useGlobalFilters(new HttpExceptionFilter());
