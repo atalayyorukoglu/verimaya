@@ -99,7 +99,7 @@
 	<meta name="twitter:image" content={ogImage} />
 
 	<!-- eslint-disable-next-line svelte/no-at-html-tags, no-useless-escape -- statik JSON-LD (kullanıcı girdisi yok, XSS riski yok); </script> kaçışı parser'ın string'i erken kapatmasını önlüyor -->
-	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd)}<\\/script>`}
+	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd)}<\/script>`}
 </svelte:head>
 
 <div
