@@ -1,0 +1,164 @@
+import { randomUUID } from 'node:crypto';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { closeDb, getDb } from '../db/client';
+import { PatientsService } from '../patients/patients.service';
+import { LocalFileStorage } from '../storage/local-file.storage';
+import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+
+/**
+ * AUDIT-01 (Faz 8) — patient file-label timezone leak isolation spec.
+ *
+ * Opus denetimi §[CRITICAL]: `PatientsService.getTenantTimezone(db)` was reading
+ * `tenants` (no RLS) without `where(eq(tenants.id, tenantId))`, so within a `withTenant(T2, ...)`
+ * scope the helper could return T1's timezone if T1 was scanned first. We provision
+ * two tenants with different timezones, drive a file creation in each, and assert
+ * the resulting `appointment_label` reflects the correct tenant's timezone.
+ *
+ * Without the fix, both tenants would see the same timezone (whichever row the DB
+ * scanned first), making a daily reconciliation run by a non-Istanbul tenant return
+ * the wrong day boundary. After the fix, the labels are tenant-specific.
+ */
+const databaseUrl =
+	process.env.DATABASE_URL_APP ??
+	process.env.DATABASE_URL ??
+	'postgresql://verimaya_app:***@localhost:5433/verimaya';
+
+async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
+	const { sql } = getDb(databaseUrl);
+	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
+	try {
+		return await fn();
+	} finally {
+		await sql`select set_config('app.current_tenant_id', '', false)`;
+	}
+}
+
+describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §[CRITICAL])', () => {
+	const tenantIstanbul = randomUUID();
+	const tenantLondon = randomUUID();
+	let labelIstanbul: string | null = null;
+	let labelLondon: string | null = null;
+
+	// UTC 22:30 on 2026-08-01:
+	//  - Europe/Istanbul (UTC+3) → 2026-08-02 01:30 local → "2026-08-02"
+	//  - Europe/London  (UTC+1)  → 2026-08-01 23:30 local → "2026-08-01"
+	const startsAt = new Date('2026-08-01T22:30:00Z');
+	const testUserId = randomUUID();
+
+	beforeAll(async () => {
+		process.env.DATABASE_URL = databaseUrl;
+		const { db, sql } = getDb(databaseUrl);
+
+		// The `files.uploaded_by_user_id` FK requires a real `user` row. Provision one.
+		await sql`insert into "user" (id, name, email) values (${testUserId}, 'audit-01', ${`audit-01-${testUserId}@test.local`})`;
+
+		for (const [tenantId, timezone] of [
+			[tenantIstanbul, 'Europe/Istanbul'],
+			[tenantLondon, 'Europe/London']
+		] as Array<[string, string]>) {
+			await sql`
+				insert into organization (id, name, slug, created_at)
+				values (${tenantId}, 'AUDIT-01 Test', ${`audit-01-${tenantId.slice(0, 8)}`}, now())
+			`;
+			await sql`
+				insert into tenants (id, name, slug, timezone)
+				values (${tenantId}, 'AUDIT-01 Test', ${`audit-01-${tenantId.slice(0, 8)}`}, ${timezone})
+			`;
+
+			// Create a patient and an appointment for this tenant so the file upload has
+			// something to attach to. We do this through service methods so the same code
+			// paths run as production.
+			const storage = new LocalFileStorage();
+			const tenantContext = new TenantContextService({ client: db, sql } as unknown as never);
+			const svc = new PatientsService(
+				tenantContext,
+				storage as unknown as Parameters<typeof PatientsService>[1]
+			);
+
+			await withTenantSession(tenantId, async () => {
+				const patient = await svc.createWithDb(db as TenantDb, tenantId, {
+					full_name: `Patient ${tenantId.slice(0, 6)}`,
+					phone: null,
+					email: null,
+					notes: null,
+					source: null,
+					status: 'lead',
+					assigned_user_id: null,
+					contact_id: null
+				});
+				const appt = await db
+					.insert((await import('../db/schema/appointments')).appointments)
+					.values({
+						tenantId,
+						patientId: patient.id,
+						patientDisplayName: patient.full_name,
+						title: 'audit-01 appointment',
+						startsAt,
+						createdAt: startsAt,
+						updatedAt: startsAt
+					})
+					.returning();
+				await svc.createFileWithDb(
+					db as TenantDb,
+					tenantId,
+					patient.id,
+					{
+						filename: 'x.pdf',
+						mime_type: 'application/pdf',
+						size_bytes: 10,
+						appointment_id: appt[0]!.id
+					},
+					{ userId: testUserId, displayName: 'test' }
+				);
+			});
+
+			// Read the resulting file row's appointment_label back from the DB so we don't
+			// depend on whatever the service mapper returns.
+			await withTenantSession(tenantId, async () => {
+				const rows = await sql<Array<{ appointment_label: string | null }>>`
+					select appointment_label
+					from files
+					where tenant_id = ${tenantId}
+					order by created_at desc
+					limit 1
+				`;
+				if (tenantId === tenantIstanbul) {
+					labelIstanbul = rows[0]?.appointment_label ?? null;
+				} else {
+					labelLondon = rows[0]?.appointment_label ?? null;
+				}
+			});
+		}
+	});
+
+	afterAll(async () => {
+		const { sql } = getDb(databaseUrl);
+		for (const tenantId of [tenantIstanbul, tenantLondon]) {
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+				await tx`delete from files where tenant_id = ${tenantId}`;
+				await tx`delete from appointments where tenant_id = ${tenantId}`;
+				await tx`delete from patients where tenant_id = ${tenantId}`;
+			});
+			await sql`delete from tenants where id = ${tenantId}`;
+			await sql`delete from organization where id = ${tenantId}`;
+		}
+		await sql`delete from "user" where id = ${testUserId}`;
+		await closeDb();
+	});
+
+	it('Istanbul tenant sees date 2026-08-02 in the appointment label', () => {
+		expect(labelIstanbul).toMatch(/2026-08-02/);
+	});
+
+	it('London tenant sees date 2026-08-01 in the appointment label (NOT 2026-08-02)', () => {
+		// The bug: with no `where` filter on `tenants`, London would see Istanbul's
+		// timezone (or vice versa, non-deterministically) and label 2026-08-02.
+		expect(labelLondon).toMatch(/2026-08-01/);
+		expect(labelLondon).not.toMatch(/2026-08-02/);
+	});
+
+	it('two tenants with different timezones produce DIFFERENT day labels for the same UTC instant', () => {
+		expect(labelIstanbul).not.toBe(labelLondon);
+	});
+});

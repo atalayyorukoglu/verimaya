@@ -1,20 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { and, eq, gte, isNotNull, isNull, lt, lte } from 'drizzle-orm';
-import {
-	calculateRealRoas,
-	type MarketingReport,
-	type MarketingReportParams,
-	type MarketingSourceRow,
-	type ReportBalances,
-	type ReportBalanceRow,
-	type ReportByCategory,
-	type ReportByCategoryDetail,
-	type ReportByCategoryDetailParams,
-	type ReportMonthly,
-	type ReportPatientDistribution,
-	type ReportPeriodParams,
-	type ReportSummary
-} from '@verimaya/shared';
+import { tenantDayRange, calculateRealRoas, type MarketingReport, type MarketingReportParams, type MarketingSourceRow, type ReportBalances, type ReportBalanceRow, type ReportByCategory, type ReportByCategoryDetail, type ReportByCategoryDetailParams, type ReportMonthly, type ReportPatientDistribution, type ReportPeriodParams, type ReportSummary } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
 import { adMetricsDaily, contacts, patients, tenants, transactions } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -70,15 +56,27 @@ function sourceLabel(source: string | null | undefined): string {
 	return trimmed || 'Bilinmeyen';
 }
 
-/** Exclusive end of calendar day `YYYY-MM-DD` as UTC Date (start of next day). */
-function dayAfterUtc(isoDate: string): Date {
-	const [y, m, d] = isoDate.split('-').map(Number) as [number, number, number];
-	return new Date(Date.UTC(y, m - 1, d + 1));
+/**
+ * AUDIT-01 (Faz 8): date boundaries now honor the tenant's timezone via `tenantDayRange`
+ * from `@verimaya/shared`. The legacy `startOfDayUtc` / `dayAfterUtc` were hard-coded UTC
+ * and produced wrong day buckets for non-Istanbul tenants (Opus denetimi §[MEDIUM]
+ * "reports.service.ts computes report date boundaries in UTC, not tenant timezone").
+ */
+async function dayRange(
+	db: TenantDb,
+	tenantId: string,
+	isoDate: string
+): Promise<{ start: Date; endExclusive: Date }> {
+	return tenantDayRange(isoDate, await getTenantTz(db, tenantId));
 }
 
-function startOfDayUtc(isoDate: string): Date {
-	const [y, m, d] = isoDate.split('-').map(Number) as [number, number, number];
-	return new Date(Date.UTC(y, m - 1, d));
+async function getTenantTz(db: TenantDb, tenantId: string): Promise<string> {
+	const [row] = await db
+		.select({ timezone: tenants.timezone })
+		.from(tenants)
+		.where(eq(tenants.id, tenantId))
+		.limit(1);
+	return row?.timezone ?? 'Europe/Istanbul';
 }
 
 @Injectable()
@@ -122,7 +120,7 @@ export class ReportsService {
 		params: ReportPeriodParams
 	): Promise<ReportPatientDistribution> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const rows = await this.fetchPatientsForPeriod(db, params);
+			const rows = await this.fetchPatientsForPeriod(db, tenantId, params);
 
 			const statusCounts = new Map<string, number>();
 			const sourceCounts = new Map<string, number>();
@@ -373,6 +371,7 @@ export class ReportsService {
 			);
 			const { leads_count, closed_count, cohortBySource } = await this.patientCohortBySource(
 				db,
+				tenantId,
 				params
 			);
 
@@ -451,14 +450,17 @@ export class ReportsService {
 
 	private async fetchPatientsForPeriod(
 		db: TenantDb,
+		tenantId: string,
 		params: ReportPeriodParams
 	): Promise<PatientDistributionRow[]> {
 		const conditions = [isNull(patients.deletedAt)];
 		if (params.from) {
-			conditions.push(gte(patients.createdAt, startOfDayUtc(params.from)));
+			const { start } = await dayRange(db, tenantId, params.from);
+			conditions.push(gte(patients.createdAt, start));
 		}
 		if (params.to) {
-			conditions.push(lt(patients.createdAt, dayAfterUtc(params.to)));
+			const { endExclusive } = await dayRange(db, tenantId, params.to);
+			conditions.push(lt(patients.createdAt, endExclusive));
 		}
 
 		return db
@@ -535,6 +537,7 @@ export class ReportsService {
 
 	private async patientCohortBySource(
 		db: TenantDb,
+		tenantId: string,
 		params: MarketingReportParams
 	): Promise<{
 		leads_count: number;
@@ -543,10 +546,12 @@ export class ReportsService {
 	}> {
 		const conditions = [isNull(patients.deletedAt)];
 		if (params.from) {
-			conditions.push(gte(patients.createdAt, startOfDayUtc(params.from)));
+			const { start } = await dayRange(db, tenantId, params.from);
+			conditions.push(gte(patients.createdAt, start));
 		}
 		if (params.to) {
-			conditions.push(lt(patients.createdAt, dayAfterUtc(params.to)));
+			const { endExclusive } = await dayRange(db, tenantId, params.to);
+			conditions.push(lt(patients.createdAt, endExclusive));
 		}
 
 		const rows: PatientCohortRow[] = await db

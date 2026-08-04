@@ -190,6 +190,7 @@ export class PatientsService {
 
 		const { appointmentId, appointmentLabel } = await this.resolveAppointmentLink(
 			db,
+			tenantId,
 			patientId,
 			input.appointment_id ?? null
 		);
@@ -476,6 +477,7 @@ export class PatientsService {
 
 	private async resolveAppointmentLink(
 		db: TenantDb,
+		tenantId: string,
 		patientId: string,
 		appointmentId: string | null
 	) {
@@ -501,7 +503,7 @@ export class PatientsService {
 		// randevular etikette **bir gün geriye** kayıyordu (yerel 4 Ağustos 01:00 = UTC
 		// 3 Ağustos 22:00). TIME-01'in kapatmayı amaçladığı hatanın aynısı; kalan tek
 		// üretim yüzeyiydi, tenant timezone'una çevrildi.
-		const timezone = await this.getTenantTimezone(db);
+		const timezone = await this.getTenantTimezone(db, tenantId);
 		const datePart = toTenantDayKey(appt.startsAt, timezone);
 		return {
 			appointmentId,
@@ -510,11 +512,18 @@ export class PatientsService {
 	}
 
 	/**
-	 * RLS `app.current_tenant_id` altında çalıştığı için tek satır döner; tenantId
-	 * parametresine gerek yok. Tenant satırı bulunamazsa TIME-01 varsayılanına düşer.
+	 * AUDIT-01 (Faz 8): explicit tenant filter is required. The `tenants` table has no
+	 * RLS by design (it's the tenant registry itself), so without a `where` clause the
+	 * query returns whichever row Postgres scans first — non-deterministic across tenants.
+	 * Opus denetimi §[CRITICAL]: "Patient file-label timezone leak" — fixing this also
+	 * fixes the analogous bug in `reports.service.ts` (see reports-timezone spec).
 	 */
-	private async getTenantTimezone(db: TenantDb): Promise<string> {
-		const [row] = await db.select({ timezone: tenants.timezone }).from(tenants).limit(1);
+	private async getTenantTimezone(db: TenantDb, tenantId: string): Promise<string> {
+		const [row] = await db
+			.select({ timezone: tenants.timezone })
+			.from(tenants)
+			.where(eq(tenants.id, tenantId))
+			.limit(1);
 		return row?.timezone ?? DEFAULT_TENANT_TIMEZONE;
 	}
 
