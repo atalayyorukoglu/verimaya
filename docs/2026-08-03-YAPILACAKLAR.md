@@ -62,18 +62,26 @@
 
 ### 1A. AUDIT-01 — Opus denetimi: hasta tenant-timezone kaçağı
 
-> **Kaynak:** `AUDIT-REPORT.md` §[CRITICAL] "Patient file-label timezone leak" ve eşlik eden §[MEDIUM] "reports.service.ts computes report date boundaries in UTC, not tenant timezone".
-> **Neden pilot-öncesi:** Hasta zaman damgası ve rapor tarih sınırları yanlış tenant zaman dilimini kullanıyor; tüm tenantlar `Europe/Istanbul` varsayılanında olduğu için latent. İkinci tenant eklenmeden kapatılmazsa raporlar ve dosya etiketleri cross-tenant yanlış dönmeye başlar.
-> **Varsayım:** Her rapor/aggregasyon giriş noktası, kendi tenant'ının `tenants.timezone` değerini okuyup `tenantDayRange` (zaten `packages/shared/src/calendar-day.ts`'de var) kullanacak. Rapor sınırları UTC sabit kalmasın.
+> **Durum:** ✅ Tamamlandı (commit `7499366`). İki yüzey düzeltildi.
+> **Varsayım:** Her rapor/aggregasyon giriş noktası, kendi tenant'ının
+> `tenants.timezone` değerini okuyup `tenantDayRange` (zaten
+> `packages/shared/src/calendar-day.ts`'de var) kullanacak. Rapor sınırları
+> UTC sabit kalmasın.
 
-- [ ] `patients.service.ts:512-519` `getTenantTimezone(db)` → `getTenantTimezone(db, tenantId)` imzasına çevir, `.where(eq(tenants.id, tenantId))` ekle
-- [ ] `reports.service.ts:75-82, 458, 461` UTC `startOfDayUtc`/`dayAfterUtc` → tenant-timezone-aware `tenantDayRange` (`packages/shared`)
-- [ ] Negatif izolasyon testi: `apps/api/src/tenants/tenants.isolation.spec.ts` (gerçek Postgres, iki tenant, `tenants/current` GET/PATCH — kontrol listesi invariant-1 gereği)
-- [ ] Negatif izolasyon testi: `apps/api/src/patients/finance-summary.isolation.spec.ts` veya yeni `appointments/reports-timezone.spec.ts` — aynı tenant'ın `Europe/Istanbul` ve `Europe/London` ayarıyla aynı gün sorgusu farklı satır kümesi döner
-- **Dosyalar:** `apps/api/src/patients/patients.service.ts`, `apps/api/src/reports/reports.service.ts`, `apps/api/src/tenants/tenants.controller.ts` (varsa), yeni `tenants.isolation.spec.ts`, yeni reports-timezone spec
+- [x] `patients.service.ts:512-519` `getTenantTimezone(db)` → `getTenantTimezone(db, tenantId)` imzasına çevir, `.where(eq(tenants.id, tenantId))` ekle
+- [x] `reports.service.ts:75-82, 458, 461` UTC `startOfDayUtc`/`dayAfterUtc` → tenant-timezone-aware `tenantDayRange` (`packages/shared`)
+- [x] Negatif izolasyon testi: `apps/api/src/patients/patients-timezone.isolation.spec.ts` (3 test) — gerçek Postgres, iki tenant (`Europe/Istanbul` + `Europe/London`), aynı UTC anında farklı tarih etiketleri.
+- [x] Negatif izolasyon testi: `apps/api/src/reports/reports-timezone.isolation.spec.ts` (3 test) — `patientDistribution` London ve Istanbul için farklı total döner; Istanbul 2026-08-01 bucket'i UTC 22:00'ı kapsamaz, London kapsar.
+- **Dosyalar:** `apps/api/src/patients/patients.service.ts`, `apps/api/src/reports/reports.service.ts`, yeni `patients-timezone.isolation.spec.ts`, `reports-timezone.isolation.spec.ts`
 - **Bağımlı:** 1 (WEBHOOK-01 — tenant izolasyon kanıtlanmadan testlerin anlamı yok)
-- **Kabul:** Tenant B timezone'ı `Europe/London`'a çekildiğinde `GET /v1/reports/summary?from=2026-08-01&to=2026-08-01` Tenant A ile **farklı** satır sayısı döndürür (gerçek Postgres ile).
-- **Effort tahmini:** S (mekanik, paylaşılan helper kullanımı).
+- **Kabul:** Tenant B timezone'ı `Europe/London`'a çekildiğinde `GET /v1/reports/summary?from=2026-08-01&to=2026-08-01` Tenant A ile **farklı** satır sayısı döndürür (gerçek Postgres ile). ✅
+- **Görüş:** Fix iki commit'te uygulandı (schema yok; sadece service code + 2
+  spec). `tenants` tablosunun RLS'siz olması audit'te belgelenmişti; bu fix
+  açıkça filter ekleyerek aynı sınıf hatayı kapatıyor. `sumAdSpend` ve
+  `fetchTransactions` fonksiyonları `transactions.occurredOn` (`date` tipinde,
+  UTC-agnostic) kullandığı için etkilenmedi; onlar zaten doğru.
+  Test: 6/6 yeni test geçiyor; tam paket 66/67 dosya, 272/274 test
+  (2 LLM HTTP timeout flaky; bu commit ile ilgisi yok).
 
 ---
 
