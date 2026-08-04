@@ -15,19 +15,21 @@ export function isPublicPath(pathname: string): boolean {
 /**
  * Client-side auth gate for the SPA panel.
  * Skipped when MSW demo is on. Marketing host `/` is public.
+ * Public paths (except login redirect) skip getSession so apex hub never hangs on API CORS.
  */
 export async function runAuthGate(pathname: string): Promise<void> {
 	if (USE_MSW) return;
 
+	const isLogin = pathname === '/login' || pathname.startsWith('/login/');
+	if (!isLogin && isPublicPath(pathname)) return;
+
 	const { data } = await authClient.getSession();
 	const session = data?.session ?? null;
 
-	if (pathname === '/login' || pathname.startsWith('/login/')) {
+	if (isLogin) {
 		if (session) await goto('/', { replaceState: true });
 		return;
 	}
-
-	if (isPublicPath(pathname)) return;
 
 	if (!session) {
 		await goto('/login', { replaceState: true });

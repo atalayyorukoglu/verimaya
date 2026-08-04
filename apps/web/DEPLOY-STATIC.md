@@ -70,6 +70,9 @@ pnpm --filter @verimaya/web build
 # prerender içeriği:
 grep -c "Hasta yolculuğunu" apps/web/build/vitrin/index.html   # >= 1
 test -f apps/web/build/yapay-zeka-karnesi/index.html
+# apex hub.html: absolute assets + no /vitrin hydrate (inject-spa-noindex.mjs)
+grep -c '../_app/' apps/web/build/hub.html || true            # 0
+grep -c 'kit.start(app, element);' apps/web/build/hub.html   # >= 1
 # SPA kabuğunda noindex (postbuild inject — layout head fallback'te render olmaz):
 grep -c "noindex" apps/web/build/index.html                   # >= 1
 # public prerender noindex taşımamalı:
