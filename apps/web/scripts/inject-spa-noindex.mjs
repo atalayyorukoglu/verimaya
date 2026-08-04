@@ -48,8 +48,9 @@ function prepareHubHtml(raw) {
 	// tears down the prerendered marketing DOM → blank apex.
 	out = out.replace(/<script>\s*\{\s*__sveltekit_[\s\S]*?<\/script>/, '');
 
-	// JS modulepreloads are unused without the client; keep CSS + icon absolute.
-	out = out.replace(/\s*<link rel="modulepreload"[^>]*>/g, '');
+	// JS modulepreloads are unused without the client; keep CSS + icon.
+	// SvelteKit emits `href` before `rel`, so match either attribute order.
+	out = out.replace(/\s*<link\b[^>]*\brel="modulepreload"[^>]*>/g, '');
 
 	if (out.includes('../_app/')) {
 		throw new Error('inject-spa-noindex: hub.html still has relative ../_app/ paths');
