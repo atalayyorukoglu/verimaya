@@ -1,44 +1,34 @@
 import { randomUUID } from 'node:crypto';
 import { UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDb, getDb } from '../db/client';
+import { CryptoService } from '../common/crypto.service';
 import type { DbService } from '../db/db.service';
 import type { QueueService } from '../queue/queue.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { WebhooksController } from './webhooks.controller';
 import {
-	formatWahaSignatureHeader,
-	signWahaPayload,
-	type WebhookRequestWithRawBody
-} from './webhooks.signature';
+	buildSignedPayload,
+	formatWebhookSignatureHeader,
+	hashWebhookSecret,
+	signWebhookPayload
+} from './webhooks.identity';
+import type { WebhookRequestWithRawBody } from './webhooks.signature';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
 	process.env.DATABASE_URL ??
-	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
-
-const WAHA_SECRET = 'test-waha-webhook-secret';
+	'postgresql://verimaya_app:***@localhost:5433/verimaya';
 
 /**
- * Test-tarafı okuma yardımcısı. Faz 7 denetim bulgusu (F-02): burası eskiden **session**
- * ömürlü `set_config(..., false)` kullanıyordu ve `finally` bloğunda paylaşılan havuzdaki
- * bağlantıda tenant'ı siliyordu — eşzamanlı senaryolarda başka bir isteğin sorgusu
- * tenant'sız bir bağlantıya düşüp RLS tarafından boş döndürülebiliyordu, yani harness
- * üretimi sadık modellemiyordu. Artık repo'nun geri kalanıyla (ve gerçek
- * `TenantContextService` ile) aynı şekilde transaction-ömürlü `set_config(..., true)`.
+ * WAHA-01 (Faz 8): the spec signs with the new per-tenant payload format
+ * (`${ts}.${provider}.${claimedTenantId}.${body}`) and a per-tenant secret. The spec
+ * provisions a `tenant_provider_identities` row for the test tenant and signs with
+ * that row's plaintext secret. WEBHOOK-01 negative isolation tests live in
+ * `webhooks.identity.isolation.spec.ts` (cross-tenant header spoof attempt).
  */
-async function withTenantSession<T>(
-	tenantId: string,
-	fn: (tx: postgres.TransactionSql) => Promise<T>
-): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	return sql.begin(async (tx) => {
-		await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-		return fn(tx);
-	}) as Promise<T>;
-}
+const WAHA_PROVIDER = 'waha';
+const WAHA_SECRET = 'test-waha-webhook-secret';
 
 function buildWahaRequest(opts: {
 	tenantId: string;
@@ -47,15 +37,17 @@ function buildWahaRequest(opts: {
 	signatureOverride?: string;
 	timestampOverride?: number;
 	nowForSign?: number;
+	secret?: string;
 }): WebhookRequestWithRawBody {
 	const rawBody = JSON.stringify(opts.payload);
 	const ts = opts.timestampOverride ?? opts.nowForSign ?? Math.floor(Date.now() / 1000);
-	const hex = signWahaPayload(rawBody, WAHA_SECRET, ts);
+	const secret = opts.secret ?? WAHA_SECRET;
+	const hex = signWebhookPayload(ts, WAHA_PROVIDER, opts.tenantId, rawBody, secret);
 	const headers: Record<string, string> = {
 		'x-tenant-id': opts.tenantId,
 		'x-webhook-timestamp': String(ts),
 		'x-webhook-signature':
-			opts.signatureOverride ?? formatWahaSignatureHeader(hex)
+			opts.signatureOverride ?? formatWebhookSignatureHeader(hex)
 	};
 	if (opts.externalEventId) {
 		headers['x-external-event-id'] = opts.externalEventId;
@@ -67,14 +59,15 @@ function buildWahaRequest(opts: {
 	} as WebhookRequestWithRawBody;
 }
 
-describe('WAHA webhook HMAC ingest (Adım 22)', () => {
+describe('WAHA webhook HMAC ingest (Adım 22 + WEBHOOK-01)', () => {
 	const tenantId = randomUUID();
 	let controller: WebhooksController;
 	let enqueueSpy: ReturnType<typeof vi.fn>;
+	let crypto: CryptoService;
+	const plaintextSecret = WAHA_SECRET;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
-		process.env.WAHA_WEBHOOK_SECRET = WAHA_SECRET;
 		const { db, sql } = getDb(databaseUrl);
 
 		await sql`
@@ -86,6 +79,19 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 			values (${tenantId}, 'WAHA Test', ${`waha-${tenantId.slice(0, 8)}`})
 		`;
 
+		// Provision per-tenant provider identity for WAHA. WEBHOOK-01 closes the cross-tenant
+		// header-trust gap; the signature now binds claimed tenant id + provider + body.
+		crypto = new CryptoService();
+		const ciphertext = crypto.encrypt(plaintextSecret);
+		const keyHash = (await import('./webhooks.identity')).hashWebhookSecret(plaintextSecret);
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			await tx`
+				insert into tenant_provider_identities (tenant_id, provider, ciphertext, key_hash, key_version)
+				values (${tenantId}, ${WAHA_PROVIDER}, ${ciphertext}, ${keyHash}, 1)
+			`;
+		});
+
 		// F-02: elle yazılmış sahte withTenant yerine üretimdeki servisin kendisi —
 		// gerçek transaction + `SET LOCAL app.current_tenant_id`, dolayısıyla eşzamanlı
 		// senaryolar üretimle aynı izolasyon altında koşuyor.
@@ -94,11 +100,11 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 		enqueueSpy = vi.fn(async () => ({ id: 'bull-test-1' }));
 		const queue = { enqueueDefaultJob: enqueueSpy } as unknown as QueueService;
 
-		const config = {
-			get: (key: string) => process.env[key]
-		} as ConfigService;
-
-		controller = new WebhooksController(config, tenantContext, queue);
+		controller = new WebhooksController(
+			{ client: db, sql } as unknown as DbService,
+			tenantContext,
+			queue
+		);
 	});
 
 	afterAll(async () => {
@@ -107,6 +113,7 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			await tx`delete from jobs where tenant_id = ${tenantId}`;
 			await tx`delete from inbound_messages where tenant_id = ${tenantId}`;
+			await tx`delete from tenant_provider_identities where tenant_id = ${tenantId}`;
 		});
 		await sql`delete from tenants where id = ${tenantId}`;
 		await sql`delete from organization where id = ${tenantId}`;
@@ -114,7 +121,9 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 	});
 
 	async function countInbound(externalId: string): Promise<number> {
-		return withTenantSession(tenantId, async (tx) => {
+		const { sql } = getDb(databaseUrl);
+		return sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			const [row] = await tx`
 				select count(*)::int as n
 				from inbound_messages
@@ -123,7 +132,7 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 					and external_id = ${externalId}
 			`;
 			return Number(row?.n ?? 0);
-		});
+		}) as Promise<number>;
 	}
 
 	it('valid signature → accepted + 1 inbound row', async () => {
@@ -148,15 +157,17 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 	it('invalid signature → 401 and 0 rows', async () => {
 		const externalId = `evt-bad-${randomUUID()}`;
 		enqueueSpy.mockClear();
-		const beforeJobs = await withTenantSession(tenantId, async (tx) => {
+		const { sql } = getDb(databaseUrl);
+		const beforeJobs = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			const [row] = await tx`select count(*)::int as n from jobs where tenant_id = ${tenantId}`;
 			return Number(row?.n ?? 0);
-		});
+		}) as number;
 
 		const req = buildWahaRequest({
 			tenantId,
 			externalEventId: externalId,
-			signatureOverride: formatWahaSignatureHeader('00'.repeat(32)),
+			signatureOverride: formatWebhookSignatureHeader('00'.repeat(32)),
 			payload: {
 				event: 'message',
 				payload: { id: externalId, body: 'should not land' }
@@ -167,10 +178,11 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 		expect(await countInbound(externalId)).toBe(0);
 		expect(enqueueSpy).not.toHaveBeenCalled();
 
-		const afterJobs = await withTenantSession(tenantId, async (tx) => {
+		const afterJobs = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			const [row] = await tx`select count(*)::int as n from jobs where tenant_id = ${tenantId}`;
 			return Number(row?.n ?? 0);
-		});
+		}) as number;
 		expect(afterJobs).toBe(beforeJobs);
 	});
 
@@ -218,3 +230,9 @@ describe('WAHA webhook HMAC ingest (Adım 22)', () => {
 		expect(enqueueSpy).toHaveBeenCalledTimes(1);
 	});
 });
+
+/**
+ * Export for use by the cross-tenant isolation spec. Keeping the helper inline here so
+ * the two spec files don't drift in their signing logic.
+ */
+export { buildWahaRequest as __buildWahaRequest, buildSignedPayload as __buildSignedPayload };

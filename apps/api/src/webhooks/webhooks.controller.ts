@@ -7,32 +7,29 @@ import {
 	Post,
 	Req
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { and, eq, sql as drizzleSql } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
 import { IdempotencyExempt } from '../common/idempotent.decorator';
 import { isUniqueViolation } from '../common/postgres-errors';
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { integrationEvents, jobs } from '../db/schema/queue';
+import type { DbService } from '../db/db.service';
 import { DEFAULT_QUEUE_NAME, QueueService } from '../queue/queue.service';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { extractWahaExternalId } from '../whatsapp/inbound-mapper';
+import { extractRawBody, type WebhookRequestWithRawBody } from './webhooks.signature';
 import {
-	extractRawBody,
-	providerWebhookSecretEnvKey,
-	verifyWebhookSignature,
+	resolveTenantFromWebhook,
+	WEBHOOK_EXTERNAL_EVENT_ID_HEADER,
 	WEBHOOK_SIGNATURE_HEADER,
-	WEBHOOK_TIMESTAMP_HEADER,
-	type WebhookRequestWithRawBody
-} from './webhooks.signature';
+	WEBHOOK_TENANT_HEADER,
+	WEBHOOK_TIMESTAMP_HEADER
+} from './webhooks.identity';
 
 /** Must match the unique index names in db/schema/{inbound-messages,queue}.ts (EVENT-01, Faz 4.2). */
 const INBOUND_MESSAGE_UNIQUE_INDEX = 'inbound_messages_tenant_provider_external_uidx';
 const INTEGRATION_EVENT_UNIQUE_INDEX = 'integration_events_tenant_provider_external_uidx';
-
-const TENANT_HEADER = 'x-tenant-id';
-const EXTERNAL_EVENT_ID_HEADER = 'x-external-event-id';
 
 /**
  * Faz 7 denetim bulgusu (F-03): aynı olayın iki eşzamanlı teslimi select-then-insert
@@ -68,14 +65,6 @@ function extractExternalEventId(
 	return payloadHash;
 }
 
-function requireTenantId(request: FastifyRequest): string {
-	const tenantId = request.headers[TENANT_HEADER];
-	if (typeof tenantId !== 'string' || !tenantId.trim()) {
-		throw new BadRequestException('Missing tenant header');
-	}
-	return tenantId.trim();
-}
-
 function parseJsonPayload(rawBody: string): Record<string, unknown> {
 	try {
 		return JSON.parse(rawBody) as Record<string, unknown>;
@@ -85,47 +74,55 @@ function parseJsonPayload(rawBody: string): Record<string, unknown> {
 }
 
 function externalEventIdHeader(request: FastifyRequest): string | undefined {
-	return typeof request.headers[EXTERNAL_EVENT_ID_HEADER] === 'string'
-		? request.headers[EXTERNAL_EVENT_ID_HEADER]
+	return typeof request.headers[WEBHOOK_EXTERNAL_EVENT_ID_HEADER] === 'string'
+		? request.headers[WEBHOOK_EXTERNAL_EVENT_ID_HEADER]
 		: undefined;
 }
 
-function resolveWebhookSecret(config: ConfigService, envKey: string): string {
-	return config.get<string>(envKey)?.trim() ?? '';
+function tenantHeaderValue(request: FastifyRequest): string | undefined {
+	return typeof request.headers[WEBHOOK_TENANT_HEADER] === 'string'
+		? request.headers[WEBHOOK_TENANT_HEADER]
+		: undefined;
 }
 
-/**
- * HMAC-SHA256 of `${timestamp}.${rawBody}` + ±5 min window.
- * Secret from `envKey` (e.g. WAHA_WEBHOOK_SECRET or WEBHOOK_SECRET_GHL).
- */
-function validateHmacWebhookRequest(
-	request: FastifyRequest,
-	config: ConfigService,
-	secretEnvKey: string
-) {
-	const secret = resolveWebhookSecret(config, secretEnvKey);
-	const rawBody = extractRawBody(request as WebhookRequestWithRawBody);
-	const signatureHeader = request.headers[WEBHOOK_SIGNATURE_HEADER];
-	const timestampHeader = request.headers[WEBHOOK_TIMESTAMP_HEADER];
+function timestampHeaderValue(request: FastifyRequest): string | undefined {
+	return typeof request.headers[WEBHOOK_TIMESTAMP_HEADER] === 'string'
+		? request.headers[WEBHOOK_TIMESTAMP_HEADER]
+		: undefined;
+}
 
-	verifyWebhookSignature({
-		rawBody,
-		signatureHeader: typeof signatureHeader === 'string' ? signatureHeader : undefined,
-		timestampHeader: typeof timestampHeader === 'string' ? timestampHeader : undefined,
-		secret
-	});
+function signatureHeaderValue(request: FastifyRequest): string | undefined {
+	return typeof request.headers[WEBHOOK_SIGNATURE_HEADER] === 'string'
+		? request.headers[WEBHOOK_SIGNATURE_HEADER]
+		: undefined;
+}
 
-	const tenantId = requireTenantId(request);
-	const payloadHash = hashPayload(rawBody);
-	const payload = parseJsonPayload(rawBody);
+function wahaResponse(result: {
+	accepted: boolean;
+	duplicate: boolean;
+	inbound_message_id: string;
+	job_id: string | undefined;
+}): {
+	accepted: boolean;
+	duplicate: boolean;
+	inbound_message_id: string;
+	job_id: string | undefined;
+} {
+	return result;
+}
 
-	return {
-		tenantId,
-		rawBody,
-		payloadHash,
-		payload,
-		externalEventIdHeader: externalEventIdHeader(request)
-	};
+function providerResponse(result: {
+	accepted: boolean;
+	duplicate: boolean;
+	integration_event_id: string;
+	job_id: string | undefined;
+}): {
+	accepted: boolean;
+	duplicate: boolean;
+	integration_event_id: string;
+	job_id: string | undefined;
+} {
+	return result;
 }
 
 /**
@@ -133,6 +130,12 @@ function validateHmacWebhookRequest(
  * send one). Dedup is via provider event id against integration_events/inbound_messages unique
  * constraints (EVENT-01, Faz 4.2), not IdempotencyService (IDEM-01, Faz 4.1's mandatory-coverage
  * inventory — see idempotency-coverage.spec.ts — needs this documented, not IdempotencyService-wired).
+ *
+ * WEBHOOK-01 (Faz 8): tenant resolution moved from X-Tenant-Id header to per-tenant
+ * `tenant_provider_identities` rows (see webhooks.identity.ts). The header is now treated
+ * as an untrusted claim; the canonical tenant comes from the resolved identity. The
+ * `X-Tenant-Id` value is still included in the HMAC signed payload so a signature
+ * generated for tenant A is invalid when the request is presented for tenant B.
  */
 @Controller('webhooks')
 @IdempotencyExempt(
@@ -140,20 +143,92 @@ function validateHmacWebhookRequest(
 )
 export class WebhooksController {
 	constructor(
-		private readonly config: ConfigService,
+		private readonly db: DbService,
 		private readonly tenantContext: TenantContextService,
 		private readonly queue: QueueService
 	) {}
 
 	@Post('waha')
 	@HttpCode(202)
-	async ingestWaha(@Req() request: FastifyRequest) {
-		const { tenantId, payloadHash, payload, externalEventIdHeader } = validateHmacWebhookRequest(
-			request,
-			this.config,
-			'WAHA_WEBHOOK_SECRET'
-		);
+	async ingestWaha(@Req() request: FastifyRequest): Promise<ReturnType<typeof wahaResponse>> {
+		const result = await this.ingestFor(request, 'waha');
+		if (result.kind !== 'waha') {
+			throw new Error('internal: waha route returned generic shape');
+		}
+		const { kind, ...waha } = result;
+		return wahaResponse(waha);
+	}
 
+	@Post(':provider')
+	@HttpCode(202)
+	async ingest(
+		@Param('provider') provider: string,
+		@Req() request: FastifyRequest
+	): Promise<ReturnType<typeof providerResponse>> {
+		const normalizedProvider = provider.trim().toLowerCase();
+		if (!normalizedProvider) {
+			throw new BadRequestException('Provider is required');
+		}
+		const result = await this.ingestFor(request, normalizedProvider);
+		if (result.kind !== 'generic') {
+			throw new Error('internal: generic route returned waha shape');
+		}
+		const { kind, ...generic } = result;
+		return providerResponse(generic);
+	}
+
+	/**
+	 * WEBHOOK-01 (Faz 8): shared ingestion pipeline. Resolves canonical tenant from the
+	 * signature (NOT from the X-Tenant-Id header), then runs the queue-first ingest path.
+	 */
+	private async ingestFor(request: FastifyRequest, provider: string) {
+		const rawBody = extractRawBody(request as WebhookRequestWithRawBody);
+
+		// WEBHOOK-01: resolve canonical tenantId via signature + identity. Throws
+		// UnauthorizedException on signature mismatch, missing identity, or
+		// header-vs-identity tenant mismatch (cross-tenant spoof).
+		const resolved = await resolveTenantFromWebhook({
+			db: this.db,
+			provider,
+			rawBody,
+			signatureHeader: signatureHeaderValue(request),
+			timestampHeader: timestampHeaderValue(request),
+			claimedTenantId: tenantHeaderValue(request)
+		});
+		const tenantId = resolved.tenantId;
+
+		const payloadHash = hashPayload(rawBody);
+		const payload = parseJsonPayload(rawBody);
+		const externalEventId = externalEventIdHeader(request);
+
+		if (provider === 'waha') {
+			const waha = await this.processWaha({
+				tenantId,
+				payload,
+				payloadHash,
+				externalEventIdHeader: externalEventId,
+				rawBody
+			});
+			return { kind: 'waha' as const, ...waha };
+		}
+		const generic = await this.processGenericProvider({
+			tenantId,
+			provider,
+			payload,
+			payloadHash,
+			externalEventIdHeader: externalEventId
+		});
+		return { kind: 'generic' as const, ...generic };
+	}
+
+	private async processWaha(args: {
+		tenantId: string;
+		payload: Record<string, unknown>;
+		payloadHash: string;
+		externalEventIdHeader: string | undefined;
+		rawBody: string;
+	}) {
+		const { tenantId, payload, payloadHash, externalEventIdHeader } = args;
 		const externalId = extractWahaExternalId(payload, payloadHash, externalEventIdHeader);
 		const jobId = randomUUID();
 		const inboundMessageId = randomUUID();
@@ -238,25 +313,14 @@ export class WebhooksController {
 		};
 	}
 
-	@Post(':provider')
-	@HttpCode(202)
-	async ingest(@Param('provider') provider: string, @Req() request: FastifyRequest) {
-		const normalizedProvider = provider.trim().toLowerCase();
-		if (!normalizedProvider) {
-			throw new BadRequestException('Provider is required');
-		}
-
-		const secretEnvKey = providerWebhookSecretEnvKey(normalizedProvider);
-		if (!secretEnvKey) {
-			throw new BadRequestException('Provider is required');
-		}
-
-		const { tenantId, payloadHash, payload, externalEventIdHeader } = validateHmacWebhookRequest(
-			request,
-			this.config,
-			secretEnvKey
-		);
-
+	private async processGenericProvider(args: {
+		tenantId: string;
+		provider: string;
+		payload: Record<string, unknown>;
+		payloadHash: string;
+		externalEventIdHeader: string | undefined;
+	}) {
+		const { tenantId, provider, payload, payloadHash, externalEventIdHeader } = args;
 		const externalEventId = extractExternalEventId(payload, payloadHash, externalEventIdHeader);
 
 		const jobId = randomUUID();
@@ -269,10 +333,10 @@ export class WebhooksController {
 		try {
 			result = await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 				await db.execute(
-					drizzleSql`select pg_advisory_xact_lock(hashtextextended(${eventLockIdentity(tenantId, normalizedProvider, externalEventId)}, 0))`
+					drizzleSql`select pg_advisory_xact_lock(hashtextextended(${eventLockIdentity(tenantId, provider, externalEventId)}, 0))`
 				);
 
-				const existing = await this.findIntegrationEvent(db, normalizedProvider, externalEventId);
+				const existing = await this.findIntegrationEvent(db, provider, externalEventId);
 				if (existing) {
 					return {
 						duplicate: true as const,
@@ -286,7 +350,7 @@ export class WebhooksController {
 				await db.insert(integrationEvents).values({
 					id: integrationEventId,
 					tenantId,
-					provider: normalizedProvider,
+					provider,
 					externalEventId,
 					payloadHash,
 					payload,
@@ -300,7 +364,7 @@ export class WebhooksController {
 					jobType: 'integration_event.process',
 					payload: {
 						integrationEventId,
-						provider: normalizedProvider
+						provider
 					},
 					status: 'pending'
 				});
@@ -321,7 +385,7 @@ export class WebhooksController {
 			if (!isUniqueViolation(err, INTEGRATION_EVENT_UNIQUE_INDEX)) throw err;
 
 			const existing = await this.tenantContext.withTenant(tenantId, ({ db }) =>
-				this.findIntegrationEvent(db, normalizedProvider, externalEventId)
+				this.findIntegrationEvent(db, provider, externalEventId)
 			);
 			if (!existing) throw err;
 			result = { duplicate: true, integrationEventId: existing.id, status: existing.status };

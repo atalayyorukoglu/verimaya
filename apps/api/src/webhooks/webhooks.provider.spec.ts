@@ -1,37 +1,32 @@
 import { randomUUID } from 'node:crypto';
 import { UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDb, getDb } from '../db/client';
+import { CryptoService } from '../common/crypto.service';
 import type { DbService } from '../db/db.service';
 import type { QueueService } from '../queue/queue.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { WebhooksController } from './webhooks.controller';
+import { providerWebhookSecretEnvKey } from './webhooks.signature';
 import {
 	formatWebhookSignatureHeader,
-	providerWebhookSecretEnvKey,
-	signWebhookPayload,
-	type WebhookRequestWithRawBody
-} from './webhooks.signature';
+	hashWebhookSecret,
+	signWebhookPayload
+} from './webhooks.identity';
+import type { WebhookRequestWithRawBody } from './webhooks.signature';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
 	process.env.DATABASE_URL ??
-	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
+	'postgresql://verimaya_app:***@localhost:5433/verimaya';
 
 const PROVIDER = 'ghl';
 const SECRET = 'test-ghl-webhook-secret';
 const SECRET_ENV = providerWebhookSecretEnvKey(PROVIDER);
 
-/**
- * Test-tarafı okuma yardımcısı — F-02 (bkz. webhooks.waha.spec.ts'teki aynı not):
- * session ömürlü `set_config(..., false)` yerine, repo'nun geri kalanı ve üretimdeki
- * `TenantContextService` ile aynı transaction ömürlü `set_config(..., true)`.
- */
 async function withTenantSession<T>(
 	tenantId: string,
-	fn: (tx: postgres.TransactionSql) => Promise<T>
+	fn: (tx: import('postgres').TransactionSql) => Promise<T>
 ): Promise<T> {
 	const { sql } = getDb(databaseUrl);
 	return sql.begin(async (tx) => {
@@ -49,7 +44,7 @@ function buildRequest(opts: {
 }): WebhookRequestWithRawBody {
 	const rawBody = JSON.stringify(opts.payload);
 	const ts = opts.timestampOverride ?? Math.floor(Date.now() / 1000);
-	const hex = signWebhookPayload(rawBody, SECRET, ts);
+	const hex = signWebhookPayload(ts, PROVIDER, opts.tenantId, rawBody, SECRET);
 	const headers: Record<string, string> = {
 		'x-tenant-id': opts.tenantId,
 		'x-webhook-timestamp': String(ts),
@@ -65,7 +60,20 @@ function buildRequest(opts: {
 	} as WebhookRequestWithRawBody;
 }
 
-describe('generic webhook HMAC ingest (Adım 23b)', () => {
+async function provisionIdentity(tenantId: string, sql: ReturnType<typeof getDb>['sql']) {
+	const crypto = new CryptoService();
+	const ciphertext = crypto.encrypt(SECRET);
+	const keyHash = hashWebhookSecret(SECRET);
+	await sql.begin(async (tx) => {
+		await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+		await tx`
+			insert into tenant_provider_identities (tenant_id, provider, ciphertext, key_hash, key_version)
+			values (${tenantId}, ${PROVIDER}, ${ciphertext}, ${keyHash}, 1)
+		`;
+	});
+}
+
+describe('generic webhook HMAC ingest (Adım 23b + WEBHOOK-01)', () => {
 	const tenantId = randomUUID();
 	let controller: WebhooksController;
 	let enqueueSpy: ReturnType<typeof vi.fn>;
@@ -84,16 +92,18 @@ describe('generic webhook HMAC ingest (Adım 23b)', () => {
 			values (${tenantId}, 'GHL HMAC Test', ${`ghl-${tenantId.slice(0, 8)}`})
 		`;
 
-		// F-02: sahte withTenant yerine üretimdeki servisin kendisi (transaction + SET LOCAL).
+		await provisionIdentity(tenantId, sql);
+
 		const tenantContext = new TenantContextService({ client: db, sql } as unknown as DbService);
 
 		enqueueSpy = vi.fn(async () => ({ id: 'bull-ghl-1' }));
 		const queue = { enqueueDefaultJob: enqueueSpy } as unknown as QueueService;
-		const config = {
-			get: (key: string) => process.env[key]
-		} as ConfigService;
 
-		controller = new WebhooksController(config, tenantContext, queue);
+		controller = new WebhooksController(
+			{ client: db, sql } as unknown as DbService,
+			tenantContext,
+			queue
+		);
 	});
 
 	afterAll(async () => {
@@ -102,6 +112,7 @@ describe('generic webhook HMAC ingest (Adım 23b)', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			await tx`delete from jobs where tenant_id = ${tenantId}`;
 			await tx`delete from integration_events where tenant_id = ${tenantId}`;
+			await tx`delete from tenant_provider_identities where tenant_id = ${tenantId}`;
 		});
 		await sql`delete from tenants where id = ${tenantId}`;
 		await sql`delete from organization where id = ${tenantId}`;
@@ -202,15 +213,13 @@ describe('generic webhook HMAC ingest (Adım 23b)', () => {
 			insert into tenants (id, name, slug)
 			values (${otherTenantId}, 'GHL HMAC Test B', ${`ghl-b-${otherTenantId.slice(0, 8)}`})
 		`;
+		await provisionIdentity(otherTenantId, sql);
 
 		try {
 			const externalEventId = `evt-cross-${randomUUID()}`;
 			const payload = { type: 'contact.created', id: externalEventId };
 			enqueueSpy.mockClear();
 
-			// Before EVENT-01: the second call's SELECT (RLS-scoped to otherTenantId) never sees
-			// tenant A's row, so it proceeds to INSERT and collides with the old *global*
-			// (provider, external_event_id) unique index -> uncaught 23505 -> 500.
 			const a = await controller.ingest(
 				PROVIDER,
 				buildRequest({ tenantId, externalEventId, payload })
@@ -244,6 +253,7 @@ describe('generic webhook HMAC ingest (Adım 23b)', () => {
 				await tx`select set_config('app.current_tenant_id', ${otherTenantId}, true)`;
 				await tx`delete from jobs where tenant_id = ${otherTenantId}`;
 				await tx`delete from integration_events where tenant_id = ${otherTenantId}`;
+				await tx`delete from tenant_provider_identities where tenant_id = ${otherTenantId}`;
 			});
 			await sql`delete from tenants where id = ${otherTenantId}`;
 			await sql`delete from organization where id = ${otherTenantId}`;
