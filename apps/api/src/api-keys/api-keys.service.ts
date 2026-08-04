@@ -30,6 +30,11 @@ export class ApiKeysService {
 
 	async createWithDb(db: TenantDb, tenantId: string, input: ApiKeyCreateInput) {
 		const material = generateApiKey();
+		// AUDIT-03 (Faz 8): default 90-day expiry. Can be overridden by passing
+		// `input.expires_at` from the controller (audit-found-1 follow-up UX:
+		// admins pick expiry in issuance form). NULL = never expires — only used
+		// for legacy compat, new keys should always have an expiry.
+		const expiresAt = input.expires_at ?? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 		const [row] = await db
 			.insert(apiKeys)
 			.values({
@@ -37,7 +42,8 @@ export class ApiKeysService {
 				name: input.name,
 				keyPrefix: material.prefix,
 				keyHash: material.hash,
-				scopes: input.scopes
+				scopes: input.scopes,
+				expiresAt
 			})
 			.returning();
 

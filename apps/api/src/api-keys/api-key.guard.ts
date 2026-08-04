@@ -41,7 +41,7 @@ export class ApiKeyGuard implements CanActivate {
 
 		const keyHash = hashApiKey(token);
 		const [row] = await this.dbService.sql<
-			[{ id: string; tenant_id: string; scopes: string[] }] | []
+			Array<{ id: string; tenant_id: string; scopes: string[] }>
 		>`select id, tenant_id, scopes from app.lookup_api_key(${keyHash})`;
 
 		if (!row) {
@@ -50,6 +50,21 @@ export class ApiKeyGuard implements CanActivate {
 				request_id: req.id
 			});
 		}
+
+		// AUDIT-03 (Faz 8): record `last_used_at` on every successful lookup. Wrapped
+		// in a transaction with explicit `app.current_tenant_id` because the
+		// `verimaya_app` role's RLS would otherwise block the UPDATE (no tenant
+		// context set). We extract the tenant id from the looked-up row and use
+		// `set_config` inside a transaction.
+		const updateSql = this.dbService.sql;
+		void updateSql
+			.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${row.tenant_id}::uuid, true)`;
+				await tx`update api_keys set last_used_at = now() where id = ${row.id}::uuid`;
+			})
+			.catch(() => {
+				// best-effort: don't fail the request because the audit update failed
+			});
 
 		req.apiKeyAuth = {
 			tenantId: row.tenant_id,
