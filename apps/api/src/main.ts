@@ -219,12 +219,9 @@ async function bootstrap() {
 	app.setGlobalPrefix('v1');
 	registerWebhookRawBodyHook(app);
 	await mountBetterAuth(app);
-	await mountOpenApiDocs(app);
 
-	// AUDIT-03 (Faz 8): lock OpenAPI/Scalar mount. Production: requires
-	// API_DOCS_TOKEN. Development: open. docs/TEHDIT-MODELI.md already calls
-	// this out as a known reconnaissance vector; the lock here is the concrete
-	// mitigation, gated on a single env var.
+	// AUDIT-03: production mounts docs only when API_DOCS_TOKEN is set.
+	// (Do not call mountOpenApiDocs twice — Fastify throws on duplicate /v1/docs.)
 	const docsToken = process.env.API_DOCS_TOKEN?.trim();
 	const isProduction = (process.env.NODE_ENV ?? 'development') === 'production';
 	await mountOpenApiDocs(app, {
@@ -234,25 +231,21 @@ async function bootstrap() {
 
 	await app.init();
 	const queueService = app.get(QueueService);
-	// AUDIT-03 (Faz 8): Bull Board is already token-gated in production by
-	// `isBullBoardEnabled` (see `bull-board.mount.ts`); the call below passes
-	// the same env vars. Documented here so the next reader knows we considered
-	// the audit finding and that the existing check satisfies it.
+	// AUDIT-03: Bull Board is token-gated in production via isBullBoardEnabled.
 	await mountBullBoard(app, queueService, {
 		isDevelopment: (process.env.NODE_ENV ?? 'development') === 'development',
 		adminQueueToken: process.env.ADMIN_QUEUE_TOKEN
 	});
 
-	// AUDIT-03 (Faz 8): wire Nest's shutdown hooks so SIGTERM (Coolify) drains the
-	// BullMQ worker, closes Fastify, then exits. Without this, in-flight HTTP
-	// requests and queue jobs die mid-step on every deploy.
-	// docs/TEHDIT-MODELI.md does not cover this; per Coolify's 30s drain contract we
-	// accept that some jobs will be killed and rely on `jobs` table idempotency
-	// + at-least-once delivery to make that safe.
+	// AUDIT-03: SIGTERM (Coolify) drains BullMQ worker + Fastify before exit.
 	app.enableShutdownHooks();
 
 	const port = Number(process.env.API_PORT ?? 3000);
 	await app.listen(port, '0.0.0.0');
 }
 
-void bootstrap();
+void bootstrap().catch((err: unknown) => {
+	const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
+	console.error(`Fatal bootstrap error: ${message}`);
+	process.exit(1);
+});
