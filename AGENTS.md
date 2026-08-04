@@ -11,7 +11,7 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 - pnpm workspaces + Turborepo: `apps/api` (NestJS + Fastify + Drizzle), `apps/web` (SvelteKit + Svelte 5 + TanStack Query (svelte) + Tailwind + shadcn-svelte), `packages/shared` (zod şemaları + API sözleşmesi).
 - PostgreSQL 16 + RLS, BullMQ + Redis, better-auth (organization), Sentry + pino.
 - Deploy: Hetzner + Coolify, önde Cloudflare. Web `adapter-static`: panel SPA (`ssr=false`, fallback `index.html`); public marketing `(public)/` grubu build-time **prerender** (`ssr=true`, `prerender=true`). İş mantığı API'dedir; `+page.server.ts`, form actions, API routes kullanılmaz.
-- **Host ayrımı:** apex `verimaya.com` (ve `www`) = marketing hub; `app.verimaya.com` = panel + auth gate. Nginx apex `/` → `hub.html` (prerender hub kopyası); eski `/vitrin` → **301** `/`. Detay: `docs/DEPLOY-COOLIFY.md`, `apps/web/nginx.conf`.
+- **Host ayrımı:** apex `verimaya.com` (ve `www`) = marketing hub; `app.verimaya.com` = panel + auth gate. Lokal: `localhost:5173` = hub, `app.localhost:5173` = panel/login (`apps/web/src/lib/host.ts`). Nginx apex `/` → `hub.html` (prerender hub kopyası); eski `/vitrin` → **301** `/`. Detay: `docs/DEPLOY-COOLIFY.md`, `apps/web/nginx.conf`.
 - Svelte kodu daima **Svelte 5 runes** sözdizimiyle yazılır (`$state`, `$derived`, `$effect`, `$props`); Svelte 4 sözdizimi (`export let`, `$:` reaktif ifadeler, store auto-subscribe ile yeni state) yasaktır.
 
 ## Değişmez mimari ilkeler

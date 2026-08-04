@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/public';
 
-/** Real API origin (NestJS). Overridden via PUBLIC_API_URL. */
-export const PUBLIC_API_URL = env.PUBLIC_API_URL ?? 'http://localhost:3000';
+/** Real API origin (NestJS). Empty string = same-origin (local Vite /v1 proxy). */
+export const PUBLIC_API_URL = (env.PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
 /**
  * Absolute marketing site origin for canonical / Open Graph URLs (no trailing slash).

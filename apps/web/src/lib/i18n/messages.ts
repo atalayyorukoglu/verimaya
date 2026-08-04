@@ -60,17 +60,17 @@ const tr = {
 	'karne.result.euEffectiveDate': '2 Ağustos 2026',
 	'karne.result.euNoticeSuffix': "'dan itibaren sizi kapsıyor.",
 	'karne.result.productBlurb':
-		'Verimaya, hasta yolculuğunu tek panelde toplar — lead’den randevuya, finanstan WhatsApp aktarımına.',
+		'Verimaya, hasta yolculuğunu tek panelde toplar — lead\'den randevuya, finanstan WhatsApp aktarımına.',
 	'karne.result.backToShowcase': 'Vitrine dön',
 	'karne.result.demoLogin': 'Demo için giriş',
 
 	// Ayarlar · AI
 	'settings.ai.title': 'AI ayarları',
 	'settings.ai.description':
-		'WhatsApp AI şeffaflığı (EU AI Act m.50) ve demo sistem prompt’u. İfşa metni giden AI mesajlarına eklenecek.',
+		'WhatsApp AI şeffaflığı (EU AI Act m.50) ve demo sistem prompt\'u. İfşa metni giden AI mesajlarına eklenecek.',
 	'settings.ai.disclosure.heading': 'WhatsApp AI ifşa metni',
 	'settings.ai.disclosure.why':
-		'EU AI Act m.50 gereği AI destekli giden mesajlarda alıcı bilgilendirilmelidir. Bu ayar karne kriteri 7.6’yı besler. Giden gönderim yolu henüz bağlı değil; metin giden AI mesajlarına eklenecek.',
+		'EU AI Act m.50 gereği AI destekli giden mesajlarda alıcı bilgilendirilmelidir. Bu ayar karne kriteri 7.6\'yı besler. Giden gönderim yolu henüz bağlı değil; metin giden AI mesajlarına eklenecek.',
 	'settings.ai.disclosure.enabled': 'Giden AI mesajlarına ifşa metni eklenecek',
 	'settings.ai.disclosure.textLabel': 'İfşa metni',
 	'settings.ai.disclosure.save': 'İfşayı kaydet',
@@ -79,14 +79,14 @@ const tr = {
 	'settings.ai.disclosure.error': 'Kayıt başarısız.',
 	'settings.ai.disclosure.loadError': 'Ayar yüklenemedi.',
 	'settings.ai.disclosure.note':
-		'Gerçek WhatsApp gönderimi henüz yok. Port + ifşa hook’u hazır; gönderim ayrı karardır.',
+		'Gerçek WhatsApp gönderimi henüz yok. Port + ifşa hook\'u hazır; gönderim ayrı karardır.',
 	'settings.ai.prompt.label': 'Prompt',
 	'settings.ai.prompt.default': 'varsayılan',
 	'settings.ai.prompt.save': 'Kaydet',
 	'settings.ai.prompt.reset': 'Varsayılana dön',
 	'settings.ai.prompt.saved': 'Kaydedildi.',
 	'settings.ai.prompt.footnote':
-		'Prompt demo: localStorage. Gerçek tenant prompt’u ayrı iş; ifşa ayarı API’de saklanır.',
+		'Prompt demo: localStorage. Gerçek tenant prompt\'u ayrı iş; ifşa ayarı API\'de saklanır.',
 
 	// Ayarlar · Organizasyon
 	'settings.organization.timezone': 'Saat dilimi',
@@ -115,7 +115,7 @@ const tr = {
 	'scorecard.zeros.heading': 'Sıfırlar',
 	'scorecard.zeros.primary': '{zeros} sıfır · {denom} geçerli kriter',
 	'scorecard.zeros.hint':
-		'Birincil gösterge budur. İkinci ölçümde “kaç sıfır kapandı” karşılaştırması burada görünür.',
+		'Birincil gösterge budur. İkinci ölçümde "kaç sıfır kapandı" karşılaştırması burada görünür.',
 	'scorecard.percentage.label': 'Yüzde',
 	'scorecard.percentage.warning':
 		'Farklı ölçek bantlarının yüzdeleri birbiriyle kıyaslanmaz. Bu yüzde yalnızca kendi önceki ölçümünüzle karşılaştırmak içindir.',
@@ -204,7 +204,7 @@ const tr = {
 	'settings.ads.syncOk': 'Senkron tamam: {count} satır ({mode}).',
 	'settings.ads.syncError': 'Senkron başarısız.',
 	'settings.ads.syncHint':
-		'Otomatik zamanlayıcı kapalıdır. Bu düğme yaklaşık son 10 yıllık günlük harcamayı çeker; Raporlar yalnızca DB’deki satırları toplar.',
+		'Otomatik zamanlayıcı kapalıdır. Bu düğme yaklaşık son 10 yıllık günlük harcamayı çeker; Raporlar yalnızca DB\'deki satırları toplar.',
 	'settings.ads.googleCustomerId.label': 'Google Ads müşteri hesap no',
 	'settings.ads.googleCustomerId.hint':
 		'MCC ile bağlandıysan, metrik çekilecek client hesabın numarasını gir (tire opsiyonel).',
@@ -214,7 +214,7 @@ const tr = {
 	'settings.ads.googleCustomerId.error': 'Hesap no kaydedilemedi.',
 	'settings.ads.dev.heading': 'Geliştirme / demo verisi',
 	'settings.ads.dev.body':
-		'OAuth yokken senkron örnek satır yazar. Otomatik 6s kuyruk için ENABLE_INTEGRATION_SCHEDULERS=true gerekir — prod’da kapalı tutuyoruz.',
+		'OAuth yokken senkron örnek satır yazar. Otomatik 6s kuyruk için ENABLE_INTEGRATION_SCHEDULERS=true gerekir — prod\'da kapalı tutuyoruz.',
 	'settings.ads.footnote':
 		'Bağlantı sonrası "hasta başına maliyet" Raporlar sayfasında kaynak bazında görünecek.',
 
@@ -267,7 +267,111 @@ const tr = {
 	'finance.ai.parse.none': 'Mesajdan işlem çıkarılamadı.',
 	'finance.ai.parse.media': 'Medya mesajı — metin yok.',
 	'finance.ai.parse.failed': 'Analiz başarısız',
-	'finance.ai.approve.failed': 'Onay başarısız'
+	'finance.ai.approve.failed': 'Onay başarısız',
+
+	// Marketing hub — ana sayfa (verimaya.com)
+	'hub.hero.eyebrow': 'Sağlık turizmi operasyon ekosistemi',
+	'hub.hero.title':
+		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta — ay sonunda kim geldi, kim ödedi bilinmiyor.',
+	'hub.hero.subtitle':
+		'Önce netleştirin: gelen hastayı mı düzene sokacaksınız, reklamdan gelen lead’i mi randevuya çevireceksiniz?',
+	'hub.hero.ctaApp': 'Maya App',
+	'hub.hero.ctaCrm': 'Maya CRM',
+	'hub.hero.forkHint': 'İki kapı. Sonra Kaynaklar ve Araçlar ile güçlenir.',
+
+	'hub.nav.webApp': 'Maya App',
+	'hub.nav.crm': 'Maya CRM',
+	'hub.nav.resources': 'Kaynaklar',
+	'hub.nav.tools': 'Araçlar',
+
+	'hub.apps.title': 'Uygulamalarımız',
+	'hub.apps.desc': 'İki platform, tek ekosistem — hangisi size lazımsa onu kullanın.',
+	'hub.apps.app.problem': 'Hasta geldikten sonra randevu, dosya ve ödeme dağılmıyor mu? Bu yüzden;',
+	'hub.apps.app.name': 'Operasyonu tek panelde topladık.',
+	'hub.apps.app.desc':
+		'Maya App hasta yolculuğunu yönetir: Hasta kapıdan girince yolculuk tek panelde: randevu, dosya, finans. Operasyon ekibi aynı ekrandan bakar.',
+	'hub.apps.app.subs': 'Hastalar · Kişiler · Randevular · Finans · Raporlar',
+	'hub.apps.app.outcome': 'Sonuç: ay sonunda kim geldi, kim ödedi — tek yerden görünür.',
+	'hub.apps.app.cta': "Maya App'e git",
+	'hub.apps.crm.problem': 'Reklam bütçesi gidiyor, lead WhatsApp’ta kayboluyor mu?',
+	'hub.apps.crm.name': 'Lead’i randevuya çevirin',
+	'hub.apps.crm.desc':
+		'Maya CRM (GoHighLevel) lead yakalama, takip ve otomasyonu satış hattında tutar — ekip kişiden kişiye değişmez.',
+	'hub.apps.crm.subs': 'Lead yakalama · Otomasyon · Çok kanallı iletişim · Pipeline · Raporlama',
+	'hub.apps.crm.outcome': 'Sonuç: lead kaçmaz; takip ölçülür, randevu artar.',
+	'hub.apps.crm.cta': "Maya CRM'i aç",
+	'hub.stage.app.eyebrow': 'Maya App',
+	'hub.stage.crm.eyebrow': 'Maya CRM',
+
+	'hub.resources.problem': 'Ekip sistemi öğrenebilecek mi? İhtiyacınız olan tüm destek içeriği hazır.',
+	'hub.resources.title': 'Yazılımı bırakıp gitmiyoruz',
+	'hub.resources.desc':
+		'Kaynaklar; tüm ekosistemi kullanmayı öğreten alanınız. Ekip aynı dili konuşur, satış ve operasyon kopmaz.',
+	'hub.resources.outcome': 'Sonuç: onboarding + içerik + öğrenme — tek çatıda.',
+	'hub.resources.ctaPrimary': 'Özellikleri incele',
+	'hub.resources.ctaSecondary': 'Ücretsiz karne al',
+
+	'hub.ctaBand.title': 'Hangisinden başlayalım?',
+	'hub.ctaBand.subtitle': 'Operasyon paneli mi, satış hattı mı — seçin; Kaynaklar ve Araçlar ikisini de besler.',
+	'hub.ctaBand.cta': "Maya App'e git",
+	'hub.ctaBand.ctaCrm': "Maya CRM'i aç",
+
+	'hub.features.title': 'Uygulamada neler var?',
+	'hub.features.desc': 'Hasta operasyonlarınızı uçtan uca yönetmek için ihtiyacınız olan her şey.',
+	'hub.features.patients.title': 'Hasta yönetimi',
+	'hub.features.patients.desc':
+		'Tüm hasta kayıtları tek ekranda. Tedavi geçmişi, iletişim logları, belgeler ve çift kayıt uyarısı.',
+	'hub.features.appointments.title': 'Akıllı randevu',
+	'hub.features.appointments.desc':
+		'Takvim görünümü, çakışma kontrolü, hatırlatıcılar ve tür bazlı filtreleme.',
+	'hub.features.finance.title': 'Finans takibi',
+	'hub.features.finance.desc':
+		'WhatsApp mesajından AI ile otomatik işlem çıkarımı, bakiye yönetimi, kur hesaplama.',
+	'hub.features.reports.title': 'Raporlar',
+	'hub.features.reports.desc':
+		'Özelleştirilebilir raporlar, hasta başına maliyet, kaynak bazında harcama analizi.',
+	'hub.features.cta': 'Tüm özellikleri incele',
+
+	'hub.tools.problem': 'Reklamı yayınlamadan önce plan, deneme ve kontrol hâlâ Excel’de mi?',
+	'hub.tools.title': 'Maya App ve Maya CRM’i besleyen araçlar',
+	'hub.tools.desc':
+		'Araçlar; Maya App ve Maya CRM’i destekler — planlar, simüle eder, yayın öncesi kontrol eder.',
+	'hub.tools.campaign.title': 'Kampanya Asistanı',
+	'hub.tools.campaign.desc':
+		'Reklam kampanyası adımlarını netleştirir; satış hattına hazırlık Maya CRM’i, sonuç takibi Maya App’i besler.',
+	'hub.tools.simulator.title': 'Simülatör',
+	'hub.tools.simulator.desc':
+		'“Şu bütçeyi şu kanala koysak?” — senaryoyu karşılaştırmadan kör harcama yapmazsınız.',
+	'hub.tools.prelaunch.title': 'Yayın Öncesi',
+	'hub.tools.prelaunch.desc':
+		'Yayına girmeden bütçe, kitle, görsel ve metin kontrolleri — boşa giden tıklama riskini keser.',
+	'hub.tools.cta': 'Tüm araçları keşfet',
+
+	'hub.scenarios.title': 'Kullanım senaryoları',
+	'hub.scenarios.desc': 'Farklı klinik profillerinde Verimaya ekosistemi nasıl çalışır.',
+	'hub.scenarios.hair.title': 'Saç ekimi kliniği',
+	'hub.scenarios.hair.desc':
+		"Lead WhatsApp'tan gelir → Maya CRM'de pipeline'a düşer → Randevu alınır → İşlem yapılır → Ödeme Maya App'te kaydedilir → Raporlanır.",
+	'hub.scenarios.dentist.title': 'Diş sağlığı kliniği',
+	'hub.scenarios.dentist.desc':
+		"Reklamlardan gelen lead Maya CRM'de karşılanır → Konsültasyon randevusu Maya App'te açılır → Tedavi planı çıkar → Ödeme taksitlendirilir.",
+	'hub.scenarios.esthetic.title': 'Estetik kliniği',
+	'hub.scenarios.esthetic.desc':
+		"Hasta bilgileri Maya App'e kaydedilir → Finans ekibi WhatsApp mesajından AI ile işlemleri ayrıştırır → Onay sonrası kayıt düşülür.",
+
+	'hub.karne.title': 'Yapay zeka karnenizi 5 dakikada alın',
+	'hub.karne.desc': 'Kurumunuzun yapay zeka olgunluğunu ölçün, eksiklerinizi görün, yol haritanızı çıkarın.',
+	'hub.karne.cta': 'Karnemi al',
+
+	'hub.integrations.title': 'Entegrasyonlar',
+	'hub.integrations.desc': 'Verimaya ekosistemini güçlendiren servisler.',
+
+	'hub.footer.tagline': 'Hasta yolculuğunu tek panelde yönetin',
+	'hub.footer.links': 'Kapılar',
+	'hub.footer.legal': 'Yasal',
+	'hub.footer.kvkk': 'KVKK Aydınlatma',
+	'hub.footer.resources': 'Kaynaklar',
+	'hub.footer.tools': 'Araçlar',
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -366,7 +470,7 @@ const en: Record<MessageKey, string> = {
 	'scorecard.zeros.heading': 'Zeros',
 	'scorecard.zeros.primary': '{zeros} zeros · {denom} applicable criteria',
 	'scorecard.zeros.hint':
-		'This is the primary signal. On the second measurement, “how many zeros closed” will appear here.',
+		'This is the primary signal. On the second measurement, "how many zeros closed" will appear here.',
 	'scorecard.percentage.label': 'Percentage',
 	'scorecard.percentage.warning':
 		'Percentages across headcount bands are not comparable. This percentage is only for comparing with your own prior measurement.',
@@ -514,10 +618,114 @@ const en: Record<MessageKey, string> = {
 	'finance.ai.draft.fxRate': 'FX rate (1 unit → base)',
 	'finance.ai.draft.amountBase': 'Base amount',
 	'finance.ai.draft.saved': 'Saved',
-	'finance.ai.parse.none': 'Could not extract transactions from the message.',
+	'finance.ai.parse.none': 'Could not extract transactions from message.',
 	'finance.ai.parse.media': 'Media message — no text.',
 	'finance.ai.parse.failed': 'Analysis failed',
-	'finance.ai.approve.failed': 'Approval failed'
-};
+	'finance.ai.approve.failed': 'Approval failed',
 
-export const messages: Record<Locale, Record<MessageKey, string>> = { tr, en };
+	// Marketing hub — homepage (verimaya.com)
+	'hub.hero.eyebrow': 'Health tourism operations ecosystem',
+	'hub.hero.title':
+		'Leads in WhatsApp, patients in Excel, payments in the group chat — month-end, who came and who paid is unclear.',
+	'hub.hero.subtitle':
+		'First decide: will you tidy the patient journey, or convert ad leads into appointments?',
+	'hub.hero.ctaApp': 'Maya App',
+	'hub.hero.ctaCrm': 'Maya CRM',
+	'hub.hero.forkHint': 'Two doors. Then Resources and Tools amplify both.',
+
+	'hub.nav.webApp': 'Maya App',
+	'hub.nav.crm': 'Maya CRM',
+	'hub.nav.resources': 'Resources',
+	'hub.nav.tools': 'Tools',
+
+	'hub.apps.title': 'Our Applications',
+	'hub.apps.desc': 'Two platforms, one ecosystem — use whichever you need.',
+	'hub.apps.app.problem': 'After the patient arrives, do appointments, files, and payments scatter? That’s why;',
+	'hub.apps.app.name': 'We put operations in one panel.',
+	'hub.apps.app.desc':
+		'Maya App manages the patient journey: once they walk in, appointments, files, and finance stay on one panel. The ops team works from the same screen.',
+	'hub.apps.app.subs': 'Patients · Contacts · Appointments · Finance · Reports',
+	'hub.apps.app.outcome': 'Outcome: who came, who paid — visible in one place at month end.',
+	'hub.apps.app.cta': 'Go to Maya App',
+	'hub.apps.crm.problem': 'Ad spend running while leads vanish in WhatsApp?',
+	'hub.apps.crm.name': 'Turn leads into appointments',
+	'hub.apps.crm.desc':
+		'Maya CRM (GoHighLevel) keeps capture, follow-up, and automation on the sales line — process doesn’t depend on who is online.',
+	'hub.apps.crm.subs': 'Lead capture · Automation · Multi-channel · Pipeline · Reports',
+	'hub.apps.crm.outcome': 'Outcome: leads don’t slip; follow-up is measurable; appointments rise.',
+	'hub.apps.crm.cta': 'Open Maya CRM',
+	'hub.stage.app.eyebrow': 'Maya App',
+	'hub.stage.crm.eyebrow': 'Maya CRM',
+
+	'hub.resources.problem': 'Can the team learn the system? All the support content you need is ready.',
+	'hub.resources.title': 'We don’t hand you software and leave',
+	'hub.resources.desc':
+		'Resources teaches your team the whole ecosystem. Everyone shares one language — sales and ops stay connected.',
+	'hub.resources.outcome': 'Outcome: onboarding + content + learning under one roof.',
+	'hub.resources.ctaPrimary': 'Browse features',
+	'hub.resources.ctaSecondary': 'Get a free scorecard',
+
+	'hub.ctaBand.title': 'Where do we start?',
+	'hub.ctaBand.subtitle': 'Operations panel or sales line — pick one; Resources and Tools feed both.',
+	'hub.ctaBand.cta': 'Go to Maya App',
+	'hub.ctaBand.ctaCrm': 'Open Maya CRM',
+
+	'hub.features.title': "What's in the application?",
+	'hub.features.desc': 'Everything you need to manage patient operations end to end.',
+	'hub.features.patients.title': 'Patient management',
+	'hub.features.patients.desc':
+		'All patient records in one screen. Treatment history, communication logs, documents, and duplicate alerts.',
+	'hub.features.appointments.title': 'Smart appointments',
+	'hub.features.appointments.desc':
+		'Calendar view, conflict detection, reminders, and type-based filtering.',
+	'hub.features.finance.title': 'Finance tracking',
+	'hub.features.finance.desc':
+		'AI-powered transaction extraction from WhatsApp, balance management, FX rate calculation.',
+	'hub.features.reports.title': 'Reports',
+	'hub.features.reports.desc':
+		'Customizable reports, cost per patient, source-based spend analysis.',
+	'hub.features.cta': 'View all features',
+
+	'hub.tools.problem': 'Before you launch ads, is planning, testing, and checking still stuck in Excel?',
+	'hub.tools.title': 'Tools that feed Maya App and Maya CRM',
+	'hub.tools.desc':
+		'Tools support Maya App and Maya CRM — plan, simulate, and check before go-live.',
+	'hub.tools.campaign.title': 'Campaign Assistant',
+	'hub.tools.campaign.desc':
+		'Clarifies campaign steps; sales prep feeds Maya CRM, results tracking feeds Maya App.',
+	'hub.tools.simulator.title': 'Simulator',
+	'hub.tools.simulator.desc':
+		'“What if that budget went to that channel?” — compare before you spend blind.',
+	'hub.tools.prelaunch.title': 'Pre-launch',
+	'hub.tools.prelaunch.desc':
+		'Budget, audience, creative, and copy checks before launch — cut wasted clicks.',
+	'hub.tools.cta': 'Discover all tools',
+
+	'hub.scenarios.title': 'Use cases',
+	'hub.scenarios.desc': 'How the Verimaya ecosystem works across different clinic profiles.',
+	'hub.scenarios.hair.title': 'Hair transplant clinic',
+	'hub.scenarios.hair.desc':
+		"Lead arrives via WhatsApp → drops into Maya CRM pipeline → Appointment booked → Procedure done → Payment logged in Maya App → Reported.",
+	'hub.scenarios.dentist.title': 'Dental clinic',
+	'hub.scenarios.dentist.desc':
+		"Lead from ads lands in Maya CRM → Consultation appointment opened in Maya App → Treatment plan created → Payment split into installments.",
+	'hub.scenarios.esthetic.title': 'Aesthetics clinic',
+	'hub.scenarios.esthetic.desc':
+		"Patient info saved to Maya App → Finance team uses WhatsApp AI to extract transactions → Records created after approval.",
+
+	'hub.karne.title': 'Get your AI scorecard in 5 minutes',
+	'hub.karne.desc': 'Measure your AI maturity, see gaps, and chart your roadmap.',
+	'hub.karne.cta': 'Get my scorecard',
+
+	'hub.integrations.title': 'Integrations',
+	'hub.integrations.desc': 'Services powering the Verimaya ecosystem.',
+
+	'hub.footer.tagline': 'Manage the patient journey in one panel',
+	'hub.footer.links': 'Doors',
+	'hub.footer.legal': 'Legal',
+	'hub.footer.kvkk': 'KVKK Disclosure',
+	'hub.footer.resources': 'Resources',
+	'hub.footer.tools': 'Tools',
+} as const;
+
+export const messages = { tr, en } as const;

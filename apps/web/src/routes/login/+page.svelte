@@ -166,7 +166,7 @@
 <div class="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-12">
 	<div class="w-full max-w-sm">
 		<div class="mb-8 flex justify-center">
-			<SiteLogo />
+			<SiteLogo class="w-fit" />
 		</div>
 
 		<div class="rounded-lg border border-border bg-surface p-6 shadow-sm">

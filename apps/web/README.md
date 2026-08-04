@@ -22,9 +22,10 @@ API çalıştırmadan arayüzü görmek için `apps/web/.env`'de `PUBLIC_USE_MSW
 - [ ] **Altyapı:** repo kökünde `docker compose up -d` (Postgres + Redis)
 - [ ] **Migrasyon:** `pnpm --filter @verimaya/api db:migrate`
 - [ ] **API:** `pnpm --filter @verimaya/api dev` → `http://localhost:3000` (health + auth hazır)
-- [ ] **Web `.env`:** `PUBLIC_API_URL=http://localhost:3000` ve `PUBLIC_USE_MSW=false`
-- [ ] **Web dev:** `pnpm --filter @verimaya/web dev` → `http://localhost:5173`
-- [ ] **Giriş:** `/giris` — better-auth (`/v1/auth/*`), oturum çerezi `credentials: include` ile API'ye gider
+- [ ] **Web `.env`:** `PUBLIC_API_URL=` (boş — Vite `/v1` proxy), `PUBLIC_USE_MSW=false`, `PUBLIC_SITE_URL=http://localhost:5173`, `PUBLIC_APP_URL=http://app.localhost:5173`
+- [ ] **API `.env`:** `TRUSTED_ORIGINS` içinde `http://localhost:5173` ve `http://app.localhost:5173`
+- [ ] **Web dev:** `pnpm --filter @verimaya/web dev` → hub `http://localhost:5173`, panel/login `http://app.localhost:5173`
+- [ ] **Giriş:** `http://app.localhost:5173/login` — better-auth (`/v1/auth/*`), oturum çerezi `credentials: include` ile API'ye gider
 - [ ] **Organizasyon:** oturumda aktif org yoksa giriş sonrası org seçimi veya ilk org oluşturma ekranı gelir (`authClient.organization.list` / `setActive`)
 - [ ] **Doğrulama:** hasta/kişi listeleri, çift kayıt tarama (`/kisiler/cift-kayit`, `/hastalar/cift-kayit`) gerçek `/v1/.../duplicate-groups` ve merge endpoint'lerine gider
 

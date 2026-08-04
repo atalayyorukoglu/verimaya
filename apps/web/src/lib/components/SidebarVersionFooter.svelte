@@ -7,6 +7,6 @@
 </script>
 
 <div class="flex w-full items-center justify-center gap-1 text-xs text-text-muted">
-	<BrandMark class="h-4 w-4 text-text" title="" />
+	<BrandMark class="h-6 w-6 shrink-0 text-text" title="" />
 	<span>Verimaya · v{version}</span>
 </div>

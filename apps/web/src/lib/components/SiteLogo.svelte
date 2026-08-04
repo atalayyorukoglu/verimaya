@@ -1,14 +1,16 @@
 <script lang="ts">
 	import BrandMark from '$lib/components/BrandMark.svelte';
+	import { site } from '$lib/site';
 	import { cn } from '$lib/utils';
 
 	/**
-	 * TickPort SiteLogo spacing/typography (gap-1, title sm/semibold, subtitle 11px -mt-1.5).
+	 * Shared brand lockup (sidebar header, login, auth shells).
+	 * TickPort spacing/typography: gap-1, title sm/semibold, subtitle 11px -mt-1.5.
 	 * docs/TASARIM.md — sidebar header.
 	 */
 	let {
-		name = 'Verimaya',
-		description = 'Demo Klinik',
+		name = site.name,
+		description = site.description,
 		class: className,
 		showText = true,
 		centered = false
@@ -28,7 +30,7 @@
 		className
 	)}
 >
-	<BrandMark class="h-8 w-8 text-text" title="" />
+	<BrandMark class="h-6 w-6 shrink-0 text-text" title="" />
 	{#if showText}
 		<div
 			class={cn(

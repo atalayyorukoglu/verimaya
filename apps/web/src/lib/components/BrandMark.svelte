@@ -16,7 +16,7 @@
 
 <svg
 	xmlns="http://www.w3.org/2000/svg"
-	viewBox="0 0 1024 1024"
+	viewBox="216 221 590 582"
 	fill="currentColor"
 	class={cn('shrink-0', className)}
 	role={decorative ? 'presentation' : 'img'}

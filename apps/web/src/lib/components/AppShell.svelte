@@ -17,7 +17,7 @@
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import BrandMark from '$lib/components/BrandMark.svelte';
-	import LogoHorizontal from '$lib/components/LogoHorizontal.svelte';
+	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import SidebarVersionFooter from '$lib/components/SidebarVersionFooter.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -243,9 +243,9 @@
 
 	<!-- Desktop sidebar — TickPort: full viewport height, footer pinned -->
 	<aside class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex">
-		<div class="flex h-14 shrink-0 items-center justify-center border-b border-border bg-bg px-4">
-			<a href="/" class="rounded-md" aria-label="Verimaya — {tenantName}">
-				<LogoHorizontal />
+		<div class="flex h-14 shrink-0 items-center border-b border-border bg-bg px-4">
+			<a href="/" class="block min-w-0 rounded-md" aria-label="Verimaya — {tenantName}">
+				<SiteLogo />
 			</a>
 		</div>
 
@@ -308,14 +308,14 @@
 		<aside
 			class="fixed inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-border bg-bg md:hidden"
 		>
-			<div class="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-bg px-3">
+			<div class="flex h-14 shrink-0 items-center border-b border-border bg-bg px-4">
 				<a
 					href="/"
-					class="flex min-w-0 flex-1 items-center justify-center rounded-md pe-1"
+					class="block min-w-0 flex-1 rounded-md"
 					aria-label="Verimaya — {tenantName}"
 					onclick={closeMobile}
 				>
-					<LogoHorizontal class="max-w-full" />
+					<SiteLogo />
 				</a>
 				<button
 					type="button"

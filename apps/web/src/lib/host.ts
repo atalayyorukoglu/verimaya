@@ -15,17 +15,31 @@ const MARKETING_HOSTS = new Set(
 
 const APP_HOSTS = new Set([hostnameOf(PUBLIC_APP_URL)].filter(Boolean));
 
-/** Apex / www — pazarlama hub’ı (App + CRM CTA). */
+/** Local apex — mirrors production `verimaya.com`. */
+function isLocalMarketingHost(h: string): boolean {
+	return h === 'localhost' || h === '127.0.0.1';
+}
+
+/** Local panel — mirrors production `app.verimaya.com` (`*.localhost` → 127.0.0.1). */
+function isLocalAppHost(h: string): boolean {
+	return h === 'app.localhost';
+}
+
+/** Apex / www — pazarlama hub’ı (App + CRM CTA). Local: `localhost`. */
 export function isMarketingHost(hostname = browser ? window.location.hostname : ''): boolean {
 	const h = hostname.toLowerCase();
-	if (!h || h === 'localhost' || h === '127.0.0.1') return false;
+	if (!h) return false;
+	if (isLocalAppHost(h)) return false;
+	if (isLocalMarketingHost(h)) return true;
 	return MARKETING_HOSTS.has(h);
 }
 
-/** app.* — panel + login. Localhost defaults to app. */
+/** app.* — panel + login. Local: `app.localhost`. */
 export function isAppHost(hostname = browser ? window.location.hostname : ''): boolean {
 	const h = hostname.toLowerCase();
-	if (!h || h === 'localhost' || h === '127.0.0.1') return true;
+	if (!h) return false;
+	if (isLocalAppHost(h)) return true;
+	if (isLocalMarketingHost(h)) return false;
 	if (APP_HOSTS.has(h)) return true;
 	return !isMarketingHost(h);
 }

@@ -23,6 +23,15 @@ export default defineConfig({
 	],
 	server: {
 		port: 5173,
-		strictPort: true
+		strictPort: true,
+		// Local host split: localhost = hub, app.localhost = panel (mirrors prod).
+		allowedHosts: ['localhost', 'app.localhost'],
+		// Same-origin /v1 so session cookies work on app.localhost (PSL: *.localhost ≠ localhost).
+		proxy: {
+			'/v1': {
+				target: 'http://127.0.0.1:3000',
+				changeOrigin: true
+			}
+		}
 	}
 });
