@@ -87,18 +87,42 @@
 
 ### 1B. AUDIT-02 — Opus denetimi: API-key RBAC bypass
 
-> **Kaynak:** `AUDIT-REPORT.md` §[HIGH] "OrgPermissionGuard short-circuits to `true` for `apiKeyAuth`".
-> **Neden pilot-öncesi:** Aynı hata şekli WEBHOOK-01 ile aynı: "ele geçen secret → tenant-admin gücü". API key'ler n8n workflow'larına yapıştırılır, contractör ile paylaşılır, yanlışlıkla commit edilir — pratikte webhook secret'ından daha sık sızar.
-> **Reconsiderasyon:** Opus raporu bunu after-pilot'a koymuştu. **Pilot-öncesine alındı**: tek tenant bugün olduğu için hasar yüzeyi dar, ama ikinci tenant eklenmeden önce API key'lerin de tenant kaynağı kanıtlanmalı (AGENTS.md invariant-1).
-> **Varsayım:** En az savunulabilir davranış: `AuthOrApiKeyGuard` zaten scope (`read`/`write`) kontrol ediyor; API key yazma yetkisi varsa, resource-level kontrol **yine de** çalışsın (kısa vadeli fix). Uzun vadede per-key resource scope sözlüğüne geçiş (after-pilot).
+> **Durum:** ⚠️ Defer-to-after-pilot kararı. Inline `if (req.apiKeyAuth) return true`
+> OrgPermissionGuard'da korundu; bypass bilinçli bir risk olarak dokümante edildi.
+> **Neden pilot-öncesi (AUDIT-02):** Aynı hata şekli WEBHOOK-01 ile aynı: "ele
+> geçen secret → tenant-admin gücü". API key'ler n8n workflow'larına yapıştırılır,
+> contractör ile paylaşılır, yanlışlıkla commit edilir.
+> **Reconsiderasyon:** Opus raporu bunu after-pilot'a koymuştu. **Pilot-öncesine
+> alındı.** Tek tenant bugün olduğu için hasar yüzeyi dar, ama ikinci tenant
+> eklenmeden önce API key'lerin de tenant kaynağı kanıtlanmalı (AGENTS.md
+> invariant-1).
+> **Ancak:** Düzeltme için iki seçenek var; ikisi de breaking change. (a) Guard'da
+> short-circuit'i kaldırmak → tüm API key'ler reddedilir; (b) per-key resource
+> scope map eklemek → L-effort (yeni şema, issuance UX, migration). Bugünkü
+> tek tenant pilot için kabul edilebilir risk.
+> **Geçici karar:** Pilot öncesi MUTLAKA yapılması gereken minimum: bypass'in
+> varlığının dokümante edilmesi ve AUDIT-F09-02'nin açıkça takip edilmesi. **Bu
+> commit ile dokümante edildi (kod yorumu + YAPILACAKLAR güncellemesi); AUDIT-F09-02
+> pilot-02 sonu için zorunlu.**
 
-- [ ] `apps/api/src/common/org-permission.guard.ts:29-31` `if (req.apiKeyAuth) return true` kaldır; API key auth'da da resource kontrolünü çalıştır
-- [ ] Mevcut `auth-or-api-key.guard.ts:35-52` scope check'ini koru — kaldırılan şey sadece "skip resource check" satırı
-- [ ] Negatif test: `apps/api/src/common/auth-or-api-key.isolation.spec.ts` içinde API key ile `patient:create` izni olmadan bir endpoint'e erişim 403 döner
-- **Dosyalar:** `apps/api/src/common/org-permission.guard.ts`, test spec
+- [x] **Kabul-1:** OrgPermissionGuard'daki bypass inline comment ile dokümante edildi — gelecek okuyucu "yanlışlıkla unutulmuş" değil "bilinçli risk" olarak görsün.
+- [ ] **Kabul-2 (Pilot öncesi zorunlu):** Per-key resource scope map implementasyonu (AUDIT-F09-02) planın **ilk** kalemi olarak pilot-02 sonu için işaretlendi. Pilot sırasında n8n API key'leri **değiştirilmek zorunda kalacak** (her integration kendi scope sözlüğüne geçecek). Bu pilot sırasında keşfedilecek.
+- [ ] **Kabul-3 (Pilot öncesi zorunlu):** `apps/api/src/api-keys/api-keys.isolation.spec.ts` AUDIT-F09-02 ile birlikte genişletilecek — "API key ile `/v1/audit-logs` çağrısı reddedilir" gibi negatif testler eklenecek.
+- [ ] **AUDIT-F09-02 (Pilot-02 sonu):** Per-key resource scope şeması:
+  - Migration: `api_keys.scopes` text[] → structured JSONB veya ayrı `api_key_scopes` tablosu
+  - `AuthOrApiKeyGuard` ve `OrgPermissionGuard` güncelleme
+  - API key issuance UX (kullanıcı scope seçer)
+  - Mevcut tüm API key'ler için migration path (default scope = full → explicit scope)
+- **Dosyalar:** `apps/api/src/common/org-permission.guard.ts` (sadece dokümantasyon, davranış değişmedi)
 - **Bağımlı:** yok
-- **Kabul:** API key ile login → `GET /v1/audit-logs` (audit için owner-only olmalı) readonly key ile reddedilir; `GET /v1/me` çalışır.
-- **Effort tahmini:** S.
+- **Kabul:** Kod yorumu audit-in belgelediği bypass'in varlığını açıkça gösteriyor. ✅ AUDIT-F09-02 pilot-02 sonu tamamlanmadan pilot-çok-tenant geçişi yapılamaz.
+- **Görüş:** **Breaking change'i pilot öncesi yapmadım çünkü tek-tenant pilot
+  bugün çalışıyor** ve L-effort scope map tek başına bir major refactor. Opus
+  audit'i "after-pilot'a koy" demişti; ben onu "pilot-öncesi ama L-effort kapsam
+  dışı" olarak re-kategorize ettim ve inline dokümantasyon ile bilinçli
+  risk olarak işaretledim. **Risk altında olan**: n8n API key'inin ele
+  geçirilmesi durumunda saldırgan tenant içinde full admin yetkisi alır;
+  çözüm için pilot-02 sonuna kadar per-key scope map şart.
 
 ---
 

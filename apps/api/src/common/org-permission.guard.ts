@@ -26,6 +26,22 @@ export class OrgPermissionGuard implements CanActivate {
 			throw this.insufficientPermission(req.id);
 		}
 
+		// AUDIT-02 (Faz 8, DEFERRED): the existing behavior short-circuits to `true` for
+		// API-key auth. This is a known accepted risk — removing the short-circuit
+		// without first implementing per-key resource scopes (AUDIT-F09-02) breaks
+		// every API key in production, including the n8n integration credentials.
+		//
+		// The right fix is option (b) from the audit: per-key resource scope map
+		// (e.g. `patients:write`, `settings:write`) that the guard maps to required
+		// resources. That's L-effort (requires API key issuance UX changes, new
+		// schema, migration). Deferred to AUDIT-F09-02 in the after-pilot backlog.
+		//
+		// What we ship NOW:
+		//  - The short-circuit is preserved for the current API key shape.
+		//  - A negative-isolation spec (`api-keys.isolation.spec.ts` in
+		//    AUDIT-F09 follow-up) will assert the post-fix behavior.
+		//  - The accepted-risk doc entry lives here so a future reader knows the
+		//    bypass is documented, not forgotten.
 		if (req.apiKeyAuth) {
 			return true;
 		}
