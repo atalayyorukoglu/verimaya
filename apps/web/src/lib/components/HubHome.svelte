@@ -98,8 +98,8 @@
 	<meta name="twitter:description" content={description} />
 	<meta name="twitter:image" content={ogImage} />
 
-	<!-- eslint-disable-next-line svelte/no-at-html-tags, no-useless-escape -- statik JSON-LD (kullanıcı girdisi yok, XSS riski yok); </script> kaçışı parser'ın string'i erken kapatmasını önlüyor -->
-	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd)}<\/script>`}
+	<!-- eslint-disable-next-line svelte/no-at-html-tags, no-useless-escape -- statik JSON-LD; `<` u+003c'ye escape edilir ki organizationLd'ye ileride dinamik veri eklenirse "</script>" ile tag'den kaçış mümkün olmasın. </script> kaçışı ayrıca parser'ın string'i erken kapatmasını önlüyor -->
+	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd).replace(/</g, '\\u003c')}<\/script>`}
 </svelte:head>
 
 <div
