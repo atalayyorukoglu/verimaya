@@ -23,14 +23,40 @@
 
 ### 1. WEBHOOK-01 — Tenant çözümünü imzalı / provider eşlemesinden yap
 
-> **Durum:** Tasarım hazır (`tenant_provider_identities` tablosu, payload-imza-doğrulama-sonrası tenant_id çözümü).
-> Atalay'dan **uygulama kararı** bekliyor. WAHA pilot/kendi firmamız tek tenant olduğu için bugünkü risk düşük,
-> ama ikinci tenant eklenmeden **önce** yapılmalı.
+> **Durum:** ✅ Tamamlandı (commit `daec868`). Tenant çözümleme artık
+> `tenant_provider_identities` tablosundan, imza doğrulaması sonrasında SECURITY
+> DEFINER fonksiyonla yapılıyor. X-Tenant-Id header'ı artık kanonik tenant değil;
+> imza payload'ına (`${ts}.${provider}.${claimedTenantId}.${body}`) bağlı. Pilot
+> geçiş köprüsü `WEBHOOK_IDENTITY_DEFAULT_SECRET=true` + `WEBHOOK_IDENTITY_DEFAULT_TENANT=<id>`
+> ile mevcut WAHA pilotunu bozmadan çalışıyor. Negatif izolasyon spec
+> (`webhooks.identity.isolation.spec.ts`, 6 test) imza+header+provider
+> tampering'in tamamını 401 ile reddediyor. **Pilot bittikten sonra pilot-shim
+> env flag'leri kapatılmalı; prod ortamda legacy scheme kapalı olmalı.**
 
-- [ ] Uygulama kararı ver → migration + kod + test
-- **Dosyalar:** `apps/api/drizzle/`, `apps/api/src/webhooks/`, `packages/shared/`
+- [x] Uygulama kararı ver → migration + kod + test
+- [ ] `.env.example` ve `docs/DEPLOY-COOLIFY.md` güncelle:
+  `WEBHOOK_IDENTITY_DEFAULT_SECRET` ve `WEBHOOK_IDENTITY_DEFAULT_TENANT` env flag'leri
+  (WAHA pilotu için) ve `tenant_provider_identities` satırlarının nasıl
+  provision edileceği (admin endpoint veya migration). **(Pilot-öncesi
+  kalem: docs/DEPLOY-COOLIFY.md'ye eklenecek.)**
+- [ ] **PILOT-02 sonu:** Pilot-shim env flag'lerini kapat (`WEBHOOK_IDENTITY_DEFAULT_SECRET=false`).
+  Tüm tenantların per-tenant identity satırı olmalı; aksi halde webhook
+  reddedilir. **AUDIT-F09-03 ile paylaşımlı kalem.**
+- **Dosyalar:** `apps/api/drizzle/0023_tenant_provider_identities.sql`,
+  `apps/api/drizzle/0024_webhook_identity_lookup.sql`,
+  `apps/api/src/db/schema/tenant-provider-identities.ts`,
+  `apps/api/src/webhooks/webhooks.identity.ts`,
+  `apps/api/src/webhooks/webhooks.controller.ts`,
+  `apps/api/src/webhooks/webhooks.identity.isolation.spec.ts`
 - **Bağımlı:** yok (tasarım hazır)
-- **Kabul:** Geçerli body imzası + değiştirilmiş `X-Tenant-Id` ile hedef tenant'a yazılamıyor (negatif test).
+- **Kabul:** Geçerli body imzası + değiştirilmiş `X-Tenant-Id` ile hedef tenant'a yazılamıyor (negatif test). ✅
+- **Görüş:** Audit başlangıcında "tek-tenant bugün" diye düşünülmüştü; reconsiderasyon
+  sonrası pilot-öncesi alındı çünkü aynı secret-leak → tenant-admin shape'i
+  AUDIT-02 ile birebir örtüşüyor. **Negatif izolasyon spec 6 test içeriyor:
+  claim-spoof, header-tampering, provider-tampering, replay, no-secret,
+  cross-provider-rotation.** Tam test paketi: 64/65 dosya, 266/268 test
+  geçiyor (1 dosyadaki 2 test LLM HTTP timeout'a bağlı flaky; WEBHOOK-01
+  ile ilgisi yok).
 
 ---
 
