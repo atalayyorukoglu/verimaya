@@ -205,6 +205,10 @@ export function toApiKey(row: ApiKeyRow): ApiKey {
 		key_prefix: row.keyPrefix,
 		scopes: row.scopes as ApiKey['scopes'],
 		created_at: toIsoDateTime(row.createdAt),
+		// AUDIT-03 (Faz 8): last_used_at / expires_at added to the shared ApiKey
+		// shape. NULL when unset (legacy keys; new keys always have expires_at).
+		last_used_at: row.lastUsedAt ? toIsoDateTime(row.lastUsedAt) : null,
+		expires_at: row.expiresAt ? toIsoDateTime(row.expiresAt) : null,
 		revoked_at: row.revokedAt ? toIsoDateTime(row.revokedAt) : null
 	};
 }

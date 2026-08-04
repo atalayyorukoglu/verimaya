@@ -1715,6 +1715,11 @@ export const handlers = [
 			key_prefix: `vk_${crypto.randomUUID().slice(0, 8)}`,
 			scopes: parsed.data.scopes,
 			created_at: nowIso(),
+			// AUDIT-03 (Faz 8): ApiKey shape now has last_used_at + expires_at. The mock
+			// returns NULL for both — mirrors what the API returns for a brand-new
+			// key before its first use, and lets the UI render without crashing.
+			last_used_at: null,
+			expires_at: null,
 			revoked_at: null
 		};
 		store.apiKeys.push(item);

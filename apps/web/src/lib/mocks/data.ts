@@ -627,10 +627,15 @@ function makeApiKeys(): ApiKey[] {
 			key_prefix: 'vk_demo123',
 			scopes: ['read', 'write'],
 			created_at: iso(faker.date.recent({ days: 30 })),
+			// AUDIT-03 (Faz 8): ApiKey now has last_used_at + expires_at. The mock
+			// generates a never-used key that expires 90 days from now — same default
+			// the real service uses.
+			last_used_at: null,
+			expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
 			revoked_at: null
-		}
-	];
-}
+			}
+			];
+			}
 
 function makeWebhookSubscriptions(): WebhookSubscription[] {
 	return [
