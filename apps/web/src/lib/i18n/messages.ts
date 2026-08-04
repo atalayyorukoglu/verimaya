@@ -17,6 +17,12 @@ export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = 'tr';
 
 const tr = {
+	// Tema
+	'theme.toLight': 'Açık temaya geç',
+	'theme.toDark': 'Koyu temaya geç',
+	'theme.light': 'Açık tema',
+	'theme.dark': 'Koyu tema',
+
 	// Panel navigasyonu — grup başlıkları
 	'nav.group.main': 'Ana',
 	'nav.group.finance': 'Finans',
@@ -272,7 +278,7 @@ const tr = {
 	// Marketing hub — ana sayfa (verimaya.com)
 	'hub.hero.eyebrow': 'Sağlık turizmi operasyon ekosistemi',
 	'hub.hero.title':
-		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta — ay sonunda kim geldi, kim ödedi bilinmiyor.',
+		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta. Ay sonunda kim geldi, kim ödedi bilinmiyor.',
 	'hub.hero.subtitle':
 		'Önce netleştirin: gelen hastayı mı düzene sokacaksınız, reklamdan gelen lead’i mi randevuya çevireceksiniz?',
 	'hub.hero.ctaApp': 'Maya App',
@@ -283,36 +289,44 @@ const tr = {
 	'hub.nav.crm': 'Maya CRM',
 	'hub.nav.resources': 'Kaynaklar',
 	'hub.nav.tools': 'Araçlar',
+	'hub.menu.open': 'Menüyü aç',
+	'hub.menu.close': 'Menüyü kapat',
+	'hub.login': 'Giriş',
+	'hub.login.app': 'Maya App Giriş',
+	'hub.login.crm': 'Maya CRM Giriş',
 
 	'hub.apps.title': 'Uygulamalarımız',
-	'hub.apps.desc': 'İki platform, tek ekosistem — hangisi size lazımsa onu kullanın.',
+	'hub.apps.desc': 'İki platform, tek ekosistem. Hangisi size lazımsa onu kullanın.',
 	'hub.apps.app.problem': 'Hasta geldikten sonra randevu, dosya ve ödeme dağılmıyor mu? Bu yüzden;',
 	'hub.apps.app.name': 'Operasyonu tek panelde topladık.',
 	'hub.apps.app.desc':
 		'Maya App hasta yolculuğunu yönetir: Hasta kapıdan girince yolculuk tek panelde: randevu, dosya, finans. Operasyon ekibi aynı ekrandan bakar.',
 	'hub.apps.app.subs': 'Hastalar · Kişiler · Randevular · Finans · Raporlar',
-	'hub.apps.app.outcome': 'Sonuç: ay sonunda kim geldi, kim ödedi — tek yerden görünür.',
+	'hub.apps.app.outcome': 'Sonuç: ay sonunda kim geldi, kim ödedi tek yerden görünür.',
 	'hub.apps.app.cta': "Maya App'e git",
+	'hub.apps.app.ctaFeatures': 'Özelliklerini gör ›',
 	'hub.apps.crm.problem': 'Reklam bütçesi gidiyor, lead WhatsApp’ta kayboluyor mu?',
-	'hub.apps.crm.name': 'Lead’i randevuya çevirin',
+	'hub.apps.crm.name': 'Lead’i randevuya çevirin.',
 	'hub.apps.crm.desc':
-		'Maya CRM (GoHighLevel) lead yakalama, takip ve otomasyonu satış hattında tutar — ekip kişiden kişiye değişmez.',
+		'Maya CRM (GoHighLevel) lead yakalama, takip ve otomasyonu satış hattında tutar; süreç kişiden kişiye değişmez.',
 	'hub.apps.crm.subs': 'Lead yakalama · Otomasyon · Çok kanallı iletişim · Pipeline · Raporlama',
 	'hub.apps.crm.outcome': 'Sonuç: lead kaçmaz; takip ölçülür, randevu artar.',
 	'hub.apps.crm.cta': "Maya CRM'i aç",
+	'hub.apps.crm.ctaFeatures': 'Özelliklerini gör ›',
 	'hub.stage.app.eyebrow': 'Maya App',
 	'hub.stage.crm.eyebrow': 'Maya CRM',
 
 	'hub.resources.problem': 'Ekip sistemi öğrenebilecek mi? İhtiyacınız olan tüm destek içeriği hazır.',
-	'hub.resources.title': 'Yazılımı bırakıp gitmiyoruz',
+	'hub.resources.title': 'Yazılımı bırakıp gitmiyoruz.',
 	'hub.resources.desc':
 		'Kaynaklar; tüm ekosistemi kullanmayı öğreten alanınız. Ekip aynı dili konuşur, satış ve operasyon kopmaz.',
-	'hub.resources.outcome': 'Sonuç: onboarding + içerik + öğrenme — tek çatıda.',
+	'hub.resources.outcome': 'Sonuç: onboarding, içerik ve öğrenme tek çatıda.',
 	'hub.resources.ctaPrimary': 'Özellikleri incele',
 	'hub.resources.ctaSecondary': 'Ücretsiz karne al',
 
 	'hub.ctaBand.title': 'Hangisinden başlayalım?',
-	'hub.ctaBand.subtitle': 'Operasyon paneli mi, satış hattı mı — seçin; Kaynaklar ve Araçlar ikisini de besler.',
+	'hub.ctaBand.subtitle':
+		'Operasyon paneli mi, satış hattı mı? Seçin; Kaynaklar ve Araçlar ikisini de besler.',
 	'hub.ctaBand.cta': "Maya App'e git",
 	'hub.ctaBand.ctaCrm': "Maya CRM'i aç",
 
@@ -333,18 +347,18 @@ const tr = {
 	'hub.features.cta': 'Tüm özellikleri incele',
 
 	'hub.tools.problem': 'Reklamı yayınlamadan önce plan, deneme ve kontrol hâlâ Excel’de mi?',
-	'hub.tools.title': 'Maya App ve Maya CRM’i besleyen araçlar',
+	'hub.tools.title': 'Planla, dene, kontrol et.',
 	'hub.tools.desc':
-		'Araçlar; Maya App ve Maya CRM’i destekler — planlar, simüle eder, yayın öncesi kontrol eder.',
+		'Araçlar Maya App ve Maya CRM’i destekler: planlar, simüle eder, yayın öncesi kontrol eder.',
 	'hub.tools.campaign.title': 'Kampanya Asistanı',
 	'hub.tools.campaign.desc':
 		'Reklam kampanyası adımlarını netleştirir; satış hattına hazırlık Maya CRM’i, sonuç takibi Maya App’i besler.',
 	'hub.tools.simulator.title': 'Simülatör',
 	'hub.tools.simulator.desc':
-		'“Şu bütçeyi şu kanala koysak?” — senaryoyu karşılaştırmadan kör harcama yapmazsınız.',
+		'“Şu bütçeyi şu kanala koysak?” Senaryoyu karşılaştırmadan kör harcama yapmazsınız.',
 	'hub.tools.prelaunch.title': 'Yayın Öncesi',
 	'hub.tools.prelaunch.desc':
-		'Yayına girmeden bütçe, kitle, görsel ve metin kontrolleri — boşa giden tıklama riskini keser.',
+		'Yayına girmeden bütçe, kitle, görsel ve metin kontrolleriyle boşa giden tıklama riskini keser.',
 	'hub.tools.cta': 'Tüm araçları keşfet',
 
 	'hub.scenarios.title': 'Kullanım senaryoları',
@@ -377,6 +391,11 @@ const tr = {
 export type MessageKey = keyof typeof tr;
 
 const en: Record<MessageKey, string> = {
+	'theme.toLight': 'Switch to light theme',
+	'theme.toDark': 'Switch to dark theme',
+	'theme.light': 'Light theme',
+	'theme.dark': 'Dark theme',
+
 	'nav.group.main': 'Main',
 	'nav.group.finance': 'Finance',
 	'nav.group.marketing': 'Marketing',
@@ -626,7 +645,7 @@ const en: Record<MessageKey, string> = {
 	// Marketing hub — homepage (verimaya.com)
 	'hub.hero.eyebrow': 'Health tourism operations ecosystem',
 	'hub.hero.title':
-		'Leads in WhatsApp, patients in Excel, payments in the group chat — month-end, who came and who paid is unclear.',
+		'Leads live in WhatsApp, patients in Excel, payments in the group chat. By month-end, who came and who paid is unclear.',
 	'hub.hero.subtitle':
 		'First decide: will you tidy the patient journey, or convert ad leads into appointments?',
 	'hub.hero.ctaApp': 'Maya App',
@@ -637,36 +656,44 @@ const en: Record<MessageKey, string> = {
 	'hub.nav.crm': 'Maya CRM',
 	'hub.nav.resources': 'Resources',
 	'hub.nav.tools': 'Tools',
+	'hub.menu.open': 'Open menu',
+	'hub.menu.close': 'Close menu',
+	'hub.login': 'Sign in',
+	'hub.login.app': 'Maya App sign in',
+	'hub.login.crm': 'Maya CRM sign in',
 
 	'hub.apps.title': 'Our Applications',
-	'hub.apps.desc': 'Two platforms, one ecosystem — use whichever you need.',
+	'hub.apps.desc': 'Two platforms, one ecosystem. Use whichever you need.',
 	'hub.apps.app.problem': 'After the patient arrives, do appointments, files, and payments scatter? That’s why;',
 	'hub.apps.app.name': 'We put operations in one panel.',
 	'hub.apps.app.desc':
 		'Maya App manages the patient journey: once they walk in, appointments, files, and finance stay on one panel. The ops team works from the same screen.',
 	'hub.apps.app.subs': 'Patients · Contacts · Appointments · Finance · Reports',
-	'hub.apps.app.outcome': 'Outcome: who came, who paid — visible in one place at month end.',
+	'hub.apps.app.outcome': 'Outcome: who came and who paid is visible in one place at month end.',
 	'hub.apps.app.cta': 'Go to Maya App',
+	'hub.apps.app.ctaFeatures': 'See features ›',
 	'hub.apps.crm.problem': 'Ad spend running while leads vanish in WhatsApp?',
-	'hub.apps.crm.name': 'Turn leads into appointments',
+	'hub.apps.crm.name': 'Turn leads into appointments.',
 	'hub.apps.crm.desc':
-		'Maya CRM (GoHighLevel) keeps capture, follow-up, and automation on the sales line — process doesn’t depend on who is online.',
+		'Maya CRM (GoHighLevel) keeps capture, follow-up, and automation on the sales line; the process doesn’t depend on who is online.',
 	'hub.apps.crm.subs': 'Lead capture · Automation · Multi-channel · Pipeline · Reports',
 	'hub.apps.crm.outcome': 'Outcome: leads don’t slip; follow-up is measurable; appointments rise.',
 	'hub.apps.crm.cta': 'Open Maya CRM',
+	'hub.apps.crm.ctaFeatures': 'See features ›',
 	'hub.stage.app.eyebrow': 'Maya App',
 	'hub.stage.crm.eyebrow': 'Maya CRM',
 
 	'hub.resources.problem': 'Can the team learn the system? All the support content you need is ready.',
-	'hub.resources.title': 'We don’t hand you software and leave',
+	'hub.resources.title': 'We don’t hand you software and leave.',
 	'hub.resources.desc':
-		'Resources teaches your team the whole ecosystem. Everyone shares one language — sales and ops stay connected.',
+		'Resources teaches your team the whole ecosystem. Everyone shares one language, so sales and ops stay connected.',
 	'hub.resources.outcome': 'Outcome: onboarding + content + learning under one roof.',
 	'hub.resources.ctaPrimary': 'Browse features',
 	'hub.resources.ctaSecondary': 'Get a free scorecard',
 
 	'hub.ctaBand.title': 'Where do we start?',
-	'hub.ctaBand.subtitle': 'Operations panel or sales line — pick one; Resources and Tools feed both.',
+	'hub.ctaBand.subtitle':
+		'Operations panel or sales line? Pick one; Resources and Tools feed both.',
 	'hub.ctaBand.cta': 'Go to Maya App',
 	'hub.ctaBand.ctaCrm': 'Open Maya CRM',
 
@@ -687,18 +714,18 @@ const en: Record<MessageKey, string> = {
 	'hub.features.cta': 'View all features',
 
 	'hub.tools.problem': 'Before you launch ads, is planning, testing, and checking still stuck in Excel?',
-	'hub.tools.title': 'Tools that feed Maya App and Maya CRM',
+	'hub.tools.title': 'Plan, test, check.',
 	'hub.tools.desc':
-		'Tools support Maya App and Maya CRM — plan, simulate, and check before go-live.',
+		'Tools support Maya App and Maya CRM: they plan, simulate, and check before go-live.',
 	'hub.tools.campaign.title': 'Campaign Assistant',
 	'hub.tools.campaign.desc':
 		'Clarifies campaign steps; sales prep feeds Maya CRM, results tracking feeds Maya App.',
 	'hub.tools.simulator.title': 'Simulator',
 	'hub.tools.simulator.desc':
-		'“What if that budget went to that channel?” — compare before you spend blind.',
+		'“What if that budget went to that channel?” Compare scenarios before you spend blind.',
 	'hub.tools.prelaunch.title': 'Pre-launch',
 	'hub.tools.prelaunch.desc':
-		'Budget, audience, creative, and copy checks before launch — cut wasted clicks.',
+		'Budget, audience, creative, and copy checks before launch cut wasted clicks.',
 	'hub.tools.cta': 'Discover all tools',
 
 	'hub.scenarios.title': 'Use cases',

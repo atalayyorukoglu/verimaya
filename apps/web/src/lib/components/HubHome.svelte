@@ -1,17 +1,25 @@
 <script lang="ts">
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
+	import Menu from '@lucide/svelte/icons/menu';
+	import X from '@lucide/svelte/icons/x';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 
 	// Always visible so prerendered HTML and no-JS users see content (not opacity:0).
 	const visible = true;
+	let menuOpen = $state(false);
+	let loginOpen = $state(false);
 
-	const title = 'Verimaya — Sağlık turizmi operasyon platformu';
+	const title = 'Verimaya: Sağlık turizmi operasyon platformu';
 	const description =
-		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta — ay sonunda kim geldi, kim ödedi bilinmiyor. Maya App, Maya CRM, Kaynaklar ve Araçlar — sağlık turizmi için tek ekosistem.';
+		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta. Ay sonunda kim geldi, kim ödedi bilinmiyor. Maya App, Maya CRM, Kaynaklar ve Araçlar ile sağlık turizmi için tek ekosistem.';
 	const canonical = `${PUBLIC_SITE_URL}/`;
 	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
+	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
 
 	const organizationLd = {
 		'@context': 'https://schema.org',
@@ -21,6 +29,13 @@
 		logo: `${PUBLIC_SITE_URL}/icon-512.png`,
 		description
 	};
+
+	const navItems = [
+		{ href: '#app', labelKey: 'hub.nav.webApp' as MessageKey },
+		{ href: '#crm', labelKey: 'hub.nav.crm' as MessageKey },
+		{ href: '#resources', labelKey: 'hub.nav.resources' as MessageKey },
+		{ href: '#tools', labelKey: 'hub.nav.tools' as MessageKey }
+	] as const;
 
 	const tools = [
 		{
@@ -39,7 +54,28 @@
 			href: '/marketing/pre-launch/'
 		}
 	] as const;
+
+	function closeMenu() {
+		menuOpen = false;
+		loginOpen = false;
+	}
+
+	function toggleMenu() {
+		menuOpen = !menuOpen;
+		if (!menuOpen) loginOpen = false;
+	}
+
+	function toggleLogin(e: MouseEvent) {
+		e.stopPropagation();
+		loginOpen = !loginOpen;
+	}
+
+	function onWindowClick() {
+		if (loginOpen) loginOpen = false;
+	}
 </script>
+
+<svelte:window onclick={onWindowClick} />
 
 <svelte:head>
 	<title>{title}</title>
@@ -78,21 +114,121 @@
 
 	<!-- ── HEADER ── -->
 	<header
-		class="relative z-10 flex items-center justify-between px-6 py-6 sm:px-10"
+		class="relative z-10 px-6 py-6 sm:px-10"
 		class:vitrin-in={visible}
 		style="--delay: 0ms"
 	>
-		<a href="/" class="text-text">
-			<SiteLogo />
-		</a>
-		<nav class="flex items-center gap-5 text-sm font-medium text-text-muted sm:gap-6">
-			<a href="#app" class="hidden transition-colors hover:text-text sm:inline">{t('hub.nav.webApp')}</a>
-			<a href="#crm" class="hidden transition-colors hover:text-text sm:inline">{t('hub.nav.crm')}</a>
-			<a href="#resources" class="hidden transition-colors hover:text-text sm:inline"
-				>{t('hub.nav.resources')}</a
+		<div class="mx-auto flex w-full max-w-6xl items-center justify-between">
+			<a href="/" class="text-text" onclick={closeMenu}>
+				<SiteLogo />
+			</a>
+			<div class="flex items-center gap-2 sm:gap-5">
+				<nav class="hidden items-center gap-5 text-sm font-medium text-text-muted sm:flex sm:gap-6">
+					{#each navItems as item (item.href)}
+						<a href={item.href} class="transition-colors hover:text-text">{t(item.labelKey)}</a>
+					{/each}
+				</nav>
+				<div class="relative hidden sm:block">
+					<button
+						type="button"
+						class="inline-flex h-9 items-center gap-1 rounded-[6px] bg-brand px-3.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+						aria-expanded={loginOpen}
+						aria-haspopup="menu"
+						onclick={toggleLogin}
+					>
+						{t('hub.login')}
+						<ChevronDown class="size-4 opacity-90" aria-hidden="true" />
+					</button>
+					{#if loginOpen}
+						<div
+							class="absolute right-0 z-40 mt-2 w-52 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
+							role="menu"
+							tabindex="-1"
+						>
+							<a
+								href={appLoginUrl}
+								class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
+								role="menuitem"
+								onclick={closeMenu}
+							>
+								{t('hub.login.app')}
+							</a>
+							<a
+								href={PUBLIC_CRM_URL}
+								class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
+								role="menuitem"
+								onclick={closeMenu}
+							>
+								{t('hub.login.crm')}
+							</a>
+						</div>
+					{/if}
+				</div>
+				<ThemeToggle />
+				<button
+					type="button"
+					class="inline-flex size-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-2 hover:text-text sm:hidden"
+					aria-expanded={menuOpen}
+					aria-controls="hub-mobile-nav"
+					aria-label={menuOpen ? t('hub.menu.close') : t('hub.menu.open')}
+					onclick={toggleMenu}
+				>
+					{#if menuOpen}
+						<X class="size-5" />
+					{:else}
+						<Menu class="size-5" />
+					{/if}
+				</button>
+			</div>
+		</div>
+		{#if menuOpen}
+			<nav
+				id="hub-mobile-nav"
+				class="mx-auto mt-4 flex w-full max-w-6xl flex-col gap-1 border-t border-border/40 pt-4 sm:hidden"
 			>
-			<a href="#tools" class="hidden transition-colors hover:text-text md:inline">{t('hub.nav.tools')}</a>
-		</nav>
+				{#each navItems as item (item.href)}
+					<a
+						href={item.href}
+						class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+						onclick={closeMenu}
+					>
+						{t(item.labelKey)}
+					</a>
+				{/each}
+				<div class="mt-2 border-t border-border/40 pt-3">
+					<button
+						type="button"
+						class="flex w-full items-center justify-between rounded-[6px] bg-brand px-3 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+						aria-expanded={loginOpen}
+						onclick={toggleLogin}
+					>
+						{t('hub.login')}
+						<ChevronDown
+							class="size-4 opacity-90 transition-transform {loginOpen ? 'rotate-180' : ''}"
+							aria-hidden="true"
+						/>
+					</button>
+					{#if loginOpen}
+						<div class="mt-1 flex flex-col gap-0.5 pl-1">
+							<a
+								href={appLoginUrl}
+								class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+								onclick={closeMenu}
+							>
+								{t('hub.login.app')}
+							</a>
+							<a
+								href={PUBLIC_CRM_URL}
+								class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+								onclick={closeMenu}
+							>
+								{t('hub.login.crm')}
+							</a>
+						</div>
+					{/if}
+				</div>
+			</nav>
+		{/if}
 	</header>
 
 	<!-- ── HERO: sorun + kapı ── -->
@@ -100,14 +236,18 @@
 		class="hero-section relative z-10 flex flex-col items-center justify-center px-6 pt-24 pb-16 text-center sm:px-10 sm:pt-32 sm:pb-20"
 	>
 		<p
-			class="text-sm font-medium text-brand"
+			class="flex justify-center"
 			class:vitrin-in={visible}
 			style="--delay: 40ms"
 		>
-			{t('hub.hero.eyebrow')}
+			<span
+				class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+			>
+				{t('hub.hero.eyebrow')}
+			</span>
 		</p>
 		<h1
-			class="mt-4 max-w-3xl text-[clamp(2rem,6vw,3.75rem)] font-semibold tracking-tight text-text"
+			class="mt-4 max-w-3xl text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-[1.15] tracking-tight text-text"
 			class:vitrin-in={visible}
 			style="--delay: 80ms"
 		>
@@ -119,31 +259,6 @@
 			style="--delay: 180ms"
 		>
 			{t('hub.hero.subtitle')}
-		</p>
-		<div
-			class:vitrin-in={visible}
-			style="--delay: 280ms"
-			class="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center"
-		>
-			<a
-				href="#app"
-				class="inline-flex h-11 items-center justify-center rounded-[6px] bg-brand px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
-			>
-				{t('hub.hero.ctaApp')}
-			</a>
-			<a
-				href="#crm"
-				class="inline-flex h-11 items-center justify-center rounded-[6px] border border-border bg-surface px-8 text-sm font-medium text-text transition-colors hover:bg-surface-2"
-			>
-				{t('hub.hero.ctaCrm')}
-			</a>
-		</div>
-		<p
-			class="mt-6 text-xs text-text-faint"
-			class:vitrin-in={visible}
-			style="--delay: 360ms"
-		>
-			{t('hub.hero.forkHint')}
 		</p>
 	</section>
 
@@ -166,7 +281,9 @@
 						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
 							{t('hub.apps.app.problem')}
 						</p>
-						<h2 class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold tracking-tight">
+						<h2
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+						>
 							{t('hub.apps.app.name')}
 						</h2>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
@@ -175,12 +292,20 @@
 						<p class="mt-4 text-xs font-medium text-[var(--stage-faint)]">
 							{t('hub.apps.app.outcome')}
 						</p>
-						<a
-							href={PUBLIC_APP_URL}
-							class="mt-8 inline-flex h-10 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
-						>
-							{t('hub.apps.app.cta')}
-						</a>
+						<div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+							<a
+								href={PUBLIC_APP_URL}
+								class="inline-flex h-10 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+							>
+								{t('hub.apps.app.cta')}
+							</a>
+							<a
+								href="/features/"
+								class="text-sm font-medium text-brand transition-colors hover:text-brand-hover"
+							>
+								{t('hub.apps.app.ctaFeatures')}
+							</a>
+						</div>
 					</div>
 					<div class="hub-mock" aria-hidden="true">
 						<div class="hub-mock-chrome">
@@ -223,7 +348,9 @@
 						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
 							{t('hub.apps.crm.problem')}
 						</p>
-						<h2 class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold tracking-tight">
+						<h2
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+						>
 							{t('hub.apps.crm.name')}
 						</h2>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
@@ -232,12 +359,20 @@
 						<p class="mt-4 text-xs font-medium text-[var(--stage-faint)]">
 							{t('hub.apps.crm.outcome')}
 						</p>
-						<a
-							href={PUBLIC_CRM_URL}
-							class="mt-8 inline-flex h-10 items-center justify-center rounded-[6px] border border-white/15 bg-transparent px-6 text-sm font-medium text-[var(--stage-fg)] transition-colors hover:border-white/30 hover:bg-white/5"
-						>
-							{t('hub.apps.crm.cta')}
-						</a>
+						<div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+							<a
+								href={PUBLIC_CRM_URL}
+								class="inline-flex h-10 items-center justify-center rounded-[6px] border border-white/15 bg-transparent px-6 text-sm font-medium text-[var(--stage-fg)] transition-colors hover:border-white/30 hover:bg-white/5"
+							>
+								{t('hub.apps.crm.cta')}
+							</a>
+							<a
+								href="/features/"
+								class="text-sm font-medium text-brand transition-colors hover:text-brand-hover"
+							>
+								{t('hub.apps.crm.ctaFeatures')}
+							</a>
+						</div>
 					</div>
 					<div class="hub-mock w-full lg:w-1/2" aria-hidden="true">
 						<div class="hub-mock-chrome">
@@ -273,12 +408,20 @@
 		class="relative z-10 scroll-mt-24 border-t border-border/40 px-6 py-20 sm:px-10 sm:py-24"
 	>
 		<div class="mx-auto max-w-3xl text-center">
-			<p class="text-sm font-medium text-brand">{t('hub.nav.resources')}</p>
+			<p class="flex justify-center">
+				<span
+					class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+				>
+					{t('hub.nav.resources')}
+				</span>
+			</p>
 			<p class="mt-4 text-base font-medium text-text sm:text-lg">{t('hub.resources.problem')}</p>
-			<h2 class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold tracking-tight text-text">
+			<h2
+				class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold leading-[1.15] tracking-tight text-text"
+			>
 				{t('hub.resources.title')}
 			</h2>
-			<p class="mt-4 text-base leading-relaxed text-text-muted sm:text-lg">
+			<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
 				{t('hub.resources.desc')}
 			</p>
 			<p class="mt-3 text-sm text-text-faint">{t('hub.resources.outcome')}</p>
@@ -306,12 +449,20 @@
 	>
 		<div class="mx-auto max-w-6xl">
 			<div class="mx-auto mb-12 max-w-3xl text-center">
-				<p class="text-sm font-medium text-brand">{t('hub.nav.tools')}</p>
+				<p class="flex justify-center">
+					<span
+						class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+					>
+						{t('hub.nav.tools')}
+					</span>
+				</p>
 				<p class="mt-4 text-base font-medium text-text sm:text-lg">{t('hub.tools.problem')}</p>
-				<h2 class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold tracking-tight text-text">
+				<h2
+				class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold leading-[1.15] tracking-tight text-text"
+			>
 					{t('hub.tools.title')}
 				</h2>
-				<p class="mt-4 text-base leading-relaxed text-text-muted sm:text-lg">
+				<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
 					{t('hub.tools.desc')}
 				</p>
 			</div>
@@ -331,17 +482,15 @@
 	</section>
 
 	<!-- ── CTA BAND ── -->
-	<section class="relative z-10 px-6 py-16 sm:px-10 sm:py-20">
+	<section class="relative z-10 border-t border-border/40 px-6 py-16 sm:px-10 sm:py-20">
 		<div class="mx-auto max-w-6xl">
 			<div
 				class="flex flex-col items-center rounded-[1.5rem] bg-brand px-8 py-12 text-center text-primary-foreground sm:px-12 sm:py-16"
 			>
-				<h2 class="text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold tracking-tight">
+				<BrandMark class="mb-5 h-10 w-10 text-white" title="" />
+				<h2 class="text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight">
 					{t('hub.ctaBand.title')}
 				</h2>
-				<p class="mt-3 max-w-lg text-sm text-primary-foreground/85 sm:text-base">
-					{t('hub.ctaBand.subtitle')}
-				</p>
 				<div class="mt-8 flex flex-col gap-3 sm:flex-row">
 					<a
 						href={PUBLIC_APP_URL}

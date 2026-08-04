@@ -30,10 +30,33 @@
 			page.url.pathname.startsWith('/kvkk-aydinlatma')
 	);
 
+	/** Unregister leftover PWA/MSW workers and wipe Cache Storage. Returns true if a
+	 *  controlling worker was active (caller should reload so Vite serves fresh). */
+	async function uninstallDevServiceWorkers(): Promise<boolean> {
+		if (!('serviceWorker' in navigator)) return false;
+		const hadController = navigator.serviceWorker.controller != null;
+		const regs = await navigator.serviceWorker.getRegistrations();
+		await Promise.all(regs.map((r) => r.unregister()));
+		if ('caches' in window) {
+			const keys = await caches.keys();
+			await Promise.all(keys.map((k) => caches.delete(k)));
+		}
+		return hadController;
+	}
+
 	onMount(async () => {
 		if (USE_MSW && import.meta.env.DEV) {
 			const { startMockWorker } = await import('$lib/mocks/browser');
 			await startMockWorker();
+		} else if (import.meta.env.DEV) {
+			// PWA SW must not run under Vite: cache-first poisons /src modules so a
+			// soft reload on localhost can paint Panel instead of Hub. Production only.
+			const hadController = await uninstallDevServiceWorkers();
+			if (hadController && !sessionStorage.getItem('verimaya:dev-sw-cleared')) {
+				sessionStorage.setItem('verimaya:dev-sw-cleared', '1');
+				window.location.reload();
+				return;
+			}
 		} else if ('serviceWorker' in navigator) {
 			// MSW installs its own worker at the same scope — never register both.
 			void navigator.serviceWorker.register('/sw.js');
