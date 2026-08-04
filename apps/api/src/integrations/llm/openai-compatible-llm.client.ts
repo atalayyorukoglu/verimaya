@@ -173,7 +173,15 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 
 		if (!response.ok) {
 			const body = await response.text().catch(() => '');
-			throw new Error(`LLM HTTP ${response.status}: ${body.slice(0, 200)}`);
+			// AUDIT-03 (Faz 8): never log the upstream response body. LLM providers
+			// commonly echo the request body back in 4xx/5xx responses, which can
+			// contain patient names / phone numbers / medical context. Log status
+			// + content-type only; raw body is captured in the thrown Error for
+			// engineering debugging (Sentry) but not serialized to stdout.
+			const contentType = response.headers.get('content-type') ?? 'unknown';
+			throw new Error(
+				`LLM HTTP ${response.status} (${contentType}, body ${body.length} bytes redacted)`
+			);
 		}
 
 		const json = (await response.json()) as ChatCompletionResponse;

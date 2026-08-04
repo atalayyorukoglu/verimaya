@@ -43,8 +43,29 @@ function docsHtml(specUrl: string): string {
 /**
  * Read-only public OpenAPI + Scalar UI.
  * Mounted on Fastify directly (outside Nest global prefix guards).
+ *
+ * AUDIT-03 (Faz 8): when `options.enabled` is false the mounts are skipped
+ * entirely (production deployments without an API_DOCS_TOKEN set will see
+ * neither `/v1/openapi.yaml` nor `/v1/docs`). When enabled, the routes are
+ * mounted but the YAML response is identical — token gating is at the
+ * deployment layer (set API_DOCS_TOKEN + reverse-proxy allowlist in prod).
  */
-export async function mountOpenApiDocs(app: NestFastifyApplication): Promise<void> {
+export type MountOpenApiDocsOptions = {
+	enabled?: boolean;
+	token?: string;
+};
+
+export async function mountOpenApiDocs(
+	app: NestFastifyApplication,
+	options: MountOpenApiDocsOptions = {}
+): Promise<void> {
+	const enabled = options.enabled ?? true;
+	if (!enabled) {
+		app.getHttpAdapter().getInstance().log.warn(
+			'AUDIT-03: openapi.yaml + /v1/docs not mounted (production requires API_DOCS_TOKEN)'
+		);
+		return;
+	}
 	const yamlPath = resolveOpenApiYamlPath();
 	if (!yamlPath) {
 		app.getHttpAdapter().getInstance().log.warn(

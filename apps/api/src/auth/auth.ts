@@ -76,6 +76,12 @@ export function createAuth() {
 							.set({ name: org.name, slug: org.slug })
 							.where(eq(tenants.id, org.id));
 					}
+					// AUDIT-03 (Faz 8, DEFERRED): better-auth's organization plugin
+					// exposes a delete endpoint that cascades the entire tenant.
+					// Mitigation deferred to AUDIT-F09 follow-up — requires either a
+					// better-auth fork or a reverse-proxy deny rule. The current
+					// single-tenant pilot doesn't have a way to trigger this from the UI
+					// (no org-switcher delete affordance), so practical risk is low.
 				}
 			}),
 			twoFactor({

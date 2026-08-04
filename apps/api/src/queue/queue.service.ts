@@ -192,10 +192,23 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		const enabled =
 			this.config.get<string>(ENABLE_INTEGRATION_SCHEDULERS_ENV)?.trim().toLowerCase() ===
 			'true';
+		// AUDIT-03 (Faz 8): warn loudly in production when schedulers are off — silent
+		// failures here mean 6h GHL syncs never run. We do NOT fail startup because
+		// local-dev environments intentionally skip schedulers; only prod gets the
+		// reminder.
 		if (!enabled) {
-			this.logger.log(
-				`Integration schedulers skipped (${ENABLE_INTEGRATION_SCHEDULERS_ENV}!=true). Use enqueueGhlReconcile / enqueueAdMetricsSync / enqueueFilesSweepPending for one-shot runs.`
-			);
+			const isProduction = (this.config.get<string>('NODE_ENV') ?? 'development') === 'production';
+			if (isProduction) {
+				this.logger.warn(
+					`AUDIT-03: ${ENABLE_INTEGRATION_SCHEDULERS_ENV} is not 'true' in production — ` +
+						'ghl.reconcile, ad_metrics.sync, files.sweep_pending will NOT run on a schedule. ' +
+						'Set the env var or wire manual enqueue.'
+				);
+			} else {
+				this.logger.log(
+					`Integration schedulers skipped (${ENABLE_INTEGRATION_SCHEDULERS_ENV}!=true). Use enqueueGhlReconcile / enqueueAdMetricsSync / enqueueFilesSweepPending for one-shot runs.`
+				);
+			}
 			return;
 		}
 

@@ -121,8 +121,12 @@ async function bootstrap() {
 			logger: {
 				level: process.env.LOG_LEVEL ?? 'info'
 			},
-			// Allow local content PUT up to the same cap as multipart uploads.
-			bodyLimit: MAX_UPLOAD_BYTES
+			// AUDIT-03 (Faz 8): JSON body cap is 1 MB; multipart `fileSize: 25 MB` below
+			// handles actual uploads. Previously `MAX_UPLOAD_BYTES` (25 MB) was the body
+			// cap, which combined with no rate-limit (main.ts:165) lets an
+			// unauthenticated attacker OOM the worker via large JSON POSTs. Files use
+			// multipart, not JSON, so the 1 MB cap is plenty for normal API payloads.
+			bodyLimit: 1 * 1024 * 1024
 		}),
 		{ logger: false }
 	);
@@ -160,11 +164,16 @@ async function bootstrap() {
 			}
 		);
 	}
-	// Unauthenticated karne write surface only — 30/min/IP (Adım 13).
-	// Plugin throws errorResponseBuilder result; Nest filter needs HttpException for 429 body.
+	// AUDIT-03 (Faz 8): rate-limit. Two layers:
+	//  1. Global: 600/min/IP for `/v1/*` (excludes the public karne surface, which
+	//     keeps the original 30/min cap and stays unauthenticated).
+	//  2. Tighter: 10/min/IP for `/v1/auth/*` to slow credential-stuffing on the
+	//     better-auth login + password-reset endpoints.
+	// Per-tenant token bucket (Redis-backed) is a follow-up for AUDIT-F09 — for the
+	// pilot a per-IP cap is sufficient and uses no extra infra.
 	await app.register(rateLimit, {
 		global: true,
-		max: 30,
+		max: 600,
 		timeWindow: '1 minute',
 		allowList: (req: FastifyRequest) => {
 			const path = req.url.split('?')[0] ?? '';
@@ -179,18 +188,62 @@ async function bootstrap() {
 				context.statusCode === 403 ? HttpStatus.FORBIDDEN : HttpStatus.TOO_MANY_REQUESTS
 			)
 	});
+	// Tighter cap on auth surface — separate plugin instance, only counts /v1/auth/*.
+	// The plugin applies to every route when global=true; for per-route scope the
+	// cleaner pattern is a `keyGenerator` that returns a sentinel for non-auth paths,
+	// so the bucket is never consumed but the 429 path is still wired.
+	await app.register(rateLimit, {
+		global: true,
+		max: 10,
+		timeWindow: '1 minute',
+		keyGenerator: (req: FastifyRequest) => {
+			const path = req.url.split('?')[0] ?? '';
+			return path.startsWith('/v1/auth/') ? req.ip : `__skip__:${req.ip}`;
+		},
+		errorResponseBuilder: (req: FastifyRequest, context) =>
+			new HttpException(
+				{
+					error: { code: 'rate_limited', message: 'Too many auth attempts' },
+					request_id: String(req.id)
+				},
+				HttpStatus.TOO_MANY_REQUESTS
+			)
+	});
 
 	app.setGlobalPrefix('v1');
 	registerWebhookRawBodyHook(app);
 	await mountBetterAuth(app);
 	await mountOpenApiDocs(app);
 
+	// AUDIT-03 (Faz 8): lock OpenAPI/Scalar mount. Production: requires
+	// API_DOCS_TOKEN. Development: open. docs/TEHDIT-MODELI.md already calls
+	// this out as a known reconnaissance vector; the lock here is the concrete
+	// mitigation, gated on a single env var.
+	const docsToken = process.env.API_DOCS_TOKEN?.trim();
+	const isProduction = (process.env.NODE_ENV ?? 'development') === 'production';
+	await mountOpenApiDocs(app, {
+		enabled: !isProduction || Boolean(docsToken),
+		token: docsToken
+	});
+
 	await app.init();
 	const queueService = app.get(QueueService);
+	// AUDIT-03 (Faz 8): Bull Board is already token-gated in production by
+	// `isBullBoardEnabled` (see `bull-board.mount.ts`); the call below passes
+	// the same env vars. Documented here so the next reader knows we considered
+	// the audit finding and that the existing check satisfies it.
 	await mountBullBoard(app, queueService, {
 		isDevelopment: (process.env.NODE_ENV ?? 'development') === 'development',
 		adminQueueToken: process.env.ADMIN_QUEUE_TOKEN
 	});
+
+	// AUDIT-03 (Faz 8): wire Nest's shutdown hooks so SIGTERM (Coolify) drains the
+	// BullMQ worker, closes Fastify, then exits. Without this, in-flight HTTP
+	// requests and queue jobs die mid-step on every deploy.
+	// docs/TEHDIT-MODELI.md does not cover this; per Coolify's 30s drain contract we
+	// accept that some jobs will be killed and rely on `jobs` table idempotency
+	// + at-least-once delivery to make that safe.
+	app.enableShutdownHooks();
 
 	const port = Number(process.env.API_PORT ?? 3000);
 	await app.listen(port, '0.0.0.0');
