@@ -65,6 +65,9 @@ Migrate: `DATABASE_URL` = owner / superuser.
 | Port | `3000` (`API_PORT`) |
 | Health | `GET /v1/health` (liveness), `GET /v1/health/ready` (Postgres+Redis) |
 | Domain | örn. `api.verimaya.com` |
+| **Watch Paths (zorunlu)** | `apps/api/**` · `packages/shared/**` · `pnpm-lock.yaml` · `pnpm-workspace.yaml` · `package.json` |
+
+> Web-only commit API’yi yeniden build etmesin. Aksi halde her hub/CSS push’u API’yi 5–10 dk “unknown/restarting”a sokar (Coolify: Application → General → Watch Paths).
 
 **Migrasyon (önerilen):** Pre-deploy / one-shot:
 
@@ -82,10 +85,15 @@ Volume: `UPLOAD_DIR` mount (local driver veya `local://` legacy satırlar için)
 
 | Ayar | Değer |
 |---|---|
+| Dockerfile | `apps/web/Dockerfile` (önerilen) veya Static Site |
+| Build context | **monorepo kökü** (Dockerfile) |
 | Build | `pnpm install --frozen-lockfile && pnpm --filter @verimaya/web build` |
-| Publish | `apps/web/build` |
+| Publish | `apps/web/build` (Static Site) |
 | Domain | **`verimaya.com` + `app.verimaya.com`** (aynı servis) |
 | Env (build-time) | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false`, `PUBLIC_KARNE_LEADS_ENABLED=false` |
+| **Watch Paths (zorunlu)** | `apps/web/**` · `packages/shared/**` · `pnpm-lock.yaml` · `pnpm-workspace.yaml` · `package.json` |
+
+> Apex hub = `hub.html` (prerender snapshot, SvelteKit client yok). nginx `/hub.html` üzerinde CSP ile module `import` engelli — yanlış hydrate blank page üretemez.
 
 Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /index.html;`
 
