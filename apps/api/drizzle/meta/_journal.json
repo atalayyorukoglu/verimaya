@@ -1,167 +1,181 @@
 {
-	"version": "7",
-	"dialect": "postgresql",
-	"entries": [
-		{
-			"idx": 0,
-			"version": "7",
-			"when": 1753100000000,
-			"tag": "0000_tenants_and_app_context",
-			"breakpoints": true
-		},
-		{
-			"idx": 1,
-			"version": "7",
-			"when": 1753101000000,
-			"tag": "0001_auth_rls",
-			"breakpoints": true
-		},
-		{
-			"idx": 2,
-			"version": "7",
-			"when": 1753102000000,
-			"tag": "0002_tenant_fn_volatile",
-			"breakpoints": true
-		},
-		{
-			"idx": 3,
-			"version": "7",
-			"when": 1753103000000,
-			"tag": "0003_app_role",
-			"breakpoints": true
-		},
-		{
-			"idx": 4,
-			"version": "7",
-			"when": 1753104000000,
-			"tag": "0004_core_domain",
-			"breakpoints": true
-		},
-		{
-			"idx": 5,
-			"version": "7",
-			"when": 1753105000000,
-			"tag": "0005_idempotency_soft_delete",
-			"breakpoints": true
-		},
-		{
-			"idx": 6,
-			"version": "7",
-			"when": 1753106000000,
-			"tag": "0006_queue_platform",
-			"breakpoints": true
-		},
-		{
-			"idx": 7,
-			"version": "7",
-			"when": 1753107000000,
-			"tag": "0007_audit_contact_entity",
-			"breakpoints": true
-		},
-		{
-			"idx": 8,
-			"version": "7",
-			"when": 1753108000000,
-			"tag": "0008_tenant_credentials",
-			"breakpoints": true
-		},
-		{
-			"idx": 9,
-			"version": "7",
-			"when": 1753109000000,
-			"tag": "0009_ad_metrics_daily",
-			"breakpoints": true
-		},
-		{
-			"idx": 10,
-			"version": "7",
-			"when": 1753110000000,
-			"tag": "0010_api_keys",
-			"breakpoints": true
-		},
-		{
-			"idx": 11,
-			"version": "7",
-			"when": 1753111000000,
-			"tag": "0011_inbound_messages",
-			"breakpoints": true
-		},
-		{
-			"idx": 12,
-			"version": "7",
-			"when": 1753112000000,
-			"tag": "0012_webhook_subscriptions",
-			"breakpoints": true
-		},
-		{
-			"idx": 13,
-			"version": "7",
-			"when": 1753113000000,
-			"tag": "0013_ai_corrections",
-			"breakpoints": true
-		},
-		{
-			"idx": 14,
-			"version": "7",
-			"when": 1753114000000,
-			"tag": "0014_tenant_settings",
-			"breakpoints": true
-		},
-		{
-			"idx": 15,
-			"version": "7",
-			"when": 1753900000000,
-			"tag": "0015_karne_public",
-			"breakpoints": true
-		},
-		{
-			"idx": 16,
-			"version": "7",
-			"when": 1753901000000,
-			"tag": "0016_files_status",
-			"breakpoints": true
-		},
-		{
-			"idx": 17,
-			"version": "7",
-			"when": 1753902000000,
-			"tag": "0017_external_ids",
-			"breakpoints": true
-		},
-		{
-			"idx": 18,
-			"version": "7",
-			"when": 1753903000000,
-			"tag": "0018_scorecard",
-			"breakpoints": true
-		},
-		{
-			"idx": 19,
-			"version": "7",
-			"when": 1753904000000,
-			"tag": "0019_transactions_contact_id_idx",
-			"breakpoints": true
-		},
-		{
-			"idx": 20,
-			"version": "7",
-			"when": 1753905000000,
-			"tag": "0020_tenant_timezone",
-			"breakpoints": true
-		},
-		{
-			"idx": 21,
-			"version": "7",
-			"when": 1753906000000,
-			"tag": "0021_idempotency_key_scope",
-			"breakpoints": true
-		},
-		{
-			"idx": 22,
-			"version": "7",
-			"when": 1753907000000,
-			"tag": "0022_integration_events_tenant_scope",
-			"breakpoints": true
-		}
-	]
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1753100000000,
+      "tag": "0000_tenants_and_app_context",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1753101000000,
+      "tag": "0001_auth_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1753102000000,
+      "tag": "0002_tenant_fn_volatile",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1753103000000,
+      "tag": "0003_app_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1753104000000,
+      "tag": "0004_core_domain",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1753105000000,
+      "tag": "0005_idempotency_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1753106000000,
+      "tag": "0006_queue_platform",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1753107000000,
+      "tag": "0007_audit_contact_entity",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1753108000000,
+      "tag": "0008_tenant_credentials",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1753109000000,
+      "tag": "0009_ad_metrics_daily",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1753110000000,
+      "tag": "0010_api_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1753111000000,
+      "tag": "0011_inbound_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1753112000000,
+      "tag": "0012_webhook_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1753113000000,
+      "tag": "0013_ai_corrections",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1753114000000,
+      "tag": "0014_tenant_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1753900000000,
+      "tag": "0015_karne_public",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1753901000000,
+      "tag": "0016_files_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1753902000000,
+      "tag": "0017_external_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1753903000000,
+      "tag": "0018_scorecard",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1753904000000,
+      "tag": "0019_transactions_contact_id_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1753905000000,
+      "tag": "0020_tenant_timezone",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1753906000000,
+      "tag": "0021_idempotency_key_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1753907000000,
+      "tag": "0022_integration_events_tenant_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1753908000000,
+      "tag": "0023_tenant_provider_identities",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1753909000000,
+      "tag": "0024_webhook_identity_lookup",
+      "breakpoints": true
+    }
+  ]
 }

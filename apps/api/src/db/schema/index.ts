@@ -21,3 +21,4 @@ export * from './tenant-settings';
 export * from './karne-events';
 export * from './external-ids';
 export * from './scorecard';
+export * from './tenant-provider-identities';
