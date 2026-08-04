@@ -633,9 +633,9 @@ function makeApiKeys(): ApiKey[] {
 			last_used_at: null,
 			expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
 			revoked_at: null
-			}
-			];
-			}
+		}
+	];
+}
 
 function makeWebhookSubscriptions(): WebhookSubscription[] {
 	return [
