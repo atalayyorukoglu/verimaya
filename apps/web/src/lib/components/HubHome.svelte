@@ -131,6 +131,7 @@
 				<div class="relative hidden sm:block">
 					<button
 						type="button"
+						data-hub-login-toggle
 						class="inline-flex h-9 items-center gap-1 rounded-[6px] bg-brand px-3.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 						aria-expanded={loginOpen}
 						aria-haspopup="menu"
@@ -139,96 +140,103 @@
 						{t('hub.login')}
 						<ChevronDown class="size-4 opacity-90" aria-hidden="true" />
 					</button>
-					{#if loginOpen}
-						<div
-							class="absolute right-0 z-40 mt-2 w-52 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
-							role="menu"
-							tabindex="-1"
+					<div
+						data-hub-login-panel
+						class="absolute right-0 z-40 mt-2 w-52 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
+						class:hidden={!loginOpen}
+						role="menu"
+						tabindex="-1"
+					>
+						<a
+							href={appLoginUrl}
+							class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
+							role="menuitem"
+							onclick={closeMenu}
 						>
-							<a
-								href={appLoginUrl}
-								class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
-								role="menuitem"
-								onclick={closeMenu}
-							>
-								{t('hub.login.app')}
-							</a>
-							<a
-								href={PUBLIC_CRM_URL}
-								class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
-								role="menuitem"
-								onclick={closeMenu}
-							>
-								{t('hub.login.crm')}
-							</a>
-						</div>
-					{/if}
+							{t('hub.login.app')}
+						</a>
+						<a
+							href={PUBLIC_CRM_URL}
+							class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
+							role="menuitem"
+							onclick={closeMenu}
+						>
+							{t('hub.login.crm')}
+						</a>
+					</div>
 				</div>
 				<ThemeToggle />
 				<button
 					type="button"
+					data-hub-menu-toggle
+					data-label-open={t('hub.menu.open')}
+					data-label-close={t('hub.menu.close')}
 					class="inline-flex size-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-2 hover:text-text sm:hidden"
 					aria-expanded={menuOpen}
 					aria-controls="hub-mobile-nav"
 					aria-label={menuOpen ? t('hub.menu.close') : t('hub.menu.open')}
 					onclick={toggleMenu}
 				>
-					{#if menuOpen}
-						<X class="size-5" />
-					{:else}
+					<span data-hub-menu-icon-open class:hidden={menuOpen}>
 						<Menu class="size-5" />
-					{/if}
+					</span>
+					<span data-hub-menu-icon-close class:hidden={!menuOpen}>
+						<X class="size-5" />
+					</span>
 				</button>
 			</div>
 		</div>
-		{#if menuOpen}
-			<nav
-				id="hub-mobile-nav"
-				class="mx-auto mt-4 flex w-full max-w-6xl flex-col gap-1 border-t border-border/40 pt-4 sm:hidden"
-			>
-				{#each navItems as item (item.href)}
+		<nav
+			id="hub-mobile-nav"
+			data-hub-mobile-nav
+			class="mx-auto mt-4 w-full max-w-6xl flex-col gap-1 border-t border-border/40 pt-4 sm:hidden {menuOpen
+				? 'flex'
+				: 'hidden'}"
+		>
+			{#each navItems as item (item.href)}
+				<a
+					href={item.href}
+					class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+					onclick={closeMenu}
+				>
+					{t(item.labelKey)}
+				</a>
+			{/each}
+			<div class="mt-2 border-t border-border/40 pt-3">
+				<button
+					type="button"
+					data-hub-login-toggle
+					class="flex w-full items-center justify-between rounded-[6px] bg-brand px-3 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+					aria-expanded={loginOpen}
+					onclick={toggleLogin}
+				>
+					{t('hub.login')}
+					<ChevronDown
+						class="size-4 opacity-90 transition-transform {loginOpen ? 'rotate-180' : ''}"
+						aria-hidden="true"
+					/>
+				</button>
+				<div
+					data-hub-login-panel
+					class="mt-1 flex-col gap-0.5 pl-1 {loginOpen ? 'flex' : 'hidden'}"
+				>
 					<a
-						href={item.href}
+						href={appLoginUrl}
 						class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 						onclick={closeMenu}
 					>
-						{t(item.labelKey)}
+						{t('hub.login.app')}
 					</a>
-				{/each}
-				<div class="mt-2 border-t border-border/40 pt-3">
-					<button
-						type="button"
-						class="flex w-full items-center justify-between rounded-[6px] bg-brand px-3 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
-						aria-expanded={loginOpen}
-						onclick={toggleLogin}
+					<a
+						href={PUBLIC_CRM_URL}
+						class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+						onclick={closeMenu}
 					>
-						{t('hub.login')}
-						<ChevronDown
-							class="size-4 opacity-90 transition-transform {loginOpen ? 'rotate-180' : ''}"
-							aria-hidden="true"
-						/>
-					</button>
-					{#if loginOpen}
-						<div class="mt-1 flex flex-col gap-0.5 pl-1">
-							<a
-								href={appLoginUrl}
-								class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-								onclick={closeMenu}
-							>
-								{t('hub.login.app')}
-							</a>
-							<a
-								href={PUBLIC_CRM_URL}
-								class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-								onclick={closeMenu}
-							>
-								{t('hub.login.crm')}
-							</a>
-						</div>
-					{/if}
+						{t('hub.login.crm')}
+					</a>
 				</div>
-			</nav>
-		{/if}
+			</div>
+		</nav>
 	</header>
 
 	<!-- ── HERO: sorun + kapı ── -->

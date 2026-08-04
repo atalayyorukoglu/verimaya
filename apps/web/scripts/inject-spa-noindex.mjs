@@ -5,7 +5,9 @@
  *
  * Critical: /vitrin/ HTML cannot be hydrated at `/` (wrong route + CSR remount blanks the
  * page). Serve hub as a static snapshot: absolute asset URLs, no SvelteKit client bootstrap.
- * Theme FOUC script in <head> stays; full SPA interactivity is on app.* / other routes.
+ * Theme FOUC script in <head> stays; inject `/hub-interact.js` for theme/menu/login
+ * progressive enhancement (Svelte onclick never binds without kit.start). Full SPA
+ * interactivity remains on app.* / other hydrated routes.
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -63,6 +65,16 @@ function prepareHubHtml(raw) {
 	if (!out.includes('hub-page')) {
 		throw new Error('inject-spa-noindex: hub.html missing hub-page markup');
 	}
+
+	// Progressive enhancement when SvelteKit client is stripped (theme/menu/login).
+	const hubInteract = '<script src="/hub-interact.js" defer></script>';
+	if (!out.includes('/hub-interact.js')) {
+		if (!out.includes('</body>')) {
+			throw new Error('inject-spa-noindex: hub.html missing </body> for hub-interact.js inject');
+		}
+		out = out.replace('</body>', `${hubInteract}\n</body>`);
+	}
+
 	return out;
 }
 
@@ -79,7 +91,15 @@ function verifyCspHashes(html) {
 	if (!existsSync(nginxConf)) {
 		throw new Error('inject-spa-noindex: nginx.conf missing — cannot verify CSP script hashes');
 	}
-	const scripts = [...html.matchAll(/<script(?:\s+[^>]*)?>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+	// Only pin inline scripts (theme FOUC + JSON-LD). External hub-interact.js uses
+	// script-src 'self' and must not produce an empty-body hash.
+	const scripts = [...html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+		.filter((m) => {
+			const attrs = m[1] ?? '';
+			if (/\bsrc\s*=/.test(attrs)) return false;
+			return m[2].trim().length > 0;
+		})
+		.map((m) => m[2]);
 	if (scripts.length === 0) {
 		throw new Error('inject-spa-noindex: hub.html has no inline <script> blocks — expected 2');
 	}

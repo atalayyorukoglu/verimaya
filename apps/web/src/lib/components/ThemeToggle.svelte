@@ -13,14 +13,14 @@
 
 <button
 	type="button"
+	data-hub-theme-toggle
+	data-label-to-light={t('theme.toLight')}
+	data-label-to-dark={t('theme.toDark')}
 	class="rounded-[6px] p-2 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 	aria-label={theme === 'dark' ? t('theme.toLight') : t('theme.toDark')}
 	title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
 	onclick={onToggle}
 >
-	{#if theme === 'dark'}
-		<Sun class="size-5" />
-	{:else}
-		<Moon class="size-5" />
-	{/if}
+	<Sun class="size-5 hidden dark:block" aria-hidden="true" />
+	<Moon class="size-5 block dark:hidden" aria-hidden="true" />
 </button>
