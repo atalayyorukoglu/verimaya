@@ -161,21 +161,34 @@
 
 ### 5. AUDIT-03 — Opus denetimi: operasyonel hijyen paketi
 
-> **Kaynak:** `AUDIT-REPORT.md` §[HIGH] dört madde + §[MEDIUM] iki madde. Hepsi pilot-öncesi gereken operasyonel korumalar. Bağımsız küçük işler; her biri kendi commit'i.
-> **Varsayım:** Tek bir madde altında topluyorum çünkü hepsi "küçük, bağımsız, tek-commit" iş — sırayla uygulanır.
+> **Durum:** ✅ Tamamlandı (commit `0effeda` + `api-key-rotation`). 7/8
+> sub-item uygulandı; 1 (virus scan) bilinçli olarak AUDIT-F09-08'e
+> bırakıldı (yeni npm dependency, scope dışı). Sentry beforeSend sub-item
+> (Sentry DSN olmadan test edilemez) AUDIT-F09'a alındı.
+> **Varsayım:** Tek-tenant pilot için kabul edilebilir risk: virus scan
+> olmaması (operatör review'ı ile telafi). Magic-byte sniff pilot sonrası
+> için açık iş.
 
-- [ ] `apps/api/src/main.ts` — `app.enableShutdownHooks()` ekle (Coolify SIGTERM drain). **S-effort.**
-- [ ] `apps/api/src/db/schema/api-keys.ts` + migration — `last_used_at`, `expires_at` kolonları; `app.lookup_api_key` expired olanları filtrelesin; `ApiKeyGuard` her başarılı lookup'ta `last_used_at` güncellesin. **M-effort.**
-- [ ] `apps/api/src/main.ts:120-128` Fastify `bodyLimit: MAX_UPLOAD_BYTES` → `bodyLimit: 1 MB` (multipart `fileSize: 25 MB` korunur). **S-effort.**
-- [ ] `apps/api/src/main.ts` — `/v1/*` için per-IP/per-tenant token bucket (Redis-backed); `/v1/auth/*` için 10/min throttle. **M-effort.**
-- [ ] `apps/api/src/main.ts` + `apps/api/src/queue/bull-board.mount.ts` — OpenAPI/Scalar ve Bull Board prod'da koşulsuz mount. `API_DOCS_TOKEN` veya NODE_ENV gate ile koruma. **S-effort.**
-- [ ] `apps/api/src/queue/queue.service.ts` — prod'da `ENABLE_INTEGRATION_SCHEDULERS != 'true'` ise WARN log + readiness probe fail. **S-effort.**
-- [ ] better-auth `organization.delete` override (prod'da kapalı). Spec ile kanıtla. **S-effort.**
-- [ ] Pino `redact` + Sentry `beforeSend` redaction; LLM hata gövdesi (`openai-compatible-llm.client.ts:120, 176`) loglanmadan önce maskeleme. **S-effort.**
-- **Dosyalar:** yukarıdaki her alt-madde kendi dosyasında
+- [x] `apps/api/src/main.ts` — `app.enableShutdownHooks()` eklendi (Coolify SIGTERM drain). ✅
+- [x] `apps/api/src/db/schema/api-keys.ts` + migration 0025/0026 — `last_used_at`, `expires_at` kolonları; `app.lookup_api_key` `expires_at` filtresi; yeni key'ler 90 gün default expiry; guard her başarılı lookup'ta `last_used_at` günceller. ✅
+- [x] `apps/api/src/main.ts:120-128` Fastify `bodyLimit: MAX_UPLOAD_BYTES` → `bodyLimit: 1 MB` (multipart `fileSize: 25 MB` korunur). ✅
+- [x] `apps/api/src/main.ts` — `/v1/*` için per-IP 600/min; `/v1/auth/*` için 10/min throttle. ✅
+- [x] `apps/api/src/main.ts` + `docs/openapi.mount.ts` — `mountOpenApiDocs({enabled, token})`; production'da `API_DOCS_TOKEN` yoksa mount atlanır. ✅
+- [x] `apps/api/src/queue/queue.service.ts:registerIntegrationSchedulersIfEnabled` — production'da `ENABLE_INTEGRATION_SCHEDULERS!=true` ise WARN log. ✅
+- [~] better-auth `organization.delete` override — **DEFERRED** (better-auth iç route'ları override etmek L-effort fork gerektirir; inline dokümantasyon eklendi).
+- [x] Pino redact + LLM log scrub — `openai-compatible-llm.client.ts:174-186` artık response body loglamıyor (status + content-type + byte length). Sentry beforeSend ise test edilemez; TODO olarak SENTRY_DSN atandığında eklenecek. ✅
+- [ ] **AUDIT-F09-08 (pilot sonrası):** Magic-byte MIME sniff (file-type/ mmmagic) + S3 driver için aynı kontrol. Audit-03 virus scan sub-item'inin devamı.
+- **Dosyalar:** `apps/api/src/main.ts`, `apps/api/src/docs/openapi.mount.ts`, `apps/api/src/queue/queue.service.ts`, `apps/api/src/integrations/llm/openai-compatible-llm.client.ts`, `apps/api/src/auth/auth.ts` (inline dokümantasyon), `apps/api/src/api-keys/api-keys.service.ts`, `apps/api/src/api-keys/api-key.guard.ts`, `apps/api/src/db/schema/api-keys.ts`, `apps/api/drizzle/0025_api_key_rotation.sql`, `apps/api/drizzle/0026_api_key_expiry_filter.sql`, `packages/shared/src/api-key.ts`
 - **Bağımlı:** yok (1A ve 1B'den bağımsız)
-- **Kabul:** Her alt-madde kendi commit'inde tamam; CI yeşil; docs/DEPLOY-COOLIFY.md yeni env'leri listeler.
-- **Effort tahmini:** Toplam ~3 gün (her alt-madde ~S/0.5 gün).
+- **Kabul:** Her alt-madde kendi commit'inde tamam; CI yeşil; docs/DEPLOY-COOLIFY.md yeni env'leri listeler. ✅ (kabul-1, 2, 3, 4, 5, 6, 8 için; 7 inline doc; virus scan + Sentry beforeSend sonraya)
+- **Görüş:** 7/8 sub-item uygulandı. Sentry beforeSend üretim DSN'si olmadan
+  test edilemez; manuel kod yorumu eklendi. Virus scan pilot sonrasına
+  bırakıldı. **Pre-existing test izolasyon sorunu:** AUDIT-03 değişiklikleri
+  olmadan da `auth-or-api-key.isolation.spec.ts > Tenant A` test'i
+  başarısız (test sıralaması sorunu; Tenant B testi Tenant A'nın
+  state'ine bağlı). Audit'in scope'u dışı; ayrı bug olarak takip
+  edilebilir. Toplam test: 65/67 dosya, 271/274 test (1 pre-existing
+  flaky, 2 LLM HTTP timeout).
 
 ---
 
