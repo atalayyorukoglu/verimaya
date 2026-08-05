@@ -303,7 +303,7 @@
 							</a>
 							<a
 								href="/features/"
-								class="text-sm font-medium text-brand transition-colors hover:text-brand-hover"
+								class="text-sm font-medium text-white transition-colors hover:text-white/80"
 							>
 								{t('hub.apps.app.ctaFeatures')}
 							</a>
@@ -364,13 +364,13 @@
 						<div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
 							<a
 								href={PUBLIC_CRM_URL}
-								class="inline-flex h-10 items-center justify-center rounded-[6px] border border-white/15 bg-transparent px-6 text-sm font-medium text-[var(--stage-fg)] transition-colors hover:border-white/30 hover:bg-white/5"
+								class="inline-flex h-10 items-center justify-center rounded-[6px] border border-border bg-surface px-6 text-sm font-medium text-text transition-colors hover:bg-surface-2"
 							>
 								{t('hub.apps.crm.cta')}
 							</a>
 							<a
 								href="/features/"
-								class="text-sm font-medium text-brand transition-colors hover:text-brand-hover"
+								class="text-sm font-medium text-white transition-colors hover:text-white/80"
 							>
 								{t('hub.apps.crm.ctaFeatures')}
 							</a>
