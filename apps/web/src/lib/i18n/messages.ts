@@ -278,9 +278,7 @@ const tr = {
 	// Marketing hub — ana sayfa (verimaya.com)
 	'hub.hero.eyebrow': 'Sağlık turizmi operasyon ekosistemi',
 	'hub.hero.title':
-		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta. Ay sonunda kim geldi, kim ödedi bilinmiyor.',
-	'hub.hero.subtitle':
-		'Önce netleştirin: gelen hastayı mı düzene sokacaksınız, reklamdan gelen lead’i mi randevuya çevireceksiniz?',
+		'Hasta iletişimi WhatsApp’ta, hasta takibi Excel’de, ödemeler sohbet grubunda... Ay sonunda ise ‘Kim geldi, kim ödedi?’ muamma.',
 	'hub.hero.ctaApp': 'Maya App',
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.forkHint': 'İki kapı. Sonra Kaynaklar ve Araçlar ile güçlenir.',
@@ -297,38 +295,44 @@ const tr = {
 
 	'hub.apps.title': 'Uygulamalarımız',
 	'hub.apps.desc': 'İki platform, tek ekosistem. Hangisi size lazımsa onu kullanın.',
-	'hub.apps.app.problem': 'Hasta geldikten sonra randevu, dosya ve ödeme dağılmıyor mu? Bu yüzden;',
-	'hub.apps.app.name': 'Operasyonu tek panelde topladık.',
+	'hub.apps.app.problem':
+		'Hasta kapıdan girdiğinde randevu, dosya ve finans farklı yerlere mi saçılıyor?',
+	'hub.apps.app.name': 'Tüm operasyonu tek ekranda toplayın.',
 	'hub.apps.app.desc':
-		'Maya App hasta yolculuğunu yönetir: Hasta kapıdan girince yolculuk tek panelde: randevu, dosya, finans. Operasyon ekibi aynı ekrandan bakar.',
+		'Maya App, hastanın gelişinden taburcu oluşuna kadar olan tüm süreci yönetir. Randevu takibi, hasta dosyaları ve ödeme bilgileri artık WhatsApp gruplarında değil, tek bir panelde birleşir.',
 	'hub.apps.app.subs': 'Hastalar · Kişiler · Randevular · Finans · Raporlar',
-	'hub.apps.app.outcome': 'Sonuç: ay sonunda kim geldi, kim ödedi tek yerden görünür.',
+	'hub.apps.app.outcome':
+		'Sonuç: Ay sonunda “Kim geldi, kim ne ödedi?” sorusunun yanıtı tek tıkla karşınızda.',
 	'hub.apps.app.cta': "Maya App'e git",
 	'hub.apps.app.ctaFeatures': 'Özelliklerini gör ›',
-	'hub.apps.crm.problem': 'Reklam bütçesi gidiyor, lead WhatsApp’ta kayboluyor mu?',
-	'hub.apps.crm.name': 'Lead’i randevuya çevirin.',
+	'hub.apps.crm.problem':
+		'Reklam bütçeniz harcanıyor ama gelen lead’ler WhatsApp sohbetlerinde kayıp mı oluyor?',
+	'hub.apps.crm.name': 'Tüm lead’leri randevuya dönüştürün.',
 	'hub.apps.crm.desc':
-		'Maya CRM (GoHighLevel) lead yakalama, takip ve otomasyonu satış hattında tutar; süreç kişiden kişiye değişmez.',
+		'Maya CRM, reklamlarınızdan gelen her potansiyel hastayı anında yakalar, otomatik takiplerle satış hattında tutar. Satış ekibinizin inisiyatifine veya kişisel takibine bağımlı kalmazsınız.',
 	'hub.apps.crm.subs': 'Lead yakalama · Otomasyon · Çok kanallı iletişim · Pipeline · Raporlama',
-	'hub.apps.crm.outcome': 'Sonuç: lead kaçmaz; takip ölçülür, randevu artar.',
+	'hub.apps.crm.outcome':
+		'Sonuç: Unutulan lead yok, boşa giden reklam bütçesi yok; daha fazla randevu var.',
 	'hub.apps.crm.cta': "Maya CRM'i aç",
 	'hub.apps.crm.ctaFeatures': 'Özelliklerini gör ›',
-	'hub.stage.app.eyebrow': 'Maya App',
-	'hub.stage.crm.eyebrow': 'Maya CRM',
+	'hub.stage.app.eyebrow': 'Maya App (Operasyon)',
+	'hub.stage.crm.eyebrow': 'Maya CRM (Satış & Reklam)',
 
-	'hub.resources.problem': 'Ekip sistemi öğrenebilecek mi? İhtiyacınız olan tüm destek içeriği hazır.',
-	'hub.resources.title': 'Yazılımı bırakıp gitmiyoruz.',
+	'hub.resources.problem':
+		'Ekibin yeni sisteme uyum sağlamakta zorlanacağından mı endişeleniyorsunuz?',
+	'hub.resources.title': 'Sadece yazılım değil, tam bir öğrenme ekosistemi sunuyoruz.',
 	'hub.resources.desc':
-		'Kaynaklar; tüm ekosistemi kullanmayı öğreten alanınız. Ekip aynı dili konuşur, satış ve operasyon kopmaz.',
-	'hub.resources.outcome': 'Sonuç: onboarding, içerik ve öğrenme tek çatıda.',
-	'hub.resources.ctaPrimary': 'Özellikleri incele',
-	'hub.resources.ctaSecondary': 'Ücretsiz karne al',
+		'Kaynaklar bölümü; adım adım video rehberler, kullanım kılavuzları ve hazır şablonlarla ekibinizin ilk günden itibaren sistemi eksiksiz kullanmasını sağlar. Satış ve operasyon ekibiniz aynı dili konuşur.',
+	'hub.resources.outcome':
+		'Sonuç: Uyum süreci haftalar sürmez; ekibiniz ilk günden uzmanlaşır.',
+	'hub.resources.ctaPrimary': 'Eğitim İçeriklerini Gör',
+	'hub.resources.ctaSecondary': 'Ücretsiz Ürün Karnesi Al',
 
-	'hub.ctaBand.title': 'Hangisinden başlayalım?',
-	'hub.ctaBand.subtitle':
-		'Operasyon paneli mi, satış hattı mı? Seçin; Kaynaklar ve Araçlar ikisini de besler.',
-	'hub.ctaBand.cta': "Maya App'e git",
-	'hub.ctaBand.ctaCrm': "Maya CRM'i aç",
+	'hub.ctaBand.title': 'Dağınıklığı sonlandırın, kontrolü elinize alın.',
+	'hub.ctaBand.subtitle': 'İhtiyacınıza en uygun noktadan hemen başlayın:',
+	'hub.ctaBand.cta': 'Klinik Operasyonunu Düzene Sok',
+	'hub.ctaBand.ctaCrm': 'Lead & Satış Dönüşümünü Artır',
+	'hub.ctaBand.trust': 'Kurulum gerektirmez • Ekibiniz saatler içinde kullanmaya başlar',
 
 	'hub.features.title': 'Uygulamada neler var?',
 	'hub.features.desc': 'Hasta operasyonlarınızı uçtan uca yönetmek için ihtiyacınız olan her şey.',
@@ -346,19 +350,22 @@ const tr = {
 		'Özelleştirilebilir raporlar, hasta başına maliyet, kaynak bazında harcama analizi.',
 	'hub.features.cta': 'Tüm özellikleri incele',
 
-	'hub.tools.problem': 'Reklamı yayınlamadan önce plan, deneme ve kontrol hâlâ Excel’de mi?',
-	'hub.tools.title': 'Planla, dene, kontrol et.',
+	'hub.tools.problem':
+		'Reklam bütçenizi yayına almadan önce tahminlerle veya karmaşık Excel tablolarıyla mı riske atıyorsunuz?',
+	'hub.tools.title': 'Reklama paranızı yatırmadan önce simüle edin ve doğrulayın.',
 	'hub.tools.desc':
-		'Araçlar Maya App ve Maya CRM’i destekler: planlar, simüle eder, yayın öncesi kontrol eder.',
+		'Verimaya Araçları; reklam yayınlamadan önceki planlama, bütçe simülasyonu ve denetim adımlarını otomatiğe bağlar. Maya CRM ve Maya App’e tam entegre çalışarak boşa gidecek her tıklamayı engeller.',
+	'hub.tools.outcome':
+		'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce %100 netlik.',
 	'hub.tools.campaign.title': 'Kampanya Asistanı',
 	'hub.tools.campaign.desc':
-		'Reklam kampanyası adımlarını netleştirir; satış hattına hazırlık Maya CRM’i, sonuç takibi Maya App’i besler.',
+		'Reklam adımlarınızı satış hattına eksiksiz hazırlar, lansman öncesi kafa karışıklığını bitirir.',
 	'hub.tools.simulator.title': 'Simülatör',
 	'hub.tools.simulator.desc':
-		'“Şu bütçeyi şu kanala koysak?” Senaryoyu karşılaştırmadan kör harcama yapmazsınız.',
-	'hub.tools.prelaunch.title': 'Yayın Öncesi',
+		'“Bu bütçeden kaç hasta döner?” sorusunu körlemesine değil, gerçekçi senaryolarla yayından önce yanıtlar.',
+	'hub.tools.prelaunch.title': 'Yayın Öncesi Kontrol',
 	'hub.tools.prelaunch.desc':
-		'Yayına girmeden bütçe, kitle, görsel ve metin kontrolleriyle boşa giden tıklama riskini keser.',
+		'Bütçe, kitle, görsel ve metin hatalarını yayın öncesi yakalar; boşa gidecek tıklama riskini keser.',
 	'hub.tools.cta': 'Tüm araçları keşfet',
 
 	'hub.scenarios.title': 'Kullanım senaryoları',
@@ -645,9 +652,7 @@ const en: Record<MessageKey, string> = {
 	// Marketing hub — homepage (verimaya.com)
 	'hub.hero.eyebrow': 'Health tourism operations ecosystem',
 	'hub.hero.title':
-		'Leads live in WhatsApp, patients in Excel, payments in the group chat. By month-end, who came and who paid is unclear.',
-	'hub.hero.subtitle':
-		'First decide: will you tidy the patient journey, or convert ad leads into appointments?',
+		'Patient chats live in WhatsApp, follow-up in Excel, payments in the group chat... By month-end, ‘Who came, who paid?’ is a mystery.',
 	'hub.hero.ctaApp': 'Maya App',
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.forkHint': 'Two doors. Then Resources and Tools amplify both.',
@@ -664,38 +669,44 @@ const en: Record<MessageKey, string> = {
 
 	'hub.apps.title': 'Our Applications',
 	'hub.apps.desc': 'Two platforms, one ecosystem. Use whichever you need.',
-	'hub.apps.app.problem': 'After the patient arrives, do appointments, files, and payments scatter? That’s why;',
-	'hub.apps.app.name': 'We put operations in one panel.',
+	'hub.apps.app.problem':
+		'When a patient walks in, do appointments, files, and finance scatter across different places?',
+	'hub.apps.app.name': 'Bring the full operation onto one screen.',
 	'hub.apps.app.desc':
-		'Maya App manages the patient journey: once they walk in, appointments, files, and finance stay on one panel. The ops team works from the same screen.',
+		'Maya App manages the entire journey from arrival to discharge. Appointment tracking, patient files, and payment details no longer live in WhatsApp groups — they come together in a single panel.',
 	'hub.apps.app.subs': 'Patients · Contacts · Appointments · Finance · Reports',
-	'hub.apps.app.outcome': 'Outcome: who came and who paid is visible in one place at month end.',
+	'hub.apps.app.outcome':
+		'Outcome: by month-end, the answer to “Who came, who paid what?” is one click away.',
 	'hub.apps.app.cta': 'Go to Maya App',
 	'hub.apps.app.ctaFeatures': 'See features ›',
-	'hub.apps.crm.problem': 'Ad spend running while leads vanish in WhatsApp?',
-	'hub.apps.crm.name': 'Turn leads into appointments.',
+	'hub.apps.crm.problem':
+		'Is ad budget spending while incoming leads get lost in WhatsApp chats?',
+	'hub.apps.crm.name': 'Turn every lead into an appointment.',
 	'hub.apps.crm.desc':
-		'Maya CRM (GoHighLevel) keeps capture, follow-up, and automation on the sales line; the process doesn’t depend on who is online.',
+		'Maya CRM instantly captures every prospective patient from your ads and keeps them on the sales line with automated follow-ups. You’re no longer dependent on a salesperson’s initiative or personal chasing.',
 	'hub.apps.crm.subs': 'Lead capture · Automation · Multi-channel · Pipeline · Reports',
-	'hub.apps.crm.outcome': 'Outcome: leads don’t slip; follow-up is measurable; appointments rise.',
+	'hub.apps.crm.outcome':
+		'Outcome: no forgotten leads, no wasted ad spend — more appointments.',
 	'hub.apps.crm.cta': 'Open Maya CRM',
 	'hub.apps.crm.ctaFeatures': 'See features ›',
-	'hub.stage.app.eyebrow': 'Maya App',
-	'hub.stage.crm.eyebrow': 'Maya CRM',
+	'hub.stage.app.eyebrow': 'Maya App (Operations)',
+	'hub.stage.crm.eyebrow': 'Maya CRM (Sales & Ads)',
 
-	'hub.resources.problem': 'Can the team learn the system? All the support content you need is ready.',
-	'hub.resources.title': 'We don’t hand you software and leave.',
+	'hub.resources.problem':
+		'Worried your team will struggle to adopt a new system?',
+	'hub.resources.title': 'Not just software — a full learning ecosystem.',
 	'hub.resources.desc':
-		'Resources teaches your team the whole ecosystem. Everyone shares one language, so sales and ops stay connected.',
-	'hub.resources.outcome': 'Outcome: onboarding + content + learning under one roof.',
-	'hub.resources.ctaPrimary': 'Browse features',
-	'hub.resources.ctaSecondary': 'Get a free scorecard',
+		'Resources gives step-by-step video guides, how-tos, and ready templates so your team can use the system fully from day one. Sales and operations speak the same language.',
+	'hub.resources.outcome':
+		'Outcome: onboarding doesn’t take weeks — your team specializes from day one.',
+	'hub.resources.ctaPrimary': 'See training content',
+	'hub.resources.ctaSecondary': 'Get a free product scorecard',
 
-	'hub.ctaBand.title': 'Where do we start?',
-	'hub.ctaBand.subtitle':
-		'Operations panel or sales line? Pick one; Resources and Tools feed both.',
-	'hub.ctaBand.cta': 'Go to Maya App',
-	'hub.ctaBand.ctaCrm': 'Open Maya CRM',
+	'hub.ctaBand.title': 'End the chaos — take control.',
+	'hub.ctaBand.subtitle': 'Start from the point that fits your need:',
+	'hub.ctaBand.cta': 'Organize clinic operations',
+	'hub.ctaBand.ctaCrm': 'Boost lead & sales conversion',
+	'hub.ctaBand.trust': 'No setup required • Your team can start in hours',
 
 	'hub.features.title': "What's in the application?",
 	'hub.features.desc': 'Everything you need to manage patient operations end to end.',
@@ -713,19 +724,22 @@ const en: Record<MessageKey, string> = {
 		'Customizable reports, cost per patient, source-based spend analysis.',
 	'hub.features.cta': 'View all features',
 
-	'hub.tools.problem': 'Before you launch ads, is planning, testing, and checking still stuck in Excel?',
-	'hub.tools.title': 'Plan, test, check.',
+	'hub.tools.problem':
+		'Are you risking ad budget on guesses or messy Excel sheets before you go live?',
+	'hub.tools.title': 'Simulate and validate before you spend on ads.',
 	'hub.tools.desc':
-		'Tools support Maya App and Maya CRM: they plan, simulate, and check before go-live.',
+		'Verimaya Tools automate pre-launch planning, budget simulation, and checks. Fully integrated with Maya CRM and Maya App, they stop every click that would be wasted.',
+	'hub.tools.outcome':
+		'Outcome: end burning budget on trial and error — 100% clarity before launch.',
 	'hub.tools.campaign.title': 'Campaign Assistant',
 	'hub.tools.campaign.desc':
-		'Clarifies campaign steps; sales prep feeds Maya CRM, results tracking feeds Maya App.',
+		'Gets your ad steps fully ready for the sales pipeline and ends pre-launch confusion.',
 	'hub.tools.simulator.title': 'Simulator',
 	'hub.tools.simulator.desc':
-		'“What if that budget went to that channel?” Compare scenarios before you spend blind.',
-	'hub.tools.prelaunch.title': 'Pre-launch',
+		'Answers “How many patients from this budget?” with realistic scenarios before launch — not guesswork.',
+	'hub.tools.prelaunch.title': 'Pre-launch Check',
 	'hub.tools.prelaunch.desc':
-		'Budget, audience, creative, and copy checks before launch cut wasted clicks.',
+		'Catches budget, audience, creative, and copy mistakes before go-live — and cuts wasted-click risk.',
 	'hub.tools.cta': 'Discover all tools',
 
 	'hub.scenarios.title': 'Use cases',

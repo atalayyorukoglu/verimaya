@@ -29,7 +29,8 @@ export default defineConfig({
 		// Same-origin /v1 so session cookies work on app.localhost (PSL: *.localhost ≠ localhost).
 		proxy: {
 			'/v1': {
-				target: 'http://127.0.0.1:3000',
+				// Override when API_PORT≠3000 (e.g. occupied): API_PROXY_TARGET=http://127.0.0.1:3001
+				target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000',
 				changeOrigin: true
 			}
 		}

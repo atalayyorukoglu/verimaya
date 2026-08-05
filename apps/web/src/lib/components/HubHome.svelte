@@ -8,6 +8,7 @@
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Lock from '@lucide/svelte/icons/lock';
 
 	// Always visible so prerendered HTML and no-JS users see content (not opacity:0).
 	const visible = true;
@@ -261,13 +262,6 @@
 		>
 			{t('hub.hero.title')}
 		</h1>
-		<p
-			class="mt-5 max-w-2xl text-base leading-relaxed text-text-muted sm:text-lg"
-			class:vitrin-in={visible}
-			style="--delay: 180ms"
-		>
-			{t('hub.hero.subtitle')}
-		</p>
 	</section>
 
 	<!-- ── İKİ KAPI ── -->
@@ -297,7 +291,7 @@
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
 							{t('hub.apps.app.desc')}
 						</p>
-						<p class="mt-4 text-xs font-medium text-[var(--stage-faint)]">
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
 							{t('hub.apps.app.outcome')}
 						</p>
 						<div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
@@ -364,7 +358,7 @@
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
 							{t('hub.apps.crm.desc')}
 						</p>
-						<p class="mt-4 text-xs font-medium text-[var(--stage-faint)]">
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
 							{t('hub.apps.crm.outcome')}
 						</p>
 						<div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
@@ -432,7 +426,9 @@
 			<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
 				{t('hub.resources.desc')}
 			</p>
-			<p class="mt-3 text-sm text-text-faint">{t('hub.resources.outcome')}</p>
+			<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
+				{t('hub.resources.outcome')}
+			</p>
 			<div class="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row">
 				<a
 					href="/features/"
@@ -466,12 +462,15 @@
 				</p>
 				<p class="mt-4 text-base font-medium text-text sm:text-lg">{t('hub.tools.problem')}</p>
 				<h2
-				class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold leading-[1.15] tracking-tight text-text"
-			>
+					class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold leading-[1.15] tracking-tight text-text"
+				>
 					{t('hub.tools.title')}
 				</h2>
 				<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
 					{t('hub.tools.desc')}
+				</p>
+				<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
+					{t('hub.tools.outcome')}
 				</p>
 			</div>
 
@@ -499,6 +498,9 @@
 				<h2 class="text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight">
 					{t('hub.ctaBand.title')}
 				</h2>
+				<p class="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
+					{t('hub.ctaBand.subtitle')}
+				</p>
 				<div class="mt-8 flex flex-col gap-3 sm:flex-row">
 					<a
 						href={PUBLIC_APP_URL}
@@ -513,6 +515,10 @@
 						{t('hub.ctaBand.ctaCrm')}
 					</a>
 				</div>
+				<p class="mt-5 inline-flex items-center gap-1.5 text-sm text-white/80">
+					<Lock class="size-3.5 shrink-0" aria-hidden="true" />
+					{t('hub.ctaBand.trust')}
+				</p>
 			</div>
 		</div>
 	</section>
