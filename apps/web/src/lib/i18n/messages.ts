@@ -283,8 +283,8 @@ const tr = {
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.forkHint': 'İki kapı. Sonra Kaynaklar ve Araçlar ile güçlenir.',
 
-	'hub.nav.webApp': 'Maya App',
-	'hub.nav.crm': 'Maya CRM',
+	'hub.nav.webApp': 'Maya App (Operasyon)',
+	'hub.nav.crm': 'Maya CRM (Satış & Reklam)',
 	'hub.nav.resources': 'Kaynaklar',
 	'hub.nav.tools': 'Araçlar',
 	'hub.menu.open': 'Menüyü aç',
@@ -319,13 +319,13 @@ const tr = {
 	'hub.stage.crm.eyebrow': 'Maya CRM (Satış & Reklam)',
 
 	'hub.resources.problem':
-		'Ekibin yeni sisteme uyum sağlamakta zorlanacağından mı endişeleniyorsunuz?',
-	'hub.resources.title': 'Sadece yazılım değil, tam bir öğrenme ekosistemi sunuyoruz.',
+		'Ürünün ne durumda olduğunu, nelerin geldiğini ve olgunluğunuzu tek yerden göremiyor musunuz?',
+	'hub.resources.title': 'Karne, özellik durumu ve yenilikler tek kapıda.',
 	'hub.resources.desc':
-		'Kaynaklar bölümü; adım adım video rehberler, kullanım kılavuzları ve hazır şablonlarla ekibinizin ilk günden itibaren sistemi eksiksiz kullanmasını sağlar. Satış ve operasyon ekibiniz aynı dili konuşur.',
+		'Kaynaklar; ücretsiz yapay zeka karnesi, özellik özeti ve yenilikler ile ekibinizin Verimaya’yı net görmesini sağlar.',
 	'hub.resources.outcome':
-		'Sonuç: Uyum süreci haftalar sürmez; ekibiniz ilk günden uzmanlaşır.',
-	'hub.resources.ctaPrimary': 'Eğitim İçeriklerini Gör',
+		'Sonuç: Nerede olduğunuzu ve sıradaki adımı dakika içinde anlarsınız.',
+	'hub.resources.ctaPrimary': 'Kaynakları gör',
 	'hub.resources.ctaSecondary': 'Ücretsiz Ürün Karnesi Al',
 
 	'hub.ctaBand.title': 'Dağınıklığı sonlandırın, kontrolü elinize alın.',
@@ -393,6 +393,217 @@ const tr = {
 	'hub.footer.kvkk': 'KVKK Aydınlatma',
 	'hub.footer.resources': 'Kaynaklar',
 	'hub.footer.tools': 'Araçlar',
+
+	// Public pillar pages (/app /crm /resources /tools)
+	'pillar.app.metaTitle': 'Maya App (Operasyon) — Verimaya',
+	'pillar.app.metaDesc':
+		'Hasta, randevu, finans, rapor ve denetim: sağlık turizmi operasyonunu tek panelde yönetin.',
+	'pillar.app.eyebrow': 'Maya App (Operasyon)',
+	'pillar.app.heading': 'Tüm operasyonu tek ekranda toplayın.',
+	'pillar.app.problem':
+		'Hasta kapıdan girdiğinde randevu, dosya ve finans farklı yerlere mi saçılıyor?',
+	'pillar.app.outcome':
+		'Sonuç: Ay sonunda “Kim geldi, kim ne ödedi?” sorusunun yanıtı tek tıkla karşınızda.',
+	'pillar.app.cta': "Maya App'e git",
+	'pillar.app.ctaSecondary': 'Özellikler kataloğu ›',
+	'pillar.app.f.patients.title': 'Hasta listesi ve detay',
+	'pillar.app.f.patients.desc':
+		'Lead ve hasta kayıtlarını listeleyin; durum, not ve iletişim bilgisine tek ekrandan ulaşın.',
+	'pillar.app.f.duplicates.title': 'Çift kayıt tarama',
+	'pillar.app.f.duplicates.desc':
+		'Hasta ve kişi mükerrerlerini tarayıp birleştirin; veri kirliliğini kesersiniz.',
+	'pillar.app.f.contacts.title': 'Kişiler (cari dizin)',
+	'pillar.app.f.contacts.desc':
+		'Otel, klinik ve transfer cari kayıtlarını hasta operasyonuna bağlı tutun.',
+	'pillar.app.f.appointments.title': 'Randevu takvimi',
+	'pillar.app.f.appointments.desc':
+		'Klinik, otel ve transfer notlarıyla randevuları gün/hafta görünümünde yönetin.',
+	'pillar.app.f.ledger.title': 'Gelir-gider işlemleri',
+	'pillar.app.f.ledger.desc':
+		'Tahsilat ve ödemeleri hasta bağlantısı, ödeme durumu ve fatura bilgisiyle kaydedin.',
+	'pillar.app.f.whatsappImport.title': 'AI ile WhatsApp işlem aktarımı',
+	'pillar.app.f.whatsappImport.desc':
+		'Grup mesajını yapıştırın veya kuyruktan seçin; AI işlemleri ayrıştırır, onay sonrası kayıt açılır.',
+	'pillar.app.f.invoiceAi.title': 'AI ile Fatura İşleme',
+	'pillar.app.f.invoiceAi.desc':
+		'Fatura belgesi ve içerğini AI ile okuyup işleme bağlayın; WhatsApp işlem aktarımından ayrı bir akıştır.',
+	'pillar.app.f.balances.title': 'P2P net bakiyeler',
+	'pillar.app.f.balances.desc':
+		'Kişiler arası borç-alacak net bakiyelerini tek bakışta izleyin.',
+	'pillar.app.f.reports.title': 'Özet raporlar ve dashboard',
+	'pillar.app.f.reports.desc':
+		'Gelir, gider ve dönem özetini kartlarda görün; kategori drill-down ile detaya inin.',
+	'pillar.app.f.realRoas.title': 'Gerçek ROAS raporu',
+	'pillar.app.f.realRoas.desc':
+		'Reklam harcamanızı dönem tahsilatıyla kıyaslayın; hasta başına maliyet ve kaynak kırılımı.',
+	'pillar.app.f.audit.title': 'Denetim kaydı',
+	'pillar.app.f.audit.desc':
+		'Kim ne yaptı: kritik işlemlerin denetim izini ayarlardan izleyin.',
+	'pillar.app.f.scorecard.title': 'Ürün içi yapay zeka karnesi',
+	'pillar.app.f.scorecard.desc':
+		'43 kriterli ölçüm, otomatik dolum ve dönem karşılaştırması panel içinde.',
+	'pillar.app.f.n8n.title': 'n8n ve dış API',
+	'pillar.app.f.n8n.desc':
+		'Scope’lu API anahtarı ve imzalı webhook’larla otomasyonları bağlayın.',
+	'pillar.app.f.multiTenant.title': 'Çok kiracılı organizasyon',
+	'pillar.app.f.multiTenant.desc':
+		'Organizasyon, ekip ve rollerle tenant izolasyonunu koruyun.',
+
+	'pillar.crm.metaTitle': 'Maya CRM (Satış & Reklam) — Verimaya',
+	'pillar.crm.metaDesc':
+		'Lead yakalama, pipeline, otomasyon ve reklam bağlantısı: satış hattını Maya CRM ile yönetin.',
+	'pillar.crm.eyebrow': 'Maya CRM (Satış & Reklam)',
+	'pillar.crm.heading': 'Tüm lead’leri randevuya dönüştürün.',
+	'pillar.crm.problem':
+		'Reklam bütçeniz harcanıyor ama gelen lead’ler WhatsApp sohbetlerinde kayıp mı oluyor?',
+	'pillar.crm.outcome':
+		'Sonuç: Unutulan lead yok, boşa giden reklam bütçesi yok; daha fazla randevu var.',
+	'pillar.crm.cta': "Maya CRM'i aç",
+	'pillar.crm.ctaSecondary': 'Maya App senkronu ›',
+	'pillar.crm.f.leadCapture.title': 'Lead yakalama',
+	'pillar.crm.f.leadCapture.desc':
+		'Reklam, form ve WhatsApp’tan gelen potansiyel hastaları anında yakalayın.',
+	'pillar.crm.f.pipeline.title': 'Pipeline / fırsat yönetimi',
+	'pillar.crm.f.pipeline.desc':
+		'Satış hattında aşamaları net tutun; fırsatları kaybetmeden ilerletin.',
+	'pillar.crm.f.automation.title': 'Otomatik takip & otomasyon',
+	'pillar.crm.f.automation.desc':
+		'Takip mesajları ve iş akışlarıyla satış ekibinin inisiyatifine bağımlılığı azaltın.',
+	'pillar.crm.f.multichannel.title': 'Çok kanallı iletişim',
+	'pillar.crm.f.multichannel.desc':
+		'WhatsApp, SMS ve e-posta kanallarını aynı satış sürecinde birleştirin.',
+	'pillar.crm.f.salesReports.title': 'Satış raporlama',
+	'pillar.crm.f.salesReports.desc':
+		'Dönüşüm ve pipeline performansını raporlarla görün.',
+	'pillar.crm.f.appSync.title': 'Maya App senkronu',
+	'pillar.crm.f.appSync.desc':
+		'Lead ve fırsat alanlarını sahiplik kurallarıyla Maya App operasyonuna bağlayın.',
+	'pillar.crm.f.ads.title': 'Meta & Google Ads bağlantısı',
+	'pillar.crm.f.ads.desc':
+		'Reklam hesaplarını bağlayın; harcama ve metrikler Gerçek ROAS raporunu besler.',
+
+	'pillar.resources.metaTitle': 'Kaynaklar — Verimaya',
+	'pillar.resources.metaDesc':
+		'Ücretsiz yapay zeka karnesi, özellik özeti ve yenilikler: Verimaya kaynakları.',
+	'pillar.resources.eyebrow': 'Kaynaklar',
+	'pillar.resources.heading': 'Karne, özellikler ve yenilikler.',
+	'pillar.resources.problem':
+		'Ürünün ne durumda olduğunu ve olgunluğunuzu tek yerden göremiyor musunuz?',
+	'pillar.resources.outcome':
+		'Sonuç: Nerede olduğunuzu ve sıradaki adımı dakika içinde anlarsınız.',
+	'pillar.resources.cta': 'Ücretsiz ürün karnesi al',
+	'pillar.resources.ctaSecondary': 'Özellikler ›',
+	'pillar.resources.f.karne.title': 'Ücretsiz yapay zeka karnesi',
+	'pillar.resources.f.karne.desc':
+		'5 dakikada, üyeliksiz: kurumunuzun AI olgunluğunu ölçün.',
+	'pillar.resources.f.features.title': 'Özellikler özeti',
+	'pillar.resources.f.features.desc':
+		'Modül bazında hangi özelliğin hazır, pilot veya yayında olduğunu görün.',
+	'pillar.resources.f.changelog.title': 'Yenilikler',
+	'pillar.resources.f.changelog.desc':
+		'Sürüm notlarıyla panele neyin geldiğini takip edin.',
+
+	'pillar.tools.metaTitle': 'Araçlar — Verimaya',
+	'pillar.tools.metaDesc':
+		'Reklama yatırmadan önce ROAS hesabı, simülatör, uyumluluk, şablon, ölçüm ve yayın öncesi kontrol.',
+	'pillar.tools.eyebrow': 'Araçlar',
+	'pillar.tools.heading': 'Reklama yatırmadan önce simüle edin ve doğrulayın.',
+	'pillar.tools.problem':
+		'Bütçeyi yayına almadan önce tahminlerle veya Excel ile mi riske atıyorsunuz?',
+	'pillar.tools.outcome':
+		'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce netlik.',
+	'pillar.tools.cta': 'Gerçek ROAS hesabına git',
+	'pillar.tools.ctaSecondary': 'Maya App ›',
+	'pillar.tools.f.templates.title': 'Kampanya asistanı',
+	'pillar.tools.f.templates.desc':
+		'UTM, 3:2:2 kreatif ve 60/30/10 bütçe şablonlarıyla lansmanı hazırlayın.',
+	'pillar.tools.f.simulator.title': 'Reklam matematiği simülatörü',
+	'pillar.tools.f.simulator.desc':
+		'CPC/CVR senaryolarıyla kaç lead ve satış döneceğini yayından önce görün.',
+	'pillar.tools.f.compliance.title': 'Reklam uyumluluk taraması',
+	'pillar.tools.f.compliance.desc':
+		'Yasaklı veya riskli sağlık vaatlerini metinde tarayıp riski azaltın.',
+	'pillar.tools.f.calculator.title': 'Gerçek ROAS hesabı',
+	'pillar.tools.f.calculator.desc':
+		'Platform ROAS’tan gerçek kâr, başabaş ve tavan maliyeti çıkarın.',
+	'pillar.tools.f.measurement.title': 'Ölçüm olgunluğu (Trust Score)',
+	'pillar.tools.f.measurement.desc':
+		'Consent, CAPI, SST ve offline conversion kontrolleriyle ölçüm sağlığını görün.',
+	'pillar.tools.f.prelaunch.title': 'Yayın öncesi kontrol',
+	'pillar.tools.f.prelaunch.desc':
+		'Uyumluluk, birim ekonomi ve ölçüm eşiklerini tek kapıda doğrulayın.',
+
+	'pillar.tools.calculator.metaTitle': 'Gerçek ROAS hesabı — Verimaya Araçlar',
+	'pillar.tools.calculator.metaDesc':
+		'Platform ROAS’ı gerçek kâra çevirin; başabaş ve tavan reklam maliyetini hesaplayın.',
+	'pillar.tools.calculator.heading': 'Gerçek ROAS hesabı',
+	'pillar.tools.calculator.problem':
+		'Platformun gösterdiği ROAS ile kasaya giren kâr aynı mı sanıyorsunuz?',
+	'pillar.tools.calculator.outcome':
+		'Sonuç: Harcamayı gerçek kâr diline çevirirsiniz.',
+	'pillar.tools.calculator.body':
+		'Girdiğiniz maliyet ve gelir varsayımlarıyla başabaş noktası ve güvenli tavan reklam maliyetini görün. Maya App Gerçek ROAS raporuyla aynı matematiğe yaslanır.',
+	'pillar.tools.calculator.cta': 'Hesabı panelde aç',
+
+	'pillar.tools.simulator.metaTitle': 'Reklam simülatörü — Verimaya Araçlar',
+	'pillar.tools.simulator.metaDesc':
+		'CPC, CVR ve satış oranıyla CPL ve satış maliyetini yayından önce simüle edin.',
+	'pillar.tools.simulator.heading': 'Reklam matematiği simülatörü',
+	'pillar.tools.simulator.problem':
+		'“Bu bütçeden kaç hasta döner?” sorusuna körlemesine mi yanıt veriyorsunuz?',
+	'pillar.tools.simulator.outcome':
+		'Sonuç: Senaryoyu yayından önce rakamla görürsünüz.',
+	'pillar.tools.simulator.body':
+		'Trafik ışığı ve ölçek tavanıyla bütçeyi büyütmenin güvenli olup olmadığını test edin.',
+	'pillar.tools.simulator.cta': 'Simülatörü panelde aç',
+
+	'pillar.tools.compliance.metaTitle': 'Reklam uyumluluk — Verimaya Araçlar',
+	'pillar.tools.compliance.metaDesc':
+		'Sağlık turizmi reklam metinlerinde yasaklı ve riskli vaatleri tarayın.',
+	'pillar.tools.compliance.heading': 'Reklam uyumluluk taraması',
+	'pillar.tools.compliance.problem':
+		'Metin veya landing, politika ihlaliyle hesabı riske mi atıyor?',
+	'pillar.tools.compliance.outcome':
+		'Sonuç: Riskli ifadeleri yayından önce yakalarsınız.',
+	'pillar.tools.compliance.body':
+		'Yasaklı ve riskli sağlık vaatlerini tarayın; yayın öncesi kontrol kapısında da kullanılır.',
+	'pillar.tools.compliance.cta': 'Taramayı panelde aç',
+
+	'pillar.tools.templates.metaTitle': 'Kampanya asistanı — Verimaya Araçlar',
+	'pillar.tools.templates.metaDesc':
+		'UTM builder, 3:2:2 kreatif split ve 60/30/10 bütçe şablonları.',
+	'pillar.tools.templates.heading': 'Kampanya asistanı',
+	'pillar.tools.templates.problem':
+		'UTM, kreatif oranı ve bütçe dağılımı her kampanyada mı dağılır?',
+	'pillar.tools.templates.outcome':
+		'Sonuç: Lansman öncesi standart hazır paketle çıkarsınız.',
+	'pillar.tools.templates.body':
+		'UTM yapıları, 3:2:2 kreatif dağılımı ve 60/30/10 bütçe şablonlarıyla satış hattına hazır kampanya iskeleti kurun.',
+	'pillar.tools.templates.cta': 'Şablonları panelde aç',
+
+	'pillar.tools.measurement.metaTitle': 'Ölçüm olgunluğu — Verimaya Araçlar',
+	'pillar.tools.measurement.metaDesc':
+		'Trust Score: consent, CAPI, SST ve offline conversion kontrolleri.',
+	'pillar.tools.measurement.heading': 'Ölçüm olgunluğu (Trust Score)',
+	'pillar.tools.measurement.problem':
+		'Reklam panosu güzel ama ölçüm altyapısı delik mi?',
+	'pillar.tools.measurement.outcome':
+		'Sonuç: Ölçüm sağlığını checklist ile netleştirirsiniz.',
+	'pillar.tools.measurement.body':
+		'Consent/KVKK, enhanced conversions/CAPI, sunucu tarafı etiket, CRM→Ads offline conversion ve EMQ kontrollerini tarayın.',
+	'pillar.tools.measurement.cta': 'Ölçümü panelde aç',
+
+	'pillar.tools.prelaunch.metaTitle': 'Yayın öncesi kontrol — Verimaya Araçlar',
+	'pillar.tools.prelaunch.metaDesc':
+		'Uyumluluk, birim ekonomi ve ölçüm eşiklerini yayından önce doğrulayın.',
+	'pillar.tools.prelaunch.heading': 'Yayın öncesi kontrol',
+	'pillar.tools.prelaunch.problem':
+		'Bütçe, metin ve ölçüm ayrı ayrı “tamam” ama yayında mı kopuyor?',
+	'pillar.tools.prelaunch.outcome':
+		'Sonuç: Kapıları tek checklist’te geçmeden yayına çıkmazsınız.',
+	'pillar.tools.prelaunch.body':
+		'Uyumluluk taraması, hesap (birim ekonomi) ve ölçüm olgunluğu eşiklerini bir arada doğrular.',
+	'pillar.tools.prelaunch.cta': 'Kontrolü panelde aç',
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -657,8 +868,8 @@ const en: Record<MessageKey, string> = {
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.forkHint': 'Two doors. Then Resources and Tools amplify both.',
 
-	'hub.nav.webApp': 'Maya App',
-	'hub.nav.crm': 'Maya CRM',
+	'hub.nav.webApp': 'Maya App (Operations)',
+	'hub.nav.crm': 'Maya CRM (Sales & Ads)',
 	'hub.nav.resources': 'Resources',
 	'hub.nav.tools': 'Tools',
 	'hub.menu.open': 'Open menu',
@@ -693,13 +904,13 @@ const en: Record<MessageKey, string> = {
 	'hub.stage.crm.eyebrow': 'Maya CRM (Sales & Ads)',
 
 	'hub.resources.problem':
-		'Worried your team will struggle to adopt a new system?',
-	'hub.resources.title': 'Not just software — a full learning ecosystem.',
+		'Can’t see product status, what’s shipping, and your maturity in one place?',
+	'hub.resources.title': 'Scorecard, feature status, and updates in one door.',
 	'hub.resources.desc':
-		'Resources gives step-by-step video guides, how-tos, and ready templates so your team can use the system fully from day one. Sales and operations speak the same language.',
+		'Resources: free AI scorecard, feature summary, and release notes so your team sees Verimaya clearly.',
 	'hub.resources.outcome':
-		'Outcome: onboarding doesn’t take weeks — your team specializes from day one.',
-	'hub.resources.ctaPrimary': 'See training content',
+		'Outcome: you know where you stand and the next step within minutes.',
+	'hub.resources.ctaPrimary': 'See resources',
 	'hub.resources.ctaSecondary': 'Get a free product scorecard',
 
 	'hub.ctaBand.title': 'End the chaos — take control.',
@@ -767,6 +978,216 @@ const en: Record<MessageKey, string> = {
 	'hub.footer.kvkk': 'KVKK Disclosure',
 	'hub.footer.resources': 'Resources',
 	'hub.footer.tools': 'Tools',
+
+	'pillar.app.metaTitle': 'Maya App (Operations) — Verimaya',
+	'pillar.app.metaDesc':
+		'Patients, appointments, finance, reports, and audit: run health-tourism operations in one panel.',
+	'pillar.app.eyebrow': 'Maya App (Operations)',
+	'pillar.app.heading': 'Bring the full operation onto one screen.',
+	'pillar.app.problem':
+		'When a patient walks in, do appointments, files, and finance scatter across tools?',
+	'pillar.app.outcome':
+		'Outcome: by month-end, “Who came, who paid?” is one click away.',
+	'pillar.app.cta': 'Go to Maya App',
+	'pillar.app.ctaSecondary': 'Feature catalog ›',
+	'pillar.app.f.patients.title': 'Patient list and detail',
+	'pillar.app.f.patients.desc':
+		'List leads and patients; reach status, notes, and contact details in one screen.',
+	'pillar.app.f.duplicates.title': 'Duplicate scan',
+	'pillar.app.f.duplicates.desc':
+		'Find and merge duplicate patients and contacts; cut data mess.',
+	'pillar.app.f.contacts.title': 'Contacts (vendor directory)',
+	'pillar.app.f.contacts.desc':
+		'Keep hotel, clinic, and transfer contacts tied to patient ops.',
+	'pillar.app.f.appointments.title': 'Appointment calendar',
+	'pillar.app.f.appointments.desc':
+		'Manage day/week view with clinic, hotel, and transfer notes.',
+	'pillar.app.f.ledger.title': 'Income and expense ledger',
+	'pillar.app.f.ledger.desc':
+		'Log collections and payouts with patient link, payment status, and invoice fields.',
+	'pillar.app.f.whatsappImport.title': 'AI WhatsApp transaction import',
+	'pillar.app.f.whatsappImport.desc':
+		'Paste a group message or pick from the queue; AI extracts drafts, humans approve before save.',
+	'pillar.app.f.invoiceAi.title': 'AI invoice processing',
+	'pillar.app.f.invoiceAi.desc':
+		'Read invoice documents with AI and link them to transactions — a separate flow from WhatsApp import.',
+	'pillar.app.f.balances.title': 'P2P net balances',
+	'pillar.app.f.balances.desc':
+		'Track net payables/receivables between contacts at a glance.',
+	'pillar.app.f.reports.title': 'Summary reports and dashboard',
+	'pillar.app.f.reports.desc':
+		'See income/expense period cards; drill down by category.',
+	'pillar.app.f.realRoas.title': 'Real ROAS report',
+	'pillar.app.f.realRoas.desc':
+		'Compare ad spend to collected revenue; cost per patient and source split.',
+	'pillar.app.f.audit.title': 'Audit log',
+	'pillar.app.f.audit.desc':
+		'Who did what: follow the audit trail for critical actions in settings.',
+	'pillar.app.f.scorecard.title': 'In-product AI scorecard',
+	'pillar.app.f.scorecard.desc':
+		'43-criteria measurement, auto-fill, and period comparison inside the panel.',
+	'pillar.app.f.n8n.title': 'n8n and external API',
+	'pillar.app.f.n8n.desc':
+		'Connect automations with scoped API keys and signed webhooks.',
+	'pillar.app.f.multiTenant.title': 'Multi-tenant organization',
+	'pillar.app.f.multiTenant.desc':
+		'Keep tenant isolation with orgs, teams, and roles.',
+
+	'pillar.crm.metaTitle': 'Maya CRM (Sales & Ads) — Verimaya',
+	'pillar.crm.metaDesc':
+		'Lead capture, pipeline, automation, and ads connect: run the sales line with Maya CRM.',
+	'pillar.crm.eyebrow': 'Maya CRM (Sales & Ads)',
+	'pillar.crm.heading': 'Turn every lead into an appointment.',
+	'pillar.crm.problem':
+		'Ad budget spends, but leads vanish in WhatsApp chats?',
+	'pillar.crm.outcome':
+		'Outcome: no forgotten leads, no wasted budget — more appointments.',
+	'pillar.crm.cta': 'Open Maya CRM',
+	'pillar.crm.ctaSecondary': 'Maya App sync ›',
+	'pillar.crm.f.leadCapture.title': 'Lead capture',
+	'pillar.crm.f.leadCapture.desc':
+		'Catch prospects from ads, forms, and WhatsApp instantly.',
+	'pillar.crm.f.pipeline.title': 'Pipeline / opportunities',
+	'pillar.crm.f.pipeline.desc':
+		'Keep stages clear; move opportunities without losing them.',
+	'pillar.crm.f.automation.title': 'Follow-ups & automation',
+	'pillar.crm.f.automation.desc':
+		'Reduce dependency on personal chasing with workflows and follow-ups.',
+	'pillar.crm.f.multichannel.title': 'Multi-channel messaging',
+	'pillar.crm.f.multichannel.desc':
+		'Combine WhatsApp, SMS, and email in one sales process.',
+	'pillar.crm.f.salesReports.title': 'Sales reporting',
+	'pillar.crm.f.salesReports.desc':
+		'See conversion and pipeline performance in reports.',
+	'pillar.crm.f.appSync.title': 'Maya App sync',
+	'pillar.crm.f.appSync.desc':
+		'Map lead and opportunity fields to Maya App ops with ownership rules.',
+	'pillar.crm.f.ads.title': 'Meta & Google Ads connect',
+	'pillar.crm.f.ads.desc':
+		'Connect ad accounts; spend and metrics feed the Real ROAS report.',
+
+	'pillar.resources.metaTitle': 'Resources — Verimaya',
+	'pillar.resources.metaDesc':
+		'Free AI scorecard, feature summary, and release notes.',
+	'pillar.resources.eyebrow': 'Resources',
+	'pillar.resources.heading': 'Scorecard, features, and updates.',
+	'pillar.resources.problem':
+		'Can’t see product status and maturity in one place?',
+	'pillar.resources.outcome':
+		'Outcome: you know where you stand and the next step within minutes.',
+	'pillar.resources.cta': 'Get free product scorecard',
+	'pillar.resources.ctaSecondary': 'Features ›',
+	'pillar.resources.f.karne.title': 'Free AI scorecard',
+	'pillar.resources.f.karne.desc':
+		'Five minutes, no signup: measure your org’s AI maturity.',
+	'pillar.resources.f.features.title': 'Feature summary',
+	'pillar.resources.f.features.desc':
+		'See which capabilities are ready, piloting, or live by module.',
+	'pillar.resources.f.changelog.title': 'What’s new',
+	'pillar.resources.f.changelog.desc':
+		'Follow release notes for what landed in the panel.',
+
+	'pillar.tools.metaTitle': 'Tools — Verimaya',
+	'pillar.tools.metaDesc':
+		'Before you spend: ROAS calculator, simulator, compliance, templates, measurement, pre-launch.',
+	'pillar.tools.eyebrow': 'Tools',
+	'pillar.tools.heading': 'Simulate and validate before you spend on ads.',
+	'pillar.tools.problem':
+		'Are you risking budget with guesses or messy spreadsheets before launch?',
+	'pillar.tools.outcome':
+		'Outcome: stop burning budget on trial and error — clarity before go-live.',
+	'pillar.tools.cta': 'Go to Real ROAS calculator',
+	'pillar.tools.ctaSecondary': 'Maya App ›',
+	'pillar.tools.f.templates.title': 'Campaign assistant',
+	'pillar.tools.f.templates.desc':
+		'UTM, 3:2:2 creative, and 60/30/10 budget templates for launch.',
+	'pillar.tools.f.simulator.title': 'Ad math simulator',
+	'pillar.tools.f.simulator.desc':
+		'See leads and sales from CPC/CVR scenarios before you spend.',
+	'pillar.tools.f.compliance.title': 'Ad compliance scan',
+	'pillar.tools.f.compliance.desc':
+		'Scan copy for banned or risky health claims.',
+	'pillar.tools.f.calculator.title': 'Real ROAS calculator',
+	'pillar.tools.f.calculator.desc':
+		'Turn platform ROAS into real profit, break-even, and spend ceiling.',
+	'pillar.tools.f.measurement.title': 'Measurement maturity (Trust Score)',
+	'pillar.tools.f.measurement.desc':
+		'Consent, CAPI, SST, and offline conversion checks for measurement health.',
+	'pillar.tools.f.prelaunch.title': 'Pre-launch check',
+	'pillar.tools.f.prelaunch.desc':
+		'Validate compliance, unit economics, and measurement gates in one place.',
+
+	'pillar.tools.calculator.metaTitle': 'Real ROAS calculator — Verimaya Tools',
+	'pillar.tools.calculator.metaDesc':
+		'Convert platform ROAS to real profit; compute break-even and max ad cost.',
+	'pillar.tools.calculator.heading': 'Real ROAS calculator',
+	'pillar.tools.calculator.problem':
+		'Do you treat platform ROAS as the same as cash profit?',
+	'pillar.tools.calculator.outcome':
+		'Outcome: you speak spend in real-profit terms.',
+	'pillar.tools.calculator.body':
+		'With your cost and revenue assumptions, see break-even and a safe ad-cost ceiling. Same math family as Maya App Real ROAS.',
+	'pillar.tools.calculator.cta': 'Open calculator in panel',
+
+	'pillar.tools.simulator.metaTitle': 'Ad simulator — Verimaya Tools',
+	'pillar.tools.simulator.metaDesc':
+		'Simulate CPL and cost per sale from CPC, CVR, and close rate before launch.',
+	'pillar.tools.simulator.heading': 'Ad math simulator',
+	'pillar.tools.simulator.problem':
+		'Answering “how many patients from this budget?” with guesses?',
+	'pillar.tools.simulator.outcome':
+		'Outcome: you see the scenario in numbers before go-live.',
+	'pillar.tools.simulator.body':
+		'Use traffic lights and scale ceilings to test whether growth is safe.',
+	'pillar.tools.simulator.cta': 'Open simulator in panel',
+
+	'pillar.tools.compliance.metaTitle': 'Ad compliance — Verimaya Tools',
+	'pillar.tools.compliance.metaDesc':
+		'Scan health-tourism ad and landing copy for banned or risky claims.',
+	'pillar.tools.compliance.heading': 'Ad compliance scan',
+	'pillar.tools.compliance.problem':
+		'Could copy or landing put the ad account at policy risk?',
+	'pillar.tools.compliance.outcome':
+		'Outcome: you catch risky phrases before launch.',
+	'pillar.tools.compliance.body':
+		'Scan for banned and risky health claims; also used as a pre-launch gate.',
+	'pillar.tools.compliance.cta': 'Open scan in panel',
+
+	'pillar.tools.templates.metaTitle': 'Campaign assistant — Verimaya Tools',
+	'pillar.tools.templates.metaDesc':
+		'UTM builder, 3:2:2 creative split, and 60/30/10 budget templates.',
+	'pillar.tools.templates.heading': 'Campaign assistant',
+	'pillar.tools.templates.problem':
+		'Do UTM, creative mix, and budget split reinvent themselves each campaign?',
+	'pillar.tools.templates.outcome':
+		'Outcome: you launch with a standard ready pack.',
+	'pillar.tools.templates.body':
+		'Build campaign scaffolding with UTM structures, 3:2:2 creative split, and 60/30/10 budgets.',
+	'pillar.tools.templates.cta': 'Open templates in panel',
+
+	'pillar.tools.measurement.metaTitle': 'Measurement maturity — Verimaya Tools',
+	'pillar.tools.measurement.metaDesc':
+		'Trust Score: consent, CAPI, SST, and offline conversion checks.',
+	'pillar.tools.measurement.heading': 'Measurement maturity (Trust Score)',
+	'pillar.tools.measurement.problem':
+		'Pretty ads dashboards but leaky measurement?',
+	'pillar.tools.measurement.outcome':
+		'Outcome: you clarify measurement health with a checklist.',
+	'pillar.tools.measurement.body':
+		'Check consent/KVKK, enhanced conversions/CAPI, server-side tagging, CRM→Ads offline conversion, and EMQ.',
+	'pillar.tools.measurement.cta': 'Open measurement in panel',
+
+	'pillar.tools.prelaunch.metaTitle': 'Pre-launch check — Verimaya Tools',
+	'pillar.tools.prelaunch.metaDesc':
+		'Validate compliance, unit economics, and measurement gates before go-live.',
+	'pillar.tools.prelaunch.heading': 'Pre-launch check',
+	'pillar.tools.prelaunch.problem':
+		'Budget, copy, and measurement each look fine — but launch still breaks?',
+	'pillar.tools.prelaunch.outcome':
+		'Outcome: you don’t go live until every gate passes one checklist.',
+	'pillar.tools.prelaunch.body':
+		'Combines compliance scan, calculator (unit economics), and measurement maturity thresholds.',
+	'pillar.tools.prelaunch.cta': 'Open pre-launch in panel',
 } as const;
 
 export const messages = { tr, en } as const;

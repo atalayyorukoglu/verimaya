@@ -27,7 +27,11 @@
 		(page.url.pathname === '/' && isMarketingHost()) ||
 			page.url.pathname.startsWith('/vitrin') ||
 			page.url.pathname.startsWith('/yapay-zeka-karnesi') ||
-			page.url.pathname.startsWith('/kvkk-aydinlatma')
+			page.url.pathname.startsWith('/kvkk-aydinlatma') ||
+			page.url.pathname.startsWith('/app/') ||
+			page.url.pathname.startsWith('/crm/') ||
+			page.url.pathname.startsWith('/resources/') ||
+			page.url.pathname.startsWith('/tools/')
 	);
 
 	/** Unregister leftover PWA/MSW workers and wipe Cache Storage.

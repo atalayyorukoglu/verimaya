@@ -32,27 +32,27 @@
 	};
 
 	const navItems = [
-		{ href: '#app', labelKey: 'hub.nav.webApp' as MessageKey },
-		{ href: '#crm', labelKey: 'hub.nav.crm' as MessageKey },
-		{ href: '#resources', labelKey: 'hub.nav.resources' as MessageKey },
-		{ href: '#tools', labelKey: 'hub.nav.tools' as MessageKey }
+		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },
+		{ href: '/crm/', labelKey: 'hub.nav.crm' as MessageKey },
+		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey },
+		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey }
 	] as const;
 
 	const tools = [
 		{
 			titleKey: 'hub.tools.campaign.title' as MessageKey,
 			descKey: 'hub.tools.campaign.desc' as MessageKey,
-			href: '/marketing/templates/'
+			href: '/tools/templates/'
 		},
 		{
 			titleKey: 'hub.tools.simulator.title' as MessageKey,
 			descKey: 'hub.tools.simulator.desc' as MessageKey,
-			href: '/marketing/simulator/'
+			href: '/tools/simulator/'
 		},
 		{
 			titleKey: 'hub.tools.prelaunch.title' as MessageKey,
 			descKey: 'hub.tools.prelaunch.desc' as MessageKey,
-			href: '/marketing/pre-launch/'
+			href: '/tools/pre-launch/'
 		}
 	] as const;
 
@@ -302,7 +302,7 @@
 								{t('hub.apps.app.cta')}
 							</a>
 							<a
-								href="/features/"
+								href="/app/"
 								class="text-sm font-medium text-white transition-colors hover:text-white/80"
 							>
 								{t('hub.apps.app.ctaFeatures')}
@@ -369,7 +369,7 @@
 								{t('hub.apps.crm.cta')}
 							</a>
 							<a
-								href="/features/"
+								href="/crm/"
 								class="text-sm font-medium text-white transition-colors hover:text-white/80"
 							>
 								{t('hub.apps.crm.ctaFeatures')}
@@ -431,7 +431,7 @@
 			</p>
 			<div class="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row">
 				<a
-					href="/features/"
+					href="/resources/"
 					class="inline-flex h-10 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 				>
 					{t('hub.resources.ctaPrimary')}
@@ -540,22 +540,22 @@
 					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint">{t('hub.footer.links')}</p>
 					<ul class="mt-4 space-y-2">
 						<li>
-							<a href={PUBLIC_APP_URL} class="text-xs text-text-muted transition-colors hover:text-text"
+							<a href="/app/" class="text-xs text-text-muted transition-colors hover:text-text"
 								>{t('hub.nav.webApp')}</a
 							>
 						</li>
 						<li>
-							<a href={PUBLIC_CRM_URL} class="text-xs text-text-muted transition-colors hover:text-text"
+							<a href="/crm/" class="text-xs text-text-muted transition-colors hover:text-text"
 								>{t('hub.nav.crm')}</a
 							>
 						</li>
 						<li>
-							<a href="#resources" class="text-xs text-text-muted transition-colors hover:text-text"
+							<a href="/resources/" class="text-xs text-text-muted transition-colors hover:text-text"
 								>{t('hub.nav.resources')}</a
 							>
 						</li>
 						<li>
-							<a href="#tools" class="text-xs text-text-muted transition-colors hover:text-text"
+							<a href="/tools/" class="text-xs text-text-muted transition-colors hover:text-text"
 								>{t('hub.nav.tools')}</a
 							>
 						</li>

@@ -7,6 +7,14 @@ Allow: /yapay-zeka-karnesi
 Allow: /yapay-zeka-karnesi/
 Allow: /kvkk-aydinlatma
 Allow: /kvkk-aydinlatma/
+Allow: /app
+Allow: /app/
+Allow: /crm
+Allow: /crm/
+Allow: /resources
+Allow: /resources/
+Allow: /tools
+Allow: /tools/
 Allow: /robots.txt
 Allow: /sitemap.xml
 
