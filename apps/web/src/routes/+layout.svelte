@@ -87,7 +87,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Verimaya</title>
+	<title>Veri Maya</title>
 	{#if !isIndexablePublic}
 		<meta name="robots" content="noindex" />
 	{/if}

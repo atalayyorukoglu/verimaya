@@ -155,12 +155,12 @@
 				? 'Devam etmek için bir çalışma alanı seçin.'
 				: step === 'orgCreate'
 					? 'Henüz bir organizasyonunuz yok. İlk tenant kaydını oluşturun.'
-					: 'Verimaya hesabınızla devam edin.'
+					: 'Veri Maya hesabınızla devam edin.'
 	);
 </script>
 
 <svelte:head>
-	<title>Giriş · Verimaya</title>
+	<title>Giriş · Veri Maya</title>
 </svelte:head>
 
 <div class="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-12">
@@ -314,7 +314,7 @@
 				href={PUBLIC_SITE_URL}
 				class="text-text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
 			>
-				Verimaya nedir?
+				Veri Maya nedir?
 			</a>
 		</p>
 	</div>

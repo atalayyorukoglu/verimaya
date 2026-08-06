@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>İçe / dışa aktar · Ayarlar · Verimaya</title>
+	<title>İçe / dışa aktar · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
@@ -16,7 +16,7 @@
 	<div class="rounded-lg border border-border bg-surface p-6 text-center sm:p-8">
 		<p class="text-sm font-medium text-text">Faz 8’de</p>
 		<p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-text-muted">
-			Tracker’daki import/export/delete Ayarlar’a gömülüydü ve toplu silme riskliydi. Verimaya’da
+			Tracker’daki import/export/delete Ayarlar’a gömülüydü ve toplu silme riskliydi. Veri Maya’da
 			ETL + kontrollü migrasyon; bu ekran şimdilik yer tutucu.
 		</p>
 		<a

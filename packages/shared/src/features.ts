@@ -72,7 +72,7 @@ export const features: Feature[] = [
 		module: 'Entegrasyonlar',
 		title: 'GoHighLevel senkronu',
 		description:
-			'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Verimaya ile eşleştirin.',
+			'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Veri Maya ile eşleştirin.',
 		status: 'kod-hazir'
 	},
 	{

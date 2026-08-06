@@ -577,7 +577,7 @@
 </script>
 
 <svelte:head>
-	<title>Raporlar · Verimaya</title>
+	<title>Raporlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">

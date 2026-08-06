@@ -89,14 +89,14 @@
 
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="tr_TR" />
-	<meta property="og:site_name" content="Verimaya" />
+	<meta property="og:site_name" content="Veri Maya" />
 	<meta property="og:title" content={pageTitle} />
 	<meta property="og:description" content={pageDescription} />
 	<meta property="og:url" content={canonical} />
 	<meta property="og:image" content={ogImage} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
-	<meta property="og:image:alt" content="Verimaya" />
+	<meta property="og:image:alt" content="Veri Maya" />
 
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={pageTitle} />
@@ -320,7 +320,7 @@
 					</a>
 					<p class="mt-4">
 						<a href="/" class="text-xs text-text-muted transition-colors hover:text-text">
-							Verimaya
+							Veri Maya
 						</a>
 					</p>
 				</div>
@@ -358,7 +358,7 @@
 				</div>
 			</div>
 			<div class="mt-10 border-t border-border/40 pt-6 text-center text-xs text-text-faint">
-				© {new Date().getFullYear()} Verimaya
+				© {new Date().getFullYear()} Veri Maya
 			</div>
 		</div>
 	</footer>

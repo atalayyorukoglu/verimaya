@@ -75,7 +75,7 @@
 </script>
 
 <svelte:head>
-	<title>Organizasyon · Ayarlar · Verimaya</title>
+	<title>Organizasyon · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

@@ -59,7 +59,7 @@
 </script>
 
 <svelte:head>
-	<title>Kişi türleri · Ayarlar · Verimaya</title>
+	<title>Kişi türleri · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

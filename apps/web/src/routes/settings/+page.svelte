@@ -139,7 +139,7 @@
 </script>
 
 <svelte:head>
-	<title>Ayarlar · Verimaya</title>
+	<title>Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

@@ -47,7 +47,7 @@
 </script>
 
 <svelte:head>
-	<title>Ekip · Ayarlar · Verimaya</title>
+	<title>Ekip · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">

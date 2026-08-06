@@ -1,5 +1,5 @@
 /** Canonical product name + sidebar/auth tagline (SiteLogo defaults). */
 export const site = {
-	name: 'Verimaya',
+	name: 'Veri Maya',
 	description: 'Ölçülebilir Büyüme.'
 } as const;

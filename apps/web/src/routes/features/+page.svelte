@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>Özellikler · Verimaya</title>
+	<title>Özellikler · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl">

@@ -66,7 +66,7 @@ const tr = {
 	'karne.result.euEffectiveDate': '2 Ağustos 2026',
 	'karne.result.euNoticeSuffix': "'dan itibaren sizi kapsıyor.",
 	'karne.result.productBlurb':
-		'Verimaya, hasta yolculuğunu tek panelde toplar — lead\'den randevuya, finanstan WhatsApp aktarımına.',
+		'Veri Maya, hasta yolculuğunu tek panelde toplar — lead\'den randevuya, finanstan WhatsApp aktarımına.',
 	'karne.result.backToShowcase': 'Vitrine dön',
 	'karne.result.demoLogin': 'Demo için giriş',
 
@@ -163,7 +163,7 @@ const tr = {
 	'settings.ghl.description': 'Lead ve iletişim senkronu — webhook-first, alan sahipliği kurallı.',
 	'settings.ghl.card.name': 'GHL hesabı',
 	'settings.ghl.card.description':
-		"Contact ve opportunity webhook'ları kuyruğa yazılır, worker'da işlenir; Verimaya sahibi olduğu alanları GHL'e geri yazar.",
+		"Contact ve opportunity webhook'ları kuyruğa yazılır, worker'da işlenir; Veri Maya sahibi olduğu alanları GHL'e geri yazar.",
 	'settings.ghl.connect': "GHL'e bağlan",
 	'settings.ghl.flash': 'GHL bağlantısı tamamlandı.',
 	'settings.ghl.statusLabel': 'Durum',
@@ -177,7 +177,7 @@ const tr = {
 	'settings.ghl.disconnectError': 'Bağlantı kesilemedi',
 	'settings.ghl.ownership.heading': 'Alan sahipliği (planlanan)',
 	'settings.ghl.ownership.lead': 'Lead durumu ve pipeline aşaması: GHL sahibi',
-	'settings.ghl.ownership.ops': 'Randevu, finans ve operasyon alanları: Verimaya sahibi',
+	'settings.ghl.ownership.ops': 'Randevu, finans ve operasyon alanları: Veri Maya sahibi',
 	'settings.ghl.ownership.conflict': 'Çakışmada kaynak sahibi kazanır, olay denetim kaydına düşer.',
 	'settings.ghl.dev.heading': 'Geliştirme / fixture',
 	'settings.ghl.dev.body':
@@ -326,7 +326,7 @@ const tr = {
 		'Sistemi daha verimli kullanmak, reklam ve satış performansınızı artırmak istiyorsunuz ama nereden başlayacağınızı bilemiyor musunuz?',
 	'hub.resources.title': 'Özellik rehberleri, dökümantasyon ve satış taktikleri tek kütüphanede.',
 	'hub.resources.desc':
-		'Kaynaklar; Verimaya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
+		'Kaynaklar; Veri Maya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
 	'hub.resources.outcome':
 		'Sonuç: “Bu özelliği nasıl kullanırız?” ya da “Satışları nasıl artırırız?” sorularının yanıtı rehberlerimizle anında elinizin altında.',
 	'hub.resources.ctaPrimary': 'Kaynakları gör',
@@ -358,7 +358,7 @@ const tr = {
 		'Reklam bütçenizi yayına almadan önce tahminlerle veya karmaşık Excel tablolarıyla mı riske atıyorsunuz?',
 	'hub.tools.title': 'Reklama paranızı yatırmadan önce simüle edin ve doğrulayın.',
 	'hub.tools.desc':
-		'Verimaya Araçları; reklam yayınlamadan önceki planlama, bütçe simülasyonu ve denetim adımlarını otomatiğe bağlar. Maya CRM ve Maya App’e tam entegre çalışarak boşa gidecek her tıklamayı engeller.',
+		'Veri Maya Araçları; reklam yayınlamadan önceki planlama, bütçe simülasyonu ve denetim adımlarını otomatiğe bağlar. Maya CRM ve Maya App’e tam entegre çalışarak boşa gidecek her tıklamayı engeller.',
 	'hub.tools.outcome':
 		'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce %100 netlik.',
 	'hub.tools.campaign.title': 'Kampanya Asistanı',
@@ -376,7 +376,7 @@ const tr = {
 	'hub.tools.cta': 'Tüm araçları keşfet',
 
 	'hub.scenarios.title': 'Kullanım senaryoları',
-	'hub.scenarios.desc': 'Farklı klinik profillerinde Verimaya ekosistemi nasıl çalışır.',
+	'hub.scenarios.desc': 'Farklı klinik profillerinde Veri Maya ekosistemi nasıl çalışır.',
 	'hub.scenarios.hair.title': 'Saç ekimi kliniği',
 	'hub.scenarios.hair.desc':
 		"Lead WhatsApp'tan gelir → Maya CRM'de pipeline'a düşer → Randevu alınır → İşlem yapılır → Ödeme Maya App'te kaydedilir → Raporlanır.",
@@ -392,7 +392,7 @@ const tr = {
 	'hub.karne.cta': 'Karnemi al',
 
 	'hub.integrations.title': 'Entegrasyonlar',
-	'hub.integrations.desc': 'Verimaya ekosistemini güçlendiren servisler.',
+	'hub.integrations.desc': 'Veri Maya ekosistemini güçlendiren servisler.',
 
 	'hub.footer.tagline': 'Hasta yolculuğunu tek panelde yönetin',
 	'hub.footer.links': 'Kapılar',
@@ -402,7 +402,7 @@ const tr = {
 	'hub.footer.tools': 'Araçlar',
 
 	// Public pillar pages (/app /crm /tools /resources)
-	'pillar.app.metaTitle': 'Maya App (Operasyon) — Verimaya',
+	'pillar.app.metaTitle': 'Maya App (Operasyon) — Veri Maya',
 	'pillar.app.metaDesc':
 		'Hasta, randevu, finans, rapor ve denetim: sağlık turizmi operasyonunu tek panelde yönetin.',
 	'pillar.app.eyebrow': 'Maya App (Operasyon)',
@@ -459,7 +459,7 @@ const tr = {
 	'pillar.app.f.multiTenant.desc':
 		'Organizasyon, ekip ve rollerle tenant izolasyonunu koruyun.',
 
-	'pillar.crm.metaTitle': 'Maya CRM (Satış & Reklam) — Verimaya',
+	'pillar.crm.metaTitle': 'Maya CRM (Satış & Reklam) — Veri Maya',
 	'pillar.crm.metaDesc':
 		'Lead yakalama, pipeline, otomasyon ve reklam bağlantısı: satış hattını Maya CRM ile yönetin.',
 	'pillar.crm.eyebrow': 'Maya CRM (Satış & Reklam)',
@@ -492,7 +492,7 @@ const tr = {
 	'pillar.crm.f.ads.desc':
 		'Reklam hesaplarını bağlayın; harcama ve metrikler Gerçek ROAS raporunu besler.',
 
-	'pillar.resources.metaTitle': 'Kaynaklar — Verimaya',
+	'pillar.resources.metaTitle': 'Kaynaklar — Veri Maya',
 	'pillar.resources.metaDesc':
 		'Özellik rehberleri, platform dökümantasyonu ve sağlık turizmine özel reklam-satış taktikleri tek kütüphanede.',
 	'pillar.resources.eyebrow': 'Kaynaklar',
@@ -501,7 +501,7 @@ const tr = {
 	'pillar.resources.problem':
 		'Sistemi daha verimli kullanmak, reklam ve satış performansınızı artırmak istiyorsunuz ama nereden başlayacağınızı bilemiyor musunuz?',
 	'pillar.resources.body':
-		'Kaynaklar; Verimaya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
+		'Kaynaklar; Veri Maya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
 	'pillar.resources.outcome':
 		'Sonuç: “Bu özelliği nasıl kullanırız?” ya da “Satışları nasıl artırırız?” sorularının yanıtı rehberlerimizle anında elinizin altında.',
 	'pillar.resources.cta': 'Ücretsiz ürün karnesi al',
@@ -516,7 +516,7 @@ const tr = {
 	'pillar.resources.f.changelog.desc':
 		'Sürüm notlarıyla panele neyin geldiğini takip edin.',
 
-	'pillar.tools.metaTitle': 'Araçlar — Verimaya',
+	'pillar.tools.metaTitle': 'Araçlar — Veri Maya',
 	'pillar.tools.metaDesc':
 		'Reklama yatırmadan önce ROAS hesabı, simülatör, uyumluluk, şablon, ölçüm ve yayın öncesi kontrol.',
 	'pillar.tools.eyebrow': 'Araçlar',
@@ -546,7 +546,7 @@ const tr = {
 	'pillar.tools.f.prelaunch.desc':
 		'Uyumluluk, birim ekonomi ve ölçüm eşiklerini tek kapıda doğrulayın.',
 
-	'pillar.tools.calculator.metaTitle': 'Gerçek ROAS hesabı — Verimaya Araçlar',
+	'pillar.tools.calculator.metaTitle': 'Gerçek ROAS hesabı — Veri Maya Araçlar',
 	'pillar.tools.calculator.metaDesc':
 		'Platform ROAS’ı gerçek kâra çevirin; başabaş ve tavan reklam maliyetini hesaplayın.',
 	'pillar.tools.calculator.heading': 'Gerçek ROAS hesabı',
@@ -558,7 +558,7 @@ const tr = {
 		'Girdiğiniz maliyet ve gelir varsayımlarıyla başabaş noktası ve güvenli tavan reklam maliyetini görün. Maya App Gerçek ROAS raporuyla aynı matematiğe yaslanır.',
 	'pillar.tools.calculator.cta': 'Hesabı panelde aç',
 
-	'pillar.tools.simulator.metaTitle': 'Reklam simülatörü — Verimaya Araçlar',
+	'pillar.tools.simulator.metaTitle': 'Reklam simülatörü — Veri Maya Araçlar',
 	'pillar.tools.simulator.metaDesc':
 		'CPC, CVR ve satış oranıyla CPL ve satış maliyetini yayından önce simüle edin.',
 	'pillar.tools.simulator.heading': 'Reklam matematiği simülatörü',
@@ -570,7 +570,7 @@ const tr = {
 		'Trafik ışığı ve ölçek tavanıyla bütçeyi büyütmenin güvenli olup olmadığını test edin.',
 	'pillar.tools.simulator.cta': 'Simülatörü panelde aç',
 
-	'pillar.tools.compliance.metaTitle': 'Reklam uyumluluk — Verimaya Araçlar',
+	'pillar.tools.compliance.metaTitle': 'Reklam uyumluluk — Veri Maya Araçlar',
 	'pillar.tools.compliance.metaDesc':
 		'Sağlık turizmi reklam metinlerinde yasaklı ve riskli vaatleri tarayın.',
 	'pillar.tools.compliance.heading': 'Reklam uyumluluk taraması',
@@ -582,7 +582,7 @@ const tr = {
 		'Yasaklı ve riskli sağlık vaatlerini tarayın; yayın öncesi kontrol kapısında da kullanılır.',
 	'pillar.tools.compliance.cta': 'Taramayı panelde aç',
 
-	'pillar.tools.templates.metaTitle': 'Kampanya asistanı — Verimaya Araçlar',
+	'pillar.tools.templates.metaTitle': 'Kampanya asistanı — Veri Maya Araçlar',
 	'pillar.tools.templates.metaDesc':
 		'UTM builder, 3:2:2 kreatif split ve 60/30/10 bütçe şablonları.',
 	'pillar.tools.templates.heading': 'Kampanya asistanı',
@@ -594,7 +594,7 @@ const tr = {
 		'UTM yapıları, 3:2:2 kreatif dağılımı ve 60/30/10 bütçe şablonlarıyla satış hattına hazır kampanya iskeleti kurun.',
 	'pillar.tools.templates.cta': 'Şablonları panelde aç',
 
-	'pillar.tools.measurement.metaTitle': 'Ölçüm olgunluğu — Verimaya Araçlar',
+	'pillar.tools.measurement.metaTitle': 'Ölçüm olgunluğu — Veri Maya Araçlar',
 	'pillar.tools.measurement.metaDesc':
 		'Trust Score: consent, CAPI, SST ve offline conversion kontrolleri.',
 	'pillar.tools.measurement.heading': 'Ölçüm olgunluğu (Trust Score)',
@@ -606,7 +606,7 @@ const tr = {
 		'Consent/KVKK, enhanced conversions/CAPI, sunucu tarafı etiket, CRM→Ads offline conversion ve EMQ kontrollerini tarayın.',
 	'pillar.tools.measurement.cta': 'Ölçümü panelde aç',
 
-	'pillar.tools.prelaunch.metaTitle': 'Yayın öncesi kontrol — Verimaya Araçlar',
+	'pillar.tools.prelaunch.metaTitle': 'Yayın öncesi kontrol — Veri Maya Araçlar',
 	'pillar.tools.prelaunch.metaDesc':
 		'Uyumluluk, birim ekonomi ve ölçüm eşiklerini yayından önce doğrulayın.',
 	'pillar.tools.prelaunch.heading': 'Yayın öncesi kontrol',
@@ -668,7 +668,7 @@ const en: Record<MessageKey, string> = {
 	'karne.result.euEffectiveDate': '2 August 2026',
 	'karne.result.euNoticeSuffix': '.',
 	'karne.result.productBlurb':
-		'Verimaya brings the patient journey into one panel — from lead to appointment, finance to WhatsApp transfer.',
+		'Veri Maya brings the patient journey into one panel — from lead to appointment, finance to WhatsApp transfer.',
 	'karne.result.backToShowcase': 'Back to the website',
 	'karne.result.demoLogin': 'Sign in for demo',
 
@@ -762,7 +762,7 @@ const en: Record<MessageKey, string> = {
 	'settings.ghl.description': 'Lead and contact sync — webhook-first, field ownership rules.',
 	'settings.ghl.card.name': 'GHL account',
 	'settings.ghl.card.description':
-		'Contact and opportunity webhooks are queued and processed by workers; Verimaya writes back fields it owns.',
+		'Contact and opportunity webhooks are queued and processed by workers; Veri Maya writes back fields it owns.',
 	'settings.ghl.connect': 'Connect GHL',
 	'settings.ghl.flash': 'GHL connection completed.',
 	'settings.ghl.statusLabel': 'Status',
@@ -776,7 +776,7 @@ const en: Record<MessageKey, string> = {
 	'settings.ghl.disconnectError': 'Could not disconnect',
 	'settings.ghl.ownership.heading': 'Field ownership (planned)',
 	'settings.ghl.ownership.lead': 'Lead status and pipeline stage: GHL owns',
-	'settings.ghl.ownership.ops': 'Appointments, finance, and ops fields: Verimaya owns',
+	'settings.ghl.ownership.ops': 'Appointments, finance, and ops fields: Veri Maya owns',
 	'settings.ghl.ownership.conflict': 'On conflict the source owner wins; the event is audited.',
 	'settings.ghl.dev.heading': 'Development / fixture',
 	'settings.ghl.dev.body':
@@ -924,7 +924,7 @@ const en: Record<MessageKey, string> = {
 		'Want to use the system more efficiently and boost ad and sales performance — but don’t know where to start?',
 	'hub.resources.title': 'Feature guides, documentation, and sales tactics in one library.',
 	'hub.resources.desc':
-		'Resources is a knowledge hub to explore every Verimaya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
+		'Resources is a knowledge hub to explore every Veri Maya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
 	'hub.resources.outcome':
 		'Outcome: answers to “How do we use this feature?” or “How do we grow sales?” are instantly at your fingertips through our guides.',
 	'hub.resources.ctaPrimary': 'See resources',
@@ -956,7 +956,7 @@ const en: Record<MessageKey, string> = {
 		'Are you risking ad budget on guesses or messy Excel sheets before you go live?',
 	'hub.tools.title': 'Simulate and validate before you spend on ads.',
 	'hub.tools.desc':
-		'Verimaya Tools automate pre-launch planning, budget simulation, and checks. Fully integrated with Maya CRM and Maya App, they stop every click that would be wasted.',
+		'Veri Maya Tools automate pre-launch planning, budget simulation, and checks. Fully integrated with Maya CRM and Maya App, they stop every click that would be wasted.',
 	'hub.tools.outcome':
 		'Outcome: end burning budget on trial and error — 100% clarity before launch.',
 	'hub.tools.campaign.title': 'Campaign Assistant',
@@ -974,7 +974,7 @@ const en: Record<MessageKey, string> = {
 	'hub.tools.cta': 'Discover all tools',
 
 	'hub.scenarios.title': 'Use cases',
-	'hub.scenarios.desc': 'How the Verimaya ecosystem works across different clinic profiles.',
+	'hub.scenarios.desc': 'How the Veri Maya ecosystem works across different clinic profiles.',
 	'hub.scenarios.hair.title': 'Hair transplant clinic',
 	'hub.scenarios.hair.desc':
 		"Lead arrives via WhatsApp → drops into Maya CRM pipeline → Appointment booked → Procedure done → Payment logged in Maya App → Reported.",
@@ -990,7 +990,7 @@ const en: Record<MessageKey, string> = {
 	'hub.karne.cta': 'Get my scorecard',
 
 	'hub.integrations.title': 'Integrations',
-	'hub.integrations.desc': 'Services powering the Verimaya ecosystem.',
+	'hub.integrations.desc': 'Services powering the Veri Maya ecosystem.',
 
 	'hub.footer.tagline': 'Manage the patient journey in one panel',
 	'hub.footer.links': 'Doors',
@@ -999,7 +999,7 @@ const en: Record<MessageKey, string> = {
 	'hub.footer.resources': 'Resources',
 	'hub.footer.tools': 'Tools',
 
-	'pillar.app.metaTitle': 'Maya App (Operations) — Verimaya',
+	'pillar.app.metaTitle': 'Maya App (Operations) — Veri Maya',
 	'pillar.app.metaDesc':
 		'Patients, appointments, finance, reports, and audit: run health-tourism operations in one panel.',
 	'pillar.app.eyebrow': 'Maya App (Operations)',
@@ -1056,7 +1056,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.app.f.multiTenant.desc':
 		'Keep tenant isolation with orgs, teams, and roles.',
 
-	'pillar.crm.metaTitle': 'Maya CRM (Sales & Ads) — Verimaya',
+	'pillar.crm.metaTitle': 'Maya CRM (Sales & Ads) — Veri Maya',
 	'pillar.crm.metaDesc':
 		'Lead capture, pipeline, automation, and ads connect: run the sales line with Maya CRM.',
 	'pillar.crm.eyebrow': 'Maya CRM (Sales & Ads)',
@@ -1089,7 +1089,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.crm.f.ads.desc':
 		'Connect ad accounts; spend and metrics feed the Real ROAS report.',
 
-	'pillar.resources.metaTitle': 'Resources — Verimaya',
+	'pillar.resources.metaTitle': 'Resources — Veri Maya',
 	'pillar.resources.metaDesc':
 		'Feature guides, platform documentation, and health-tourism ad and sales tactics in one library.',
 	'pillar.resources.eyebrow': 'Resources',
@@ -1098,7 +1098,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.resources.problem':
 		'Want to use the system more efficiently and boost ad and sales performance — but don’t know where to start?',
 	'pillar.resources.body':
-		'Resources is a knowledge hub to explore every Verimaya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
+		'Resources is a knowledge hub to explore every Veri Maya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
 	'pillar.resources.outcome':
 		'Outcome: answers to “How do we use this feature?” or “How do we grow sales?” are instantly at your fingertips through our guides.',
 	'pillar.resources.cta': 'Get free product scorecard',
@@ -1113,7 +1113,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.resources.f.changelog.desc':
 		'Follow release notes for what landed in the panel.',
 
-	'pillar.tools.metaTitle': 'Tools — Verimaya',
+	'pillar.tools.metaTitle': 'Tools — Veri Maya',
 	'pillar.tools.metaDesc':
 		'Before you spend: ROAS calculator, simulator, compliance, templates, measurement, pre-launch.',
 	'pillar.tools.eyebrow': 'Tools',
@@ -1143,7 +1143,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.f.prelaunch.desc':
 		'Validate compliance, unit economics, and measurement gates in one place.',
 
-	'pillar.tools.calculator.metaTitle': 'Real ROAS calculator — Verimaya Tools',
+	'pillar.tools.calculator.metaTitle': 'Real ROAS calculator — Veri Maya Tools',
 	'pillar.tools.calculator.metaDesc':
 		'Convert platform ROAS to real profit; compute break-even and max ad cost.',
 	'pillar.tools.calculator.heading': 'Real ROAS calculator',
@@ -1155,7 +1155,7 @@ const en: Record<MessageKey, string> = {
 		'With your cost and revenue assumptions, see break-even and a safe ad-cost ceiling. Same math family as Maya App Real ROAS.',
 	'pillar.tools.calculator.cta': 'Open calculator in panel',
 
-	'pillar.tools.simulator.metaTitle': 'Ad simulator — Verimaya Tools',
+	'pillar.tools.simulator.metaTitle': 'Ad simulator — Veri Maya Tools',
 	'pillar.tools.simulator.metaDesc':
 		'Simulate CPL and cost per sale from CPC, CVR, and close rate before launch.',
 	'pillar.tools.simulator.heading': 'Ad math simulator',
@@ -1167,7 +1167,7 @@ const en: Record<MessageKey, string> = {
 		'Use traffic lights and scale ceilings to test whether growth is safe.',
 	'pillar.tools.simulator.cta': 'Open simulator in panel',
 
-	'pillar.tools.compliance.metaTitle': 'Ad compliance — Verimaya Tools',
+	'pillar.tools.compliance.metaTitle': 'Ad compliance — Veri Maya Tools',
 	'pillar.tools.compliance.metaDesc':
 		'Scan health-tourism ad and landing copy for banned or risky claims.',
 	'pillar.tools.compliance.heading': 'Ad compliance scan',
@@ -1179,7 +1179,7 @@ const en: Record<MessageKey, string> = {
 		'Scan for banned and risky health claims; also used as a pre-launch gate.',
 	'pillar.tools.compliance.cta': 'Open scan in panel',
 
-	'pillar.tools.templates.metaTitle': 'Campaign assistant — Verimaya Tools',
+	'pillar.tools.templates.metaTitle': 'Campaign assistant — Veri Maya Tools',
 	'pillar.tools.templates.metaDesc':
 		'UTM builder, 3:2:2 creative split, and 60/30/10 budget templates.',
 	'pillar.tools.templates.heading': 'Campaign assistant',
@@ -1191,7 +1191,7 @@ const en: Record<MessageKey, string> = {
 		'Build campaign scaffolding with UTM structures, 3:2:2 creative split, and 60/30/10 budgets.',
 	'pillar.tools.templates.cta': 'Open templates in panel',
 
-	'pillar.tools.measurement.metaTitle': 'Measurement maturity — Verimaya Tools',
+	'pillar.tools.measurement.metaTitle': 'Measurement maturity — Veri Maya Tools',
 	'pillar.tools.measurement.metaDesc':
 		'Trust Score: consent, CAPI, SST, and offline conversion checks.',
 	'pillar.tools.measurement.heading': 'Measurement maturity (Trust Score)',
@@ -1203,7 +1203,7 @@ const en: Record<MessageKey, string> = {
 		'Check consent/KVKK, enhanced conversions/CAPI, server-side tagging, CRM→Ads offline conversion, and EMQ.',
 	'pillar.tools.measurement.cta': 'Open measurement in panel',
 
-	'pillar.tools.prelaunch.metaTitle': 'Pre-launch check — Verimaya Tools',
+	'pillar.tools.prelaunch.metaTitle': 'Pre-launch check — Veri Maya Tools',
 	'pillar.tools.prelaunch.metaDesc':
 		'Validate compliance, unit economics, and measurement gates before go-live.',
 	'pillar.tools.prelaunch.heading': 'Pre-launch check',

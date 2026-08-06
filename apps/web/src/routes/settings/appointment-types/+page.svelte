@@ -52,7 +52,7 @@
 </script>
 
 <svelte:head>
-	<title>Randevu ayarları · Ayarlar · Verimaya</title>
+	<title>Randevu ayarları · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
@@ -104,7 +104,7 @@
 	<div class="mt-4 rounded-lg border border-dashed border-border bg-surface/50 p-4">
 		<p class="text-sm font-medium text-text">Checklist şablonları</p>
 		<p class="mt-1 text-sm text-text-muted">
-			Tracker’daki “pasaport kopyası, onam formu…” maddeleri. Verimaya’da dosya yükleme ile birlikte
+			Tracker’daki “pasaport kopyası, onam formu…” maddeleri. Veri Maya’da dosya yükleme ile birlikte
 			Faz 1’de gelir; şimdilik yok.
 		</p>
 	</div>

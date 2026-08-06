@@ -84,7 +84,7 @@
 </script>
 
 <svelte:head>
-	<title>{contact?.display_name ?? 'Kişi'} · Verimaya</title>
+	<title>{contact?.display_name ?? 'Kişi'} · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

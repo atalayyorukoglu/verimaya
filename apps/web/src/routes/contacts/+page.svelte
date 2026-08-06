@@ -94,7 +94,7 @@
 </script>
 
 <svelte:head>
-	<title>Kişiler · Verimaya</title>
+	<title>Kişiler · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">

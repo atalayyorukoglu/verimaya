@@ -172,7 +172,7 @@
 </script>
 
 <svelte:head>
-	<title>Randevular · Verimaya</title>
+	<title>Randevular · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">

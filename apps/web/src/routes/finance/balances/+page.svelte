@@ -20,7 +20,7 @@
 </script>
 
 <svelte:head>
-	<title>Bakiyeler · Verimaya</title>
+	<title>Bakiyeler · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

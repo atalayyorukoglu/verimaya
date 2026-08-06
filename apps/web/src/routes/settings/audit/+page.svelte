@@ -40,7 +40,7 @@
 </script>
 
 <svelte:head>
-	<title>Denetim Kaydı · Ayarlar · Verimaya</title>
+	<title>Denetim Kaydı · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">

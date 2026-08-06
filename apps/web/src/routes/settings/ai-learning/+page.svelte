@@ -75,7 +75,7 @@
 </script>
 
 <svelte:head>
-	<title>AI öğrenme · Ayarlar · Verimaya</title>
+	<title>AI öğrenme · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

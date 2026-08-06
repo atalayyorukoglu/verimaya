@@ -37,7 +37,7 @@
 </script>
 
 <svelte:head>
-	<title>Yenilikler · Verimaya</title>
+	<title>Yenilikler · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl">

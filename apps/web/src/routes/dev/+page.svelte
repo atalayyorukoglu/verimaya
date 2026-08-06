@@ -155,7 +155,7 @@
 </script>
 
 <svelte:head>
-	<title>Geliştirici paneli · Verimaya</title>
+	<title>Geliştirici paneli · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0 space-y-8">
@@ -339,7 +339,7 @@
 	</section>
 
 	<p class="text-xs text-text-faint">
-		Tracker: <code class="text-text-muted">/dev-users</code> — yalnızca platform dev e-postası. Verimaya’da
+		Tracker: <code class="text-text-muted">/dev-users</code> — yalnızca platform dev e-postası. Veri Maya’da
 		gerçek erişim Faz 0b’de süper-admin / allowlist ile sınırlanır.
 	</p>
 </div>

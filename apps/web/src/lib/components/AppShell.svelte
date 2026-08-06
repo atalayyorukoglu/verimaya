@@ -222,7 +222,7 @@
 			class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 mx-3 mb-2 rounded-[8px] border border-border bg-surface p-3 shadow-lg md:right-4 md:bottom-4 md:left-auto md:mx-0 md:w-[22rem]"
 			role="status"
 		>
-			<p class="text-sm font-medium text-text">Verimaya’yı ana ekrana ekle</p>
+			<p class="text-sm font-medium text-text">Veri Maya’yı ana ekrana ekle</p>
 			<p class="mt-1 text-xs leading-relaxed text-text-muted">
 				Uygulamayı cihazınıza kurarak daha hızlı açabilirsiniz.
 			</p>
@@ -244,7 +244,7 @@
 	<!-- Desktop sidebar — TickPort: full viewport height, footer pinned -->
 	<aside class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex">
 		<div class="flex h-14 shrink-0 items-center border-b border-border bg-bg px-4">
-			<a href="/" class="block min-w-0 rounded-md" aria-label="Verimaya — {tenantName}">
+			<a href="/" class="block min-w-0 rounded-md" aria-label="Veri Maya — {tenantName}">
 				<SiteLogo />
 			</a>
 		</div>
@@ -312,7 +312,7 @@
 				<a
 					href="/"
 					class="block min-w-0 flex-1 rounded-md"
-					aria-label="Verimaya — {tenantName}"
+					aria-label="Veri Maya — {tenantName}"
 					onclick={closeMobile}
 				>
 					<SiteLogo />
@@ -386,7 +386,7 @@
 			<a
 				href="/"
 				class="shrink-0 rounded-md text-text md:hidden"
-				aria-label="Verimaya — {tenantName}"
+				aria-label="Veri Maya — {tenantName}"
 			>
 				<BrandMark class="h-7 w-7" title="" />
 			</a>

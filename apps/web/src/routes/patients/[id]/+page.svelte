@@ -198,7 +198,7 @@
 
 <svelte:head>
 	<title>
-		{patientQuery.data?.full_name ?? 'Hasta'} · Verimaya
+		{patientQuery.data?.full_name ?? 'Hasta'} · Veri Maya
 	</title>
 </svelte:head>
 

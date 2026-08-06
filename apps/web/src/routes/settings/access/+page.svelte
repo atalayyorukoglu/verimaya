@@ -34,7 +34,7 @@
 </script>
 
 <svelte:head>
-	<title>Erişim · Ayarlar · Verimaya</title>
+	<title>Erişim · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">

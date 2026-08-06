@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>Çift kayıt · Hastalar · Verimaya</title>
+	<title>Çift kayıt · Hastalar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

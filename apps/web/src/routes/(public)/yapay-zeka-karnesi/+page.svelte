@@ -40,7 +40,7 @@
 	} from '$lib/karne/telemetry';
 	import KarneResult from '$lib/components/KarneResult.svelte';
 
-	const title = 'Ücretsiz Yapay Zeka Karnesi — Verimaya';
+	const title = 'Ücretsiz Yapay Zeka Karnesi — Veri Maya';
 	const description =
 		'Kliniğinizin yapay zeka hazırlığını 5 dakikada görün. Üyelik yok — durumunuzu fark edin.';
 	const canonical = `${PUBLIC_SITE_URL}/yapay-zeka-karnesi/`;
@@ -131,7 +131,7 @@
 
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="tr_TR" />
-	<meta property="og:site_name" content="Verimaya" />
+	<meta property="og:site_name" content="Veri Maya" />
 	<meta property="og:title" content={title} />
 	<meta property="og:description" content={description} />
 	<meta property="og:url" content={canonical} />
@@ -147,7 +147,7 @@
 	<header class="flex items-center justify-between px-6 py-6 sm:px-10">
 		<a href="/" class="flex items-center gap-2 text-text">
 			<BrandMark class="h-6 w-6" title="" />
-			<span class="text-sm font-semibold tracking-tight">Verimaya</span>
+			<span class="text-sm font-semibold tracking-tight">Veri Maya</span>
 		</a>
 		<a href="/login" class="text-sm font-medium text-text-muted transition-colors hover:text-text">
 			Giriş

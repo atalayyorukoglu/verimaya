@@ -146,7 +146,7 @@
 </script>
 
 <svelte:head>
-	<title>Ölçüm · Pazarlama · Verimaya</title>
+	<title>Ölçüm · Pazarlama · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">

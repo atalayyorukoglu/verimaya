@@ -155,7 +155,7 @@
 </script>
 
 <svelte:head>
-	<title>n8n / API · Ayarlar · Verimaya</title>
+	<title>n8n / API · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

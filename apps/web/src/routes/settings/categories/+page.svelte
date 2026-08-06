@@ -93,7 +93,7 @@
 </script>
 
 <svelte:head>
-	<title>Kategoriler · Ayarlar · Verimaya</title>
+	<title>Kategoriler · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

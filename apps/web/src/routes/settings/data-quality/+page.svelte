@@ -71,7 +71,7 @@
 </script>
 
 <svelte:head>
-	<title>Veri kalitesi · Ayarlar · Verimaya</title>
+	<title>Veri kalitesi · Ayarlar · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

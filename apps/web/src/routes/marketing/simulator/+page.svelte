@@ -107,7 +107,7 @@
 </script>
 
 <svelte:head>
-	<title>Simülatör · Pazarlama · Verimaya</title>
+	<title>Simülatör · Pazarlama · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">
