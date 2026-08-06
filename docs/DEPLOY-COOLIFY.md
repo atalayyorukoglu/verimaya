@@ -260,7 +260,39 @@ Ek:
 - [ ] Sentry’ye test hata düşüyor
 - [ ] Restore prova tablosunda ≥1 OK
 
-## R2 / local migrate (hatırlatma)
+## Troubleshooting — Sentinel Out Of Sync / deploy timeout
+
+Belirtiler (birlikte sık görülür):
+
+- Coolify sunucu kartı: **Sentinel Out Of Sync** (agent metrik push etmiyor)
+- Deploy log: `pnpm install` → *Verifying lockfile against supply-chain policies* 10–20 dk, sonra yavaş npm indirme
+- `ApplicationDeploymentJob has timed out` (~1 saat)
+- Cleanup: `Connection timed out during banner exchange` (SSH)
+- Public HTTPS timeout (Cloudflare DNS resolve, origin 0 byte)
+
+Kök neden genelde: **aynı VPS’te uzun/soğuk Docker build CPU+disk’i dolduruyor** → SSH/Sentinel/nginx/proxy de yanıt vermiyor.
+
+### Acil (Hetzner Console — SSH gerekmez)
+
+1. Hetzner Cloud → sunucu → **Console** aç (SSH değil).
+2. `df -h` — disk doluysa `docker system prune -af` (dikkat: unused imajlar silinir).
+3. `docker ps` — takılı `coolify-helper` / build container varsa durdur.
+4. Gerekirse soft **reboot**.
+5. Coolify UI dönünce: web uygulamasında **Redeploy** (Watch Paths yüzünden yalnız web).
+
+### Kalıcı (repo — Dockerfile)
+
+`apps/web/Dockerfile` ve `apps/api/Dockerfile`:
+
+- BuildKit `pnpm` store cache mount (`--mount=type=cache,id=pnpm,…`)
+- `pnpm@11.15.1` + `--config.trustLockfile=true` (registry re-verify skip; Coldify’da 15m+ hang’in ana sebebi)
+
+Coolify’da BuildKit açık olmalı (modern Coolify varsayılan). Job timeout’u yetmiyorsa Application → Advanced → timeout’u geçici yükselt; asıl çözüm build süresini kısaltmak.
+
+### Sentinel
+
+Deploy/site düzelince çoğu kez kendiliğinden yeşile döner. Kalırsa: Servers → verimaya-prod → Configurations → Sentinel off/on veya `coolify-sentinel` container restart.
+
 
 `docs/DEPLOY-COOLIFY.md` önceki R2 bölümü hâlâ geçerli; yukarıdaki S3 env’ler + `files:migrate-s3`.
 

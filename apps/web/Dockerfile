@@ -4,7 +4,8 @@
 FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@11.1.3 --activate
+# 11.3+ : --config.trustLockfile skips registry re-verify (Coolify cold builds 15m+ hang)
+RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 
 FROM base AS build
 WORKDIR /app
@@ -21,7 +22,9 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 
-RUN pnpm install --frozen-lockfile --filter @verimaya/web...
+# Persist pnpm store across Coolify builds; trust committed lockfile (no 15m+ verify).
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+	pnpm install --frozen-lockfile --filter @verimaya/web... --config.trustLockfile=true
 
 COPY packages/shared packages/shared
 COPY apps/web apps/web
