@@ -81,15 +81,14 @@ function prepareHubHtml(raw) {
 /**
  * hub.html is served with a hash-pinned `script-src` CSP (nginx.conf, `/hub.html`
  * location) instead of `'unsafe-inline'`, so an injected inline `<script>` can't
- * execute. That only works if the CSP's hashes stay in sync with hub.html's actual
- * inline script content. Fail the build loudly rather than silently shipping a CSP
- * that blocks the legitimate theme/JSON-LD scripts (or, if hashes were dropped
- * instead of updated, silently falls back to allowing arbitrary inline JS).
+ * execute. Sync nginx.conf hashes to the actual hub.html scripts at build time
+ * (JSON-LD content depends on PUBLIC_SITE_URL etc.) — then copy that nginx.conf
+ * from the Docker build stage into the final image.
  * @param {string} html
  */
-function verifyCspHashes(html) {
+function syncCspHashes(html) {
 	if (!existsSync(nginxConf)) {
-		throw new Error('inject-spa-noindex: nginx.conf missing — cannot verify CSP script hashes');
+		throw new Error('inject-spa-noindex: nginx.conf missing — cannot sync CSP script hashes');
 	}
 	// Only pin inline scripts (theme FOUC + JSON-LD). External hub-interact.js uses
 	// script-src 'self' and must not produce an empty-body hash.
@@ -103,34 +102,33 @@ function verifyCspHashes(html) {
 	if (scripts.length === 0) {
 		throw new Error('inject-spa-noindex: hub.html has no inline <script> blocks — expected 2');
 	}
-	const actualHashes = new Set(
-		scripts.map((s) => `sha256-${createHash('sha256').update(s, 'utf8').digest('base64')}`)
+	const hashList = scripts.map(
+		(s) => `sha256-${createHash('sha256').update(s, 'utf8').digest('base64')}`
 	);
+	const hashClause = hashList.map((h) => `'${h}'`).join(' ');
 
 	const conf = readFileSync(nginxConf, 'utf8');
-	const hubBlockMatch = conf.match(/location = \/hub\.html \{[\s\S]*?\}/);
-	if (!hubBlockMatch) {
+	if (!/location = \/hub\.html \{/.test(conf)) {
 		throw new Error('inject-spa-noindex: nginx.conf has no `location = /hub.html` block');
 	}
-	const confHashes = new Set([...hubBlockMatch[0].matchAll(/'(sha256-[^']+)'/g)].map((m) => m[1]));
-
-	const missingFromConf = [...actualHashes].filter((h) => !confHashes.has(h));
-	if (missingFromConf.length > 0) {
+	const updated = conf.replace(
+		/(location = \/hub\.html \{[\s\S]*?script-src 'self')(?: '[^']+')*/,
+		`$1 ${hashClause}`
+	);
+	if (updated === conf && !hashList.every((h) => conf.includes(h))) {
 		throw new Error(
-			'inject-spa-noindex: hub.html inline script hash(es) not present in nginx.conf CSP — ' +
-				'a theme/JSON-LD script changed without updating the hash, so the browser will block it ' +
-				`(or worse, someone widened the CSP back to 'unsafe-inline'). Recompute and update ` +
-				`nginx.conf's \`location = /hub.html\` script-src. Missing: ${missingFromConf.join(', ')}`
+			'inject-spa-noindex: failed to rewrite hub.html CSP script-src hashes in nginx.conf'
 		);
 	}
+	writeFileSync(nginxConf, updated);
+	console.log(`inject-spa-noindex: synced hub.html CSP hashes → nginx.conf (${hashList.join(', ')})`);
 }
 
 if (existsSync(vitrin)) {
 	const prepared = prepareHubHtml(readFileSync(vitrin, 'utf8'));
-	verifyCspHashes(prepared);
+	syncCspHashes(prepared);
 	writeFileSync(hub, prepared);
 	console.log('inject-spa-noindex: wrote build/hub.html (static snapshot, no client)');
-	console.log('inject-spa-noindex: hub.html inline script hashes verified against nginx.conf CSP');
 } else {
 	console.warn('inject-spa-noindex: build/vitrin/index.html missing — hub.html not created');
 }
