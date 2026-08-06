@@ -101,8 +101,11 @@ Tetik: `main` push (`apps/web/**`, `packages/shared/**`, lockfile…) veya **Run
 2. Image name: `ghcr.io/<user>/verimaya-web` · tag: `main` (veya immutable sha).
 3. Private GHCR: Registry credentials → GitHub username + PAT (`read:packages`, gerekirse `write` yok).
 4. **Git-based auto deploy / Watch Paths build’i kapat** — VPS bir daha build etmesin.
-5. Application → Webhooks → Deploy webhook kopyala → GitHub repo **Settings → Secrets** → `COOLIFY_WEB_DEPLOY_WEBHOOK`.
-6. Actions’ta **Deploy web image** yeşil olsun; sonra siteyi doğrula (`/` hub, `/app/`).
+5. Application → Webhooks → Deploy webhook kopyala → GitHub repo **Settings → Secrets**:
+   - `COOLIFY_WEB_DEPLOY_WEBHOOK` = webhook URL (`…/deploy?uuid=…`)
+   - `COOLIFY_API_TOKEN` = Coolify **Keys & Tokens → API Tokens** (scope: **deploy**)
+6. Workflow deploy tetikleyici `Authorization: Bearer` gönderir (yalnız URL yetmez).
+7. Actions’ta **Deploy web image** yeşil olsun; sonra siteyi doğrula (`/` hub, `/app/`).
 
 Fallback (eski yol, OOM riski): Dockerfile + monorepo context — yalnız acil / CI kırıkken.
 

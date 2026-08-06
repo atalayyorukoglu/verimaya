@@ -60,10 +60,13 @@ jobs:
       - name: Trigger Coolify redeploy
         env:
           WEBHOOK: ${{ secrets.COOLIFY_WEB_DEPLOY_WEBHOOK }}
+          TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
         run: |
-          if [ -z "$WEBHOOK" ]; then
-            echo "COOLIFY_WEB_DEPLOY_WEBHOOK not set — skip (Coolify can still poll :main manually)"
+          if [ -z "$WEBHOOK" ] || [ -z "$TOKEN" ]; then
+            echo "COOLIFY_WEB_DEPLOY_WEBHOOK and/or COOLIFY_API_TOKEN not set — skip auto redeploy"
             exit 0
           fi
-          curl -fsS -X GET "$WEBHOOK" || curl -fsS -X POST "$WEBHOOK"
+          curl -fsS -X GET "$WEBHOOK" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/json"
           echo "Coolify webhook triggered"
