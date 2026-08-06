@@ -282,7 +282,7 @@ const tr = {
 	'hub.hero.ctaApp': 'Maya App',
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.ctaContact': 'İletişime geç',
-	'hub.hero.forkHint': 'İki kapı. Sonra Kaynaklar ve Araçlar ile güçlenir.',
+	'hub.hero.forkHint': 'İki kapı. Sonra Araçlar ve Kaynaklar ile güçlenir.',
 
 	'hub.nav.webApp': 'Maya App (Operasyon)',
 	'hub.nav.crm': 'Maya CRM (Satış & Reklam)',
@@ -297,13 +297,14 @@ const tr = {
 	'hub.apps.title': 'Uygulamalarımız',
 	'hub.apps.desc': 'İki platform, tek ekosistem. Hangisi size lazımsa onu kullanın.',
 	'hub.apps.app.problem':
-		'Hasta kapıdan girdiğinde randevu, dosya ve finans farklı yerlere mi saçılıyor?',
-	'hub.apps.app.name': 'Tüm operasyonu tek ekranda toplayın.',
+		'Hasta kapıdan girdi; tedavisi bitti, ödemesi alındı… Peki harcamalardan sonra bu hastadan tam olarak ne kazandığınızı ve size yeni hastalar kazandırıp kazandırmadığını görebiliyor musunuz?',
+	'hub.apps.app.name':
+		'Hasta başı net kazancınızı, referans takibini ve tüm operasyonu tek ekranda görün.',
 	'hub.apps.app.desc':
-		'Maya App, hastanın gelişinden taburcu oluşuna kadar olan tüm süreci yönetir. Randevu takibi, hasta dosyaları ve ödeme bilgileri artık WhatsApp gruplarında değil, tek bir panelde birleşir.',
+		'Maya App; hastanın gelişinden taburcu oluşuna kadar olan tüm süreci, dosyaları ve finansal akışı tek panelde toplar. WhatsApp gruplarında kaybolan ödemeleri, hasta bazlı net kârlılığı ve hangi hastanın size yeni referans hastalar getirdiğini anında gösterir.',
 	'hub.apps.app.subs': 'Hastalar · Kişiler · Randevular · Finans · Raporlar',
 	'hub.apps.app.outcome':
-		'Sonuç: Ay sonunda “Kim geldi, kim ne ödedi?” sorusunun yanıtı tek tıkla karşınızda.',
+		'Sonuç: Ay sonunda “Hasta başı ne kazandık, kim kimi referans etti?” sorularının net ve şeffaf yanıtı tek tıkla karşınızda.',
 	'hub.apps.app.cta': "Maya App'e git",
 	'hub.apps.app.ctaFeatures': 'Özelliklerini gör ›',
 	'hub.apps.app.ctaFeaturesPage': 'Maya App (Operasyon) Özelliklerini gör ›',
@@ -322,12 +323,12 @@ const tr = {
 	'hub.stage.crm.eyebrow': 'Maya CRM (Satış & Reklam)',
 
 	'hub.resources.problem':
-		'Ürünün ne durumda olduğunu, nelerin geldiğini ve olgunluğunuzu tek yerden göremiyor musunuz?',
-	'hub.resources.title': 'Karne, özellik durumu ve yenilikler tek kapıda.',
+		'Sistemi daha verimli kullanmak, reklam ve satış performansınızı artırmak istiyorsunuz ama nereden başlayacağınızı bilemiyor musunuz?',
+	'hub.resources.title': 'Özellik rehberleri, dökümantasyon ve satış taktikleri tek kütüphanede.',
 	'hub.resources.desc':
-		'Kaynaklar; ücretsiz yapay zeka karnesi, özellik özeti ve yenilikler ile ekibinizin Verimaya’yı net görmesini sağlar.',
+		'Kaynaklar; Verimaya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
 	'hub.resources.outcome':
-		'Sonuç: Nerede olduğunuzu ve sıradaki adımı dakika içinde anlarsınız.',
+		'Sonuç: “Bu özelliği nasıl kullanırız?” ya da “Satışları nasıl artırırız?” sorularının yanıtı rehberlerimizle anında elinizin altında.',
 	'hub.resources.ctaPrimary': 'Kaynakları gör',
 	'hub.resources.ctaSecondary': 'Ücretsiz Ürün Karnesi Al',
 
@@ -369,6 +370,9 @@ const tr = {
 	'hub.tools.prelaunch.title': 'Yayın Öncesi Kontrol',
 	'hub.tools.prelaunch.desc':
 		'Bütçe, kitle, görsel ve metin hatalarını yayın öncesi yakalar; boşa gidecek tıklama riskini keser.',
+	'hub.tools.scorecard.title': 'Yapay Zeka Karnesi',
+	'hub.tools.scorecard.desc':
+		'Kliniğinizin yapay zeka ve dijital olgunluğunu ölçer, eksiklerinizi ve gelişim alanlarınızı anında raporlar.',
 	'hub.tools.cta': 'Tüm araçları keşfet',
 
 	'hub.scenarios.title': 'Kullanım senaryoları',
@@ -397,16 +401,19 @@ const tr = {
 	'hub.footer.resources': 'Kaynaklar',
 	'hub.footer.tools': 'Araçlar',
 
-	// Public pillar pages (/app /crm /resources /tools)
+	// Public pillar pages (/app /crm /tools /resources)
 	'pillar.app.metaTitle': 'Maya App (Operasyon) — Verimaya',
 	'pillar.app.metaDesc':
 		'Hasta, randevu, finans, rapor ve denetim: sağlık turizmi operasyonunu tek panelde yönetin.',
 	'pillar.app.eyebrow': 'Maya App (Operasyon)',
-	'pillar.app.heading': 'Tüm operasyonu tek ekranda toplayın.',
+	'pillar.app.heading':
+		'Hasta başı net kazancınızı, referans takibini ve tüm operasyonu tek ekranda görün.',
 	'pillar.app.problem':
-		'Hasta kapıdan girdiğinde randevu, dosya ve finans farklı yerlere mi saçılıyor?',
+		'Hasta kapıdan girdi; tedavisi bitti, ödemesi alındı… Peki harcamalardan sonra bu hastadan tam olarak ne kazandığınızı ve size yeni hastalar kazandırıp kazandırmadığını görebiliyor musunuz?',
+	'pillar.app.body':
+		'Maya App; hastanın gelişinden taburcu oluşuna kadar olan tüm süreci, dosyaları ve finansal akışı tek panelde toplar. WhatsApp gruplarında kaybolan ödemeleri, hasta bazlı net kârlılığı ve hangi hastanın size yeni referans hastalar getirdiğini anında gösterir.',
 	'pillar.app.outcome':
-		'Sonuç: Ay sonunda “Kim geldi, kim ne ödedi?” sorusunun yanıtı tek tıkla karşınızda.',
+		'Sonuç: Ay sonunda “Hasta başı ne kazandık, kim kimi referans etti?” sorularının net ve şeffaf yanıtı tek tıkla karşınızda.',
 	'pillar.app.cta': "Maya App'e git",
 	'pillar.app.ctaSecondary': 'Özellikler kataloğu ›',
 	'pillar.app.f.patients.title': 'Hasta listesi ve detay',
@@ -487,13 +494,16 @@ const tr = {
 
 	'pillar.resources.metaTitle': 'Kaynaklar — Verimaya',
 	'pillar.resources.metaDesc':
-		'Ücretsiz yapay zeka karnesi, özellik özeti ve yenilikler: Verimaya kaynakları.',
+		'Özellik rehberleri, platform dökümantasyonu ve sağlık turizmine özel reklam-satış taktikleri tek kütüphanede.',
 	'pillar.resources.eyebrow': 'Kaynaklar',
-	'pillar.resources.heading': 'Karne, özellikler ve yenilikler.',
+	'pillar.resources.heading':
+		'Özellik rehberleri, dökümantasyon ve satış taktikleri tek kütüphanede.',
 	'pillar.resources.problem':
-		'Ürünün ne durumda olduğunu ve olgunluğunuzu tek yerden göremiyor musunuz?',
+		'Sistemi daha verimli kullanmak, reklam ve satış performansınızı artırmak istiyorsunuz ama nereden başlayacağınızı bilemiyor musunuz?',
+	'pillar.resources.body':
+		'Kaynaklar; Verimaya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
 	'pillar.resources.outcome':
-		'Sonuç: Nerede olduğunuzu ve sıradaki adımı dakika içinde anlarsınız.',
+		'Sonuç: “Bu özelliği nasıl kullanırız?” ya da “Satışları nasıl artırırız?” sorularının yanıtı rehberlerimizle anında elinizin altında.',
 	'pillar.resources.cta': 'Ücretsiz ürün karnesi al',
 	'pillar.resources.ctaSecondary': 'Özellikler ›',
 	'pillar.resources.f.karne.title': 'Ücretsiz yapay zeka karnesi',
@@ -870,7 +880,7 @@ const en: Record<MessageKey, string> = {
 	'hub.hero.ctaApp': 'Maya App',
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.ctaContact': 'Get in touch',
-	'hub.hero.forkHint': 'Two doors. Then Resources and Tools amplify both.',
+	'hub.hero.forkHint': 'Two doors. Then Tools and Resources amplify both.',
 
 	'hub.nav.webApp': 'Maya App (Operations)',
 	'hub.nav.crm': 'Maya CRM (Sales & Ads)',
@@ -885,13 +895,14 @@ const en: Record<MessageKey, string> = {
 	'hub.apps.title': 'Our Applications',
 	'hub.apps.desc': 'Two platforms, one ecosystem. Use whichever you need.',
 	'hub.apps.app.problem':
-		'When a patient walks in, do appointments, files, and finance scatter across different places?',
-	'hub.apps.app.name': 'Bring the full operation onto one screen.',
+		'The patient walked in, treatment is done, payment collected… But after expenses — can you see exactly what you earned from them, and whether they brought you new patients?',
+	'hub.apps.app.name':
+		'See per-patient net profit, referral tracking, and the full operation on one screen.',
 	'hub.apps.app.desc':
-		'Maya App manages the entire journey from arrival to discharge. Appointment tracking, patient files, and payment details no longer live in WhatsApp groups — they come together in a single panel.',
+		'Maya App brings the entire journey from arrival to discharge — files and financial flow — into one panel. It surfaces payments lost in WhatsApp groups, per-patient net profitability, and which patients referred new ones — instantly.',
 	'hub.apps.app.subs': 'Patients · Contacts · Appointments · Finance · Reports',
 	'hub.apps.app.outcome':
-		'Outcome: by month-end, the answer to “Who came, who paid what?” is one click away.',
+		'Outcome: by month-end, clear answers to “What did we earn per patient, who referred whom?” are one click away.',
 	'hub.apps.app.cta': 'Go to Maya App',
 	'hub.apps.app.ctaFeatures': 'See features ›',
 	'hub.apps.app.ctaFeaturesPage': 'Maya App (Operations) Features ›',
@@ -910,12 +921,12 @@ const en: Record<MessageKey, string> = {
 	'hub.stage.crm.eyebrow': 'Maya CRM (Sales & Ads)',
 
 	'hub.resources.problem':
-		'Can’t see product status, what’s shipping, and your maturity in one place?',
-	'hub.resources.title': 'Scorecard, feature status, and updates in one door.',
+		'Want to use the system more efficiently and boost ad and sales performance — but don’t know where to start?',
+	'hub.resources.title': 'Feature guides, documentation, and sales tactics in one library.',
 	'hub.resources.desc':
-		'Resources: free AI scorecard, feature summary, and release notes so your team sees Verimaya clearly.',
+		'Resources is a knowledge hub to explore every Verimaya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
 	'hub.resources.outcome':
-		'Outcome: you know where you stand and the next step within minutes.',
+		'Outcome: answers to “How do we use this feature?” or “How do we grow sales?” are instantly at your fingertips through our guides.',
 	'hub.resources.ctaPrimary': 'See resources',
 	'hub.resources.ctaSecondary': 'Get a free product scorecard',
 
@@ -957,6 +968,9 @@ const en: Record<MessageKey, string> = {
 	'hub.tools.prelaunch.title': 'Pre-launch Check',
 	'hub.tools.prelaunch.desc':
 		'Catches budget, audience, creative, and copy mistakes before go-live — and cuts wasted-click risk.',
+	'hub.tools.scorecard.title': 'AI Scorecard',
+	'hub.tools.scorecard.desc':
+		'Measures your clinic’s AI and digital maturity, and instantly reports gaps and growth areas.',
 	'hub.tools.cta': 'Discover all tools',
 
 	'hub.scenarios.title': 'Use cases',
@@ -989,11 +1003,14 @@ const en: Record<MessageKey, string> = {
 	'pillar.app.metaDesc':
 		'Patients, appointments, finance, reports, and audit: run health-tourism operations in one panel.',
 	'pillar.app.eyebrow': 'Maya App (Operations)',
-	'pillar.app.heading': 'Bring the full operation onto one screen.',
+	'pillar.app.heading':
+		'See per-patient net profit, referral tracking, and the full operation on one screen.',
 	'pillar.app.problem':
-		'When a patient walks in, do appointments, files, and finance scatter across tools?',
+		'The patient walked in, treatment is done, payment collected… But after expenses — can you see exactly what you earned from them, and whether they brought you new patients?',
+	'pillar.app.body':
+		'Maya App brings the entire journey from arrival to discharge — files and financial flow — into one panel. It surfaces payments lost in WhatsApp groups, per-patient net profitability, and which patients referred new ones — instantly.',
 	'pillar.app.outcome':
-		'Outcome: by month-end, “Who came, who paid?” is one click away.',
+		'Outcome: by month-end, clear answers to “What did we earn per patient, who referred whom?” are one click away.',
 	'pillar.app.cta': 'Go to Maya App',
 	'pillar.app.ctaSecondary': 'Feature catalog ›',
 	'pillar.app.f.patients.title': 'Patient list and detail',
@@ -1074,13 +1091,16 @@ const en: Record<MessageKey, string> = {
 
 	'pillar.resources.metaTitle': 'Resources — Verimaya',
 	'pillar.resources.metaDesc':
-		'Free AI scorecard, feature summary, and release notes.',
+		'Feature guides, platform documentation, and health-tourism ad and sales tactics in one library.',
 	'pillar.resources.eyebrow': 'Resources',
-	'pillar.resources.heading': 'Scorecard, features, and updates.',
+	'pillar.resources.heading':
+		'Feature guides, documentation, and sales tactics in one library.',
 	'pillar.resources.problem':
-		'Can’t see product status and maturity in one place?',
+		'Want to use the system more efficiently and boost ad and sales performance — but don’t know where to start?',
+	'pillar.resources.body':
+		'Resources is a knowledge hub to explore every Verimaya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
 	'pillar.resources.outcome':
-		'Outcome: you know where you stand and the next step within minutes.',
+		'Outcome: answers to “How do we use this feature?” or “How do we grow sales?” are instantly at your fingertips through our guides.',
 	'pillar.resources.cta': 'Get free product scorecard',
 	'pillar.resources.ctaSecondary': 'Features ›',
 	'pillar.resources.f.karne.title': 'Free AI scorecard',

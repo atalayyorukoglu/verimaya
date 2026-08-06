@@ -54,8 +54,8 @@
 	const navItems = [
 		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },
 		{ href: '/crm/', labelKey: 'hub.nav.crm' as MessageKey },
-		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey },
-		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey }
+		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
+		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
 	] as const;
 
 	const hasLinkedFeatures = $derived(features.some((f) => Boolean(f.href)));
@@ -243,14 +243,14 @@
 			<p class="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-text sm:text-lg">
 				{problem}
 			</p>
-			<p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-text-muted sm:text-lg">
-				{outcome}
-			</p>
 			{#if body}
 				<p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-text-muted sm:text-lg">
 					{body}
 				</p>
 			{/if}
+			<p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-text-muted sm:text-lg">
+				{outcome}
+			</p>
 		</div>
 
 		{#if features.length > 0}

@@ -31,6 +31,7 @@
 	eyebrow={mk('pillar.resources.eyebrow')}
 	heading={mk('pillar.resources.heading')}
 	problem={mk('pillar.resources.problem')}
+	body={mk('pillar.resources.body')}
 	outcome={mk('pillar.resources.outcome')}
 	{features}
 	primaryCta={{ label: mk('pillar.resources.cta'), href: '/yapay-zeka-karnesi/' }}

@@ -40,6 +40,7 @@
 	eyebrow={mk('pillar.app.eyebrow')}
 	heading={mk('pillar.app.heading')}
 	problem={mk('pillar.app.problem')}
+	body={mk('pillar.app.body')}
 	outcome={mk('pillar.app.outcome')}
 	{features}
 	primaryCta={{ label: mk('pillar.app.cta'), href: PUBLIC_APP_URL, external: true }}

@@ -159,6 +159,43 @@
 
 ---
 
+### 4A. OPS-WEB-B — Path B sonrası temizlik (kafa karışıklığı önle)
+
+> **Durum:** Web canlıda **GHCR pull** (`verimaya-web-image`). Build VPS’te değil;
+> `.github/workflows/deploy-web.yml` → `ghcr.io/atalayyorukoglu/verimaya-web:main`
+> → Coolify webhook (`uuid=i7fds7lshwjs980rnontx6ye` + `COOLIFY_API_TOKEN`).
+> Eski Dockerfile app durduruldu (silinmedi). Detay: `docs/DEPLOY-COOLIFY.md` § Web.
+
+**Coolify (silinebilir / dokunma — karıştırma):**
+
+- [ ] Eski **`verimaya-web`** (Dockerfile + Git build, status Exited) — birkaç gün
+  rollback gerekmezse **sil**. Canlı domain’ler artık **`verimaya-web-image`** üzerinde.
+  Silmeden önce domain’lerin yalnız yeni app’te olduğunu doğrula.
+- [ ] Eski app’i **yeniden Start etme** (aynı domain çakışması / yanlışlıkla VPS build).
+- [ ] Yeni app’te Git/Dockerfile Watch Paths **yok**; kaynak = Docker Image + GHCR.
+
+**Repo (silme):**
+
+- [ ] `apps/web/Dockerfile` — **silme**. GHA hâlâ bununla image üretir.
+- [ ] `.github/workflows/deploy-web.yml` — **silme**. Prod web deploy yolu bu.
+
+**İsteğe bağlı (kafa karışıklığı azaltır):**
+
+- [ ] Coolify projede eski app silindikten sonra isim: `verimaya-web-image` →
+  `verimaya-web` rename (UUID aynı kalır; webhook secret’ı güncelleme gerekmez).
+- [ ] `docs/MIMARI.md` “Falkenstein” vs gerçek sunucu **Helsinki (`*-hel1-*`)** —
+  tek satır düzelt (DPA/anket için).
+- [ ] API için aynı path B (GHCR) — web OOM sınıfı API Dockerfile build’de tekrarlanabilir;
+  ayrı iş, şimdilik zorunlu değil.
+
+- **Bağımlı:** yok (path B zaten canlı)
+- **Kabul:** Coolify’da tek aktif web app = image pull; GitHub Actions deploy yeşil;
+  VPS deploy log’unda `pnpm` / `docker build` web için yok.
+- **Görüş:** 2026-08-06 — cutover Claude+manuel; webhook Bearer zorunlu. Secret’lar:
+  `COOLIFY_WEB_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN`. Paket public GHCR.
+
+---
+
 ### 5. AUDIT-03 — Opus denetimi: operasyonel hijyen paketi
 
 > **Durum:** ✅ Tamamlandı (commit `0effeda` + `api-key-rotation`). 7/8

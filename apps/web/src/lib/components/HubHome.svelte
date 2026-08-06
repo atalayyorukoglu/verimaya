@@ -26,7 +26,7 @@
 
 	const title = 'Verimaya: Sağlık turizmi operasyon platformu';
 	const description =
-		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta. Ay sonunda kim geldi, kim ödedi bilinmiyor. Maya App, Maya CRM, Kaynaklar ve Araçlar ile sağlık turizmi için tek ekosistem.';
+		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta. Ay sonunda kim geldi, kim ödedi bilinmiyor. Maya App, Maya CRM, Araçlar ve Kaynaklar ile sağlık turizmi için tek ekosistem.';
 	const canonical = `${PUBLIC_SITE_URL}/`;
 	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
@@ -44,8 +44,8 @@
 	const navItems = [
 		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },
 		{ href: '/crm/', labelKey: 'hub.nav.crm' as MessageKey },
-		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey },
-		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey }
+		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
+		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
 	] as const;
 
 	const tools = [
@@ -63,6 +63,11 @@
 			titleKey: 'hub.tools.prelaunch.title' as MessageKey,
 			descKey: 'hub.tools.prelaunch.desc' as MessageKey,
 			href: '/tools/pre-launch/'
+		},
+		{
+			titleKey: 'hub.tools.scorecard.title' as MessageKey,
+			descKey: 'hub.tools.scorecard.desc' as MessageKey,
+			href: '/yapay-zeka-karnesi/'
 		}
 	] as const;
 
@@ -483,75 +488,11 @@
 			</div>
 
 			<div
-				id="resources"
-				class="hub-stage scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[var(--stage-border)]"
-			>
-				<div
-					class="grid items-center gap-8 p-8 text-left sm:p-10 lg:grid-cols-2 lg:gap-12 lg:p-12"
-				>
-					<div>
-						<span
-							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
-						>
-							{t('hub.nav.resources')}
-						</span>
-						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
-							{t('hub.resources.problem')}
-						</p>
-						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
-						>
-							{t('hub.resources.title')}
-						</h2>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.resources.desc')}
-						</p>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.resources.outcome')}
-						</p>
-						<div class="mt-8 flex flex-wrap items-center gap-3">
-							<a
-								href="/resources/"
-								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
-							>
-								{t('hub.resources.ctaPrimary')}
-							</a>
-							<a
-								href="/yapay-zeka-karnesi/"
-								class="inline-flex items-center justify-center rounded-md border border-white/25 bg-transparent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
-							>
-								{t('hub.resources.ctaSecondary')}
-							</a>
-						</div>
-					</div>
-					<div class="hub-mock" aria-hidden="true">
-						<div class="hub-mock-chrome">
-							<span class="hub-mock-dot"></span>
-							<span class="hub-mock-dot"></span>
-							<span class="hub-mock-dot"></span>
-						</div>
-						<div class="hub-mock-body">
-							<div class="hub-mock-main w-full gap-3 p-4">
-								<div class="hub-mock-row hub-mock-row--wide"></div>
-								<div class="hub-mock-row"></div>
-								<div class="mt-1 grid grid-cols-2 gap-2">
-									<div class="h-16 rounded-md border border-[var(--stage-border)] bg-[var(--stage-bg)]"></div>
-									<div class="h-16 rounded-md border border-brand/40 bg-brand/20"></div>
-								</div>
-								<div class="hub-mock-row hub-mock-row--short"></div>
-								<div class="hub-mock-row hub-mock-row--wide"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div
 				id="tools"
 				class="hub-stage scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[var(--stage-border)]"
 			>
 				<div
-					class="flex flex-col items-center gap-8 p-8 text-left sm:p-10 lg:flex-row-reverse lg:gap-12 lg:p-12"
+					class="flex flex-col items-center gap-8 p-8 text-left sm:p-10 lg:flex-row lg:gap-12 lg:p-12"
 				>
 					<div class="w-full lg:w-1/2">
 						<span
@@ -592,6 +533,64 @@
 								<p class="mt-1.5 text-xs leading-relaxed text-[var(--stage-muted)]">{t(descKey)}</p>
 							</a>
 						{/each}
+					</div>
+				</div>
+			</div>
+
+			<div
+				id="resources"
+				class="hub-stage scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[var(--stage-border)]"
+			>
+				<div
+					class="flex flex-col items-center gap-8 p-8 text-left sm:p-10 lg:flex-row-reverse lg:gap-12 lg:p-12"
+				>
+					<div class="w-full lg:w-1/2">
+						<span
+							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+						>
+							{t('hub.nav.resources')}
+						</span>
+						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
+							{t('hub.resources.problem')}
+						</p>
+						<h2
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+						>
+							{t('hub.resources.title')}
+						</h2>
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+							{t('hub.resources.desc')}
+						</p>
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+							{t('hub.resources.outcome')}
+						</p>
+						<div class="mt-8">
+							<a
+								href="/resources/"
+								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+							>
+								{t('hub.resources.ctaPrimary')}
+							</a>
+						</div>
+					</div>
+					<div class="hub-mock w-full lg:w-1/2" aria-hidden="true">
+						<div class="hub-mock-chrome">
+							<span class="hub-mock-dot"></span>
+							<span class="hub-mock-dot"></span>
+							<span class="hub-mock-dot"></span>
+						</div>
+						<div class="hub-mock-body">
+							<div class="hub-mock-main w-full gap-3 p-4">
+								<div class="hub-mock-row hub-mock-row--wide"></div>
+								<div class="hub-mock-row"></div>
+								<div class="mt-1 grid grid-cols-2 gap-2">
+									<div class="h-16 rounded-md border border-[var(--stage-border)] bg-[var(--stage-bg)]"></div>
+									<div class="h-16 rounded-md border border-brand/40 bg-brand/20"></div>
+								</div>
+								<div class="hub-mock-row hub-mock-row--short"></div>
+								<div class="hub-mock-row hub-mock-row--wide"></div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -658,13 +657,13 @@
 							>
 						</li>
 						<li>
-							<a href="/resources/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.resources')}</a
+							<a href="/tools/" class="text-xs text-text-muted transition-colors hover:text-text"
+								>{t('hub.nav.tools')}</a
 							>
 						</li>
 						<li>
-							<a href="/tools/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.tools')}</a
+							<a href="/resources/" class="text-xs text-text-muted transition-colors hover:text-text"
+								>{t('hub.nav.resources')}</a
 							>
 						</li>
 					</ul>

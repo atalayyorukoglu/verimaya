@@ -10,8 +10,8 @@ const PUBLIC_PREFIXES = [
 	'/kvkk-aydinlatma',
 	'/app',
 	'/crm',
-	'/resources',
-	'/tools'
+	'/tools',
+	'/resources'
 ] as const;
 
 export function isPublicPath(pathname: string): boolean {
