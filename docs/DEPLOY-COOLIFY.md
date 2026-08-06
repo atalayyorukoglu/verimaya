@@ -79,19 +79,38 @@ Alternatif: `RUN_MIGRATIONS=true` (entrypoint migrate + start).
 
 Volume: `UPLOAD_DIR` mount (local driver veya `local://` legacy satırlar için).
 
-### 4. Web (static)
+### 4. Web (static) — **önerilen: GHCR image (path B)**
 
-`apps/web/DEPLOY-STATIC.md` — Coolify Static Site **veya** nginx image.
+VPS’te `docker build` / pnpm **yapma**. Image GitHub Actions’ta build edilir, Coolify yalnız çeker.
+Aksi halde 2 GB kutuda OOM / Sentinel / SSH kopması tekrarlanır.
 
 | Ayar | Değer |
 |---|---|
-| Dockerfile | `apps/web/Dockerfile` (önerilen) veya Static Site |
-| Build context | **monorepo kökü** (Dockerfile) |
-| Build | `pnpm install --frozen-lockfile && pnpm --filter @verimaya/web build` |
-| Publish | `apps/web/build` (Static Site) |
+| Kaynak | **Docker Image** (Dockerfile build değil) |
+| Image | `ghcr.io/<github-user>/verimaya-web:main` |
+| Registry | `ghcr.io` — private package → GitHub PAT (`read:packages`) |
 | Domain | **`verimaya.com` + `app.verimaya.com`** (aynı servis) |
-| Env (build-time) | `PUBLIC_API_URL`, `PUBLIC_SITE_URL`, `PUBLIC_APP_URL`, `PUBLIC_CRM_URL`, `PUBLIC_USE_MSW=false`, `PUBLIC_KARNE_LEADS_ENABLED=false` |
-| **Watch Paths (zorunlu)** | `apps/web/**` · `packages/shared/**` · `pnpm-lock.yaml` · `pnpm-workspace.yaml` · `package.json` |
+| Auto deploy | Coolify **Deploy Webhook** URL → repo secret `COOLIFY_WEB_DEPLOY_WEBHOOK` |
+
+Workflow: [`.github/workflows/deploy-web.yml`](../.github/workflows/deploy-web.yml)  
+Tetik: `main` push (`apps/web/**`, `packages/shared/**`, lockfile…) veya **Run workflow**.
+
+#### Coolify’da geçiş (web)
+
+1. Web uygulaması → **General** → Build Pack / Source: **Docker Image**.
+2. Image name: `ghcr.io/<user>/verimaya-web` · tag: `main` (veya immutable sha).
+3. Private GHCR: Registry credentials → GitHub username + PAT (`read:packages`, gerekirse `write` yok).
+4. **Git-based auto deploy / Watch Paths build’i kapat** — VPS bir daha build etmesin.
+5. Application → Webhooks → Deploy webhook kopyala → GitHub repo **Settings → Secrets** → `COOLIFY_WEB_DEPLOY_WEBHOOK`.
+6. Actions’ta **Deploy web image** yeşil olsun; sonra siteyi doğrula (`/` hub, `/app/`).
+
+Fallback (eski yol, OOM riski): Dockerfile + monorepo context — yalnız acil / CI kırıkken.
+
+| Eski ayar | Değer |
+|---|---|
+| Dockerfile | `apps/web/Dockerfile` |
+| Build context | **monorepo kökü** |
+| Watch Paths | `apps/web/**` · `packages/shared/**` · lockfile… |
 
 > Apex hub = `hub.html` (prerender snapshot, SvelteKit client yok). nginx `/hub.html` üzerinde CSP ile module `import` engelli — yanlış hydrate blank page üretemez.
 

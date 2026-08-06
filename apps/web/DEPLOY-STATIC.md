@@ -2,6 +2,9 @@
 
 `adapter-static` + `fallback: index.html` — çıktı: `apps/web/build/`.
 
+**Prod (path B):** Image’i VPS’te build etme — `.github/workflows/deploy-web.yml` → GHCR → Coolify pull.
+Runbook: `docs/DEPLOY-COOLIFY.md` § Web.
+
 Public rotalar (`(public)/`, örn. `/vitrin/`) **prerender** edilir → `build/vitrin/index.html`.
 Panel rotaları SPA fallback’e düşer → `build/index.html` (`noindex`).
 
