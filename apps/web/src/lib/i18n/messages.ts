@@ -281,6 +281,7 @@ const tr = {
 		'Hasta iletişimi WhatsApp’ta, hasta takibi Excel’de, ödemeler sohbet grubunda... Ay sonunda ise ‘Kim geldi, kim ödedi?’ muamma.',
 	'hub.hero.ctaApp': 'Maya App',
 	'hub.hero.ctaCrm': 'Maya CRM',
+	'hub.hero.ctaContact': 'İletişime geç',
 	'hub.hero.forkHint': 'İki kapı. Sonra Kaynaklar ve Araçlar ile güçlenir.',
 
 	'hub.nav.webApp': 'Maya App (Operasyon)',
@@ -305,6 +306,7 @@ const tr = {
 		'Sonuç: Ay sonunda “Kim geldi, kim ne ödedi?” sorusunun yanıtı tek tıkla karşınızda.',
 	'hub.apps.app.cta': "Maya App'e git",
 	'hub.apps.app.ctaFeatures': 'Özelliklerini gör ›',
+	'hub.apps.app.ctaFeaturesPage': 'Maya App (Operasyon) Özelliklerini gör ›',
 	'hub.apps.crm.problem':
 		'Reklam bütçeniz harcanıyor ama gelen lead’ler WhatsApp sohbetlerinde kayıp mı oluyor?',
 	'hub.apps.crm.name': 'Tüm lead’leri randevuya dönüştürün.',
@@ -315,6 +317,7 @@ const tr = {
 		'Sonuç: Unutulan lead yok, boşa giden reklam bütçesi yok; daha fazla randevu var.',
 	'hub.apps.crm.cta': "Maya CRM'i aç",
 	'hub.apps.crm.ctaFeatures': 'Özelliklerini gör ›',
+	'hub.apps.crm.ctaFeaturesPage': 'Maya CRM (Satış & Reklam) Özelliklerini gör ›',
 	'hub.stage.app.eyebrow': 'Maya App (Operasyon)',
 	'hub.stage.crm.eyebrow': 'Maya CRM (Satış & Reklam)',
 
@@ -866,6 +869,7 @@ const en: Record<MessageKey, string> = {
 		'Patient chats live in WhatsApp, follow-up in Excel, payments in the group chat... By month-end, ‘Who came, who paid?’ is a mystery.',
 	'hub.hero.ctaApp': 'Maya App',
 	'hub.hero.ctaCrm': 'Maya CRM',
+	'hub.hero.ctaContact': 'Get in touch',
 	'hub.hero.forkHint': 'Two doors. Then Resources and Tools amplify both.',
 
 	'hub.nav.webApp': 'Maya App (Operations)',
@@ -890,6 +894,7 @@ const en: Record<MessageKey, string> = {
 		'Outcome: by month-end, the answer to “Who came, who paid what?” is one click away.',
 	'hub.apps.app.cta': 'Go to Maya App',
 	'hub.apps.app.ctaFeatures': 'See features ›',
+	'hub.apps.app.ctaFeaturesPage': 'Maya App (Operations) Features ›',
 	'hub.apps.crm.problem':
 		'Is ad budget spending while incoming leads get lost in WhatsApp chats?',
 	'hub.apps.crm.name': 'Turn every lead into an appointment.',
@@ -900,6 +905,7 @@ const en: Record<MessageKey, string> = {
 		'Outcome: no forgotten leads, no wasted ad spend — more appointments.',
 	'hub.apps.crm.cta': 'Open Maya CRM',
 	'hub.apps.crm.ctaFeatures': 'See features ›',
+	'hub.apps.crm.ctaFeaturesPage': 'Maya CRM (Sales & Ads) Features ›',
 	'hub.stage.app.eyebrow': 'Maya App (Operations)',
 	'hub.stage.crm.eyebrow': 'Maya CRM (Sales & Ads)',
 

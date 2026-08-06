@@ -8,12 +8,21 @@
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import Lock from '@lucide/svelte/icons/lock';
 
-	// Always visible so prerendered HTML and no-JS users see content (not opacity:0).
-	const visible = true;
 	let menuOpen = $state(false);
 	let loginOpen = $state(false);
+
+	const heroTitleParts = $derived.by(() => {
+		const full = t('hub.hero.title');
+		const ellipsisIdx = full.indexOf('...');
+		if (ellipsisIdx === -1) {
+			return { primary: full, muted: '' };
+		}
+		const cut = ellipsisIdx + 3;
+		return { primary: full.slice(0, cut), muted: full.slice(cut) };
+	});
 
 	const title = 'Verimaya: Sağlık turizmi operasyon platformu';
 	const description =
@@ -21,6 +30,7 @@
 	const canonical = `${PUBLIC_SITE_URL}/`;
 	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
+	const whatsappContactUrl = 'https://wa.me/905326566007';
 
 	const organizationLd = {
 		'@context': 'https://schema.org',
@@ -114,11 +124,7 @@
 	</div>
 
 	<!-- ── HEADER ── -->
-	<header
-		class="relative z-10 px-6 py-6 sm:px-10"
-		class:vitrin-in={visible}
-		style="--delay: 0ms"
-	>
+	<header class="relative z-10 px-6 py-6 sm:px-10">
 		<div class="mx-auto flex w-full max-w-6xl items-center justify-between">
 			<a href="/" class="text-text" onclick={closeMenu}>
 				<SiteLogo />
@@ -129,11 +135,12 @@
 						<a href={item.href} class="transition-colors hover:text-text">{t(item.labelKey)}</a>
 					{/each}
 				</nav>
-				<div class="relative hidden sm:block">
+				<ThemeToggle />
+				<div class="relative">
 					<button
 						type="button"
 						data-hub-login-toggle
-						class="inline-flex h-9 items-center gap-1 rounded-[6px] bg-brand px-3.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+						class="inline-flex h-9 items-center gap-1 rounded-[6px] bg-brand px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover sm:px-3.5"
 						aria-expanded={loginOpen}
 						aria-haspopup="menu"
 						onclick={toggleLogin}
@@ -166,7 +173,6 @@
 						</a>
 					</div>
 				</div>
-				<ThemeToggle />
 				<button
 					type="button"
 					data-hub-menu-toggle
@@ -203,65 +209,151 @@
 					{t(item.labelKey)}
 				</a>
 			{/each}
-			<div class="mt-2 border-t border-border/40 pt-3">
-				<button
-					type="button"
-					data-hub-login-toggle
-					class="flex w-full items-center justify-between rounded-[6px] bg-brand px-3 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
-					aria-expanded={loginOpen}
-					onclick={toggleLogin}
-				>
-					{t('hub.login')}
-					<ChevronDown
-						class="size-4 opacity-90 transition-transform {loginOpen ? 'rotate-180' : ''}"
-						aria-hidden="true"
-					/>
-				</button>
-				<div
-					data-hub-login-panel
-					class="mt-1 flex-col gap-0.5 pl-1 {loginOpen ? 'flex' : 'hidden'}"
-				>
-					<a
-						href={appLoginUrl}
-						class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-						onclick={closeMenu}
-					>
-						{t('hub.login.app')}
-					</a>
-					<a
-						href={PUBLIC_CRM_URL}
-						class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-						onclick={closeMenu}
-					>
-						{t('hub.login.crm')}
-					</a>
-				</div>
-			</div>
 		</nav>
 	</header>
 
 	<!-- ── HERO: sorun + kapı ── -->
-	<section
-		class="hero-section relative z-10 flex flex-col items-center justify-center px-6 pt-24 pb-16 text-center sm:px-10 sm:pt-32 sm:pb-20"
-	>
-		<p
-			class="flex justify-center"
-			class:vitrin-in={visible}
-			style="--delay: 40ms"
-		>
-			<span
-				class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
-			>
-				{t('hub.hero.eyebrow')}
-			</span>
-		</p>
-		<h1
-			class="mt-4 max-w-3xl text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-[1.15] tracking-tight text-text"
-			class:vitrin-in={visible}
-			style="--delay: 80ms"
-		>
-			{t('hub.hero.title')}
-		</h1>
+	<section class="hero-section relative z-10 py-16 sm:py-20 lg:py-28">
+		<div class="mx-auto max-w-6xl px-6 sm:px-10">
+			<div class="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+				<div
+					class="flex flex-col items-center pr-0 text-center sm:pr-0 lg:items-start lg:pr-12 lg:text-left xl:pr-16"
+				>
+					<div>
+						<span
+							class="inline-flex items-center rounded-full bg-brand/15 px-2.5 py-0.5 text-[11px] font-medium text-brand"
+						>
+							{t('hub.hero.eyebrow')}
+						</span>
+					</div>
+					<h1
+						class="mt-4 max-w-[24ch] text-2xl font-semibold leading-[1.35] tracking-tight text-text sm:max-w-[26ch] sm:text-[1.65rem] lg:text-[1.85rem] lg:leading-[1.32]"
+					>
+						<span>{heroTitleParts.primary}</span><span class="text-text-muted"
+							>{heroTitleParts.muted}</span
+						>
+					</h1>
+					<div class="mt-6 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
+						<a
+							href={whatsappContactUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex h-9 items-center justify-center rounded-full bg-brand px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+						>
+							{t('hub.hero.ctaContact')}
+						</a>
+					</div>
+				</div>
+
+				<div class="hero-visual relative isolate" aria-hidden="true">
+					<div class="hero-iso-grid pointer-events-none absolute inset-0 -z-10 opacity-60 dark:opacity-40"></div>
+
+					<!-- Floating chaos sheets -->
+					<div class="relative mx-auto max-w-md lg:max-w-none">
+						<div class="flex flex-col items-center gap-2.5 pl-2 pr-6 sm:pr-10">
+							<div
+								class="hero-float-card flex w-[min(100%,14.5rem)] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-1.5deg]"
+							>
+								<span class="font-medium">WhatsApp</span>
+								<span class="tracking-widest text-text-faint">— — —</span>
+							</div>
+							<div
+								class="hero-float-card flex w-[min(100%,14.5rem)] translate-x-4 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[1.1deg] sm:translate-x-6"
+							>
+								<span class="font-medium">Excel</span>
+								<span class="tracking-widest text-text-faint">— — —</span>
+							</div>
+							<div
+								class="hero-float-card flex w-[min(100%,14.5rem)] -translate-x-1 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-0.7deg]"
+							>
+								<span class="font-medium">Sohbet grubu</span>
+								<span class="tracking-widest text-text-faint">— — —</span>
+							</div>
+						</div>
+
+						<!-- Connector -->
+						<div class="relative my-1 flex h-10 items-center justify-center">
+							<svg
+								class="absolute inset-x-0 mx-auto h-full w-16 text-border"
+								viewBox="0 0 64 40"
+								fill="none"
+								aria-hidden="true"
+							>
+								<path
+									d="M32 2 v28"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-dasharray="3 3"
+								/>
+								<path d="M24 26 l8 8 8-8" stroke="currentColor" stroke-width="1.5" />
+							</svg>
+							<span
+								class="relative z-10 flex size-7 items-center justify-center rounded-full border border-brand/30 bg-surface text-brand shadow-sm"
+							>
+								<ArrowDown class="size-3.5" />
+							</span>
+						</div>
+
+						<!-- App panel + side float cards -->
+						<div class="relative">
+							<div
+								class="hero-float-card absolute -left-1 top-8 z-10 hidden w-28 rounded-md border border-border bg-surface p-2 shadow-sm rotate-[-6deg] sm:block lg:-left-4"
+							>
+								<div class="mb-1.5 h-1.5 w-10 rounded bg-border"></div>
+								<div class="space-y-1">
+									<div class="h-1 w-full rounded bg-border/80"></div>
+									<div class="h-1 w-4/5 rounded bg-border/80"></div>
+									<div class="h-1 w-3/5 rounded bg-brand/40"></div>
+								</div>
+							</div>
+							<div
+								class="hero-float-card absolute -right-1 top-14 z-10 hidden w-24 rounded-md border border-border bg-surface p-2 shadow-sm rotate-[5deg] sm:block lg:-right-3"
+							>
+								<div class="mb-1.5 flex gap-0.5">
+									<span class="h-6 flex-1 rounded-sm bg-border/70"></span>
+									<span class="h-6 flex-1 rounded-sm bg-border/50"></span>
+									<span class="h-6 flex-1 rounded-sm bg-brand/35"></span>
+								</div>
+								<div class="h-1 w-full rounded bg-border/70"></div>
+							</div>
+
+							<div
+								class="relative overflow-hidden rounded-xl border border-border bg-surface shadow-[0_20px_50px_-28px_rgba(0,0,0,0.35)] dark:shadow-[0_20px_50px_-28px_rgba(0,0,0,0.7)]"
+							>
+								<div class="flex items-center gap-1.5 border-b border-border px-3.5 py-2.5">
+									<span class="size-2 rounded-full bg-border"></span>
+									<span class="size-2 rounded-full bg-border"></span>
+									<span class="size-2 rounded-full bg-border"></span>
+								</div>
+								<div class="flex min-h-48">
+									<div class="flex w-14 flex-col gap-2 border-r border-border bg-surface-2/60 p-2.5 sm:w-16">
+										<div class="h-1.5 w-full rounded bg-border"></div>
+										<div class="h-1.5 w-[88%] rounded bg-brand"></div>
+										<div class="h-1.5 w-full rounded bg-border"></div>
+										<div class="h-1.5 w-full rounded bg-border"></div>
+										<div class="mt-auto h-1.5 w-3/4 rounded bg-border"></div>
+									</div>
+									<div class="flex flex-1 flex-col gap-2.5 p-3.5 sm:p-4">
+										<div class="mb-1 flex items-center justify-between">
+											<div class="h-2 w-24 rounded bg-text/15"></div>
+											<div class="h-5 w-16 rounded-full bg-brand/20"></div>
+										</div>
+										<div class="h-2 w-[72%] rounded bg-border"></div>
+										<div class="h-2 w-[90%] rounded bg-border"></div>
+										<div class="mt-1 grid grid-cols-3 gap-2">
+											<div class="h-14 rounded-md border border-border bg-surface-2/80"></div>
+											<div class="h-14 rounded-md border border-border bg-surface-2/80"></div>
+											<div class="h-14 rounded-md border border-brand/25 bg-brand/10"></div>
+										</div>
+										<div class="h-2 w-[55%] rounded bg-border"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</section>
 
 	<!-- ── İKİ KAPI ── -->
@@ -294,18 +386,12 @@
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
 							{t('hub.apps.app.outcome')}
 						</p>
-						<div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-							<a
-								href={PUBLIC_APP_URL}
-								class="inline-flex h-10 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
-							>
-								{t('hub.apps.app.cta')}
-							</a>
+						<div class="mt-8">
 							<a
 								href="/app/"
-								class="text-sm font-medium text-white transition-colors hover:text-white/80"
+								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
-								{t('hub.apps.app.ctaFeatures')}
+								{t('hub.apps.app.ctaFeaturesPage')}
 							</a>
 						</div>
 					</div>
@@ -361,18 +447,12 @@
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
 							{t('hub.apps.crm.outcome')}
 						</p>
-						<div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-							<a
-								href={PUBLIC_CRM_URL}
-								class="inline-flex h-10 items-center justify-center rounded-[6px] border border-border bg-surface px-6 text-sm font-medium text-text transition-colors hover:bg-surface-2"
-							>
-								{t('hub.apps.crm.cta')}
-							</a>
+						<div class="mt-8">
 							<a
 								href="/crm/"
-								class="text-sm font-medium text-white transition-colors hover:text-white/80"
+								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
-								{t('hub.apps.crm.ctaFeatures')}
+								{t('hub.apps.crm.ctaFeaturesPage')}
 							</a>
 						</div>
 					</div>
@@ -401,89 +481,119 @@
 					</div>
 				</div>
 			</div>
-		</div>
-	</section>
 
-	<!-- ── KAYNAKLAR ── -->
-	<section
-		id="resources"
-		class="relative z-10 scroll-mt-24 border-t border-border/40 px-6 py-20 sm:px-10 sm:py-24"
-	>
-		<div class="mx-auto max-w-3xl text-center">
-			<p class="flex justify-center">
-				<span
-					class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
-				>
-					{t('hub.nav.resources')}
-				</span>
-			</p>
-			<p class="mt-4 text-base font-medium text-text sm:text-lg">{t('hub.resources.problem')}</p>
-			<h2
-				class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold leading-[1.15] tracking-tight text-text"
+			<div
+				id="resources"
+				class="hub-stage scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[var(--stage-border)]"
 			>
-				{t('hub.resources.title')}
-			</h2>
-			<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
-				{t('hub.resources.desc')}
-			</p>
-			<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
-				{t('hub.resources.outcome')}
-			</p>
-			<div class="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row">
-				<a
-					href="/resources/"
-					class="inline-flex h-10 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+				<div
+					class="grid items-center gap-8 p-8 text-left sm:p-10 lg:grid-cols-2 lg:gap-12 lg:p-12"
 				>
-					{t('hub.resources.ctaPrimary')}
-				</a>
-				<a
-					href="/yapay-zeka-karnesi/"
-					class="inline-flex h-10 items-center justify-center rounded-[6px] border border-border bg-surface px-6 text-sm font-medium text-text transition-colors hover:bg-surface-2"
-				>
-					{t('hub.resources.ctaSecondary')}
-				</a>
+					<div>
+						<span
+							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+						>
+							{t('hub.nav.resources')}
+						</span>
+						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
+							{t('hub.resources.problem')}
+						</p>
+						<h2
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+						>
+							{t('hub.resources.title')}
+						</h2>
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+							{t('hub.resources.desc')}
+						</p>
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+							{t('hub.resources.outcome')}
+						</p>
+						<div class="mt-8 flex flex-wrap items-center gap-3">
+							<a
+								href="/resources/"
+								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+							>
+								{t('hub.resources.ctaPrimary')}
+							</a>
+							<a
+								href="/yapay-zeka-karnesi/"
+								class="inline-flex items-center justify-center rounded-md border border-white/25 bg-transparent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
+							>
+								{t('hub.resources.ctaSecondary')}
+							</a>
+						</div>
+					</div>
+					<div class="hub-mock" aria-hidden="true">
+						<div class="hub-mock-chrome">
+							<span class="hub-mock-dot"></span>
+							<span class="hub-mock-dot"></span>
+							<span class="hub-mock-dot"></span>
+						</div>
+						<div class="hub-mock-body">
+							<div class="hub-mock-main w-full gap-3 p-4">
+								<div class="hub-mock-row hub-mock-row--wide"></div>
+								<div class="hub-mock-row"></div>
+								<div class="mt-1 grid grid-cols-2 gap-2">
+									<div class="h-16 rounded-md border border-[var(--stage-border)] bg-[var(--stage-bg)]"></div>
+									<div class="h-16 rounded-md border border-brand/40 bg-brand/20"></div>
+								</div>
+								<div class="hub-mock-row hub-mock-row--short"></div>
+								<div class="hub-mock-row hub-mock-row--wide"></div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
-		</div>
-	</section>
 
-	<!-- ── ARAÇLAR ── -->
-	<section
-		id="tools"
-		class="relative z-10 scroll-mt-24 border-t border-border/40 px-6 py-20 sm:px-10 sm:py-24"
-	>
-		<div class="mx-auto max-w-6xl">
-			<div class="mx-auto mb-12 max-w-3xl text-center">
-				<p class="flex justify-center">
-					<span
-						class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
-					>
-						{t('hub.nav.tools')}
-					</span>
-				</p>
-				<p class="mt-4 text-base font-medium text-text sm:text-lg">{t('hub.tools.problem')}</p>
-				<h2
-					class="mt-4 text-[clamp(1.75rem,4vw,2.5rem)] font-semibold leading-[1.15] tracking-tight text-text"
+			<div
+				id="tools"
+				class="hub-stage scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[var(--stage-border)]"
+			>
+				<div
+					class="flex flex-col items-center gap-8 p-8 text-left sm:p-10 lg:flex-row-reverse lg:gap-12 lg:p-12"
 				>
-					{t('hub.tools.title')}
-				</h2>
-				<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
-					{t('hub.tools.desc')}
-				</p>
-				<p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-muted sm:text-lg">
-					{t('hub.tools.outcome')}
-				</p>
-			</div>
-
-			<div class="grid gap-6 sm:grid-cols-3">
-				{#each tools as { titleKey, descKey, href } (titleKey)}
-					<a
-						{href}
-						class="section-card rounded-xl border border-border bg-surface p-6 text-left transition-colors hover:border-brand/40 hover:bg-surface-2"
-					>
-						<h3 class="text-sm font-semibold text-text">{t(titleKey)}</h3>
-						<p class="mt-2 text-xs leading-relaxed text-text-muted">{t(descKey)}</p>
-					</a>
-				{/each}
+					<div class="w-full lg:w-1/2">
+						<span
+							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+						>
+							{t('hub.nav.tools')}
+						</span>
+						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
+							{t('hub.tools.problem')}
+						</p>
+						<h2
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+						>
+							{t('hub.tools.title')}
+						</h2>
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+							{t('hub.tools.desc')}
+						</p>
+						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+							{t('hub.tools.outcome')}
+						</p>
+						<div class="mt-8">
+							<a
+								href="/tools/"
+								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+							>
+								{t('hub.tools.cta')}
+							</a>
+						</div>
+					</div>
+					<div class="flex w-full flex-col gap-3 lg:w-1/2">
+						{#each tools as { titleKey, descKey, href } (titleKey)}
+							<a
+								{href}
+								class="rounded-xl border border-[var(--stage-border)] bg-[var(--stage-surface)] p-4 text-left transition-colors hover:border-brand/40"
+							>
+								<h3 class="text-sm font-semibold text-[var(--stage-fg)]">{t(titleKey)}</h3>
+								<p class="mt-1.5 text-xs leading-relaxed text-[var(--stage-muted)]">{t(descKey)}</p>
+							</a>
+						{/each}
+					</div>
+				</div>
 			</div>
 		</div>
 	</section>
@@ -492,7 +602,7 @@
 	<section class="relative z-10 border-t border-border/40 px-6 py-16 sm:px-10 sm:py-20">
 		<div class="mx-auto max-w-6xl">
 			<div
-				class="flex flex-col items-center rounded-[1.5rem] bg-brand px-8 py-12 text-center text-primary-foreground sm:px-12 sm:py-16"
+				class="flex w-full flex-col items-center rounded-[1.5rem] bg-brand px-5 py-12 text-center text-primary-foreground sm:px-12 sm:py-16"
 			>
 				<BrandMark class="mb-5 h-10 w-10 text-white" title="" />
 				<h2 class="text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight">
@@ -501,34 +611,32 @@
 				<p class="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
 					{t('hub.ctaBand.subtitle')}
 				</p>
-				<div class="mt-8 flex flex-col gap-3 sm:flex-row">
+				<div class="mt-8 flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:justify-center">
 					<a
 						href={PUBLIC_APP_URL}
-						class="inline-flex h-11 items-center justify-center rounded-[6px] bg-white px-8 text-sm font-medium text-brand transition-colors hover:bg-white/90"
+						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] bg-white px-4 text-sm font-medium text-brand transition-colors hover:bg-white/90 sm:w-auto sm:px-8"
 					>
 						{t('hub.ctaBand.cta')}
 					</a>
 					<a
 						href={PUBLIC_CRM_URL}
-						class="inline-flex h-11 items-center justify-center rounded-[6px] border border-white/40 bg-transparent px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-white/10"
+						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] border border-white/40 bg-transparent px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-white/10 sm:w-auto sm:px-8"
 					>
 						{t('hub.ctaBand.ctaCrm')}
 					</a>
 				</div>
-				<p class="mt-5 inline-flex items-center gap-1.5 text-sm text-white/80">
+				<p
+					class="mt-5 flex flex-col items-center gap-1.5 text-sm text-white/80 sm:inline-flex sm:flex-row"
+				>
 					<Lock class="size-3.5 shrink-0" aria-hidden="true" />
-					{t('hub.ctaBand.trust')}
+					<span class="text-center sm:text-left">{t('hub.ctaBand.trust')}</span>
 				</p>
 			</div>
 		</div>
 	</section>
 
 	<!-- ── FOOTER ── -->
-	<footer
-		class="relative z-10 border-t border-border/40 px-6 py-12 sm:px-10"
-		class:vitrin-in={visible}
-		style="--delay: 0ms"
-	>
+	<footer class="relative z-10 border-t border-border/40 px-6 py-12 sm:px-10">
 		<div class="mx-auto max-w-6xl">
 			<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
 				<div>
@@ -630,7 +738,6 @@
 		background: var(--gradient-hero);
 		opacity: 0.1;
 		filter: blur(64px);
-		animation: vitrin-breathe 10s ease-in-out infinite;
 	}
 
 	:global(.dark) .vitrin-glow {
@@ -742,76 +849,13 @@
 		background: color-mix(in srgb, var(--stage-bg) 70%, var(--stage-surface));
 	}
 
-	header,
-	.hero-section > p,
-	.hero-section > h1,
-	.hero-section > div,
-	footer {
-		opacity: 0;
-		transform: translateY(14px);
-		transition:
-			opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-			transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-		transition-delay: var(--delay, 0ms);
-	}
-
-	header.vitrin-in,
-	.hero-section > p.vitrin-in,
-	.hero-section > h1.vitrin-in,
-	.hero-section > div.vitrin-in,
-	footer.vitrin-in {
-		opacity: 1;
-		transform: translateY(0);
-	}
-
-	.section-card {
-		opacity: 0;
-		transform: translateY(12px);
-		animation: card-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-	}
-
-	#tools .section-card:nth-child(1) {
-		animation-delay: 0.05s;
-	}
-	#tools .section-card:nth-child(2) {
-		animation-delay: 0.1s;
-	}
-	#tools .section-card:nth-child(3) {
-		animation-delay: 0.15s;
-	}
-
-	@keyframes vitrin-breathe {
-		0%,
-		100% {
-			transform: translateX(-50%) scale(1);
-		}
-		50% {
-			transform: translateX(-50%) scale(1.08);
-		}
-	}
-
-	@keyframes card-enter {
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.vitrin-glow {
-			animation: none;
-		}
-
-		header,
-		.hero-section > p,
-		.hero-section > h1,
-		.hero-section > div,
-		footer,
-		.section-card {
-			opacity: 1;
-			transform: none;
-			transition: none;
-			animation: none;
-		}
+	.hero-iso-grid {
+		background-image:
+			linear-gradient(to right, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px),
+			linear-gradient(to bottom, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px);
+		background-size: 28px 28px;
+		mask-image: radial-gradient(ellipse 70% 65% at 55% 45%, #000 20%, transparent 75%);
+		transform: perspective(600px) rotateX(58deg) scale(1.35);
+		transform-origin: center 40%;
 	}
 </style>
