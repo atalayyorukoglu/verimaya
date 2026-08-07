@@ -128,7 +128,8 @@ Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu 
 | Tracker | Verimaya | Dönüşüm | Boş / çakışma |
 | --- | --- | --- | --- |
 | `id` | yeni UUID + map | — | — |
-| `case_id` | `patient_id` **NOT NULL** | patient map | **case_id null → satır skip** (rapor) |
+| `case_id` | `patient_id` **NOT NULL** | patient map | `case_id` yoksa `contact_id` → `cases.contact_id` (ilk eşleşme); ikisi de yoksa **skip** (rapor) |
+| `contact_id` | (yalnız ara çözüm) | yukarıdaki fallback | Tracker pilotunda çoğu randevuda `case_id` boş, `contact_id` dolu |
 | case.full_name | `patient_display_name` | denormalize | zorunlu |
 | type.name | `appointment_type` | §2.2 | null OK |
 | status.name | `status` | §2.3 | default `scheduled` |
@@ -160,7 +161,7 @@ Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu 
 
 | Tracker | Verimaya | Dönüşüm | Boş / çakışma |
 | --- | --- | --- | --- |
-| `case_id` | `patient_id` **NOT NULL** | map | null → **skip** |
+| `case_id` | `patient_id` **NOT NULL** | map | null → randevu `appointment_id` üzerinden çözülen patient; yoksa **skip** |
 | `appointment_id` | `appointment_id` | map | null OK |
 | `filename` | `filename` | — | zorunlu |
 | `mime_type` | `mime_type` | boş → `application/octet-stream` | — |

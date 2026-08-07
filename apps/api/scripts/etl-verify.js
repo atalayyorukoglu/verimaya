@@ -92,7 +92,46 @@ function expectedFromMapped(mapped) {
 			net_minor: incomeMinor - expenseMinor,
 			transaction_count: mapped.transactions.filter((t) => t.verimaya.amount != null).length
 		},
-		sample_transactions: sampleTx
+		sample_transactions: sampleTx,
+		duplicates: expectedDuplicatesFromMapped(mapped)
+	};
+}
+
+/**
+ * Source may already contain duplicate emails/phones; verify expects the same groups after ETL.
+ * @param {ReturnType<typeof mapFixture>} mapped
+ */
+function expectedDuplicatesFromMapped(mapped) {
+	/** @type {Map<string, number>} */
+	const patientEmail = new Map();
+	/** @type {Map<string, number>} */
+	const patientPhone = new Map();
+	/** @type {Map<string, number>} */
+	const contactEmail = new Map();
+
+	for (const p of mapped.patients) {
+		const email = p.verimaya.email ? String(p.verimaya.email).trim().toLowerCase() : '';
+		if (email) patientEmail.set(email, (patientEmail.get(email) ?? 0) + 1);
+		const phone = p.verimaya.phone
+			? String(p.verimaya.phone).replace(/\D/g, '')
+			: '';
+		if (phone.length >= 7) patientPhone.set(phone, (patientPhone.get(phone) ?? 0) + 1);
+	}
+	for (const c of mapped.contacts) {
+		const email = c.verimaya.email ? String(c.verimaya.email).trim().toLowerCase() : '';
+		if (email) contactEmail.set(email, (contactEmail.get(email) ?? 0) + 1);
+	}
+
+	const toGroups = (/** @type {Map<string, number>} */ m) =>
+		[...m.entries()]
+			.filter(([, n]) => n > 1)
+			.map(([key, n]) => ({ key, n }))
+			.sort((a, b) => a.key.localeCompare(b.key));
+
+	return {
+		patient_email: toGroups(patientEmail),
+		patient_phone: toGroups(patientPhone),
+		contact_email: toGroups(contactEmail)
 	};
 }
 
@@ -232,11 +271,15 @@ function buildDiffs(input) {
 		actual.duplicates.patient_email.length +
 		actual.duplicates.patient_phone.length +
 		actual.duplicates.contact_email.length;
+	const expectedDupeTotal =
+		expected.duplicates.patient_email.length +
+		expected.duplicates.patient_phone.length +
+		expected.duplicates.contact_email.length;
 	rows.push({
 		check: 'duplicates.groups',
-		expected: 0,
+		expected: expectedDupeTotal,
 		actual: dupeTotal,
-		ok: dupeTotal === 0
+		ok: dupeTotal === expectedDupeTotal
 	});
 
 	return rows;

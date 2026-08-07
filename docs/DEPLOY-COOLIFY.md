@@ -236,32 +236,103 @@ pnpm --filter @verimaya/api files:migrate-s3
 pnpm --filter @verimaya/api files:migrate-s3 -- --apply
 ```
 
-## Günlük Postgres yedeği + sunucu dışı kopya
+## Günlük Postgres yedeği + sunucu dışı kopya (OPS-01 · R2)
 
-Coolify scheduled job **veya** sunucu cron (örnek):
+**Hedef:** Her gün bir `pg_dump` → gzip → **Cloudflare R2** (`verimaya-pg-backups`).
+Aynı Hetzner diskine yalnız tutma. Script: `scripts/ops/pg-backup-to-r2.sh`.
+
+### 1) Cloudflare dashboard (bir kez)
+
+1. Cloudflare → **R2** → **Create bucket**
+   - Name: `verimaya-pg-backups`
+   - Location: **EU** (mümkünse)
+2. R2 → **Manage R2 API Tokens** → **Create API token**
+   - Permission: **Object Read & Write**
+   - Bucket: yalnız `verimaya-pg-backups`
+3. Not et (Coolify/sunucu secret’a):
+   - Access Key ID
+   - Secret Access Key
+   - Endpoint: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
+     (R2 overview / bucket Settings → S3 API)
+
+### 2) Sunucu: araçlar
+
+SSH (veya Coolify host terminal):
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-OUT="/var/backups/verimaya/pg-${STAMP}.sql.gz"
-mkdir -p "$(dirname "$OUT")"
-# Coolify internal hostname / credentials — secret'tan oku
-docker exec -i <postgres-container> \
-  pg_dump -U verimaya -d verimaya --format=plain \
-  | gzip -9 > "$OUT"
-# Sunucu dışı kopya (Hetzner Storage Box, R2, Backblaze, …)
-rclone copy "$OUT" remote:verimaya-pg-backups/
-# Yerelde N günden eskiyi sil (sunucu dışı kopya asıl kaynak)
-find /var/backups/verimaya -name 'pg-*.sql.gz' -mtime +7 -delete
+# AWS CLI (R2 S3-compatible)
+command -v aws >/dev/null || (curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip && unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install)
+
+# Script’i koy
+sudo mkdir -p /opt/verimaya/ops /var/backups/verimaya
+# Repodan kopyala veya scp:
+#   scripts/ops/pg-backup-to-r2.sh → /opt/verimaya/ops/pg-backup-to-r2.sh
+sudo chmod +x /opt/verimaya/ops/pg-backup-to-r2.sh
 ```
+
+Postgres container adı:
+
+```bash
+docker ps --format '{{.Names}}' | grep -i postgres
+# örn. …-postgres-…  → PG_CONTAINER=
+```
+
+### 3) Env + cron
+
+`/etc/verimaya/backup.env` (root only, `chmod 600`):
+
+```bash
+PG_CONTAINER=CHANGE_ME
+PG_USER=postgres
+PG_DATABASE=verimaya
+R2_ENDPOINT=https://ACCOUNT_ID.r2.cloudflarestorage.com
+R2_BUCKET=verimaya-pg-backups
+AWS_ACCESS_KEY_ID=…
+AWS_SECRET_ACCESS_KEY=…
+```
+
+Cron (UTC 03:00):
+
+```cron
+0 3 * * * . /etc/verimaya/backup.env && /opt/verimaya/ops/pg-backup-to-r2.sh >> /var/log/verimaya-pg-backup.log 2>&1
+```
+
+Elle ilk koşu:
+
+```bash
+set -a && . /etc/verimaya/backup.env && set +a
+/opt/verimaya/ops/pg-backup-to-r2.sh
+```
+
+R2’de `pg/pg-….sql.gz` görünmeli.
+
+### 4) Restore prova (zorunlu)
+
+```bash
+# indir
+aws s3 cp s3://verimaya-pg-backups/pg/pg-YYYYMMDD….sql.gz /tmp/restore.sql.gz \
+  --endpoint-url "$R2_ENDPOINT"
+
+# prod’u EZME — ayrı DB
+docker exec -i "$PG_CONTAINER" psql -U postgres -c 'CREATE DATABASE verimaya_restore_test;'
+gunzip -c /tmp/restore.sql.gz | docker exec -i "$PG_CONTAINER" \
+  psql -U postgres -d verimaya_restore_test
+
+docker exec -i "$PG_CONTAINER" psql -U postgres -d verimaya_restore_test -c \
+  "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
+
+docker exec -i "$PG_CONTAINER" psql -U postgres -c 'DROP DATABASE verimaya_restore_test;'
+```
+
+Sonucu aşağıdaki tabloya yaz.
 
 Kontrol listesi:
 
 - [ ] Cron / Coolify schedule: günde ≥1 (UTC sabahı önerilir)
 - [ ] Çıktı gzip + tarih damgası
-- [ ] Sunucu dışı kopya (Storage Box / R2 / S3) — **aynı Hetzner diskinde yalnız tutma**
-- [ ] Alert: son 36s içinde başarılı yedek yoksa bildirim
+- [ ] Sunucu dışı kopya (R2) — **aynı Hetzner diskinde yalnız tutma**
+- [ ] İlk restore prova OK
+- [ ] (İsteğe bağlı) Haftalık Hetzner server snapshot
 
 Redis yedeği zorunlu değil (broker); kritik durum Postgres’tedir.
 
@@ -271,12 +342,12 @@ Redis yedeği zorunlu değil (broker); kritik durum Postgres’tedir.
 
 ### Prosedür (staging / ayrı Postgres volume)
 
-1. Son başarılı dump’ı sunucu dışından indir.
+1. Son başarılı dump’ı sunucu dışından (R2) indir.
 2. Boş bir Postgres’e yükle (prod’u ezme):
 
 ```bash
 gunzip -c pg-YYYYMMDD….sql.gz | docker exec -i <restore-pg> \
-  psql -U verimaya -d verimaya
+  psql -U postgres -d verimaya_restore_test
 ```
 
 3. Doğrula:
@@ -295,9 +366,10 @@ psql … -c "select max(created_at) from audit_logs;"
 
 | Tarih (UTC) | Dump dosyası | Hedef | Sonuç | Not |
 |---|---|---|---|---|
-| 2026-07-31 | `pg-20260731T143657Z.sql.gz` | `verimaya_restore_test` (aynı PG, prod dışı DB) | OK | 37 public tablo eşleşti; test DB drop edildi. Sunucu dışı kopya henüz yok. |
+| 2026-08-07 | `pg-dump-verimaya-1786112976.dmp` (Coolify→R2, 123K) | `verimaya_restore_test` | OK | 37 public tablo; host `pg_restore`; test DB drop edildi. Storage `verimaya-r2-pg`. |
+| 2026-07-31 | `pg-20260731T143657Z.sql.gz` | `verimaya_restore_test` (aynı PG, prod dışı DB) | OK | 37 public tablo eşleşti; test DB drop edildi. Sunucu dışı kopya henüz yoktu. |
 
-> Canlı kabul: en az **bir** OK satırı olmadan Adım 31 kapanmaz.
+> Canlı kabul: en az **bir** OK satırı + **R2’de** kopya olmadan OPS-01 kapanmaz.
 
 ## Canlı kabul (curl)
 

@@ -166,48 +166,44 @@
 
 ### 4. OPS-01 (kalan) — Otomatik sunucu dışı yedek/snapshot düzeni
 
-> **Durum:** Dump/restore provası, Coolify deploy, canlı curl kabulü tamamlandı.
-> Kalan: otomatik, sunucu dışı yedekleme (ör. Hetzner snapshot + pg_dump cron).
+> **Durum:** ✅ Tamamlandı (2026-08-07). Coolify scheduled backup → R2
+> (`verimaya-pg-backups` / storage `verimaya-r2-pg`). DB: `verimaya` (yalnız
+> `postgres` değil). Cron `0 3 * * *` UTC. Restore prova: host’tan
+> `pg_restore` → `verimaya_restore_test` → **37** public tablo → DROP.
 
-- [ ] Yedek düzenini kur (ör. günlük pg_dump → S3/R2 + Hetzner snapshot)
-- [ ] Tarihli restore provası yap, kanıtla
-- [ ] Runbook'u `docs/DEPLOY-COOLIFY.md`'ye ekle
+- [x] Yedek düzenini kur (Coolify Backups + R2 S3 storage)
+- [x] Tarihli restore provası yap, kanıtla (2026-08-07, 37 tablo)
+- [x] Runbook'u `docs/DEPLOY-COOLIFY.md`'ye ekle (R2 + Coolify yolu)
+- **Görüş:** Özel `scripts/ops/pg-backup-to-r2.sh` yedek planı olarak
+  duruyor; canlı yol Coolify native Backup + R2. Retention alanları 0
+  (limitsiz) — ileride 7–14 gün sabitlemek iyi olur.
 
 ---
 
 ### 4A. OPS-WEB-B — Path B sonrası temizlik (kafa karışıklığı önle)
 
-> **Durum:** Web canlıda **GHCR pull** (`verimaya-web-image`). Build VPS’te değil;
-> `.github/workflows/deploy-web.yml` → `ghcr.io/atalayyorukoglu/verimaya-web:main`
-> → Coolify webhook (`uuid=i7fds7lshwjs980rnontx6ye` + `COOLIFY_API_TOKEN`).
-> Eski Dockerfile app durduruldu (silinmedi). Detay: `docs/DEPLOY-COOLIFY.md` § Web.
+> **Durum:** ✅ 2026-08-07. Eski `verimaya-web` (Dockerfile) silindi. Canlı web =
+> yalnız `verimaya-web-image` (domain: apex + www + app). API hâlâ Dockerfile yolu.
 
 **Coolify (silinebilir / dokunma — karıştırma):**
 
-- [ ] Eski **`verimaya-web`** (Dockerfile + Git build, status Exited) — birkaç gün
-  rollback gerekmezse **sil**. Canlı domain’ler artık **`verimaya-web-image`** üzerinde.
-  Silmeden önce domain’lerin yalnız yeni app’te olduğunu doğrula.
-- [ ] Eski app’i **yeniden Start etme** (aynı domain çakışması / yanlışlıkla VPS build).
-- [ ] Yeni app’te Git/Dockerfile Watch Paths **yok**; kaynak = Docker Image + GHCR.
+- [x] Eski **`verimaya-web`** (Dockerfile + Git build) silindi — 2026-08-07
+- [x] Eski app’i **yeniden Start etme** — app yok; uyarı geçersiz
+- [x] Yeni app’te kaynak = Docker Image + GHCR (`verimaya-web-image`)
 
 **Repo (silme):**
 
-- [ ] `apps/web/Dockerfile` — **silme**. GHA hâlâ bununla image üretir.
-- [ ] `.github/workflows/deploy-web.yml` — **silme**. Prod web deploy yolu bu.
+- [x] `apps/web/Dockerfile` — **silinmedi** (GHA image üretir) — bilinçli koru
+- [x] `.github/workflows/deploy-web.yml` — **silinmedi** — bilinçli koru
 
 **İsteğe bağlı (kafa karışıklığı azaltır):**
 
-- [ ] Coolify projede eski app silindikten sonra isim: `verimaya-web-image` →
-  `verimaya-web` rename (UUID aynı kalır; webhook secret’ı güncelleme gerekmez).
-- [x] `docs/MIMARI.md` Helsinki (`*-hel1-*`) DPA/anket satırı — 2026-08-07.
-  (Eski “Falkenstein” metni MIMARI’de yoktu; canlı lokasyon açıkça yazıldı.)
-- [ ] API için aynı path B (GHCR) — web OOM sınıfı API Dockerfile build’de tekrarlanabilir;
-  ayrı iş, şimdilik zorunlu değil.
+- [ ] Coolify projede isim: `verimaya-web-image` → `verimaya-web` rename (UUID aynı)
+- [x] `docs/MIMARI.md` Helsinki (`*-hel1-*`) DPA/anket satırı — 2026-08-07
+- [ ] API için aynı path B (GHCR) — ayrı iş, şimdilik zorunlu değil
 - **Bağımlı:** yok (path B zaten canlı)
-- **Kabul:** Coolify’da tek aktif web app = image pull; GitHub Actions deploy yeşil;
-  VPS deploy log’unda `pnpm` / `docker build` web için yok.
-- **Görüş:** 2026-08-06 — cutover Claude+manuel; webhook Bearer zorunlu. Secret’lar:
-  `COOLIFY_WEB_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN`. Paket public GHCR.
+- **Kabul:** Coolify’da tek aktif web app = image pull ✅
+- **Görüş:** Silme sonrası resources: api + web-image + db + redis. Rename isteğe bağlı.
 
 ---
 
@@ -249,10 +245,18 @@
 > **Bağımlı:** 1+1A+1B+2+3+4+5 (WEBHOOK-01, AUDIT-01, AUDIT-02, sırlar temiz, hukuk onayı, yedek, operasyonel hijyen).
 > Runbook: `docs/ETL-KESIM.md`.
 
-- [ ] ETL dry-run (Fixrav Tracker → Verimaya)
-- [ ] Apply + verify
+- [x] ETL dry-run (Fixrav Tracker → Verimaya)
+- [x] Apply + verify
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org'u dahil)
 
+- **Görüş (2026-08-07):** Tracker Railway `OrbisMed Clinics` → prod tenant
+  `Demo Klinik` (`afb4a68b…`). İlk apply’de 816/757/548 yazıldı; randevu/dosya 0
+  kaldı çünkü Tracker’da `appointments.case_id` hep NULL — bağlantı `contact_id`.
+  ETL’e `contact_id → cases.contact_id` (ve dosya için randevu zinciri) eklendi;
+  2. apply: **703 randevu + 24 dosya** (3+3 skip: contactsiz). 3. apply 0 insert
+  (idempotent). `etl:verify` OK (counts + money; kaynakta 8 contact-email dupe
+  grubu beklentiyle hizalandı). Tenant adı hâlâ “Demo Klinik” — rename / 2. org
+  açık. Spot check UI + para örneklem panoda.
 ---
 
 ### 7. MARKET-01 — Üç stratejik karar (17 Ağustos review öncesi)

@@ -56,7 +56,7 @@ const APPOINTMENT_STATUS_MAP = {
  * @typedef {{ id: string | number, type: string, name: string, phone: string | null, email: string | null, notes: string | null, is_internal?: boolean }} SourceContact
  * @typedef {{ id: string | number, full_name: string, phone: string | null, email: string | null, status: string | null, source: string | null, notes: string | null, contact_id: string | number | null }} SourceCase
  * @typedef {{ kind: string, name: string, subcategories: string[] }} SourceFinanceCategory
- * @typedef {{ id: string | number, case_id: string | number | null, title?: string | null, type?: string | null, status?: string | null, starts_at: string, ends_at?: string | null, clinic_name?: string | null, hotel_name?: string | null, transfer_note?: string | null, notes?: string | null, clinic_contact_id?: string | number | null, hotel_contact_id?: string | number | null, transfer_contact_id?: string | number | null }} SourceAppointment
+ * @typedef {{ id: string | number, case_id: string | number | null, contact_id?: string | number | null, title?: string | null, type?: string | null, status?: string | null, starts_at: string, ends_at?: string | null, clinic_name?: string | null, hotel_name?: string | null, transfer_note?: string | null, notes?: string | null, clinic_contact_id?: string | number | null, hotel_contact_id?: string | number | null, transfer_contact_id?: string | number | null }} SourceAppointment
  * @typedef {{ id: string | number, case_id?: string | number | null, kind: string, title: string, subtitle?: string | null, category?: string | null, occurred_on: string, status: string, invoice_status?: string, payment_method?: string | null, amount_major?: number, amount?: number, currency: string, paid_amount_major?: number | null, paid_amount?: number | null, contact_id?: string | number | null, contact_label?: string | null, description?: string | null }} SourceTransaction
  * @typedef {{ id: string | number, case_id: string | number | null, appointment_id?: string | number | null, filename: string, mime_type?: string | null, size_bytes?: number | null }} SourceFile
  * @typedef {{ id: string | number, case_id: string | number, body: string, author_display_name?: string | null }} SourceCaseNote
@@ -257,16 +257,29 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 		};
 	});
 
+	/** Tracker often leaves appointments.case_id null and links via contact_id → cases.contact_id. */
+	const contactToCaseLegacy = new Map();
+	for (const p of patients) {
+		if (p._contact_legacy && !contactToCaseLegacy.has(p._contact_legacy)) {
+			contactToCaseLegacy.set(p._contact_legacy, p.legacy_id);
+		}
+	}
+
 	const appointments = (fixture.appointments ?? []).map((a) => {
 		const legacy = extId(a.id);
 		const id = mapId('appointment', legacy);
 		appointmentIdMap.set(legacy, id);
-		const caseLegacy = a.case_id != null ? extId(a.case_id) : null;
+		const contactLegacy = a.contact_id != null ? extId(a.contact_id) : null;
+		let caseLegacy = a.case_id != null ? extId(a.case_id) : null;
+		if (!caseLegacy && contactLegacy) {
+			caseLegacy = contactToCaseLegacy.get(contactLegacy) ?? null;
+		}
 		const patientPlaceholder = caseLegacy != null ? (patientIdMap.get(caseLegacy) ?? null) : null;
 		const patient = patients.find((p) => p.legacy_id === caseLegacy);
 		return {
 			legacy_id: legacy,
 			_case_legacy: caseLegacy,
+			_contact_legacy: contactLegacy,
 			_clinic_contact_legacy: a.clinic_contact_id != null ? extId(a.clinic_contact_id) : null,
 			_hotel_contact_legacy: a.hotel_contact_id != null ? extId(a.hotel_contact_id) : null,
 			_transfer_contact_legacy:
@@ -289,6 +302,11 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 			}
 		};
 	});
+
+	const appointmentToCaseLegacy = new Map();
+	for (const item of appointments) {
+		if (item._case_legacy) appointmentToCaseLegacy.set(item.legacy_id, item._case_legacy);
+	}
 
 	const transactions = (fixture.transactions ?? []).map((t) => {
 		const legacy = extId(t.id);
@@ -329,8 +347,11 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 
 	const files = (fixture.files ?? []).map((f) => {
 		const legacy = extId(f.id);
-		const caseLegacy = f.case_id != null ? extId(f.case_id) : null;
 		const apptLegacy = f.appointment_id != null ? extId(f.appointment_id) : null;
+		let caseLegacy = f.case_id != null ? extId(f.case_id) : null;
+		if (!caseLegacy && apptLegacy) {
+			caseLegacy = appointmentToCaseLegacy.get(apptLegacy) ?? null;
+		}
 		return {
 			legacy_id: legacy,
 			_case_legacy: caseLegacy,
@@ -453,6 +474,7 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 			select
 				a.id,
 				a.case_id,
+				a.contact_id,
 				a.starts_at,
 				a.ends_at,
 				a.notes,
@@ -542,6 +564,7 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 			appointments: appointments.map((a) => ({
 				id: String(a.id),
 				case_id: a.case_id != null ? String(a.case_id) : null,
+				contact_id: a.contact_id != null ? String(a.contact_id) : null,
 				title: a.type_name != null ? String(a.type_name) : 'Randevu',
 				type: a.type_name != null ? String(a.type_name) : null,
 				status: a.status_name != null ? String(a.status_name) : null,
@@ -921,7 +944,9 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 
 				const caseLegacy = item._case_legacy;
 				if (!caseLegacy) {
-					stats.errors.push(`appointment ${legacy}: missing case_id — skipped`);
+					stats.errors.push(
+						`appointment ${legacy}: missing case_id/contact→case — skipped`
+					);
 					continue;
 				}
 				const patientId = patientMap.get(caseLegacy);
