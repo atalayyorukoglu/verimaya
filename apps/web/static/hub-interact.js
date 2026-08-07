@@ -29,7 +29,7 @@
 		root.style.colorScheme = theme;
 		try {
 			localStorage.setItem(THEME_KEY, theme);
-		} catch (_) {
+		} catch {
 			/* ignore quota / private mode */
 		}
 		syncThemeToggleLabels();
@@ -118,7 +118,7 @@
 		document.documentElement.lang = locale;
 		try {
 			localStorage.setItem(LOCALE_KEY, locale);
-		} catch (_) {
+		} catch {
 			/* ignore */
 		}
 
@@ -249,7 +249,7 @@
 			syncLocaleToggle(currentLocale());
 			syncThemeToggleLabels();
 		}
-	} catch (_) {
+	} catch {
 		syncLocaleToggle(currentLocale());
 		syncThemeToggleLabels();
 	}

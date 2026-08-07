@@ -62,7 +62,9 @@ if (!src.includes(begin) || !src.includes(end)) {
 }
 
 const updated = src.replace(
-	new RegExp(`${begin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+	new RegExp(
+		`${begin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+	),
 	block
 );
 if (updated === src && !src.includes('"hub.nav.webApp"')) {

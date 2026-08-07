@@ -240,7 +240,7 @@
 						</span>
 					</div>
 					<h1
-						class="mt-4 max-w-[24ch] text-2xl font-semibold leading-[1.35] tracking-tight text-text sm:max-w-[26ch] sm:text-[1.65rem] lg:text-[1.85rem] lg:leading-[1.32]"
+						class="mt-4 max-w-[24ch] text-2xl leading-[1.35] font-semibold tracking-tight text-text sm:max-w-[26ch] sm:text-[1.65rem] lg:text-[1.85rem] lg:leading-[1.32]"
 						data-i18n="hub.hero.title"
 						data-i18n-mode="ellipsis-split"
 					>
@@ -262,25 +262,27 @@
 				</div>
 
 				<div class="hero-visual relative isolate" aria-hidden="true">
-					<div class="hero-iso-grid pointer-events-none absolute inset-0 -z-10 opacity-60 dark:opacity-40"></div>
+					<div
+						class="hero-iso-grid pointer-events-none absolute inset-0 -z-10 opacity-60 dark:opacity-40"
+					></div>
 
 					<!-- Floating chaos sheets -->
 					<div class="relative mx-auto max-w-md lg:max-w-none">
-						<div class="flex flex-col items-center gap-2.5 pl-2 pr-6 sm:pr-10">
+						<div class="flex flex-col items-center gap-2.5 pr-6 pl-2 sm:pr-10">
 							<div
-								class="hero-float-card flex w-[min(100%,14.5rem)] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-1.5deg]"
+								class="hero-float-card flex w-[min(100%,14.5rem)] rotate-[-1.5deg] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm"
 							>
 								<span class="font-medium">WhatsApp</span>
 								<span class="tracking-widest text-text-faint">— — —</span>
 							</div>
 							<div
-								class="hero-float-card flex w-[min(100%,14.5rem)] translate-x-4 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[1.1deg] sm:translate-x-6"
+								class="hero-float-card flex w-[min(100%,14.5rem)] translate-x-4 rotate-[1.1deg] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm sm:translate-x-6"
 							>
 								<span class="font-medium">Excel</span>
 								<span class="tracking-widest text-text-faint">— — —</span>
 							</div>
 							<div
-								class="hero-float-card flex w-[min(100%,14.5rem)] -translate-x-1 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-0.7deg]"
+								class="hero-float-card flex w-[min(100%,14.5rem)] -translate-x-1 rotate-[-0.7deg] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm"
 							>
 								<span class="font-medium" data-i18n="hub.hero.chaos.chatGroup"
 									>{t('hub.hero.chaos.chatGroup')}</span
@@ -315,7 +317,7 @@
 						<!-- App panel + side float cards -->
 						<div class="relative">
 							<div
-								class="hero-float-card absolute -left-1 top-8 z-10 hidden w-28 rounded-md border border-border bg-surface p-2 shadow-sm rotate-[-6deg] sm:block lg:-left-4"
+								class="hero-float-card absolute top-8 -left-1 z-10 hidden w-28 rotate-[-6deg] rounded-md border border-border bg-surface p-2 shadow-sm sm:block lg:-left-4"
 							>
 								<div class="mb-1.5 h-1.5 w-10 rounded bg-border"></div>
 								<div class="space-y-1">
@@ -325,7 +327,7 @@
 								</div>
 							</div>
 							<div
-								class="hero-float-card absolute -right-1 top-14 z-10 hidden w-24 rounded-md border border-border bg-surface p-2 shadow-sm rotate-[5deg] sm:block lg:-right-3"
+								class="hero-float-card absolute top-14 -right-1 z-10 hidden w-24 rotate-[5deg] rounded-md border border-border bg-surface p-2 shadow-sm sm:block lg:-right-3"
 							>
 								<div class="mb-1.5 flex gap-0.5">
 									<span class="h-6 flex-1 rounded-sm bg-border/70"></span>
@@ -344,7 +346,9 @@
 									<span class="size-2 rounded-full bg-border"></span>
 								</div>
 								<div class="flex min-h-48">
-									<div class="flex w-14 flex-col gap-2 border-r border-border bg-surface-2/60 p-2.5 sm:w-16">
+									<div
+										class="flex w-14 flex-col gap-2 border-r border-border bg-surface-2/60 p-2.5 sm:w-16"
+									>
 										<div class="h-1.5 w-full rounded bg-border"></div>
 										<div class="h-1.5 w-[88%] rounded bg-brand"></div>
 										<div class="h-1.5 w-full rounded bg-border"></div>
@@ -381,9 +385,7 @@
 				id="app"
 				class="hub-stage scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[var(--stage-border)]"
 			>
-				<div
-					class="grid items-center gap-8 p-8 text-left sm:p-10 lg:grid-cols-2 lg:gap-12 lg:p-12"
-				>
+				<div class="grid items-center gap-8 p-8 text-left sm:p-10 lg:grid-cols-2 lg:gap-12 lg:p-12">
 					<div>
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
@@ -398,7 +400,7 @@
 							{t('hub.apps.app.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
 							data-i18n="hub.apps.app.name"
 						>
 							{t('hub.apps.app.name')}
@@ -471,7 +473,7 @@
 							{t('hub.apps.crm.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
 							data-i18n="hub.apps.crm.name"
 						>
 							{t('hub.apps.crm.name')}
@@ -545,7 +547,7 @@
 							{t('hub.tools.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
 							data-i18n="hub.tools.title"
 						>
 							{t('hub.tools.title')}
@@ -578,9 +580,9 @@
 								{href}
 								class="rounded-xl border border-[var(--stage-border)] bg-[var(--stage-surface)] p-4 text-left transition-colors hover:border-brand/40"
 							>
-								<h3 class="text-sm font-semibold text-[var(--stage-fg)]" data-i18n={titleKey}
-									>{t(titleKey)}</h3
-								>
+								<h3 class="text-sm font-semibold text-[var(--stage-fg)]" data-i18n={titleKey}>
+									{t(titleKey)}
+								</h3>
 								<p
 									class="mt-1.5 text-xs leading-relaxed text-[var(--stage-muted)]"
 									data-i18n={descKey}
@@ -614,7 +616,7 @@
 							{t('hub.resources.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
 							data-i18n="hub.resources.title"
 						>
 							{t('hub.resources.title')}
@@ -652,7 +654,9 @@
 								<div class="hub-mock-row hub-mock-row--wide"></div>
 								<div class="hub-mock-row"></div>
 								<div class="mt-1 grid grid-cols-2 gap-2">
-									<div class="h-16 rounded-md border border-[var(--stage-border)] bg-[var(--stage-bg)]"></div>
+									<div
+										class="h-16 rounded-md border border-[var(--stage-border)] bg-[var(--stage-bg)]"
+									></div>
 									<div class="h-16 rounded-md border border-brand/40 bg-brand/20"></div>
 								</div>
 								<div class="hub-mock-row hub-mock-row--short"></div>
@@ -673,7 +677,7 @@
 			>
 				<BrandMark class="mb-5 h-10 w-10 text-white" title="" />
 				<h2
-					class="text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+					class="text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
 					data-i18n="hub.ctaBand.title"
 				>
 					{t('hub.ctaBand.title')}
@@ -687,14 +691,14 @@
 				<div class="mt-8 flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:justify-center">
 					<a
 						href={PUBLIC_APP_URL}
-						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] bg-white px-4 text-sm font-medium text-brand transition-colors hover:bg-white/90 sm:w-auto sm:px-8"
+						class="inline-flex h-11 w-full items-center justify-center rounded-[6px] bg-white px-4 text-sm font-medium whitespace-nowrap text-brand transition-colors hover:bg-white/90 sm:w-auto sm:px-8"
 						data-i18n="hub.ctaBand.cta"
 					>
 						{t('hub.ctaBand.cta')}
 					</a>
 					<a
 						href={PUBLIC_CRM_URL}
-						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] border border-white/40 bg-transparent px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-white/10 sm:w-auto sm:px-8"
+						class="inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-white/40 bg-transparent px-4 text-sm font-medium whitespace-nowrap text-primary-foreground transition-colors hover:bg-white/10 sm:w-auto sm:px-8"
 						data-i18n="hub.ctaBand.ctaCrm"
 					>
 						{t('hub.ctaBand.ctaCrm')}
@@ -723,7 +727,7 @@
 				</div>
 				<div>
 					<p
-						class="text-xs font-semibold uppercase tracking-wider text-text-faint"
+						class="text-xs font-semibold tracking-wider text-text-faint uppercase"
 						data-i18n="hub.footer.links"
 					>
 						{t('hub.footer.links')}
@@ -761,7 +765,7 @@
 				</div>
 				<div>
 					<p
-						class="text-xs font-semibold uppercase tracking-wider text-text-faint"
+						class="text-xs font-semibold tracking-wider text-text-faint uppercase"
 						data-i18n="hub.footer.resources"
 					>
 						{t('hub.footer.resources')}
@@ -792,7 +796,7 @@
 				</div>
 				<div>
 					<p
-						class="text-xs font-semibold uppercase tracking-wider text-text-faint"
+						class="text-xs font-semibold tracking-wider text-text-faint uppercase"
 						data-i18n="hub.footer.legal"
 					>
 						{t('hub.footer.legal')}
@@ -953,8 +957,16 @@
 
 	.hero-iso-grid {
 		background-image:
-			linear-gradient(to right, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px),
-			linear-gradient(to bottom, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px);
+			linear-gradient(
+				to right,
+				color-mix(in srgb, var(--border) 70%, transparent) 1px,
+				transparent 1px
+			),
+			linear-gradient(
+				to bottom,
+				color-mix(in srgb, var(--border) 70%, transparent) 1px,
+				transparent 1px
+			);
 		background-size: 28px 28px;
 		mask-image: radial-gradient(ellipse 70% 65% at 55% 45%, #000 20%, transparent 75%);
 		transform: perspective(600px) rotateX(58deg) scale(1.35);

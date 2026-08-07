@@ -121,7 +121,9 @@ function syncCspHashes(html) {
 		);
 	}
 	writeFileSync(nginxConf, updated);
-	console.log(`inject-spa-noindex: synced hub.html CSP hashes → nginx.conf (${hashList.join(', ')})`);
+	console.log(
+		`inject-spa-noindex: synced hub.html CSP hashes → nginx.conf (${hashList.join(', ')})`
+	);
 }
 
 if (existsSync(vitrin)) {
