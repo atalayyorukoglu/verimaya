@@ -22,5 +22,5 @@
 	onclick={onToggle}
 >
 	<Languages class="size-5" aria-hidden="true" />
-	<span class="text-xs font-medium tracking-wide" aria-hidden="true">{nextLabel}</span>
+	<span class="text-xs font-medium tracking-wide" aria-hidden="true" data-hub-locale-next>{nextLabel}</span>
 </button>

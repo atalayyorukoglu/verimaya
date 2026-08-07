@@ -2,10 +2,11 @@
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import LocaleToggle from '$lib/components/LocaleToggle.svelte';
+	import HubI18nText from '$lib/components/HubI18nText.svelte';
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
-	import type { MessageKey } from '$lib/i18n/messages';
+	import { messages, type MessageKey } from '$lib/i18n/messages';
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -15,15 +16,18 @@
 	let menuOpen = $state(false);
 	let loginOpen = $state(false);
 
-	const heroTitleParts = $derived.by(() => {
-		const full = t('hub.hero.title');
+	function splitHeroTitle(full: string): { primary: string; muted: string } {
 		const ellipsisIdx = full.indexOf('...');
 		if (ellipsisIdx === -1) {
 			return { primary: full, muted: '' };
 		}
 		const cut = ellipsisIdx + 3;
 		return { primary: full.slice(0, cut), muted: full.slice(cut) };
-	});
+	}
+
+	const heroTitleParts = $derived(splitHeroTitle(t('hub.hero.title')));
+	const heroTitleTr = splitHeroTitle(messages.tr['hub.hero.title']);
+	const heroTitleEn = splitHeroTitle(messages.en['hub.hero.title']);
 
 	const title = 'Veri Maya: Sağlık turizmi operasyon platformu';
 	const description =
@@ -138,7 +142,7 @@
 			<div class="flex items-center gap-2 sm:gap-5">
 				<nav class="hidden items-center gap-5 text-sm font-medium text-text-muted sm:flex sm:gap-6">
 					{#each navItems as item (item.href)}
-						<a href={item.href} class="transition-colors hover:text-text">{t(item.labelKey)}</a>
+						<a href={item.href} class="transition-colors hover:text-text"><HubI18nText key={item.labelKey} /></a>
 					{/each}
 				</nav>
 				<LocaleToggle />
@@ -152,7 +156,7 @@
 						aria-haspopup="menu"
 						onclick={toggleLogin}
 					>
-						{t('hub.login')}
+						<HubI18nText key="hub.login" />
 						<ChevronDown class="size-4 opacity-90" aria-hidden="true" />
 					</button>
 					<div
@@ -168,7 +172,7 @@
 							role="menuitem"
 							onclick={closeMenu}
 						>
-							{t('hub.login.app')}
+							<HubI18nText key="hub.login.app" />
 						</a>
 						<a
 							href={PUBLIC_CRM_URL}
@@ -176,7 +180,7 @@
 							role="menuitem"
 							onclick={closeMenu}
 						>
-							{t('hub.login.crm')}
+							<HubI18nText key="hub.login.crm" />
 						</a>
 					</div>
 				</div>
@@ -213,7 +217,7 @@
 					class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 					onclick={closeMenu}
 				>
-					{t(item.labelKey)}
+					<HubI18nText key={item.labelKey} />
 				</a>
 			{/each}
 		</nav>
@@ -230,14 +234,18 @@
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-2.5 py-0.5 text-[11px] font-medium text-brand"
 						>
-							{t('hub.hero.eyebrow')}
+							<HubI18nText key="hub.hero.eyebrow" />
 						</span>
 					</div>
 					<h1
 						class="mt-4 max-w-[24ch] text-2xl font-semibold leading-[1.35] tracking-tight text-text sm:max-w-[26ch] sm:text-[1.65rem] lg:text-[1.85rem] lg:leading-[1.32]"
 					>
-						<span>{heroTitleParts.primary}</span><span class="text-text-muted"
-							>{heroTitleParts.muted}</span
+						<span data-i18n-tr={heroTitleTr.primary} data-i18n-en={heroTitleEn.primary}
+							>{heroTitleParts.primary}</span
+						><span
+							class="text-text-muted"
+							data-i18n-tr={heroTitleTr.muted}
+							data-i18n-en={heroTitleEn.muted}>{heroTitleParts.muted}</span
 						>
 					</h1>
 					<div class="mt-6 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
@@ -247,7 +255,7 @@
 							rel="noopener noreferrer"
 							class="inline-flex h-9 items-center justify-center rounded-full bg-brand px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 						>
-							{t('hub.hero.ctaContact')}
+							<HubI18nText key="hub.hero.ctaContact" />
 						</a>
 					</div>
 				</div>
@@ -273,7 +281,7 @@
 							<div
 								class="hero-float-card flex w-[min(100%,14.5rem)] -translate-x-1 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-0.7deg]"
 							>
-								<span class="font-medium">{t('hub.hero.chaos.chatGroup')}</span>
+								<span class="font-medium"><HubI18nText key="hub.hero.chaos.chatGroup" /></span>
 								<span class="tracking-widest text-text-faint">— — —</span>
 							</div>
 						</div>
@@ -377,28 +385,28 @@
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
 						>
-							{t('hub.stage.app.eyebrow')}
+							<HubI18nText key="hub.stage.app.eyebrow" />
 						</span>
 						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
-							{t('hub.apps.app.problem')}
+							<HubI18nText key="hub.apps.app.problem" />
 						</p>
 						<h2
 							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
 						>
-							{t('hub.apps.app.name')}
+							<HubI18nText key="hub.apps.app.name" />
 						</h2>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.apps.app.desc')}
+							<HubI18nText key="hub.apps.app.desc" />
 						</p>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.apps.app.outcome')}
+							<HubI18nText key="hub.apps.app.outcome" />
 						</p>
 						<div class="mt-8">
 							<a
 								href="/app/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
-								{t('hub.apps.app.ctaFeaturesPage')}
+								<HubI18nText key="hub.apps.app.ctaFeaturesPage" />
 							</a>
 						</div>
 					</div>
@@ -438,28 +446,28 @@
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
 						>
-							{t('hub.stage.crm.eyebrow')}
+							<HubI18nText key="hub.stage.crm.eyebrow" />
 						</span>
 						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
-							{t('hub.apps.crm.problem')}
+							<HubI18nText key="hub.apps.crm.problem" />
 						</p>
 						<h2
 							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
 						>
-							{t('hub.apps.crm.name')}
+							<HubI18nText key="hub.apps.crm.name" />
 						</h2>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.apps.crm.desc')}
+							<HubI18nText key="hub.apps.crm.desc" />
 						</p>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.apps.crm.outcome')}
+							<HubI18nText key="hub.apps.crm.outcome" />
 						</p>
 						<div class="mt-8">
 							<a
 								href="/crm/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
-								{t('hub.apps.crm.ctaFeaturesPage')}
+								<HubI18nText key="hub.apps.crm.ctaFeaturesPage" />
 							</a>
 						</div>
 					</div>
@@ -500,28 +508,28 @@
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
 						>
-							{t('hub.nav.tools')}
+							<HubI18nText key="hub.nav.tools" />
 						</span>
 						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
-							{t('hub.tools.problem')}
+							<HubI18nText key="hub.tools.problem" />
 						</p>
 						<h2
 							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
 						>
-							{t('hub.tools.title')}
+							<HubI18nText key="hub.tools.title" />
 						</h2>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.tools.desc')}
+							<HubI18nText key="hub.tools.desc" />
 						</p>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.tools.outcome')}
+							<HubI18nText key="hub.tools.outcome" />
 						</p>
 						<div class="mt-8">
 							<a
 								href="/tools/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
-								{t('hub.tools.cta')}
+								<HubI18nText key="hub.tools.cta" />
 							</a>
 						</div>
 					</div>
@@ -531,8 +539,8 @@
 								{href}
 								class="rounded-xl border border-[var(--stage-border)] bg-[var(--stage-surface)] p-4 text-left transition-colors hover:border-brand/40"
 							>
-								<h3 class="text-sm font-semibold text-[var(--stage-fg)]">{t(titleKey)}</h3>
-								<p class="mt-1.5 text-xs leading-relaxed text-[var(--stage-muted)]">{t(descKey)}</p>
+								<h3 class="text-sm font-semibold text-[var(--stage-fg)]"><HubI18nText key={titleKey} /></h3>
+								<p class="mt-1.5 text-xs leading-relaxed text-[var(--stage-muted)]"><HubI18nText key={descKey} /></p>
 							</a>
 						{/each}
 					</div>
@@ -550,28 +558,28 @@
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
 						>
-							{t('hub.nav.resources')}
+							<HubI18nText key="hub.nav.resources" />
 						</span>
 						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
-							{t('hub.resources.problem')}
+							<HubI18nText key="hub.resources.problem" />
 						</p>
 						<h2
 							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
 						>
-							{t('hub.resources.title')}
+							<HubI18nText key="hub.resources.title" />
 						</h2>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.resources.desc')}
+							<HubI18nText key="hub.resources.desc" />
 						</p>
 						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
-							{t('hub.resources.outcome')}
+							<HubI18nText key="hub.resources.outcome" />
 						</p>
 						<div class="mt-8">
 							<a
 								href="/resources/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
-								{t('hub.resources.ctaPrimary')}
+								<HubI18nText key="hub.resources.ctaPrimary" />
 							</a>
 						</div>
 					</div>
@@ -607,30 +615,30 @@
 			>
 				<BrandMark class="mb-5 h-10 w-10 text-white" title="" />
 				<h2 class="text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight">
-					{t('hub.ctaBand.title')}
+					<HubI18nText key="hub.ctaBand.title" />
 				</h2>
 				<p class="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
-					{t('hub.ctaBand.subtitle')}
+					<HubI18nText key="hub.ctaBand.subtitle" />
 				</p>
 				<div class="mt-8 flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:justify-center">
 					<a
 						href={PUBLIC_APP_URL}
 						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] bg-white px-4 text-sm font-medium text-brand transition-colors hover:bg-white/90 sm:w-auto sm:px-8"
 					>
-						{t('hub.ctaBand.cta')}
+						<HubI18nText key="hub.ctaBand.cta" />
 					</a>
 					<a
 						href={PUBLIC_CRM_URL}
 						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] border border-white/40 bg-transparent px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-white/10 sm:w-auto sm:px-8"
 					>
-						{t('hub.ctaBand.ctaCrm')}
+						<HubI18nText key="hub.ctaBand.ctaCrm" />
 					</a>
 				</div>
 				<p
 					class="mt-5 flex flex-col items-center gap-1.5 text-sm text-white/80 sm:inline-flex sm:flex-row"
 				>
 					<Lock class="size-3.5 shrink-0" aria-hidden="true" />
-					<span class="text-center sm:text-left">{t('hub.ctaBand.trust')}</span>
+					<span class="text-center sm:text-left"><HubI18nText key="hub.ctaBand.trust" /></span>
 				</p>
 			</div>
 		</div>
@@ -646,62 +654,62 @@
 					</a>
 				</div>
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint">{t('hub.footer.links')}</p>
+					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint"><HubI18nText key="hub.footer.links" /></p>
 					<ul class="mt-4 space-y-2">
 						<li>
 							<a href="/app/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.webApp')}</a
+								><HubI18nText key="hub.nav.webApp" /></a
 							>
 						</li>
 						<li>
 							<a href="/crm/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.crm')}</a
+								><HubI18nText key="hub.nav.crm" /></a
 							>
 						</li>
 						<li>
 							<a href="/tools/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.tools')}</a
+								><HubI18nText key="hub.nav.tools" /></a
 							>
 						</li>
 						<li>
 							<a href="/resources/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.resources')}</a
+								><HubI18nText key="hub.nav.resources" /></a
 							>
 						</li>
 					</ul>
 				</div>
 				<div>
 					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint"
-						>{t('hub.footer.resources')}</p
+						><HubI18nText key="hub.footer.resources" /></p
 					>
 					<ul class="mt-4 space-y-2">
 						<li>
 							<a href="/features/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('nav.features')}</a
+								><HubI18nText key="nav.features" /></a
 							>
 						</li>
 						<li>
 							<a href="/changelog/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('nav.changelog')}</a
+								><HubI18nText key="nav.changelog" /></a
 							>
 						</li>
 						<li>
 							<a
 								href="/yapay-zeka-karnesi/"
 								class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.karne.title')}</a
+								><HubI18nText key="hub.karne.title" /></a
 							>
 						</li>
 					</ul>
 				</div>
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint">{t('hub.footer.legal')}</p>
+					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint"><HubI18nText key="hub.footer.legal" /></p>
 					<ul class="mt-4 space-y-2">
 						<li>
 							<a
 								href="/kvkk-aydinlatma/"
 								class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.footer.kvkk')}</a
+								><HubI18nText key="hub.footer.kvkk" /></a
 							>
 						</li>
 					</ul>

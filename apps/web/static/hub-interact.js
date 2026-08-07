@@ -8,7 +8,8 @@
 	if (window.__hubInteract) return;
 	window.__hubInteract = true;
 
-	var STORAGE_KEY = 'verimaya:theme';
+	var THEME_KEY = 'verimaya:theme';
+	var LOCALE_KEY = 'verimaya:locale';
 
 	function isDark() {
 		return document.documentElement.classList.contains('dark');
@@ -20,7 +21,7 @@
 		root.classList.toggle('dark', dark);
 		root.style.colorScheme = theme;
 		try {
-			localStorage.setItem(STORAGE_KEY, theme);
+			localStorage.setItem(THEME_KEY, theme);
 		} catch (_) {
 			/* ignore quota / private mode */
 		}
@@ -35,6 +36,53 @@
 				btn.setAttribute('aria-label', isDark() ? toLight : toDark);
 			}
 		});
+	}
+
+	function readLocale() {
+		try {
+			var raw = localStorage.getItem(LOCALE_KEY);
+			if (raw === 'en' || raw === 'tr') return raw;
+		} catch (_) {
+			/* ignore */
+		}
+		return 'tr';
+	}
+
+	function applyI18nTexts(locale) {
+		document.querySelectorAll('[data-i18n-tr][data-i18n-en]').forEach(function (el) {
+			var text = el.getAttribute(locale === 'en' ? 'data-i18n-en' : 'data-i18n-tr');
+			if (text == null) return;
+			el.textContent = text;
+		});
+	}
+
+	function syncLocaleToggle(locale) {
+		document.querySelectorAll('[data-hub-locale-toggle]').forEach(function (btn) {
+			var next = locale === 'tr' ? 'en' : 'tr';
+			var toEn = btn.getAttribute('data-label-to-en');
+			var toTr = btn.getAttribute('data-label-to-tr');
+			if (toEn && toTr) {
+				btn.setAttribute('aria-label', next === 'en' ? toEn : toTr);
+			}
+			btn.setAttribute('title', next === 'en' ? 'English' : 'Türkçe');
+			var label = btn.querySelector('[data-hub-locale-next]');
+			if (label) label.textContent = next.toUpperCase();
+		});
+	}
+
+	function applyLocale(locale) {
+		document.documentElement.lang = locale;
+		try {
+			localStorage.setItem(LOCALE_KEY, locale);
+		} catch (_) {
+			/* ignore */
+		}
+		applyI18nTexts(locale);
+		syncLocaleToggle(locale);
+	}
+
+	function toggleLocale() {
+		applyLocale(readLocale() === 'tr' ? 'en' : 'tr');
 	}
 
 	function setMenuOpen(open) {
@@ -86,6 +134,12 @@
 	document.addEventListener(
 		'click',
 		function (e) {
+			var localeBtn = e.target.closest('[data-hub-locale-toggle]');
+			if (localeBtn) {
+				toggleLocale();
+				return;
+			}
+
 			var themeBtn = e.target.closest('[data-hub-theme-toggle]');
 			if (themeBtn) {
 				toggleTheme();
@@ -106,7 +160,6 @@
 				var willOpen = panel.classList.contains('hidden');
 				closeLoginPanels(willOpen ? panel : null);
 				panel.classList.toggle('hidden', !willOpen);
-				// Mobile panel uses flex when open; desktop dropdown is absolute (no flex).
 				if (panel.classList.contains('flex-col')) {
 					panel.classList.toggle('flex', willOpen);
 				}
@@ -127,4 +180,11 @@
 		},
 		false
 	);
+
+	var initial = readLocale();
+	if (initial !== 'tr') {
+		applyLocale(initial);
+	} else {
+		syncLocaleToggle(initial);
+	}
 })();
