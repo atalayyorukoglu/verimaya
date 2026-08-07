@@ -228,7 +228,7 @@
 		</nav>
 	</header>
 
-	<main class="relative z-10 px-6 pb-20 pt-16 sm:px-10 sm:pt-24">
+	<main class="relative z-10 px-6 pt-16 pb-20 sm:px-10 sm:pt-24">
 		<div class="mx-auto max-w-3xl text-center">
 			<p class="flex justify-center">
 				<span
@@ -238,11 +238,11 @@
 				</span>
 			</p>
 			<h1
-				class="mt-4 text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-[1.15] tracking-tight text-text"
+				class="mt-4 text-[clamp(1.75rem,4.5vw,3rem)] leading-[1.15] font-semibold tracking-tight text-text"
 			>
 				{heading}
 			</h1>
-			<p class="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-text sm:text-lg">
+			<p class="mx-auto mt-6 max-w-2xl text-base leading-relaxed font-medium text-text sm:text-lg">
 				{problem}
 			</p>
 			{#if body}
@@ -267,12 +267,16 @@
 										class="block h-full rounded-xl border border-border bg-surface p-6 text-left transition-colors hover:border-brand/40 hover:bg-surface-2"
 									>
 										<h2 class="text-sm font-semibold text-text">{feature.title}</h2>
-										<p class="mt-2 text-xs leading-relaxed text-text-muted">{feature.description}</p>
+										<p class="mt-2 text-xs leading-relaxed text-text-muted">
+											{feature.description}
+										</p>
 									</a>
 								{:else}
 									<div class="h-full rounded-xl border border-border bg-surface p-6 text-left">
 										<h2 class="text-sm font-semibold text-text">{feature.title}</h2>
-										<p class="mt-2 text-xs leading-relaxed text-text-muted">{feature.description}</p>
+										<p class="mt-2 text-xs leading-relaxed text-text-muted">
+											{feature.description}
+										</p>
 									</div>
 								{/if}
 							</li>
@@ -291,7 +295,9 @@
 			</div>
 		{/if}
 
-		<div class="mx-auto mt-12 flex max-w-3xl flex-col items-center justify-center gap-3 sm:flex-row">
+		<div
+			class="mx-auto mt-12 flex max-w-3xl flex-col items-center justify-center gap-3 sm:flex-row"
+		>
 			<a
 				href={primaryCta.href}
 				class="inline-flex h-10 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
@@ -327,7 +333,7 @@
 					</p>
 				</div>
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint">
+					<p class="text-xs font-semibold tracking-wider text-text-faint uppercase">
 						{t('hub.footer.links')}
 					</p>
 					<ul class="mt-4 space-y-2">
@@ -344,7 +350,7 @@
 					</ul>
 				</div>
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint">
+					<p class="text-xs font-semibold tracking-wider text-text-faint uppercase">
 						{t('hub.footer.legal')}
 					</p>
 					<ul class="mt-4 space-y-2">

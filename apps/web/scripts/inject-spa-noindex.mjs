@@ -5,7 +5,7 @@
  *
  * Critical: /vitrin/ HTML cannot be hydrated at `/` (wrong route + CSR remount blanks the
  * page). Serve hub as a static snapshot: absolute asset URLs, no SvelteKit client bootstrap.
- * Theme FOUC script in <head> stays; inject `/hub-interact.js` for theme/menu/login
+ * Theme FOUC script in <head> stays; inject `/hub-interact.js` for theme/menu/login/locale
  * progressive enhancement (Svelte onclick never binds without kit.start). Full SPA
  * interactivity remains on app.* / other hydrated routes.
  */
@@ -66,7 +66,7 @@ function prepareHubHtml(raw) {
 		throw new Error('inject-spa-noindex: hub.html missing hub-page markup');
 	}
 
-	// Progressive enhancement when SvelteKit client is stripped (theme/menu/login).
+	// Progressive enhancement when SvelteKit client is stripped (theme/menu/login/locale).
 	const hubInteract = '<script src="/hub-interact.js" defer></script>';
 	if (!out.includes('/hub-interact.js')) {
 		if (!out.includes('</body>')) {
@@ -121,7 +121,9 @@ function syncCspHashes(html) {
 		);
 	}
 	writeFileSync(nginxConf, updated);
-	console.log(`inject-spa-noindex: synced hub.html CSP hashes → nginx.conf (${hashList.join(', ')})`);
+	console.log(
+		`inject-spa-noindex: synced hub.html CSP hashes → nginx.conf (${hashList.join(', ')})`
+	);
 }
 
 if (existsSync(vitrin)) {

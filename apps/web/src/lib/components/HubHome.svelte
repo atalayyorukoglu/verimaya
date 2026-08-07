@@ -138,7 +138,9 @@
 			<div class="flex items-center gap-2 sm:gap-5">
 				<nav class="hidden items-center gap-5 text-sm font-medium text-text-muted sm:flex sm:gap-6">
 					{#each navItems as item (item.href)}
-						<a href={item.href} class="transition-colors hover:text-text">{t(item.labelKey)}</a>
+						<a href={item.href} class="transition-colors hover:text-text" data-i18n={item.labelKey}
+							>{t(item.labelKey)}</a
+						>
 					{/each}
 				</nav>
 				<LocaleToggle />
@@ -152,7 +154,7 @@
 						aria-haspopup="menu"
 						onclick={toggleLogin}
 					>
-						{t('hub.login')}
+						<span data-i18n="hub.login">{t('hub.login')}</span>
 						<ChevronDown class="size-4 opacity-90" aria-hidden="true" />
 					</button>
 					<div
@@ -167,6 +169,7 @@
 							class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
 							role="menuitem"
 							onclick={closeMenu}
+							data-i18n="hub.login.app"
 						>
 							{t('hub.login.app')}
 						</a>
@@ -175,6 +178,7 @@
 							class="block px-3 py-2 text-sm text-text hover:bg-surface-2"
 							role="menuitem"
 							onclick={closeMenu}
+							data-i18n="hub.login.crm"
 						>
 							{t('hub.login.crm')}
 						</a>
@@ -212,6 +216,7 @@
 					href={item.href}
 					class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 					onclick={closeMenu}
+					data-i18n={item.labelKey}
 				>
 					{t(item.labelKey)}
 				</a>
@@ -229,12 +234,15 @@
 					<div>
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-2.5 py-0.5 text-[11px] font-medium text-brand"
+							data-i18n="hub.hero.eyebrow"
 						>
 							{t('hub.hero.eyebrow')}
 						</span>
 					</div>
 					<h1
-						class="mt-4 max-w-[24ch] text-2xl font-semibold leading-[1.35] tracking-tight text-text sm:max-w-[26ch] sm:text-[1.65rem] lg:text-[1.85rem] lg:leading-[1.32]"
+						class="mt-4 max-w-[24ch] text-2xl leading-[1.35] font-semibold tracking-tight text-text sm:max-w-[26ch] sm:text-[1.65rem] lg:text-[1.85rem] lg:leading-[1.32]"
+						data-i18n="hub.hero.title"
+						data-i18n-mode="ellipsis-split"
 					>
 						<span>{heroTitleParts.primary}</span><span class="text-text-muted"
 							>{heroTitleParts.muted}</span
@@ -246,6 +254,7 @@
 							target="_blank"
 							rel="noopener noreferrer"
 							class="inline-flex h-9 items-center justify-center rounded-full bg-brand px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+							data-i18n="hub.hero.ctaContact"
 						>
 							{t('hub.hero.ctaContact')}
 						</a>
@@ -253,27 +262,31 @@
 				</div>
 
 				<div class="hero-visual relative isolate" aria-hidden="true">
-					<div class="hero-iso-grid pointer-events-none absolute inset-0 -z-10 opacity-60 dark:opacity-40"></div>
+					<div
+						class="hero-iso-grid pointer-events-none absolute inset-0 -z-10 opacity-60 dark:opacity-40"
+					></div>
 
 					<!-- Floating chaos sheets -->
 					<div class="relative mx-auto max-w-md lg:max-w-none">
-						<div class="flex flex-col items-center gap-2.5 pl-2 pr-6 sm:pr-10">
+						<div class="flex flex-col items-center gap-2.5 pr-6 pl-2 sm:pr-10">
 							<div
-								class="hero-float-card flex w-[min(100%,14.5rem)] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-1.5deg]"
+								class="hero-float-card flex w-[min(100%,14.5rem)] rotate-[-1.5deg] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm"
 							>
 								<span class="font-medium">WhatsApp</span>
 								<span class="tracking-widest text-text-faint">— — —</span>
 							</div>
 							<div
-								class="hero-float-card flex w-[min(100%,14.5rem)] translate-x-4 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[1.1deg] sm:translate-x-6"
+								class="hero-float-card flex w-[min(100%,14.5rem)] translate-x-4 rotate-[1.1deg] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm sm:translate-x-6"
 							>
 								<span class="font-medium">Excel</span>
 								<span class="tracking-widest text-text-faint">— — —</span>
 							</div>
 							<div
-								class="hero-float-card flex w-[min(100%,14.5rem)] -translate-x-1 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-0.7deg]"
+								class="hero-float-card flex w-[min(100%,14.5rem)] -translate-x-1 rotate-[-0.7deg] items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm"
 							>
-								<span class="font-medium">{t('hub.hero.chaos.chatGroup')}</span>
+								<span class="font-medium" data-i18n="hub.hero.chaos.chatGroup"
+									>{t('hub.hero.chaos.chatGroup')}</span
+								>
 								<span class="tracking-widest text-text-faint">— — —</span>
 							</div>
 						</div>
@@ -304,7 +317,7 @@
 						<!-- App panel + side float cards -->
 						<div class="relative">
 							<div
-								class="hero-float-card absolute -left-1 top-8 z-10 hidden w-28 rounded-md border border-border bg-surface p-2 shadow-sm rotate-[-6deg] sm:block lg:-left-4"
+								class="hero-float-card absolute top-8 -left-1 z-10 hidden w-28 rotate-[-6deg] rounded-md border border-border bg-surface p-2 shadow-sm sm:block lg:-left-4"
 							>
 								<div class="mb-1.5 h-1.5 w-10 rounded bg-border"></div>
 								<div class="space-y-1">
@@ -314,7 +327,7 @@
 								</div>
 							</div>
 							<div
-								class="hero-float-card absolute -right-1 top-14 z-10 hidden w-24 rounded-md border border-border bg-surface p-2 shadow-sm rotate-[5deg] sm:block lg:-right-3"
+								class="hero-float-card absolute top-14 -right-1 z-10 hidden w-24 rotate-[5deg] rounded-md border border-border bg-surface p-2 shadow-sm sm:block lg:-right-3"
 							>
 								<div class="mb-1.5 flex gap-0.5">
 									<span class="h-6 flex-1 rounded-sm bg-border/70"></span>
@@ -333,7 +346,9 @@
 									<span class="size-2 rounded-full bg-border"></span>
 								</div>
 								<div class="flex min-h-48">
-									<div class="flex w-14 flex-col gap-2 border-r border-border bg-surface-2/60 p-2.5 sm:w-16">
+									<div
+										class="flex w-14 flex-col gap-2 border-r border-border bg-surface-2/60 p-2.5 sm:w-16"
+									>
 										<div class="h-1.5 w-full rounded bg-border"></div>
 										<div class="h-1.5 w-[88%] rounded bg-brand"></div>
 										<div class="h-1.5 w-full rounded bg-border"></div>
@@ -370,33 +385,43 @@
 				id="app"
 				class="hub-stage scroll-mt-24 overflow-hidden rounded-[1.5rem] border border-[var(--stage-border)]"
 			>
-				<div
-					class="grid items-center gap-8 p-8 text-left sm:p-10 lg:grid-cols-2 lg:gap-12 lg:p-12"
-				>
+				<div class="grid items-center gap-8 p-8 text-left sm:p-10 lg:grid-cols-2 lg:gap-12 lg:p-12">
 					<div>
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+							data-i18n="hub.stage.app.eyebrow"
 						>
 							{t('hub.stage.app.eyebrow')}
 						</span>
-						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
+						<p
+							class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base"
+							data-i18n="hub.apps.app.problem"
+						>
 							{t('hub.apps.app.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
+							data-i18n="hub.apps.app.name"
 						>
 							{t('hub.apps.app.name')}
 						</h2>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.apps.app.desc"
+						>
 							{t('hub.apps.app.desc')}
 						</p>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.apps.app.outcome"
+						>
 							{t('hub.apps.app.outcome')}
 						</p>
 						<div class="mt-8">
 							<a
 								href="/app/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+								data-i18n="hub.apps.app.ctaFeaturesPage"
 							>
 								{t('hub.apps.app.ctaFeaturesPage')}
 							</a>
@@ -437,27 +462,39 @@
 					<div class="w-full lg:w-1/2">
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+							data-i18n="hub.stage.crm.eyebrow"
 						>
 							{t('hub.stage.crm.eyebrow')}
 						</span>
-						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
+						<p
+							class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base"
+							data-i18n="hub.apps.crm.problem"
+						>
 							{t('hub.apps.crm.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
+							data-i18n="hub.apps.crm.name"
 						>
 							{t('hub.apps.crm.name')}
 						</h2>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.apps.crm.desc"
+						>
 							{t('hub.apps.crm.desc')}
 						</p>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.apps.crm.outcome"
+						>
 							{t('hub.apps.crm.outcome')}
 						</p>
 						<div class="mt-8">
 							<a
 								href="/crm/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+								data-i18n="hub.apps.crm.ctaFeaturesPage"
 							>
 								{t('hub.apps.crm.ctaFeaturesPage')}
 							</a>
@@ -499,27 +536,39 @@
 					<div class="w-full lg:w-1/2">
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+							data-i18n="hub.nav.tools"
 						>
 							{t('hub.nav.tools')}
 						</span>
-						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
+						<p
+							class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base"
+							data-i18n="hub.tools.problem"
+						>
 							{t('hub.tools.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
+							data-i18n="hub.tools.title"
 						>
 							{t('hub.tools.title')}
 						</h2>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.tools.desc"
+						>
 							{t('hub.tools.desc')}
 						</p>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.tools.outcome"
+						>
 							{t('hub.tools.outcome')}
 						</p>
 						<div class="mt-8">
 							<a
 								href="/tools/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+								data-i18n="hub.tools.cta"
 							>
 								{t('hub.tools.cta')}
 							</a>
@@ -531,8 +580,15 @@
 								{href}
 								class="rounded-xl border border-[var(--stage-border)] bg-[var(--stage-surface)] p-4 text-left transition-colors hover:border-brand/40"
 							>
-								<h3 class="text-sm font-semibold text-[var(--stage-fg)]">{t(titleKey)}</h3>
-								<p class="mt-1.5 text-xs leading-relaxed text-[var(--stage-muted)]">{t(descKey)}</p>
+								<h3 class="text-sm font-semibold text-[var(--stage-fg)]" data-i18n={titleKey}>
+									{t(titleKey)}
+								</h3>
+								<p
+									class="mt-1.5 text-xs leading-relaxed text-[var(--stage-muted)]"
+									data-i18n={descKey}
+								>
+									{t(descKey)}
+								</p>
 							</a>
 						{/each}
 					</div>
@@ -549,27 +605,39 @@
 					<div class="w-full lg:w-1/2">
 						<span
 							class="inline-flex items-center rounded-full bg-brand/15 px-3 py-1 text-xs font-medium text-brand"
+							data-i18n="hub.nav.resources"
 						>
 							{t('hub.nav.resources')}
 						</span>
-						<p class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base">
+						<p
+							class="mt-5 text-sm font-medium text-[var(--stage-fg)] sm:text-base"
+							data-i18n="hub.resources.problem"
+						>
 							{t('hub.resources.problem')}
 						</p>
 						<h2
-							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight"
+							class="mt-3 text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
+							data-i18n="hub.resources.title"
 						>
 							{t('hub.resources.title')}
 						</h2>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.resources.desc"
+						>
 							{t('hub.resources.desc')}
 						</p>
-						<p class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base">
+						<p
+							class="mt-3 text-sm leading-relaxed text-[var(--stage-muted)] sm:text-base"
+							data-i18n="hub.resources.outcome"
+						>
 							{t('hub.resources.outcome')}
 						</p>
 						<div class="mt-8">
 							<a
 								href="/resources/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
+								data-i18n="hub.resources.ctaPrimary"
 							>
 								{t('hub.resources.ctaPrimary')}
 							</a>
@@ -586,7 +654,9 @@
 								<div class="hub-mock-row hub-mock-row--wide"></div>
 								<div class="hub-mock-row"></div>
 								<div class="mt-1 grid grid-cols-2 gap-2">
-									<div class="h-16 rounded-md border border-[var(--stage-border)] bg-[var(--stage-bg)]"></div>
+									<div
+										class="h-16 rounded-md border border-[var(--stage-border)] bg-[var(--stage-bg)]"
+									></div>
 									<div class="h-16 rounded-md border border-brand/40 bg-brand/20"></div>
 								</div>
 								<div class="hub-mock-row hub-mock-row--short"></div>
@@ -606,22 +676,30 @@
 				class="flex w-full flex-col items-center rounded-[1.5rem] bg-brand px-5 py-12 text-center text-primary-foreground sm:px-12 sm:py-16"
 			>
 				<BrandMark class="mb-5 h-10 w-10 text-white" title="" />
-				<h2 class="text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight">
+				<h2
+					class="text-[clamp(1.5rem,3.5vw,2.25rem)] leading-[1.15] font-semibold tracking-tight"
+					data-i18n="hub.ctaBand.title"
+				>
 					{t('hub.ctaBand.title')}
 				</h2>
-				<p class="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
+				<p
+					class="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg"
+					data-i18n="hub.ctaBand.subtitle"
+				>
 					{t('hub.ctaBand.subtitle')}
 				</p>
 				<div class="mt-8 flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:justify-center">
 					<a
 						href={PUBLIC_APP_URL}
-						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] bg-white px-4 text-sm font-medium text-brand transition-colors hover:bg-white/90 sm:w-auto sm:px-8"
+						class="inline-flex h-11 w-full items-center justify-center rounded-[6px] bg-white px-4 text-sm font-medium whitespace-nowrap text-brand transition-colors hover:bg-white/90 sm:w-auto sm:px-8"
+						data-i18n="hub.ctaBand.cta"
 					>
 						{t('hub.ctaBand.cta')}
 					</a>
 					<a
 						href={PUBLIC_CRM_URL}
-						class="inline-flex h-11 w-full items-center justify-center whitespace-nowrap rounded-[6px] border border-white/40 bg-transparent px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-white/10 sm:w-auto sm:px-8"
+						class="inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-white/40 bg-transparent px-4 text-sm font-medium whitespace-nowrap text-primary-foreground transition-colors hover:bg-white/10 sm:w-auto sm:px-8"
+						data-i18n="hub.ctaBand.ctaCrm"
 					>
 						{t('hub.ctaBand.ctaCrm')}
 					</a>
@@ -630,7 +708,9 @@
 					class="mt-5 flex flex-col items-center gap-1.5 text-sm text-white/80 sm:inline-flex sm:flex-row"
 				>
 					<Lock class="size-3.5 shrink-0" aria-hidden="true" />
-					<span class="text-center sm:text-left">{t('hub.ctaBand.trust')}</span>
+					<span class="text-center sm:text-left" data-i18n="hub.ctaBand.trust"
+						>{t('hub.ctaBand.trust')}</span
+					>
 				</p>
 			</div>
 		</div>
@@ -646,62 +726,87 @@
 					</a>
 				</div>
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint">{t('hub.footer.links')}</p>
+					<p
+						class="text-xs font-semibold tracking-wider text-text-faint uppercase"
+						data-i18n="hub.footer.links"
+					>
+						{t('hub.footer.links')}
+					</p>
 					<ul class="mt-4 space-y-2">
 						<li>
-							<a href="/app/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.webApp')}</a
+							<a
+								href="/app/"
+								class="text-xs text-text-muted transition-colors hover:text-text"
+								data-i18n="hub.nav.webApp">{t('hub.nav.webApp')}</a
 							>
 						</li>
 						<li>
-							<a href="/crm/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.crm')}</a
+							<a
+								href="/crm/"
+								class="text-xs text-text-muted transition-colors hover:text-text"
+								data-i18n="hub.nav.crm">{t('hub.nav.crm')}</a
 							>
 						</li>
 						<li>
-							<a href="/tools/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.tools')}</a
+							<a
+								href="/tools/"
+								class="text-xs text-text-muted transition-colors hover:text-text"
+								data-i18n="hub.nav.tools">{t('hub.nav.tools')}</a
 							>
 						</li>
 						<li>
-							<a href="/resources/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.nav.resources')}</a
+							<a
+								href="/resources/"
+								class="text-xs text-text-muted transition-colors hover:text-text"
+								data-i18n="hub.nav.resources">{t('hub.nav.resources')}</a
 							>
 						</li>
 					</ul>
 				</div>
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint"
-						>{t('hub.footer.resources')}</p
+					<p
+						class="text-xs font-semibold tracking-wider text-text-faint uppercase"
+						data-i18n="hub.footer.resources"
 					>
+						{t('hub.footer.resources')}
+					</p>
 					<ul class="mt-4 space-y-2">
 						<li>
-							<a href="/features/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('nav.features')}</a
+							<a
+								href="/features/"
+								class="text-xs text-text-muted transition-colors hover:text-text"
+								data-i18n="nav.features">{t('nav.features')}</a
 							>
 						</li>
 						<li>
-							<a href="/changelog/" class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('nav.changelog')}</a
+							<a
+								href="/changelog/"
+								class="text-xs text-text-muted transition-colors hover:text-text"
+								data-i18n="nav.changelog">{t('nav.changelog')}</a
 							>
 						</li>
 						<li>
 							<a
 								href="/yapay-zeka-karnesi/"
 								class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.karne.title')}</a
+								data-i18n="hub.karne.title">{t('hub.karne.title')}</a
 							>
 						</li>
 					</ul>
 				</div>
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wider text-text-faint">{t('hub.footer.legal')}</p>
+					<p
+						class="text-xs font-semibold tracking-wider text-text-faint uppercase"
+						data-i18n="hub.footer.legal"
+					>
+						{t('hub.footer.legal')}
+					</p>
 					<ul class="mt-4 space-y-2">
 						<li>
 							<a
 								href="/kvkk-aydinlatma/"
 								class="text-xs text-text-muted transition-colors hover:text-text"
-								>{t('hub.footer.kvkk')}</a
+								data-i18n="hub.footer.kvkk">{t('hub.footer.kvkk')}</a
 							>
 						</li>
 					</ul>
@@ -852,8 +957,16 @@
 
 	.hero-iso-grid {
 		background-image:
-			linear-gradient(to right, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px),
-			linear-gradient(to bottom, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px);
+			linear-gradient(
+				to right,
+				color-mix(in srgb, var(--border) 70%, transparent) 1px,
+				transparent 1px
+			),
+			linear-gradient(
+				to bottom,
+				color-mix(in srgb, var(--border) 70%, transparent) 1px,
+				transparent 1px
+			);
 		background-size: 28px 28px;
 		mask-image: radial-gradient(ellipse 70% 65% at 55% 45%, #000 20%, transparent 75%);
 		transform: perspective(600px) rotateX(58deg) scale(1.35);

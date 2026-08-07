@@ -382,6 +382,9 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
   `AGENTS.md`, `docs/TASARIM.md`, “Bilinçli olarak yapılmayacaklar” tablosunda yazılı.
   Panel dil değiştiricisi hâlâ kapalı. Obsidian `01-kararlar.md` sıradaki vault oturumunda
   aynı cümleyle hizalanmalı.
+  **Hotfix 2026-08-07:** Apex `hub.html` SvelteKit client’siz; dil butonu `hub-interact.js`
+  progressive enhancement + `data-i18n` ile çalışır (mobil Playwright iPhone 13 tap OK).
+  Mesaj kataloğu `scripts/generate-hub-i18n.mjs` → `static/hub-interact.js`.
 - [x] **DOC-03f — Flaky LLM HTTP timeout:** ✅ Takip kalemi + stabilize.
   `openai-compatible-llm.client.spec.ts` “falls back…timeout” artık anında `AbortError`
   atıyor (AbortSignal.timeout yarışına bağlı değildi). Kalan pre-existing:
