@@ -4,6 +4,8 @@
 	import type {
 		ContractResponse,
 		InboundMessage,
+		SupportedCurrency,
+		Tenant,
 		Transaction,
 		TransactionCreate,
 		TransactionUpdate
@@ -17,6 +19,7 @@
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatMoney } from '$lib/format';
+	import { amountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -37,6 +40,25 @@
 	let editing = $state<Transaction | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
+
+	const tenantQuery = createQuery(() => ({
+		queryKey: keys.tenants.current(),
+		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
+		enabled: ready
+	}));
+
+	const baseCurrency = $derived(
+		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
+	);
+
+	/** Base equivalent only when txn currency differs and snapshot exists. */
+	function baseLine(tx: Transaction): string | null {
+		if (tx.currency === baseCurrency) return null;
+		const base = amountInBase(tx, baseCurrency);
+		if (base == null) return null;
+		const sign = tx.kind === 'expense' ? '−' : '';
+		return `${sign}${formatMoney(base, baseCurrency)}`;
+	}
 
 	const txQuery = createInfiniteQuery(() => ({
 		queryKey: keys.transactions.list({ patient_id: patientFilterId }),
@@ -179,6 +201,7 @@
 				</thead>
 				<tbody class="divide-y divide-border">
 					{#each items as tx (tx.id)}
+						{@const baseAmt = baseLine(tx)}
 						<tr
 							class="cursor-pointer transition-colors hover:bg-surface-2/60"
 							onclick={() => openEdit(tx)}
@@ -204,7 +227,12 @@
 									? 'text-success'
 									: 'text-text'}"
 							>
-								{tx.kind === 'expense' ? '−' : ''}{formatMoney(tx.amount, tx.currency)}
+								<p>
+									{tx.kind === 'expense' ? '−' : ''}{formatMoney(tx.amount, tx.currency)}
+								</p>
+								{#if baseAmt}
+									<p class="text-xs font-normal text-text-faint">{baseAmt}</p>
+								{/if}
 							</td>
 						</tr>
 					{/each}
@@ -214,6 +242,7 @@
 
 		<ul class="space-y-2 md:hidden">
 			{#each items as tx (tx.id)}
+				{@const baseAmt = baseLine(tx)}
 				<li class="min-w-0">
 					<button
 						type="button"
@@ -225,13 +254,18 @@
 								<p class="truncate text-sm font-medium text-text">{tx.title}</p>
 								<p class="text-xs text-text-faint">{formatDate(tx.occurred_on)}</p>
 							</div>
-							<p
-								class="shrink-0 text-sm font-semibold tabular-nums {tx.kind === 'income'
-									? 'text-success'
-									: 'text-text'}"
-							>
-								{tx.kind === 'expense' ? '−' : ''}{formatMoney(tx.amount, tx.currency)}
-							</p>
+							<div class="shrink-0 text-right">
+								<p
+									class="text-sm font-semibold tabular-nums {tx.kind === 'income'
+										? 'text-success'
+										: 'text-text'}"
+								>
+									{tx.kind === 'expense' ? '−' : ''}{formatMoney(tx.amount, tx.currency)}
+								</p>
+								{#if baseAmt}
+									<p class="text-xs text-text-faint tabular-nums">{baseAmt}</p>
+								{/if}
+							</div>
 						</div>
 						<div class="mt-2">
 							<StatusBadge
