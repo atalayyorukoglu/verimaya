@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import {
 	mergeRecordsSchema,
+	patientCaseNoteCreateSchema,
 	patientCreateSchema,
 	patientFileCreateSchema,
 	patientFilePresignSchema,
@@ -101,6 +102,64 @@ export class PatientsController {
 	@RequireOrgPermission('patient', 'read')
 	listFiles(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.patientsService.listFiles(getActiveOrgId(req), id);
+	}
+
+	@Get(':id/case-notes')
+	@RequireOrgPermission('patient', 'read')
+	listCaseNotes(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.patientsService.listCaseNotes(getActiveOrgId(req), id);
+	}
+
+	@Post(':id/case-notes')
+	@RequireOrgPermission('patient', 'update')
+	@Idempotent()
+	async createCaseNote(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(patientCaseNoteCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/patients/:id/case-notes',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.patientsService.createCaseNoteWithDb(db, tenantId, id, input, {
+					displayName: actor.actorDisplayName
+				})
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Delete(':id/case-notes/:noteId')
+	@RequireOrgPermission('patient', 'update')
+	@Idempotent()
+	async deleteCaseNote(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('noteId') noteId: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'DELETE',
+			'/v1/patients/:id/case-notes/:noteId',
+			async (db) => {
+				await this.patientsService.deleteCaseNoteWithDb(db, id, noteId);
+				return { statusCode: 204, body: null };
+			}
+		);
+		reply.status(result.statusCode);
+		return result.body;
 	}
 
 	@Get(':id/files/:fileId/download')

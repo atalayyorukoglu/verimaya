@@ -1,25 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type {
-	AdMetric,
-	AiCorrection,
-	ApiKey,
-	Appointment,
-	AuditLog,
-	Contact,
-	ContactType,
-	FinanceCategory,
-	Patient,
-	PatientFile,
-	Tenant,
-	Transaction,
-	WebhookSubscription
-} from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AuditLog, Contact, ContactType, FinanceCategory, Patient, PatientCaseNote, PatientFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
 import type { AiCorrectionRow } from '../db/schema/ai-corrections';
 import type { ApiKeyRow } from '../db/schema/api-keys';
 import type { AppointmentRow } from '../db/schema/appointments';
 import type { AuditLogRow } from '../db/schema/audit';
+import type { CaseNoteRow } from '../db/schema/case-notes';
 import type { ContactTypeRow } from '../db/schema/contact-types';
 import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
@@ -260,6 +247,17 @@ export function toPatientFile(row: FileRow): PatientFile {
 		size_bytes: row.sizeBytes,
 		status: row.status === 'pending' ? 'pending' : 'ready',
 		uploaded_by_display_name: row.uploadedByDisplayName,
+		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toPatientCaseNote(row: CaseNoteRow): PatientCaseNote {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		patient_id: row.patientId,
+		body: row.body,
+		author_display_name: row.authorDisplayName,
 		created_at: toIsoDateTime(row.createdAt)
 	};
 }

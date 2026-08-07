@@ -125,7 +125,7 @@ import {
 	transactionDraftSchema
 } from './inbound-message.js';
 import { patientFileCreateSchema, patientFileSchema } from './file.js';
-import { patientCaseNoteSchema } from './case-note.js';
+import { patientCaseNoteCreateSchema, patientCaseNoteSchema } from './case-note.js';
 import { contactSchema, contactTypeSchema } from './contact.js';
 import {
 	contactDuplicateGroupSchema,
@@ -195,6 +195,13 @@ export const apiContract = {
 	},
 	'GET /v1/patients/:id/case-notes': {
 		response: z.object({ items: z.array(patientCaseNoteSchema) })
+	},
+	'POST /v1/patients/:id/case-notes': {
+		body: patientCaseNoteCreateSchema,
+		response: patientCaseNoteSchema
+	},
+	'DELETE /v1/patients/:id/case-notes/:noteId': {
+		response: z.null()
 	},
 	'GET /v1/contacts': {
 		response: cursorPageSchema(contactSchema)

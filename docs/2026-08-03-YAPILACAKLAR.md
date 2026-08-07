@@ -260,6 +260,8 @@
   **2026-08-07 akşam:** Panel randevu/ayar 500 kök nedeni prod DB migration
   drift (`tenants.timezone` 0020+ eksik) — migrate 0020–0027 uygulandı.
   Finans listesi `occurred_on DESC` olacak şekilde kodlandı (API deploy sonrası).
+  **Hasta notları:** `GET/POST/DELETE /v1/patients/:id/case-notes` API’de
+  eksikti (UI + MSW vardı → prod 404 “Notlar yüklenemedi”); endpoint’ler eklendi.
 ---
 
 ### 7. MARKET-01 — Üç stratejik karar (17 Ağustos review öncesi)

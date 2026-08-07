@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type {
 	MergeRecords,
+	PatientCaseNoteCreate,
 	PatientCreate,
 	PatientFileCreate,
 	PatientFilePresign,
@@ -25,7 +26,7 @@ import {
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
-import { toPatient, toPatientFile } from '../common/mappers';
+import { toPatient, toPatientCaseNote, toPatientFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
 import {
 	FILE_STORAGE,
@@ -166,6 +167,75 @@ export class PatientsService {
 
 			return { items: rows.map(toPatientFile) };
 		});
+	}
+
+	async listCaseNotes(tenantId: string, patientId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const patient = await this.findActiveRow(db, patientId);
+			if (!patient) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Patient not found' }
+				});
+			}
+
+			const rows = await db
+				.select()
+				.from(caseNotes)
+				.where(eq(caseNotes.patientId, patientId))
+				.orderBy(asc(caseNotes.createdAt), asc(caseNotes.id));
+
+			return { items: rows.map(toPatientCaseNote) };
+		});
+	}
+
+	async createCaseNoteWithDb(
+		db: TenantDb,
+		tenantId: string,
+		patientId: string,
+		input: PatientCaseNoteCreate,
+		author: { displayName: string }
+	) {
+		const patient = await this.findActiveRow(db, patientId);
+		if (!patient) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Patient not found' }
+			});
+		}
+
+		const body = input.body.trim();
+		const [row] = await db
+			.insert(caseNotes)
+			.values({
+				tenantId,
+				patientId,
+				body,
+				authorDisplayName: author.displayName.trim() || 'User'
+			})
+			.returning();
+
+		return toPatientCaseNote(row!);
+	}
+
+	async deleteCaseNoteWithDb(db: TenantDb, patientId: string, noteId: string) {
+		const patient = await this.findActiveRow(db, patientId);
+		if (!patient) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Patient not found' }
+			});
+		}
+
+		const [row] = await db
+			.delete(caseNotes)
+			.where(and(eq(caseNotes.id, noteId), eq(caseNotes.patientId, patientId)))
+			.returning({ id: caseNotes.id });
+
+		if (!row) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Case note not found' }
+			});
+		}
+
+		return { ok: true as const };
 	}
 
 	async createFileWithDb(
