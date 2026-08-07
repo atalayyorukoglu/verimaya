@@ -273,10 +273,12 @@
   aynı kural (`base_currency == null` kaçığı kapatıldı). `GET /v1/reports/summary`
   → `fx_missing_count`, `fx_missing_amount_by_currency`, `coverage_ratio` (adet).
   Rapor kartı tooltip + Veri kalitesi “Kur bilgisi eksik”.
-- [ ] **Adım 2 — backfill-fx.js + ETL mapping**
+- [x] **Adım 2 — backfill-fx.js + ETL mapping:** Tracker `counterparty_*` → 389
+  Demo Klinik satırı güncellendi (coverage %99.8; 1 satır equivalent yok).
+  ETL INSERT artık FX dört alanını yazıyor; ETL-ESLEME §3.4 hizalandı.
 - [ ] **Adım 3 — base doğrulama sonrası `base_currency_locked` (ayrı deploy)**
-- **Görüş (Adım 1):** Sunucu coverage adet bazlı; canlı kur yok. Kilidi Adım 1–2
-  ile birlikte gönderme.
+- **Görüş (Adım 1–2):** Sunucu coverage adet bazlı; canlı kur yok. Prod tek
+  tenant (Demo Klinik) `base_currency=GBP` OrbisMed ile uyumlu.
 ---
 
 ### 7. MARKET-01 — Üç stratejik karar (17 Ağustos review öncesi)

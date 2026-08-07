@@ -147,7 +147,7 @@ Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu 
 | --- | --- | --- | --- |
 | `amount` (numeric major) | `amount` (int minor) | `round(amount * 100)` | zorunlu |
 | `paid_amount` | `paid_amount` | `*100`; null → null | partial kuralları API’de |
-| `counterparty_amount` | `amount_base` (opsiyonel) | `*100` | kur yoksa null; `fx_*` null |
+| `counterparty_amount` + `equivalent_currency` | `amount_base` / `base_currency` / `fx_rate` / `fx_dated` | `equivalent_currency === tenants.base_currency` ve tutar doluysa: `amount_base=round(cp*100)`, `base_currency=tenant base`, `fx_rate=cp/amount`, `fx_dated=occurred_on`. Native `currency===base` satırlarda dört alan **null** (resolver `amount` kullanır). Eşleşme yoksa null — **canlı kur yok** | mevcut satırlar için `scripts/backfill-fx.js` |
 | `currency` | `currency` | upper; destek dışı → **TRY** + not | default TRY |
 | `case_id` | `patient_id` + display | map | null OK |
 | `contact_id` | `contact_id` | map | null OK |

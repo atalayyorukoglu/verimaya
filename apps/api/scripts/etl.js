@@ -57,7 +57,7 @@ const APPOINTMENT_STATUS_MAP = {
  * @typedef {{ id: string | number, full_name: string, phone: string | null, email: string | null, status: string | null, source: string | null, notes: string | null, contact_id: string | number | null }} SourceCase
  * @typedef {{ kind: string, name: string, subcategories: string[] }} SourceFinanceCategory
  * @typedef {{ id: string | number, case_id: string | number | null, contact_id?: string | number | null, title?: string | null, type?: string | null, status?: string | null, starts_at: string, ends_at?: string | null, clinic_name?: string | null, hotel_name?: string | null, transfer_note?: string | null, notes?: string | null, clinic_contact_id?: string | number | null, hotel_contact_id?: string | number | null, transfer_contact_id?: string | number | null }} SourceAppointment
- * @typedef {{ id: string | number, case_id?: string | number | null, kind: string, title: string, subtitle?: string | null, category?: string | null, occurred_on: string, status: string, invoice_status?: string, payment_method?: string | null, amount_major?: number, amount?: number, currency: string, paid_amount_major?: number | null, paid_amount?: number | null, contact_id?: string | number | null, contact_label?: string | null, description?: string | null }} SourceTransaction
+ * @typedef {{ id: string | number, case_id?: string | number | null, kind: string, title: string, subtitle?: string | null, category?: string | null, occurred_on: string, status: string, invoice_status?: string, payment_method?: string | null, amount_major?: number, amount?: number, currency: string, paid_amount_major?: number | null, paid_amount?: number | null, contact_id?: string | number | null, contact_label?: string | null, description?: string | null, counterparty_amount?: number | null, equivalent_currency?: string | null }} SourceTransaction
  * @typedef {{ id: string | number, case_id: string | number | null, appointment_id?: string | number | null, filename: string, mime_type?: string | null, size_bytes?: number | null }} SourceFile
  * @typedef {{ id: string | number, case_id: string | number, body: string, author_display_name?: string | null }} SourceCaseNote
  * @typedef {{
@@ -125,6 +125,49 @@ function parseArgs(argv) {
  */
 function toMinor(major) {
 	return Math.round(Number(major) * 100);
+}
+
+/**
+ * Immutable FX snapshot from Tracker counterparty_* (never live rates).
+ * Native-currency rows leave all four fields null — resolver uses amount.
+ *
+ * @param {{
+ *   currency: string,
+ *   amountMajor: number,
+ *   occurredOn: string,
+ *   counterpartyMajor: number | null | undefined,
+ *   equivalentCurrency: string | null | undefined,
+ *   tenantBase: string
+ * }} input
+ * @returns {{ amount_base: number | null, base_currency: string | null, fx_rate: number | null, fx_dated: string | null }}
+ */
+function resolveFxSnapshot(input) {
+	const currency = String(input.currency ?? 'TRY').trim().toUpperCase();
+	const tenantBase = String(input.tenantBase ?? 'TRY').trim().toUpperCase();
+	if (currency === tenantBase) {
+		return { amount_base: null, base_currency: null, fx_rate: null, fx_dated: null };
+	}
+	const eq = String(input.equivalentCurrency ?? '')
+		.trim()
+		.toUpperCase();
+	const cp = input.counterpartyMajor;
+	if (
+		eq === tenantBase &&
+		cp != null &&
+		Number.isFinite(Number(cp)) &&
+		Number(cp) > 0 &&
+		Number.isFinite(input.amountMajor) &&
+		input.amountMajor > 0
+	) {
+		const cpNum = Number(cp);
+		return {
+			amount_base: toMinor(cpNum),
+			base_currency: tenantBase,
+			fx_rate: cpNum / input.amountMajor,
+			fx_dated: input.occurredOn
+		};
+	}
+	return { amount_base: null, base_currency: null, fx_rate: null, fx_dated: null };
 }
 
 /**
@@ -316,11 +359,20 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 		const paidMajor = transactionPaidMajor(t);
 		const { currency, coerced } = normalizeCurrency(t.currency);
 		const patient = patients.find((p) => p.legacy_id === caseLegacy);
+		const counterpartyMajor =
+			t.counterparty_amount != null && Number.isFinite(Number(t.counterparty_amount))
+				? Number(t.counterparty_amount)
+				: null;
+		const equivalentCurrency =
+			t.equivalent_currency != null ? String(t.equivalent_currency).trim().toUpperCase() : null;
 		return {
 			legacy_id: legacy,
 			_case_legacy: caseLegacy,
 			_contact_legacy: contactLegacy,
 			_currency_coerced: coerced,
+			_amount_major: Number.isFinite(major) ? major : null,
+			_counterparty_major: counterpartyMajor,
+			_equivalent_currency: equivalentCurrency,
 			external: { source: SOURCE, external_id: legacy },
 			verimaya: {
 				id: mapId('transaction', legacy),
@@ -502,6 +554,7 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 			select
 				id, case_id, kind, title, subtitle, category, occurred_on, status,
 				invoice_status, payment_method, amount, paid_amount, currency,
+				counterparty_amount, equivalent_currency,
 				contact_id, contact_label, description
 			from transactions
 			where tenant_id = ${trackerTenantId}
@@ -599,6 +652,10 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 				amount: Number(t.amount),
 				paid_amount: t.paid_amount != null ? Number(t.paid_amount) : null,
 				currency: String(t.currency ?? 'TRY'),
+				counterparty_amount:
+					t.counterparty_amount != null ? Number(t.counterparty_amount) : null,
+				equivalent_currency:
+					t.equivalent_currency != null ? String(t.equivalent_currency) : null,
 				contact_id: t.contact_id != null ? String(t.contact_id) : null,
 				contact_label: t.contact_label != null ? String(t.contact_label) : null,
 				description: t.description != null ? String(t.description) : null
@@ -930,6 +987,14 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 		tenantId
 	);
 
+	let tenantBase = 'TRY';
+	await withTenant(sql, tenantId, async (tx) => {
+		const [row] = await tx`
+			select base_currency from tenants where id = ${tenantId} limit 1
+		`;
+		if (row?.base_currency) tenantBase = String(row.base_currency);
+	});
+
 	for (let i = 0; i < mapped.appointments.length; i += batchSize) {
 		const batch = mapped.appointments.slice(i, i + batchSize);
 		await withTenant(sql, tenantId, async (tx) => {
@@ -1045,10 +1110,25 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 				}
 
 				const internalId = randomUUID();
+				const amountMajor =
+					item._amount_major != null
+						? item._amount_major
+						: item.verimaya.amount != null
+							? item.verimaya.amount / 100
+							: NaN;
+				const fx = resolveFxSnapshot({
+					currency: item.verimaya.currency,
+					amountMajor,
+					occurredOn: item.verimaya.occurred_on,
+					counterpartyMajor: item._counterparty_major,
+					equivalentCurrency: item._equivalent_currency,
+					tenantBase
+				});
 				await tx`
 					insert into transactions (
 						id, tenant_id, kind, title, subtitle, category, occurred_on, status,
 						invoice_status, payment_method, amount, paid_amount, currency,
+						amount_base, base_currency, fx_rate, fx_dated,
 						patient_id, patient_display_name, contact_id, contact_label, description
 					) values (
 						${internalId},
@@ -1064,6 +1144,10 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 						${item.verimaya.amount},
 						${item.verimaya.paid_amount},
 						${item.verimaya.currency},
+						${fx.amount_base},
+						${fx.base_currency},
+						${fx.fx_rate},
+						${fx.fx_dated},
 						${patientId},
 						${patientId ? (patientNames.get(patientId) ?? null) : null},
 						${contactId},
@@ -1332,6 +1416,7 @@ module.exports = {
 	applyAll,
 	attachContactLegacy,
 	toMinor,
+	resolveFxSnapshot,
 	normalizeAppointmentStatus,
 	SOURCE,
 	DEFAULT_FIXTURE
