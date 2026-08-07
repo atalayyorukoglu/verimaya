@@ -36,13 +36,6 @@
 		<h1 class="mt-3 text-[clamp(1.75rem,4vw,2.25rem)] font-semibold tracking-tight text-text">
 			Aydınlatma metni
 		</h1>
-		<p
-			class="mt-4 rounded-[8px] border border-border bg-surface-2 px-4 py-3 text-sm leading-relaxed text-text-muted"
-			role="note"
-		>
-			<strong class="font-semibold text-text">Taslak — hukukçu onayı bekleniyor.</strong>
-			Bu metin yayına çıkmadan önce gözden geçirilmelidir; onaylanmadan üretimde e-posta toplamayın.
-		</p>
 
 		<div class="mt-10 space-y-8 text-sm leading-relaxed text-text">
 			<section class="space-y-2">

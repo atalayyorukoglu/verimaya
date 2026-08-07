@@ -34,7 +34,8 @@ export const KARNE_TELEMETRY_ENABLED = (() => {
 })();
 
 /**
- * Karne email / lead capture. Fail-closed until KVKK/legal approval:
- * only `PUBLIC_KARNE_LEADS_ENABLED=true` turns the form and POST /leads on.
+ * Karne email / lead capture. Explicit `true` required.
+ * LEG-02 (2026-08-07): prod Dockerfile bakes PUBLIC_KARNE_LEADS_ENABLED=true;
+ * API Coolify must set KARNE_LEADS_ENABLED=true in lockstep.
  */
 export const KARNE_LEADS_ENABLED = (env.PUBLIC_KARNE_LEADS_ENABLED ?? 'false') === 'true';

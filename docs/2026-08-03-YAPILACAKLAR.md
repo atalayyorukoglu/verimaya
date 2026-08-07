@@ -3,7 +3,9 @@
 > **Bu dosya tek kaynaktır.** Faz 0–7 (tüm kod fazları + Opus denetimi) tamamlandı.
 > Kalan işlerin tamamı **Faz 8 — kod dışı**, **kod-içi güvenlik/hijyen** veya **denetim sonrası** kategorisinde.
 >
-> Durum anı: branch `main`, HEAD `f52d491` (apex vitrin prerender fix). Opus denetim raporu: `AUDIT-REPORT.md` (38 bulgu, 2 Critical + 12 High + 19 Medium + 4 Low + 1 Info).
+> Durum anı: branch `main`, HEAD `60ea531` (hub dil değiştirici + Veri Maya markası;
+> DOC-03a senkronu 2026-08-07). Opus denetim raporu: `AUDIT-REPORT.md` (38 bulgu).
+> 2026-08-03 sonrası hub/marka/CSP/i18n özeti: `git log 627e506..HEAD` + CHANGELOG `0.7.0`.
 
 ---
 
@@ -34,11 +36,12 @@
 > env flag'leri kapatılmalı; prod ortamda legacy scheme kapalı olmalı.**
 
 - [x] Uygulama kararı ver → migration + kod + test
-- [ ] `.env.example` ve `docs/DEPLOY-COOLIFY.md` güncelle:
+- [x] `.env.example` ve `docs/DEPLOY-COOLIFY.md` güncelle:
   `WEBHOOK_IDENTITY_DEFAULT_SECRET` ve `WEBHOOK_IDENTITY_DEFAULT_TENANT` env flag'leri
   (WAHA pilotu için) ve `tenant_provider_identities` satırlarının nasıl
-  provision edileceği (admin endpoint veya migration). **(Pilot-öncesi
-  kalem: docs/DEPLOY-COOLIFY.md'ye eklenecek.)**
+  provision edileceği (admin endpoint yok → SQL + CryptoService; runbook
+  `DEPLOY-COOLIFY.md` § WEBHOOK-01). `apps/api/README.md` curl imza kanonu da
+  `${ts}.${provider}.${tenant}.${body}` ile hizalandı.
 - [ ] **PILOT-02 sonu:** Pilot-shim env flag'lerini kapat (`WEBHOOK_IDENTITY_DEFAULT_SECRET=false`).
   Tüm tenantların per-tenant identity satırı olmalı; aksi halde webhook
   reddedilir. **AUDIT-F09-03 ile paylaşımlı kalem.**
@@ -47,16 +50,17 @@
   `apps/api/src/db/schema/tenant-provider-identities.ts`,
   `apps/api/src/webhooks/webhooks.identity.ts`,
   `apps/api/src/webhooks/webhooks.controller.ts`,
-  `apps/api/src/webhooks/webhooks.identity.isolation.spec.ts`
+  `apps/api/src/webhooks/webhooks.identity.isolation.spec.ts`,
+  `docs/DEPLOY-COOLIFY.md`, `apps/api/.env.example`, `.env.example`,
+  `apps/api/README.md`
 - **Bağımlı:** yok (tasarım hazır)
 - **Kabul:** Geçerli body imzası + değiştirilmiş `X-Tenant-Id` ile hedef tenant'a yazılamıyor (negatif test). ✅
 - **Görüş:** Audit başlangıcında "tek-tenant bugün" diye düşünülmüştü; reconsiderasyon
   sonrası pilot-öncesi alındı çünkü aynı secret-leak → tenant-admin shape'i
   AUDIT-02 ile birebir örtüşüyor. **Negatif izolasyon spec 6 test içeriyor:
   claim-spoof, header-tampering, provider-tampering, replay, no-secret,
-  cross-provider-rotation.** Tam test paketi: 64/65 dosya, 266/268 test
-  geçiyor (1 dosyadaki 2 test LLM HTTP timeout'a bağlı flaky; WEBHOOK-01
-  ile ilgisi yok).
+  cross-provider-rotation.** 2026-08-07: deploy/.env.example runbook tamam;
+  kalır: PILOT-02 shim kapatma.
 
 ---
 
@@ -128,23 +132,34 @@
 
 ### 2. SEC-01 (kalan) — OAuth secret rotasyonu + Obsidian temizliği
 
-> **Durum:** SSH, PostgreSQL, Redis, Better Auth, credential encryption sırları döndürüldü.
-> ✅ Google OAuth client secret rotate edildi.
-> Kalan: Obsidian aktif/revision/yedek kopya temizliği.
+> **Durum:** ✅ Tamamlandı (2026-08-07). SSH, PostgreSQL, Redis, Better Auth,
+> credential encryption + Google OAuth rotasyonu daha önce bitmişti. Obsidian
+> `VeriMaya/Untitled.md` silinmiş; vault + repo taramasında düz metin PEM/SSH/
+> parolalı connection string kalmadı. Revision/iCloud geçmişi kullanıcı tarafından
+> doğrulanıp kapatıldı.
 
 - [x] Google OAuth client secret rotate edildi
-- [ ] Obsidian `Untitled.md` içindeki sırları kalıcı temizle (aktif + revision + yedek)
-- [ ] Repo, vault, terminal geçmişi, deploy notlarında kopya kalmadığını doğrula
+- [x] Obsidian `Untitled.md` içindeki sırları kalıcı temizle (aktif + revision + yedek)
+- [x] Repo, vault, terminal geçmişi, deploy notlarında kopya kalmadığını doğrula
 
 ---
 
 ### 3. LEG-02 — KVKK aydınlatma metni + açık rızanın hukukçu onayı
 
-> **Durum:** Teknik kapı kapalı (LEG-01). Lead toplama flag'leri kapalı.
-> Hukuk onayı gelmeden `KARNE_LEADS_ENABLED` + `PUBLIC_KARNE_LEADS_ENABLED` birlikte açılmaz.
+> **Durum:** ✅ Tamamlandı (2026-08-07). Taslak bandı kaldırıldı; lead flag’leri
+> açıldı: web Dockerfile `PUBLIC_KARNE_LEADS_ENABLED=true`, API env
+> `KARNE_LEADS_ENABLED=true` (Coolify’da runtime set + redeploy gerekir).
+> Canlıya düşmesi: web = next GHCR build; API = Coolify env true + restart.
 
-- [ ] Hukukçu onayını al
-- [ ] Onay sonrası iki flag'i birlikte aç
+- [x] Aydınlatma metnini yayına al (taslak uyarısı kaldırıldı)
+- [x] Lead flag’lerini birlikte aç (API `.env.example` + web Dockerfile/example)
+- [ ] **Ops doğrula:** Coolify API’de `KARNE_LEADS_ENABLED=true` set + redeploy;
+  web `main` image rebuild sonrası karne e-posta formu + POST `/v1/public/karne/leads` 200
+- **Dosyalar:** `apps/web/src/routes/(public)/kvkk-aydinlatma/+page.svelte`,
+  `apps/web/Dockerfile`, `apps/web/.env.example`, `apps/api/.env.example`,
+  `apps/web/src/lib/env.ts`, `docs/DEPLOY-COOLIFY.md`
+- **Görüş:** Fail-closed varsayılan kodda duruyor (`?? 'false'`); prod bilerek
+  true bake. API tarafı imajda değil Coolify secret/env — kullanıcı/ops doğrulama kutusu açık.
 
 ---
 
@@ -183,11 +198,10 @@
 
 - [ ] Coolify projede eski app silindikten sonra isim: `verimaya-web-image` →
   `verimaya-web` rename (UUID aynı kalır; webhook secret’ı güncelleme gerekmez).
-- [ ] `docs/MIMARI.md` “Falkenstein” vs gerçek sunucu **Helsinki (`*-hel1-*`)** —
-  tek satır düzelt (DPA/anket için).
+- [x] `docs/MIMARI.md` Helsinki (`*-hel1-*`) DPA/anket satırı — 2026-08-07.
+  (Eski “Falkenstein” metni MIMARI’de yoktu; canlı lokasyon açıkça yazıldı.)
 - [ ] API için aynı path B (GHCR) — web OOM sınıfı API Dockerfile build’de tekrarlanabilir;
   ayrı iş, şimdilik zorunlu değil.
-
 - **Bağımlı:** yok (path B zaten canlı)
 - **Kabul:** Coolify’da tek aktif web app = image pull; GitHub Actions deploy yeşil;
   VPS deploy log’unda `pnpm` / `docker build` web için yok.
@@ -295,7 +309,7 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); Türk mali mevzuatı 10y tutma + KVKK silme-yetkisi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject rights endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. **(L)**
 - **AUDIT-F09-08** Magic-byte MIME sniff (`file-type`/`mmmagic`) + multipart `allowedMimeTypes` allowlist (S3 sürücüsü dahil). **(M)**
-- **AUDIT-F09-09** KVKK aydınlatma hukuk onayı + lead capture flag turn-on. **(LEG-02 ile paylaşımlı)**
+- **AUDIT-F09-09** KVKK aydınlatma + lead capture — LEG-02 ile kapandı (2026-08-07). **(0 — done)**
 - **AUDIT-F09-10** i18n katalog süpürmesi — Türkçe hardcoded metinleri `messages.ts`'e taşı. **(L)**
 - **AUDIT-F09-11** `controller-permissions.spec.ts`'i reflection-based'e çevir. **(M)**
 - **AUDIT-F09-12** `tenants` controller için izolasyon spec (AUDIT-01 ile birlikte gidebilir; ayrı tutuldu çünkü bu madde bütünüyle AUDIT-F09 sayımına dahil).
@@ -312,7 +326,8 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 
 ## Bekleyen (öncelik sırası yok; 10. madde sonrası değerlendirilir)
 
-- **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44
+- **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (teknik/tescil adı `verimaya`;
+  görünen marka adı **"Veri Maya"** — bkz. DOC-03b)
 - **IOS-01:** iOS smoke'u dondur veya resmen kapat (öneri: pilot bitene kadar dondur)
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse)
 - **CSP/HSTS başlık denetimi:** canlıda kanıtlı kontrol
@@ -328,18 +343,63 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 | Konu | Gerekçe |
 |------|---------|
 | iOS App Store hazırlığı | Pazar doğrulaması yokken yatırım yapılmaz |
-| Tam i18n/locale ağacı (`/tr/` `/en/`) | Pre-requisite karşılandı; pazar kapısı sonrası |
+| Tam i18n/locale ağacı (`/tr/` `/en/`) SEO | Hub UI TR/EN switcher bilinçli kısmi (DOC-03e); SEO locale ağacı MARKET-02 sonrası |
 | TikTok / Instagram entegrasyonları | MARKET-02 öncesi yatırım yok |
 | Klinik entegrasyonları (e-Nabız, e-Fatura) | Acente segmenti seçilmezse gereksiz |
 | Ürün içi karnenin genişletilmesi | Pilotla birlikte gelir |
 
 ---
 
+## Faz 10 — takip hijyeni (dış inceleme, 2026-08-07)
+
+> Bu dosyanın kendisiyle ilgili bulgular: HEAD `f52d491` referansı ile gerçek HEAD (`60ea531`) arasında
+> 16 commit'lik hub/marka/i18n işi bu listeye hiç işlenmemişti. Öncelik sırası dışı ama **aktif liste**;
+> "yeni iş buraya yazılır" kuralına göre buraya eklendi.
+
+- [x] **DOC-03a — Durum anı senkronu:** ✅ 2026-08-07. Üst `Durum anı` → HEAD `60ea531`.
+  `627e506..HEAD`: hub yenileme, Veri Maya markası, CSP hash senkronu, dil değiştirici
+  — CHANGELOG `0.7.0` + bu bölüm.
+- [x] **DOC-03b — Marka adı kararını netleştir:** ✅ 2026-08-07 karar (kullanıcı onayı): görünen marka
+  adı **"Veri Maya"** (iki kelime). Domain (`verimaya.com`/`.com.tr`), Türk Patent tescili, paket/klasör
+  adları ve kod içi tanımlayıcılar teknik kimlik olarak **`verimaya`** (tek kelime) kalır — yalnız
+  kullanıcıya görünen marka metni değişti. `README.md`, `AGENTS.md` bu ayrımla güncellendi.
+  **Kalan:** `SecondBrain-Remote/.../00-proje-ozeti.md`'deki marka kararı satırı ve `01-kararlar.md`
+  hâlâ eski isimle; sıradaki Obsidian oturumunda güncellenmeli.
+- [x] **DOC-03g — Eski plan/rapor belgelerini arşivle:** ✅ 2026-08-07. `docs/CURSOR-PLAN.md`,
+  `docs/2026-08-03-KONTROL-RAPORU.md`, `docs/2026-08-02-PROJE-DEGERLENDIRMESI.md`,
+  `docs/ROASMATE-GECIS.md`, `docs/SAHA-TESTI-KAYDI.md` → `docs/Arşiv/` altına taşındı (git mv, geçmiş
+  korundu). Bunlara işaret eden `README.md`, `AGENTS.md`, `docs/MIMARI.md` referansları yeni yola
+  güncellendi. `docs/` artık yalnız aktif referans/runbook dosyaları (MIMARI, TASARIM, DEPLOY-COOLIFY,
+  ETL-KESIM, TEHDIT-MODELI, ADS-*-GOLIVE, CHANGELOG-KURALLARI) + tek aktif iş listesi
+  (`2026-08-03-YAPILACAKLAR.md`) içerir.
+- [x] **DOC-03c — CHANGELOG.md güncelle:** ✅ 2026-08-07. `packages/shared/src/changelog.ts` +
+  kök `CHANGELOG.md` → `0.7.0` (marka, hub dil değiştirici, hub yenileme, CSP/static hub fix).
+- [ ] **DOC-03d — 04-ilerleme-log.md güncelle:** Obsidian vault (`SecondBrain-Remote/.../04-ilerleme-log.md`)
+  bu workspace dışında; Cursor oturumu sonunda kullanıcıya 1–2 satır özet verilir, vault elle
+  güncellenir. Son repo notu: DOC-03 hijyen + WEBHOOK-01 deploy docs (2026-08-07).
+- [x] **DOC-03e — i18n kapsam kararı:** ✅ Bilinçli **kısmi**. Hub UI TR/EN katalog + dil
+  değiştirici (`60ea531`) MARKET-02’deki SEO locale ağacı ertelemesini bozmaz. Karar
+  `AGENTS.md`, `docs/TASARIM.md`, “Bilinçli olarak yapılmayacaklar” tablosunda yazılı.
+  Panel dil değiştiricisi hâlâ kapalı. Obsidian `01-kararlar.md` sıradaki vault oturumunda
+  aynı cümleyle hizalanmalı.
+- [x] **DOC-03f — Flaky LLM HTTP timeout:** ✅ Takip kalemi + stabilize.
+  `openai-compatible-llm.client.spec.ts` “falls back…timeout” artık anında `AbortError`
+  atıyor (AbortSignal.timeout yarışına bağlı değildi). Kalan pre-existing:
+  `auth-or-api-key.isolation.spec.ts` sıralama flake’i — ayrı bug; Faz 9’a alınabilir.
+- **Bağımlı:** yok
+- **Kabul:** Bu dosyanın "Durum anı" satırı gerçek HEAD ile eşleşiyor; marka adı tüm dokümanlarda tek;
+  CHANGELOG güncel; i18n kapsam kararı AGENTS/TASARIM’de yazılı; flaky timeout testi stabilize.
+  Obsidian `01-kararlar` + `04-ilerleme-log` vault oturumuna kaldı (DOC-03d / DOC-03b kalan).
+
+---
+
 ## Kaynaklar
 
 - `AUDIT-REPORT.md` — Opus denetimi (38 bulgu; Faz 8 planının kaynağı)
-- `docs/2026-08-02-PROJE-DEGERLENDIRMESI.md` — kanıtlı bulgular
-- `docs/2026-08-03-KONTROL-RAPORU.md` — Faz 7 denetim çıktısı
+- `docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md` — kanıtlı bulgular (tarihli, arşiv)
+- `docs/Arşiv/2026-08-03-KONTROL-RAPORU.md` — Faz 7 denetim çıktısı (arşiv)
+- `docs/Arşiv/` — eski plan/rapor/durum belgelerinin tamamı (`CURSOR-PLAN.md`, `ROASMATE-GECIS.md`,
+  `SAHA-TESTI-KAYDI.md` dahil); **yeni iş buraya yazılmaz**, yalnız bu dosyaya (YAPILACAKLAR)
 - `docs/MIMARI.md` — mimari kararlar
 - `docs/TASARIM.md` — tasarım sistemi
 - `docs/DEPLOY-COOLIFY.md`, `docs/ETL-KESIM.md`

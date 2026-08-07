@@ -1,4 +1,8 @@
-# Verimaya
+# Veri Maya
+
+> Marka görünen adı **Veri Maya**'dır (2026-08-07 karar). Domain (`verimaya.com`), paket/klasör adları
+> ve kod içi tanımlayıcılar teknik kimlik olarak **`verimaya`** kalır — yalnız kullanıcıya görünen
+> marka metni değişti. Detay: `docs/2026-08-03-YAPILACAKLAR.md` § DOC-03b.
 
 Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (multi-tenant) B2B SaaS operasyon platformu: lead/hasta takibi, randevu, finans, raporlama, WhatsApp inbox ve GoHighLevel / reklam API'leri / n8n entegrasyonları.
 
@@ -6,9 +10,8 @@ Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (m
 
 Kod kapsamı pilot seviyesine yakın; güvenlik, veri doğruluğu ve canlı kabul kapıları kapatılıyor. Dahili pilot henüz resmi olarak başlamadı.
 
-**Aktif yapılacaklar listesi (tek kaynak):** [`docs/2026-08-03-YAPILACAKLAR.md`](./docs/2026-08-03-YAPILACAKLAR.md) — fazlı, kabul kriterli.
-Gerçek durum ve açık riskler: [`docs/2026-08-02-PROJE-DEGERLENDIRMESI.md`](./docs/2026-08-02-PROJE-DEGERLENDIRMESI.md).
-**CURSOR-PLAN** (Adım 1–44) kod olarak kapandı ve arşive alındı: [`docs/CURSOR-PLAN.md`](./docs/CURSOR-PLAN.md).
+**Aktif yapılacaklar listesi (tek kaynak):** [`docs/2026-08-03-YAPILACAKLAR.md`](./docs/2026-08-03-YAPILACAKLAR.md) — fazlı, kabul kriterli. Tüm eski plan/rapor/durum belgeleri artık [`docs/Arşiv/`](./docs/Arşiv/) altında; aktif iş yalnız YAPILACAKLAR dosyasındadır.
+Gerçek durum ve açık riskler (arşiv, tarihli kanıt): [`docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md`](./docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md).
 
 Mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
 

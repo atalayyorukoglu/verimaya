@@ -29,6 +29,8 @@ NestJS API (Fastify)
 - **SvelteKit SPA (2026-07-17'de React yerine seçildi):** geliştirici tercihi + tickport'taki SvelteKit deneyimi. `adapter-static` ile saf SPA olarak kullanılır; SSR/form actions/sunucu route'ları kapalıdır, tüm iş mantığı API'de kalır. **UI renkleri (2026-07-20):** TickPort warm neutrals paleti — `docs/TASARIM.md`. Bilinen ödünler: React Native bilgi paylaşımı yok (mobil planı zaten PWA-first; gerekirse Capacitor) ve AI kod üretiminde React'e göre daha ince ekosistem (Svelte 5 runes kuralı `.cursor/rules/frontend.mdc` ile sabitlendi).
 - **BullMQ + Redis:** rate-limit'li dış API çağrıları, retry/backoff, hazır dashboard (Bull Board).
 - **Hetzner + Coolify + Cloudflare:** AB veri lokasyonu (KVKK/GDPR), düşük maliyet, düşük DevOps yükü.
+  Canlı app sunucusu **Helsinki** (`*-hel1-*`); DPA/anket cevabı Falkenstein (DE) değil FI’dir.
+  R2 bucket tercihen EU.
 
 ## Değişmez ilkeler
 
@@ -91,11 +93,11 @@ Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker
 
 OAuth: `AdsOAuthStateService` state’i `CryptoService` ile şifreler (tenantId+provider+exp); callback’te çözülür. Credential secret’ı `tenant_credentials` tablosunda AES-GCM ciphertext. UI: `GET/DELETE /v1/integrations/ads/*` + `/settings/connections/ads`.
 
-`AdMetricsSyncService` (`ad_metrics.sync`): creds yoksa deterministik fixture upsert; creds varsa ilgili adapter `pullDailyMetrics` → idempotent `ad_metrics_daily` upsert (unique: tenant+provider+date+campaign). Periyodik 6h: `ENABLE_INTEGRATION_SCHEDULERS=true` (varsayılan kapalı). Canlı go-live için uygulama kimlikleri `.env` + harici OAuth konsolları gerekir (`docs/ROASMATE-GECIS.md` RM-4 go-live).
+`AdMetricsSyncService` (`ad_metrics.sync`): creds yoksa deterministik fixture upsert; creds varsa ilgili adapter `pullDailyMetrics` → idempotent `ad_metrics_daily` upsert (unique: tenant+provider+date+campaign). Periyodik 6h: `ENABLE_INTEGRATION_SCHEDULERS=true` (varsayılan kapalı). Canlı go-live için uygulama kimlikleri `.env` + harici OAuth konsolları gerekir (`docs/Arşiv/ROASMATE-GECIS.md` RM-4 go-live).
 
 ## Pazarlama hesap katmanı ve ROAS tanımı
 
-`packages/shared/src/marketing`: saf, Vitest'li birim-ekonomi fonksiyonları — `truth-calculator`, `ad-simulator`, `compliance`, `templates`, `trust-score`. Para alanları minor unit (kuruş integer); oranlar `number` (Infinity taşıyabilir); Infinity/uygulanamaz para çıktısı `null`. Geçiş planı: `docs/ROASMATE-GECIS.md`.
+`packages/shared/src/marketing`: saf, Vitest'li birim-ekonomi fonksiyonları — `truth-calculator`, `ad-simulator`, `compliance`, `templates`, `trust-score`. Para alanları minor unit (kuruş integer); oranlar `number` (Infinity taşıyabilir); Infinity/uygulanamaz para çıktısı `null`. Geçiş planı: `docs/Arşiv/ROASMATE-GECIS.md`.
 
 İki-katman ROAS (UI'da ayrı etiketlenir; karışıklık önlenir):
 

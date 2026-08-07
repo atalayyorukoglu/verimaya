@@ -2,6 +2,15 @@
 
 Kaynak: `packages/shared/src/changelog.ts` (docs/CHANGELOG-KURALLARI.md).
 
+## 0.7.0 — 2026-08-07
+
+### Hub yenileme ve Veri Maya markası
+
+- **Değişti (Platform):** Görünen marka adı Veri Maya olarak hizalandı; domain ve kod kimliği verimaya kaldı.
+- **Eklendi (Pazarlama):** Pazarlama sitesinde Türkçe/İngilizce dil değiştirici ve hero sohbet grubu çevirileri kullanılabilir (URL locale ağacı henüz yok).
+- **Değişti (Pazarlama):** Ana sayfa, App/CRM/Kaynaklar/Araçlar sayfaları ve pazarlama metinleri fayda odaklı yenilendi.
+- **Düzeltildi (Platform):** Apex hub’da tema ve mobil menü static sayfada çalışır; CSP hash’leri build ile senkron tutulur.
+
 ## 0.6.0 — 2026-07-30
 
 ### GHL bağlantısı ve ürün içi karne

@@ -94,17 +94,9 @@ describe('OpenAiCompatibleLlmClient (Adım 25)', () => {
 	});
 
 	it('falls back to heuristic on provider timeout', async () => {
-		const fetchFn = vi.fn(async (_url: string, init?: RequestInit) => {
-			const signal = init?.signal;
-			return await new Promise<Response>((_resolve, reject) => {
-				if (signal?.aborted) {
-					reject(new DOMException('The operation was aborted', 'AbortError'));
-					return;
-				}
-				signal?.addEventListener('abort', () => {
-					reject(new DOMException('The operation was aborted', 'AbortError'));
-				});
-			});
+		// Deterministic AbortError — do not wait on AbortSignal.timeout (CI flaky).
+		const fetchFn = vi.fn(async () => {
+			throw new DOMException('The operation was aborted', 'AbortError');
 		});
 
 		const client = new OpenAiCompatibleLlmClient({

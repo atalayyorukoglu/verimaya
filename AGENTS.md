@@ -32,7 +32,7 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 - API: `/v1` prefix, cursor sayfalama (`?cursor=&limit=`), standart hata gövdesi (`error.code`, `error.message`, `request_id`).
 - Dokümantasyon ve commit mesajları Türkçe; kod, tanımlayıcılar ve log mesajları İngilizce.
 - **Rota ve slug'lar İngilizce** (`/patients`, `/settings/connections/ads`). Kullanıcıya görünen metin `apps/web/src/lib/i18n/messages.ts` kataloğundan gelir. Detay ve gerekçe: aşağıdaki "Dil ve slug" bölümü.
-- UI'da yayındaki tek dil **Türkçe**, ama **i18n altyapısı kuruldu** — yeni metin doğrudan Türkçe yazılmaz, kataloğa anahtar olarak eklenir. Tema: **açık (varsayılan) + koyu**, üst bardan değiştirilir. Renk: **TickPort warm neutrals** (terracotta `#D97757`); layout CF dashboard deseni — `docs/TASARIM.md`. Changelog/özellik sayfası kuralları: `docs/CHANGELOG-KURALLARI.md`.
+- Panel UI varsayılan dil **Türkçe**; hub’da TR/EN dil değiştirici var (URL locale yok). **i18n altyapısı kuruldu** — yeni metin doğrudan dil gömülmez, `messages.ts` anahtarı. Tema: **açık (varsayılan) + koyu**. Renk: **TickPort warm neutrals** (terracotta `#D97757`); layout CF dashboard — `docs/TASARIM.md`. Changelog: `docs/CHANGELOG-KURALLARI.md`.
 - Test: her tenant'lı endpoint için negatif izolasyon testi ("Tenant A, Tenant B verisini göremez") zorunludur.
 
 ## Dil ve slug — 2026-07-26 kuralı
@@ -43,7 +43,7 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 | --- | --- | --- | --- |
 | **API yolu** (`/v1/...`) | **İngilizce** — değiştirilemez | yok | Dış `/v1` API + n8n + OpenAPI tüketicileri var; Türkçe yol yayınlanırsa geri dönüş kırıcı değişiklik olur. Tek kaynak: `packages/shared/src/api.ts` → `apiPaths`. |
 | **Panel rotası** (`app.verimaya.com`, login arkası) | **İngilizce** | **yok** | SPA + `noindex`, SEO değeri sıfır → slug bir ürün kararı değil, kod tutarlılığı kararı. Şema/tablo/dizin adları (`Patient`, `patients`) İngilizce olduğu için Türkçe rota kalıcı bir çeviri katmanı yaratır ve AI üretiminde hata kaynağıdır. |
-| **Marketing hub** (apex `verimaya.com`, login öncesi) | her dil kendi dilinde | **ileride** `/tr/` + `/en/` | SEO'nun çalıştığı yer. Bugün hub kök `/` (nginx → `hub.html`); public rotalar `(public)/` altında build-time prerender. Locale ağacı henüz yok — aşağıdaki sıraya bak. |
+| **Marketing hub** (apex `verimaya.com`, login öncesi) | her dil kendi dilinde | **ileride** `/tr/` + `/en/` | SEO'nun çalıştığı yer. Bugün hub kök `/` (nginx → `hub.html`); UI TR/EN katalog+switcher var; SEO locale ağacı henüz yok — aşağıdaki sıra. |
 
 **Panel rotaları dile göre çoğaltılmaz.** `/patients` vardır; `/tr/hastalar` + `/en/patients` yoktur. Dil kullanıcı tercihidir, URL'in parçası değildir — aksi halde rota yüzeyi ikiye katlanır ve kullanıcı dil değiştirdiğinde derin linkler kırılır.
 
@@ -53,12 +53,13 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 
 **Host ve prerender (gerçek durum):** Kök layout (`apps/web/src/routes/+layout.ts`) panel SPA için `ssr = false` + `prerender = false`. Public grup (`(public)/+layout.ts`) `ssr = true` + `prerender = true` — hub, ücretsiz karne, KVKK aydınlatma build-time HTML üretir. Build sonrası `inject-spa-noindex.mjs` prerender hub HTML'ini `hub.html` olarak kopyalar; nginx apex `/`'yi buna verir. Eski yol `/vitrin` nginx'te **301 → `/`**; kullanıcıya aktif rota değildir (kaynak dosya yalnız prerender/legacy için kalır).
 
-**Marketing locale ağacı bilinçli olarak kurulmadı.** Prerender ön koşulu **karşılandı**; sıradaki iş locale/slug. Sıra: (1) `/tr/` + `/en/` ağacını kur (her dil kendi slug'ıyla), (2) apex `/` için Cloudflare'de uçta **302** yönlendirme + `hreflang` (JS ile yönlendirme SEO'yu öldürür). Hangi dilin birincil olacağı o yönlendirme kuralına iner — segment kararı (acente / klinik) verilene kadar sabitlenmez.
+**Marketing SEO locale ağacı bilinçli olarak kurulmadı** (DOC-03e / 2026-08-07): hub’da UI dil değiştirici bilinçli **kısmi** i18n’dir; MARKET-02’deki “tam i18n/locale ağacı ertesi” kuralını çiğnemez. Prerender ön koşulu **karşılandı**; sıradaki SEO işi: (1) `/tr/` + `/en/` ağacı (her dil kendi slug'ıyla), (2) apex `/` için Cloudflare’de uçta **302** + `hreflang` (JS yönlendirme SEO’yu öldürür). Birincil dil, segment kararına (acente / klinik) bağlıdır.
 
 ## Süreç
 
 - **Aktif yapılacaklar listesi: `docs/2026-08-03-YAPILACAKLAR.md` — tek kaynak.** Fazlı; her adımın kabul kriteri, dokunulacak dosyaları ve model önerisi orada. Adım bitince o dosyadaki kutuyu işaretle ve **Görüş** satırını doldur. Listenin dışına çıkan işe başlama.
 - Obsidian yol haritası (`SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`) durum belgesidir (öncelik sırası YAPILACAKLAR'dadır); eski faz metni `Arşiv/2026-07-30-yol-haritasi.md`.
-- Ürünün kanıta dayalı gerçek durumu: `docs/2026-08-02-PROJE-DEGERLENDIRMESI.md`.
+- Ürünün kanıta dayalı gerçek durumu (arşiv, tarihli kanıt): `docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md`.
+- Eski plan/rapor/durum belgeleri (`CURSOR-PLAN.md`, `KONTROL-RAPORU.md`, `ROASMATE-GECIS.md`, `SAHA-TESTI-KAYDI.md`) `docs/Arşiv/`'e taşındı; aktif iş tek dosyada — `docs/2026-08-03-YAPILACAKLAR.md`.
 - Önemli mimari kararlar `docs/MIMARI.md`'ye işlenir; proje takibi Obsidian'dadır (`SecondBrain-Remote/03-Areas/Verimaya`), oturum sonunda kullanıcıya log'a düşülecek 1-2 satır özet ver.
 - Faz 0a (MSW demo) ve Faz 0b (gerçek API) tamamlandı; panelde `PUBLIC_USE_MSW` ile MSW hâlâ açılabilir — canlıda kapalı.

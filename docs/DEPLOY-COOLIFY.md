@@ -154,10 +154,58 @@ API CORS / auth:
 | `ADMIN_QUEUE_TOKEN` | Bull Board; boş bırakma |
 | `ENABLE_INTEGRATION_SCHEDULERS` | Pilot sonrası `true` (6h sync + günlük files sweep) |
 | `FILES_SWEEP_DRY_RUN` | İlk hafta `true`, sonra kapat |
-| `KARNE_LEADS_ENABLED` | Hukuk/KVKK onayına kadar `false`; yalnız web bayrağıyla birlikte aç |
+| `KARNE_LEADS_ENABLED` | Lead POST; prod `true` (LEG-02). Web `PUBLIC_KARNE_LEADS_ENABLED` ile birlikte |
+| `WEBHOOK_IDENTITY_DEFAULT_SECRET` | Pilot WAHA shim. `true` → env paylaşımlı secret kabul; **PILOT-02 sonu `false`** |
+| `WEBHOOK_IDENTITY_DEFAULT_TENANT` | Shim açıkken kabul edilen tek tenant UUID; boşsa shim etkisiz |
+| `WAHA_WEBHOOK_SECRET` | Shim / lokal HMAC; prod’da asıl kaynak `tenant_provider_identities` |
+| `WEBHOOK_SECRET_<PROVIDER>` | Generic provider shim (ör. `WEBHOOK_SECRET_GHL`); aynı PILOT-02 kapanışı |
 
-Opsiyonel: `LLM_*`, Ads OAuth (`META_*`, `GOOGLE_ADS_*`), webhook secret’ları.
+Opsiyonel: `LLM_*`, Ads OAuth (`META_*`, `GOOGLE_ADS_*`).
 Meta Ads canlı: `docs/ADS-META-GOLIVE.md` (redirect URI = `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`).
+
+### WEBHOOK-01 — tenant kimliği + pilot shim
+
+Kanonik tenant **istemci header’ından değil**, imza doğrulamasından sonra
+`tenant_provider_identities` satırından çözülür (migration `0023`/`0024`,
+`apps/api/src/webhooks/webhooks.identity.ts`).
+
+İmza kanonu: `HMAC-SHA256(secret, "${ts}.${provider}.${claimedTenantId}.${rawBody}")`
+→ header `X-Webhook-Signature: v1=<hex>`. `X-Tenant-Id` yalnız claim’dir; imzaya
+bağlıdır ama RLS tenant’ı değildir.
+
+**Pilot shim (tek tenant WAHA):** Coolify’da geçici olarak:
+
+```text
+WEBHOOK_IDENTITY_DEFAULT_SECRET=true
+WEBHOOK_IDENTITY_DEFAULT_TENANT=<pilot-tenant-uuid>
+WAHA_WEBHOOK_SECRET=<aynı-HMAC-secret>
+```
+
+Shim yalnız claim == `WEBHOOK_IDENTITY_DEFAULT_TENANT` iken env secret’ı kabul
+eder. İkinci tenant veya PILOT-02 sonu: shim’i kapat (`…_DEFAULT_SECRET=false`),
+her tenant için identity satırı zorunlu — yoksa webhook 401.
+
+**Identity provision (admin UI yok; migration / SQL + CryptoService):**
+
+1. Secret üret: `openssl rand -hex 32` (WAHA / sağlayıcıya aynı değeri ver).
+2. `key_hash` = `sha256(utf8(secret)).hex` (`hashWebhookSecret`).
+3. `ciphertext` = `CryptoService.encrypt(secret)` (`CREDENTIALS_ENCRYPTION_KEY`
+   ile; AES-GCM). Lokal/ops: Vitest provision kalıbı
+   `apps/api/src/webhooks/webhooks.provider.spec.ts` → `provisionIdentity`.
+4. Owner veya RLS bağlamında insert:
+
+```sql
+SELECT set_config('app.current_tenant_id', '<tenant-uuid>', true);
+INSERT INTO tenant_provider_identities
+  (tenant_id, provider, ciphertext, key_hash, key_version)
+VALUES
+  ('<tenant-uuid>', 'waha', '<bytea-ciphertext>', '<sha256-hex>', 1);
+```
+
+`provider` WAHA için `waha`; generic için path segment (`ghl`, …).
+Rotasyon: yeni satır / upsert + `updated_at` — lookup `updated_at DESC` alır.
+PILOT-02 kapanış checklist’i: tüm aktif tenant’larda satır var → shim env
+`false` → eski paylaşımlı secret’ı rotate et.
 
 Web build:
 
@@ -168,7 +216,7 @@ Web build:
 | `PUBLIC_APP_URL` | `https://app.verimaya.com` (hub → App CTA) |
 | `PUBLIC_CRM_URL` | `https://crm.verimaya.com` (hub → CRM CTA; GHL) |
 | `PUBLIC_USE_MSW` | `false` |
-| `PUBLIC_KARNE_LEADS_ENABLED` | Hukuk/KVKK onayına kadar `false`; API bayrağıyla birlikte aç |
+| `PUBLIC_KARNE_LEADS_ENABLED` | Lead form; prod image `true` (Dockerfile). API `KARNE_LEADS_ENABLED` ile birlikte |
 
 ## Cloudflare R2 (dosya depolama)
 

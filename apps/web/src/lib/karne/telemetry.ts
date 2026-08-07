@@ -253,7 +253,7 @@ export type SubmitKarneLeadResult = { ok: true } | { ok: false; reason: 'validat
 /** POST /leads — returns structured result for the form UI (not fire-and-forget). */
 export async function submitKarneLead(input: SubmitKarneLeadInput): Promise<SubmitKarneLeadResult> {
 	if (!browser) return { ok: false, reason: 'network' };
-	// LEG-01: fail-closed until legal approval enables PUBLIC_KARNE_LEADS_ENABLED=true
+	// LEG-02: gated by PUBLIC_KARNE_LEADS_ENABLED (fail-closed unless true)
 	if (!KARNE_LEADS_ENABLED) return { ok: false, reason: 'network' };
 	if (input.website.trim() !== '') {
 		// Trip honeypot client-side: pretend success so bots don't retry.

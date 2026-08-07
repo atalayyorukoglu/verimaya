@@ -16,7 +16,8 @@ ENV PUBLIC_API_URL=https://api.verimaya.com \
 	PUBLIC_SITE_URL=https://verimaya.com \
 	PUBLIC_APP_URL=https://app.verimaya.com \
 	PUBLIC_CRM_URL=https://crm.verimaya.com \
-	PUBLIC_USE_MSW=false
+	PUBLIC_USE_MSW=false \
+	PUBLIC_KARNE_LEADS_ENABLED=true
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY apps/web/package.json apps/web/
@@ -35,6 +36,7 @@ RUN printf '%s\n' \
 	'PUBLIC_APP_URL=https://app.verimaya.com' \
 	'PUBLIC_CRM_URL=https://crm.verimaya.com' \
 	'PUBLIC_USE_MSW=false' \
+	'PUBLIC_KARNE_LEADS_ENABLED=true' \
 	> apps/web/.env.production
 
 RUN pnpm --filter @verimaya/shared build

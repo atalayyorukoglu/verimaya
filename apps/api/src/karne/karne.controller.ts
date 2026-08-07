@@ -60,7 +60,7 @@ export class KarneController {
 	@Post('leads')
 	@HttpCode(204)
 	async createLead(@Req() req: FastifyRequest) {
-		// LEG-01: fail-closed until KVKK/legal approval sets KARNE_LEADS_ENABLED=true
+		// LEG-02: enabled when KARNE_LEADS_ENABLED=true (Coolify / .env); fail-closed otherwise
 		if (!karneLeadsEnabled()) {
 			throw new ServiceUnavailableException({
 				error: {

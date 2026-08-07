@@ -9,7 +9,7 @@ Kaynak referans: TickPort `--palette-*` → Verimaya `--brand` / `--bg` / `--sur
 1. **Marketing hub (apex `verimaya.com`, login öncesi):** sıcak nötr zemin + terracotta brand gradient hero, bol alan, büyük başlıklar. Kök URL `/` — nginx `hub.html` (prerender). Public rotalar: ücretsiz karne, KVKK aydınlatma (`(public)/`, build-time prerender).
 2. **Panel (`app.verimaya.com`, login sonrası):** Cloudflare dashboard düzeni — sol gruplu menü, üstte hızlı arama (⌘K), kart tabanlı içerik; **renkler TickPort paleti**. SPA fallback `index.html`, `noindex`.
 
-Tema değiştirici üst barda (ay/güneş). Varsayılan: **açık**. Tercih `localStorage` (`verimaya:theme`) ile saklanır. Dil değiştirici arayüzde YOK — yayındaki tek dil Türkçe, ama altyapı iki dilli (aşağı bak).
+Tema değiştirici üst barda (ay/güneş). Varsayılan: **açık**. Tercih `localStorage` (`verimaya:theme`) ile saklanır. **Hub dil değiştirici (2026-08-07):** apex pazarlama yüzünde TR/EN katalog + UI switcher var; panel dil değiştiricisi hâlâ kapalı (varsayılan `tr`). URL locale ağacı (`/tr/`, `/en/`) MARKET-02 sonrasına erteli — aşağıdaki “Dil ve slug”.
 
 ## Dil ve slug
 
@@ -27,7 +27,7 @@ Zamanlama gerekçesi: i18n iskelesini **şimdi** kurmak ucuz (ekran sayısı az)
 | --- | --- | --- | --- |
 | API (`/v1/...`) | İngilizce — değiştirilemez | yok | ✅ zaten öyleydi |
 | Panel (`app.verimaya.com`) | İngilizce | **yok** — dil kullanıcı tercihi | ✅ 2026-07-26'da taşındı |
-| Marketing hub (apex) | her dil kendi dilinde | ileride `/tr/` + `/en/` | ✅ prerender açık; ⏸ locale ağacı yok |
+| Marketing hub (apex) | her dil kendi dilinde | ileride `/tr/` + `/en/` | ✅ prerender + hub UI TR/EN; ⏸ SEO locale ağacı yok |
 
 Panel rotası SEO taşımaz (SPA + `noindex`), dolayısıyla slug dili bir ürün kararı değil kod tutarlılığı kararıdır: şema ve tablo adları İngilizce (`Patient`, `patients`), rota da İngilizce olmalı — aksi halde kalıcı bir çeviri katmanı doğar.
 
@@ -36,7 +36,7 @@ Panel rotası SEO taşımaz (SPA + `noindex`), dolayısıyla slug dili bir ürü
 - Katalog: `apps/web/src/lib/i18n/messages.ts`. `tr` tip kaynağıdır; `en`'de eksik anahtar derleme hatası verir.
 - Erişim: `import { t } from '$lib/i18n/locale.svelte'` → `t('nav.patients')`.
 - `navigation.ts` etiketleri `labelKey: MessageKey` taşır, ham string taşımaz.
-- Yayındaki dil `defaultLocale = 'tr'`. Dil değiştirici arayüze **eklenmedi**; `setLocale()` hazır, açılması ayrı karar.
+- Yayındaki dil `defaultLocale = 'tr'`. Hub’da dil değiştirici **açık** (UI tercihi; SEO için `/tr/`+`/en/` değil). Panelde dil değiştirici kapalı; `setLocale()` hazır.
 - Mevcut ekranların Türkçe metinleri henüz kataloğa taşınmadı. Kural yeni ve dokunulan kod için bağlayıcı.
 
 ### Host, prerender ve locale sırası

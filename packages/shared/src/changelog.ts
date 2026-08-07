@@ -20,6 +20,33 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.7.0',
+		date: '2026-08-07',
+		title: 'Hub yenileme ve Veri Maya markası',
+		changes: [
+			{
+				type: 'degisti',
+				module: 'Platform',
+				text: 'Görünen marka adı Veri Maya olarak hizalandı; domain ve kod kimliği verimaya kaldı.'
+			},
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'Pazarlama sitesinde Türkçe/İngilizce dil değiştirici ve hero sohbet grubu çevirileri kullanılabilir (URL locale ağacı henüz yok).'
+			},
+			{
+				type: 'degisti',
+				module: 'Pazarlama',
+				text: 'Ana sayfa, App/CRM/Kaynaklar/Araçlar sayfaları ve pazarlama metinleri fayda odaklı yenilendi.'
+			},
+			{
+				type: 'duzeltildi',
+				module: 'Platform',
+				text: 'Apex hub’da tema ve mobil menü static sayfada çalışır; CSP hash’leri build ile senkron tutulur.'
+			}
+		]
+	},
+	{
 		version: '0.6.0',
 		date: '2026-07-30',
 		title: 'GHL bağlantısı ve ürün içi karne',

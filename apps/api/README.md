@@ -44,48 +44,52 @@ Tablolar: `integration_events`, `outbox_events`, `jobs` (RLS + `verimaya_app` gr
 
 **Credential şifreleme:** OAuth/API token'ları yalnızca `ciphertext` sütununda saklanır; AES-GCM uygulaması ileride eklenecek. Plaintext credential loglanmaz ve API yanıtlarına yazılmaz.
 
-Webhook header'ları (HMAC — provider ve WAHA):
+Webhook header'ları (HMAC — WEBHOOK-01; provider ve WAHA):
 
 | Header | Açıklama |
 |--------|----------|
 | `X-Webhook-Timestamp` | Unix saniye; sunucu saatiyle ±5 dk |
-| `X-Webhook-Signature` | `v1=` + hex(`HMAC-SHA256(secret, "${timestamp}.${rawBody}")`) |
-| `X-Tenant-Id` | Aktif tenant UUID |
+| `X-Webhook-Signature` | `v1=` + hex(`HMAC-SHA256(secret, "${timestamp}.${provider}.${claimedTenantId}.${rawBody}")`) |
+| `X-Tenant-Id` | Claim (imzaya bağlı); kanonik tenant `tenant_provider_identities` |
 | `X-External-Event-Id` | Opsiyonel; yoksa payload `id` / hash |
 
-Secret: WAHA → `WAHA_WEBHOOK_SECRET`; generic → `WEBHOOK_SECRET_<PROVIDER>` (ör. `WEBHOOK_SECRET_GHL`).
+Secret: tercih `tenant_provider_identities` satırı. Pilot shim:
+`WEBHOOK_IDENTITY_DEFAULT_SECRET` + `WAHA_WEBHOOK_SECRET` / `WEBHOOK_SECRET_<PROVIDER>`
+(`docs/DEPLOY-COOLIFY.md` § WEBHOOK-01).
 
 ```bash
 BODY='{"type":"contact.created","id":"evt-001"}'
+TENANT=<tenant-uuid>
 TS=$(date +%s)
-SIG=$(node -e "const c=require('crypto');const b=process.argv[1];const t=process.argv[2];const s=process.env.WEBHOOK_SECRET_GHL||'dev-ghl-webhook-secret';console.log('v1='+c.createHmac('sha256',s).update(t+'.'+b).digest('hex'))" "$BODY" "$TS")
+SIG=$(node -e "const c=require('crypto');const [b,t,ten,s]=process.argv.slice(1);console.log('v1='+c.createHmac('sha256',s).update(t+'.ghl.'+ten+'.'+b).digest('hex'))" "$BODY" "$TS" "$TENANT" "${WEBHOOK_SECRET_GHL:-dev-ghl-webhook-secret}")
 curl -s -X POST http://localhost:3000/v1/webhooks/ghl \
   -H 'Content-Type: application/json' \
   -H "X-Webhook-Timestamp: $TS" \
   -H "X-Webhook-Signature: $SIG" \
-  -H 'X-Tenant-Id: <tenant-uuid>' \
+  -H "X-Tenant-Id: $TENANT" \
   -H 'X-External-Event-Id: evt-001' \
   -d "$BODY"
 ```
 
-WAHA (WhatsApp inbox) — HMAC-SHA256 (`WAHA_WEBHOOK_SECRET`):
+WAHA (WhatsApp inbox) — aynı kanon (`provider=waha`):
 
 | Header | Açıklama |
 |--------|----------|
 | `X-Webhook-Timestamp` | Unix saniye; sunucu saatiyle ±5 dk |
-| `X-Webhook-Signature` | `v1=` + hex(`HMAC-SHA256(secret, "${timestamp}.${rawBody}")`) |
-| `X-Tenant-Id` | Aktif tenant UUID |
+| `X-Webhook-Signature` | `v1=` + hex(`HMAC-SHA256(secret, "${timestamp}.waha.${claimedTenantId}.${rawBody}")`) |
+| `X-Tenant-Id` | Claim UUID |
 | `X-External-Event-Id` | Opsiyonel; yoksa payload'dan |
 
 ```bash
 BODY='{"event":"message","payload":{"id":"msg-001","body":"Sandra 2900 GBP ödeme","from":"120363@g.us","chatName":"Finans"}}'
+TENANT=<tenant-uuid>
 TS=$(date +%s)
-SIG=$(node -e "const c=require('crypto');const b=process.argv[1];const t=process.argv[2];const s=process.env.WAHA_WEBHOOK_SECRET||'dev-waha-webhook-secret';console.log('v1='+c.createHmac('sha256',s).update(t+'.'+b).digest('hex'))" "$BODY" "$TS")
+SIG=$(node -e "const c=require('crypto');const [b,t,ten,s]=process.argv.slice(1);console.log('v1='+c.createHmac('sha256',s).update(t+'.waha.'+ten+'.'+b).digest('hex'))" "$BODY" "$TS" "$TENANT" "${WAHA_WEBHOOK_SECRET:-dev-waha-webhook-secret}")
 curl -s -X POST http://localhost:3000/v1/webhooks/waha \
   -H 'Content-Type: application/json' \
   -H "X-Webhook-Timestamp: $TS" \
   -H "X-Webhook-Signature: $SIG" \
-  -H 'X-Tenant-Id: <tenant-uuid>' \
+  -H "X-Tenant-Id: $TENANT" \
   -H 'X-External-Event-Id: msg-001' \
   -d "$BODY"
 ```
