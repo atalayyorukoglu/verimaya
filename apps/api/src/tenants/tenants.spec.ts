@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { closeDb, getDb } from '../db/client';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { TenantsService } from './tenants.service';
@@ -53,6 +53,9 @@ describe('tenants current (get/update)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
+		await withTenantSession(tenantId, async () => {
+			await sql`delete from transactions where tenant_id = ${tenantId}`;
+		});
 		await sql`delete from tenants where id in (${tenantId}, ${otherTenantId})`;
 		await sql`delete from organization where id in (${tenantId}, ${otherTenantId})`;
 		await closeDb();
@@ -64,11 +67,12 @@ describe('tenants current (get/update)', () => {
 		expect(tenant.id).toBe(tenantId);
 		expect(tenant.name).toBe('Test Tenant');
 		expect(tenant.base_currency).toBe('TRY');
+		expect(tenant.base_currency_locked).toBe(false);
 		expect(tenant.patients_section_label).toBe('Hastalar');
 		expect(tenant.timezone).toBe('Europe/Istanbul');
 	});
 
-	it('updates name, base_currency, timezone and patients_section_label', async () => {
+	it('updates name, base_currency, timezone and patients_section_label when unlocked', async () => {
 		const updated = await tenantsService.update(
 			tenantId,
 			{
@@ -84,6 +88,7 @@ describe('tenants current (get/update)', () => {
 		expect(updated.base_currency).toBe('USD');
 		expect(updated.patients_section_label).toBe('Misafirler');
 		expect(updated.timezone).toBe('Asia/Riyadh');
+		expect(updated.base_currency_locked).toBe(false);
 
 		const reloaded = await tenantsService.get(tenantId);
 		expect(reloaded.name).toBe('Renamed Tenant');
@@ -95,6 +100,45 @@ describe('tenants current (get/update)', () => {
 		expect(updated.name).toBe('Renamed Tenant');
 		expect(updated.base_currency).toBe('EUR');
 		expect(updated.patients_section_label).toBe('Misafirler');
+	});
+
+	it('allows same base_currency PATCH after first transaction', async () => {
+		const { sql } = getDb(databaseUrl);
+		await withTenantSession(tenantId, async () => {
+			await sql`
+				insert into transactions (
+					tenant_id, kind, title, occurred_on, status, amount, currency
+				) values (
+					${tenantId}, 'income', 'Lock probe', '2026-01-01', 'paid', 1000, 'EUR'
+				)
+			`;
+		});
+
+		const same = await tenantsService.update(
+			tenantId,
+			{ base_currency: 'EUR', name: 'Still Eur' },
+			actor
+		);
+		expect(same.base_currency).toBe('EUR');
+		expect(same.name).toBe('Still Eur');
+		expect(same.base_currency_locked).toBe(true);
+	});
+
+	it('returns 409 base_currency_locked when changing base after first transaction', async () => {
+		try {
+			await tenantsService.update(tenantId, { base_currency: 'GBP' }, actor);
+			expect.unreachable('expected ConflictException');
+		} catch (err) {
+			expect(err).toBeInstanceOf(ConflictException);
+			const body = (err as ConflictException).getResponse() as {
+				error: { code: string };
+			};
+			expect(body.error.code).toBe('base_currency_locked');
+		}
+
+		const reloaded = await tenantsService.get(tenantId);
+		expect(reloaded.base_currency).toBe('EUR');
+		expect(reloaded.base_currency_locked).toBe(true);
 	});
 
 	it('does not leak or affect another tenant row', async () => {

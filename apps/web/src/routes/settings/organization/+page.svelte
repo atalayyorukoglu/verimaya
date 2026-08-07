@@ -36,16 +36,22 @@
 	let timezone = $state<TenantTimezone>('Europe/Istanbul');
 	let hydratedFor = $state<string | null>(null);
 
+	function hydrateFrom(tenant: Tenant) {
+		name = tenant.name;
+		baseCurrency = tenant.base_currency;
+		patientsLabel = tenant.patients_section_label;
+		timezone = tenant.timezone;
+		hydratedFor = tenant.id;
+	}
+
 	$effect(() => {
-		const t = tenantQuery.data;
-		if (t && hydratedFor !== t.id) {
-			name = t.name;
-			baseCurrency = t.base_currency;
-			patientsLabel = t.patients_section_label;
-			timezone = t.timezone;
-			hydratedFor = t.id;
+		const tenant = tenantQuery.data;
+		if (tenant && hydratedFor !== tenant.id) {
+			hydrateFrom(tenant);
 		}
 	});
+
+	const currencyLocked = $derived(tenantQuery.data?.base_currency_locked === true);
 
 	let saving = $state(false);
 	let error = $state<string | null>(null);
@@ -58,13 +64,16 @@
 		savedAt = null;
 		const payload: TenantUpdate = {
 			name: name.trim(),
-			base_currency: baseCurrency,
 			patients_section_label: patientsLabel.trim() || 'Hastalar',
 			timezone
 		};
+		if (!currencyLocked) {
+			payload.base_currency = baseCurrency;
+		}
 		try {
-			await apiSend<Tenant>('/v1/tenants/current', 'PATCH', payload);
-			await queryClient.invalidateQueries({ queryKey: keys.tenants.current() });
+			const updated = await apiSend<Tenant>('/v1/tenants/current', 'PATCH', payload);
+			queryClient.setQueryData(keys.tenants.current(), updated);
+			hydrateFrom(updated);
 			savedAt = Date.now();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Kaydetme başarısız';
@@ -96,11 +105,21 @@
 
 				<div>
 					<label class={labelClass} for="tenant-currency">Varsayılan para birimi</label>
-					<select id="tenant-currency" class={fieldClass} bind:value={baseCurrency}>
+					<select
+						id="tenant-currency"
+						class={fieldClass}
+						bind:value={baseCurrency}
+						disabled={currencyLocked}
+					>
 						{#each SUPPORTED_CURRENCIES as c (c)}
 							<option value={c}>{c}</option>
 						{/each}
 					</select>
+					{#if currencyLocked}
+						<p class="mt-1 text-xs text-text-faint">
+							{t('settings.organization.baseCurrencyLocked')}
+						</p>
+					{/if}
 				</div>
 
 				<div>

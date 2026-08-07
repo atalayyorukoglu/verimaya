@@ -121,6 +121,8 @@ const tr = {
 	'settings.organization.timezone': 'Saat dilimi',
 	'settings.organization.timezoneHint':
 		'Takvim günleri ve randevu filtreleri bu saat dilimine göre hesaplanır.',
+	'settings.organization.baseCurrencyLocked':
+		'İlk işlem kaydından sonra varsayılan para birimi kilitlenir; değiştiremezsiniz.',
 	'settings.organization.tzEuropeIstanbul': 'Europe/Istanbul (Türkiye)',
 	'settings.organization.tzAsiaRiyadh': 'Asia/Riyadh (Suudi Arabistan)',
 	'settings.organization.tzEuropeLondon': 'Europe/London (İngiltere)',
@@ -729,6 +731,8 @@ const en: Record<MessageKey, string> = {
 	'settings.organization.timezone': 'Timezone',
 	'settings.organization.timezoneHint':
 		'Calendar days and appointment filters are computed in this timezone.',
+	'settings.organization.baseCurrencyLocked':
+		'Default currency locks after the first transaction and cannot be changed.',
 	'settings.organization.tzEuropeIstanbul': 'Europe/Istanbul (Turkey)',
 	'settings.organization.tzAsiaRiyadh': 'Asia/Riyadh (Saudi Arabia)',
 	'settings.organization.tzEuropeLondon': 'Europe/London (UK)',

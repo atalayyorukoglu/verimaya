@@ -200,12 +200,13 @@ export function toApiKey(row: ApiKeyRow): ApiKey {
 	};
 }
 
-export function toTenant(row: TenantRow): Tenant {
+export function toTenant(row: TenantRow, baseCurrencyLocked = false): Tenant {
 	return {
 		id: row.id,
 		name: row.name,
 		slug: row.slug,
 		base_currency: row.baseCurrency as Tenant['base_currency'],
+		base_currency_locked: baseCurrencyLocked,
 		patients_section_label: row.patientsSectionLabel,
 		timezone: row.timezone as Tenant['timezone'],
 		created_at: toIsoDateTime(row.createdAt)

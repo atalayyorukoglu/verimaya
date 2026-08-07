@@ -21,6 +21,11 @@ export const tenantSchema = z.object({
 	name: z.string().min(1).max(255),
 	slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
 	base_currency: supportedCurrencySchema.default('TRY'),
+	/**
+	 * True once the tenant has ≥1 transaction — base_currency cannot change (409).
+	 * Computed on read; not stored on tenants row.
+	 */
+	base_currency_locked: z.boolean().default(false),
 	/** UI label for the patient/case section (legacy: cases_section_label) */
 	patients_section_label: z.string().min(1).max(80).default('Hastalar'),
 	timezone: tenantTimezoneSchema.default('Europe/Istanbul'),
@@ -31,7 +36,8 @@ export type Tenant = z.infer<typeof tenantSchema>;
 
 export const tenantCreateSchema = tenantSchema.omit({
 	id: true,
-	created_at: true
+	created_at: true,
+	base_currency_locked: true
 });
 
 export type TenantCreate = z.infer<typeof tenantCreateSchema>;

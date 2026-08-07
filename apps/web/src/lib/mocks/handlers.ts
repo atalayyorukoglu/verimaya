@@ -496,16 +496,40 @@ const mswAdsConnected = new Set<string>(['meta']);
 export const handlers = [
 	http.get('/v1/me', () => HttpResponse.json(demoUser)),
 
-	http.get('/v1/tenants/current', ({ request }) =>
-		HttpResponse.json(getStore(scenarioFrom(request)).tenant)
-	),
+	http.get('/v1/tenants/current', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({
+			...store.tenant,
+			base_currency_locked: store.transactions.length > 0
+		});
+	}),
 
 	http.patch('/v1/tenants/current', async ({ request }) => {
 		const body = await request.json();
 		const parsed = tenantUpdateSchema.safeParse(body);
 		if (!parsed.success) return badRequest('Geçersiz tenant verisi', parsed.error.flatten());
 		const store = getStore(scenarioFrom(request));
-		const updated: Tenant = { ...store.tenant, ...parsed.data };
+		if (
+			parsed.data.base_currency != null &&
+			parsed.data.base_currency !== store.tenant.base_currency &&
+			store.transactions.length > 0
+		) {
+			return HttpResponse.json(
+				{
+					error: {
+						code: 'base_currency_locked',
+						message: 'Base currency is locked after the first transaction'
+					},
+					request_id: 'msw-base-currency-locked'
+				},
+				{ status: 409 }
+			);
+		}
+		const updated: Tenant = {
+			...store.tenant,
+			...parsed.data,
+			base_currency_locked: store.transactions.length > 0
+		};
 		store.tenant = updated;
 		return HttpResponse.json(updated);
 	}),
@@ -1804,6 +1828,7 @@ export const handlers = [
 			name,
 			slug,
 			base_currency: 'TRY',
+			base_currency_locked: false,
 			patients_section_label: 'Hastalar',
 			timezone: 'Europe/Istanbul',
 			created_at: now
