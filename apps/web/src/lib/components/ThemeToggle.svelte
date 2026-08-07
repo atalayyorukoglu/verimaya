@@ -21,6 +21,6 @@
 	title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
 	onclick={onToggle}
 >
-	<Sun class="size-5 hidden dark:block" aria-hidden="true" />
-	<Moon class="size-5 block dark:hidden" aria-hidden="true" />
+	<Sun class="hidden size-5 dark:block" aria-hidden="true" />
+	<Moon class="block size-5 dark:hidden" aria-hidden="true" />
 </button>

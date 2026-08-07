@@ -72,7 +72,7 @@ const tr = {
 	'karne.result.euEffectiveDate': '2 Ağustos 2026',
 	'karne.result.euNoticeSuffix': "'dan itibaren sizi kapsıyor.",
 	'karne.result.productBlurb':
-		'Veri Maya, hasta yolculuğunu tek panelde toplar — lead\'den randevuya, finanstan WhatsApp aktarımına.',
+		"Veri Maya, hasta yolculuğunu tek panelde toplar — lead'den randevuya, finanstan WhatsApp aktarımına.",
 	'karne.result.backToShowcase': 'Vitrine dön',
 	'karne.result.demoLogin': 'Demo için giriş',
 
@@ -96,10 +96,10 @@ const tr = {
 	// Ayarlar · AI
 	'settings.ai.title': 'AI ayarları',
 	'settings.ai.description':
-		'WhatsApp AI şeffaflığı (EU AI Act m.50) ve demo sistem prompt\'u. İfşa metni giden AI mesajlarına eklenecek.',
+		"WhatsApp AI şeffaflığı (EU AI Act m.50) ve demo sistem prompt'u. İfşa metni giden AI mesajlarına eklenecek.",
 	'settings.ai.disclosure.heading': 'WhatsApp AI ifşa metni',
 	'settings.ai.disclosure.why':
-		'EU AI Act m.50 gereği AI destekli giden mesajlarda alıcı bilgilendirilmelidir. Bu ayar karne kriteri 7.6\'yı besler. Giden gönderim yolu henüz bağlı değil; metin giden AI mesajlarına eklenecek.',
+		"EU AI Act m.50 gereği AI destekli giden mesajlarda alıcı bilgilendirilmelidir. Bu ayar karne kriteri 7.6'yı besler. Giden gönderim yolu henüz bağlı değil; metin giden AI mesajlarına eklenecek.",
 	'settings.ai.disclosure.enabled': 'Giden AI mesajlarına ifşa metni eklenecek',
 	'settings.ai.disclosure.textLabel': 'İfşa metni',
 	'settings.ai.disclosure.save': 'İfşayı kaydet',
@@ -108,14 +108,14 @@ const tr = {
 	'settings.ai.disclosure.error': 'Kayıt başarısız.',
 	'settings.ai.disclosure.loadError': 'Ayar yüklenemedi.',
 	'settings.ai.disclosure.note':
-		'Gerçek WhatsApp gönderimi henüz yok. Port + ifşa hook\'u hazır; gönderim ayrı karardır.',
+		"Gerçek WhatsApp gönderimi henüz yok. Port + ifşa hook'u hazır; gönderim ayrı karardır.",
 	'settings.ai.prompt.label': 'Prompt',
 	'settings.ai.prompt.default': 'varsayılan',
 	'settings.ai.prompt.save': 'Kaydet',
 	'settings.ai.prompt.reset': 'Varsayılana dön',
 	'settings.ai.prompt.saved': 'Kaydedildi.',
 	'settings.ai.prompt.footnote':
-		'Prompt demo: localStorage. Gerçek tenant prompt\'u ayrı iş; ifşa ayarı API\'de saklanır.',
+		"Prompt demo: localStorage. Gerçek tenant prompt'u ayrı iş; ifşa ayarı API'de saklanır.",
 
 	// Ayarlar · Organizasyon
 	'settings.organization.timezone': 'Saat dilimi',
@@ -233,7 +233,7 @@ const tr = {
 	'settings.ads.syncOk': 'Senkron tamam: {count} satır ({mode}).',
 	'settings.ads.syncError': 'Senkron başarısız.',
 	'settings.ads.syncHint':
-		'Otomatik zamanlayıcı kapalıdır. Bu düğme yaklaşık son 10 yıllık günlük harcamayı çeker; Raporlar yalnızca DB\'deki satırları toplar.',
+		"Otomatik zamanlayıcı kapalıdır. Bu düğme yaklaşık son 10 yıllık günlük harcamayı çeker; Raporlar yalnızca DB'deki satırları toplar.",
 	'settings.ads.googleCustomerId.label': 'Google Ads müşteri hesap no',
 	'settings.ads.googleCustomerId.hint':
 		'MCC ile bağlandıysan, metrik çekilecek client hesabın numarasını gir (tire opsiyonel).',
@@ -243,7 +243,7 @@ const tr = {
 	'settings.ads.googleCustomerId.error': 'Hesap no kaydedilemedi.',
 	'settings.ads.dev.heading': 'Geliştirme / demo verisi',
 	'settings.ads.dev.body':
-		'OAuth yokken senkron örnek satır yazar. Otomatik 6s kuyruk için ENABLE_INTEGRATION_SCHEDULERS=true gerekir — prod\'da kapalı tutuyoruz.',
+		"OAuth yokken senkron örnek satır yazar. Otomatik 6s kuyruk için ENABLE_INTEGRATION_SCHEDULERS=true gerekir — prod'da kapalı tutuyoruz.",
 	'settings.ads.footnote':
 		'Bağlantı sonrası "hasta başına maliyet" Raporlar sayfasında kaynak bazında görünecek.',
 
@@ -383,8 +383,7 @@ const tr = {
 	'hub.tools.title': 'Reklama paranızı yatırmadan önce simüle edin ve doğrulayın.',
 	'hub.tools.desc':
 		'Veri Maya Araçları; reklam yayınlamadan önceki planlama, bütçe simülasyonu ve denetim adımlarını otomatiğe bağlar. Maya CRM ve Maya App’e tam entegre çalışarak boşa gidecek her tıklamayı engeller.',
-	'hub.tools.outcome':
-		'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce %100 netlik.',
+	'hub.tools.outcome': 'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce %100 netlik.',
 	'hub.tools.campaign.title': 'Kampanya Asistanı',
 	'hub.tools.campaign.desc':
 		'Reklam adımlarınızı satış hattına eksiksiz hazırlar, lansman öncesi kafa karışıklığını bitirir.',
@@ -412,7 +411,8 @@ const tr = {
 		"Hasta bilgileri Maya App'e kaydedilir → Finans ekibi WhatsApp mesajından AI ile işlemleri ayrıştırır → Onay sonrası kayıt düşülür.",
 
 	'hub.karne.title': 'Yapay zeka karnenizi 5 dakikada alın',
-	'hub.karne.desc': 'Kurumunuzun yapay zeka olgunluğunu ölçün, eksiklerinizi görün, yol haritanızı çıkarın.',
+	'hub.karne.desc':
+		'Kurumunuzun yapay zeka olgunluğunu ölçün, eksiklerinizi görün, yol haritanızı çıkarın.',
 	'hub.karne.cta': 'Karnemi al',
 
 	'hub.integrations.title': 'Entegrasyonlar',
@@ -462,8 +462,7 @@ const tr = {
 	'pillar.app.f.invoiceAi.desc':
 		'Fatura belgesi ve içerğini AI ile okuyup işleme bağlayın; WhatsApp işlem aktarımından ayrı bir akıştır.',
 	'pillar.app.f.balances.title': 'P2P net bakiyeler',
-	'pillar.app.f.balances.desc':
-		'Kişiler arası borç-alacak net bakiyelerini tek bakışta izleyin.',
+	'pillar.app.f.balances.desc': 'Kişiler arası borç-alacak net bakiyelerini tek bakışta izleyin.',
 	'pillar.app.f.reports.title': 'Özet raporlar ve dashboard',
 	'pillar.app.f.reports.desc':
 		'Gelir, gider ve dönem özetini kartlarda görün; kategori drill-down ile detaya inin.',
@@ -471,17 +470,14 @@ const tr = {
 	'pillar.app.f.realRoas.desc':
 		'Reklam harcamanızı dönem tahsilatıyla kıyaslayın; hasta başına maliyet ve kaynak kırılımı.',
 	'pillar.app.f.audit.title': 'Denetim kaydı',
-	'pillar.app.f.audit.desc':
-		'Kim ne yaptı: kritik işlemlerin denetim izini ayarlardan izleyin.',
+	'pillar.app.f.audit.desc': 'Kim ne yaptı: kritik işlemlerin denetim izini ayarlardan izleyin.',
 	'pillar.app.f.scorecard.title': 'Ürün içi yapay zeka karnesi',
 	'pillar.app.f.scorecard.desc':
 		'43 kriterli ölçüm, otomatik dolum ve dönem karşılaştırması panel içinde.',
 	'pillar.app.f.n8n.title': 'n8n ve dış API',
-	'pillar.app.f.n8n.desc':
-		'Scope’lu API anahtarı ve imzalı webhook’larla otomasyonları bağlayın.',
+	'pillar.app.f.n8n.desc': 'Scope’lu API anahtarı ve imzalı webhook’larla otomasyonları bağlayın.',
 	'pillar.app.f.multiTenant.title': 'Çok kiracılı organizasyon',
-	'pillar.app.f.multiTenant.desc':
-		'Organizasyon, ekip ve rollerle tenant izolasyonunu koruyun.',
+	'pillar.app.f.multiTenant.desc': 'Organizasyon, ekip ve rollerle tenant izolasyonunu koruyun.',
 
 	'pillar.crm.metaTitle': 'Maya CRM (Satış & Reklam) — Veri Maya',
 	'pillar.crm.metaDesc':
@@ -507,8 +503,7 @@ const tr = {
 	'pillar.crm.f.multichannel.desc':
 		'WhatsApp, SMS ve e-posta kanallarını aynı satış sürecinde birleştirin.',
 	'pillar.crm.f.salesReports.title': 'Satış raporlama',
-	'pillar.crm.f.salesReports.desc':
-		'Dönüşüm ve pipeline performansını raporlarla görün.',
+	'pillar.crm.f.salesReports.desc': 'Dönüşüm ve pipeline performansını raporlarla görün.',
 	'pillar.crm.f.appSync.title': 'Maya App senkronu',
 	'pillar.crm.f.appSync.desc':
 		'Lead ve fırsat alanlarını sahiplik kurallarıyla Maya App operasyonuna bağlayın.',
@@ -531,14 +526,12 @@ const tr = {
 	'pillar.resources.cta': 'Ücretsiz ürün karnesi al',
 	'pillar.resources.ctaSecondary': 'Özellikler ›',
 	'pillar.resources.f.karne.title': 'Ücretsiz yapay zeka karnesi',
-	'pillar.resources.f.karne.desc':
-		'5 dakikada, üyeliksiz: kurumunuzun AI olgunluğunu ölçün.',
+	'pillar.resources.f.karne.desc': '5 dakikada, üyeliksiz: kurumunuzun AI olgunluğunu ölçün.',
 	'pillar.resources.f.features.title': 'Özellikler özeti',
 	'pillar.resources.f.features.desc':
 		'Modül bazında hangi özelliğin hazır, pilot veya yayında olduğunu görün.',
 	'pillar.resources.f.changelog.title': 'Yenilikler',
-	'pillar.resources.f.changelog.desc':
-		'Sürüm notlarıyla panele neyin geldiğini takip edin.',
+	'pillar.resources.f.changelog.desc': 'Sürüm notlarıyla panele neyin geldiğini takip edin.',
 
 	'pillar.tools.metaTitle': 'Araçlar — Veri Maya',
 	'pillar.tools.metaDesc':
@@ -547,8 +540,7 @@ const tr = {
 	'pillar.tools.heading': 'Reklama yatırmadan önce simüle edin ve doğrulayın.',
 	'pillar.tools.problem':
 		'Bütçeyi yayına almadan önce tahminlerle veya Excel ile mi riske atıyorsunuz?',
-	'pillar.tools.outcome':
-		'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce netlik.',
+	'pillar.tools.outcome': 'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce netlik.',
 	'pillar.tools.cta': 'Gerçek ROAS hesabına git',
 	'pillar.tools.ctaSecondary': 'Maya App ›',
 	'pillar.tools.f.templates.title': 'Kampanya asistanı',
@@ -576,8 +568,7 @@ const tr = {
 	'pillar.tools.calculator.heading': 'Gerçek ROAS hesabı',
 	'pillar.tools.calculator.problem':
 		'Platformun gösterdiği ROAS ile kasaya giren kâr aynı mı sanıyorsunuz?',
-	'pillar.tools.calculator.outcome':
-		'Sonuç: Harcamayı gerçek kâr diline çevirirsiniz.',
+	'pillar.tools.calculator.outcome': 'Sonuç: Harcamayı gerçek kâr diline çevirirsiniz.',
 	'pillar.tools.calculator.body':
 		'Girdiğiniz maliyet ve gelir varsayımlarıyla başabaş noktası ve güvenli tavan reklam maliyetini görün. Maya App Gerçek ROAS raporuyla aynı matematiğe yaslanır.',
 	'pillar.tools.calculator.cta': 'Hesabı panelde aç',
@@ -588,8 +579,7 @@ const tr = {
 	'pillar.tools.simulator.heading': 'Reklam matematiği simülatörü',
 	'pillar.tools.simulator.problem':
 		'“Bu bütçeden kaç hasta döner?” sorusuna körlemesine mi yanıt veriyorsunuz?',
-	'pillar.tools.simulator.outcome':
-		'Sonuç: Senaryoyu yayından önce rakamla görürsünüz.',
+	'pillar.tools.simulator.outcome': 'Sonuç: Senaryoyu yayından önce rakamla görürsünüz.',
 	'pillar.tools.simulator.body':
 		'Trafik ışığı ve ölçek tavanıyla bütçeyi büyütmenin güvenli olup olmadığını test edin.',
 	'pillar.tools.simulator.cta': 'Simülatörü panelde aç',
@@ -600,8 +590,7 @@ const tr = {
 	'pillar.tools.compliance.heading': 'Reklam uyumluluk taraması',
 	'pillar.tools.compliance.problem':
 		'Metin veya landing, politika ihlaliyle hesabı riske mi atıyor?',
-	'pillar.tools.compliance.outcome':
-		'Sonuç: Riskli ifadeleri yayından önce yakalarsınız.',
+	'pillar.tools.compliance.outcome': 'Sonuç: Riskli ifadeleri yayından önce yakalarsınız.',
 	'pillar.tools.compliance.body':
 		'Yasaklı ve riskli sağlık vaatlerini tarayın; yayın öncesi kontrol kapısında da kullanılır.',
 	'pillar.tools.compliance.cta': 'Taramayı panelde aç',
@@ -612,8 +601,7 @@ const tr = {
 	'pillar.tools.templates.heading': 'Kampanya asistanı',
 	'pillar.tools.templates.problem':
 		'UTM, kreatif oranı ve bütçe dağılımı her kampanyada mı dağılır?',
-	'pillar.tools.templates.outcome':
-		'Sonuç: Lansman öncesi standart hazır paketle çıkarsınız.',
+	'pillar.tools.templates.outcome': 'Sonuç: Lansman öncesi standart hazır paketle çıkarsınız.',
 	'pillar.tools.templates.body':
 		'UTM yapıları, 3:2:2 kreatif dağılımı ve 60/30/10 bütçe şablonlarıyla satış hattına hazır kampanya iskeleti kurun.',
 	'pillar.tools.templates.cta': 'Şablonları panelde aç',
@@ -622,10 +610,8 @@ const tr = {
 	'pillar.tools.measurement.metaDesc':
 		'Trust Score: consent, CAPI, SST ve offline conversion kontrolleri.',
 	'pillar.tools.measurement.heading': 'Ölçüm olgunluğu (Trust Score)',
-	'pillar.tools.measurement.problem':
-		'Reklam panosu güzel ama ölçüm altyapısı delik mi?',
-	'pillar.tools.measurement.outcome':
-		'Sonuç: Ölçüm sağlığını checklist ile netleştirirsiniz.',
+	'pillar.tools.measurement.problem': 'Reklam panosu güzel ama ölçüm altyapısı delik mi?',
+	'pillar.tools.measurement.outcome': 'Sonuç: Ölçüm sağlığını checklist ile netleştirirsiniz.',
 	'pillar.tools.measurement.body':
 		'Consent/KVKK, enhanced conversions/CAPI, sunucu tarafı etiket, CRM→Ads offline conversion ve EMQ kontrollerini tarayın.',
 	'pillar.tools.measurement.cta': 'Ölçümü panelde aç',
@@ -636,11 +622,10 @@ const tr = {
 	'pillar.tools.prelaunch.heading': 'Yayın öncesi kontrol',
 	'pillar.tools.prelaunch.problem':
 		'Bütçe, metin ve ölçüm ayrı ayrı “tamam” ama yayında mı kopuyor?',
-	'pillar.tools.prelaunch.outcome':
-		'Sonuç: Kapıları tek checklist’te geçmeden yayına çıkmazsınız.',
+	'pillar.tools.prelaunch.outcome': 'Sonuç: Kapıları tek checklist’te geçmeden yayına çıkmazsınız.',
 	'pillar.tools.prelaunch.body':
 		'Uyumluluk taraması, hesap (birim ekonomi) ve ölçüm olgunluğu eşiklerini bir arada doğrular.',
-	'pillar.tools.prelaunch.cta': 'Kontrolü panelde aç',
+	'pillar.tools.prelaunch.cta': 'Kontrolü panelde aç'
 } as const;
 
 export type MessageKey = keyof typeof tr;
@@ -953,14 +938,12 @@ const en: Record<MessageKey, string> = {
 	'hub.apps.app.cta': 'Go to Maya App',
 	'hub.apps.app.ctaFeatures': 'See features ›',
 	'hub.apps.app.ctaFeaturesPage': 'Maya App (Operations) Features ›',
-	'hub.apps.crm.problem':
-		'Is ad budget spending while incoming leads get lost in WhatsApp chats?',
+	'hub.apps.crm.problem': 'Is ad budget spending while incoming leads get lost in WhatsApp chats?',
 	'hub.apps.crm.name': 'Turn every lead into an appointment.',
 	'hub.apps.crm.desc':
 		'Maya CRM instantly captures every prospective patient from your ads and keeps them on the sales line with automated follow-ups. You’re no longer dependent on a salesperson’s initiative or personal chasing.',
 	'hub.apps.crm.subs': 'Lead capture · Automation · Multi-channel · Pipeline · Reports',
-	'hub.apps.crm.outcome':
-		'Outcome: no forgotten leads, no wasted ad spend — more appointments.',
+	'hub.apps.crm.outcome': 'Outcome: no forgotten leads, no wasted ad spend — more appointments.',
 	'hub.apps.crm.cta': 'Open Maya CRM',
 	'hub.apps.crm.ctaFeatures': 'See features ›',
 	'hub.apps.crm.ctaFeaturesPage': 'Maya CRM (Sales & Ads) Features ›',
@@ -1024,13 +1007,13 @@ const en: Record<MessageKey, string> = {
 	'hub.scenarios.desc': 'How the Veri Maya ecosystem works across different clinic profiles.',
 	'hub.scenarios.hair.title': 'Hair transplant clinic',
 	'hub.scenarios.hair.desc':
-		"Lead arrives via WhatsApp → drops into Maya CRM pipeline → Appointment booked → Procedure done → Payment logged in Maya App → Reported.",
+		'Lead arrives via WhatsApp → drops into Maya CRM pipeline → Appointment booked → Procedure done → Payment logged in Maya App → Reported.',
 	'hub.scenarios.dentist.title': 'Dental clinic',
 	'hub.scenarios.dentist.desc':
-		"Lead from ads lands in Maya CRM → Consultation appointment opened in Maya App → Treatment plan created → Payment split into installments.",
+		'Lead from ads lands in Maya CRM → Consultation appointment opened in Maya App → Treatment plan created → Payment split into installments.',
 	'hub.scenarios.esthetic.title': 'Aesthetics clinic',
 	'hub.scenarios.esthetic.desc':
-		"Patient info saved to Maya App → Finance team uses WhatsApp AI to extract transactions → Records created after approval.",
+		'Patient info saved to Maya App → Finance team uses WhatsApp AI to extract transactions → Records created after approval.',
 
 	'hub.karne.title': 'Get your AI scorecard in 5 minutes',
 	'hub.karne.desc': 'Measure your AI maturity, see gaps, and chart your roadmap.',
@@ -1064,14 +1047,11 @@ const en: Record<MessageKey, string> = {
 	'pillar.app.f.patients.desc':
 		'List leads and patients; reach status, notes, and contact details in one screen.',
 	'pillar.app.f.duplicates.title': 'Duplicate scan',
-	'pillar.app.f.duplicates.desc':
-		'Find and merge duplicate patients and contacts; cut data mess.',
+	'pillar.app.f.duplicates.desc': 'Find and merge duplicate patients and contacts; cut data mess.',
 	'pillar.app.f.contacts.title': 'Contacts (vendor directory)',
-	'pillar.app.f.contacts.desc':
-		'Keep hotel, clinic, and transfer contacts tied to patient ops.',
+	'pillar.app.f.contacts.desc': 'Keep hotel, clinic, and transfer contacts tied to patient ops.',
 	'pillar.app.f.appointments.title': 'Appointment calendar',
-	'pillar.app.f.appointments.desc':
-		'Manage day/week view with clinic, hotel, and transfer notes.',
+	'pillar.app.f.appointments.desc': 'Manage day/week view with clinic, hotel, and transfer notes.',
 	'pillar.app.f.ledger.title': 'Income and expense ledger',
 	'pillar.app.f.ledger.desc':
 		'Log collections and payouts with patient link, payment status, and invoice fields.',
@@ -1082,11 +1062,9 @@ const en: Record<MessageKey, string> = {
 	'pillar.app.f.invoiceAi.desc':
 		'Read invoice documents with AI and link them to transactions — a separate flow from WhatsApp import.',
 	'pillar.app.f.balances.title': 'P2P net balances',
-	'pillar.app.f.balances.desc':
-		'Track net payables/receivables between contacts at a glance.',
+	'pillar.app.f.balances.desc': 'Track net payables/receivables between contacts at a glance.',
 	'pillar.app.f.reports.title': 'Summary reports and dashboard',
-	'pillar.app.f.reports.desc':
-		'See income/expense period cards; drill down by category.',
+	'pillar.app.f.reports.desc': 'See income/expense period cards; drill down by category.',
 	'pillar.app.f.realRoas.title': 'Real ROAS report',
 	'pillar.app.f.realRoas.desc':
 		'Compare ad spend to collected revenue; cost per patient and source split.',
@@ -1097,51 +1075,41 @@ const en: Record<MessageKey, string> = {
 	'pillar.app.f.scorecard.desc':
 		'43-criteria measurement, auto-fill, and period comparison inside the panel.',
 	'pillar.app.f.n8n.title': 'n8n and external API',
-	'pillar.app.f.n8n.desc':
-		'Connect automations with scoped API keys and signed webhooks.',
+	'pillar.app.f.n8n.desc': 'Connect automations with scoped API keys and signed webhooks.',
 	'pillar.app.f.multiTenant.title': 'Multi-tenant organization',
-	'pillar.app.f.multiTenant.desc':
-		'Keep tenant isolation with orgs, teams, and roles.',
+	'pillar.app.f.multiTenant.desc': 'Keep tenant isolation with orgs, teams, and roles.',
 
 	'pillar.crm.metaTitle': 'Maya CRM (Sales & Ads) — Veri Maya',
 	'pillar.crm.metaDesc':
 		'Lead capture, pipeline, automation, and ads connect: run the sales line with Maya CRM.',
 	'pillar.crm.eyebrow': 'Maya CRM (Sales & Ads)',
 	'pillar.crm.heading': 'Turn every lead into an appointment.',
-	'pillar.crm.problem':
-		'Ad budget spends, but leads vanish in WhatsApp chats?',
-	'pillar.crm.outcome':
-		'Outcome: no forgotten leads, no wasted budget — more appointments.',
+	'pillar.crm.problem': 'Ad budget spends, but leads vanish in WhatsApp chats?',
+	'pillar.crm.outcome': 'Outcome: no forgotten leads, no wasted budget — more appointments.',
 	'pillar.crm.cta': 'Open Maya CRM',
 	'pillar.crm.ctaSecondary': 'Maya App sync ›',
 	'pillar.crm.f.leadCapture.title': 'Lead capture',
-	'pillar.crm.f.leadCapture.desc':
-		'Catch prospects from ads, forms, and WhatsApp instantly.',
+	'pillar.crm.f.leadCapture.desc': 'Catch prospects from ads, forms, and WhatsApp instantly.',
 	'pillar.crm.f.pipeline.title': 'Pipeline / opportunities',
-	'pillar.crm.f.pipeline.desc':
-		'Keep stages clear; move opportunities without losing them.',
+	'pillar.crm.f.pipeline.desc': 'Keep stages clear; move opportunities without losing them.',
 	'pillar.crm.f.automation.title': 'Follow-ups & automation',
 	'pillar.crm.f.automation.desc':
 		'Reduce dependency on personal chasing with workflows and follow-ups.',
 	'pillar.crm.f.multichannel.title': 'Multi-channel messaging',
-	'pillar.crm.f.multichannel.desc':
-		'Combine WhatsApp, SMS, and email in one sales process.',
+	'pillar.crm.f.multichannel.desc': 'Combine WhatsApp, SMS, and email in one sales process.',
 	'pillar.crm.f.salesReports.title': 'Sales reporting',
-	'pillar.crm.f.salesReports.desc':
-		'See conversion and pipeline performance in reports.',
+	'pillar.crm.f.salesReports.desc': 'See conversion and pipeline performance in reports.',
 	'pillar.crm.f.appSync.title': 'Maya App sync',
 	'pillar.crm.f.appSync.desc':
 		'Map lead and opportunity fields to Maya App ops with ownership rules.',
 	'pillar.crm.f.ads.title': 'Meta & Google Ads connect',
-	'pillar.crm.f.ads.desc':
-		'Connect ad accounts; spend and metrics feed the Real ROAS report.',
+	'pillar.crm.f.ads.desc': 'Connect ad accounts; spend and metrics feed the Real ROAS report.',
 
 	'pillar.resources.metaTitle': 'Resources — Veri Maya',
 	'pillar.resources.metaDesc':
 		'Feature guides, platform documentation, and health-tourism ad and sales tactics in one library.',
 	'pillar.resources.eyebrow': 'Resources',
-	'pillar.resources.heading':
-		'Feature guides, documentation, and sales tactics in one library.',
+	'pillar.resources.heading': 'Feature guides, documentation, and sales tactics in one library.',
 	'pillar.resources.problem':
 		'Want to use the system more efficiently and boost ad and sales performance — but don’t know where to start?',
 	'pillar.resources.body':
@@ -1151,14 +1119,12 @@ const en: Record<MessageKey, string> = {
 	'pillar.resources.cta': 'Get free product scorecard',
 	'pillar.resources.ctaSecondary': 'Features ›',
 	'pillar.resources.f.karne.title': 'Free AI scorecard',
-	'pillar.resources.f.karne.desc':
-		'Five minutes, no signup: measure your org’s AI maturity.',
+	'pillar.resources.f.karne.desc': 'Five minutes, no signup: measure your org’s AI maturity.',
 	'pillar.resources.f.features.title': 'Feature summary',
 	'pillar.resources.f.features.desc':
 		'See which capabilities are ready, piloting, or live by module.',
 	'pillar.resources.f.changelog.title': 'What’s new',
-	'pillar.resources.f.changelog.desc':
-		'Follow release notes for what landed in the panel.',
+	'pillar.resources.f.changelog.desc': 'Follow release notes for what landed in the panel.',
 
 	'pillar.tools.metaTitle': 'Tools — Veri Maya',
 	'pillar.tools.metaDesc':
@@ -1172,14 +1138,11 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.cta': 'Go to Real ROAS calculator',
 	'pillar.tools.ctaSecondary': 'Maya App ›',
 	'pillar.tools.f.templates.title': 'Campaign assistant',
-	'pillar.tools.f.templates.desc':
-		'UTM, 3:2:2 creative, and 60/30/10 budget templates for launch.',
+	'pillar.tools.f.templates.desc': 'UTM, 3:2:2 creative, and 60/30/10 budget templates for launch.',
 	'pillar.tools.f.simulator.title': 'Ad math simulator',
-	'pillar.tools.f.simulator.desc':
-		'See leads and sales from CPC/CVR scenarios before you spend.',
+	'pillar.tools.f.simulator.desc': 'See leads and sales from CPC/CVR scenarios before you spend.',
 	'pillar.tools.f.compliance.title': 'Ad compliance scan',
-	'pillar.tools.f.compliance.desc':
-		'Scan copy for banned or risky health claims.',
+	'pillar.tools.f.compliance.desc': 'Scan copy for banned or risky health claims.',
 	'pillar.tools.f.calculator.title': 'Real ROAS calculator',
 	'pillar.tools.f.calculator.desc':
 		'Turn platform ROAS into real profit, break-even, and spend ceiling.',
@@ -1194,10 +1157,8 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.calculator.metaDesc':
 		'Convert platform ROAS to real profit; compute break-even and max ad cost.',
 	'pillar.tools.calculator.heading': 'Real ROAS calculator',
-	'pillar.tools.calculator.problem':
-		'Do you treat platform ROAS as the same as cash profit?',
-	'pillar.tools.calculator.outcome':
-		'Outcome: you speak spend in real-profit terms.',
+	'pillar.tools.calculator.problem': 'Do you treat platform ROAS as the same as cash profit?',
+	'pillar.tools.calculator.outcome': 'Outcome: you speak spend in real-profit terms.',
 	'pillar.tools.calculator.body':
 		'With your cost and revenue assumptions, see break-even and a safe ad-cost ceiling. Same math family as Maya App Real ROAS.',
 	'pillar.tools.calculator.cta': 'Open calculator in panel',
@@ -1206,10 +1167,8 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.simulator.metaDesc':
 		'Simulate CPL and cost per sale from CPC, CVR, and close rate before launch.',
 	'pillar.tools.simulator.heading': 'Ad math simulator',
-	'pillar.tools.simulator.problem':
-		'Answering “how many patients from this budget?” with guesses?',
-	'pillar.tools.simulator.outcome':
-		'Outcome: you see the scenario in numbers before go-live.',
+	'pillar.tools.simulator.problem': 'Answering “how many patients from this budget?” with guesses?',
+	'pillar.tools.simulator.outcome': 'Outcome: you see the scenario in numbers before go-live.',
 	'pillar.tools.simulator.body':
 		'Use traffic lights and scale ceilings to test whether growth is safe.',
 	'pillar.tools.simulator.cta': 'Open simulator in panel',
@@ -1218,10 +1177,8 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.compliance.metaDesc':
 		'Scan health-tourism ad and landing copy for banned or risky claims.',
 	'pillar.tools.compliance.heading': 'Ad compliance scan',
-	'pillar.tools.compliance.problem':
-		'Could copy or landing put the ad account at policy risk?',
-	'pillar.tools.compliance.outcome':
-		'Outcome: you catch risky phrases before launch.',
+	'pillar.tools.compliance.problem': 'Could copy or landing put the ad account at policy risk?',
+	'pillar.tools.compliance.outcome': 'Outcome: you catch risky phrases before launch.',
 	'pillar.tools.compliance.body':
 		'Scan for banned and risky health claims; also used as a pre-launch gate.',
 	'pillar.tools.compliance.cta': 'Open scan in panel',
@@ -1232,8 +1189,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.templates.heading': 'Campaign assistant',
 	'pillar.tools.templates.problem':
 		'Do UTM, creative mix, and budget split reinvent themselves each campaign?',
-	'pillar.tools.templates.outcome':
-		'Outcome: you launch with a standard ready pack.',
+	'pillar.tools.templates.outcome': 'Outcome: you launch with a standard ready pack.',
 	'pillar.tools.templates.body':
 		'Build campaign scaffolding with UTM structures, 3:2:2 creative split, and 60/30/10 budgets.',
 	'pillar.tools.templates.cta': 'Open templates in panel',
@@ -1242,10 +1198,8 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.measurement.metaDesc':
 		'Trust Score: consent, CAPI, SST, and offline conversion checks.',
 	'pillar.tools.measurement.heading': 'Measurement maturity (Trust Score)',
-	'pillar.tools.measurement.problem':
-		'Pretty ads dashboards but leaky measurement?',
-	'pillar.tools.measurement.outcome':
-		'Outcome: you clarify measurement health with a checklist.',
+	'pillar.tools.measurement.problem': 'Pretty ads dashboards but leaky measurement?',
+	'pillar.tools.measurement.outcome': 'Outcome: you clarify measurement health with a checklist.',
 	'pillar.tools.measurement.body':
 		'Check consent/KVKK, enhanced conversions/CAPI, server-side tagging, CRM→Ads offline conversion, and EMQ.',
 	'pillar.tools.measurement.cta': 'Open measurement in panel',
@@ -1260,7 +1214,7 @@ const en: Record<MessageKey, string> = {
 		'Outcome: you don’t go live until every gate passes one checklist.',
 	'pillar.tools.prelaunch.body':
 		'Combines compliance scan, calculator (unit economics), and measurement maturity thresholds.',
-	'pillar.tools.prelaunch.cta': 'Open pre-launch in panel',
+	'pillar.tools.prelaunch.cta': 'Open pre-launch in panel'
 } as const;
 
 export const messages = { tr, en } as const;

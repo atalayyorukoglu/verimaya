@@ -104,8 +104,8 @@
 	<div class="mt-4 rounded-lg border border-dashed border-border bg-surface/50 p-4">
 		<p class="text-sm font-medium text-text">Checklist şablonları</p>
 		<p class="mt-1 text-sm text-text-muted">
-			Tracker’daki “pasaport kopyası, onam formu…” maddeleri. Veri Maya’da dosya yükleme ile birlikte
-			Faz 1’de gelir; şimdilik yok.
+			Tracker’daki “pasaport kopyası, onam formu…” maddeleri. Veri Maya’da dosya yükleme ile
+			birlikte Faz 1’de gelir; şimdilik yok.
 		</p>
 	</div>
 </div>

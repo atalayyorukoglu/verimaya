@@ -258,8 +258,7 @@ export type SubmitKarneLeadInput = {
 };
 
 export type SubmitKarneLeadResult =
-	| { ok: true; emailed: boolean }
-	| { ok: false; reason: 'validation' | 'network' };
+	{ ok: true; emailed: boolean } | { ok: false; reason: 'validation' | 'network' };
 
 /** POST /leads — returns structured result for the form UI (not fire-and-forget). */
 export async function submitKarneLead(input: SubmitKarneLeadInput): Promise<SubmitKarneLeadResult> {

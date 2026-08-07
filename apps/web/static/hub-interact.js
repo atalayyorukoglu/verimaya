@@ -22,7 +22,7 @@
 		root.style.colorScheme = theme;
 		try {
 			localStorage.setItem(THEME_KEY, theme);
-		} catch (_) {
+		} catch {
 			/* ignore quota / private mode */
 		}
 	}
@@ -42,7 +42,7 @@
 		try {
 			var raw = localStorage.getItem(LOCALE_KEY);
 			if (raw === 'en' || raw === 'tr') return raw;
-		} catch (_) {
+		} catch {
 			/* ignore */
 		}
 		return 'tr';
@@ -74,7 +74,7 @@
 		document.documentElement.lang = locale;
 		try {
 			localStorage.setItem(LOCALE_KEY, locale);
-		} catch (_) {
+		} catch {
 			/* ignore */
 		}
 		applyI18nTexts(locale);
