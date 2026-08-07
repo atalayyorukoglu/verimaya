@@ -176,6 +176,27 @@
       "when": 1753909000000,
       "tag": "0024_webhook_identity_lookup",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1753910000000,
+      "tag": "0025_api_key_rotation",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1753911000000,
+      "tag": "0026_api_key_expiry_filter",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1753912000000,
+      "tag": "0027_transactions_occurred_on_list_idx",
+      "breakpoints": true
     }
   ]
 }

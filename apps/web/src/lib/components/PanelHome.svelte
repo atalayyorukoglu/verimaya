@@ -102,7 +102,7 @@
 
 	{#if anyError}
 		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
-			Bazı paneller yüklenemedi. Sayfayı yenileyin veya MSW senaryosunu kontrol edin.
+			Bazı paneller yüklenemedi. Sayfayı yenileyin veya daha sonra tekrar deneyin.
 		</div>
 	{/if}
 

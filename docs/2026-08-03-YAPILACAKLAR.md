@@ -257,6 +257,9 @@
   (idempotent). `etl:verify` OK (counts + money; kaynakta 8 contact-email dupe
   grubu beklentiyle hizalandı). Tenant adı hâlâ “Demo Klinik” — rename / 2. org
   açık. Spot check UI + para örneklem panoda.
+  **2026-08-07 akşam:** Panel randevu/ayar 500 kök nedeni prod DB migration
+  drift (`tenants.timezone` 0020+ eksik) — migrate 0020–0027 uygulandı.
+  Finans listesi `occurred_on DESC` olacak şekilde kodlandı (API deploy sonrası).
 ---
 
 ### 7. MARKET-01 — Üç stratejik karar (17 Ağustos review öncesi)

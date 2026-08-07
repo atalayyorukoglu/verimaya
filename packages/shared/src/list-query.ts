@@ -57,10 +57,21 @@ export type PatientListQuery = z.infer<typeof patientListQuerySchema>;
  * pagination is built on this order) and MSW (previously used ad-hoc per-resource
  * orderings — display_name, occurred_on, starts_at — that silently diverged from
  * the real API; that was a real MSW/API contract bug, not a stylistic choice).
+ *
+ * Exception — `GET /v1/transactions`: business date order
+ * (`occurred_on` desc, `id` desc). See `compareByOccurredOnDesc`.
  */
 export function compareByCreatedAtDesc<T extends { created_at: string; id: string }>(
 	a: T,
 	b: T
 ): number {
 	return b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id);
+}
+
+/** Transactions list order / MSW parity (`occurred_on DESC, id DESC`). */
+export function compareByOccurredOnDesc<T extends { occurred_on: string; id: string }>(
+	a: T,
+	b: T
+): number {
+	return b.occurred_on.localeCompare(a.occurred_on) || b.id.localeCompare(a.id);
 }

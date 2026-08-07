@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { compareByCreatedAtDesc } from '@verimaya/shared';
+import { compareByCreatedAtDesc, compareByOccurredOnDesc } from '@verimaya/shared';
 import { ATALAY_PATIENT_ID, CONTACT_KLINIK_ID, getStore } from './data';
 import { server } from './server';
 
@@ -77,7 +77,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 	it('transactions: contact_id filter matches the store exactly', async () => {
 		const expected = store.transactions
 			.filter((t) => t.contact_id === CONTACT_KLINIK_ID)
-			.sort(compareByCreatedAtDesc)
+			.sort(compareByOccurredOnDesc)
 			.map((t) => t.id);
 		expect(expected.length).toBeGreaterThan(0);
 		const page = await fetchPage<{ id: string }>(
@@ -89,7 +89,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 	it('transactions: patient_id + cursor pagination covers every matching row exactly once', async () => {
 		const expected = store.transactions
 			.filter((t) => t.patient_id === ATALAY_PATIENT_ID)
-			.sort(compareByCreatedAtDesc)
+			.sort(compareByOccurredOnDesc)
 			.map((t) => t.id);
 		expect(expected.length).toBeGreaterThan(0);
 		const all = await fetchAllPages<{ id: string }>(

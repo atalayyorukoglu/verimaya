@@ -195,6 +195,70 @@ describe('transactions tenant isolation', () => {
 		expect(result.items.some((t) => t.id === transactionB)).toBe(false);
 	});
 
+	it('list orders by occurred_on desc then id (stable cursor)', async () => {
+		const olderId = await withTenantSession(tenantA, async () => {
+			const t = await transactionsService.createWithDb(db, tenantA, {
+				kind: 'expense',
+				title: 'Older date',
+				subtitle: null,
+				category: null,
+				occurred_on: '2025-06-01',
+				status: 'paid',
+				invoice_status: 'none',
+				payment_method: null,
+				amount: 500,
+				paid_amount: 500,
+				currency: 'TRY',
+				amount_base: 500,
+				base_currency: 'TRY',
+				fx_rate: null,
+				fx_dated: null,
+				patient_id: patientA,
+				contact_id: contactA,
+				contact_label: null,
+				description: null
+			});
+			return t.id;
+		});
+		const newerId = await withTenantSession(tenantA, async () => {
+			const t = await transactionsService.createWithDb(db, tenantA, {
+				kind: 'expense',
+				title: 'Newer date',
+				subtitle: null,
+				category: null,
+				occurred_on: '2026-06-01',
+				status: 'paid',
+				invoice_status: 'none',
+				payment_method: null,
+				amount: 700,
+				paid_amount: 700,
+				currency: 'TRY',
+				amount_base: 700,
+				base_currency: 'TRY',
+				fx_rate: null,
+				fx_dated: null,
+				patient_id: patientA,
+				contact_id: contactA,
+				contact_label: null,
+				description: null
+			});
+			return t.id;
+		});
+
+		const page1 = await transactionsService.list(tenantA, { limit: 1 });
+		expect(page1.items).toHaveLength(1);
+		expect(page1.items[0]!.id).toBe(newerId);
+		expect(page1.next_cursor).toBeTruthy();
+
+		const page2 = await transactionsService.list(tenantA, {
+			limit: 10,
+			cursor: page1.next_cursor!
+		});
+		expect(page2.items.map((t) => t.id)).toContain(olderId);
+		expect(page2.items.map((t) => t.id)).toContain(transactionA);
+		expect(page2.items.map((t) => t.id)).not.toContain(newerId);
+	});
+
 	it('Tenant B lists only its own transaction', async () => {
 		const result = await transactionsService.list(tenantB, { limit: 25 });
 		expect(result.items.map((t) => t.id)).toEqual([transactionB]);

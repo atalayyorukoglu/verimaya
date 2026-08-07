@@ -41,16 +41,34 @@ export const transactions = pgTable(
 	(table) => [
 		index('transactions_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
 		index('transactions_tenant_id_occurred_on_idx').on(table.tenantId, table.occurredOn),
+		// List + cursor: occurred_on DESC, id DESC (PILOT-01 / ETL-friendly).
+		index('transactions_tenant_occurred_on_id_idx').on(
+			table.tenantId,
+			table.occurredOn,
+			table.id
+		),
 		index('transactions_tenant_id_patient_id_created_at_idx').on(
 			table.tenantId,
 			table.patientId,
 			table.createdAt
+		),
+		index('transactions_tenant_patient_occurred_on_id_idx').on(
+			table.tenantId,
+			table.patientId,
+			table.occurredOn,
+			table.id
 		),
 		// CONTRACT-01 (Faz 2.1): contact_id is now a real list filter (contacts/[id] page).
 		index('transactions_tenant_id_contact_id_created_at_idx').on(
 			table.tenantId,
 			table.contactId,
 			table.createdAt
+		),
+		index('transactions_tenant_contact_occurred_on_id_idx').on(
+			table.tenantId,
+			table.contactId,
+			table.occurredOn,
+			table.id
 		)
 	]
 );

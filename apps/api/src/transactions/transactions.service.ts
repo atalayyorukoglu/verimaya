@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from '@verimaya/shared';
 import { contacts, patients, tenants, transactions } from '../db/schema';
-import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
+import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
@@ -13,8 +13,8 @@ export class TransactionsService {
 	async list(tenantId: string, params: TransactionListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const filters: SQL[] = [];
-			const cursorCond = createdAtCursorCondition(
-				transactions.createdAt,
+			const cursorCond = occurredOnCursorCondition(
+				transactions.occurredOn,
 				transactions.id,
 				params.cursor
 			);
@@ -29,10 +29,10 @@ export class TransactionsService {
 				.select()
 				.from(transactions)
 				.where(filters.length > 0 ? and(...filters) : undefined)
-				.orderBy(desc(transactions.createdAt), desc(transactions.id))
+				.orderBy(desc(transactions.occurredOn), desc(transactions.id))
 				.limit(params.limit + 1);
 
-			const page = buildCursorPage(rows, params.limit);
+			const page = buildOccurredOnCursorPage(rows, params.limit);
 			return {
 				items: page.items.map(toTransaction),
 				next_cursor: page.next_cursor

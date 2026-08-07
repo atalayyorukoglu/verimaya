@@ -1,8 +1,9 @@
 -- AUDIT-03 (Faz 8): tighten app.lookup_api_key to filter by expires_at.
--- The migration is intentionally small and idempotent: REPLACE the function
--- with the same shape plus the new filter. Existing callers don't change.
+-- Return type changed (added expires_at/last_used_at) → must DROP first.
 
-CREATE OR REPLACE FUNCTION app.lookup_api_key(p_hash text)
+DROP FUNCTION IF EXISTS app.lookup_api_key(text);
+--> statement-breakpoint
+CREATE FUNCTION app.lookup_api_key(p_hash text)
 RETURNS TABLE(id uuid, tenant_id uuid, scopes text[], expires_at timestamp with time zone, last_used_at timestamp with time zone)
 LANGUAGE sql
 SECURITY DEFINER

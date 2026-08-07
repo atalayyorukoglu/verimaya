@@ -29,6 +29,7 @@ import {
 	approveDraftsRequestSchema,
 	trustScoreSettings,
 	compareByCreatedAtDesc,
+	compareByOccurredOnDesc,
 	tenantDayRange,
 	type AiCorrection,
 	type ApiKey,
@@ -747,9 +748,8 @@ export const handlers = [
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
-		// CONTRACT-02: the real API orders by created_at desc, not occurred_on — finance/
-		// reports pages don't re-sort client-side, so this was a real visible MSW/API drift.
-		const sorted = items.sort(compareByCreatedAtDesc);
+		// CONTRACT-02 exception: API orders transactions by occurred_on desc, id desc.
+		const sorted = items.sort(compareByOccurredOnDesc);
 		return HttpResponse.json(paginate(sorted, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 

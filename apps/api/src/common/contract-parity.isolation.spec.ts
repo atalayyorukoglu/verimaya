@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { compareByCreatedAtDesc } from '@verimaya/shared';
+import { compareByCreatedAtDesc, compareByOccurredOnDesc } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { ContactsService } from '../contacts/contacts.service';
@@ -193,6 +193,11 @@ describe('CONTRACT-02: API list endpoints match the shared filter + order contra
 		const page = await transactionsService.list(tenantId, { limit: 25, contact_id: contactClinic });
 		expect(page.items.every((t) => t.contact_id === contactClinic)).toBe(true);
 		expect(page.items).toHaveLength(2);
+	});
+
+	it('transactions: list is ordered by occurred_on desc (not created_at)', async () => {
+		const page = await transactionsService.list(tenantId, { limit: 25 });
+		expect([...page.items].sort(compareByOccurredOnDesc)).toEqual(page.items);
 	});
 
 	it('transactions: patient_id filter does not leak the other patient', async () => {
