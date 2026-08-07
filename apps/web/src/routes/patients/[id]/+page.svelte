@@ -37,6 +37,7 @@
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { t } from '$lib/i18n/locale.svelte';
 	import Pencil from '@lucide/svelte/icons/pencil';
 
 	type PageOf<T> = { items: T[]; next_cursor: string | null };
@@ -98,14 +99,14 @@
 	const finance = $derived.by(() => {
 		const byCurrency = new Map<string, { income: number; expense: number }>();
 		const byCategory = new Map<string, number>();
-		for (const t of transactions) {
-			const row = byCurrency.get(t.currency) ?? { income: 0, expense: 0 };
-			if (t.kind === 'income') row.income += t.amount;
-			else row.expense += t.amount;
-			byCurrency.set(t.currency, row);
+		for (const tx of transactions) {
+			const row = byCurrency.get(tx.currency) ?? { income: 0, expense: 0 };
+			if (tx.kind === 'income') row.income += tx.amount;
+			else row.expense += tx.amount;
+			byCurrency.set(tx.currency, row);
 
-			const cat = t.category?.trim() || 'Kategorisiz';
-			byCategory.set(cat, (byCategory.get(cat) ?? 0) + t.amount);
+			const cat = tx.category?.trim() || 'Kategorisiz';
+			byCategory.set(cat, (byCategory.get(cat) ?? 0) + tx.amount);
 		}
 		const currencies = [...byCurrency.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 		const catMax = Math.max(1, ...byCategory.values());
@@ -227,77 +228,107 @@
 
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">Finans özeti</h2>
+				<h2 class="text-sm font-semibold text-text">{t('patients.finance.title')}</h2>
 				<a
 					href={`/finance?hasta=${patient.id}`}
 					class="text-xs font-medium text-brand hover:underline"
 				>
-					İşlemlerde aç →
+					{t('patients.finance.openInTransactions')}
 				</a>
 			</div>
 
 			{#if !USE_MSW && financeSummaryQuery.isPending}
-				<p class="text-sm text-text-muted">Yükleniyor…</p>
+				<p class="text-sm text-text-muted">{t('patients.finance.loading')}</p>
 			{:else if !USE_MSW && financeSummaryQuery.data}
 				{@const summary = financeSummaryQuery.data}
 				{#if summary.transaction_count === 0}
-					<p class="text-sm text-text-muted">Bu hastaya bağlı işlem yok.</p>
+					<p class="text-sm text-text-muted">{t('patients.finance.empty')}</p>
 				{:else}
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<p class="text-xs text-text-muted">Gelir ({baseCurrency})</p>
+							<p class="text-xs text-text-muted">
+								{t('patients.finance.income', { currency: baseCurrency })}
+							</p>
 							<p class="mt-1 text-base font-semibold text-success tabular-nums">
 								+{formatMoney(summary.income_base, baseCurrency)}
 							</p>
 						</div>
 						<div>
-							<p class="text-xs text-text-muted">Gider ({baseCurrency})</p>
+							<p class="text-xs text-text-muted">
+								{t('patients.finance.expense', { currency: baseCurrency })}
+							</p>
 							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
 								−{formatMoney(summary.expense_base, baseCurrency)}
 							</p>
 						</div>
+					</div>
+					<div class="mt-3 rounded-md border-t border-border bg-surface-2/50 px-3 py-3">
+						<p class="text-xs text-text-muted">
+							{t('patients.finance.net', { currency: baseCurrency })}
+						</p>
+						<p
+							class="mt-1 text-xl font-semibold tabular-nums {summary.net_base >= 0
+								? 'text-text'
+								: 'text-danger'}"
+						>
+							{formatMoney(summary.net_base, baseCurrency)}
+						</p>
+					</div>
+					<div class="mt-3 grid grid-cols-2 gap-3">
 						<div>
-							<p class="text-xs text-text-muted">Tahsil ({baseCurrency})</p>
-							<p class="mt-1 text-base font-semibold text-text tabular-nums">
+							<p class="text-xs text-text-muted">
+								{t('patients.finance.collected', { currency: baseCurrency })}
+							</p>
+							<p class="mt-1 text-sm font-semibold text-text tabular-nums">
 								{formatMoney(summary.paid_base, baseCurrency)}
 							</p>
 						</div>
 						<div>
-							<p class="text-xs text-text-muted">Bekleyen ({baseCurrency})</p>
-							<p class="mt-1 text-base font-semibold text-warning tabular-nums">
+							<p class="text-xs text-text-muted">
+								{t('patients.finance.outstanding', { currency: baseCurrency })}
+							</p>
+							<p class="mt-1 text-sm font-semibold text-warning tabular-nums">
 								{formatMoney(summary.outstanding_base, baseCurrency)}
 							</p>
 						</div>
 					</div>
 				{/if}
 			{:else if txQuery.isPending}
-				<p class="text-sm text-text-muted">Yükleniyor…</p>
+				<p class="text-sm text-text-muted">{t('patients.finance.loading')}</p>
 			{:else if finance.currencies.length === 0}
-				<p class="text-sm text-text-muted">Bu hastaya bağlı işlem yok.</p>
+				<p class="text-sm text-text-muted">{t('patients.finance.empty')}</p>
 			{:else}
 				{#each finance.currencies as [currency, totals] (currency)}
-					<div class="mb-3 grid grid-cols-3 gap-3 last:mb-0">
-						<div>
-							<p class="text-xs text-text-muted">Gelir ({currency})</p>
-							<p class="mt-1 text-base font-semibold text-success tabular-nums">
-								+{formatMoney(totals.income, currency)}
-							</p>
+					{@const net = totals.income - totals.expense}
+					<div class="mb-3 last:mb-0">
+						<div class="grid grid-cols-2 gap-3">
+							<div>
+								<p class="text-xs text-text-muted">
+									{t('patients.finance.income', { currency })}
+								</p>
+								<p class="mt-1 text-base font-semibold text-success tabular-nums">
+									+{formatMoney(totals.income, currency)}
+								</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted">
+									{t('patients.finance.expense', { currency })}
+								</p>
+								<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+									−{formatMoney(totals.expense, currency)}
+								</p>
+							</div>
 						</div>
-						<div>
-							<p class="text-xs text-text-muted">Gider ({currency})</p>
-							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-								−{formatMoney(totals.expense, currency)}
+						<div class="mt-3 rounded-md border-t border-border bg-surface-2/50 px-3 py-3">
+							<p class="text-xs text-text-muted">
+								{t('patients.finance.net', { currency })}
 							</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted">Net ({currency})</p>
 							<p
-								class="mt-1 text-base font-semibold tabular-nums {totals.income - totals.expense >=
-								0
+								class="mt-1 text-xl font-semibold tabular-nums {net >= 0
 									? 'text-text'
 									: 'text-danger'}"
 							>
-								{formatMoney(totals.income - totals.expense, currency)}
+								{formatMoney(net, currency)}
 							</p>
 						</div>
 					</div>

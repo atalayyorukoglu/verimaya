@@ -53,6 +53,7 @@ export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 export const patientFinanceSummarySchema = z.object({
 	income_base: moneyMinor,
 	expense_base: moneyMinor,
+	net_base: moneyMinor,
 	paid_base: moneyMinor,
 	outstanding_base: moneyMinor,
 	transaction_count: z.number().int().nonnegative()

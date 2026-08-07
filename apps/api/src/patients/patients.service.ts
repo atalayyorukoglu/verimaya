@@ -152,6 +152,7 @@ export class PatientsService {
 			return {
 				income_base: incomeBase,
 				expense_base: expenseBase,
+				net_base: incomeBase - expenseBase,
 				paid_base: paidBase,
 				outstanding_base: outstandingBase,
 				transaction_count: rows.length

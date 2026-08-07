@@ -113,6 +113,7 @@ describe('patient finance summary tenant isolation', () => {
 
 		expect(summary.income_base).toBe(18000);
 		expect(summary.expense_base).toBe(2000);
+		expect(summary.net_base).toBe(16000);
 		expect(summary.paid_base).toBe(13000);
 		expect(summary.outstanding_base).toBe(5000);
 		expect(summary.transaction_count).toBe(3);
@@ -129,6 +130,7 @@ describe('patient finance summary tenant isolation', () => {
 
 		expect(summary.income_base).toBe(50000);
 		expect(summary.expense_base).toBe(0);
+		expect(summary.net_base).toBe(50000);
 		expect(summary.paid_base).toBe(50000);
 		expect(summary.outstanding_base).toBe(0);
 		expect(summary.transaction_count).toBe(1);

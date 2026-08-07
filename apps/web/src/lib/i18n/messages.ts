@@ -58,6 +58,15 @@ const tr = {
 
 	'patients.list.total': '{count} hasta',
 	'patients.list.totalFiltered': '{count} hasta (filtreli)',
+	'patients.finance.title': 'Finans özeti',
+	'patients.finance.openInTransactions': 'İşlemlerde aç →',
+	'patients.finance.loading': 'Yükleniyor…',
+	'patients.finance.empty': 'Bu hastaya bağlı işlem yok.',
+	'patients.finance.income': 'Gelir ({currency})',
+	'patients.finance.expense': 'Gider ({currency})',
+	'patients.finance.net': 'Net ({currency})',
+	'patients.finance.collected': 'Tahsil ({currency})',
+	'patients.finance.outstanding': 'Bekleyen ({currency})',
 	'contacts.list.total': '{count} kişi',
 	'contacts.list.totalFiltered': '{count} kişi (filtreli)',
 
@@ -675,6 +684,15 @@ const en: Record<MessageKey, string> = {
 
 	'patients.list.total': '{count} patients',
 	'patients.list.totalFiltered': '{count} patients (filtered)',
+	'patients.finance.title': 'Finance summary',
+	'patients.finance.openInTransactions': 'Open in transactions →',
+	'patients.finance.loading': 'Loading…',
+	'patients.finance.empty': 'No transactions linked to this patient.',
+	'patients.finance.income': 'Income ({currency})',
+	'patients.finance.expense': 'Expense ({currency})',
+	'patients.finance.net': 'Net ({currency})',
+	'patients.finance.collected': 'Collected ({currency})',
+	'patients.finance.outstanding': 'Outstanding ({currency})',
 	'contacts.list.total': '{count} contacts',
 	'contacts.list.totalFiltered': '{count} contacts (filtered)',
 
