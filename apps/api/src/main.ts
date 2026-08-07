@@ -196,17 +196,16 @@ async function bootstrap() {
 				context.statusCode === 403 ? HttpStatus.FORBIDDEN : HttpStatus.TOO_MANY_REQUESTS
 			)
 	});
-	// Tighter cap on auth surface — separate plugin instance, only counts /v1/auth/*.
-	// The plugin applies to every route when global=true; for per-route scope the
-	// cleaner pattern is a `keyGenerator` that returns a sentinel for non-auth paths,
-	// so the bucket is never consumed but the 429 path is still wired.
+	// Tighter cap on auth surface only — non-auth paths must be allowListed
+	// (skipped). A shared "__skip__" keyGenerator still counts every request into
+	// one 10/min bucket and breaks public karne / health.
 	await app.register(rateLimit, {
 		global: true,
 		max: 10,
 		timeWindow: '1 minute',
-		keyGenerator: (req: FastifyRequest) => {
+		allowList: (req: FastifyRequest) => {
 			const path = req.url.split('?')[0] ?? '';
-			return path.startsWith('/v1/auth/') ? req.ip : `__skip__:${req.ip}`;
+			return !path.startsWith('/v1/auth/');
 		},
 		errorResponseBuilder: (req: FastifyRequest, context) =>
 			new HttpException(
