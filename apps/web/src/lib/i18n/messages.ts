@@ -32,7 +32,7 @@ const tr = {
 	// Panel navigasyonu — grup başlıkları
 	'nav.group.main': 'Ana',
 	'nav.group.finance': 'Finans',
-	'nav.group.marketing': 'Pazarlama',
+	'nav.group.marketing': 'Araçlar',
 	'nav.group.system': 'Sistem',
 
 	// Panel navigasyonu — bağlantılar
@@ -43,7 +43,7 @@ const tr = {
 	'nav.transactions': 'İşlemler',
 	'nav.balances': 'Bakiyeler',
 	'nav.reports': 'Raporlar',
-	'nav.scorecard': 'Karne',
+	'nav.scorecard': 'AI Karne',
 	'nav.marketingOverview': 'Genel Bakış',
 	'nav.calculator': 'Hesap',
 	'nav.simulator': 'Simülatör',
@@ -55,6 +55,11 @@ const tr = {
 	'nav.features': 'Özellikler',
 	'nav.changelog': 'Yenilikler',
 	'nav.developer': 'Geliştirici',
+
+	'patients.list.total': '{count} hasta',
+	'patients.list.totalFiltered': '{count} hasta (filtreli)',
+	'contacts.list.total': '{count} kişi',
+	'contacts.list.totalFiltered': '{count} kişi (filtreli)',
 
 	// Ücretsiz karne — sonuç ve lead kapısı (LEG-01)
 	'karne.result.gate.eyebrow': 'Sonuç hazır',
@@ -645,7 +650,7 @@ const en: Record<MessageKey, string> = {
 
 	'nav.group.main': 'Main',
 	'nav.group.finance': 'Finance',
-	'nav.group.marketing': 'Marketing',
+	'nav.group.marketing': 'Tools',
 	'nav.group.system': 'System',
 
 	'nav.dashboard': 'Dashboard',
@@ -655,7 +660,7 @@ const en: Record<MessageKey, string> = {
 	'nav.transactions': 'Transactions',
 	'nav.balances': 'Balances',
 	'nav.reports': 'Reports',
-	'nav.scorecard': 'Scorecard',
+	'nav.scorecard': 'AI Scorecard',
 	'nav.marketingOverview': 'Overview',
 	'nav.calculator': 'Calculator',
 	'nav.simulator': 'Simulator',
@@ -667,6 +672,11 @@ const en: Record<MessageKey, string> = {
 	'nav.features': 'Features',
 	'nav.changelog': "What's new",
 	'nav.developer': 'Developer',
+
+	'patients.list.total': '{count} patients',
+	'patients.list.totalFiltered': '{count} patients (filtered)',
+	'contacts.list.total': '{count} contacts',
+	'contacts.list.totalFiltered': '{count} contacts (filtered)',
 
 	'karne.result.gate.eyebrow': 'Result ready',
 	'karne.result.gate.title': 'Get the detailed summary by email',

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, inArray, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, type SQL } from 'drizzle-orm';
 import type { ContactCreate, ContactListQuery, ContactUpdate, MergeRecords } from '@verimaya/shared';
 import { findContactDuplicateGroups } from '@verimaya/shared';
 import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
@@ -25,22 +25,30 @@ export class ContactsService {
 				contacts.email,
 				contacts.phone
 			]);
-			const filters: SQL[] = [];
-			if (cursorCond) filters.push(cursorCond);
-			if (searchCond) filters.push(searchCond);
-			if (params.type_id) filters.push(eq(contacts.contactTypeId, params.type_id));
+			const baseFilters: SQL[] = [];
+			if (searchCond) baseFilters.push(searchCond);
+			if (params.type_id) baseFilters.push(eq(contacts.contactTypeId, params.type_id));
+
+			const [totalRow] = await db
+				.select({ n: count() })
+				.from(contacts)
+				.where(baseFilters.length > 0 ? and(...baseFilters) : undefined);
+
+			const pageFilters = [...baseFilters];
+			if (cursorCond) pageFilters.push(cursorCond);
 
 			const rows = await db
 				.select()
 				.from(contacts)
-				.where(filters.length > 0 ? and(...filters) : undefined)
+				.where(pageFilters.length > 0 ? and(...pageFilters) : undefined)
 				.orderBy(desc(contacts.createdAt), desc(contacts.id))
 				.limit(params.limit + 1);
 
 			const page = buildCursorPage(rows, params.limit);
 			return {
 				items: page.items.map(toContact),
-				next_cursor: page.next_cursor
+				next_cursor: page.next_cursor,
+				total_count: Number(totalRow?.n ?? 0)
 			};
 		});
 	}

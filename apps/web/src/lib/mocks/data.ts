@@ -1324,13 +1324,14 @@ export function paginate<T>(
 	items: T[],
 	cursor: string | null,
 	limit: number
-): { items: T[]; next_cursor: string | null } {
+): { items: T[]; next_cursor: string | null; total_count: number } {
 	const start = cursor ? Number.parseInt(cursor, 10) : 0;
 	const safeStart = Number.isFinite(start) && start >= 0 ? start : 0;
 	const slice = items.slice(safeStart, safeStart + limit);
 	const next = safeStart + limit;
 	return {
 		items: slice,
-		next_cursor: next < items.length ? String(next) : null
+		next_cursor: next < items.length ? String(next) : null,
+		total_count: items.length
 	};
 }

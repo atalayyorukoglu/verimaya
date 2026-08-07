@@ -11,6 +11,7 @@
 	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -54,6 +55,15 @@
 	}));
 
 	const items = $derived(contactsQuery.data?.pages.flatMap((p) => p.items) ?? []);
+	const totalCount = $derived(contactsQuery.data?.pages[0]?.total_count);
+	const filtered = $derived(Boolean(search || typeId));
+	const listDescription = $derived(
+		totalCount == null
+			? 'Otel, klinik, transfer, hasta ve diğer cariler — hasta iş kaydından ayrı dizin.'
+			: filtered
+				? t('contacts.list.totalFiltered', { count: String(totalCount) })
+				: t('contacts.list.total', { count: String(totalCount) })
+	);
 
 	function submitSearch(e: Event) {
 		e.preventDefault();
@@ -98,10 +108,7 @@
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">
-	<PageHeader
-		title="Kişiler"
-		description="Otel, klinik, transfer, hasta ve diğer cariler — hasta iş kaydından ayrı dizin."
-	>
+	<PageHeader title="Kişiler" description={listDescription}>
 		{#snippet actions()}
 			<Button type="button" variant="outline" onclick={() => goto('/contacts/duplicates')}
 				>Çift kayıt tara</Button
@@ -121,8 +128,8 @@
 			bind:value={typeId}
 		>
 			<option value="">Tüm türler</option>
-			{#each contactTypes as t (t.id)}
-				<option value={t.id}>{t.name}</option>
+			{#each contactTypes as ct (ct.id)}
+				<option value={ct.id}>{ct.name}</option>
 			{/each}
 		</select>
 		<Button type="submit" variant="secondary">Ara</Button>

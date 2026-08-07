@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type {
 	MergeRecords,
 	PatientCaseNoteCreate,
@@ -64,21 +64,29 @@ export class PatientsService {
 				patients.email,
 				patients.phone
 			]);
-			const filters = [isNull(patients.deletedAt)];
-			if (cursorCond) filters.push(cursorCond);
-			if (searchCond) filters.push(searchCond);
+			const baseFilters = [isNull(patients.deletedAt)];
+			if (searchCond) baseFilters.push(searchCond);
+
+			const [totalRow] = await db
+				.select({ n: count() })
+				.from(patients)
+				.where(and(...baseFilters));
+
+			const pageFilters = [...baseFilters];
+			if (cursorCond) pageFilters.push(cursorCond);
 
 			const rows = await db
 				.select()
 				.from(patients)
-				.where(and(...filters))
+				.where(and(...pageFilters))
 				.orderBy(desc(patients.createdAt), desc(patients.id))
 				.limit(params.limit + 1);
 
 			const page = buildCursorPage(rows, params.limit);
 			return {
 				items: page.items.map(toPatient),
-				next_cursor: page.next_cursor
+				next_cursor: page.next_cursor,
+				total_count: Number(totalRow?.n ?? 0)
 			};
 		});
 	}

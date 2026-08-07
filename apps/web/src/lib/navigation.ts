@@ -44,8 +44,7 @@ export const navGroups: NavGroup[] = [
 			{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
 			{ labelKey: 'nav.patients', href: '/patients', icon: Users },
 			{ labelKey: 'nav.contacts', href: '/contacts', icon: Contact },
-			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
-			{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck }
+			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar }
 		]
 	},
 	{
@@ -59,6 +58,7 @@ export const navGroups: NavGroup[] = [
 	{
 		labelKey: 'nav.group.marketing',
 		items: [
+			{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck },
 			{ labelKey: 'nav.marketingOverview', href: '/marketing', icon: Megaphone },
 			{ labelKey: 'nav.calculator', href: '/marketing/calculator', icon: Calculator },
 			{ labelKey: 'nav.simulator', href: '/marketing/simulator', icon: FlaskConical },

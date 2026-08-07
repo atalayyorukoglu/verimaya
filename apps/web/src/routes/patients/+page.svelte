@@ -6,6 +6,7 @@
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { patientStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -35,6 +36,14 @@
 	}));
 
 	const patients = $derived(patientsQuery.data?.pages.flatMap((p) => p.items) ?? []);
+	const totalCount = $derived(patientsQuery.data?.pages[0]?.total_count);
+	const listDescription = $derived(
+		totalCount == null
+			? 'Lead ve hasta kayıtları.'
+			: search
+				? t('patients.list.totalFiltered', { count: String(totalCount) })
+				: t('patients.list.total', { count: String(totalCount) })
+	);
 
 	function submitSearch(e: Event) {
 		e.preventDefault();
@@ -62,7 +71,7 @@
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
-	<PageHeader title="Hastalar" description="Lead ve hasta kayıtları.">
+	<PageHeader title="Hastalar" description={listDescription}>
 		{#snippet actions()}
 			<form class="flex min-w-0 flex-wrap gap-2" onsubmit={submitSearch}>
 				<input
