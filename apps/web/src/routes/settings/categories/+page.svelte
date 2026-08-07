@@ -13,12 +13,12 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const catsQuery = createQuery(() => ({
-		queryKey: keys.settings.financeCategories(),
+		queryKey: qs.keys.settings.financeCategories(),
 		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const items = $derived(
@@ -76,7 +76,7 @@
 				const payload: FinanceCategoryCreate = { kind: formKind, name, subcategories };
 				await apiSend(apiPaths.settingsFinanceCategories, 'POST', payload);
 			}
-			await queryClient.invalidateQueries({ queryKey: keys.settings.financeCategories() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.financeCategories() });
 			dialogOpen = false;
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
@@ -88,7 +88,7 @@
 	async function remove(cat: FinanceCategory) {
 		if (!confirm(`“${cat.name}” silinsin mi?`)) return;
 		await apiSend(apiPaths.settingsFinanceCategory(cat.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: keys.settings.financeCategories() });
+		await queryClient.invalidateQueries({ queryKey: qs.keys.settings.financeCategories() });
 	}
 </script>
 

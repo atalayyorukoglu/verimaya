@@ -22,12 +22,12 @@
 	let q = $state('');
 	let triggerEl: HTMLButtonElement | undefined = $state();
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const searchQuery = createQuery(() => ({
-		queryKey: keys.search.query(q),
+		queryKey: qs.keys.search.query(q),
 		queryFn: () => apiGet<SearchResult>(`/v1/search?q=${encodeURIComponent(q)}`),
-		enabled: open && q.trim().length >= 2 && ready
+		enabled: open && q.trim().length >= 2 && qs.ready
 	}));
 
 	function openPalette() {

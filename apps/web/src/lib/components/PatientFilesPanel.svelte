@@ -24,7 +24,7 @@
 	} = $props();
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 	let uploading = $state(false);
 	let uploadProgress = $state<number | null>(null);
 	let uploadError = $state<string | null>(null);
@@ -32,9 +32,9 @@
 	let fileInput: HTMLInputElement | undefined = $state();
 
 	const filesQuery = createQuery(() => ({
-		queryKey: keys.patients.files(patientId),
+		queryKey: qs.keys.patients.files(patientId),
 		queryFn: () => apiGet<{ items: PatientFile[] }>(`/v1/patients/${patientId}/files`),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const files = $derived(filesQuery.data?.items ?? []);
@@ -95,7 +95,7 @@
 		uploadError = null;
 		try {
 			await uploadViaPresign(file);
-			await queryClient.invalidateQueries({ queryKey: keys.patients.files(patientId) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.files(patientId) });
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : 'Yükleme başarısız';
 		} finally {
@@ -107,7 +107,7 @@
 	async function removeFile(file: PatientFile) {
 		try {
 			await apiSend(`/v1/patients/${patientId}/files/${file.id}`, 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: keys.patients.files(patientId) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.files(patientId) });
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : 'Silme başarısız';
 		}

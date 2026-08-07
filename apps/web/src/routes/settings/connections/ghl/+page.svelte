@@ -11,14 +11,14 @@
 	import IntegrationCard from '$lib/components/IntegrationCard.svelte';
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 	const apiOrigin = PUBLIC_API_URL.replace(/\/$/, '');
 	const authorizeHref = `${apiOrigin}/v1/integrations/ghl/authorize`;
 
 	const statusQuery = createQuery(() => ({
-		queryKey: keys.integrations.ghlStatus(),
+		queryKey: qs.keys.integrations.ghlStatus(),
 		queryFn: () => apiGet<GhlConnectionStatus>('/v1/integrations/ghl/status'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const flashConnected = $derived(page.url.searchParams.get('ghl') === 'connected');
@@ -59,7 +59,7 @@
 		disconnectError = null;
 		try {
 			await apiSend('/v1/integrations/ghl', 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: keys.integrations.ghlStatus() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.integrations.ghlStatus() });
 		} catch (err) {
 			disconnectError = err instanceof Error ? err.message : t('settings.ghl.disconnectError');
 		} finally {

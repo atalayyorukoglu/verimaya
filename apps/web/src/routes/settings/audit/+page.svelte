@@ -12,15 +12,15 @@
 
 	type AuditLogsPage = ContractResponse<'GET /v1/audit-logs'>;
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const logsQuery = createInfiniteQuery(() => ({
-		queryKey: keys.auditLogs.list(),
+		queryKey: qs.keys.auditLogs.list(),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<AuditLogsPage>(listUrl('audit-logs', { limit: 25, cursor: pageParam })),
 		initialPageParam: null as string | null,
 		getNextPageParam: (last: AuditLogsPage) => last.next_cursor,
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const items = $derived(logsQuery.data?.pages.flatMap((p) => p.items) ?? []);

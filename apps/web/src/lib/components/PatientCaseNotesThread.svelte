@@ -18,12 +18,12 @@
 	} = $props();
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const notesQuery = createQuery(() => ({
-		queryKey: keys.patients.caseNotes(patientId),
+		queryKey: qs.keys.patients.caseNotes(patientId),
 		queryFn: () => apiGet<{ items: PatientCaseNote[] }>(`/v1/patients/${patientId}/case-notes`),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	let draft = $state('');
@@ -48,7 +48,7 @@
 		try {
 			await apiSend<PatientCaseNote>(`/v1/patients/${patientId}/case-notes`, 'POST', { body });
 			draft = '';
-			await queryClient.invalidateQueries({ queryKey: keys.patients.caseNotes(patientId) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.caseNotes(patientId) });
 			requestAnimationFrame(() => requestAnimationFrame(scrollListToBottom));
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Not gönderilemedi';
@@ -64,7 +64,7 @@
 		error = null;
 		try {
 			await apiSend(`/v1/patients/${patientId}/case-notes/${id}`, 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: keys.patients.caseNotes(patientId) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.caseNotes(patientId) });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Not silinemedi';
 		} finally {

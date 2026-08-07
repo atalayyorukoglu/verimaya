@@ -11,12 +11,12 @@
 
 	type TxPage = { items: Transaction[]; next_cursor: string | null };
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
@@ -33,15 +33,15 @@
 	const from = $derived(daysAgoIso(7));
 
 	const txQuery = createQuery(() => ({
-		queryKey: keys.transactions.list({ for: 'data-quality', from }),
+		queryKey: qs.keys.transactions.list({ for: 'data-quality', from }),
 		queryFn: () => apiGet<TxPage>(listUrl('transactions', { limit: 100, from })),
-		enabled: ready && !!tenantQuery.data
+		enabled: qs.ready && !!tenantQuery.data
 	}));
 
 	const summaryQuery = createQuery(() => ({
-		queryKey: keys.reports.summary({ from, to: null }),
+		queryKey: qs.keys.reports.summary({ from, to: null }),
 		queryFn: () => apiGet<ReportSummary>(reportUrl('summary', { from })),
-		enabled: ready && !!tenantQuery.data
+		enabled: qs.ready && !!tenantQuery.data
 	}));
 
 	const report = $derived.by(() => {

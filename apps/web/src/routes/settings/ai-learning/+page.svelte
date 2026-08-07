@@ -30,12 +30,12 @@
 		{ field: 'occurred_on', corrections: 4, rate: '6%' }
 	];
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const correctionsQuery = createQuery(() => ({
-		queryKey: keys.whatsapp.corrections(),
+		queryKey: qs.keys.whatsapp.corrections(),
 		queryFn: () => apiGet<CorrectionsPage>(apiPaths.whatsappCorrectionsList({ limit: 100 })),
-		enabled: !USE_MSW && ready
+		enabled: !USE_MSW && qs.ready
 	}));
 
 	function fieldDiffs(a: TransactionDraft, b: TransactionDraft): Record<string, boolean> {

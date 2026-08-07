@@ -27,7 +27,7 @@
 	} = $props();
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	let keepByGroup = $state<Record<string, string>>({});
 	let mergingKey = $state<string | null>(null);
@@ -36,14 +36,14 @@
 
 	const groupsQuery = createQuery(() => ({
 		queryKey:
-			kind === 'contacts' ? keys.contacts.duplicateGroups() : keys.patients.duplicateGroups(),
+			kind === 'contacts' ? qs.keys.contacts.duplicateGroups() : qs.keys.patients.duplicateGroups(),
 		queryFn: async (): Promise<{ items: AnyGroup[] }> => {
 			if (kind === 'contacts') {
 				return apiGet<{ items: ContactDuplicateGroup[] }>(apiPaths.contactsDuplicateGroups);
 			}
 			return apiGet<{ items: PatientDuplicateGroup[] }>(apiPaths.patientsDuplicateGroups);
 		},
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const groups = $derived(groupsQuery.data?.items ?? []);
@@ -97,10 +97,10 @@
 			await apiSend(path, 'POST', { keep_id, merge_ids });
 			await queryClient.invalidateQueries({
 				queryKey:
-					kind === 'contacts' ? keys.contacts.duplicateGroups() : keys.patients.duplicateGroups()
+					kind === 'contacts' ? qs.keys.contacts.duplicateGroups() : qs.keys.patients.duplicateGroups()
 			});
 			await queryClient.invalidateQueries({
-				queryKey: kind === 'contacts' ? keys.contacts.all() : keys.patients.all()
+				queryKey: kind === 'contacts' ? qs.keys.contacts.all() : qs.keys.patients.all()
 			});
 			success = `${merge_ids.length} kayıt birleştirildi.`;
 			const next = { ...keepByGroup };

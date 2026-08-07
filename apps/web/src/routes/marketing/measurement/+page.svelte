@@ -70,12 +70,12 @@
 	}
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const settingsQuery = createQuery(() => ({
-		queryKey: keys.settings.trustScore(),
+		queryKey: qs.keys.settings.trustScore(),
 		queryFn: () => apiGet<TrustScoreSettings>('/v1/settings/trust-score'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	let checks = $state<CheckRow[]>(mergeSaved(undefined));
@@ -135,7 +135,7 @@
 				checks: checks.map((c) => ({ id: c.id, score: c.score }))
 			};
 			await apiSend<TrustScoreSettings>('/v1/settings/trust-score', 'PUT', body);
-			await queryClient.invalidateQueries({ queryKey: keys.settings.trustScore() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.trustScore() });
 			saveOk = true;
 		} catch (err) {
 			saveError = err instanceof Error ? err.message : 'Kayıt başarısız';

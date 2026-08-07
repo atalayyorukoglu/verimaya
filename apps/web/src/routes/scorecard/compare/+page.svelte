@@ -28,11 +28,11 @@
 
 	const previousId = $derived(page.url.searchParams.get('previous') ?? '');
 	const currentId = $derived(page.url.searchParams.get('current') ?? '');
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const compareQuery = createQuery(() => ({
-		queryKey: keys.scorecard.compare(previousId, currentId),
-		enabled: Boolean(previousId && currentId) && ready,
+		queryKey: qs.keys.scorecard.compare(previousId, currentId),
+		enabled: Boolean(previousId && currentId) && qs.ready,
 		queryFn: () => apiGet<CompareDto>(apiPaths.scorecardCompare(previousId, currentId))
 	}));
 

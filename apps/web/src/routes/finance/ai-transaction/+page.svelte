@@ -27,7 +27,7 @@
 	type DraftState = DraftApprovalState & { contact_id: string | null };
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 	let message = $state('');
 	let parsing = $state(false);
 	let parseError = $state<string | null>(null);
@@ -40,21 +40,21 @@
 	let originalDrafts = $state<TransactionDraft[]>([]);
 
 	const inboxQuery = createQuery(() => ({
-		queryKey: keys.whatsapp.inbox(),
+		queryKey: qs.keys.whatsapp.inbox(),
 		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: keys.patients.list({ limit: 100, for: 'whatsapp' }),
+		queryKey: qs.keys.patients.list({ limit: 100, for: 'whatsapp' }),
 		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patients = $derived(patientsQuery.data?.items ?? []);
@@ -170,7 +170,7 @@
 			if (res.records.length === 0) {
 				parseError = item.has_media ? t('finance.ai.parse.media') : t('finance.ai.parse.none');
 			}
-			await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.whatsapp.inbox() });
 		} catch (err) {
 			parseError = err instanceof Error ? err.message : t('finance.ai.parse.failed');
 			drafts = [];
@@ -184,7 +184,7 @@
 		processing = true;
 		try {
 			await apiSend(apiPaths.whatsappInboxProcess, 'POST');
-			await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.whatsapp.inbox() });
 		} finally {
 			processing = false;
 		}
@@ -198,7 +198,7 @@
 			drafts = [];
 			originalDrafts = [];
 		}
-		await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
+		await queryClient.invalidateQueries({ queryKey: qs.keys.whatsapp.inbox() });
 	}
 
 	function updateDraft(index: number, patch: Partial<DraftState>) {
@@ -245,8 +245,8 @@
 				}
 			);
 			drafts = drafts.map((d) => ({ ...d, _status: 'saved', _error: null }));
-			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
-			await queryClient.invalidateQueries({ queryKey: keys.whatsapp.inbox() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.whatsapp.inbox() });
 			activeInboxId = null;
 			message = '';
 			drafts = [];

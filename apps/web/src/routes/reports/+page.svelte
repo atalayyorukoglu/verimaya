@@ -53,12 +53,12 @@
 		| { mode: 'subcategory'; categoryLabel: string; subtitleLabel: string };
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
@@ -144,7 +144,7 @@
 	const periodText = $derived(periodLabel(periodKey, dateRange.from ?? '', dateRange.to ?? ''));
 
 	const txQuery = createQuery(() => ({
-		queryKey: keys.transactions.list({ for: 'reports', from: dateRange.from, to: dateRange.to }),
+		queryKey: qs.keys.transactions.list({ for: 'reports', from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<TxPage>(
 				listUrl('transactions', {
@@ -153,38 +153,38 @@
 					to: dateRange.to ?? undefined
 				})
 			),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const summaryQuery = createQuery(() => ({
-		queryKey: keys.reports.summary({ from: dateRange.from, to: dateRange.to }),
+		queryKey: qs.keys.reports.summary({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<ReportSummary>(reportUrl('summary', { from: dateRange.from, to: dateRange.to })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patientDistributionQuery = createQuery(() => ({
-		queryKey: keys.reports.patientDistribution({ from: dateRange.from, to: dateRange.to }),
+		queryKey: qs.keys.reports.patientDistribution({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<ReportPatientDistribution>(
 				reportUrl('patient-distribution', { from: dateRange.from, to: dateRange.to })
 			),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const byCategoryQuery = createQuery(() => ({
-		queryKey: keys.reports.byCategory({ from: dateRange.from, to: dateRange.to }),
+		queryKey: qs.keys.reports.byCategory({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<ReportByCategory>(
 				reportUrl('by-category', { from: dateRange.from, to: dateRange.to })
 			),
-		enabled: !USE_MSW && ready
+		enabled: !USE_MSW && qs.ready
 	}));
 
 	const drillCategoryLabel = $derived(drill?.mode === 'category' ? drill.label : null);
 
 	const byCategoryDetailQuery = createQuery(() => ({
-		queryKey: keys.reports.byCategoryDetail({
+		queryKey: qs.keys.reports.byCategoryDetail({
 			from: dateRange.from,
 			to: dateRange.to,
 			category: drillCategoryLabel
@@ -197,7 +197,7 @@
 					category: drillCategoryLabel
 				})
 			),
-		enabled: !USE_MSW && drillCategoryLabel != null && ready
+		enabled: !USE_MSW && drillCategoryLabel != null && qs.ready
 	}));
 
 	const monthlyRange = $derived.by(() => {
@@ -215,22 +215,22 @@
 	});
 
 	const monthlyQuery = createQuery(() => ({
-		queryKey: keys.reports.monthly(monthlyRange),
+		queryKey: qs.keys.reports.monthly(monthlyRange),
 		queryFn: () => apiGet<ReportMonthly>(reportUrl('monthly', monthlyRange)),
-		enabled: !USE_MSW && ready
+		enabled: !USE_MSW && qs.ready
 	}));
 
 	const marketingQuery = createQuery(() => ({
-		queryKey: keys.reports.marketing({ from: dateRange.from, to: dateRange.to }),
+		queryKey: qs.keys.reports.marketing({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
 			apiGet<MarketingReport>(marketingReportUrl({ from: dateRange.from, to: dateRange.to })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: keys.patients.list({ limit: 100, for: 'reports-form' }),
+		queryKey: qs.keys.patients.list({ limit: 100, for: 'reports-form' }),
 		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
-		enabled: ready && txFormOpen
+		enabled: qs.ready && txFormOpen
 	}));
 
 	const transactions = $derived(txQuery.data?.items ?? []);
@@ -559,8 +559,8 @@
 		txFormError = null;
 		try {
 			await apiSend(`/v1/transactions/${editingTx.id}`, 'PATCH', data);
-			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
-			await queryClient.invalidateQueries({ queryKey: keys.reports.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.reports.all() });
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {

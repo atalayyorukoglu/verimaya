@@ -30,12 +30,12 @@
 	} = $props();
 
 	const statuses = Object.keys(patientStatusLabels) as PatientStatus[];
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const membersQuery = createQuery(() => ({
-		queryKey: keys.members.list({ for: 'patient-form' }),
+		queryKey: qs.keys.members.list({ for: 'patient-form' }),
 		queryFn: () => apiGet<MembersPage>(listUrl('members', { limit: 50 })),
-		enabled: open && ready
+		enabled: open && qs.ready
 	}));
 
 	let full_name = $state('');

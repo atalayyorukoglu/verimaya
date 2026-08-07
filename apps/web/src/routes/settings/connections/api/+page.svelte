@@ -21,7 +21,7 @@
 	import Webhook from '@lucide/svelte/icons/webhook';
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 	const scopeLabels: Record<ApiKeyScope, string> = { read: 'Okuma', write: 'Yazma' };
 	const webhookEventLabels: Record<WebhookEventType, string> = {
 		'transaction.created': 'İşlem oluşturuldu',
@@ -32,17 +32,17 @@
 	const webhookEventTypes = webhookEventTypeSchema.options;
 
 	const keysQuery = createQuery(() => ({
-		queryKey: keys.settings.apiKeys(),
+		queryKey: qs.keys.settings.apiKeys(),
 		queryFn: () => apiGet<{ items: ApiKey[] }>(apiPaths.apiKeys),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const items = $derived(keysQuery.data?.items ?? []);
 
 	const webhooksQuery = createQuery(() => ({
-		queryKey: keys.settings.webhookSubscriptions(),
+		queryKey: qs.keys.settings.webhookSubscriptions(),
 		queryFn: () => apiGet<{ items: WebhookSubscription[] }>(apiPaths.webhookSubscriptions),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const webhookItems = $derived(webhooksQuery.data?.items ?? []);
@@ -80,7 +80,7 @@
 				scopes: formScopes
 			});
 			createdKey = created;
-			await queryClient.invalidateQueries({ queryKey: keys.settings.apiKeys() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.apiKeys() });
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
 		} finally {
@@ -91,7 +91,7 @@
 	async function revoke(key: ApiKey) {
 		if (!confirm(`“${key.name}” anahtarı iptal edilsin mi? Bu işlem geri alınamaz.`)) return;
 		await apiSend(apiPaths.apiKey(key.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: keys.settings.apiKeys() });
+		await queryClient.invalidateQueries({ queryKey: qs.keys.settings.apiKeys() });
 	}
 
 	async function copyKey() {
@@ -138,7 +138,7 @@
 				event_types: webhookFormEventTypes
 			});
 			webhookDialogOpen = false;
-			await queryClient.invalidateQueries({ queryKey: keys.settings.webhookSubscriptions() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.webhookSubscriptions() });
 		} catch (err) {
 			webhookFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
 		} finally {
@@ -150,7 +150,7 @@
 		if (!confirm(`“${subscription.url}” için abonelik silinsin mi? Bu işlem geri alınamaz.`))
 			return;
 		await apiSend(apiPaths.webhookSubscription(subscription.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: keys.settings.webhookSubscriptions() });
+		await queryClient.invalidateQueries({ queryKey: qs.keys.settings.webhookSubscriptions() });
 	}
 </script>
 

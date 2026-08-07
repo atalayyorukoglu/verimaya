@@ -8,12 +8,12 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const balancesQuery = createQuery(() => ({
-		queryKey: keys.reports.balances(),
+		queryKey: qs.keys.reports.balances(),
 		queryFn: () => apiGet<ReportBalances>(reportUrl('balances')),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const balances = $derived(balancesQuery.data?.items ?? []);

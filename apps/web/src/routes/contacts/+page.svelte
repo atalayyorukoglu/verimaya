@@ -19,7 +19,7 @@
 	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	let q = $state('');
 	let search = $state('');
@@ -30,15 +30,15 @@
 	let formError = $state<string | null>(null);
 
 	const typesQuery = createQuery(() => ({
-		queryKey: keys.settings.contactTypes(),
+		queryKey: qs.keys.settings.contactTypes(),
 		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
 
 	const contactsQuery = createInfiniteQuery(() => ({
-		queryKey: keys.contacts.list({ q: search, type_id: typeId || null }),
+		queryKey: qs.keys.contacts.list({ q: search, type_id: typeId || null }),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<ContactsPage>(
 				listUrl('contacts', {
@@ -50,7 +50,7 @@
 			),
 		initialPageParam: null as string | null,
 		getNextPageParam: (last: ContactsPage) => last.next_cursor,
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const items = $derived(contactsQuery.data?.pages.flatMap((p) => p.items) ?? []);
@@ -81,8 +81,8 @@
 			} else {
 				await apiSend(apiPaths.contacts, 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: keys.contacts.all() });
-			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
 			formOpen = false;
 			editing = null;
 		} catch (err) {

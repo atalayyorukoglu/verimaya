@@ -15,7 +15,7 @@
 	type PatientsPage = ContractResponse<'GET /v1/patients'>;
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	let q = $state('');
 	let search = $state('');
@@ -24,14 +24,14 @@
 	let formError = $state<string | null>(null);
 
 	const patientsQuery = createInfiniteQuery(() => ({
-		queryKey: keys.patients.list({ q: search }),
+		queryKey: qs.keys.patients.list({ q: search }),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<PatientsPage>(
 				listUrl('patients', { limit: 25, q: search || undefined, cursor: pageParam })
 			),
 		initialPageParam: null as string | null,
 		getNextPageParam: (last: PatientsPage) => last.next_cursor,
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patients = $derived(patientsQuery.data?.pages.flatMap((p) => p.items) ?? []);
@@ -46,7 +46,7 @@
 		formError = null;
 		try {
 			const created = await apiSend<Patient>(apiPaths.patients, 'POST', data);
-			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
 			formOpen = false;
 			await goto(`/patients/${created.id}`);
 		} catch (err) {

@@ -34,19 +34,19 @@
 	} = $props();
 
 	const statuses = Object.keys(appointmentStatusLabels) as AppointmentStatus[];
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const typesQuery = createQuery(() => ({
-		queryKey: keys.settings.appointmentTypes(),
+		queryKey: qs.keys.settings.appointmentTypes(),
 		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes),
-		enabled: open && ready
+		enabled: open && qs.ready
 	}));
 
 	const contactsQuery = createQuery(() => ({
-		queryKey: keys.contacts.list({ limit: 100, for: 'appt-form' }),
+		queryKey: qs.keys.contacts.list({ limit: 100, for: 'appt-form' }),
 		queryFn: () =>
 			apiGet<{ items: Contact[]; next_cursor: string | null }>(listUrl('contacts', { limit: 100 })),
-		enabled: open && ready
+		enabled: open && qs.ready
 	}));
 
 	const typeNames = $derived(

@@ -12,12 +12,12 @@
 
 	type Page = { items: MembershipUser[]; next_cursor: string | null };
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const membersQuery = createQuery(() => ({
-		queryKey: keys.members.list({ limit: 50 }),
+		queryKey: qs.keys.members.list({ limit: 50 }),
 		queryFn: () => apiGet<Page>(listUrl('members', { limit: 50 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const members = $derived(membersQuery.data?.items ?? []);

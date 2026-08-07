@@ -32,12 +32,12 @@ Kurallar:
 	let disclosureHydrated = $state(false);
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const disclosureQuery = createQuery(() => ({
-		queryKey: keys.settings.aiDisclosure(),
+		queryKey: qs.keys.settings.aiDisclosure(),
 		queryFn: () => apiGet<WhatsappAiDisclosure>(apiPaths.settingsAiDisclosure),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	$effect(() => {
@@ -84,7 +84,7 @@ Kurallar:
 			});
 			disclosureEnabled = saved.enabled;
 			disclosureText = saved.text;
-			await queryClient.invalidateQueries({ queryKey: keys.settings.aiDisclosure() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.aiDisclosure() });
 			disclosureSavedOk = true;
 			setTimeout(() => (disclosureSavedOk = false), 2000);
 		} catch (err) {

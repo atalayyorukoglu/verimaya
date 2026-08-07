@@ -19,13 +19,13 @@
 	import { Button } from '$lib/components/ui/button';
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 	const apiOrigin = PUBLIC_API_URL.replace(/\/$/, '');
 
 	const statusQuery = createQuery(() => ({
-		queryKey: keys.integrations.adsStatus(),
+		queryKey: qs.keys.integrations.adsStatus(),
 		queryFn: () => apiGet<AdConnectionsResponse>('/v1/integrations/ads/status'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const adsFlash = $derived.by((): AdProvider | null => {
@@ -98,7 +98,7 @@
 		disconnectError = null;
 		try {
 			await apiSend(`/v1/integrations/ads/${provider}`, 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: keys.integrations.adsStatus() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.integrations.adsStatus() });
 		} catch (err) {
 			disconnectError = err instanceof Error ? err.message : t('settings.ads.disconnectError');
 		} finally {
@@ -116,7 +116,7 @@
 				customer_id: googleCustomerIdDraft
 			});
 			customerIdOk = t('settings.ads.googleCustomerId.saved');
-			await queryClient.invalidateQueries({ queryKey: keys.integrations.adsStatus() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.integrations.adsStatus() });
 		} catch (err) {
 			customerIdError =
 				err instanceof Error ? err.message : t('settings.ads.googleCustomerId.error');
@@ -135,7 +135,7 @@
 				count: String(result.upserted),
 				mode: result.mode
 			});
-			await queryClient.invalidateQueries({ queryKey: keys.integrations.adsStatus() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.integrations.adsStatus() });
 		} catch (err) {
 			syncError = err instanceof Error ? err.message : t('settings.ads.syncError');
 		} finally {

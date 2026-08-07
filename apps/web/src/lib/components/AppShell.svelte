@@ -46,14 +46,14 @@
 	const pathname = $derived(page.url.pathname);
 	const showInstallPrompt = $derived(!USE_MSW && installPromptEvent != null && !installDismissed);
 
-	const { keys, meQuery } = useQueryScope();
+	const qs = useQueryScope();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current')
 	}));
 
-	const role = $derived(meQuery.data?.role ?? DEFAULT_ROLE);
+	const role = $derived(qs.meQuery.data?.role ?? DEFAULT_ROLE);
 	const queryClient = useQueryClient();
 
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
@@ -106,7 +106,7 @@
 	}
 
 	$effect(() => {
-		if (meQuery.isPending) return;
+		if (qs.meQuery.isPending) return;
 		const path = page.url.pathname;
 		if (!canAccessPath(path, role)) {
 			void goto('/');

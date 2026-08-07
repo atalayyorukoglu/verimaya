@@ -14,7 +14,7 @@
 	type PageOf<T> = { items: T[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 	const id = $derived(page.params.id!);
 
 	let formOpen = $state(false);
@@ -22,28 +22,28 @@
 	let formError = $state<string | null>(null);
 
 	const contactQuery = createQuery(() => ({
-		queryKey: keys.contacts.detail(id),
+		queryKey: qs.keys.contacts.detail(id),
 		queryFn: () => apiGet<Contact>(apiPaths.contact(id)),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const txQuery = createQuery(() => ({
-		queryKey: keys.transactions.list({ contact_id: id, limit: 20 }),
+		queryKey: qs.keys.transactions.list({ contact_id: id, limit: 20 }),
 		queryFn: () =>
 			apiGet<PageOf<Transaction>>(listUrl('transactions', { limit: 20, contact_id: id })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const apptQuery = createQuery(() => ({
-		queryKey: keys.appointments.list({ limit: 100, for: 'contact-profile' }),
+		queryKey: qs.keys.appointments.list({ limit: 100, for: 'contact-profile' }),
 		queryFn: () => apiGet<PageOf<Appointment>>(listUrl('appointments', { limit: 100 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: keys.patients.list({ limit: 100, for: 'contact-link' }),
+		queryKey: qs.keys.patients.list({ limit: 100, for: 'contact-link' }),
 		queryFn: () => apiGet<PageOf<Patient>>(listUrl('patients', { limit: 100 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const contact = $derived(contactQuery.data);
@@ -72,8 +72,8 @@
 		formError = null;
 		try {
 			await apiSend(apiPaths.contact(id), 'PATCH', data);
-			await queryClient.invalidateQueries({ queryKey: keys.contacts.all() });
-			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
 			formOpen = false;
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Kayıt başarısız';

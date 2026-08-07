@@ -47,25 +47,25 @@
 	const kinds = Object.keys(transactionKindLabels) as TransactionKind[];
 	const statuses = Object.keys(transactionStatusLabels) as TransactionStatus[];
 	const invoiceStatuses = Object.keys(invoiceStatusLabels) as InvoiceStatus[];
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
-		enabled: open && ready
+		enabled: open && qs.ready
 	}));
 
 	const catsQuery = createQuery(() => ({
-		queryKey: keys.settings.financeCategories(),
+		queryKey: qs.keys.settings.financeCategories(),
 		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
-		enabled: open && ready
+		enabled: open && qs.ready
 	}));
 
 	const contactsQuery = createQuery(() => ({
-		queryKey: keys.contacts.list({ limit: 100, for: 'tx-form' }),
+		queryKey: qs.keys.contacts.list({ limit: 100, for: 'tx-form' }),
 		queryFn: () =>
 			apiGet<{ items: Contact[]; next_cursor: string | null }>(listUrl('contacts', { limit: 100 })),
-		enabled: open && ready
+		enabled: open && qs.ready
 	}));
 
 	const tenantBase = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);

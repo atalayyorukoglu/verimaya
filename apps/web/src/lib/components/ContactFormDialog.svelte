@@ -21,12 +21,12 @@
 		onsubmit: (data: ContactCreate | ContactUpdate) => void | Promise<void>;
 	} = $props();
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const typesQuery = createQuery(() => ({
-		queryKey: keys.settings.contactTypes(),
+		queryKey: qs.keys.settings.contactTypes(),
 		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
-		enabled: open && ready
+		enabled: open && qs.ready
 	}));
 
 	let contact_type_id = $state('');

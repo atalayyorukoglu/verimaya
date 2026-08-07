@@ -11,12 +11,12 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const typesQuery = createQuery(() => ({
-		queryKey: keys.settings.appointmentTypes(),
+		queryKey: qs.keys.settings.appointmentTypes(),
 		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const items = $derived(
@@ -36,7 +36,7 @@
 		try {
 			await apiSend(apiPaths.settingsAppointmentTypes, 'POST', { name });
 			newName = '';
-			await queryClient.invalidateQueries({ queryKey: keys.settings.appointmentTypes() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.appointmentTypes() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Eklenemedi';
 		} finally {
@@ -47,7 +47,7 @@
 	async function remove(item: AppointmentTypeSetting) {
 		if (!confirm(`“${item.name}” silinsin mi?`)) return;
 		await apiSend(apiPaths.settingsAppointmentType(item.id), 'DELETE');
-		await queryClient.invalidateQueries({ queryKey: keys.settings.appointmentTypes() });
+		await queryClient.invalidateQueries({ queryKey: qs.keys.settings.appointmentTypes() });
 	}
 </script>
 

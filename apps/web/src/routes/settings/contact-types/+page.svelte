@@ -11,12 +11,12 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const typesQuery = createQuery(() => ({
-		queryKey: keys.settings.contactTypes(),
+		queryKey: qs.keys.settings.contactTypes(),
 		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	let newName = $state('');
@@ -36,7 +36,7 @@
 		try {
 			await apiSend(apiPaths.settingsContactTypes, 'POST', { name });
 			newName = '';
-			await queryClient.invalidateQueries({ queryKey: keys.settings.contactTypes() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.contactTypes() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Eklenemedi';
 		} finally {
@@ -49,7 +49,7 @@
 		error = null;
 		try {
 			await apiSend(apiPaths.settingsContactType(id), 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: keys.settings.contactTypes() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.contactTypes() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Silinemedi';
 		} finally {

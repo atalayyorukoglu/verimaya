@@ -19,8 +19,8 @@
 
 	type Page<T> = { items: T[]; next_cursor: string | null };
 
-	const { keys, ready, meQuery } = useQueryScope();
-	const role = $derived(meQuery.data?.role ?? DEFAULT_ROLE);
+	const qs = useQueryScope();
+	const role = $derived(qs.meQuery.data?.role ?? DEFAULT_ROLE);
 	const canFinance = $derived(canAccessPath('/finance/ai-transaction', role));
 
 	function pad2(n: number) {
@@ -39,33 +39,33 @@
 	})();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: keys.patients.list({ limit: 5 }),
+		queryKey: qs.keys.patients.list({ limit: 5 }),
 		queryFn: () => apiGet<Page<Patient>>(listUrl('patients', { limit: 5 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const appointmentsQuery = createQuery(() => ({
-		queryKey: keys.appointments.list({ limit: 40 }),
+		queryKey: qs.keys.appointments.list({ limit: 40 }),
 		queryFn: () => apiGet<Page<Appointment>>(listUrl('appointments', { limit: 40 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const inboxQuery = createQuery(() => ({
-		queryKey: keys.whatsapp.inbox(),
+		queryKey: qs.keys.whatsapp.inbox(),
 		queryFn: () => apiGet<{ messages: InboundMessage[] }>('/v1/whatsapp/inbox'),
-		enabled: canFinance && ready
+		enabled: canFinance && qs.ready
 	}));
 
 	const summaryQuery = createQuery(() => ({
-		queryKey: keys.reports.dashboardSummary(currentMonthRange),
+		queryKey: qs.keys.reports.dashboardSummary(currentMonthRange),
 		queryFn: () => apiGet<ReportSummary>(reportUrl('summary', currentMonthRange)),
-		enabled: !USE_MSW && canFinance && ready
+		enabled: !USE_MSW && canFinance && qs.ready
 	}));
 
 	const todayAppointments = $derived(

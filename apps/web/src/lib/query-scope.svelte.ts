@@ -7,13 +7,13 @@
  * `createQuery(meQueryOptions)`, and TanStack Query dedupes those by the shared
  * `['me']` key — one network request, shared cache entry.
  *
- * Usage:
- *   const { keys, ready } = useQueryScope();
- *   const patientsQuery = createQuery(() => ({
- *     queryKey: keys.patients.list({ q: search }),
- *     queryFn: ...,
- *     enabled: ready
- *   }));
+ * IMPORTANT: do **not** destructure `keys` / `ready` / `scope`:
+ *   // ❌ const { keys, ready } = useQueryScope(); // snapshot — stuck on hard refresh
+ *   // ✅ const qs = useQueryScope();
+ *   //    createQuery(() => ({ queryKey: qs.keys…, enabled: qs.ready }))
+ *
+ * Destructuring invokes getters once; after Cmd+Shift+R, `/v1/me` is still
+ * pending so `ready` freezes as `false` and scoped queries never enable.
  */
 import { createQuery, type QueryClient } from '@tanstack/svelte-query';
 import { meQueryOptions } from './me-query';
@@ -39,6 +39,7 @@ export function useQueryScope() {
 		meQuery.data ? { tenantId: meQuery.data.tenant_id, userId: meQuery.data.id } : null
 	);
 	const keys = $derived(queryKeys(scope));
+	const ready = $derived(scope !== null);
 
 	return {
 		/** The underlying `GET /v1/me` query — reuse this instead of creating a second one for `role` etc. */
@@ -54,7 +55,7 @@ export function useQueryScope() {
 		},
 		/** `true` once the scope is known; combine with a resource's own loading state as needed. */
 		get ready() {
-			return scope !== null;
+			return ready;
 		}
 	};
 }

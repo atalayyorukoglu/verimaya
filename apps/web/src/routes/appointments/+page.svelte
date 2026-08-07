@@ -28,7 +28,7 @@
 	type ViewMode = 'day' | 'week';
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
 
@@ -61,9 +61,9 @@
 	const rangeStart = $derived(view === 'day' ? startOfDay(anchor) : startOfWeek(anchor));
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
@@ -78,7 +78,7 @@
 	);
 
 	const appointmentsQuery = createQuery(() => ({
-		queryKey: keys.appointments.list({
+		queryKey: qs.keys.appointments.list({
 			from: rangeFromDay,
 			to: rangeToDay,
 			patient_id: patientFilterId
@@ -92,13 +92,13 @@
 					patient_id: patientFilterId
 				})
 			),
-		enabled: ready && !!tenantQuery.data
+		enabled: qs.ready && !!tenantQuery.data
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: keys.patients.list({ limit: 100, for: 'picker' }),
+		queryKey: qs.keys.patients.list({ limit: 100, for: 'picker' }),
 		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const filterPatient = $derived(
@@ -152,7 +152,7 @@
 			} else {
 				await apiSend(apiPaths.appointments, 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: keys.appointments.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.appointments.all() });
 			formOpen = false;
 			editing = null;
 		} catch (err) {

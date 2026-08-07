@@ -22,12 +22,12 @@
 	let commissionText = $state('50');
 	let platformExtraFeeText = $state('2');
 
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const trustQuery = createQuery(() => ({
-		queryKey: keys.settings.trustScore(),
+		queryKey: qs.keys.settings.trustScore(),
 		queryFn: () => apiGet<TrustScoreSettings>('/v1/settings/trust-score'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	function parseNumberInput(value: string): number | null {

@@ -42,7 +42,7 @@
 	type PageOf<T> = { items: T[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 	const id = $derived(page.params.id!);
 
 	let patientFormOpen = $state(false);
@@ -60,35 +60,35 @@
 	let apptFormError = $state<string | null>(null);
 
 	const patientQuery = createQuery(() => ({
-		queryKey: keys.patients.detail(id),
+		queryKey: qs.keys.patients.detail(id),
 		queryFn: () => apiGet<Patient>(apiPaths.patient(id)),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const txQuery = createQuery(() => ({
-		queryKey: keys.transactions.list({ patient_id: id, limit: 20 }),
+		queryKey: qs.keys.transactions.list({ patient_id: id, limit: 20 }),
 		queryFn: () =>
 			apiGet<PageOf<Transaction>>(listUrl('transactions', { limit: 20, patient_id: id })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const apptQuery = createQuery(() => ({
-		queryKey: keys.appointments.list({ patient_id: id, limit: 20 }),
+		queryKey: qs.keys.appointments.list({ patient_id: id, limit: 20 }),
 		queryFn: () =>
 			apiGet<PageOf<Appointment>>(listUrl('appointments', { limit: 20, patient_id: id })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
-		enabled: !USE_MSW && ready
+		enabled: !USE_MSW && qs.ready
 	}));
 
 	const financeSummaryQuery = createQuery(() => ({
-		queryKey: keys.patients.financeSummary(id),
+		queryKey: qs.keys.patients.financeSummary(id),
 		queryFn: () => apiGet<PatientFinanceSummary>(apiPaths.patientFinanceSummary(id)),
-		enabled: !USE_MSW && ready
+		enabled: !USE_MSW && qs.ready
 	}));
 
 	const transactions = $derived(txQuery.data?.items ?? []);
@@ -124,7 +124,7 @@
 		patientFormError = null;
 		try {
 			await apiSend<Patient>(apiPaths.patient(id), 'PATCH', data);
-			await queryClient.invalidateQueries({ queryKey: keys.patients.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
 			patientFormOpen = false;
 		} catch (err) {
 			patientFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
@@ -154,7 +154,7 @@
 			} else {
 				await apiSend('/v1/transactions', 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {
@@ -185,7 +185,7 @@
 			} else {
 				await apiSend('/v1/appointments', 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: keys.appointments.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.appointments.all() });
 			apptFormOpen = false;
 			editingAppt = null;
 		} catch (err) {

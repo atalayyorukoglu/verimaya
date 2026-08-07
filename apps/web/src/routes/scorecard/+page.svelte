@@ -55,12 +55,12 @@
 	};
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const currentQuery = createQuery(() => ({
-		queryKey: keys.scorecard.current(),
+		queryKey: qs.keys.scorecard.current(),
 		queryFn: () => apiGet<CurrentDto>(apiPaths.scorecardCurrent),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	let band = $state<ScorecardBandId>('5-15');
@@ -101,7 +101,7 @@
 				setup_s3: setupS3
 			});
 			await apiSend(apiPaths.scorecardAssessments, 'POST');
-			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		} finally {
@@ -113,7 +113,7 @@
 		actionError = null;
 		try {
 			await apiSend(apiPaths.scorecardAssessments, 'POST');
-			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		}
@@ -126,7 +126,7 @@
 		actionError = null;
 		try {
 			await apiSend(apiPaths.scorecardAssessmentAutoFill(assessmentId), 'POST');
-			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		} finally {
@@ -141,7 +141,7 @@
 		actionError = null;
 		try {
 			await apiSend(apiPaths.scorecardAssessmentComplete(assessmentId), 'POST');
-			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		} finally {
@@ -159,7 +159,7 @@
 				score,
 				na_declared: false
 			});
-			await queryClient.invalidateQueries({ queryKey: keys.scorecard.current() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.scorecard.current() });
 		} catch (err) {
 			actionError = err instanceof Error ? err.message : t('scorecard.loadError');
 		}

@@ -32,7 +32,7 @@
 	type PatientsPage = ContractResponse<'GET /v1/patients'>;
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
 
@@ -42,9 +42,9 @@
 	let formError = $state<string | null>(null);
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const baseCurrency = $derived(
@@ -61,7 +61,7 @@
 	}
 
 	const txQuery = createInfiniteQuery(() => ({
-		queryKey: keys.transactions.list({ patient_id: patientFilterId }),
+		queryKey: qs.keys.transactions.list({ patient_id: patientFilterId }),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<TransactionsPage>(
 				listUrl('transactions', {
@@ -72,13 +72,13 @@
 			),
 		initialPageParam: null as string | null,
 		getNextPageParam: (last: TransactionsPage) => last.next_cursor,
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const patientsQuery = createQuery(() => ({
-		queryKey: keys.patients.list({ limit: 100, for: 'picker' }),
+		queryKey: qs.keys.patients.list({ limit: 100, for: 'picker' }),
 		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const filterPatient = $derived(
@@ -86,9 +86,9 @@
 	);
 
 	const inboxQuery = createQuery(() => ({
-		queryKey: keys.whatsapp.inbox(),
+		queryKey: qs.keys.whatsapp.inbox(),
 		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	const pendingCount = $derived(
@@ -116,7 +116,7 @@
 			} else {
 				await apiSend(apiPaths.transactions, 'POST', data);
 			}
-			await queryClient.invalidateQueries({ queryKey: keys.transactions.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
 			formOpen = false;
 			editing = null;
 		} catch (err) {

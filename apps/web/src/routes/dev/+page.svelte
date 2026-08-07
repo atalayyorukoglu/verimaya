@@ -10,12 +10,12 @@
 	const SELF_EMAIL = 'demo@verimaya.app';
 
 	const queryClient = useQueryClient();
-	const { keys } = useQueryScope();
+	const qs = useQueryScope();
 	const roles = Object.keys(userRoleLabels) as UserRole[];
 
 	// Not scoped via `keys` (queryKeys()): this panel intentionally lists/edits *other*
 	// tenants by design (superadmin), so tying these to the current tenant/user would be
-	// wrong, not safer. See the exception note in `query-keys.ts`.
+	// wrong, not safer. See the exception note in `query-qs.keys.ts`.
 	const tenantsQuery = createQuery(() => ({
 		queryKey: ['dev', 'tenants'],
 		queryFn: () => apiGet<{ items: Tenant[] }>('/v1/dev/tenants')
@@ -127,7 +127,7 @@
 			await refreshUsers();
 			// This dev-panel action can affect the currently active tenant's membership
 			// list (used by settings/team), which since CACHE-01 lives under a scoped key.
-			await queryClient.invalidateQueries({ queryKey: keys.members.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.members.all() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Kullanıcı kaydedilemedi';
 		} finally {
@@ -147,7 +147,7 @@
 			await refreshUsers();
 			// This dev-panel action can affect the currently active tenant's membership
 			// list (used by settings/team), which since CACHE-01 lives under a scoped key.
-			await queryClient.invalidateQueries({ queryKey: keys.members.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.members.all() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Kaldırılamadı';
 		}

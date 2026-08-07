@@ -22,12 +22,12 @@
 	}
 
 	const queryClient = useQueryClient();
-	const { keys, ready } = useQueryScope();
+	const qs = useQueryScope();
 
 	const tenantQuery = createQuery(() => ({
-		queryKey: keys.tenants.current(),
+		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>('/v1/tenants/current'),
-		enabled: ready
+		enabled: qs.ready
 	}));
 
 	let name = $state('');
@@ -72,7 +72,7 @@
 		}
 		try {
 			const updated = await apiSend<Tenant>('/v1/tenants/current', 'PATCH', payload);
-			queryClient.setQueryData(keys.tenants.current(), updated);
+			queryClient.setQueryData(qs.keys.tenants.current(), updated);
 			hydrateFrom(updated);
 			savedAt = Date.now();
 		} catch (err) {
