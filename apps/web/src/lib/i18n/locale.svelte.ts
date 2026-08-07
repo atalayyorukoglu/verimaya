@@ -12,7 +12,28 @@
  * Dil kullanıcı tercihidir, URL'in parçası değildir. Gerekçe: docs/TASARIM.md § Dil ve slug.
  */
 
-import { defaultLocale, messages, type Locale, type MessageKey } from './messages';
+import { defaultLocale, locales, messages, type Locale, type MessageKey } from './messages';
+
+const STORAGE_KEY = 'verimaya:locale';
+
+function isLocale(value: string | null): value is Locale {
+	return value !== null && (locales as readonly string[]).includes(value);
+}
+
+function readStoredLocale(): Locale {
+	if (typeof localStorage === 'undefined') return defaultLocale;
+	const raw = localStorage.getItem(STORAGE_KEY);
+	return isLocale(raw) ? raw : defaultLocale;
+}
+
+function applyLocale(locale: Locale): void {
+	if (typeof document !== 'undefined') {
+		document.documentElement.lang = locale;
+	}
+	if (typeof localStorage !== 'undefined') {
+		localStorage.setItem(STORAGE_KEY, locale);
+	}
+}
 
 let currentLocale = $state<Locale>(defaultLocale);
 
@@ -23,10 +44,19 @@ export function getLocale(): Locale {
 
 /**
  * Aktif dili değiştirir.
- * Kalıcılık (kullanıcı profili / JWT claim) Faz 1'de eklenecek — şu an yalnızca oturum içi.
+ * Tercih `localStorage` (`verimaya:locale`) ile saklanır; profil/JWT kalıcılığı ayrı iş.
  */
 export function setLocale(locale: Locale): void {
 	currentLocale = locale;
+	applyLocale(locale);
+}
+
+/** Sayfa yükünde saklı dili uygular (tema init ile aynı desen). */
+export function initLocale(): Locale {
+	const locale = readStoredLocale();
+	currentLocale = locale;
+	applyLocale(locale);
+	return locale;
 }
 
 /** Anahtarı aktif dile çevirir; eksikse varsayılan dile, o da yoksa anahtarın kendisine düşer. */

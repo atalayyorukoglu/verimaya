@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import LocaleToggle from '$lib/components/LocaleToggle.svelte';
 	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
@@ -160,6 +161,7 @@
 						</a>
 					</div>
 				</div>
+				<LocaleToggle />
 				<ThemeToggle />
 				<button
 					type="button"

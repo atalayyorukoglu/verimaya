@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import LocaleToggle from '$lib/components/LocaleToggle.svelte';
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -140,6 +141,7 @@
 						<a href={item.href} class="transition-colors hover:text-text">{t(item.labelKey)}</a>
 					{/each}
 				</nav>
+				<LocaleToggle />
 				<ThemeToggle />
 				<div class="relative">
 					<button
@@ -271,7 +273,7 @@
 							<div
 								class="hero-float-card flex w-[min(100%,14.5rem)] -translate-x-1 items-center justify-between rounded-lg border border-border bg-surface/95 px-3.5 py-2.5 text-sm text-text-muted shadow-sm rotate-[-0.7deg]"
 							>
-								<span class="font-medium">Sohbet grubu</span>
+								<span class="font-medium">{t('hub.hero.chaos.chatGroup')}</span>
 								<span class="tracking-widest text-text-faint">— — —</span>
 							</div>
 						</div>

@@ -23,6 +23,12 @@ const tr = {
 	'theme.light': 'Açık tema',
 	'theme.dark': 'Koyu tema',
 
+	// Dil
+	'locale.toEn': 'İngilizceye geç',
+	'locale.toTr': 'Türkçeye geç',
+	'locale.en': 'English',
+	'locale.tr': 'Türkçe',
+
 	// Panel navigasyonu — grup başlıkları
 	'nav.group.main': 'Ana',
 	'nav.group.finance': 'Finans',
@@ -283,6 +289,7 @@ const tr = {
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.ctaContact': 'İletişime geç',
 	'hub.hero.forkHint': 'İki kapı. Sonra Araçlar ve Kaynaklar ile güçlenir.',
+	'hub.hero.chaos.chatGroup': 'Sohbet grubu',
 
 	'hub.nav.webApp': 'Maya App (Operasyon)',
 	'hub.nav.crm': 'Maya CRM (Satış & Reklam)',
@@ -627,6 +634,11 @@ const en: Record<MessageKey, string> = {
 	'theme.light': 'Light theme',
 	'theme.dark': 'Dark theme',
 
+	'locale.toEn': 'Switch to English',
+	'locale.toTr': 'Switch to Turkish',
+	'locale.en': 'English',
+	'locale.tr': 'Türkçe',
+
 	'nav.group.main': 'Main',
 	'nav.group.finance': 'Finance',
 	'nav.group.marketing': 'Marketing',
@@ -881,6 +893,7 @@ const en: Record<MessageKey, string> = {
 	'hub.hero.ctaCrm': 'Maya CRM',
 	'hub.hero.ctaContact': 'Get in touch',
 	'hub.hero.forkHint': 'Two doors. Then Tools and Resources amplify both.',
+	'hub.hero.chaos.chatGroup': 'Group chat',
 
 	'hub.nav.webApp': 'Maya App (Operations)',
 	'hub.nav.crm': 'Maya CRM (Sales & Ads)',
