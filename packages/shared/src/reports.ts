@@ -14,6 +14,13 @@ export const reportPeriodSchema = z.object({
 });
 export type ReportPeriod = z.infer<typeof reportPeriodSchema>;
 
+export const reportFxMissingByCurrencySchema = z.object({
+	currency: supportedCurrencySchema,
+	/** Sum of native-currency amounts (minor) that could not be resolved into tenant base. */
+	amount_minor: moneyMinor
+});
+export type ReportFxMissingByCurrency = z.infer<typeof reportFxMissingByCurrencySchema>;
+
 export const reportSummarySchema = z.object({
 	period: reportPeriodSchema,
 	income_base: moneyMinor,
@@ -21,7 +28,15 @@ export const reportSummarySchema = z.object({
 	net_base: moneyMinor,
 	/** Unpaid income in tenant base (income amount − paid, clamped ≥ 0 per row). */
 	pending_base: moneyMinor,
-	transaction_count: z.number().int().nonnegative()
+	transaction_count: z.number().int().nonnegative(),
+	/** Rows with no resolvable amount in tenant base (period-scoped). */
+	fx_missing_count: z.number().int().nonnegative(),
+	fx_missing_amount_by_currency: z.array(reportFxMissingByCurrencySchema),
+	/**
+	 * Count-based coverage: (transaction_count − fx_missing_count) / max(transaction_count, 1).
+	 * Cross-currency value weights are not comparable without FX.
+	 */
+	coverage_ratio: z.number().min(0).max(1)
 });
 export type ReportSummary = z.infer<typeof reportSummarySchema>;
 

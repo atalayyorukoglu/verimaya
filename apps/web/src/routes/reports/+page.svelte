@@ -240,7 +240,14 @@
 		kindFilter === 'all' ? transactions : transactions.filter((t) => t.kind === kindFilter)
 	);
 
-	const fxSkipped = $derived(filteredTx.filter((t) => isFxMissing(t, baseCurrency)).length);
+	const fxMissingCount = $derived(summaryQuery.data?.fx_missing_count ?? 0);
+	const coverageRatio = $derived(summaryQuery.data?.coverage_ratio ?? 1);
+	const fxMissingPct = $derived(Math.round((1 - coverageRatio) * 100));
+	const fxHint = $derived(
+		fxMissingCount > 0
+			? `${baseCurrency} karşılığı olmayan ${fxMissingCount} işlem bu toplamın dışında (yaklaşık %${fxMissingPct})`
+			: null
+	);
 
 	const clientTotals = $derived.by(() => {
 		let income = 0;
@@ -261,7 +268,7 @@
 	});
 
 	const totals = $derived.by(() => {
-		if (summaryQuery.data) {
+		if (summaryQuery.data && kindFilter === 'all') {
 			return {
 				income: summaryQuery.data.income_base,
 				expense: summaryQuery.data.expense_base,
@@ -664,29 +671,42 @@
 	{:else if failed}
 		<p class="text-sm text-danger">Rapor verisi yüklenemedi.</p>
 	{:else if tab === 'ozet'}
-		{#if fxSkipped > 0}
-			<div
-				class="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning"
-			>
-				Kur eksik: {fxSkipped} işlem baz para ({baseCurrency}) karşılığı olmadığı için toplamların
-				dışında.
-			</div>
-		{/if}
 		<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
 			<div class="rounded-lg border border-border bg-surface p-4">
-				<p class="text-xs text-text-muted">Toplam gelir ({baseCurrency})</p>
+				<p class="text-xs text-text-muted">
+					Toplam gelir ({baseCurrency})
+					{#if fxHint}
+						<span class="ml-1 cursor-help text-warning" title={fxHint}>*</span>
+					{/if}
+				</p>
 				<p class="mt-1 truncate text-lg font-semibold text-success tabular-nums">
 					{formatMoney(totals.income, baseCurrency)}
 				</p>
+				{#if fxHint && totals.income === 0 && totals.count > 0}
+					<p class="mt-1 text-[11px] text-warning">{fxHint}</p>
+				{/if}
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-4">
-				<p class="text-xs text-text-muted">Toplam gider ({baseCurrency})</p>
+				<p class="text-xs text-text-muted">
+					Toplam gider ({baseCurrency})
+					{#if fxHint}
+						<span class="ml-1 cursor-help text-warning" title={fxHint}>*</span>
+					{/if}
+				</p>
 				<p class="mt-1 truncate text-lg font-semibold text-text tabular-nums">
 					{formatMoney(totals.expense, baseCurrency)}
 				</p>
+				{#if fxHint && totals.expense === 0 && totals.count > 0}
+					<p class="mt-1 text-[11px] text-warning">{fxHint}</p>
+				{/if}
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-4">
-				<p class="text-xs text-text-muted">Net ({baseCurrency})</p>
+				<p class="text-xs text-text-muted">
+					Net ({baseCurrency})
+					{#if fxHint}
+						<span class="ml-1 cursor-help text-warning" title={fxHint}>*</span>
+					{/if}
+				</p>
 				<p
 					class="mt-1 truncate text-lg font-semibold tabular-nums {totals.net >= 0
 						? 'text-success'
@@ -696,7 +716,12 @@
 				</p>
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-4">
-				<p class="text-xs text-text-muted">Bekleyen tahsilat ({baseCurrency})</p>
+				<p class="text-xs text-text-muted">
+					Bekleyen tahsilat ({baseCurrency})
+					{#if fxHint}
+						<span class="ml-1 cursor-help text-warning" title={fxHint}>*</span>
+					{/if}
+				</p>
 				<p class="mt-1 truncate text-lg font-semibold text-warning tabular-nums">
 					{formatMoney(totals.pending, baseCurrency)}
 				</p>
@@ -931,23 +956,29 @@
 				</label>
 			</section>
 
-			{#if fxSkipped > 0}
-				<div
-					class="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning"
-				>
-					Kur eksik: {fxSkipped} işlem baz ({baseCurrency}) toplamına dahil edilmedi.
-				</div>
+			{#if fxHint && kindFilter === 'all'}
+				<p class="mb-3 text-xs text-warning">{fxHint}</p>
 			{/if}
 
 			<div class="mb-4 grid grid-cols-3 gap-3">
 				<div class="rounded-lg border border-border bg-surface p-3 sm:p-4">
-					<p class="text-xs text-text-muted">Gelir ({baseCurrency})</p>
+					<p class="text-xs text-text-muted">
+						Gelir ({baseCurrency})
+						{#if fxHint && kindFilter === 'all'}
+							<span class="ml-1 cursor-help text-warning" title={fxHint}>*</span>
+						{/if}
+					</p>
 					<p class="mt-1 text-base font-semibold text-success tabular-nums sm:text-lg">
 						{formatMoney(totals.income, baseCurrency)}
 					</p>
 				</div>
 				<div class="rounded-lg border border-border bg-surface p-3 sm:p-4">
-					<p class="text-xs text-text-muted">Gider ({baseCurrency})</p>
+					<p class="text-xs text-text-muted">
+						Gider ({baseCurrency})
+						{#if fxHint && kindFilter === 'all'}
+							<span class="ml-1 cursor-help text-warning" title={fxHint}>*</span>
+						{/if}
+					</p>
 					<p class="mt-1 text-base font-semibold text-text tabular-nums sm:text-lg">
 						{formatMoney(totals.expense, baseCurrency)}
 					</p>

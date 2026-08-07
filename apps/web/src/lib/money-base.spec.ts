@@ -1,0 +1,87 @@
+import { describe, expect, it } from 'vitest';
+import type { Transaction } from '@verimaya/shared';
+import { amountInBase } from './money-base';
+
+/** Minimal Transaction-shaped fixtures for amountInBase parity with API resolveBaseAmount. */
+function tx(
+	partial: Pick<Transaction, 'amount' | 'currency'> &
+		Partial<Pick<Transaction, 'amount_base' | 'base_currency'>>
+): Transaction {
+	return {
+		id: '00000000-0000-0000-0000-000000000001',
+		tenant_id: '00000000-0000-0000-0000-000000000002',
+		kind: 'income',
+		title: 't',
+		subtitle: null,
+		category: null,
+		occurred_on: '2026-01-01',
+		status: 'paid',
+		invoice_status: 'none',
+		payment_method: null,
+		paid_amount: null,
+		amount_base: null,
+		base_currency: null,
+		fx_rate: null,
+		fx_dated: null,
+		patient_id: null,
+		patient_display_name: null,
+		contact_id: null,
+		contact_label: null,
+		description: null,
+		created_at: '2026-01-01T00:00:00.000Z',
+		updated_at: '2026-01-01T00:00:00.000Z',
+		...partial
+	};
+}
+
+describe('amountInBase (parity with resolveBaseAmount)', () => {
+	it('matches native / snapshot / wrong-base / null-base cases', () => {
+		const cases: Array<{
+			row: ReturnType<typeof tx>;
+			tenantBase: 'GBP' | 'EUR' | 'TRY';
+			expected: number | null;
+		}> = [
+			{ row: tx({ amount: 1000, currency: 'GBP' }), tenantBase: 'GBP', expected: 1000 },
+			{
+				row: tx({ amount: 1000, amount_base: 900, currency: 'GBP' }),
+				tenantBase: 'GBP',
+				expected: 900
+			},
+			{
+				row: tx({
+					amount: 10000,
+					amount_base: 2500,
+					currency: 'TRY',
+					base_currency: 'GBP'
+				}),
+				tenantBase: 'GBP',
+				expected: 2500
+			},
+			{
+				row: tx({
+					amount: 10000,
+					amount_base: 2500,
+					currency: 'TRY',
+					base_currency: 'EUR'
+				}),
+				tenantBase: 'GBP',
+				expected: null
+			},
+			{
+				row: tx({
+					amount: 10000,
+					amount_base: 2500,
+					currency: 'TRY',
+					base_currency: null
+				}),
+				tenantBase: 'GBP',
+				expected: null
+			},
+			{ row: tx({ amount: 10000, currency: 'TRY' }), tenantBase: 'GBP', expected: null }
+		];
+
+		for (const c of cases) {
+			expect(amountInBase(c.row, c.tenantBase)).toBe(c.expected);
+		}
+	});
+});

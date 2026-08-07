@@ -7,16 +7,21 @@ import {
 } from './reports.js';
 
 describe('reportSummarySchema', () => {
-	it('accepts pending_base', () => {
+	it('accepts pending_base and FX coverage fields', () => {
 		const parsed = reportSummarySchema.parse({
 			period: { from: '2026-01-01', to: '2026-01-31' },
 			income_base: 10000,
 			expense_base: 3000,
 			net_base: 7000,
 			pending_base: 2500,
-			transaction_count: 2
+			transaction_count: 2,
+			fx_missing_count: 1,
+			fx_missing_amount_by_currency: [{ currency: 'TRY', amount_minor: 5000 }],
+			coverage_ratio: 0.5
 		});
 		expect(parsed.pending_base).toBe(2500);
+		expect(parsed.fx_missing_count).toBe(1);
+		expect(parsed.coverage_ratio).toBe(0.5);
 	});
 });
 

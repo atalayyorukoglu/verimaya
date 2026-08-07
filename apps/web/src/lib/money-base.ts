@@ -3,12 +3,13 @@ import type { SupportedCurrency, Transaction } from '@verimaya/shared';
 /**
  * Amount in tenant reporting currency (minor units), or null if not convertible.
  * Uses immutable FX snapshot — never live rates.
+ * Must stay in lockstep with apps/api/src/common/finance-base.ts resolveBaseAmount.
  */
 export function amountInBase(tx: Transaction, tenantBase: SupportedCurrency): number | null {
 	if (tx.currency === tenantBase) {
 		return tx.amount_base ?? tx.amount;
 	}
-	if (tx.amount_base != null && (tx.base_currency === tenantBase || tx.base_currency == null)) {
+	if (tx.amount_base != null && tx.base_currency === tenantBase) {
 		return tx.amount_base;
 	}
 	return null;

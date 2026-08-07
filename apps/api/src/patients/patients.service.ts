@@ -116,6 +116,7 @@ export class PatientsService {
 					kind: transactions.kind,
 					amount: transactions.amount,
 					amountBase: transactions.amountBase,
+					baseCurrency: transactions.baseCurrency,
 					currency: transactions.currency,
 					paidAmount: transactions.paidAmount
 				})

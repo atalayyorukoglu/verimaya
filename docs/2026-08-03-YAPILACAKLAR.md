@@ -262,6 +262,21 @@
   Finans listesi `occurred_on DESC` olacak şekilde kodlandı (API deploy sonrası).
   **Hasta notları:** `GET/POST/DELETE /v1/patients/:id/case-notes` API’de
   eksikti (UI + MSW vardı → prod 404 “Notlar yüklenemedi”); endpoint’ler eklendi.
+
+### 6A. FX-01 — Base currency FX coverage (sırayla; kilit en sonda)
+
+> Prod teşhis: Demo Klinik `base_currency=GBP` ama ETL `amount_base` yazmamış
+> (548 satır FX null). Liste native currency (TRY) gösterir; GBP özet eksik kalır.
+
+- [x] **Adım 1 — Resolver + summary FX alanları (kilit YOK):** `resolveBaseAmount`
+  yalnız `baseCurrency === tenantBase` iken snapshot kullanır; `amountInBase`
+  aynı kural (`base_currency == null` kaçığı kapatıldı). `GET /v1/reports/summary`
+  → `fx_missing_count`, `fx_missing_amount_by_currency`, `coverage_ratio` (adet).
+  Rapor kartı tooltip + Veri kalitesi “Kur bilgisi eksik”.
+- [ ] **Adım 2 — backfill-fx.js + ETL mapping**
+- [ ] **Adım 3 — base doğrulama sonrası `base_currency_locked` (ayrı deploy)**
+- **Görüş (Adım 1):** Sunucu coverage adet bazlı; canlı kur yok. Kilidi Adım 1–2
+  ile birlikte gönderme.
 ---
 
 ### 7. MARKET-01 — Üç stratejik karar (17 Ağustos review öncesi)

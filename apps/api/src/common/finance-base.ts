@@ -1,7 +1,9 @@
-type TxAmountRow = {
+export type TxAmountRow = {
 	kind: string;
 	amount: number;
 	amountBase: number | null;
+	/** Currency the amount_base snapshot was stored in; must match tenant base to count. */
+	baseCurrency: string | null;
 	currency: string;
 	paidAmount: number | null;
 };
@@ -10,7 +12,7 @@ export function resolveBaseAmount(row: TxAmountRow, tenantBase: string): number 
 	if (row.currency === tenantBase) {
 		return row.amountBase ?? row.amount;
 	}
-	if (row.amountBase != null) {
+	if (row.amountBase != null && row.baseCurrency === tenantBase) {
 		return row.amountBase;
 	}
 	return null;

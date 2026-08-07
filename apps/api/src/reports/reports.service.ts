@@ -14,6 +14,7 @@ type TxRow = {
 	occurredOn: string;
 	amount: number;
 	amountBase: number | null;
+	baseCurrency: string | null;
 	paidAmount: number | null;
 	currency: string;
 };
@@ -22,6 +23,7 @@ type IncomeWithSourceRow = {
 	kind: string;
 	amount: number;
 	amountBase: number | null;
+	baseCurrency: string | null;
 	paidAmount: number | null;
 	currency: string;
 	source: string | null;
@@ -91,10 +93,19 @@ export class ReportsService {
 			let incomeBase = 0;
 			let expenseBase = 0;
 			let pendingBase = 0;
+			let fxMissingCount = 0;
+			const fxMissingByCurrency = new Map<string, number>();
 
 			for (const row of rows) {
 				const base = resolveBaseAmount(row, tenantBase);
-				if (base == null) continue;
+				if (base == null) {
+					fxMissingCount += 1;
+					fxMissingByCurrency.set(
+						row.currency,
+						(fxMissingByCurrency.get(row.currency) ?? 0) + row.amount
+					);
+					continue;
+				}
 				if (row.kind === 'income') {
 					incomeBase += base;
 					const paidBase = resolvePaidBaseAmount(row, tenantBase) ?? 0;
@@ -104,13 +115,25 @@ export class ReportsService {
 				}
 			}
 
+			const transactionCount = rows.length;
+			const coverageRatio =
+				transactionCount === 0 ? 1 : (transactionCount - fxMissingCount) / transactionCount;
+
 			return {
 				period: { from: params.from ?? null, to: params.to ?? null },
 				income_base: incomeBase,
 				expense_base: expenseBase,
 				net_base: incomeBase - expenseBase,
 				pending_base: pendingBase,
-				transaction_count: rows.length
+				transaction_count: transactionCount,
+				fx_missing_count: fxMissingCount,
+				fx_missing_amount_by_currency: [...fxMissingByCurrency.entries()]
+					.map(([currency, amount_minor]) => ({
+						currency: currency as ReportSummary['fx_missing_amount_by_currency'][number]['currency'],
+						amount_minor
+					}))
+					.sort((a, b) => a.currency.localeCompare(b.currency)),
+				coverage_ratio: coverageRatio
 			};
 		});
 	}
@@ -441,6 +464,7 @@ export class ReportsService {
 				occurredOn: transactions.occurredOn,
 				amount: transactions.amount,
 				amountBase: transactions.amountBase,
+				baseCurrency: transactions.baseCurrency,
 				paidAmount: transactions.paidAmount,
 				currency: transactions.currency
 			})
@@ -514,6 +538,7 @@ export class ReportsService {
 				kind: transactions.kind,
 				amount: transactions.amount,
 				amountBase: transactions.amountBase,
+				baseCurrency: transactions.baseCurrency,
 				paidAmount: transactions.paidAmount,
 				currency: transactions.currency,
 				source: patients.source

@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { Tenant, Transaction } from '@verimaya/shared';
-	import { toTenantDayKey } from '@verimaya/shared';
+	import type { ReportSummary, SupportedCurrency, Tenant, Transaction } from '@verimaya/shared';
+	import { reportUrl, toTenantDayKey } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
+	import { isFxMissing } from '$lib/money-base';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 
@@ -19,6 +20,9 @@
 	}));
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
+	const baseCurrency = $derived(
+		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
+	);
 
 	function daysAgoIso(days: number): string {
 		const d = new Date();
@@ -34,12 +38,19 @@
 		enabled: ready && !!tenantQuery.data
 	}));
 
+	const summaryQuery = createQuery(() => ({
+		queryKey: keys.reports.summary({ from, to: null }),
+		queryFn: () => apiGet<ReportSummary>(reportUrl('summary', { from })),
+		enabled: ready && !!tenantQuery.data
+	}));
+
 	const report = $derived.by(() => {
 		const items = txQuery.data?.items ?? [];
 		let income = 0;
 		let expense = 0;
 		const missingCategory: Transaction[] = [];
 		const missingLink: Transaction[] = [];
+		const fxMissing: Transaction[] = [];
 		const dupMap = new Map<string, Transaction[]>();
 
 		for (const t of items) {
@@ -48,6 +59,7 @@
 			if (!t.category?.trim()) missingCategory.push(t);
 			if (t.kind === 'income' && !t.patient_id) missingLink.push(t);
 			if (t.kind === 'expense' && !t.contact_label?.trim() && !t.patient_id) missingLink.push(t);
+			if (isFxMissing(t, baseCurrency)) fxMissing.push(t);
 			const key = `${t.amount}|${t.currency}|${t.occurred_on}|${t.kind}`;
 			const bucket = dupMap.get(key) ?? [];
 			bucket.push(t);
@@ -65,9 +77,12 @@
 			expense,
 			missingCategory: missingCategory.slice(0, 8),
 			missingLink: missingLink.slice(0, 8),
+			fxMissing: fxMissing.slice(0, 12),
 			duplicates
 		};
 	});
+
+	const fxSummary = $derived(summaryQuery.data);
 </script>
 
 <svelte:head>
@@ -78,7 +93,7 @@
 	<SettingsBackLink />
 	<PageHeader
 		title="Veri kalitesi"
-		description="Son 7 günlük işlem özeti, eksik alanlar ve mükerrer şüphe (demo)."
+		description="Son 7 günlük işlem özeti, eksik alanlar, kur karşılığı ve mükerrer şüphe."
 	/>
 
 	{#if txQuery.isPending}
@@ -110,6 +125,54 @@
 				</p>
 			</div>
 		</div>
+
+		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
+			<h2 class="text-sm font-semibold text-text">Kur bilgisi eksik</h2>
+			<p class="mt-0.5 text-xs text-text-muted">
+				Baz para ({baseCurrency}) karşılığı çözülemeyen işlemler — rapor toplamına dahil edilmez.
+			</p>
+			{#if summaryQuery.isPending}
+				<p class="mt-3 text-sm text-text-muted">Özet yükleniyor…</p>
+			{:else if fxSummary && fxSummary.fx_missing_count === 0}
+				<p class="mt-3 text-sm text-success">Temiz (coverage {(fxSummary.coverage_ratio * 100).toFixed(0)}%).</p>
+			{:else if fxSummary}
+				<p class="mt-3 text-sm text-warning">
+					{fxSummary.fx_missing_count} işlem · coverage {(fxSummary.coverage_ratio * 100).toFixed(0)}%
+				</p>
+				{#if fxSummary.fx_missing_amount_by_currency.length > 0}
+					<ul class="mt-2 flex flex-wrap gap-2 text-xs text-text-muted">
+						{#each fxSummary.fx_missing_amount_by_currency as row (row.currency)}
+							<li class="rounded border border-border px-2 py-1 tabular-nums">
+								{row.currency}: {formatMoney(row.amount_minor, row.currency)}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if report.fxMissing.length === 0}
+					<p class="mt-3 text-xs text-text-faint">
+						Örnek liste son 100 kayıtta yok; dönem özeti sunucudan.
+					</p>
+				{:else}
+					<ul class="mt-3 divide-y divide-border">
+						{#each report.fxMissing as t (t.id)}
+							<li class="flex justify-between gap-2 py-2 text-sm">
+								<span class="truncate text-text">
+									{t.title}
+									<span class="text-text-faint"> · {t.currency}</span>
+								</span>
+								<a
+									href="/finance"
+									class="shrink-0 text-xs text-brand hover:underline"
+									>Düzelt</a
+								>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			{:else}
+				<p class="mt-3 text-sm text-danger">Kur özeti yüklenemedi.</p>
+			{/if}
+		</section>
 
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
 			<h2 class="text-sm font-semibold text-text">Eksik bağlantı</h2>

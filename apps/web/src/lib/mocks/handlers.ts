@@ -146,7 +146,7 @@ function amountInBaseMock(tx: Transaction, tenantBase: string): number | null {
 	if (tx.currency === tenantBase) {
 		return tx.amount_base ?? tx.amount;
 	}
-	if (tx.amount_base != null) {
+	if (tx.amount_base != null && tx.base_currency === tenantBase) {
 		return tx.amount_base;
 	}
 	return null;
@@ -280,9 +280,15 @@ function buildReportSummary(
 	let incomeBase = 0;
 	let expenseBase = 0;
 	let pendingBase = 0;
+	let fxMissingCount = 0;
+	const fxMissingByCurrency = new Map<string, number>();
 	for (const t of rows) {
 		const amount = amountInBaseMock(t, base);
-		if (amount == null) continue;
+		if (amount == null) {
+			fxMissingCount += 1;
+			fxMissingByCurrency.set(t.currency, (fxMissingByCurrency.get(t.currency) ?? 0) + t.amount);
+			continue;
+		}
 		if (t.kind === 'income') {
 			incomeBase += amount;
 			pendingBase += Math.max(0, amount - paidInBaseMock(t, base));
@@ -290,13 +296,19 @@ function buildReportSummary(
 			expenseBase += amount;
 		}
 	}
+	const transactionCount = rows.length;
 	return {
 		period: { from, to },
 		income_base: incomeBase,
 		expense_base: expenseBase,
 		net_base: incomeBase - expenseBase,
 		pending_base: pendingBase,
-		transaction_count: rows.length
+		transaction_count: transactionCount,
+		fx_missing_count: fxMissingCount,
+		fx_missing_amount_by_currency: [...fxMissingByCurrency.entries()]
+			.map(([currency, amount_minor]) => ({ currency, amount_minor }))
+			.sort((a, b) => a.currency.localeCompare(b.currency)),
+		coverage_ratio: transactionCount === 0 ? 1 : (transactionCount - fxMissingCount) / transactionCount
 	};
 }
 
