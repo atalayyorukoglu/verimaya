@@ -66,13 +66,25 @@ function prepareHubHtml(raw) {
 		throw new Error('inject-spa-noindex: hub.html missing hub-page markup');
 	}
 
-	// Progressive enhancement when SvelteKit client is stripped (theme/menu/login).
-	const hubInteract = '<script src="/hub-interact.js" defer></script>';
+	// Progressive enhancement when SvelteKit client is stripped (theme/menu/login/locale).
+	// Content-hash query busts Cloudflare/browser cache when hub-interact.js changes
+	// (apex Hub HTML updates earlier than the long-lived .js edge cache otherwise).
+	const interactPath = join(root, 'static/hub-interact.js');
+	if (!existsSync(interactPath)) {
+		throw new Error('inject-spa-noindex: static/hub-interact.js missing');
+	}
+	const interactHash = createHash('sha256')
+		.update(readFileSync(interactPath))
+		.digest('hex')
+		.slice(0, 12);
+	const hubInteract = `<script src="/hub-interact.js?h=${interactHash}" defer></script>`;
 	if (!out.includes('/hub-interact.js')) {
 		if (!out.includes('</body>')) {
 			throw new Error('inject-spa-noindex: hub.html missing </body> for hub-interact.js inject');
 		}
 		out = out.replace('</body>', `${hubInteract}\n</body>`);
+	} else {
+		out = out.replace(/\/hub-interact\.js(?:\?[^"']*)?/g, `/hub-interact.js?h=${interactHash}`);
 	}
 
 	return out;
