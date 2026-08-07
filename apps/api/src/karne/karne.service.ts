@@ -1,13 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DbService } from '../db/db.service';
 import { karneEvents, karneLeads, karneSessions } from '../db/schema/karne-events';
+import {
+	buildKarneSummaryEmail,
+	type EmailSender
+} from '../integrations/email';
 import type {
 	KarneComplete,
 	KarneEventCreate,
 	KarneLeadCreate,
 	KarneSessionCreate
 } from './karne.schemas';
+
+export const EMAIL_SENDER = Symbol('EMAIL_SENDER');
 
 /** Coarse UA family only — never store the raw User-Agent string. */
 export function userAgentFamily(ua: string | undefined): string | null {
@@ -21,9 +27,16 @@ export function userAgentFamily(ua: string | undefined): string | null {
 	return 'other';
 }
 
+export type KarneLeadResult = { emailed: boolean };
+
 @Injectable()
 export class KarneService {
-	constructor(private readonly db: DbService) {}
+	private readonly logger = new Logger(KarneService.name);
+
+	constructor(
+		private readonly db: DbService,
+		@Inject(EMAIL_SENDER) private readonly email: EmailSender
+	) {}
 
 	async createSession(
 		input: KarneSessionCreate,
@@ -90,8 +103,9 @@ export class KarneService {
 	/**
 	 * Idempotent on email: duplicate address returns without inserting a new row.
 	 * Honeypot (`website`) is rejected in the zod schema before this runs.
+	 * Summary email is best-effort: lead save succeeds even if mail fails.
 	 */
-	async createLead(input: KarneLeadCreate): Promise<void> {
+	async createLead(input: KarneLeadCreate): Promise<KarneLeadResult> {
 		const exists = await this.sessionExists(input.session_id);
 		if (!exists) {
 			throw new NotFoundException({
@@ -108,6 +122,26 @@ export class KarneService {
 				consentAt: new Date()
 			})
 			.onConflictDoNothing({ target: karneLeads.email });
+
+		if (!input.summary) {
+			this.logger.warn(`Karne lead saved without summary; email skipped for ${email.slice(0, 3)}…`);
+			return { emailed: false };
+		}
+
+		const built = buildKarneSummaryEmail(input.summary);
+		const replyTo = process.env.KARNE_SUMMARY_REPLY_TO?.trim() || undefined;
+		const result = await this.email.send({
+			to: email,
+			subject: built.subject,
+			text: built.text,
+			html: built.html,
+			replyTo
+		});
+		if (!result.ok) {
+			this.logger.warn(`Karne summary email failed: ${result.error}`);
+			return { emailed: false };
+		}
+		return { emailed: true };
 	}
 
 	private async sessionExists(sessionId: string): Promise<boolean> {

@@ -58,18 +58,18 @@ export class KarneController {
 	}
 
 	@Post('leads')
-	@HttpCode(204)
+	@HttpCode(200)
 	async createLead(@Req() req: FastifyRequest) {
 		// LEG-02: enabled when KARNE_LEADS_ENABLED=true (Coolify / .env); fail-closed otherwise
 		if (!karneLeadsEnabled()) {
 			throw new ServiceUnavailableException({
 				error: {
 					code: 'karne_leads_disabled',
-					message: 'Karne lead capture is disabled pending legal approval'
+					message: 'Karne lead capture is disabled'
 				}
 			});
 		}
 		const body = parseBody(karneLeadCreateSchema, req.body, req);
-		await this.karne.createLead(body);
+		return this.karne.createLead(body);
 	}
 }

@@ -239,6 +239,14 @@ export async function ensureSessionForLead(input: KarneSessionStartInput): Promi
 	return null;
 }
 
+export type KarneLeadSummaryPayload = {
+	zero_count: number;
+	answered_count: number;
+	top_weak: string[];
+	strong_titles: string[];
+	eu_exposure: boolean;
+};
+
 export type SubmitKarneLeadInput = {
 	email: string;
 	consent: true;
@@ -246,9 +254,12 @@ export type SubmitKarneLeadInput = {
 	website: string;
 	band: IntakeBandId;
 	eu_exposure: IntakeEuId;
+	summary: KarneLeadSummaryPayload;
 };
 
-export type SubmitKarneLeadResult = { ok: true } | { ok: false; reason: 'validation' | 'network' };
+export type SubmitKarneLeadResult =
+	| { ok: true; emailed: boolean }
+	| { ok: false; reason: 'validation' | 'network' };
 
 /** POST /leads — returns structured result for the form UI (not fire-and-forget). */
 export async function submitKarneLead(input: SubmitKarneLeadInput): Promise<SubmitKarneLeadResult> {
@@ -257,7 +268,7 @@ export async function submitKarneLead(input: SubmitKarneLeadInput): Promise<Subm
 	if (!KARNE_LEADS_ENABLED) return { ok: false, reason: 'network' };
 	if (input.website.trim() !== '') {
 		// Trip honeypot client-side: pretend success so bots don't retry.
-		return { ok: true };
+		return { ok: true, emailed: true };
 	}
 	const email = input.email.trim();
 	if (!email || !input.consent) {
@@ -278,11 +289,16 @@ export async function submitKarneLead(input: SubmitKarneLeadInput): Promise<Subm
 				session_id,
 				email,
 				consent: true,
-				website: ''
+				website: '',
+				summary: input.summary
 			}),
 			keepalive: true
 		});
-		if (res.status === 204 || res.ok) return { ok: true };
+		if (res.status === 204) return { ok: true, emailed: false };
+		if (res.ok) {
+			const body = (await res.json().catch(() => null)) as { emailed?: boolean } | null;
+			return { ok: true, emailed: body?.emailed === true };
+		}
 		if (res.status === 400) return { ok: false, reason: 'validation' };
 		return { ok: false, reason: 'network' };
 	} catch {

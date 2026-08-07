@@ -50,7 +50,7 @@ describe('KarneController lead gate', () => {
 			expect((err as ServiceUnavailableException).getResponse()).toEqual({
 				error: {
 					code: 'karne_leads_disabled',
-					message: 'Karne lead capture is disabled pending legal approval'
+					message: 'Karne lead capture is disabled'
 				}
 			});
 		}
@@ -81,11 +81,12 @@ describe('KarneController lead gate', () => {
 
 	it('accepts leads only when KARNE_LEADS_ENABLED is explicitly true', async () => {
 		process.env.KARNE_LEADS_ENABLED = 'true';
-		const createLead = vi.fn().mockResolvedValue(undefined);
+		const createLead = vi.fn().mockResolvedValue({ emailed: false });
 		const controller = new KarneController({ createLead } as unknown as KarneService);
 
-		await controller.createLead(makeRequest());
+		const result = await controller.createLead(makeRequest());
 
+		expect(result).toEqual({ emailed: false });
 		expect(createLead).toHaveBeenCalledOnce();
 		expect(createLead).toHaveBeenCalledWith({
 			session_id: '00000000-0000-4000-8000-000000000001',

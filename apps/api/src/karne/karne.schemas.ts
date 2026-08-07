@@ -39,13 +39,23 @@ export const karneCompleteSchema = z.object({
 	zero_count: z.number().int().min(0).max(10)
 });
 
+/** Client-computed karne summary for transactional email (matches on-screen result). */
+export const karneLeadSummarySchema = z.object({
+	zero_count: z.number().int().min(0).max(10),
+	answered_count: z.number().int().min(0).max(10),
+	top_weak: z.array(z.string().trim().min(1).max(240)).max(3),
+	strong_titles: z.array(z.string().trim().min(1).max(240)).max(10),
+	eu_exposure: z.boolean()
+});
+
 /** `website` is a honeypot — must be absent or empty. */
 export const karneLeadCreateSchema = z
 	.object({
 		session_id: z.string().uuid(),
 		email: z.string().trim().email().max(320),
 		consent: z.literal(true),
-		website: z.string().max(200).optional()
+		website: z.string().max(200).optional(),
+		summary: karneLeadSummarySchema.optional()
 	})
 	.superRefine((data, ctx) => {
 		if (data.website !== undefined && data.website.trim() !== '') {
@@ -60,4 +70,5 @@ export const karneLeadCreateSchema = z
 export type KarneSessionCreate = z.infer<typeof karneSessionCreateSchema>;
 export type KarneEventCreate = z.infer<typeof karneEventCreateSchema>;
 export type KarneComplete = z.infer<typeof karneCompleteSchema>;
+export type KarneLeadSummary = z.infer<typeof karneLeadSummarySchema>;
 export type KarneLeadCreate = z.infer<typeof karneLeadCreateSchema>;

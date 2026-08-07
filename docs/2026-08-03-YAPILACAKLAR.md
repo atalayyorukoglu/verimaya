@@ -147,19 +147,20 @@
 ### 3. LEG-02 — KVKK aydınlatma metni + açık rızanın hukukçu onayı
 
 > **Durum:** ✅ Tamamlandı (2026-08-07). Taslak bandı kaldırıldı; lead flag’leri
-> açıldı: web Dockerfile `PUBLIC_KARNE_LEADS_ENABLED=true`, API env
-> `KARNE_LEADS_ENABLED=true` (Coolify’da runtime set + redeploy gerekir).
-> Canlıya düşmesi: web = next GHCR build; API = Coolify env true + restart.
+> açıldı; canlıda lead `karne_leads`’e yazıldığı doğrulandı (Coolify
+> `KARNE_LEADS_ENABLED=true` + kullanıcı gönderimi + psql SELECT).
 
 - [x] Aydınlatma metnini yayına al (taslak uyarısı kaldırıldı)
 - [x] Lead flag’lerini birlikte aç (API `.env.example` + web Dockerfile/example)
-- [ ] **Ops doğrula:** Coolify API’de `KARNE_LEADS_ENABLED=true` set + redeploy;
-  web `main` image rebuild sonrası karne e-posta formu + POST `/v1/public/karne/leads` 200
+- [x] **Ops doğrula:** Coolify API’de `KARNE_LEADS_ENABLED=true` + karne formu +
+  `karne_leads` satırı (psql) — 2026-08-07
 - **Dosyalar:** `apps/web/src/routes/(public)/kvkk-aydinlatma/+page.svelte`,
   `apps/web/Dockerfile`, `apps/web/.env.example`, `apps/api/.env.example`,
   `apps/web/src/lib/env.ts`, `docs/DEPLOY-COOLIFY.md`
-- **Görüş:** Fail-closed varsayılan kodda duruyor (`?? 'false'`); prod bilerek
-  true bake. API tarafı imajda değil Coolify secret/env — kullanıcı/ops doğrulama kutusu açık.
+- **Görüş:** Lead kaydı DB’ye yazılıyor. 2026-08-07 devam: Resend ile özet
+  e-postası eklendi (`integrations/email`). Prod’da `RESEND_API_KEY` +
+  `KARNE_SUMMARY_FROM` (verified domain) şart; yoksa UI “kaydınız alındı /
+  mail gecikebilir” der.
 
 ---
 

@@ -76,6 +76,23 @@ const tr = {
 	'karne.result.backToShowcase': 'Vitrine dön',
 	'karne.result.demoLogin': 'Demo için giriş',
 
+	'karne.email.heading': 'Detaylı raporu e-posta ile alın',
+	'karne.email.blurb':
+		'Özeti e-posta adresinize göndereceğiz. Zorunlu değil — sonuç yukarıda zaten görünür.',
+	'karne.email.label': 'E-posta',
+	'karne.email.placeholder': 'ornek@klinik.com',
+	'karne.email.consentBefore': 'Kişisel verilerimin',
+	'karne.email.consentLink': 'aydınlatma metni',
+	'karne.email.consentAfter': ' kapsamında işlenmesini kabul ediyorum.',
+	'karne.email.submit': 'Gönder',
+	'karne.email.submitting': 'Gönderiliyor…',
+	'karne.email.successSent':
+		'Teşekkürler — özet e-postanıza gönderildi. Gelen kutunuzu (ve spam’i) kontrol edin.',
+	'karne.email.successSaved':
+		'Teşekkürler — kaydınız alındı. Özet maili şu an gecikebilir; kısa süre içinde tekrar deneyebilirsiniz.',
+	'karne.email.errorValidation': 'E-posta veya onay eksik görünüyor. Kontrol edip yeniden deneyin.',
+	'karne.email.errorNetwork': 'Şu an gönderilemedi. Biraz sonra yeniden deneyebilirsiniz.',
+
 	// Ayarlar · AI
 	'settings.ai.title': 'AI ayarları',
 	'settings.ai.description':
@@ -683,6 +700,23 @@ const en: Record<MessageKey, string> = {
 		'Veri Maya brings the patient journey into one panel — from lead to appointment, finance to WhatsApp transfer.',
 	'karne.result.backToShowcase': 'Back to the website',
 	'karne.result.demoLogin': 'Sign in for demo',
+
+	'karne.email.heading': 'Get the detailed summary by email',
+	'karne.email.blurb':
+		'We will send the summary to your email. Optional — your result is already visible above.',
+	'karne.email.label': 'Email',
+	'karne.email.placeholder': 'you@clinic.com',
+	'karne.email.consentBefore': 'I agree to the processing of my personal data under the',
+	'karne.email.consentLink': 'privacy notice',
+	'karne.email.consentAfter': '.',
+	'karne.email.submit': 'Send',
+	'karne.email.submitting': 'Sending…',
+	'karne.email.successSent':
+		'Thanks — we sent the summary to your email. Check your inbox (and spam).',
+	'karne.email.successSaved':
+		'Thanks — your request was saved. The summary email may be delayed; try again shortly.',
+	'karne.email.errorValidation': 'Email or consent looks incomplete. Please check and try again.',
+	'karne.email.errorNetwork': 'Could not send right now. Please try again in a moment.',
 
 	'settings.ai.title': 'AI settings',
 	'settings.ai.description':

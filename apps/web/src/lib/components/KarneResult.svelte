@@ -63,7 +63,7 @@
 			</p>
 		</div>
 		<div class="border-t border-border pt-8">
-			<KarneEmailCapture {band} {eu} onsuccess={() => (gateUnlocked = true)} />
+			<KarneEmailCapture {band} {eu} {result} onsuccess={() => (gateUnlocked = true)} />
 		</div>
 	</section>
 {:else}
@@ -128,7 +128,7 @@
 
 		{#if showsInlineCapture(KARNE_LEADS_ENABLED, EMAIL_GATE_POSITION)}
 			<div class="border-t border-border pt-8">
-				<KarneEmailCapture {band} {eu} />
+				<KarneEmailCapture {band} {eu} {result} />
 			</div>
 		{/if}
 

@@ -1,14 +1,18 @@
 <script lang="ts">
 	import type { IntakeBandId, IntakeEuId } from '$lib/karne/questions';
+	import type { KarneResult } from '$lib/karne/score';
 	import { submitKarneLead } from '$lib/karne/telemetry';
+	import { t } from '$lib/i18n/locale.svelte';
 
 	let {
 		band,
 		eu,
+		result,
 		onsuccess
 	}: {
 		band: IntakeBandId;
 		eu: IntakeEuId;
+		result: KarneResult;
 		onsuccess?: () => void;
 	} = $props();
 
@@ -18,6 +22,7 @@
 	let website = $state('');
 	let submitting = $state(false);
 	let done = $state(false);
+	let emailed = $state(false);
 	let errorMsg = $state<string | null>(null);
 
 	const canSubmit = $derived(
@@ -29,36 +34,46 @@
 		if (!canSubmit) return;
 		submitting = true;
 		errorMsg = null;
-		const result = await submitKarneLead({
+		const submitResult = await submitKarneLead({
 			email,
 			consent: true,
 			website,
 			band,
-			eu_exposure: eu
+			eu_exposure: eu,
+			summary: {
+				zero_count: result.zeroCount,
+				answered_count: result.answeredCount,
+				top_weak: result.topThreeWeak.map((q) => q.weakLabel),
+				strong_titles: result.strongQuestions.map((q) => q.title),
+				eu_exposure: result.euExposure
+			}
 		});
 		submitting = false;
-		if (result.ok) {
+		if (submitResult.ok) {
 			done = true;
+			emailed = submitResult.emailed;
 			onsuccess?.();
 			return;
 		}
 		errorMsg =
-			result.reason === 'validation'
-				? 'E-posta veya onay eksik görünüyor. Kontrol edip yeniden deneyin.'
-				: 'Şu an gönderilemedi. Biraz sonra yeniden deneyebilirsiniz.';
+			submitResult.reason === 'validation'
+				? t('karne.email.errorValidation')
+				: t('karne.email.errorNetwork');
 	}
 </script>
 
 <section class="space-y-4" aria-labelledby="karne-email-heading">
 	<h2 id="karne-email-heading" class="text-sm font-semibold tracking-tight text-text">
-		Detaylı raporu e-posta ile alın
+		{t('karne.email.heading')}
 	</h2>
 	<p class="text-sm leading-relaxed text-text-muted">
-		İsterseniz özeti e-posta adresinize gönderelim. Zorunlu değil.
+		{t('karne.email.blurb')}
 	</p>
 
 	{#if done}
-		<p class="text-sm font-medium text-text" role="status">Teşekkürler — kaydınız alındı.</p>
+		<p class="text-sm font-medium text-text" role="status">
+			{emailed ? t('karne.email.successSent') : t('karne.email.successSaved')}
+		</p>
 	{:else}
 		<form class="relative space-y-4" onsubmit={onSubmit}>
 			<!-- honeypot -->
@@ -73,7 +88,7 @@
 			</div>
 
 			<label class="block space-y-2">
-				<span class="text-sm font-medium text-text">E-posta</span>
+				<span class="text-sm font-medium text-text">{t('karne.email.label')}</span>
 				<input
 					type="email"
 					name="email"
@@ -81,7 +96,7 @@
 					required
 					bind:value={email}
 					class="flex h-11 w-full rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					placeholder="ornek@klinik.com"
+					placeholder={t('karne.email.placeholder')}
 				/>
 			</label>
 
@@ -92,16 +107,16 @@
 					bind:checked={consent}
 				/>
 				<span>
-					Kişisel verilerimin
+					{t('karne.email.consentBefore')}
 					<a
 						href="/kvkk-aydinlatma/"
 						class="font-medium text-brand underline-offset-2 hover:underline"
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						aydınlatma metni
+						{t('karne.email.consentLink')}
 					</a>
-					kapsamında işlenmesini kabul ediyorum.
+					{t('karne.email.consentAfter')}
 				</span>
 			</label>
 
@@ -114,7 +129,7 @@
 				disabled={!canSubmit}
 				class="inline-flex h-11 min-w-40 items-center justify-center rounded-[6px] bg-brand px-6 text-sm font-medium text-primary-foreground transition-[background-color,transform] hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
 			>
-				{submitting ? 'Gönderiliyor…' : 'Gönder'}
+				{submitting ? t('karne.email.submitting') : t('karne.email.submit')}
 			</button>
 		</form>
 	{/if}
