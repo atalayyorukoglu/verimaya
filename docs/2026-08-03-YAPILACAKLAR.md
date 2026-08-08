@@ -708,7 +708,22 @@
              count(*) AS toplam
       FROM cases WHERE tenant_id = :tracker_tenant_id;
       ```
-
+    - **Görüş (2026-08-08):** Panel formunda serbest metin → preset select
+      (`Meta`/`Google`/`WhatsApp`/`Tavsiye`/`Organik` + `Diğer…`). Değerler ham
+      etiket olarak saklanır (report `sourceLabel` kırılımı okunabilir kalsın diye;
+      mapping katmanı yok). Zod `source` hâlâ nullable. Legacy/`ghl` gibi
+      preset-dışı değerler düzenlemede `Diğer…` + metin kutusunda korunur.
+      Component harness yok → mapping `patient-source-select` saf yardımcıda
+      test edildi.
+    - ⚠️ **OPS-02e AÇIK kalmaya devam ediyor.** Preset select yalnız *girişi*
+      düzeltiyor; hiçbir satırı doldurmuyor. Kapanma şartı: yeni dosyalarda
+      kaynak doluluğu `ATTRIBUTION_COVERAGE_THRESHOLD`'u (%80) geçmeli — o güne
+      kadar `attribution_missing` tetiklenmeye devam eder ve Pazarlama sekmesi
+      müşteri önüne çıkmaz. Geçmiş 757 satır kalıcı olarak kaynaksız
+      (legacy'de veri yok — yukarıdaki sorgu 0/757 döndü).
+    - **Karar bekleyen:** alan hâlâ **isteğe bağlı**. Zorunlu yapmak operatör
+      akışını değiştirir; kapsam kendiliğinden %80'e çıkmazsa tek gerçek kaldıraç
+      bu.
 ---
 
 ### 9. PILOT-02 — 2–4 haftalık feature-freeze dahili pilot

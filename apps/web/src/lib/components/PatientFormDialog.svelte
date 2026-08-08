@@ -7,8 +7,13 @@
 		PatientStatus,
 		PatientUpdate
 	} from '@verimaya/shared';
-	import { patientStatusLabels } from '@verimaya/shared';
+	import { PATIENT_SOURCE_PRESETS, patientStatusLabels } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
+	import {
+		initPatientSourceSelect,
+		PATIENT_SOURCE_SELECT_OTHER,
+		resolvePatientSource
+	} from '$lib/patient-source-select';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -43,7 +48,8 @@
 	let phone = $state('');
 	let email = $state('');
 	let status = $state<PatientStatus>('scheduled');
-	let source = $state('');
+	let sourceSelect = $state('');
+	let sourceCustom = $state('');
 	let notes = $state('');
 	let assigned_user_id = $state('');
 
@@ -53,7 +59,10 @@
 		phone = patient?.phone ?? '';
 		email = patient?.email ?? '';
 		status = patient?.status ?? 'scheduled';
-		source = patient?.source ?? '';
+		// Legacy / non-preset sources (e.g. GHL `ghl`) must open as Diğer… with the value kept.
+		const sourceInit = initPatientSourceSelect(patient?.source);
+		sourceSelect = sourceInit.selectValue;
+		sourceCustom = sourceInit.customSource;
 		notes = patient?.notes ?? '';
 		assigned_user_id = patient?.assigned_user_id ?? '';
 	});
@@ -68,7 +77,7 @@
 			phone: phone.trim() || null,
 			email: email.trim() || null,
 			status,
-			source: source.trim() || null,
+			source: resolvePatientSource(sourceSelect, sourceCustom),
 			notes: notes.trim() || null,
 			assigned_user_id: assigned_user_id || null,
 			contact_id: patient?.contact_id ?? null
@@ -114,7 +123,22 @@
 			</div>
 			<div>
 				<label class={labelClass} for="patient-source">{t('patients.form.source')}</label>
-				<input id="patient-source" class={fieldClass} bind:value={source} maxlength={128} />
+				<select id="patient-source" class={fieldClass} bind:value={sourceSelect}>
+					<option value="">{t('patients.form.sourceEmpty')}</option>
+					{#each PATIENT_SOURCE_PRESETS as preset (preset)}
+						<option value={preset}>{preset}</option>
+					{/each}
+					<option value={PATIENT_SOURCE_SELECT_OTHER}>{t('patients.form.sourceOther')}</option>
+				</select>
+				{#if sourceSelect === PATIENT_SOURCE_SELECT_OTHER}
+					<input
+						id="patient-source-other"
+						class="{fieldClass} mt-2"
+						bind:value={sourceCustom}
+						placeholder={t('patients.form.sourceOtherPlaceholder')}
+						maxlength={128}
+					/>
+				{/if}
 			</div>
 		</div>
 		<div>

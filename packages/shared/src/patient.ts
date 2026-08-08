@@ -15,6 +15,23 @@ export const patientStatusSchema = z.enum([
 
 export type PatientStatus = z.infer<typeof patientStatusSchema>;
 
+/**
+ * Preset channel labels for `patients.source` (panel select).
+ * Stored as display labels (not lowercase keys) because the marketing report
+ * groups by the raw source string (`sourceLabel` in reports.service.ts) —
+ * keeping the label readable in the breakdown avoids a mapping layer.
+ * Do not change that report grouping; this list is the UI contract only.
+ */
+export const PATIENT_SOURCE_PRESETS = [
+	'Meta',
+	'Google',
+	'WhatsApp',
+	'Tavsiye',
+	'Organik'
+] as const;
+
+export type PatientSourcePreset = (typeof PATIENT_SOURCE_PRESETS)[number];
+
 export const patientSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
