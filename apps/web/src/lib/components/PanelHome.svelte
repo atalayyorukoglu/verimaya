@@ -4,6 +4,7 @@
 		Appointment,
 		InboundMessage,
 		Patient,
+		ReportPatientDistribution,
 		ReportSummary,
 		Tenant
 	} from '@verimaya/shared';
@@ -14,6 +15,7 @@
 	import { patientStatusTone } from '$lib/status-tone';
 	import { canAccessPath, DEFAULT_ROLE } from '$lib/rbac';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
@@ -22,6 +24,7 @@
 	const qs = useQueryScope();
 	const role = $derived(qs.meQuery.data?.role ?? DEFAULT_ROLE);
 	const canFinance = $derived(canAccessPath('/finance/ai-transaction', role));
+	const canReports = $derived(canAccessPath('/reports', role));
 
 	function pad2(n: number) {
 		return String(n).padStart(2, '0');
@@ -68,11 +71,23 @@
 		enabled: !USE_MSW && canFinance && qs.ready
 	}));
 
+	/** All-time patient/file total — no from/to (period would become a funnel metric). */
+	const patientDistributionQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.patientDistribution({ scope: 'all-time' }),
+		queryFn: () => apiGet<ReportPatientDistribution>(reportUrl('patient-distribution')),
+		enabled: canReports && qs.ready
+	}));
+
 	const todayAppointments = $derived(
 		(appointmentsQuery.data?.items ?? []).filter((a) => isSameLocalDay(a.starts_at)).slice(0, 5)
 	);
 
 	const recentPatients = $derived(patientsQuery.data?.items ?? []);
+	const openFilesValue = $derived(
+		canReports && patientDistributionQuery.data != null
+			? String(patientDistributionQuery.data.total)
+			: '—'
+	);
 	const pendingMessages = $derived(
 		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new').slice(0, 5)
 	);
@@ -109,15 +124,17 @@
 	<div class="mb-8 grid min-w-0 gap-4 lg:grid-cols-3">
 		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 class="text-sm font-semibold text-text">Son hastalar</h2>
-				<a href="/patients" class="text-xs text-info hover:underline">Tümü</a>
+				<h2 class="text-sm font-semibold text-text">{t('panel.home.recentFiles')}</h2>
+				<a href="/patients" class="text-xs text-info hover:underline"
+					>{t('panel.home.recentFilesAll')}</a
+				>
 			</div>
 			{#if patientsQuery.isPending}
-				<p class="text-sm text-text-faint">Yükleniyor…</p>
+				<p class="text-sm text-text-faint">{t('panel.home.recentFilesLoading')}</p>
 			{:else if patientsQuery.isError}
-				<p class="text-sm text-danger">Hastalar yüklenemedi.</p>
+				<p class="text-sm text-danger">{t('panel.home.recentFilesError')}</p>
 			{:else if recentPatients.length === 0}
-				<p class="text-sm text-text-faint">Henüz hasta yok.</p>
+				<p class="text-sm text-text-faint">{t('panel.home.recentFilesEmpty')}</p>
 			{:else}
 				<ul class="min-w-0 divide-y divide-border">
 					{#each recentPatients as patient (patient.id)}
@@ -129,7 +146,7 @@
 								<div class="min-w-0 flex-1 overflow-hidden">
 									<p class="truncate text-sm font-medium text-text">{patient.full_name}</p>
 									<p class="truncate text-xs text-text-faint">
-										{patient.source ?? 'Kaynak yok'} · {formatDateTime(patient.updated_at)}
+										{formatDateTime(patient.updated_at)}
 									</p>
 								</div>
 								<StatusBadge
@@ -226,7 +243,7 @@
 	<section>
 		<h2 class="mb-3 text-sm font-semibold text-text">Özet metrikler</h2>
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' }, { label: 'Net (bu ay)', value: !USE_MSW && canFinance && summaryQuery.data ? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY') : (tenantQuery.data?.base_currency ?? '—'), hint: !USE_MSW && canFinance ? 'Sunucu aggregate' : (tenantQuery.data?.name ?? 'Organizasyon') }] as card (card.label)}
+			{#each [{ label: t('panel.home.metric.openFiles'), value: openFilesValue, hint: t('panel.home.metric.openFilesHint') }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' }, { label: 'Net (bu ay)', value: !USE_MSW && canFinance && summaryQuery.data ? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY') : (tenantQuery.data?.base_currency ?? '—'), hint: !USE_MSW && canFinance ? 'Sunucu aggregate' : (tenantQuery.data?.name ?? 'Organizasyon') }] as card (card.label)}
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{card.label}</p>
 					<p class="mt-1 text-2xl font-semibold tracking-tight text-text">{card.value}</p>

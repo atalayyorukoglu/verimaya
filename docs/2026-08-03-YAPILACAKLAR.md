@@ -270,7 +270,7 @@
 > PILOT-02 feature-freeze başlayıp 2–4 hafta gerçek operasyon verisi biriktikten sonra
 > enum değişimi pahalılaşır. Kritik tarih ETL değil, **PILOT-02 başlangıcı**.
 
-- [ ] **Adım 1 — Kopya / UI dili (şema dokunulmaz):** "Yeni hasta = yeni lead" hissini kaldır.
+- [x] **Adım 1 — Kopya / UI dili (şema dokunulmaz):** "Yeni hasta = yeni lead" hissini kaldır.
   `/patients` liste kolonları, `PatientFormDialog`, `PanelHome` ve boş-durum metinleri
   operasyon dosyası diline çevrilir (yeni metinler doğrudan gömülmez → `messages.ts`
   anahtarı, AGENTS.md dil kuralı). Pipeline vurgusu yerine **randevu / dosya / para** vurgusu.
@@ -278,6 +278,10 @@
     metinlerinde satış hunisi dili yok; tüm yeni metinler `messages.ts` anahtarı
     (tr + en); **`patient.ts`, şema, migration ve enum'a dokunulmadı** (`git diff`
     ile kanıtlanır); mevcut testler yeşil.
+  - **Görüş (Adım 1):** CTA/boş durum/açıklama dosya diline alındı; Kaynak kolonu en sağa.
+    PanelHome "Yeni lead" → "Açık dosya" (`GET /v1/reports/patient-distribution`, from/to
+    yok). `/patients/duplicates` açıklamasından "lead" çıkarıldı (i18n). Status etiketleri
+    bilinçli bırakıldı (Adım 2).
 - [ ] **Adım 2 — `patientStatusSchema` daraltma:** 9 değerli CRM hunisi
   (`lead, contacted, qualified, scheduled, arrived, treated, follow_up, closed_won, closed_lost`)
   → operasyon değerlerine indirilir. Öneri: `scheduled, arrived, treated, follow_up, cancelled`.

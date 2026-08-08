@@ -10,6 +10,7 @@
 	import { patientStatusLabels } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -78,21 +79,21 @@
 
 <Dialog
 	bind:open
-	title={isEdit ? 'Hastayı düzenle' : 'Yeni hasta'}
-	description="MSW üzerinden kaydedilir."
+	title={isEdit ? t('patients.form.editTitle') : t('patients.form.createTitle')}
+	description={t('patients.form.description')}
 >
 	<form id="patient-form" class="space-y-3" onsubmit={handleSubmit}>
 		<div>
-			<label class={labelClass} for="patient-name">Ad soyad</label>
+			<label class={labelClass} for="patient-name">{t('patients.form.fullName')}</label>
 			<input id="patient-name" class={fieldClass} bind:value={full_name} required maxlength={255} />
 		</div>
 		<div class="grid gap-3 sm:grid-cols-2">
 			<div>
-				<label class={labelClass} for="patient-phone">Telefon</label>
+				<label class={labelClass} for="patient-phone">{t('patients.form.phone')}</label>
 				<input id="patient-phone" class={fieldClass} bind:value={phone} maxlength={64} />
 			</div>
 			<div>
-				<label class={labelClass} for="patient-email">E-posta</label>
+				<label class={labelClass} for="patient-email">{t('patients.form.email')}</label>
 				<input
 					id="patient-email"
 					class={fieldClass}
@@ -104,7 +105,7 @@
 		</div>
 		<div class="grid gap-3 sm:grid-cols-2">
 			<div>
-				<label class={labelClass} for="patient-status">Durum</label>
+				<label class={labelClass} for="patient-status">{t('patients.form.status')}</label>
 				<select id="patient-status" class={fieldClass} bind:value={status}>
 					{#each statuses as s (s)}
 						<option value={s}>{patientStatusLabels[s]}</option>
@@ -112,12 +113,12 @@
 				</select>
 			</div>
 			<div>
-				<label class={labelClass} for="patient-source">Kaynak</label>
+				<label class={labelClass} for="patient-source">{t('patients.form.source')}</label>
 				<input id="patient-source" class={fieldClass} bind:value={source} maxlength={128} />
 			</div>
 		</div>
 		<div>
-			<label class={labelClass} for="patient-assignee">Sorumlu</label>
+			<label class={labelClass} for="patient-assignee">{t('patients.form.assignee')}</label>
 			<select id="patient-assignee" class={fieldClass} bind:value={assigned_user_id}>
 				<option value="">—</option>
 				{#each members as m (m.id)}
@@ -126,7 +127,7 @@
 			</select>
 		</div>
 		<div>
-			<label class={labelClass} for="patient-notes">Notlar</label>
+			<label class={labelClass} for="patient-notes">{t('patients.form.notes')}</label>
 			<textarea id="patient-notes" class={textareaClass} bind:value={notes} maxlength={8000}
 			></textarea>
 		</div>
@@ -136,10 +137,14 @@
 	</form>
 	{#snippet footer()}
 		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
-			>İptal</Button
+			>{t('patients.form.cancel')}</Button
 		>
 		<Button type="submit" form="patient-form" disabled={saving || !full_name.trim()}>
-			{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
+			{saving
+				? t('patients.form.saving')
+				: isEdit
+					? t('patients.form.save')
+					: t('patients.form.create')}
 		</Button>
 	{/snippet}
 </Dialog>

@@ -39,10 +39,10 @@
 	const totalCount = $derived(patientsQuery.data?.pages[0]?.total_count);
 	const listDescription = $derived(
 		totalCount == null
-			? 'Lead ve hasta kayıtları.'
+			? t('patients.list.description')
 			: search
-				? t('patients.list.totalFiltered', { count: String(totalCount) })
-				: t('patients.list.total', { count: String(totalCount) })
+				? `${t('patients.list.description')} · ${t('patients.list.totalFiltered', { count: String(totalCount) })}`
+				: `${t('patients.list.description')} · ${t('patients.list.total', { count: String(totalCount) })}`
 	);
 
 	function submitSearch(e: Event) {
@@ -59,7 +59,7 @@
 			formOpen = false;
 			await goto(`/patients/${created.id}`);
 		} catch (err) {
-			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			formError = err instanceof Error ? err.message : t('patients.list.createError');
 		} finally {
 			saving = false;
 		}
@@ -67,50 +67,51 @@
 </script>
 
 <svelte:head>
-	<title>Hastalar · Veri Maya</title>
+	<title>{t('patients.list.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
-	<PageHeader title="Hastalar" description={listDescription}>
+	<PageHeader title={t('patients.list.title')} description={listDescription}>
 		{#snippet actions()}
 			<form class="flex min-w-0 flex-wrap gap-2" onsubmit={submitSearch}>
 				<input
 					bind:value={q}
 					type="search"
-					placeholder="Ad, e-posta veya telefon…"
+					placeholder={t('patients.list.searchPlaceholder')}
 					class="h-9 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:w-56"
 				/>
-				<Button type="submit" variant="secondary">Ara</Button>
+				<Button type="submit" variant="secondary">{t('patients.list.search')}</Button>
 				<Button type="button" variant="outline" onclick={() => goto('/patients/duplicates')}
-					>Çift kayıt tara</Button
+					>{t('patients.list.duplicates')}</Button
 				>
-				<Button type="button" onclick={() => (formOpen = true)}>Yeni hasta</Button>
+				<Button type="button" onclick={() => (formOpen = true)}
+					>{t('patients.list.newFile')}</Button
+				>
 			</form>
 		{/snippet}
 	</PageHeader>
 
 	{#if patientsQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('patients.list.loading')}</p>
 	{:else if patientsQuery.isError}
-		<p class="text-sm text-danger">Hasta listesi yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('patients.list.loadError')}</p>
 	{:else if patients.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-8 text-center">
-			<p class="text-sm font-medium text-text">Hasta bulunamadı</p>
-			<p class="mt-1 text-sm text-text-muted">
-				Yeni hasta ekleyin veya MSW senaryosunu değiştirin.
-			</p>
-			<Button class="mt-4" type="button" onclick={() => (formOpen = true)}>Yeni hasta</Button>
+			<p class="text-sm font-medium text-text">{t('patients.list.emptyTitle')}</p>
+			<Button class="mt-4" type="button" onclick={() => (formOpen = true)}
+				>{t('patients.list.emptyCta')}</Button
+			>
 		</div>
 	{:else}
 		<div class="hidden min-w-0 overflow-hidden rounded-lg border border-border bg-surface md:block">
 			<table class="w-full table-fixed text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						<th class="w-[32%] px-4 py-3 font-medium">Ad</th>
-						<th class="w-[18%] px-4 py-3 font-medium">Durum</th>
-						<th class="w-[16%] px-4 py-3 font-medium">Kaynak</th>
-						<th class="w-[18%] px-4 py-3 font-medium">Telefon</th>
-						<th class="w-[16%] px-4 py-3 font-medium">Güncelleme</th>
+						<th class="w-[32%] px-4 py-3 font-medium">{t('patients.list.col.name')}</th>
+						<th class="w-[18%] px-4 py-3 font-medium">{t('patients.list.col.status')}</th>
+						<th class="w-[18%] px-4 py-3 font-medium">{t('patients.list.col.phone')}</th>
+						<th class="w-[16%] px-4 py-3 font-medium">{t('patients.list.col.updated')}</th>
+						<th class="w-[16%] px-4 py-3 font-medium">{t('patients.list.col.source')}</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-border">
@@ -127,12 +128,12 @@
 									tone={patientStatusTone(patient.status)}
 								/>
 							</td>
-							<td class="truncate px-4 py-3 text-text-muted">{patient.source ?? '—'}</td>
 							<td class="truncate px-4 py-3 text-text-muted tabular-nums">{patient.phone ?? '—'}</td
 							>
 							<td class="px-4 py-3 whitespace-nowrap text-text-faint">
 								{formatDateTime(patient.updated_at)}
 							</td>
+							<td class="truncate px-4 py-3 text-text-faint">{patient.source ?? '—'}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -156,8 +157,13 @@
 							/>
 						</div>
 						<p class="mt-2 truncate text-xs text-text-muted">
-							{patient.source ?? 'Kaynak yok'} · {patient.phone ?? 'Telefon yok'}
+							{patient.phone ?? t('patients.list.noPhone')}
 						</p>
+						{#if patient.source}
+							<p class="mt-0.5 truncate text-xs text-text-faint">
+								{t('patients.list.col.source')}: {patient.source}
+							</p>
+						{/if}
 					</a>
 				</li>
 			{/each}
@@ -171,7 +177,9 @@
 					disabled={patientsQuery.isFetchingNextPage}
 					onclick={() => patientsQuery.fetchNextPage()}
 				>
-					{patientsQuery.isFetchingNextPage ? 'Yükleniyor…' : 'Daha fazla yükle'}
+					{patientsQuery.isFetchingNextPage
+						? t('patients.list.loading')
+						: t('patients.list.loadMore')}
 				</Button>
 			</div>
 		{/if}
