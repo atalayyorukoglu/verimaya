@@ -315,6 +315,7 @@ const tr = {
 	'reports.ops.col.count': 'Adet',
 	'reports.ops.col.completion': 'Tamamlanma',
 	'reports.ops.col.ratio': 'Oran',
+	'reports.ops.clinicStats': '{count} · tamamlanma {pct}',
 	'reports.consistency.title': 'Tutarlılık uyarıları',
 	'reports.consistency.description':
 		'Kategori / hasta / kişi seçimleri veya ödeme durumu tutarsız görünen işlemler.',
@@ -329,10 +330,10 @@ const tr = {
 	'reports.consistency.expense_contact_missing': 'Gider kaydında kişi/firma yok.',
 	'reports.consistency.fx_missing': 'Kur karşılığı yok (rapora dahil edilmedi).',
 	'reports.consistency.paid_amount_mismatch':
-		'Durum “ödendi” ama ödenen tutar tutarsız veya boş.',
+		'Durum “ödendi” ama ödenen tutar kayıt tutarından farklı.',
 	'reports.consistency.unpaid_with_payment': 'Durum “ödenmedi” ama paid_amount > 0.',
 	'reports.consistency.partial_amount_invalid':
-		'Durum “kısmi” ama ödenen tutar 0 veya tutara eşit/büyük.',
+		'Durum “kısmi” ama ödenen tutar boş, ≤0 veya tutara eşit/büyük.',
 	'settings.dataQuality.title': 'Veri kalitesi',
 	'settings.dataQuality.description':
 		'Son 7 günlük tutarlılık denetimi (tam dönem, sunucu tarafı) + mükerrer şüphe.',
@@ -1123,6 +1124,7 @@ const en: Record<MessageKey, string> = {
 	'reports.ops.col.count': 'Count',
 	'reports.ops.col.completion': 'Completion',
 	'reports.ops.col.ratio': 'Share',
+	'reports.ops.clinicStats': '{count} · completion {pct}',
 	'reports.consistency.title': 'Consistency warnings',
 	'reports.consistency.description':
 		'Transactions with missing category / patient / contact or inconsistent payment status.',
@@ -1137,10 +1139,10 @@ const en: Record<MessageKey, string> = {
 	'reports.consistency.expense_contact_missing': 'Expense record has no contact.',
 	'reports.consistency.fx_missing': 'Missing FX equivalent (excluded from reports).',
 	'reports.consistency.paid_amount_mismatch':
-		'Status is “paid” but paid amount is missing or inconsistent.',
+		'Status is “paid” but paid amount differs from the record amount.',
 	'reports.consistency.unpaid_with_payment': 'Status is “unpaid” but paid_amount > 0.',
 	'reports.consistency.partial_amount_invalid':
-		'Status is “partial” but paid amount is 0 or ≥ full amount.',
+		'Status is “partial” but paid amount is missing, ≤0, or ≥ full amount.',
 	'settings.dataQuality.title': 'Data quality',
 	'settings.dataQuality.description':
 		'Last 7 days consistency audit (full period, server-side) + duplicate suspicion.',

@@ -338,9 +338,9 @@ export class ReportsService {
 			// FX: foreign currency without base snapshot. Same-currency rows may have
 			// amount_base NULL on purpose (ETL-ESLEME.md §3.4 — resolver uses amount).
 			const fxMissing = sql`${transactions.currency} <> ${tenantBase} AND ${transactions.amountBase} IS NULL`;
-			const paidMismatch = sql`${transactions.status} = 'paid' AND (${transactions.paidAmount} IS NULL OR ${transactions.paidAmount} <> ${transactions.amount})`;
+			const paidMismatch = sql`${transactions.status} = 'paid' AND ${transactions.paidAmount} IS NOT NULL AND ${transactions.paidAmount} <> ${transactions.amount}`;
 			const unpaidWithPay = sql`${transactions.status} = 'unpaid' AND coalesce(${transactions.paidAmount}, 0) > 0`;
-			const partialInvalid = sql`${transactions.status} = 'partial' AND (${transactions.paidAmount} IS NULL OR ${transactions.paidAmount} = 0 OR ${transactions.paidAmount} >= ${transactions.amount})`;
+			const partialInvalid = sql`${transactions.status} = 'partial' AND (${transactions.paidAmount} IS NULL OR ${transactions.paidAmount} <= 0 OR ${transactions.paidAmount} >= ${transactions.amount})`;
 
 			const [agg] = await db
 				.select({

@@ -674,7 +674,10 @@
 								<li class="flex items-center justify-between gap-2 py-2 text-sm">
 									<span class="min-w-0 truncate text-text">{row.clinic_name}</span>
 									<span class="shrink-0 text-xs text-text-muted tabular-nums">
-										{row.count} · {formatPercent(row.completion_rate, 0)}
+										{t('reports.ops.clinicStats', {
+											count: row.count,
+											pct: formatPercent(row.completion_rate, 0)
+										})}
 									</span>
 								</li>
 							{/each}

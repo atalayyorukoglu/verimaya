@@ -476,7 +476,7 @@ function buildReportConsistency(
 		if (t.currency !== base && t.amount_base == null) {
 			push(t, 'warning', 'fx_missing', 'reports.consistency.fx_missing');
 		}
-		if (t.status === 'paid' && (t.paid_amount == null || t.paid_amount !== t.amount)) {
+		if (t.status === 'paid' && t.paid_amount != null && t.paid_amount !== t.amount) {
 			push(t, 'error', 'paid_amount_mismatch', 'reports.consistency.paid_amount_mismatch');
 		}
 		if (t.status === 'unpaid' && (t.paid_amount ?? 0) > 0) {
@@ -484,7 +484,7 @@ function buildReportConsistency(
 		}
 		if (
 			t.status === 'partial' &&
-			(t.paid_amount == null || t.paid_amount === 0 || t.paid_amount >= t.amount)
+			(t.paid_amount == null || t.paid_amount <= 0 || t.paid_amount >= t.amount)
 		) {
 			push(t, 'error', 'partial_amount_invalid', 'reports.consistency.partial_amount_invalid');
 		}

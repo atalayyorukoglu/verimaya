@@ -33,6 +33,9 @@ describe('GAP-05: reports consistency', () => {
 	const ids = {
 		cleanIncome: randomUUID(),
 		cleanExpense: randomUUID(),
+		paidNullOk: randomUUID(),
+		unpaidZeroOk: randomUUID(),
+		partialOk: randomUUID(),
 		categoryMissing: randomUUID(),
 		incomeNoPatient: randomUUID(),
 		expenseNoContact: randomUUID(),
@@ -109,6 +112,34 @@ describe('GAP-05: reports consistency', () => {
 					${ids.cleanExpense}, ${tenantA}, 'expense', 'Clean expense', 'Konaklama', '2026-05-01', 'paid',
 					5000, 5000, 'TRY', 5000, 'TRY',
 					null, ${contactA}, 'Klinik Alfa'
+				)
+			`;
+			// Tracker model: paid + paid_amount NULL = fully paid (OK)
+			await sql`
+				insert into transactions (
+					id, tenant_id, kind, title, category, occurred_on, status,
+					amount, paid_amount, currency, amount_base, base_currency, patient_id
+				) values (
+					${ids.paidNullOk}, ${tenantA}, 'income', 'Paid null OK', 'Operasyon', '2026-05-01', 'paid',
+					1100, null, 'TRY', 1100, 'TRY', ${patientA}
+				)
+			`;
+			await sql`
+				insert into transactions (
+					id, tenant_id, kind, title, category, occurred_on, status,
+					amount, paid_amount, currency, amount_base, base_currency, patient_id
+				) values (
+					${ids.unpaidZeroOk}, ${tenantA}, 'income', 'Unpaid zero OK', 'Operasyon', '2026-05-01', 'unpaid',
+					1200, 0, 'TRY', 1200, 'TRY', ${patientA}
+				)
+			`;
+			await sql`
+				insert into transactions (
+					id, tenant_id, kind, title, category, occurred_on, status,
+					amount, paid_amount, currency, amount_base, base_currency, patient_id
+				) values (
+					${ids.partialOk}, ${tenantA}, 'income', 'Partial OK', 'Operasyon', '2026-05-01', 'partial',
+					1300, 500, 'TRY', 1300, 'TRY', ${patientA}
 				)
 			`;
 
@@ -262,6 +293,9 @@ describe('GAP-05: reports consistency', () => {
 
 		expect(report.items.map((i) => i.transaction_id)).not.toContain(ids.cleanIncome);
 		expect(report.items.map((i) => i.transaction_id)).not.toContain(ids.cleanExpense);
+		expect(report.items.map((i) => i.transaction_id)).not.toContain(ids.paidNullOk);
+		expect(report.items.map((i) => i.transaction_id)).not.toContain(ids.unpaidZeroOk);
+		expect(report.items.map((i) => i.transaction_id)).not.toContain(ids.partialOk);
 		expect(report.items.every((i) => i.message_key.startsWith('reports.consistency.'))).toBe(
 			true
 		);
