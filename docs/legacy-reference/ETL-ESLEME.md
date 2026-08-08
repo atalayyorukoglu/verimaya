@@ -80,7 +80,7 @@ Tracker canlı seed (11 üst + 52 alt) Verimaya `DEFAULT_FINANCE_CATEGORY_SEEDS`
 
 | Alan | Tracker | Verimaya | Karar |
 | --- | --- | --- | --- |
-| `patients.status` | `cases` tablosunda yok (`extra` JSON opsiyonel) | enum `lead`…`closed_lost`, default `lead` | `extra.status` varsa map; yoksa **`lead`** |
+| `patients.status` | `cases` tablosunda yok (`extra` JSON opsiyonel) | enum `scheduled`…`cancelled`, default `scheduled` | `extra.status` bilinen operasyon değeriyse map; değilse **`scheduled`**. CRM hunisi (`lead`/`contacted`/…) GHL’de kalır — ETL’de semantik sadakat aranmaz (pilot tek kullanımlık). |
 | `transactions.kind` | `income` \| `expense` | aynı | birebir |
 | `transactions.status` | `paid` \| `partial` \| `unpaid` | aynı | birebir |
 | `invoice_status` | `none` \| `issued` \| `not_issued` | aynı | birebir; boş → `none` |
@@ -117,7 +117,7 @@ Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu 
 | `contact_id` | `contact_id` | contact map | yoksa null |
 | `notes` | `notes` | — | null OK |
 | `extra.email` / contact.email | `email` | önce extra, sonra bağlı contact | geçersiz → null |
-| `extra.status` | `status` | bilinen enum; değilse `lead` | default **`lead`** |
+| `extra.status` | `status` | bilinen operasyon enum; değilse `scheduled` | default **`scheduled`** |
 | `extra.source` | `source` | trim max 128 | null OK |
 | — | `assigned_user_id` | **null** (üyeler taşınmaz) | — |
 | — | `deleted_at` | **null** | — |
@@ -184,7 +184,7 @@ Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu 
 | `contacts.usage_count` | 0 |
 | `patients.tenant_id` | hedef tenant |
 | `patients.full_name` | cases.full_name (boşsa skip) |
-| `patients.status` | extra / **`lead`** |
+| `patients.status` | extra / **`scheduled`** |
 | `appointments.tenant_id` | hedef tenant |
 | `appointments.patient_id` | case map (yoksa skip) |
 | `appointments.patient_display_name` | case.full_name |

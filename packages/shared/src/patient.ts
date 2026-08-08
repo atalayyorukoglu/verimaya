@@ -2,19 +2,15 @@ import { z } from 'zod';
 import { isoDateTime, moneyMinor, uuid } from './common.js';
 
 /**
- * Patient (legacy: Case). Lead/hasta kaydı — sağlık turizmi operasyonunun çekirdeği.
- * Status pipeline is a first draft; refine after legacy notes.md is filled.
+ * Patient = operations file for one visit (not a CRM lead).
+ * Sales pipeline lives in GHL; app status is operational only.
  */
 export const patientStatusSchema = z.enum([
-	'lead',
-	'contacted',
-	'qualified',
 	'scheduled',
 	'arrived',
 	'treated',
 	'follow_up',
-	'closed_won',
-	'closed_lost'
+	'cancelled'
 ]);
 
 export type PatientStatus = z.infer<typeof patientStatusSchema>;
@@ -25,7 +21,7 @@ export const patientSchema = z.object({
 	full_name: z.string().min(1).max(255),
 	phone: z.string().max(64).nullable(),
 	email: z.string().email().max(255).nullable(),
-	status: patientStatusSchema.default('lead'),
+	status: patientStatusSchema.default('scheduled'),
 	source: z.string().max(128).nullable(),
 	notes: z.string().max(8000).nullable(),
 	assigned_user_id: uuid.nullable(),

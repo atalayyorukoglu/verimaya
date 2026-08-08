@@ -28,15 +28,11 @@ const DEFAULT_BATCH = 1000;
 const FALLBACK_CONTACT_TYPE = 'Diğer';
 const SUPPORTED_CURRENCIES = new Set(['TRY', 'GBP', 'EUR', 'USD']);
 const PATIENT_STATUSES = new Set([
-	'lead',
-	'contacted',
-	'qualified',
 	'scheduled',
 	'arrived',
 	'treated',
 	'follow_up',
-	'closed_won',
-	'closed_lost'
+	'cancelled'
 ]);
 const APPOINTMENT_STATUS_MAP = {
 	'randevu ayarlanıyor': 'scheduled',
@@ -195,7 +191,7 @@ function extId(legacyId) {
 function normalizePatientStatus(status) {
 	const s = (status ?? '').trim().toLowerCase();
 	if (PATIENT_STATUSES.has(s)) return s;
-	return 'lead';
+	return 'scheduled';
 }
 
 /**

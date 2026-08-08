@@ -282,15 +282,36 @@
     PanelHome "Yeni lead" → "Açık dosya" (`GET /v1/reports/patient-distribution`, from/to
     yok). `/patients/duplicates` açıklamasından "lead" çıkarıldı (i18n). Status etiketleri
     bilinçli bırakıldı (Adım 2).
-- [ ] **Adım 2 — `patientStatusSchema` daraltma:** 9 değerli CRM hunisi
+- [x] **Adım 2 — `patientStatusSchema` daraltma:** 9 değerli CRM hunisi
   (`lead, contacted, qualified, scheduled, arrived, treated, follow_up, closed_won, closed_lost`)
   → operasyon değerlerine indirilir. Öneri: `scheduled, arrived, treated, follow_up, cancelled`.
   Lead tarafı (`lead/contacted/qualified/closed_won/closed_lost`) GHL'in; app'e **sync ile** düşer,
   app'te yazılmaz. Sözleşme önce `packages/shared/src/patient.ts`'te değişir (AGENTS.md ilke 7),
   sonra Drizzle migration + ETL eşlemesi + MSW + web.
-- [ ] **Adım 3 — Veri migrasyonu:** Demo Klinik'teki 757 hastanın mevcut `status` değerleri
-  yeni enum'a eşlenir. `lead/contacted/qualified` → yeni varsayılan; `closed_*` → `follow_up`
-  veya `cancelled`. Eşleme tablosu `docs/legacy-reference/ETL-ESLEME.md` §2.5'e işlenir.
+- [x] **Adım 3 — Veri migrasyonu.** ⚠️ **Adım 2 ile AYNI commit ve AYNI migration'da gider.**
+  Gerekçe (2026-08-07 tespiti): `patients.status` Postgres enum değil, `text('status')` ve
+  kolon varsayılanı `'lead'` (`apps/api/src/db/schema/patients.ts:16`). Adım 2 tek başına
+  giderse (a) DB'deki 757 satır hâlâ `lead`/`contacted` tutar → zod okurken reddeder,
+  hasta listesi kırılır; (b) kolon varsayılanı `'lead'` kaldığı için yeni açılan her dosya
+  geçersiz değerle doğar. **İkisi ayrılamaz.**
+  - Tek migration içinde: `UPDATE patients SET status = <eşleme>` → sonra
+    `ALTER COLUMN status SET DEFAULT '<yeni varsayılan>'`.
+  - Eşleme: yeni sette olmayan **her değer** → `scheduled`. Semantik sadakat aranmaz —
+    **pilot verisi tek kullanımlık** (2026-08-07 kullanıcı teyidi): aynı kayıtlar Tracker'da
+    ayrıca duruyor, Verimaya'daki kopyası kaybolsa sorun değil. Bu yüzden `closed_won → treated`
+    gibi kalem kalem eşleme gereksiz; tek `UPDATE` yeterli.
+  - Tabloyu boşaltıp ETL'i baştan çalıştırmak **tercih edilmez** — `appointments`,
+    `transactions`, `files`, `case_notes` hepsi `patient_id`'ye bağlı, cascade ile silinir;
+    tek satırlık `UPDATE`'ten pahalı.
+  - Eşleme tablosu `docs/legacy-reference/ETL-ESLEME.md` §2.5'e işlenir (ETL de aynı
+    varsayılanı yazmalı — bugün `lead` yazıyor).
+  - **Kabul (Adım 2+3):** `patientStatusSchema` yalnız operasyon değerleri içeriyor;
+    `patientStatusLabels` güncel; migration sonrası `SELECT DISTINCT status FROM patients`
+    yalnız yeni değerleri döndürüyor; kolon varsayılanı yeni değer; `/patients` ve `/reports`
+    hata vermeden açılıyor; tenant izolasyon testleri yeşil.
+  - **Görüş (Adım 2+3):** Tek migration `0029_patient_status_operational.sql`: legacy →
+    `scheduled`, DEFAULT `scheduled`, CHECK daraltıldı. Marketing `closed_*` → `treated_*`
+    (`status === 'treated'`). ETL/MSW/web güncellendi. iOS bilinçli atlandı (IOS-01 drift notu).
 - [ ] **Adım 4 — GHL sahiplik kuralını "planlanan"dan çıkar:** `settings.ghl.ownership.heading`
   başlığındaki "(planlanan)" kaldırılır; kural yazılı olduğu gibi uygulanır
   (çakışmada kaynak sahibi kazanır + audit). İdeal akış: GHL'de lead olgunlaşınca
@@ -300,6 +321,31 @@
   `source` alanı kalır (ROAS/hasta-başı-maliyet buna bağlı) ama **satış hunisi olarak sunulmaz**.
 - [ ] **Adım 6 — MSW demo notunu ayır:** Demo/fixture verisindeki lead dili "demo" etiketiyle
   işaretlenir; gerçek panelde operasyon dili görünür.
+- [ ] **Adım 7 — Hasta birleştirmeyi "boş dosya" ile sınırla (karar: Açık sorular §2).**
+  Dedup'ın amacı aynı **kişinin kayıt bilgisini** birleştirmek; kişinin **gelişlerini** tek
+  dosyada toplamak değil. Bugünkü `merge` bu ikisini ayırmıyor — aynı işlemde hem kapak
+  bilgisini topluyor hem randevu/işlem taşıyor. Ayrılacak.
+
+  **İki farklı durum, iki farklı davranış:**
+
+  | Durum | Davranış |
+  | --- | --- |
+  | Dosyada **randevu veya işlem var** | Mükerrer sayılmaz, gruplarda **hiç görünmez**. Bu meşru bir geliştir; birleştirilirse hangi randevu/ödeme hangi gelişe aitti geri dönülemez şekilde kaybolur. |
+  | **İkisi de tamamen boş** (randevu 0, işlem 0) | Birleştirilebilir: eksik alanlar (telefon / e-posta / kaynak / notlar) hedef kayda doldurulur, fazla kayıt silinir. Taşınacak randevu/işlem zaten yok. |
+
+  - `GET /v1/patients/duplicate-groups` yalnız **randevusu ve işlemi olmayan** hastaları döndürür.
+  - `POST /v1/patients/merge` ön koşul kontrolü yapar: hedef veya kaynakta randevu/işlem varsa
+    **409** (`patient_has_records`) döner. FK taşıma mantığı kalkar; yerine **alan doldurma**
+    (yalnız hedefte boş olan alanlar kaynaktan yazılır) + kaynak kaydı silme gelir.
+  - UI dili "birleştir"den **"eksik bilgiyi tamamla, fazla dosyayı kapat"**a çevrilir
+    (`messages.ts`, tr + en). "Çift kayıt tara" butonu kalır.
+  - **Korunacak:** kişi tarafı dedup'ın tamamı (`/contacts/duplicate-groups`, `/contacts/merge`)
+    — dokunulmaz. Kullanıcı örneği ("bir kayıtta telefon, diğerinde e-posta") kimlik düzeyinde
+    zaten orada çözülüyor.
+  - **Kabul (Adım 7):** Randevusu/işlemi olan hasta mükerrer grubunda görünmüyor; böyle bir
+    merge denemesi 409 dönüyor (negatif test); iki boş kayıtta telefon+e-posta tek kayıtta
+    birleşiyor ve diğeri siliniyor (pozitif test); tenant izolasyon spec'i geçiyor;
+    `docs/legacy-reference/kisiler.md` hasta-merge satırı bu kararla güncellenmiş.
 - **Dosyalar:** `packages/shared/src/patient.ts`, `apps/api/src/db/schema/patients.ts` + yeni migration,
   `apps/api/src/patients/patients.service.ts`, `apps/web/src/routes/patients/**`,
   `apps/web/src/routes/reports/+page.svelte`, `apps/web/src/lib/components/PatientFormDialog.svelte`,
@@ -593,7 +639,12 @@ Sıra dışıdır; PILOT-02 geri bildirimi hangisinin gerçekten istendiğini g�
 
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (teknik/tescil adı `verimaya`;
   görünen marka adı **"Veri Maya"** — bkz. DOC-03b)
-- **IOS-01:** iOS smoke'u dondur veya resmen kapat (öneri: pilot bitene kadar dondur)
+- **IOS-01:** iOS smoke'u dondur veya resmen kapat (öneri: pilot bitene kadar dondur).
+  **Birikmiş drift (2026-08-07):** DOMAIN-01 Adım 2+3 iOS'a uygulanmadı — `Models.swift`
+  hasta status enum'u hâlâ CRM değerlerini (`lead` vb.) taşıyor, `PatientFormView` default
+  `.lead`, marketing `closedCount` / `costPerClosed` eski adlarda, test JSON'ları eski.
+  Bilinçli atlandı: iOS `pnpm test` filtrelerinde yok (api/shared/web) ve donmuş durumda.
+  **iOS çözülürse bu drift ilk kapatılacak kalem.**
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse)
 - **CSP/HSTS başlık denetimi:** canlıda kanıtlı kontrol
 - **pnpm audit / Dependabot:** CI'da düzenli güvenlik taraması
@@ -648,12 +699,14 @@ Kaynak: `docs/tracker-verimaya-ozellik-gap.md`. Ertelenebilir; pilot sonrası de
 1. **Silme politikası — GAP-06'yı bloklar.** İşlem / randevu / kişi için hard-delete mi
    soft-delete mi? Türk mali mevzuatı 10 yıl saklama (`AUDIT-F09-06`) ile KVKK silme hakkı
    (`AUDIT-F09-07`) çatışıyor. Karar verilmeden üç endpoint yazılamaz.
-2. **Patient merge semantiği — DOMAIN-01'in açık ucu.** DOMAIN-01 "aynı kişide 2. geliş =
-   yeni patient" diyor; ama `/patients/duplicate-groups` + `/patients/merge` bugün var ve
-   **iki meşru operasyon dosyasını birleştirebilir**. Kimlik `Contact`'ta, epizot `Patient`'ta
-   olacaksa hasta birleştirme yüzeyi ya kaldırılmalı ya "yanlışlıkla iki kez açılmış aynı
-   epizot" ile sınırlandırılmalı. **Bu kapsam dışı bırakıldı (Adım 2 = kopya + status);
-   ayrı karar gerekiyor.**
+2. ~~**Patient merge semantiği**~~ → **KARAR VERİLDİ (2026-08-07, kullanıcı onayı).**
+   Dedup'ın amacı aynı **kişinin kayıt bilgisini** birleştirmek; kişinin **gelişlerini** tek
+   dosyada toplamak değil. Aynı kişinin 2. gelişi ayrı `Patient` dosyasıdır ve birleştirilmez.
+   **Ama tamamen keskin kaldırma da yanlış:** "bir kayıtta telefon var, diğerinde e-posta"
+   durumunda ikisi de boşsa bilgiyi tek kayıtta toplamak gerekir — bu alan doldurmadır,
+   epizot birleştirme değil. Karar: **randevusu/işlemi olan dosya asla birleştirilmez;
+   iki boş dosya alan doldurma + silme ile birleşir.** Kişi tarafı dedup dokunulmaz.
+   → Uygulama: **DOMAIN-01 Adım 7**.
 3. **Randevu durumu enum kalacak mı?** Pilot bir tenant'ın kendi durumunu istemesi durumunda
    enum → FK migrasyonu gerekir. PILOT-02 bunu cevaplayacak mı?
 4. **Checklist ölü özellik mi?** `ayarlar.md` "çoğu tenant'ta kullanılmıyor"; Tracker canlı

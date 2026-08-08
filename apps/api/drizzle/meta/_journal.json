@@ -204,6 +204,13 @@
       "when": 1753913000000,
       "tag": "0028_appointment_types",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1753914000000,
+      "tag": "0029_patient_status_operational",
+      "breakpoints": true
     }
   ]
 }

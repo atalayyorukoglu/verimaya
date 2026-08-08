@@ -5,11 +5,11 @@ import type { RealRoasInput, RealRoasResult } from './schema.js';
  * Money inputs/outputs are integer minor units (kuruş).
  */
 export function calculateRealRoas(input: RealRoasInput): RealRoasResult {
-	const { spendMinor, revenueMinor, leads, closed } = input;
+	const { spendMinor, revenueMinor, leads, treated } = input;
 
 	return {
 		realRoas: spendMinor > 0 ? revenueMinor / spendMinor : null,
 		costPerLead: leads > 0 ? Math.round(spendMinor / leads) : null,
-		costPerClosed: closed > 0 ? Math.round(spendMinor / closed) : null
+		costPerTreated: treated > 0 ? Math.round(spendMinor / treated) : null
 	};
 }

@@ -99,7 +99,7 @@
 			"full_name": "Örnek Lead",
 			"phone": null,
 			"email": null,
-			"status": "lead",
+			"status": "scheduled",
 			"source": null,
 			"notes": "Email/phone yok — status default örneği",
 			"contact_id": null,

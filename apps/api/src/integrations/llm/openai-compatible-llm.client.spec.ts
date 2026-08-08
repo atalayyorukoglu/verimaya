@@ -14,7 +14,7 @@ const patients: Patient[] = [
 		full_name: 'Ayşe Yılmaz',
 		phone: null,
 		email: null,
-		status: 'lead',
+		status: 'scheduled',
 		source: null,
 		notes: null,
 		contact_id: null,

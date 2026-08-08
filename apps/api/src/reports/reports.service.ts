@@ -379,7 +379,7 @@ export class ReportsService {
 	}
 
 	/**
-	 * Real ROAS report: ad spend vs tahsilat (paid income) + lead/closed cohort by source.
+	 * Real ROAS report: ad spend vs tahsilat (paid income) + file/treated cohort by source.
 	 * Revenue denominator = TAHSİLAT (paid_amount → tenant base), not invoice amount.
 	 */
 	async marketing(tenantId: string, params: MarketingReportParams): Promise<MarketingReport> {
@@ -392,7 +392,7 @@ export class ReportsService {
 				params,
 				tenantBase
 			);
-			const { leads_count, closed_count, cohortBySource } = await this.patientCohortBySource(
+			const { leads_count, treated_count, cohortBySource } = await this.patientCohortBySource(
 				db,
 				tenantId,
 				params
@@ -405,23 +405,23 @@ export class ReportsService {
 					return {
 						source,
 						leads: cohort?.leads ?? 0,
-						closed: cohort?.closed ?? 0,
+						treated: cohort?.treated ?? 0,
 						revenue_base: revenueBySource.get(source) ?? 0
 					};
 				})
 				.sort(
 					(a, b) =>
 						Math.abs(b.leads) +
-						Math.abs(b.closed) +
+						Math.abs(b.treated) +
 						Math.abs(b.revenue_base) -
-						(Math.abs(a.leads) + Math.abs(a.closed) + Math.abs(a.revenue_base))
+						(Math.abs(a.leads) + Math.abs(a.treated) + Math.abs(a.revenue_base))
 				);
 
 			const metrics = calculateRealRoas({
 				spendMinor: spend_base,
 				revenueMinor: revenue_base,
 				leads: leads_count,
-				closed: closed_count
+				treated: treated_count
 			});
 
 			return {
@@ -430,9 +430,9 @@ export class ReportsService {
 				revenue_base,
 				real_roas: metrics.realRoas,
 				leads_count,
-				closed_count,
+				treated_count,
 				cost_per_lead: metrics.costPerLead,
-				cost_per_closed: metrics.costPerClosed,
+				cost_per_treated: metrics.costPerTreated,
 				by_source
 			};
 		});
@@ -566,8 +566,8 @@ export class ReportsService {
 		params: MarketingReportParams
 	): Promise<{
 		leads_count: number;
-		closed_count: number;
-		cohortBySource: Map<string, { leads: number; closed: number }>;
+		treated_count: number;
+		cohortBySource: Map<string, { leads: number; treated: number }>;
 	}> {
 		const conditions = [isNull(patients.deletedAt)];
 		if (params.from) {
@@ -587,22 +587,22 @@ export class ReportsService {
 			.from(patients)
 			.where(and(...conditions));
 
-		const cohortBySource = new Map<string, { leads: number; closed: number }>();
+		const cohortBySource = new Map<string, { leads: number; treated: number }>();
 		let leads_count = 0;
-		let closed_count = 0;
+		let treated_count = 0;
 
 		for (const row of rows) {
 			leads_count += 1;
-			const isClosed = row.status === 'closed_won';
-			if (isClosed) closed_count += 1;
+			const isTreated = row.status === 'treated';
+			if (isTreated) treated_count += 1;
 
 			const label = sourceLabel(row.source);
-			const cur = cohortBySource.get(label) ?? { leads: 0, closed: 0 };
+			const cur = cohortBySource.get(label) ?? { leads: 0, treated: 0 };
 			cur.leads += 1;
-			if (isClosed) cur.closed += 1;
+			if (isTreated) cur.treated += 1;
 			cohortBySource.set(label, cur);
 		}
 
-		return { leads_count, closed_count, cohortBySource };
+		return { leads_count, treated_count, cohortBySource };
 	}
 }

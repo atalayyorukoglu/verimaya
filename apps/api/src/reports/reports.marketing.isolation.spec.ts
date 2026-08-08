@@ -51,7 +51,7 @@ describe('reports marketing tenant isolation', () => {
 					${tenantA},
 					'Patient A Meta',
 					'Meta Ads',
-					'closed_won',
+					'treated',
 					timestamptz '2026-01-15 12:00:00+00'
 				)
 				returning id
@@ -66,7 +66,7 @@ describe('reports marketing tenant isolation', () => {
 					${tenantB},
 					'Patient B Google',
 					'Google Ads',
-					'closed_won',
+					'treated',
 					timestamptz '2026-01-15 12:00:00+00'
 				)
 				returning id
@@ -141,7 +141,7 @@ describe('reports marketing tenant isolation', () => {
 		expect(report.spend_base).toBe(100000);
 		expect(report.revenue_base).toBe(300000);
 		expect(report.leads_count).toBe(1);
-		expect(report.closed_count).toBe(1);
+		expect(report.treated_count).toBe(1);
 		expect(report.real_roas).toBeCloseTo(3);
 		expect(report.by_source.map((r) => r.source)).toContain('Meta Ads');
 		expect(report.by_source.map((r) => r.source)).not.toContain('Google Ads');

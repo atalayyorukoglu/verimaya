@@ -13,7 +13,7 @@ export type MarketingReportParams = z.infer<typeof marketingReportParams>;
 export const marketingSourceRow = z.object({
 	source: z.string(),
 	leads: z.number().int().nonnegative(),
-	closed: z.number().int().nonnegative(),
+	treated: z.number().int().nonnegative(),
 	revenue_base: moneyMinor
 });
 export type MarketingSourceRow = z.infer<typeof marketingSourceRow>;
@@ -24,9 +24,9 @@ export const marketingReportSchema = z.object({
 	revenue_base: moneyMinor,
 	real_roas: z.number().nullable(),
 	leads_count: z.number().int().nonnegative(),
-	closed_count: z.number().int().nonnegative(),
+	treated_count: z.number().int().nonnegative(),
 	cost_per_lead: moneyMinor.nullable(),
-	cost_per_closed: moneyMinor.nullable(),
+	cost_per_treated: moneyMinor.nullable(),
 	by_source: z.array(marketingSourceRow)
 });
 export type MarketingReport = z.infer<typeof marketingReportSchema>;

@@ -885,10 +885,10 @@
 							: formatMoney(marketing.cost_per_lead, baseCurrency)}
 					</p>
 					<p class="mt-0.5 text-sm font-semibold text-text tabular-nums">
-						<span class="text-text-muted">CPA</span>
-						{marketing.cost_per_closed == null
+						<span class="text-text-muted">CPT</span>
+						{marketing.cost_per_treated == null
 							? '—'
-							: formatMoney(marketing.cost_per_closed, baseCurrency)}
+							: formatMoney(marketing.cost_per_treated, baseCurrency)}
 					</p>
 				</div>
 			</div>
@@ -901,7 +901,7 @@
 				<div class="flex flex-wrap items-baseline justify-between gap-2">
 					<h2 class="text-sm font-semibold text-text">Kaynak kırılımı</h2>
 					<p class="text-xs text-text-muted">
-						{marketing.leads_count} lead · {marketing.closed_count} kapalı
+						{marketing.leads_count} dosya · {marketing.treated_count} tedavi edilen
 					</p>
 				</div>
 
@@ -913,8 +913,8 @@
 							<thead>
 								<tr class="border-b border-border text-xs text-text-muted">
 									<th class="px-1 pb-2 font-medium">Kaynak</th>
-									<th class="px-1 pb-2 text-right font-medium">Lead</th>
-									<th class="px-1 pb-2 text-right font-medium">Kapalı</th>
+									<th class="px-1 pb-2 text-right font-medium">Dosya</th>
+									<th class="px-1 pb-2 text-right font-medium">Tedavi edilen</th>
 									<th class="px-1 pb-2 text-right font-medium">Tahsilat</th>
 								</tr>
 							</thead>
@@ -926,7 +926,7 @@
 											{row.leads}
 										</td>
 										<td class="px-1 py-2.5 text-right text-text tabular-nums">
-											{row.closed}
+											{row.treated}
 										</td>
 										<td class="px-1 py-2.5 text-right text-text tabular-nums">
 											{formatMoney(row.revenue_base, baseCurrency)}

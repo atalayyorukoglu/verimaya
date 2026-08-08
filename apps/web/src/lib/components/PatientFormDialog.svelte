@@ -42,7 +42,7 @@
 	let full_name = $state('');
 	let phone = $state('');
 	let email = $state('');
-	let status = $state<PatientStatus>('lead');
+	let status = $state<PatientStatus>('scheduled');
 	let source = $state('');
 	let notes = $state('');
 	let assigned_user_id = $state('');
@@ -52,7 +52,7 @@
 		full_name = patient?.full_name ?? '';
 		phone = patient?.phone ?? '';
 		email = patient?.email ?? '';
-		status = patient?.status ?? 'lead';
+		status = patient?.status ?? 'scheduled';
 		source = patient?.source ?? '';
 		notes = patient?.notes ?? '';
 		assigned_user_id = patient?.assigned_user_id ?? '';

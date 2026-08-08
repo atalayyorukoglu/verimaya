@@ -29,7 +29,7 @@ describe('reportPatientDistributionSchema', () => {
 	it('accepts status and source breakdown', () => {
 		const parsed = reportPatientDistributionSchema.parse({
 			period: { from: null, to: null },
-			by_status: [{ status: 'lead', count: 3 }],
+			by_status: [{ status: 'scheduled', count: 3 }],
 			by_source: [{ source: 'Meta', count: 2 }],
 			total: 3
 		});

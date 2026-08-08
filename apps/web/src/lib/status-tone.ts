@@ -9,19 +9,15 @@ type Tone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'info';
 
 export function patientStatusTone(status: PatientStatus): Tone {
 	switch (status) {
-		case 'closed_won':
 		case 'treated':
 			return 'success';
-		case 'closed_lost':
+		case 'cancelled':
 			return 'danger';
 		case 'scheduled':
 		case 'arrived':
 			return 'brand';
-		case 'qualified':
 		case 'follow_up':
 			return 'info';
-		case 'contacted':
-			return 'warning';
 		default:
 			return 'neutral';
 	}

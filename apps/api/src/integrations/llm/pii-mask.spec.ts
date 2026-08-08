@@ -15,7 +15,7 @@ function patient(id: string, full_name: string): Patient {
 		full_name,
 		phone: null,
 		email: null,
-		status: 'lead',
+		status: 'scheduled',
 		source: null,
 		notes: null,
 		contact_id: null,
