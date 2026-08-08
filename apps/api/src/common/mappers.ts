@@ -23,15 +23,30 @@ type ParseSchema<T> = {
 		data: unknown
 	) =>
 		| { success: true; data: T }
-		| { success: false; error: { issues: ReadonlyArray<{ message: string }> } };
+		| {
+				success: false;
+				error: {
+					issues: ReadonlyArray<{
+						message: string;
+						params?: { code?: string };
+					}>;
+				};
+		  };
 };
+
+function errorCodeFromIssues(
+	issues: ReadonlyArray<{ message: string; params?: { code?: string } }>
+): string {
+	const code = issues[0]?.params?.code;
+	return typeof code === 'string' && code.length > 0 ? code : 'validation_error';
+}
 
 export function parseBody<T>(schema: ParseSchema<T>, body: unknown, req: FastifyRequest): T {
 	const parsed = schema.safeParse(body);
 	if (!parsed.success) {
 		throw new BadRequestException({
 			error: {
-				code: 'validation_error',
+				code: errorCodeFromIssues(parsed.error.issues),
 				message: parsed.error.issues.map((issue) => issue.message).join('; ')
 			},
 			request_id: req.id

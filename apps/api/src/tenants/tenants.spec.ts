@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { INVALID_TIMEZONE_CODE, tenantUpdateSchema } from '@verimaya/shared';
+import type { FastifyRequest } from 'fastify';
 import { closeDb, getDb } from '../db/client';
+import { parseBody } from '../common/mappers';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { TenantsService } from './tenants.service';
 
@@ -149,5 +152,32 @@ describe('tenants current (get/update)', () => {
 
 	it('throws not_found for an unknown tenant id', async () => {
 		await expect(tenantsService.get(randomUUID())).rejects.toThrow(NotFoundException);
+	});
+});
+
+describe('PATCH /v1/tenants/current timezone validation (AUDIT-F09-19)', () => {
+	it('parseBody rejects non-IANA timezone with invalid_timezone', () => {
+		const req = { id: 'audit-f09-19' } as FastifyRequest;
+		try {
+			parseBody(tenantUpdateSchema, { timezone: 'Not/A_Real_Zone' }, req);
+			expect.unreachable('expected BadRequestException');
+		} catch (err) {
+			expect(err).toBeInstanceOf(BadRequestException);
+			const body = (err as BadRequestException).getResponse() as {
+				error: { code: string; message: string };
+			};
+			expect(body.error.code).toBe(INVALID_TIMEZONE_CODE);
+			expect(body.error.message).toMatch(/IANA/i);
+		}
+	});
+
+	it('parseBody accepts preset and extra valid IANA timezones', () => {
+		const req = { id: 'audit-f09-19-ok' } as FastifyRequest;
+		expect(parseBody(tenantUpdateSchema, { timezone: 'Europe/Istanbul' }, req).timezone).toBe(
+			'Europe/Istanbul'
+		);
+		expect(parseBody(tenantUpdateSchema, { timezone: 'America/New_York' }, req).timezone).toBe(
+			'America/New_York'
+		);
 	});
 });

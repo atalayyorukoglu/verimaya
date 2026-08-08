@@ -627,13 +627,11 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 - **AUDIT-F09-16** `_tmp_*` sıfır-byte dosyaları temizle + `.gitignore`/.dockerignore ekle. **(S)**
 - **AUDIT-F09-17** Contacts duplicate-detection — sayfalama/cap ekle (şu an O(N) bellek). **(M)**
 - **AUDIT-F09-18** Per-method vs class-level guard standardizasyonu (`ads.controller.ts`, `ghl.controller.ts`); reflection-based `@UseGuards` coverage. **(S)**
-- **AUDIT-F09-19** `tenants.timezone` IANA doğrulaması (`Intl.supportedValuesOf`). **(S)**
-  ⚠️ **Öncelik yükseldi (2026-08-07, GAP-07 review):** GAP-07 ile `tenants.timezone` artık
-  ham SQL'e gömülüyor (`reports.service.ts` `appointmentMetrics` → `sql.raw(tzLiteral)`,
-  `AT TIME ZONE`). Tırnak kaçırma var (`'` → `''`) yani string break-out kapalı; kalan risk
-  doğrulanmamış değerle Postgres hatası → rapor 500. Bu commit'ten **önce** timezone hiçbir
-  ham SQL yolunda değildi. Doğrulama eklenene kadar `appointmentMetrics` bozuk tz değerine
-  karşı savunmasız. **GAP-05'ten önce yapılmalı** — tek satırlık zod refine.
+- **AUDIT-F09-19** `tenants.timezone` IANA doğrulaması (`Intl.DateTimeFormat` probe). **(S)** ✅
+  ⚠️ ~~Öncelik yükseldi (2026-08-07, GAP-07 review):~~ Kapandı (2026-08-08).
+  `tenantTimezoneSchema` → `new Intl.DateTimeFormat(..., { timeZone })` try/catch (UTC/Etc/UTC
+  dahil; `supportedValuesOf` alias kaçırıyordu); `parseBody` zod `params.code` →
+  `invalid_timezone` (400). UI listesi `TENANT_TIMEZONES` kaldı.
 - **AUDIT-F09-20** `corsOrigins` allowlist hot-reload (read-at-boot artı prod restart gerektirir). **(M, düşük öncelik)**
 
 ### Faz 9 — Tracker gap analizi P2 kalemleri (2026-08-07)

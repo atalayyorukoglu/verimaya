@@ -40,7 +40,9 @@
 		name = tenant.name;
 		baseCurrency = tenant.base_currency;
 		patientsLabel = tenant.patients_section_label;
-		timezone = tenant.timezone;
+		timezone = (TENANT_TIMEZONES as readonly string[]).includes(tenant.timezone)
+			? (tenant.timezone as TenantTimezone)
+			: 'Europe/Istanbul';
 		hydratedFor = tenant.id;
 	}
 
