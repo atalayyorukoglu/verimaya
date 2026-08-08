@@ -1,4 +1,5 @@
 import type { AdsProviderAdapter, NormalizedAdMetricRow } from '../ads/ads.types';
+import { parseAdsCurrency } from '../ads/ads-currency';
 
 export type GoogleAdsAdapterConfig = {
 	clientId: string;
@@ -262,6 +263,15 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		const failures: string[] = [];
 
 		for (const customerId of candidates) {
+			let currency: string;
+			try {
+				currency = await this.fetchCustomerCurrency(accessToken, customerId);
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : String(err);
+				failures.push(`${customerId}: ${msg}`);
+				continue;
+			}
+
 			const res = await this.searchStream(accessToken, customerId, query);
 			const body = await readJsonBody<unknown>(res, 'Google searchStream failed');
 			if (!res.ok) {
@@ -273,7 +283,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 			const batches = this.normalizeStreamBatches(body);
 			for (const batch of batches) {
 				for (const row of batch.results ?? []) {
-					const mapped = this.mapResultRow(row);
+					const mapped = this.mapResultRow(row, currency);
 					if (mapped) out.push(mapped);
 				}
 			}
@@ -287,6 +297,30 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		}
 
 		return out;
+	}
+
+	/** Account currency_code from Google Ads — never defaulted. */
+	private async fetchCustomerCurrency(
+		accessToken: string,
+		customerId: string
+	): Promise<string> {
+		const query = 'SELECT customer.currency_code FROM customer LIMIT 1';
+		const res = await this.searchStream(accessToken, customerId, query);
+		const body = await readJsonBody<unknown>(res, 'Google customer currency failed');
+		if (!res.ok) {
+			throw new Error(googleErrorMessage('customer currency', body, res.status));
+		}
+		const batches = this.normalizeStreamBatches(body);
+		for (const batch of batches) {
+			for (const row of batch.results ?? []) {
+				const raw =
+					(row as { customer?: { currencyCode?: string; currency_code?: string } }).customer
+						?.currencyCode ??
+					(row as { customer?: { currency_code?: string } }).customer?.currency_code;
+				if (raw) return parseAdsCurrency(raw, `Google customer ${customerId}`);
+			}
+		}
+		throw new Error(`Google customer ${customerId}: currency_code missing from API response`);
 	}
 
 	private searchStream(
@@ -398,7 +432,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 		return [];
 	}
 
-	private mapResultRow(row: GoogleAdsResult): NormalizedAdMetricRow | null {
+	private mapResultRow(row: GoogleAdsResult, currency: string): NormalizedAdMetricRow | null {
 		const date = row.segments?.date;
 		const campaignId = row.campaign?.id;
 		if (!date || campaignId == null) return null;
@@ -413,6 +447,7 @@ export class GoogleAdsAdapter implements AdsProviderAdapter {
 			date,
 			campaignId: String(campaignId),
 			spendMinor: Number.isFinite(costMicros) ? Math.round(costMicros / 10_000) : 0,
+			currency,
 			impressions: Number.isFinite(impressions) ? impressions : 0,
 			clicks: Number.isFinite(clicks) ? clicks : 0
 		};

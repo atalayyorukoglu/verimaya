@@ -879,46 +879,73 @@
 	{:else if tab === 'pazarlama'}
 		{@const marketing = marketingQuery.data}
 		{#if !marketing}
-			<p class="text-sm text-text-muted">Pazarlama raporu yüklenemedi.</p>
+			<p class="text-sm text-text-muted">{t('reports.marketing.loadError')}</p>
 		{:else}
+			{#if marketing.spend_fx_missing}
+				<div
+					class="mb-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-text"
+					role="status"
+				>
+					<p class="font-medium">{t('reports.marketing.fxMissing')}</p>
+					<p class="mt-0.5 text-text-muted">{t('reports.marketing.fxMissingHint')}</p>
+				</div>
+			{/if}
 			<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
 				<div class="rounded-lg border border-border bg-surface p-4">
-					<p class="text-xs text-text-muted">Reklam harcaması ({baseCurrency})</p>
+					<p class="text-xs text-text-muted">
+						{t('reports.marketing.spend', { currency: baseCurrency })}
+					</p>
 					<p class="mt-1 truncate text-lg font-semibold text-text tabular-nums">
-						{formatMoney(marketing.spend_base, baseCurrency)}
+						{#if marketing.spend_fx_missing || marketing.spend_base == null}
+							<span class="text-warning">{t('reports.marketing.fxMissing')}</span>
+						{:else}
+							{formatMoney(marketing.spend_base, baseCurrency)}
+						{/if}
 					</p>
 				</div>
 				<div class="rounded-lg border border-border bg-surface p-4">
-					<p class="text-xs text-text-muted">Tahsilat (dönem) ({baseCurrency})</p>
+					<p class="text-xs text-text-muted">
+						{t('reports.marketing.revenue', { currency: baseCurrency })}
+					</p>
 					<p class="mt-1 truncate text-lg font-semibold text-success tabular-nums">
 						{formatMoney(marketing.revenue_base, baseCurrency)}
 					</p>
 				</div>
 				<div class="rounded-lg border border-border bg-surface p-4">
-					<p class="text-xs text-text-muted">Gerçek ROAS</p>
+					<p class="text-xs text-text-muted">{t('reports.marketing.roas')}</p>
 					<p class="mt-1 truncate text-lg font-semibold text-text tabular-nums">
-						{marketing.real_roas == null ? '—' : formatRatio(marketing.real_roas)}
+						{#if marketing.spend_fx_missing}
+							<span class="text-warning">{t('reports.marketing.fxMissing')}</span>
+						{:else}
+							{marketing.real_roas == null ? '—' : formatRatio(marketing.real_roas)}
+						{/if}
 					</p>
 				</div>
 				<div class="rounded-lg border border-border bg-surface p-4">
-					<p class="text-xs text-text-muted">Hasta başı maliyet</p>
-					<p class="mt-1 text-sm font-semibold text-text tabular-nums">
-						<span class="text-text-muted">CPL</span>
-						{marketing.cost_per_lead == null
-							? '—'
-							: formatMoney(marketing.cost_per_lead, baseCurrency)}
-					</p>
-					<p class="mt-0.5 text-sm font-semibold text-text tabular-nums">
-						<span class="text-text-muted">CPT</span>
-						{marketing.cost_per_treated == null
-							? '—'
-							: formatMoney(marketing.cost_per_treated, baseCurrency)}
-					</p>
+					<p class="text-xs text-text-muted">{t('reports.marketing.cplLabel')}</p>
+					{#if marketing.spend_fx_missing}
+						<p class="mt-1 text-sm font-semibold text-warning">
+							{t('reports.marketing.fxMissing')}
+						</p>
+					{:else}
+						<p class="mt-1 text-sm font-semibold text-text tabular-nums">
+							<span class="text-text-muted">CPL</span>
+							{marketing.cost_per_lead == null
+								? '—'
+								: formatMoney(marketing.cost_per_lead, baseCurrency)}
+						</p>
+						<p class="mt-0.5 text-sm font-semibold text-text tabular-nums">
+							<span class="text-text-muted">CPT</span>
+							{marketing.cost_per_treated == null
+								? '—'
+								: formatMoney(marketing.cost_per_treated, baseCurrency)}
+						</p>
+					{/if}
 				</div>
 			</div>
 
 			<p class="mt-3 text-xs text-text-muted">
-				Gerçek ROAS = dönem tahsilatı ÷ reklam harcaması. Platform ROAS'tan farklıdır.
+				{t('reports.marketing.footnote')}
 			</p>
 
 			<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">

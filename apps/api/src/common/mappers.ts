@@ -204,6 +204,11 @@ export function toAdMetric(row: AdMetricsDailyRow): AdMetric {
 		date: row.date,
 		campaign_id: row.campaignId,
 		spend_minor: row.spendMinor,
+		currency: (row.currency as AdMetric['currency']) ?? null,
+		spend_base: row.spendBase ?? null,
+		base_currency: (row.baseCurrency as AdMetric['base_currency']) ?? null,
+		fx_rate: row.fxRate ?? null,
+		fx_dated: row.fxDated ?? null,
 		impressions: row.impressions,
 		clicks: row.clicks
 	};

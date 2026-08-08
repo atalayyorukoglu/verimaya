@@ -20,13 +20,16 @@ export type MarketingSourceRow = z.infer<typeof marketingSourceRow>;
 
 export const marketingReportSchema = z.object({
 	period: reportPeriodSchema,
-	spend_base: moneyMinor,
+	/** Sum of ad spend resolved to tenant base; null when any row lacks FX. */
+	spend_base: moneyMinor.nullable(),
 	revenue_base: moneyMinor,
 	real_roas: z.number().nullable(),
 	leads_count: z.number().int().nonnegative(),
 	treated_count: z.number().int().nonnegative(),
 	cost_per_lead: moneyMinor.nullable(),
 	cost_per_treated: moneyMinor.nullable(),
+	/** True when at least one spend row cannot be converted to tenant base. */
+	spend_fx_missing: z.boolean(),
 	by_source: z.array(marketingSourceRow)
 });
 export type MarketingReport = z.infer<typeof marketingReportSchema>;

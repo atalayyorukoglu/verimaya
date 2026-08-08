@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDate, moneyMinor } from './common.js';
+import { isoDate, moneyMinor, supportedCurrencySchema } from './common.js';
 
 export const adProviderSchema = z.enum(['meta', 'google']);
 export type AdProvider = z.infer<typeof adProviderSchema>;
@@ -11,6 +11,11 @@ export const adMetricSchema = z.object({
 	date: isoDate,
 	campaign_id: z.string(),
 	spend_minor: moneyMinor,
+	currency: supportedCurrencySchema.nullable(),
+	spend_base: moneyMinor.nonnegative().nullable(),
+	base_currency: supportedCurrencySchema.nullable(),
+	fx_rate: z.number().positive().nullable(),
+	fx_dated: isoDate.nullable(),
 	impressions: z.number().int(),
 	clicks: z.number().int()
 });

@@ -1,17 +1,27 @@
 import { resolveCollectedAmount } from '@verimaya/shared';
 
-export type TxAmountRow = {
-	kind: string;
-	status: string;
+/** Shared FX snapshot input — transactions and ad spend both use this. */
+export type BaseAmountRow = {
 	amount: number;
 	amountBase: number | null;
-	/** Currency the amount_base snapshot was stored in; must match tenant base to count. */
+	/** Currency the amount_base / spend_base snapshot was stored in; must match tenant base. */
 	baseCurrency: string | null;
-	currency: string;
+	/** Native currency; null = incomplete (cannot include in base totals). */
+	currency: string | null;
+};
+
+export type TxAmountRow = BaseAmountRow & {
+	kind: string;
+	status: string;
 	paidAmount: number | null;
 };
 
-export function resolveBaseAmount(row: TxAmountRow, tenantBase: string): number | null {
+/**
+ * Amount in tenant reporting currency (minor units), or null if not convertible.
+ * Immutable FX snapshot only — never live rates.
+ */
+export function resolveBaseAmount(row: BaseAmountRow, tenantBase: string): number | null {
+	if (row.currency == null || row.currency === '') return null;
 	if (row.currency === tenantBase) {
 		return row.amountBase ?? row.amount;
 	}

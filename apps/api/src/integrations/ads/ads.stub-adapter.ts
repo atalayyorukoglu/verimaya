@@ -42,6 +42,7 @@ export class StubAdsAdapter implements AdsProviderAdapter {
 				date: yesterday,
 				campaignId,
 				spendMinor: this.provider === 'meta' ? 22_000 : 18_500,
+				currency: 'TRY',
 				impressions: this.provider === 'meta' ? 9_100 : 7_400,
 				clicks: this.provider === 'meta' ? 410 : 360
 			},
@@ -50,6 +51,7 @@ export class StubAdsAdapter implements AdsProviderAdapter {
 				date: twoDaysAgo,
 				campaignId,
 				spendMinor: this.provider === 'meta' ? 19_400 : 16_200,
+				currency: 'TRY',
 				impressions: this.provider === 'meta' ? 8_200 : 6_800,
 				clicks: this.provider === 'meta' ? 355 : 290
 			}

@@ -88,9 +88,13 @@ describe('MetaAdsAdapter', () => {
 		expect(JSON.parse(secret).adAccountId).toBe('1');
 	});
 
-	it('pullDailyMetrics maps spend major-unit string to kuruş integer', async () => {
+	it('pullDailyMetrics maps spend major-unit string to kuruş integer and reads account currency', async () => {
 		const fetchFn: FetchFn = async (input) => {
 			const url = String(input);
+			if (url.includes('/act_999888777?') || (url.includes('/act_999888777') && url.includes('fields=currency'))) {
+				expect(url).toContain('fields=currency');
+				return jsonResponse({ currency: 'TRY' });
+			}
 			expect(url).toContain('/act_999888777/insights');
 			expect(url).toContain('level=campaign');
 			return jsonResponse({
@@ -118,6 +122,7 @@ describe('MetaAdsAdapter', () => {
 			date: '2026-07-20',
 			campaignId: 'c1',
 			spendMinor: 1250,
+			currency: 'TRY',
 			impressions: 8400,
 			clicks: 320
 		});

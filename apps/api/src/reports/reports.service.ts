@@ -668,12 +668,13 @@ export class ReportsService {
 	/**
 	 * Real ROAS report: ad spend vs tahsilat (paid income) + file/treated cohort by source.
 	 * Revenue denominator = TAHSİLAT (resolveCollectedAmount → tenant base), not invoice amount.
+	 * Spend uses the same resolveBaseAmount FX snapshot rules as transactions (OPS-02c).
 	 */
 	async marketing(tenantId: string, params: MarketingReportParams): Promise<MarketingReport> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const tenantBase = await this.getTenantBase(db, tenantId);
 
-			const spend_base = await this.sumAdSpend(db, params);
+			const { spend_base, spend_fx_missing } = await this.sumAdSpend(db, params, tenantBase);
 			const { revenue_base, revenueBySource } = await this.sumTahsilatBySource(
 				db,
 				params,
@@ -704,6 +705,22 @@ export class ReportsService {
 						(Math.abs(a.leads) + Math.abs(a.treated) + Math.abs(a.revenue_base))
 				);
 
+			// Do not publish ROAS/CPL when any spend row lacks convertible FX.
+			if (spend_fx_missing || spend_base == null) {
+				return {
+					period: { from: params.from ?? null, to: params.to ?? null },
+					spend_base: null,
+					revenue_base,
+					real_roas: null,
+					leads_count,
+					treated_count,
+					cost_per_lead: null,
+					cost_per_treated: null,
+					spend_fx_missing: true,
+					by_source
+				};
+			}
+
 			const metrics = calculateRealRoas({
 				spendMinor: spend_base,
 				revenueMinor: revenue_base,
@@ -720,6 +737,7 @@ export class ReportsService {
 				treated_count,
 				cost_per_lead: metrics.costPerLead,
 				cost_per_treated: metrics.costPerTreated,
+				spend_fx_missing: false,
 				by_source
 			};
 		});
@@ -785,10 +803,14 @@ export class ReportsService {
 	}
 
 	/**
-	 * V1: spendMinor is treated as already in the tenant base currency.
-	 * Cross-currency (USD/TRY) reconciliation for ad spend is deferred to V2.
+	 * Ad spend in tenant base via resolveBaseAmount (FX-01 / OPS-02c).
+	 * Any row that cannot be converted sets spend_fx_missing — caller must not show ROAS.
 	 */
-	private async sumAdSpend(db: TenantDb, params: MarketingReportParams): Promise<number> {
+	private async sumAdSpend(
+		db: TenantDb,
+		params: MarketingReportParams,
+		tenantBase: string
+	): Promise<{ spend_base: number | null; spend_fx_missing: boolean }> {
 		const conditions = [];
 		if (params.from) {
 			conditions.push(gte(adMetricsDaily.date, params.from));
@@ -801,11 +823,39 @@ export class ReportsService {
 		}
 
 		const rows = await db
-			.select({ spendMinor: adMetricsDaily.spendMinor })
+			.select({
+				spendMinor: adMetricsDaily.spendMinor,
+				spendBase: adMetricsDaily.spendBase,
+				baseCurrency: adMetricsDaily.baseCurrency,
+				currency: adMetricsDaily.currency
+			})
 			.from(adMetricsDaily)
 			.where(conditions.length ? and(...conditions) : undefined);
 
-		return rows.reduce((sum, row) => sum + row.spendMinor, 0);
+		let spend_base = 0;
+		let spend_fx_missing = false;
+
+		for (const row of rows) {
+			const base = resolveBaseAmount(
+				{
+					amount: row.spendMinor,
+					amountBase: row.spendBase,
+					baseCurrency: row.baseCurrency,
+					currency: row.currency
+				},
+				tenantBase
+			);
+			if (base == null) {
+				spend_fx_missing = true;
+				continue;
+			}
+			spend_base += base;
+		}
+
+		if (spend_fx_missing) {
+			return { spend_base: null, spend_fx_missing: true };
+		}
+		return { spend_base, spend_fx_missing: false };
 	}
 
 	private async sumTahsilatBySource(

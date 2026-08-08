@@ -687,6 +687,11 @@ function makeAdMetricsDaily(): AdMetric[] {
 			date: isoDayLocal(day),
 			campaign_id: camp.campaign_id,
 			spend_minor: spend,
+			currency: 'TRY',
+			spend_base: null,
+			base_currency: null,
+			fx_rate: null,
+			fx_dated: null,
 			impressions: Math.round(spend / 8) + 200,
 			clicks: Math.round(spend / 900) + 12
 		});

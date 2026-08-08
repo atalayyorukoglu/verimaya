@@ -68,7 +68,7 @@ describe('GoogleAdsAdapter', () => {
 		expect(parsed.customerId).toBe('9876543210');
 	});
 
-	it('pullDailyMetrics maps cost_micros to kuruş integer', async () => {
+	it('pullDailyMetrics maps cost_micros to kuruş integer and reads account currency', async () => {
 		const fetchFn: FetchFn = async (input, init) => {
 			const url = String(input);
 			if (url === 'https://oauth2.googleapis.com/token') {
@@ -85,6 +85,13 @@ describe('GoogleAdsAdapter', () => {
 					'developer-token': 'dev-tok'
 				});
 				const body = JSON.parse(String(init?.body ?? '{}')) as { query: string };
+				if (body.query.includes('customer.currency_code')) {
+					return jsonResponse([
+						{
+							results: [{ customer: { currencyCode: 'TRY' } }]
+						}
+					]);
+				}
 				expect(body.query).toContain('metrics.cost_micros');
 				expect(body.query).toContain("BETWEEN '2026-07-01'");
 				return jsonResponse([
@@ -121,6 +128,7 @@ describe('GoogleAdsAdapter', () => {
 			date: '2026-07-20',
 			campaignId: '123',
 			spendMinor: 1250,
+			currency: 'TRY',
 			impressions: 8400,
 			clicks: 320
 		});
@@ -141,6 +149,10 @@ describe('GoogleAdsAdapter', () => {
 					'developer-token': 'dev-tok',
 					'login-customer-id': '1112223333'
 				});
+				const body = JSON.parse(String(init?.body ?? '{}')) as { query: string };
+				if (body.query.includes('customer.currency_code')) {
+					return jsonResponse([{ results: [{ customer: { currencyCode: 'TRY' } }] }]);
+				}
 				return jsonResponse([]);
 			}
 			throw new Error(`unexpected URL: ${url}`);
@@ -160,7 +172,7 @@ describe('GoogleAdsAdapter', () => {
 	});
 
 	it('resolves MCC via listAccessibleCustomers (skips customer_client)', async () => {
-		const fetchFn: FetchFn = async (input) => {
+		const fetchFn: FetchFn = async (input, init) => {
 			const url = String(input);
 			if (url === 'https://oauth2.googleapis.com/token') {
 				return jsonResponse({ access_token: 'access-fresh' });
@@ -170,21 +182,30 @@ describe('GoogleAdsAdapter', () => {
 					resourceNames: ['customers/1112223333', 'customers/5556667777']
 				});
 			}
-			if (url.includes('/customers/5556667777/googleAds:searchStream')) {
-				return jsonResponse([
-					{
-						results: [
-							{
-								segments: { date: '2026-07-20' },
-								campaign: { id: '99' },
-								metrics: { cost_micros: '1000000', impressions: '10', clicks: '1' }
-							}
-						]
+			if (url.includes('/googleAds:searchStream')) {
+				const body = JSON.parse(String(init?.body ?? '{}')) as { query: string };
+				if (body.query.includes('customer.currency_code')) {
+					if (url.includes('/customers/1112223333/')) {
+						return jsonResponse({ error: { message: 'manager denied' } }, 403);
 					}
-				]);
-			}
-			if (url.includes('/customers/1112223333/googleAds:searchStream')) {
-				return jsonResponse({ error: { message: 'manager denied' } }, 403);
+					return jsonResponse([{ results: [{ customer: { currencyCode: 'TRY' } }] }]);
+				}
+				if (url.includes('/customers/5556667777/')) {
+					return jsonResponse([
+						{
+							results: [
+								{
+									segments: { date: '2026-07-20' },
+									campaign: { id: '99' },
+									metrics: { cost_micros: '1000000', impressions: '10', clicks: '1' }
+								}
+							]
+						}
+					]);
+				}
+				if (url.includes('/customers/1112223333/')) {
+					return jsonResponse({ error: { message: 'manager denied' } }, 403);
+				}
 			}
 			throw new Error(`unexpected URL: ${url}`);
 		};
@@ -203,10 +224,11 @@ describe('GoogleAdsAdapter', () => {
 
 		expect(rows).toHaveLength(1);
 		expect(rows[0]?.campaignId).toBe('99');
+		expect(rows[0]?.currency).toBe('TRY');
 	});
 
 	it('uses GOOGLE_ADS_CUSTOMER_ID override when set', async () => {
-		const fetchFn: FetchFn = async (input) => {
+		const fetchFn: FetchFn = async (input, init) => {
 			const url = String(input);
 			if (url === 'https://oauth2.googleapis.com/token') {
 				return jsonResponse({ access_token: 'access-fresh' });
@@ -215,6 +237,10 @@ describe('GoogleAdsAdapter', () => {
 				throw new Error('should not list when customerId override is set');
 			}
 			if (url.includes('/customers/5556667777/googleAds:searchStream')) {
+				const body = JSON.parse(String(init?.body ?? '{}')) as { query: string };
+				if (body.query.includes('customer.currency_code')) {
+					return jsonResponse([{ results: [{ customer: { currencyCode: 'TRY' } }] }]);
+				}
 				return jsonResponse([]);
 			}
 			throw new Error(`unexpected URL: ${url}`);
@@ -235,33 +261,38 @@ describe('GoogleAdsAdapter', () => {
 	});
 
 	it('surfaces Google Ads authorizationError codes in pull failures', async () => {
-		const fetchFn: FetchFn = async (input) => {
+		const fetchFn: FetchFn = async (input, init) => {
 			const url = String(input);
 			if (url === 'https://oauth2.googleapis.com/token') {
 				return jsonResponse({ access_token: 'access-fresh' });
 			}
 			if (url.includes('/googleAds:searchStream')) {
-				return jsonResponse(
-					{
-						error: {
-							code: 403,
-							message: 'The caller does not have permission',
-							status: 'PERMISSION_DENIED',
-							details: [
-								{
-									errors: [
-										{
-											errorCode: { authorizationError: 'DEVELOPER_TOKEN_NOT_APPROVED' },
-											message:
-												'The developer token is not approved. Non-approved developer tokens can only be used with test accounts.'
-										}
-									]
-								}
-							]
-						}
-					},
-					403
-				);
+				const body = JSON.parse(String(init?.body ?? '{}')) as { query: string };
+				if (body.query.includes('customer.currency_code')) {
+					return jsonResponse(
+						{
+							error: {
+								code: 403,
+								message: 'The caller does not have permission',
+								status: 'PERMISSION_DENIED',
+								details: [
+									{
+										errors: [
+											{
+												errorCode: {
+													authorizationError: 'DEVELOPER_TOKEN_NOT_APPROVED'
+												},
+												message:
+													'The developer token is not approved. Non-approved developer tokens can only be used with test accounts.'
+											}
+										]
+									}
+								]
+							}
+						},
+						403
+					);
+				}
 			}
 			throw new Error(`unexpected URL: ${url}`);
 		};

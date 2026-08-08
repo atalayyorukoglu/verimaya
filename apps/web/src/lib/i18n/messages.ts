@@ -316,6 +316,16 @@ const tr = {
 	'reports.ops.col.completion': 'Tamamlanma',
 	'reports.ops.col.ratio': 'Oran',
 	'reports.ops.clinicStats': '{count} · tamamlanma {pct}',
+	'reports.marketing.spend': 'Reklam harcaması ({currency})',
+	'reports.marketing.revenue': 'Tahsilat (dönem) ({currency})',
+	'reports.marketing.roas': 'Gerçek ROAS',
+	'reports.marketing.cplLabel': 'Hasta başı maliyet',
+	'reports.marketing.fxMissing': 'Kur bilgisi eksik',
+	'reports.marketing.fxMissingHint':
+		'Reklam harcaması tenant baz para birimine çevrilemedi; ROAS/CPL gösterilmiyor.',
+	'reports.marketing.footnote':
+		'Gerçek ROAS = dönem tahsilatı ÷ reklam harcaması. Platform ROAS\'tan farklıdır.',
+	'reports.marketing.loadError': 'Pazarlama raporu yüklenemedi.',
 	'reports.consistency.title': 'Tutarlılık uyarıları',
 	'reports.consistency.description':
 		'Kategori / hasta / kişi seçimleri veya ödeme durumu tutarsız görünen işlemler.',
@@ -1128,6 +1138,16 @@ const en: Record<MessageKey, string> = {
 	'reports.ops.col.completion': 'Completion',
 	'reports.ops.col.ratio': 'Share',
 	'reports.ops.clinicStats': '{count} · completion {pct}',
+	'reports.marketing.spend': 'Ad spend ({currency})',
+	'reports.marketing.revenue': 'Collected (period) ({currency})',
+	'reports.marketing.roas': 'Real ROAS',
+	'reports.marketing.cplLabel': 'Cost per patient',
+	'reports.marketing.fxMissing': 'FX rate missing',
+	'reports.marketing.fxMissingHint':
+		'Ad spend could not be converted to the tenant base currency; ROAS/CPL are hidden.',
+	'reports.marketing.footnote':
+		'Real ROAS = period collections ÷ ad spend. Differs from platform ROAS.',
+	'reports.marketing.loadError': 'Marketing report failed to load.',
 	'reports.consistency.title': 'Consistency warnings',
 	'reports.consistency.description':
 		'Transactions with missing category / patient / contact or inconsistent payment status.',

@@ -6,6 +6,8 @@ export type NormalizedAdMetricRow = {
 	date: string;
 	campaignId: string;
 	spendMinor: number;
+	/** Ads account currency from the provider API — required for OAuth pulls. */
+	currency: string;
 	impressions: number;
 	clicks: number;
 };

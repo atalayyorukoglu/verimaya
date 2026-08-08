@@ -218,6 +218,13 @@
       "when": 1753915000000,
       "tag": "0030_soft_delete_txn_appt_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1754000000000,
+      "tag": "0031_ad_metrics_fx",
+      "breakpoints": true
     }
   ]
 }

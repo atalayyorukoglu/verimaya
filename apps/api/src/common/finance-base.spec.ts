@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveBaseAmount, resolvePaidBaseAmount, type TxAmountRow } from './finance-base';
 
 function row(
-	partial: Partial<TxAmountRow> & Pick<TxAmountRow, 'amount' | 'currency'>
+	partial: Partial<TxAmountRow> & Pick<TxAmountRow, 'amount'> & { currency: string | null }
 ): TxAmountRow {
 	return {
 		kind: 'income',
@@ -54,6 +54,10 @@ describe('resolveBaseAmount', () => {
 
 	it('excludes foreign rows without amountBase', () => {
 		expect(resolveBaseAmount(row({ amount: 10000, currency: 'TRY' }), 'GBP')).toBeNull();
+	});
+
+	it('excludes rows with null currency', () => {
+		expect(resolveBaseAmount(row({ amount: 10000, currency: null }), 'GBP')).toBeNull();
 	});
 });
 

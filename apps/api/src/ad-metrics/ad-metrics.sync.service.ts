@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { inArray } from 'drizzle-orm';
-import { adMetricsDaily, tenantCredentials } from '../db/schema';
+import { eq, inArray } from 'drizzle-orm';
+import { parseAdsCurrency } from '../integrations/ads/ads-currency';
+import { adMetricsDaily, tenantCredentials, tenants } from '../db/schema';
 import { AdsAdapterRegistry } from '../integrations/ads/ads-adapter.registry';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -24,7 +25,7 @@ function sinceDaysAgo(days: number): string {
 
 /**
  * Ad metrics sync. Without OAuth credentials, upserts deterministic fixture rows.
- * With credentials, pulls via AdsProviderAdapter (stub until RM-4b/c) and upserts.
+ * With credentials, pulls via AdsProviderAdapter and upserts (currency from API).
  */
 @Injectable()
 export class AdMetricsSyncService {
@@ -61,6 +62,7 @@ export class AdMetricsSyncService {
 
 			await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 				for (const row of rows) {
+					const currency = parseAdsCurrency(row.currency, `${provider} sync`);
 					await db
 						.insert(adMetricsDaily)
 						.values({
@@ -69,6 +71,7 @@ export class AdMetricsSyncService {
 							date: row.date,
 							campaignId: row.campaignId,
 							spendMinor: row.spendMinor,
+							currency,
 							impressions: row.impressions,
 							clicks: row.clicks
 						})
@@ -81,6 +84,7 @@ export class AdMetricsSyncService {
 							],
 							set: {
 								spendMinor: row.spendMinor,
+								currency,
 								impressions: row.impressions,
 								clicks: row.clicks
 							}
@@ -101,7 +105,13 @@ export class AdMetricsSyncService {
 		tenantId: string
 	): Promise<{ mode: 'fixture'; upserted: number }> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const rows = buildFixtureAdMetricsRows(tenantId);
+			const [tenant] = await db
+				.select({ baseCurrency: tenants.baseCurrency })
+				.from(tenants)
+				.where(eq(tenants.id, tenantId))
+				.limit(1);
+			const tenantBase = tenant?.baseCurrency ?? 'TRY';
+			const rows = buildFixtureAdMetricsRows(tenantId, tenantBase);
 			for (const row of rows) {
 				await db
 					.insert(adMetricsDaily)
@@ -115,6 +125,7 @@ export class AdMetricsSyncService {
 						],
 						set: {
 							spendMinor: row.spendMinor,
+							currency: row.currency,
 							impressions: row.impressions,
 							clicks: row.clicks
 						}

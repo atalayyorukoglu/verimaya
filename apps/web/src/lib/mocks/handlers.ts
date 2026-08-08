@@ -179,7 +179,25 @@ function buildMarketingReport(
 	if (provider === 'meta' || provider === 'google') {
 		spendRows = spendRows.filter((r) => r.provider === provider);
 	}
-	const spend_base = spendRows.reduce((sum, r) => sum + r.spend_minor, 0);
+
+	/** Mirrors apps/api resolveBaseAmount for ad spend rows. */
+	function spendInBase(r: (typeof spendRows)[number]): number | null {
+		if (r.currency == null) return null;
+		if (r.currency === tenantBase) return r.spend_base ?? r.spend_minor;
+		if (r.spend_base != null && r.base_currency === tenantBase) return r.spend_base;
+		return null;
+	}
+
+	let spendSum = 0;
+	let spend_fx_missing = false;
+	for (const r of spendRows) {
+		const resolved = spendInBase(r);
+		if (resolved == null) {
+			spend_fx_missing = true;
+			continue;
+		}
+		spendSum += resolved;
+	}
 
 	const incomeRows = filterTransactionsByPeriod(store.transactions, from, to).filter(
 		(t) => t.kind === 'income'
@@ -234,8 +252,23 @@ function buildMarketingReport(
 				(Math.abs(a.leads) + Math.abs(a.treated) + Math.abs(a.revenue_base))
 		);
 
+	if (spend_fx_missing) {
+		return {
+			period: { from, to },
+			spend_base: null,
+			revenue_base,
+			real_roas: null,
+			leads_count,
+			treated_count,
+			cost_per_lead: null,
+			cost_per_treated: null,
+			spend_fx_missing: true,
+			by_source
+		};
+	}
+
 	const metrics = calculateRealRoas({
-		spendMinor: spend_base,
+		spendMinor: spendSum,
 		revenueMinor: revenue_base,
 		leads: leads_count,
 		treated: treated_count
@@ -243,13 +276,14 @@ function buildMarketingReport(
 
 	return {
 		period: { from, to },
-		spend_base,
+		spend_base: spendSum,
 		revenue_base,
 		real_roas: metrics.realRoas,
 		leads_count,
 		treated_count,
 		cost_per_lead: metrics.costPerLead,
 		cost_per_treated: metrics.costPerTreated,
+		spend_fx_missing: false,
 		by_source
 	};
 }

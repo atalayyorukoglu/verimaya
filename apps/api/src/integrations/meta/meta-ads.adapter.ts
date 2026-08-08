@@ -1,4 +1,5 @@
 import type { AdsProviderAdapter, NormalizedAdMetricRow } from '../ads/ads.types';
+import { parseAdsCurrency } from '../ads/ads-currency';
 
 export type MetaAdsAdapterConfig = {
 	appId: string;
@@ -27,6 +28,12 @@ type MetaInsightRow = {
 	clicks?: string;
 	campaign_id?: string;
 	date_start?: string;
+	account_currency?: string;
+};
+
+type MetaAdAccountResponse = {
+	currency?: string;
+	error?: { message?: string; type?: string; code?: number };
 };
 
 type MetaInsightsResponse = {
@@ -145,6 +152,7 @@ export class MetaAdsAdapter implements AdsProviderAdapter {
 		const stored = this.parseSecret(p.secret);
 		const until = utcToday();
 		const accountId = stored.adAccountId.replace(/^act_/, '');
+		const currency = await this.fetchAccountCurrency(stored.accessToken, accountId);
 
 		let nextUrl: string | null = (() => {
 			const url = new URL(
@@ -171,7 +179,7 @@ export class MetaAdsAdapter implements AdsProviderAdapter {
 			}
 
 			for (const row of body.data ?? []) {
-				const mapped = this.mapInsightRow(row);
+				const mapped = this.mapInsightRow(row, currency);
 				if (mapped) out.push(mapped);
 			}
 
@@ -179,6 +187,19 @@ export class MetaAdsAdapter implements AdsProviderAdapter {
 		}
 
 		return out;
+	}
+
+	/** Ad account currency from Meta — never defaulted. */
+	private async fetchAccountCurrency(accessToken: string, accountId: string): Promise<string> {
+		const url = new URL(`https://graph.facebook.com/${this.apiVersion}/act_${accountId}`);
+		url.searchParams.set('fields', 'currency');
+		url.searchParams.set('access_token', accessToken);
+		const res = await this.fetchFn(url.toString());
+		const body = (await res.json()) as MetaAdAccountResponse;
+		if (!res.ok) {
+			throw new Error(metaErrorMessage('Meta ad account currency failed', body, res.status));
+		}
+		return parseAdsCurrency(body.currency, `Meta act_${accountId}`);
 	}
 
 	private parseSecret(secret: string): MetaStoredSecret {
@@ -199,7 +220,7 @@ export class MetaAdsAdapter implements AdsProviderAdapter {
 		return parsed as MetaStoredSecret;
 	}
 
-	private mapInsightRow(row: MetaInsightRow): NormalizedAdMetricRow | null {
+	private mapInsightRow(row: MetaInsightRow, currency: string): NormalizedAdMetricRow | null {
 		if (!row.campaign_id || !row.date_start) return null;
 		const spendMajor = Number.parseFloat(row.spend ?? '0');
 		const impressions = Number.parseInt(row.impressions ?? '0', 10);
@@ -209,6 +230,7 @@ export class MetaAdsAdapter implements AdsProviderAdapter {
 			date: row.date_start,
 			campaignId: row.campaign_id,
 			spendMinor: Number.isFinite(spendMajor) ? Math.round(spendMajor * 100) : 0,
+			currency,
 			impressions: Number.isFinite(impressions) ? impressions : 0,
 			clicks: Number.isFinite(clicks) ? clicks : 0
 		};
