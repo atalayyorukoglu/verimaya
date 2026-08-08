@@ -285,4 +285,55 @@ describe('transactions tenant isolation', () => {
 		const stillB = await transactionsService.list(tenantB, { limit: 25 });
 		expect(stillB.items.find((t) => t.id === transactionB)?.title).toBe('Transaction B');
 	});
+
+	it('GAP-03: kind / status / category / q filters narrow results without tenant leak', async () => {
+		const expenseId = await withTenantSession(tenantA, async () => {
+			const t = await transactionsService.createWithDb(db, tenantA, {
+				kind: 'expense',
+				title: 'Hotel stay Alpha',
+				subtitle: null,
+				category: 'Konaklama',
+				occurred_on: '2026-03-01',
+				status: 'unpaid',
+				invoice_status: 'none',
+				payment_method: null,
+				amount: 3000,
+				paid_amount: null,
+				currency: 'TRY',
+				amount_base: 3000,
+				base_currency: 'TRY',
+				fx_rate: null,
+				fx_dated: null,
+				patient_id: patientA,
+				contact_id: contactA,
+				contact_label: null,
+				description: 'nightly rate'
+			});
+			return t.id;
+		});
+
+		const byKind = await transactionsService.list(tenantA, { limit: 25, kind: 'expense' });
+		expect(byKind.items.every((t) => t.kind === 'expense')).toBe(true);
+		expect(byKind.items.map((t) => t.id)).toContain(expenseId);
+		expect(byKind.items.map((t) => t.id)).not.toContain(transactionA);
+
+		const byStatus = await transactionsService.list(tenantA, { limit: 25, status: 'unpaid' });
+		expect(byStatus.items.map((t) => t.id)).toEqual([expenseId]);
+
+		const byCategory = await transactionsService.list(tenantA, {
+			limit: 25,
+			category: 'Konaklama'
+		});
+		expect(byCategory.items.map((t) => t.id)).toEqual([expenseId]);
+
+		const byQ = await transactionsService.list(tenantA, { limit: 25, q: 'Alpha' });
+		expect(byQ.items.map((t) => t.id)).toEqual([expenseId]);
+
+		const leak = await transactionsService.list(tenantA, {
+			limit: 25,
+			kind: 'income',
+			patient_id: patientB
+		});
+		expect(leak.items).toHaveLength(0);
+	});
 });

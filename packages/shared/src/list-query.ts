@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
+import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
 
 /**
  * CONTRACT-01 (Faz 2.1): per-endpoint list query schemas.
@@ -27,12 +28,17 @@ export const appointmentListQuerySchema = cursorPageParams
 
 export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
 
+/** GAP-03 (G-01): pilot filter set — kind / status / category (exact) / q (substring). */
 export const transactionListQuerySchema = cursorPageParams
 	.extend({
 		patient_id: uuid.optional(),
 		contact_id: uuid.optional(),
 		from: isoDate.optional(),
-		to: isoDate.optional()
+		to: isoDate.optional(),
+		kind: transactionKindSchema.optional(),
+		status: transactionStatusSchema.optional(),
+		category: z.string().trim().min(1).max(128).optional(),
+		q: z.string().trim().min(1).max(255).optional()
 	})
 	.strict();
 

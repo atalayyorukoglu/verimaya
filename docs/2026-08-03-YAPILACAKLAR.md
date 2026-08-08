@@ -351,20 +351,23 @@
   - **Kabul (GAP-02):** `PATCH /v1/members/:id` var; org sahibi `/settings/team`'den rolü
     değiştirebiliyor; kullanıcı kendi rolünü düşüremiyor; audit kaydı düşüyor;
     tenant izolasyon spec'i geçiyor. ✅
-- [ ] **GAP-03 (G-01) — İşlem listesi filtre seti.** Tracker `GET /transactions` 16 query param
+- [x] **GAP-03 (G-01) — İşlem listesi filtre seti.** Tracker `GET /transactions` 16 query param
   alıyordu (`transactions.py:176-280`); Verimaya `transactionListQuerySchema`
   (`list-query.ts:30-38`) yalnız `patient_id, contact_id, from, to` + `.strict()` —
   tanımsız parametre 400 döner. Pilot minimum seti: **`kind`, `status`, `category`, `q`**.
   Sözleşme önce `packages/shared`'da (AGENTS.md ilke 7), sonra API + MSW + `/finance` filtre çubuğu.
   - **Kabul (GAP-03):** `transactionListQuerySchema` dört filtreyi kabul ediyor; API, MSW ve web
     aynı şemadan türüyor; `/finance` sayfasında filtre çubuğu çalışıyor;
-    tanımsız parametre hâlâ 400 dönüyor (`.strict()` korunur).
+    tanımsız parametre hâlâ 400 dönüyor (`.strict()` korunur). ✅
 - **Dosyalar:** `apps/api/src/settings/settings.controller.ts`, `apps/api/src/members/members.controller.ts`,
   `packages/shared/src/list-query.ts`, `apps/api/src/transactions/transactions.{controller,service}.ts`,
   `apps/web/src/routes/finance/+page.svelte`, `apps/web/src/routes/settings/team/+page.svelte`,
   `apps/web/src/lib/mocks/handlers.ts`
 - **Bağımlı:** yok. **Üç kalem bağımsız — ayrı commit, ayrı kabul kriteri.**
-- **Görüş:** _(doldurulacak)_
+- **Kabul:** GAP-01 + GAP-02 + GAP-03 kabul kriterlerinin üçü de geçti (kalıcılık/izolasyon,
+  rol değiştirme + last-owner, filtre seti + `.strict()`). ✅
+- **Görüş:** 5B P0 pilot bloğu kapandı (2026-08-08). Üç kalem ayrı commit; PILOT-02 freeze
+  öncesi P0 yüzey açıkları kapalı.
 - **Görüş (GAP-01, 2026-08-08):** Coverage `api-paths-coverage.spec.ts` önce yalnız
   `settingsAppointmentType` eksikliğini gösterdi (KIRMIZI); POST+DELETE sonrası YEŞİL.
   `0028_appointment_types` + RLS + `app.default_appointment_type_id` SQL fonksiyonu Node
@@ -378,6 +381,10 @@
   Self-role → 403 `cannot_change_own_role`; son owner demote → 400 `last_owner` (ayrı test).
   Audit `entity_type=user`. UI: owner/admin select; self rozet+disabled. MSW PATCH eklendi.
   **GAP-03 dokunulmadı.**
+- **Görüş (GAP-03, 2026-08-08):** `kind`/`status` enum exact; `category` exact string; `q`
+  title/subtitle/category/patient/contact/description ilike. `.strict()` korundu (MSW + schema
+  test). `/finance` filtre çubuğu + i18n. Tracker'ın diğer 12 param'ı (subtitle, invoice_status…)
+  bilinçli olarak dışarıda — pilot minimum seti.
 
 ---
 

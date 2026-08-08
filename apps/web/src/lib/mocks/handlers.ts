@@ -811,11 +811,35 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.transactions];
-		const { patient_id: patientId, contact_id: contactId, from, to } = parsed.data;
+		const {
+			patient_id: patientId,
+			contact_id: contactId,
+			from,
+			to,
+			kind,
+			status,
+			category,
+			q
+		} = parsed.data;
 		if (patientId) items = items.filter((t) => t.patient_id === patientId);
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
+		if (kind) items = items.filter((t) => t.kind === kind);
+		if (status) items = items.filter((t) => t.status === status);
+		if (category) items = items.filter((t) => t.category === category);
+		if (q) {
+			const needle = q.toLowerCase();
+			items = items.filter(
+				(t) =>
+					t.title.toLowerCase().includes(needle) ||
+					(t.subtitle?.toLowerCase().includes(needle) ?? false) ||
+					(t.category?.toLowerCase().includes(needle) ?? false) ||
+					(t.patient_display_name?.toLowerCase().includes(needle) ?? false) ||
+					(t.contact_label?.toLowerCase().includes(needle) ?? false) ||
+					(t.description?.toLowerCase().includes(needle) ?? false)
+			);
+		}
 		// CONTRACT-02 exception: API orders transactions by occurred_on desc, id desc.
 		const sorted = items.sort(compareByOccurredOnDesc);
 		return HttpResponse.json(paginate(sorted, parsed.data.cursor ?? null, parsed.data.limit));

@@ -99,6 +99,9 @@ export type ListQueryParams = {
 	patient_id?: string | null;
 	contact_id?: string | null;
 	type_id?: string | null;
+	kind?: string;
+	status?: string;
+	category?: string;
 };
 
 /** Build a cursor-paginated list URL (path + query only, no origin). */
@@ -112,6 +115,9 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.patient_id) url.searchParams.set('patient_id', params.patient_id);
 	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
 	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
+	if (params?.kind) url.searchParams.set('kind', params.kind);
+	if (params?.status) url.searchParams.set('status', params.status);
+	if (params?.category) url.searchParams.set('category', params.category);
 	return `${url.pathname}${url.search}`;
 }
 import { patientSchema, patientFinanceSummarySchema } from './patient.js';

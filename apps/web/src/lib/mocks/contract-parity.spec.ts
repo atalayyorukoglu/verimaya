@@ -86,6 +86,54 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 		expect(page.items.map((t) => t.id)).toEqual(expected);
 	});
 
+	it('transactions: kind / status / category / q filters match the store (GAP-03)', async () => {
+		const byKind = store.transactions
+			.filter((t) => t.kind === 'expense')
+			.sort(compareByOccurredOnDesc)
+			.map((t) => t.id);
+		expect(byKind.length).toBeGreaterThan(0);
+		const kindPage = await fetchPage<{ id: string; kind: string }>(
+			'/v1/transactions?kind=expense&limit=100'
+		);
+		expect(kindPage.items.map((t) => t.id)).toEqual(byKind);
+		expect(kindPage.items.every((t) => t.kind === 'expense')).toBe(true);
+
+		const byStatus = store.transactions
+			.filter((t) => t.status === 'unpaid')
+			.sort(compareByOccurredOnDesc)
+			.map((t) => t.id);
+		const statusPage = await fetchPage<{ id: string }>('/v1/transactions?status=unpaid&limit=100');
+		expect(statusPage.items.map((t) => t.id)).toEqual(byStatus);
+
+		const sample = store.transactions.find((t) => t.category);
+		expect(sample?.category).toBeTruthy();
+		const byCategory = store.transactions
+			.filter((t) => t.category === sample!.category)
+			.sort(compareByOccurredOnDesc)
+			.map((t) => t.id);
+		const catPage = await fetchPage<{ id: string }>(
+			`/v1/transactions?category=${encodeURIComponent(sample!.category!)}&limit=100`
+		);
+		expect(catPage.items.map((t) => t.id)).toEqual(byCategory);
+
+		const needle = 'atalay';
+		const byQ = store.transactions
+			.filter(
+				(t) =>
+					t.title.toLowerCase().includes(needle) ||
+					(t.subtitle?.toLowerCase().includes(needle) ?? false) ||
+					(t.category?.toLowerCase().includes(needle) ?? false) ||
+					(t.patient_display_name?.toLowerCase().includes(needle) ?? false) ||
+					(t.contact_label?.toLowerCase().includes(needle) ?? false) ||
+					(t.description?.toLowerCase().includes(needle) ?? false)
+			)
+			.sort(compareByOccurredOnDesc)
+			.map((t) => t.id);
+		expect(byQ.length).toBeGreaterThan(0);
+		const qPage = await fetchPage<{ id: string }>(`/v1/transactions?q=${needle}&limit=100`);
+		expect(qPage.items.map((t) => t.id)).toEqual(byQ);
+	});
+
 	it('transactions: patient_id + cursor pagination covers every matching row exactly once', async () => {
 		const expected = store.transactions
 			.filter((t) => t.patient_id === ATALAY_PATIENT_ID)

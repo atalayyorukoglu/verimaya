@@ -8,18 +8,23 @@
 		Tenant,
 		Transaction,
 		TransactionCreate,
+		TransactionKind,
+		TransactionStatus,
 		TransactionUpdate
 	} from '@verimaya/shared';
 	import {
 		apiPaths,
 		listUrl,
 		transactionKindLabels,
-		transactionStatusLabels
+		transactionKindSchema,
+		transactionStatusLabels,
+		transactionStatusSchema
 	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { amountInBase } from '$lib/money-base';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -36,10 +41,32 @@
 
 	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
 
+	let qInput = $state('');
+	let categoryInput = $state('');
+	let appliedQ = $state('');
+	let appliedCategory = $state('');
+	let kind = $state('');
+	let status = $state('');
+
 	let formOpen = $state(false);
 	let editing = $state<Transaction | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
+
+	const kindOptions = $derived(transactionKindSchema.options);
+	const statusOptions = $derived(transactionStatusSchema.options);
+
+	const listFilters = $derived({
+		patient_id: patientFilterId,
+		q: appliedQ || undefined,
+		kind: (kind || undefined) as TransactionKind | undefined,
+		status: (status || undefined) as TransactionStatus | undefined,
+		category: appliedCategory || undefined
+	});
+
+	const filtersActive = $derived(
+		Boolean(appliedQ || appliedCategory || kind || status || patientFilterId)
+	);
 
 	const tenantQuery = createQuery(() => ({
 		queryKey: qs.keys.tenants.current(),
@@ -61,13 +88,17 @@
 	}
 
 	const txQuery = createInfiniteQuery(() => ({
-		queryKey: qs.keys.transactions.list({ patient_id: patientFilterId }),
+		queryKey: qs.keys.transactions.list(listFilters),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<TransactionsPage>(
 				listUrl('transactions', {
 					limit: 25,
 					cursor: pageParam,
-					patient_id: patientFilterId
+					patient_id: listFilters.patient_id,
+					q: listFilters.q,
+					kind: listFilters.kind,
+					status: listFilters.status,
+					category: listFilters.category
 				})
 			),
 		initialPageParam: null as string | null,
@@ -97,6 +128,21 @@
 
 	const items = $derived(txQuery.data?.pages.flatMap((p) => p.items) ?? []);
 
+	function applyFilters(e: Event) {
+		e.preventDefault();
+		appliedQ = qInput.trim();
+		appliedCategory = categoryInput.trim();
+	}
+
+	function clearFilters() {
+		qInput = '';
+		categoryInput = '';
+		appliedQ = '';
+		appliedCategory = '';
+		kind = '';
+		status = '';
+	}
+
 	function openCreate() {
 		editing = null;
 		formOpen = true;
@@ -120,7 +166,7 @@
 			formOpen = false;
 			editing = null;
 		} catch (err) {
-			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			formError = err instanceof Error ? err.message : t('finance.saveFailed');
 		} finally {
 			saving = false;
 		}
@@ -128,25 +174,25 @@
 </script>
 
 <svelte:head>
-	<title>İşlemler · Veri Maya</title>
+	<title>{t('finance.title')} · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
-	<PageHeader title="İşlemler" description="Gelir ve gider kayıtları (tutarlar minor unit).">
+	<PageHeader title={t('finance.title')} description={t('finance.description')}>
 		{#snippet actions()}
 			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 				<a
 					href="/finance/balances"
 					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
 				>
-					Bakiyeler
+					{t('finance.balances')}
 				</a>
 				<a
 					href="/finance/ai-transaction"
 					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
 				>
 					<Sparkles class="size-4" />
-					AI ile işlem
+					{t('finance.aiLink')}
 					{#if pendingCount > 0}
 						<span
 							class="rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-semibold text-text tabular-nums"
@@ -155,7 +201,9 @@
 						</span>
 					{/if}
 				</a>
-				<Button type="button" class="w-full sm:w-auto" onclick={openCreate}>Yeni işlem</Button>
+				<Button type="button" class="w-full sm:w-auto" onclick={openCreate}
+					>{t('finance.new')}</Button
+				>
 			</div>
 		{/snippet}
 	</PageHeader>
@@ -165,7 +213,7 @@
 			class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand/30 bg-brand-subtle px-3 py-2"
 		>
 			<p class="text-sm text-text">
-				Hasta filtresi:
+				{t('finance.filter.patient')}
 				<span class="font-medium">{filterPatient?.full_name ?? patientFilterId.slice(0, 8)}</span>
 			</p>
 			<a
@@ -173,30 +221,76 @@
 				class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text"
 			>
 				<X class="size-3.5" />
-				Filtreyi kaldır
+				{t('finance.filter.clearPatient')}
 			</a>
 		</div>
 	{/if}
 
+	<form
+		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center"
+		onsubmit={applyFilters}
+	>
+		<input
+			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:min-w-[12rem]"
+			placeholder={t('finance.filter.qPlaceholder')}
+			bind:value={qInput}
+		/>
+		<select
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
+			bind:value={kind}
+		>
+			<option value="">{t('finance.filter.kindAll')}</option>
+			{#each kindOptions as k (k)}
+				<option value={k}>{transactionKindLabels[k]}</option>
+			{/each}
+		</select>
+		<select
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
+			bind:value={status}
+		>
+			<option value="">{t('finance.filter.statusAll')}</option>
+			{#each statusOptions as s (s)}
+				<option value={s}>{transactionStatusLabels[s]}</option>
+			{/each}
+		</select>
+		<input
+			class="h-9 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:w-44"
+			placeholder={t('finance.filter.categoryPlaceholder')}
+			bind:value={categoryInput}
+		/>
+		<div class="flex gap-2">
+			<Button type="submit" variant="secondary">{t('finance.filter.apply')}</Button>
+			{#if appliedQ || appliedCategory || kind || status}
+				<Button type="button" variant="outline" onclick={clearFilters}
+					>{t('finance.filter.clear')}</Button
+				>
+			{/if}
+		</div>
+	</form>
+
 	{#if txQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('finance.loading')}</p>
 	{:else if txQuery.isError}
-		<p class="text-sm text-danger">İşlemler yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('finance.loadError')}</p>
 	{:else if items.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-8 text-center">
-			<p class="text-sm text-text-muted">İşlem yok.</p>
-			<Button class="mt-4" type="button" onclick={openCreate}>Yeni işlem</Button>
+			<p class="text-sm text-text-muted">
+				{filtersActive ? t('finance.emptyFiltered') : t('finance.empty')}
+			</p>
+			{#if !filtersActive}
+				<Button class="mt-4" type="button" onclick={openCreate}>{t('finance.new')}</Button>
+			{/if}
 		</div>
 	{:else}
 		<div class="hidden min-w-0 overflow-hidden rounded-lg border border-border bg-surface md:block">
 			<table class="w-full table-fixed text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						<th class="w-[14%] px-4 py-3 font-medium">Tarih</th>
-						<th class="w-[36%] px-4 py-3 font-medium">Başlık</th>
-						<th class="w-[12%] px-4 py-3 font-medium">Tür</th>
-						<th class="w-[16%] px-4 py-3 font-medium">Durum</th>
-						<th class="w-[22%] px-4 py-3 text-right font-medium">Tutar</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('finance.col.date')}</th>
+						<th class="w-[36%] px-4 py-3 font-medium">{t('finance.col.title')}</th>
+						<th class="w-[12%] px-4 py-3 font-medium">{t('finance.col.kind')}</th>
+						<th class="w-[16%] px-4 py-3 font-medium">{t('finance.col.status')}</th>
+						<th class="w-[22%] px-4 py-3 text-right font-medium">{t('finance.col.amount')}</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-border">
@@ -286,7 +380,7 @@
 					disabled={txQuery.isFetchingNextPage}
 					onclick={() => txQuery.fetchNextPage()}
 				>
-					{txQuery.isFetchingNextPage ? 'Yükleniyor…' : 'Daha fazla yükle'}
+					{txQuery.isFetchingNextPage ? t('finance.loadingMore') : t('finance.loadMore')}
 				</Button>
 			</div>
 		{/if}
