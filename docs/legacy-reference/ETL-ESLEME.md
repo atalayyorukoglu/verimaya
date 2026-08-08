@@ -89,6 +89,9 @@ Tracker canlı seed (11 üst + 52 alt) Verimaya `DEFAULT_FINANCE_CATEGORY_SEEDS`
 
 ## 3. Alan eşleme tabloları
 
+> Bu bölüm Faz 8 (içe/dışa aktarım) tarafından yeniden kullanılır — bkz. YAPILACAKLAR § 6B GAP-08.
+> Alan eşlemesi değişirse orası da güncellenmeli.
+
 Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu gibi; `trim` = boş string → null.
 
 ### 3.1 `contacts` → `contacts`

@@ -457,6 +457,15 @@
 - [x] ETL dry-run (Fixrav Tracker → Verimaya)
 - [x] Apply + verify
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org'u dahil)
+- [ ] **Prod migration 0028–0030 (2026-08-07 eklendi).** Prod `0027`'de; yerel `0030`'da.
+  Bekleyenler: `0028_appointment_types` (tüm tenant'lara varsayılan tip seed'i),
+  `0029_patient_status_operational` (**757 satır `UPDATE`**), `0030_soft_delete_txn_appt_contact`.
+  ⚠️ `0029`'un `UPDATE` satırı bugüne kadar hiç çalışmadı — yerel `patients` tablosu boştu,
+  yalnız DEFAULT + CHECK doğrulandı. Prod'da gerçek veriye ilk kez dokunacak.
+  - Önce yedek: OPS-01 ile kurulan R2/Coolify snapshot'ı (restore provası 2026-08-07 yapıldı).
+  - Sonra `pnpm db:migrate`, ardından kanıt: `SELECT DISTINCT status FROM patients`
+    yalnız `scheduled|arrived|treated|follow_up|cancelled` döndürmeli.
+  - `0028` seed'i mevcut tenant'lara deterministik ID'lerle yazar; çakışma `ON CONFLICT DO NOTHING`.
 
 - **Görüş (2026-08-07):** Tracker Railway `OrbisMed Clinics` → prod tenant
   `Demo Klinik` (`afb4a68b…`). İlk apply’de 816/757/548 yazıldı; randevu/dosya 0
@@ -557,15 +566,21 @@
     izolasyon + Istanbul/London timezone + oran testleri yeşil. ✅
   - **Görüş (GAP-07):** Agregasyon SQL FILTER/GROUP BY (ham satır yok). Klinik null →
     `Atanmamış`; tip null → `Belirtilmemiş`. Oranlar 0–1. GAP-05/08 dokunulmadı.
-- [ ] **GAP-08 (G-09/G-10) — İçe/dışa aktarım kapsamını ETL eşlemesine bağla.** Tracker
+- [x] **GAP-08 (G-09/G-10) — İçe/dışa aktarım kapsamını ETL eşlemesine bağla.** Tracker
   `tenant_import_export.py` 1482 satır: üç kapsam için şablon → export → dry-run → commit,
   ayrıca 26 sütunluk kişi şablonu + legacy başlık eşleme + formül enjeksiyonu sanitizasyonu
   (`_sanitize_cell`). Verimaya'da 29 satırlık "Faz 8'de" yer tutucu.
   **Yeni iş değil** — kapsam netleştirmesi: Faz 8 planı `ETL-ESLEME.md` §3 alan eşlemesini
   yeniden kullanmalı, sanitizasyon korunmalı. İkinci müşteriden önce zorunlu, pilot için değil.
-- **Bağımlı:** GAP-06 için silme politikası kararı (bkz. "Açık sorular / ürün kararı" §2).
-- **Kabul:** Her kalem kendi commit'inde; sözleşme değişiklikleri önce `packages/shared`'da.
-- **Görüş:** _(doldurulacak)_
+  - **Kabul (GAP-08):** Faz 8 içe/dışa aktarım kapsamı dokümanda kilitlendi; ETL-ESLEME §3
+    çapraz referans eklendi; kod yok. ✅
+  - **Görüş (GAP-08):** **Kapsamda:** `docs/legacy-reference/ETL-ESLEME.md` §3 alan eşlemesi
+    yeniden kullanılır (sıfırdan keşif yok); kişi şablonu (26 sütun) + legacy başlık eşlemesi;
+    hücre sanitizasyonu (formül enjeksiyonu — Tracker `_sanitize_cell`). **Kapsam dışı:**
+    toplu silme (`ayarlar.md` "tehlikeli"). Uygulama Faz 8'de; bu madde yalnız sözleşme.
+- **Bağımlı:** GAP-06 soft-delete politikası kararı alındı (tamam).
+- **Kabul (6B):** Her kalem kendi commit'inde; sözleşme değişiklikleri önce `packages/shared`'da.
+- **Görüş (6B):** GAP-04…08 tamam; P1 sürtünme kalemleri kapanmış.
 
 ---
 
