@@ -88,7 +88,8 @@ export const apiPaths = {
 	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`,
 	reportsPatientDistribution: `${API_V1_PREFIX}/reports/patient-distribution`,
 	reportsBalances: `${API_V1_PREFIX}/reports/balances`,
-	reportsAppointmentMetrics: `${API_V1_PREFIX}/reports/appointment-metrics`
+	reportsAppointmentMetrics: `${API_V1_PREFIX}/reports/appointment-metrics`,
+	reportsConsistency: `${API_V1_PREFIX}/reports/consistency`
 } as const;
 
 export type ListQueryParams = {
@@ -151,6 +152,7 @@ import {
 	reportBalancesSchema,
 	reportByCategoryDetailSchema,
 	reportByCategorySchema,
+	reportConsistencySchema,
 	reportMonthlySchema,
 	reportPatientDistributionSchema,
 	reportSummarySchema
@@ -370,6 +372,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/appointment-metrics': {
 		response: reportAppointmentMetricsSchema
+	},
+	'GET /v1/reports/consistency': {
+		response: reportConsistencySchema
 	}
 } as const;
 

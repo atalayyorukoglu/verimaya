@@ -506,7 +506,7 @@
     hasta adı / not / klinik / otel ilike; tanımsız parametre hâlâ 400 (`.strict()` korunur). ✅
   - **Görüş (GAP-04):** `contact_involves` ve tarih-q taşınmadı (pilot minimum). Status exact enum.
     Sayfa metinleri `messages.ts`'e alındı. **GAP-05/07/08 dokunulmadı.**
-- [ ] **GAP-05 (G-03/G-04) — Sunucu tarafı işlem denetim motoru.** Tracker
+- [x] **GAP-05 (G-03/G-04) — Sunucu tarafı işlem denetim motoru.** Tracker
   `services/transaction_audit.py` (310 satır, 8 kural: `case_required`, `case_forbidden`,
   `contact_type_mismatch`, `responsible_not_internal`, `contact_equals_responsible`,
   `personal_payer_payee_required`, `currency_equivalent_missing`, `partial_amount_out_of_range`)
@@ -515,6 +515,13 @@
   sayfalı listeden hesaplandığı için büyük tenant'ta yanlış "temiz" sonucu verir.
   **`AUDIT-F09-17` ile aynı sınıf** (istemci O(N) agregasyon); birlikte ele alınmalı.
   Not: BF-04/BF-05 gereği `responsible_party` ve payer/payee kuralları **taşınmaz**.
+  - **Kabul (GAP-05):** `GET /v1/reports/consistency?from=&to=` beş kuralı SQL ile tam
+    dönemde tarıyor; `/reports` istemci hesabı silindi; `/settings/data-quality` aynı
+    endpoint; `message_key` i18n; izolasyon + kural pozitif/negatif + >100 satır sayım yeşil. ✅
+  - **Görüş (GAP-05):** Kural seti: category / income patient / expense contact / FX
+    (yabancı kur + null amount_base; aynı-kur null bilinçli) / status↔paid_amount (3 code).
+    `counts` SQL FILTER agregasyonu; `items` UNION ALL + LIMIT 100 + `truncated`.
+    responsible_party, payer/payee, contact_type_mismatch taşınmadı. **GAP-08 dokunulmadı.**
 - [x] **GAP-06 (G-06/G-07/G-08) — Silme yüzeyleri: işlem / randevu / kişi.** Üçünde de
   `@Delete` yok (doğrulandı: 0 eşleşme). **Politika kararı verildi (Açık sorular §1):
   üçünde de soft-delete, hard-delete yok.** Artık bloklu değil.

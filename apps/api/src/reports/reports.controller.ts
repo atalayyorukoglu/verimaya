@@ -95,6 +95,17 @@ export class ReportsController {
 		return this.reportsService.appointmentMetrics(getActiveOrgId(req), params);
 	}
 
+	@Get('consistency')
+	@RequireOrgPermission('finance', 'read')
+	consistency(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		return this.reportsService.consistency(getActiveOrgId(req), params);
+	}
+
 	@Get('balances')
 	@RequireOrgPermission('finance', 'read')
 	balances(@Req() req: FastifyRequest) {

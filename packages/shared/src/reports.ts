@@ -172,6 +172,47 @@ export const reportAppointmentMetricsSchema = z.object({
 });
 export type ReportAppointmentMetrics = z.infer<typeof reportAppointmentMetricsSchema>;
 
+/** GAP-05: transaction consistency audit (server-side, full period — not page-capped). */
+export const reportConsistencySeveritySchema = z.enum(['warning', 'error']);
+export type ReportConsistencySeverity = z.infer<typeof reportConsistencySeveritySchema>;
+
+export const reportConsistencyCodeSchema = z.enum([
+	'category_missing',
+	'income_patient_missing',
+	'expense_contact_missing',
+	'fx_missing',
+	'paid_amount_mismatch',
+	'unpaid_with_payment',
+	'partial_amount_invalid'
+]);
+export type ReportConsistencyCode = z.infer<typeof reportConsistencyCodeSchema>;
+
+export const reportConsistencyItemSchema = z.object({
+	transaction_id: uuid,
+	title: z.string(),
+	occurred_on: isoDate,
+	severity: reportConsistencySeveritySchema,
+	code: reportConsistencyCodeSchema,
+	/** i18n catalog key — never a localized string from the server. */
+	message_key: z.string().min(1).max(128)
+});
+export type ReportConsistencyItem = z.infer<typeof reportConsistencyItemSchema>;
+
+/** Max issue rows returned in `items` (full totals live in `counts`). */
+export const REPORT_CONSISTENCY_ITEMS_LIMIT = 100;
+
+export const reportConsistencySchema = z.object({
+	period: reportPeriodSchema,
+	items: z.array(reportConsistencyItemSchema).max(REPORT_CONSISTENCY_ITEMS_LIMIT),
+	counts: z.object({
+		error: z.number().int().nonnegative(),
+		warning: z.number().int().nonnegative()
+	}),
+	/** True when error+warning exceeds items.length (list is capped). */
+	truncated: z.boolean()
+});
+export type ReportConsistency = z.infer<typeof reportConsistencySchema>;
+
 export type ReportUrlPath =
 	| 'summary'
 	| 'by-category'
@@ -179,7 +220,8 @@ export type ReportUrlPath =
 	| 'by-category-detail'
 	| 'patient-distribution'
 	| 'balances'
-	| 'appointment-metrics';
+	| 'appointment-metrics'
+	| 'consistency';
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(

@@ -94,6 +94,7 @@ export function queryKeys(scope: QueryScope) {
 			marketing: (params: Params) => k('reports', 'marketing', params),
 			patientDistribution: (params: Params) => k('reports', 'patient-distribution', params),
 			appointmentMetrics: (params: Params) => k('reports', 'appointment-metrics', params),
+			consistency: (params: Params) => k('reports', 'consistency', params),
 			balances: () => k('reports', 'balances')
 		},
 		scorecard: {

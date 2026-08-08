@@ -8,6 +8,7 @@
 		ReportAppointmentMetrics,
 		ReportByCategory,
 		ReportByCategoryDetail,
+		ReportConsistency,
 		ReportMonthly,
 		ReportPatientDistribution,
 		ReportSummary,
@@ -29,8 +30,9 @@
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
+	import type { MessageKey } from '$lib/i18n/messages';
 	import { formatDate, formatMoney, formatPercent, formatRatio } from '$lib/format';
-	import { amountInBase, isFxMissing, paidAmountInBase } from '$lib/money-base';
+	import { amountInBase, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -179,6 +181,15 @@
 		queryFn: () =>
 			apiGet<ReportAppointmentMetrics>(
 				reportUrl('appointment-metrics', { from: dateRange.from, to: dateRange.to })
+			),
+		enabled: qs.ready
+	}));
+
+	const consistencyQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.consistency({ from: dateRange.from, to: dateRange.to }),
+		queryFn: () =>
+			apiGet<ReportConsistency>(
+				reportUrl('consistency', { from: dateRange.from, to: dateRange.to })
 			),
 		enabled: qs.ready
 	}));
@@ -345,67 +356,10 @@
 		}));
 	});
 
-	type ConsistencyIssue = {
-		id: string;
-		title: string;
-		severity: 'warning' | 'error';
-		message: string;
-	};
-
-	const consistencyIssues = $derived.by(() => {
-		const issues: ConsistencyIssue[] = [];
-		for (const t of transactions) {
-			if (t.kind === 'income' && !t.patient_id) {
-				issues.push({
-					id: t.id,
-					title: t.title,
-					severity: 'warning',
-					message: 'Gelir kaydında hasta seçilmemiş.'
-				});
-			}
-			if (t.kind === 'expense' && !t.contact_label?.trim()) {
-				issues.push({
-					id: t.id,
-					title: t.title,
-					severity: 'warning',
-					message: 'Gider kaydında kişi/firma etiketi yok.'
-				});
-			}
-			if (!t.category?.trim()) {
-				issues.push({
-					id: t.id,
-					title: t.title,
-					severity: 'warning',
-					message: 'Kategori boş.'
-				});
-			}
-			if (t.status === 'paid' && (t.paid_amount == null || t.paid_amount !== t.amount)) {
-				issues.push({
-					id: t.id,
-					title: t.title,
-					severity: 'error',
-					message: 'Durum “ödendi” ama ödenen tutar tutarsız veya boş.'
-				});
-			}
-			if (t.status === 'unpaid' && (t.paid_amount ?? 0) > 0) {
-				issues.push({
-					id: t.id,
-					title: t.title,
-					severity: 'error',
-					message: 'Durum “ödenmedi” ama paid_amount > 0.'
-				});
-			}
-			if (isFxMissing(t, baseCurrency)) {
-				issues.push({
-					id: t.id,
-					title: t.title,
-					severity: 'error',
-					message: `Kur karşılığı yok (${t.currency} → ${baseCurrency}). Rapora dahil edilmedi.`
-				});
-			}
-		}
-		return issues.slice(0, 12);
-	});
+	const consistencyIssues = $derived(consistencyQuery.data?.items ?? []);
+	const consistencyIssueCount = $derived(
+		(consistencyQuery.data?.counts.error ?? 0) + (consistencyQuery.data?.counts.warning ?? 0)
+	);
 
 	const clientByCategory = $derived.by(() => {
 		const map = new Map<string, { income: number; expense: number; count: number }>();
@@ -518,6 +472,7 @@
 			summaryQuery.isPending ||
 			patientDistributionQuery.isPending ||
 			appointmentMetricsQuery.isPending ||
+			consistencyQuery.isPending ||
 			marketingQuery.isPending ||
 			(!USE_MSW && (byCategoryQuery.isPending || monthlyQuery.isPending))
 	);
@@ -526,6 +481,7 @@
 			summaryQuery.isError ||
 			patientDistributionQuery.isError ||
 			appointmentMetricsQuery.isError ||
+			consistencyQuery.isError ||
 			marketingQuery.isError ||
 			(!USE_MSW && (byCategoryQuery.isError || monthlyQuery.isError)) ||
 			(!USE_MSW && drillCategoryLabel != null && byCategoryDetailQuery.isError)
@@ -881,27 +837,27 @@
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
 			<div class="flex flex-wrap items-center justify-between gap-2">
 				<div>
-					<h2 class="text-sm font-semibold text-text">Tutarlılık uyarıları</h2>
+					<h2 class="text-sm font-semibold text-text">{t('reports.consistency.title')}</h2>
 					<p class="mt-0.5 text-xs text-text-muted">
-						Kategori / hasta / kişi seçimleri veya ödeme durumu tutarsız görünen işlemler.
+						{t('reports.consistency.description')}
 					</p>
 				</div>
-				{#if consistencyIssues.length > 0}
+				{#if consistencyIssueCount > 0}
 					<span class="rounded-[6px] bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
-						{consistencyIssues.length} uyarı
+						{t('reports.consistency.badge', { count: consistencyIssueCount })}
 					</span>
 				{/if}
 			</div>
 
-			{#if consistencyIssues.length === 0}
+			{#if consistencyIssueCount === 0}
 				<div
 					class="mt-4 rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success"
 				>
-					Tüm kayıtlar temiz görünüyor.
+					{t('reports.consistency.clean')}
 				</div>
 			{:else}
 				<ul class="mt-4 divide-y divide-border">
-					{#each consistencyIssues as issue (`${issue.id}-${issue.message}`)}
+					{#each consistencyIssues as issue (`${issue.transaction_id}-${issue.code}`)}
 						<li class="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0">
 							<span
 								class="mt-0.5 shrink-0 rounded-[6px] px-2 py-0.5 text-[10px] font-semibold uppercase {issue.severity ===
@@ -909,18 +865,27 @@
 									? 'bg-danger/15 text-danger'
 									: 'bg-warning/15 text-warning'}"
 							>
-								{issue.severity === 'error' ? 'Hata' : 'Uyarı'}
+								{issue.severity === 'error'
+									? t('reports.consistency.error')
+									: t('reports.consistency.warning')}
 							</span>
 							<div class="min-w-0 flex-1">
 								<p class="truncate text-sm font-medium text-text">{issue.title}</p>
-								<p class="mt-0.5 text-sm text-text-muted">{issue.message}</p>
+								<p class="mt-0.5 text-sm text-text-muted">
+									{t(issue.message_key as MessageKey)}
+								</p>
 							</div>
 							<a href="/finance" class="shrink-0 text-xs font-medium text-brand hover:underline">
-								Düzelt
+								{t('reports.consistency.fix')}
 							</a>
 						</li>
 					{/each}
 				</ul>
+				{#if consistencyQuery.data?.truncated}
+					<p class="mt-3 text-xs text-text-muted">
+						{t('reports.consistency.truncated', { count: consistencyIssueCount })}
+					</p>
+				{/if}
 			{/if}
 		</section>
 	{:else if tab === 'pazarlama'}

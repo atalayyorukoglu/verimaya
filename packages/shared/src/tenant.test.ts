@@ -29,7 +29,8 @@ describe('tenantTimezoneSchema (AUDIT-F09-19)', () => {
 		const result = tenantTimezoneSchema.safeParse('Mars/Olympus');
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error.issues[0]?.params).toMatchObject({ code: INVALID_TIMEZONE_CODE });
+			const params = result.error.issues[0] as { params?: { code?: string } };
+			expect(params.params?.code).toBe(INVALID_TIMEZONE_CODE);
 		}
 	});
 

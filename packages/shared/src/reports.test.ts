@@ -3,6 +3,7 @@ import {
 	reportAppointmentMetricsSchema,
 	reportBalanceRowSchema,
 	reportBalancesSchema,
+	reportConsistencySchema,
 	reportPatientDistributionSchema,
 	reportSummarySchema
 } from './reports.js';
@@ -59,6 +60,29 @@ describe('reportAppointmentMetricsSchema (GAP-07)', () => {
 		});
 		expect(parsed.completion_rate).toBe(0.5);
 		expect(parsed.by_clinic[0]?.clinic_name).toBe('Atanmamış');
+	});
+});
+
+describe('reportConsistencySchema (GAP-05)', () => {
+	it('accepts items with message_key, severity counts, and truncated', () => {
+		const parsed = reportConsistencySchema.parse({
+			period: { from: '2026-01-01', to: '2026-01-31' },
+			items: [
+				{
+					transaction_id: '550e8400-e29b-41d4-a716-446655440000',
+					title: 'Missing cat',
+					occurred_on: '2026-01-15',
+					severity: 'warning',
+					code: 'category_missing',
+					message_key: 'reports.consistency.category_missing'
+				}
+			],
+			counts: { error: 0, warning: 1 },
+			truncated: false
+		});
+		expect(parsed.counts.warning).toBe(1);
+		expect(parsed.truncated).toBe(false);
+		expect(parsed.items[0]?.message_key).toBe('reports.consistency.category_missing');
 	});
 });
 

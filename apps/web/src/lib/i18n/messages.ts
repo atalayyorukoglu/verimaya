@@ -315,6 +315,49 @@ const tr = {
 	'reports.ops.col.count': 'Adet',
 	'reports.ops.col.completion': 'Tamamlanma',
 	'reports.ops.col.ratio': 'Oran',
+	'reports.consistency.title': 'Tutarlılık uyarıları',
+	'reports.consistency.description':
+		'Kategori / hasta / kişi seçimleri veya ödeme durumu tutarsız görünen işlemler.',
+	'reports.consistency.clean': 'Tüm kayıtlar temiz görünüyor.',
+	'reports.consistency.badge': '{count} uyarı',
+	'reports.consistency.error': 'Hata',
+	'reports.consistency.warning': 'Uyarı',
+	'reports.consistency.fix': 'Düzelt',
+	'reports.consistency.truncated': 'İlk 100 gösteriliyor, toplam {count}',
+	'reports.consistency.category_missing': 'Kategori boş.',
+	'reports.consistency.income_patient_missing': 'Gelir kaydında hasta seçilmemiş.',
+	'reports.consistency.expense_contact_missing': 'Gider kaydında kişi/firma yok.',
+	'reports.consistency.fx_missing': 'Kur karşılığı yok (rapora dahil edilmedi).',
+	'reports.consistency.paid_amount_mismatch':
+		'Durum “ödendi” ama ödenen tutar tutarsız veya boş.',
+	'reports.consistency.unpaid_with_payment': 'Durum “ödenmedi” ama paid_amount > 0.',
+	'reports.consistency.partial_amount_invalid':
+		'Durum “kısmi” ama ödenen tutar 0 veya tutara eşit/büyük.',
+	'settings.dataQuality.title': 'Veri kalitesi',
+	'settings.dataQuality.description':
+		'Son 7 günlük tutarlılık denetimi (tam dönem, sunucu tarafı) + mükerrer şüphe.',
+	'settings.dataQuality.loading': 'Yükleniyor…',
+	'settings.dataQuality.loadError': 'Veri yüklenemedi.',
+	'settings.dataQuality.stat.issues': 'Uyarılar',
+	'settings.dataQuality.stat.coverage': 'Kur coverage',
+	'settings.dataQuality.consistencyHint':
+		'GET /v1/reports/consistency — sayfa sınırı yok; tüm dönem taranır.',
+	'settings.dataQuality.fx.title': 'Kur bilgisi özeti',
+	'settings.dataQuality.fx.description':
+		'Baz para ({currency}) karşılığı çözülemeyen işlemler — rapor toplamına dahil edilmez.',
+	'settings.dataQuality.fx.clean': 'Temiz (coverage {pct}%).',
+	'settings.dataQuality.fx.summary': '{count} işlem · coverage {pct}%',
+	'settings.dataQuality.fx.loadError': 'Kur özeti yüklenemedi.',
+	'settings.dataQuality.dupes.title': 'Mükerrer şüphe',
+	'settings.dataQuality.dupes.description': 'Aynı tutar + tarih + tür + para birimi (örnekleme).',
+	'settings.dataQuality.dupes.clean': 'Şüphe yok.',
+	'settings.dataQuality.dupes.count': '{count} kayıt',
+	'settings.dataQuality.duplicatesNav.title': 'Kişi / hasta çift kayıt',
+	'settings.dataQuality.duplicatesNav.description':
+		'Telefon, e-posta veya ada göre dizin ve hasta mükerrerleri — birleştirme demosu.',
+	'settings.dataQuality.duplicatesNav.contacts': 'Kişilerde tara →',
+	'settings.dataQuality.duplicatesNav.patients': 'Hastalarda tara →',
+	'settings.dataQuality.reportsLink': 'Raporlar → tutarlılık',
 
 	'settings.ads.title': 'Reklamlar',
 	'settings.ads.description':
@@ -1080,6 +1123,49 @@ const en: Record<MessageKey, string> = {
 	'reports.ops.col.count': 'Count',
 	'reports.ops.col.completion': 'Completion',
 	'reports.ops.col.ratio': 'Share',
+	'reports.consistency.title': 'Consistency warnings',
+	'reports.consistency.description':
+		'Transactions with missing category / patient / contact or inconsistent payment status.',
+	'reports.consistency.clean': 'All records look clean.',
+	'reports.consistency.badge': '{count} warnings',
+	'reports.consistency.error': 'Error',
+	'reports.consistency.warning': 'Warning',
+	'reports.consistency.fix': 'Fix',
+	'reports.consistency.truncated': 'Showing first 100, {count} total',
+	'reports.consistency.category_missing': 'Category is empty.',
+	'reports.consistency.income_patient_missing': 'Income record has no patient.',
+	'reports.consistency.expense_contact_missing': 'Expense record has no contact.',
+	'reports.consistency.fx_missing': 'Missing FX equivalent (excluded from reports).',
+	'reports.consistency.paid_amount_mismatch':
+		'Status is “paid” but paid amount is missing or inconsistent.',
+	'reports.consistency.unpaid_with_payment': 'Status is “unpaid” but paid_amount > 0.',
+	'reports.consistency.partial_amount_invalid':
+		'Status is “partial” but paid amount is 0 or ≥ full amount.',
+	'settings.dataQuality.title': 'Data quality',
+	'settings.dataQuality.description':
+		'Last 7 days consistency audit (full period, server-side) + duplicate suspicion.',
+	'settings.dataQuality.loading': 'Loading…',
+	'settings.dataQuality.loadError': 'Could not load data.',
+	'settings.dataQuality.stat.issues': 'Issues',
+	'settings.dataQuality.stat.coverage': 'FX coverage',
+	'settings.dataQuality.consistencyHint':
+		'GET /v1/reports/consistency — no page cap; full period is scanned.',
+	'settings.dataQuality.fx.title': 'FX summary',
+	'settings.dataQuality.fx.description':
+		'Transactions without a resolvable {currency} equivalent — excluded from report totals.',
+	'settings.dataQuality.fx.clean': 'Clean (coverage {pct}%).',
+	'settings.dataQuality.fx.summary': '{count} transactions · coverage {pct}%',
+	'settings.dataQuality.fx.loadError': 'Could not load FX summary.',
+	'settings.dataQuality.dupes.title': 'Duplicate suspicion',
+	'settings.dataQuality.dupes.description': 'Same amount + date + kind + currency (sampled).',
+	'settings.dataQuality.dupes.clean': 'No suspicion.',
+	'settings.dataQuality.dupes.count': '{count} rows',
+	'settings.dataQuality.duplicatesNav.title': 'Contact / patient duplicates',
+	'settings.dataQuality.duplicatesNav.description':
+		'Directory and patient duplicates by phone, email, or name — merge demo.',
+	'settings.dataQuality.duplicatesNav.contacts': 'Scan contacts →',
+	'settings.dataQuality.duplicatesNav.patients': 'Scan patients →',
+	'settings.dataQuality.reportsLink': 'Reports → consistency',
 
 	'settings.ads.title': 'Ads',
 	'settings.ads.description':

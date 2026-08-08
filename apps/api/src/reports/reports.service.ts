@@ -1,8 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, eq, gte, isNotNull, isNull, lt, lte, sql, type SQL } from 'drizzle-orm';
+import {
+	and,
+	count,
+	eq,
+	gte,
+	isNotNull,
+	isNull,
+	lt,
+	lte,
+	sql,
+	type SQL
+} from 'drizzle-orm';
 import {
 	tenantDayRange,
 	calculateRealRoas,
+	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	type MarketingReport,
 	type MarketingReportParams,
 	type MarketingSourceRow,
@@ -12,6 +24,10 @@ import {
 	type ReportByCategory,
 	type ReportByCategoryDetail,
 	type ReportByCategoryDetailParams,
+	type ReportConsistency,
+	type ReportConsistencyCode,
+	type ReportConsistencyItem,
+	type ReportConsistencySeverity,
 	type ReportMonthly,
 	type ReportPatientDistribution,
 	type ReportPeriodParams,
@@ -296,6 +312,119 @@ export class ReportsService {
 					month: row.month,
 					count: Number(row.count)
 				}))
+			};
+		});
+	}
+
+	/**
+	 * GAP-05: full-period transaction consistency audit.
+	 * Counts = SQL FILTER aggregation over the whole period; items = capped list (LIMIT 100).
+	 * BF-04/BF-05 rules (responsible_party, payer/payee) and contact_type_mismatch are out of scope.
+	 */
+	async consistency(
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<ReportConsistency> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const tenantBase = await this.getTenantBase(db, tenantId);
+			const period: SQL[] = [isNull(transactions.deletedAt)];
+			if (params.from) period.push(gte(transactions.occurredOn, params.from));
+			if (params.to) period.push(lte(transactions.occurredOn, params.to));
+			const periodWhere = and(...period)!;
+
+			const emptyCategory = sql`btrim(coalesce(${transactions.category}, '')) = ''`;
+			const incomeNoPatient = sql`${transactions.kind} = 'income' AND ${transactions.patientId} IS NULL`;
+			const expenseNoContact = sql`${transactions.kind} = 'expense' AND ${transactions.contactId} IS NULL AND btrim(coalesce(${transactions.contactLabel}, '')) = ''`;
+			// FX: foreign currency without base snapshot. Same-currency rows may have
+			// amount_base NULL on purpose (ETL-ESLEME.md §3.4 — resolver uses amount).
+			const fxMissing = sql`${transactions.currency} <> ${tenantBase} AND ${transactions.amountBase} IS NULL`;
+			const paidMismatch = sql`${transactions.status} = 'paid' AND (${transactions.paidAmount} IS NULL OR ${transactions.paidAmount} <> ${transactions.amount})`;
+			const unpaidWithPay = sql`${transactions.status} = 'unpaid' AND coalesce(${transactions.paidAmount}, 0) > 0`;
+			const partialInvalid = sql`${transactions.status} = 'partial' AND (${transactions.paidAmount} IS NULL OR ${transactions.paidAmount} = 0 OR ${transactions.paidAmount} >= ${transactions.amount})`;
+
+			const [agg] = await db
+				.select({
+					warning: sql<number>`(
+						count(*) filter (where ${emptyCategory})
+						+ count(*) filter (where ${incomeNoPatient})
+						+ count(*) filter (where ${expenseNoContact})
+						+ count(*) filter (where ${fxMissing})
+					)::int`,
+					error: sql<number>`(
+						count(*) filter (where ${paidMismatch})
+						+ count(*) filter (where ${unpaidWithPay})
+						+ count(*) filter (where ${partialInvalid})
+					)::int`
+				})
+				.from(transactions)
+				.where(periodWhere);
+
+			const error = Number(agg?.error ?? 0);
+			const warning = Number(agg?.warning ?? 0);
+
+			const branch = (
+				severity: ReportConsistencySeverity,
+				code: ReportConsistencyCode,
+				messageKey: string,
+				pred: SQL
+			) => sql`
+				SELECT
+					${transactions.id} AS transaction_id,
+					${transactions.title} AS title,
+					${transactions.occurredOn} AS occurred_on,
+					${severity}::text AS severity,
+					${code}::text AS code,
+					${messageKey}::text AS message_key
+				FROM ${transactions}
+				WHERE ${and(periodWhere, pred)}
+			`;
+
+			const itemResult = await db.execute(sql`
+				SELECT transaction_id, title, occurred_on, severity, code, message_key
+				FROM (
+					${branch('warning', 'category_missing', 'reports.consistency.category_missing', emptyCategory)}
+					UNION ALL
+					${branch('warning', 'income_patient_missing', 'reports.consistency.income_patient_missing', incomeNoPatient)}
+					UNION ALL
+					${branch('warning', 'expense_contact_missing', 'reports.consistency.expense_contact_missing', expenseNoContact)}
+					UNION ALL
+					${branch('warning', 'fx_missing', 'reports.consistency.fx_missing', fxMissing)}
+					UNION ALL
+					${branch('error', 'paid_amount_mismatch', 'reports.consistency.paid_amount_mismatch', paidMismatch)}
+					UNION ALL
+					${branch('error', 'unpaid_with_payment', 'reports.consistency.unpaid_with_payment', unpaidWithPay)}
+					UNION ALL
+					${branch('error', 'partial_amount_invalid', 'reports.consistency.partial_amount_invalid', partialInvalid)}
+				) AS issues
+				ORDER BY
+					CASE severity WHEN 'error' THEN 0 ELSE 1 END,
+					occurred_on DESC,
+					transaction_id DESC
+				LIMIT ${REPORT_CONSISTENCY_ITEMS_LIMIT}
+			`);
+
+			const items: ReportConsistencyItem[] = [...itemResult].map((row) => {
+				const occurred =
+					typeof row.occurred_on === 'string'
+						? row.occurred_on.slice(0, 10)
+						: row.occurred_on instanceof Date
+							? row.occurred_on.toISOString().slice(0, 10)
+							: String(row.occurred_on).slice(0, 10);
+				return {
+					transaction_id: String(row.transaction_id),
+					title: String(row.title),
+					occurred_on: occurred,
+					severity: row.severity as ReportConsistencySeverity,
+					code: row.code as ReportConsistencyCode,
+					message_key: String(row.message_key)
+				};
+			});
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				items,
+				counts: { error, warning },
+				truncated: error + warning > items.length
 			};
 		});
 	}

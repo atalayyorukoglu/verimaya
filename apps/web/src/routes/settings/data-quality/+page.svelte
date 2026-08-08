@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { ReportSummary, SupportedCurrency, Tenant, Transaction } from '@verimaya/shared';
+	import type { ReportConsistency, ReportSummary, SupportedCurrency, Tenant, Transaction } from '@verimaya/shared';
 	import { reportUrl, toTenantDayKey } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
+	import type { MessageKey } from '$lib/i18n/messages';
 	import { formatMoney } from '$lib/format';
-	import { isFxMissing } from '$lib/money-base';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 
@@ -32,9 +33,9 @@
 
 	const from = $derived(daysAgoIso(7));
 
-	const txQuery = createQuery(() => ({
-		queryKey: qs.keys.transactions.list({ for: 'data-quality', from }),
-		queryFn: () => apiGet<TxPage>(listUrl('transactions', { limit: 100, from })),
+	const consistencyQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.consistency({ from, to: null }),
+		queryFn: () => apiGet<ReportConsistency>(reportUrl('consistency', { from })),
 		enabled: qs.ready && !!tenantQuery.data
 	}));
 
@@ -44,100 +45,125 @@
 		enabled: qs.ready && !!tenantQuery.data
 	}));
 
-	const report = $derived.by(() => {
-		const items = txQuery.data?.items ?? [];
-		let income = 0;
-		let expense = 0;
-		const missingCategory: Transaction[] = [];
-		const missingLink: Transaction[] = [];
-		const fxMissing: Transaction[] = [];
-		const dupMap = new Map<string, Transaction[]>();
+	const txQuery = createQuery(() => ({
+		queryKey: qs.keys.transactions.list({ for: 'data-quality-dupes', from }),
+		queryFn: () => apiGet<TxPage>(listUrl('transactions', { limit: 100, from })),
+		enabled: qs.ready && !!tenantQuery.data
+	}));
 
+	const consistency = $derived(consistencyQuery.data);
+	const issueCount = $derived(
+		(consistency?.counts.error ?? 0) + (consistency?.counts.warning ?? 0)
+	);
+	const fxSummary = $derived(summaryQuery.data);
+
+	const duplicates = $derived.by(() => {
+		const items = txQuery.data?.items ?? [];
+		const dupMap = new Map<string, Transaction[]>();
 		for (const t of items) {
-			if (t.kind === 'income') income += t.amount;
-			else expense += t.amount;
-			if (!t.category?.trim()) missingCategory.push(t);
-			if (t.kind === 'income' && !t.patient_id) missingLink.push(t);
-			if (t.kind === 'expense' && !t.contact_label?.trim() && !t.patient_id) missingLink.push(t);
-			if (isFxMissing(t, baseCurrency)) fxMissing.push(t);
 			const key = `${t.amount}|${t.currency}|${t.occurred_on}|${t.kind}`;
 			const bucket = dupMap.get(key) ?? [];
 			bucket.push(t);
 			dupMap.set(key, bucket);
 		}
-
-		const duplicates = [...dupMap.entries()]
+		return [...dupMap.entries()]
 			.filter(([, rows]) => rows.length > 1)
 			.map(([key, rows]) => ({ key, count: rows.length, sample: rows[0]! }))
 			.slice(0, 8);
-
-		return {
-			count: items.length,
-			income,
-			expense,
-			missingCategory: missingCategory.slice(0, 8),
-			missingLink: missingLink.slice(0, 8),
-			fxMissing: fxMissing.slice(0, 12),
-			duplicates
-		};
 	});
-
-	const fxSummary = $derived(summaryQuery.data);
 </script>
 
 <svelte:head>
-	<title>Veri kalitesi · Ayarlar · Veri Maya</title>
+	<title>{t('settings.dataQuality.title')} · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
 	<PageHeader
-		title="Veri kalitesi"
-		description="Son 7 günlük işlem özeti, eksik alanlar, kur karşılığı ve mükerrer şüphe."
+		title={t('settings.dataQuality.title')}
+		description={t('settings.dataQuality.description')}
 	/>
 
-	{#if txQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
-	{:else if txQuery.isError}
-		<p class="text-sm text-danger">Veri yüklenemedi.</p>
+	{#if consistencyQuery.isPending}
+		<p class="text-sm text-text-muted">{t('settings.dataQuality.loading')}</p>
+	{:else if consistencyQuery.isError}
+		<p class="text-sm text-danger">{t('settings.dataQuality.loadError')}</p>
 	{:else}
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 			<div class="rounded-lg border border-border bg-surface p-3">
-				<p class="text-xs text-text-muted">Kayıt</p>
-				<p class="mt-1 text-lg font-semibold text-text tabular-nums">{report.count}</p>
+				<p class="text-xs text-text-muted">{t('settings.dataQuality.stat.issues')}</p>
+				<p class="mt-1 text-lg font-semibold text-text tabular-nums">{issueCount}</p>
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-3">
-				<p class="text-xs text-text-muted">Gelir</p>
-				<p class="mt-1 text-lg font-semibold text-success tabular-nums">
-					{formatMoney(report.income)}
+				<p class="text-xs text-text-muted">{t('reports.consistency.error')}</p>
+				<p class="mt-1 text-lg font-semibold text-danger tabular-nums">
+					{consistency?.counts.error ?? 0}
 				</p>
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-3">
-				<p class="text-xs text-text-muted">Gider</p>
-				<p class="mt-1 text-lg font-semibold text-text tabular-nums">
-					{formatMoney(report.expense)}
-				</p>
-			</div>
-			<div class="rounded-lg border border-border bg-surface p-3">
-				<p class="text-xs text-text-muted">Eksik kategori</p>
+				<p class="text-xs text-text-muted">{t('reports.consistency.warning')}</p>
 				<p class="mt-1 text-lg font-semibold text-warning tabular-nums">
-					{report.missingCategory.length}
+					{consistency?.counts.warning ?? 0}
+				</p>
+			</div>
+			<div class="rounded-lg border border-border bg-surface p-3">
+				<p class="text-xs text-text-muted">{t('settings.dataQuality.stat.coverage')}</p>
+				<p class="mt-1 text-lg font-semibold text-text tabular-nums">
+					{#if fxSummary}
+						{(fxSummary.coverage_ratio * 100).toFixed(0)}%
+					{:else}
+						—
+					{/if}
 				</p>
 			</div>
 		</div>
 
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
-			<h2 class="text-sm font-semibold text-text">Kur bilgisi eksik</h2>
+			<h2 class="text-sm font-semibold text-text">{t('reports.consistency.title')}</h2>
+			<p class="mt-0.5 text-xs text-text-muted">{t('settings.dataQuality.consistencyHint')}</p>
+			{#if issueCount === 0}
+				<p class="mt-3 text-sm text-success">{t('reports.consistency.clean')}</p>
+			{:else}
+				<ul class="mt-3 divide-y divide-border">
+					{#each consistency?.items ?? [] as issue (`${issue.transaction_id}-${issue.code}`)}
+						<li class="flex min-w-0 items-start justify-between gap-2 py-2 text-sm">
+							<div class="min-w-0">
+								<p class="truncate font-medium text-text">{issue.title}</p>
+								<p class="mt-0.5 text-text-muted">{t(issue.message_key as MessageKey)}</p>
+							</div>
+							<a href="/finance" class="shrink-0 text-xs text-brand hover:underline">
+								{t('reports.consistency.fix')}
+							</a>
+						</li>
+					{/each}
+				</ul>
+				{#if consistency?.truncated}
+					<p class="mt-3 text-xs text-text-muted">
+						{t('reports.consistency.truncated', { count: issueCount })}
+					</p>
+				{/if}
+			{/if}
+		</section>
+
+		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
+			<h2 class="text-sm font-semibold text-text">{t('settings.dataQuality.fx.title')}</h2>
 			<p class="mt-0.5 text-xs text-text-muted">
-				Baz para ({baseCurrency}) karşılığı çözülemeyen işlemler — rapor toplamına dahil edilmez.
+				{t('settings.dataQuality.fx.description', { currency: baseCurrency })}
 			</p>
 			{#if summaryQuery.isPending}
-				<p class="mt-3 text-sm text-text-muted">Özet yükleniyor…</p>
+				<p class="mt-3 text-sm text-text-muted">{t('settings.dataQuality.loading')}</p>
 			{:else if fxSummary && fxSummary.fx_missing_count === 0}
-				<p class="mt-3 text-sm text-success">Temiz (coverage {(fxSummary.coverage_ratio * 100).toFixed(0)}%).</p>
+				<p class="mt-3 text-sm text-success">
+					{t('settings.dataQuality.fx.clean', {
+						pct: (fxSummary.coverage_ratio * 100).toFixed(0)
+					})}
+				</p>
 			{:else if fxSummary}
 				<p class="mt-3 text-sm text-warning">
-					{fxSummary.fx_missing_count} işlem · coverage {(fxSummary.coverage_ratio * 100).toFixed(0)}%
+					{t('settings.dataQuality.fx.summary', {
+						count: fxSummary.fx_missing_count,
+						pct: (fxSummary.coverage_ratio * 100).toFixed(0)
+					})}
 				</p>
 				{#if fxSummary.fx_missing_amount_by_currency.length > 0}
 					<ul class="mt-2 flex flex-wrap gap-2 text-xs text-text-muted">
@@ -148,61 +174,27 @@
 						{/each}
 					</ul>
 				{/if}
-				{#if report.fxMissing.length === 0}
-					<p class="mt-3 text-xs text-text-faint">
-						Örnek liste son 100 kayıtta yok; dönem özeti sunucudan.
-					</p>
-				{:else}
-					<ul class="mt-3 divide-y divide-border">
-						{#each report.fxMissing as t (t.id)}
-							<li class="flex justify-between gap-2 py-2 text-sm">
-								<span class="truncate text-text">
-									{t.title}
-									<span class="text-text-faint"> · {t.currency}</span>
-								</span>
-								<a
-									href="/finance"
-									class="shrink-0 text-xs text-brand hover:underline"
-									>Düzelt</a
-								>
-							</li>
-						{/each}
-					</ul>
-				{/if}
 			{:else}
-				<p class="mt-3 text-sm text-danger">Kur özeti yüklenemedi.</p>
+				<p class="mt-3 text-sm text-danger">{t('settings.dataQuality.fx.loadError')}</p>
 			{/if}
 		</section>
 
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
-			<h2 class="text-sm font-semibold text-text">Eksik bağlantı</h2>
-			<p class="mt-0.5 text-xs text-text-muted">Gelirde hasta yok / giderde kişi veya hasta yok.</p>
-			{#if report.missingLink.length === 0}
-				<p class="mt-3 text-sm text-success">Temiz.</p>
+			<h2 class="text-sm font-semibold text-text">{t('settings.dataQuality.dupes.title')}</h2>
+			<p class="mt-0.5 text-xs text-text-muted">{t('settings.dataQuality.dupes.description')}</p>
+			{#if txQuery.isPending}
+				<p class="mt-3 text-sm text-text-muted">{t('settings.dataQuality.loading')}</p>
+			{:else if duplicates.length === 0}
+				<p class="mt-3 text-sm text-success">{t('settings.dataQuality.dupes.clean')}</p>
 			{:else}
 				<ul class="mt-3 divide-y divide-border">
-					{#each report.missingLink as t (t.id)}
-						<li class="flex justify-between gap-2 py-2 text-sm">
-							<span class="truncate text-text">{t.title}</span>
-							<a href="/finance" class="shrink-0 text-xs text-brand hover:underline">Düzelt</a>
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		</section>
-
-		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
-			<h2 class="text-sm font-semibold text-text">Mükerrer şüphe</h2>
-			<p class="mt-0.5 text-xs text-text-muted">Aynı tutar + tarih + tür + para birimi.</p>
-			{#if report.duplicates.length === 0}
-				<p class="mt-3 text-sm text-success">Şüphe yok.</p>
-			{:else}
-				<ul class="mt-3 divide-y divide-border">
-					{#each report.duplicates as d (d.key)}
+					{#each duplicates as d (d.key)}
 						<li class="flex justify-between gap-2 py-2 text-sm">
 							<span class="truncate text-text">
 								{d.sample.title}
-								<span class="text-text-faint"> · {d.count} kayıt</span>
+								<span class="text-text-faint">
+									· {t('settings.dataQuality.dupes.count', { count: d.count })}
+								</span>
 							</span>
 							<span class="shrink-0 text-text-muted tabular-nums">
 								{formatMoney(d.sample.amount, d.sample.currency)}
@@ -214,19 +206,20 @@
 		</section>
 
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
-			<h2 class="text-sm font-semibold text-text">Kişi / hasta çift kayıt</h2>
-			<p class="mt-0.5 text-xs text-text-muted">
-				Telefon, e-posta veya ada göre dizin ve hasta mükerrerleri — birleştirme demosu.
-			</p>
+			<h2 class="text-sm font-semibold text-text">{t('settings.dataQuality.duplicatesNav.title')}</h2>
+			<p class="mt-0.5 text-xs text-text-muted">{t('settings.dataQuality.duplicatesNav.description')}</p>
 			<div class="mt-3 flex flex-wrap gap-3 text-sm">
-				<a href="/contacts/duplicates" class="text-brand hover:underline">Kişilerde tara →</a>
-				<a href="/patients/duplicates" class="text-brand hover:underline">Hastalarda tara →</a>
+				<a href="/contacts/duplicates" class="text-brand hover:underline"
+					>{t('settings.dataQuality.duplicatesNav.contacts')}</a
+				>
+				<a href="/patients/duplicates" class="text-brand hover:underline"
+					>{t('settings.dataQuality.duplicatesNav.patients')}</a
+				>
 			</div>
 		</section>
 
 		<p class="mt-3 text-xs text-text-faint">
-			<a href="/reports" class="text-brand hover:underline">Raporlar → tutarlılık</a> ile örtüşür; ileride
-			tek “kalite” yüzeyi olabilir.
+			<a href="/reports" class="text-brand hover:underline">{t('settings.dataQuality.reportsLink')}</a>
 		</p>
 	{/if}
 </div>

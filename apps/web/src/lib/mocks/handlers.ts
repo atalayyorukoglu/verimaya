@@ -30,6 +30,7 @@ import {
 	trustScoreSettings,
 	compareByCreatedAtDesc,
 	compareByOccurredOnDesc,
+	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	tenantDayRange,
 	toTenantDayKey,
 	type AiCorrection,
@@ -425,6 +426,91 @@ function buildReportAppointmentMetrics(
 		monthly: [...monthMap.entries()]
 			.map(([month, count]) => ({ month, count }))
 			.sort((a, b) => a.month.localeCompare(b.month))
+	};
+}
+
+function buildReportConsistency(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+) {
+	const base = store.tenant.base_currency;
+	const rows = filterTransactionsByPeriod(store.transactions, from, to);
+	type Item = {
+		transaction_id: string;
+		title: string;
+		occurred_on: string;
+		severity: 'warning' | 'error';
+		code: string;
+		message_key: string;
+	};
+	const items: Item[] = [];
+
+	const push = (
+		t: Transaction,
+		severity: 'warning' | 'error',
+		code: string,
+		message_key: string
+	) => {
+		items.push({
+			transaction_id: t.id,
+			title: t.title,
+			occurred_on: t.occurred_on,
+			severity,
+			code,
+			message_key
+		});
+	};
+
+	for (const t of rows) {
+		if (!(t.category ?? '').trim()) {
+			push(t, 'warning', 'category_missing', 'reports.consistency.category_missing');
+		}
+		if (t.kind === 'income' && !t.patient_id) {
+			push(t, 'warning', 'income_patient_missing', 'reports.consistency.income_patient_missing');
+		}
+		if (t.kind === 'expense' && !t.contact_id && !(t.contact_label ?? '').trim()) {
+			push(t, 'warning', 'expense_contact_missing', 'reports.consistency.expense_contact_missing');
+		}
+		// Same-currency amount_base may be null on purpose (ETL-ESLEME §3.4).
+		if (t.currency !== base && t.amount_base == null) {
+			push(t, 'warning', 'fx_missing', 'reports.consistency.fx_missing');
+		}
+		if (t.status === 'paid' && (t.paid_amount == null || t.paid_amount !== t.amount)) {
+			push(t, 'error', 'paid_amount_mismatch', 'reports.consistency.paid_amount_mismatch');
+		}
+		if (t.status === 'unpaid' && (t.paid_amount ?? 0) > 0) {
+			push(t, 'error', 'unpaid_with_payment', 'reports.consistency.unpaid_with_payment');
+		}
+		if (
+			t.status === 'partial' &&
+			(t.paid_amount == null || t.paid_amount === 0 || t.paid_amount >= t.amount)
+		) {
+			push(t, 'error', 'partial_amount_invalid', 'reports.consistency.partial_amount_invalid');
+		}
+	}
+
+	items.sort((a, b) => {
+		const sev = (a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1);
+		if (sev !== 0) return sev;
+		const byDate = b.occurred_on.localeCompare(a.occurred_on);
+		if (byDate !== 0) return byDate;
+		return b.transaction_id.localeCompare(a.transaction_id);
+	});
+
+	let error = 0;
+	let warning = 0;
+	for (const item of items) {
+		if (item.severity === 'error') error += 1;
+		else warning += 1;
+	}
+
+	const truncated = error + warning > REPORT_CONSISTENCY_ITEMS_LIMIT;
+	return {
+		period: { from, to },
+		items: truncated ? items.slice(0, REPORT_CONSISTENCY_ITEMS_LIMIT) : items,
+		counts: { error, warning },
+		truncated
 	};
 }
 
@@ -1009,6 +1095,14 @@ export const handlers = [
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
 		return HttpResponse.json(buildReportAppointmentMetrics(store, from, to));
+	}),
+
+	http.get('/v1/reports/consistency', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildReportConsistency(store, from, to));
 	}),
 
 	http.get('/v1/reports/balances', ({ request }) => {
