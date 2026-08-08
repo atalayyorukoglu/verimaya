@@ -128,11 +128,3 @@
 		</li>
 	{/each}
 </ul>
-
-{#if data.truncated}
-	<p class="mt-3 text-xs text-text-muted">
-		{t('reports.consistency.truncated', {
-			count: data.counts.error + data.counts.warning
-		})}
-	</p>
-{/if}
