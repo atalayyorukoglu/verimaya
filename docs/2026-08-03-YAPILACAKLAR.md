@@ -270,7 +270,7 @@
 > PILOT-02 feature-freeze başlayıp 2–4 hafta gerçek operasyon verisi biriktikten sonra
 > enum değişimi pahalılaşır. Kritik tarih ETL değil, **PILOT-02 başlangıcı**.
 
-- [ ] **Adım 1 — Kopya / UI dili (şema dokunulmaz):** "Yeni hasta = yeni lead" hissini kaldır.
+- [x] **Adım 1 — Kopya / UI dili (şema dokunulmaz):** "Yeni hasta = yeni lead" hissini kaldır.
   `/patients` liste kolonları, `PatientFormDialog`, `PanelHome` ve boş-durum metinleri
   operasyon dosyası diline çevrilir (yeni metinler doğrudan gömülmez → `messages.ts`
   anahtarı, AGENTS.md dil kuralı). Pipeline vurgusu yerine **randevu / dosya / para** vurgusu.
@@ -278,23 +278,23 @@
     metinlerinde satış hunisi dili yok; tüm yeni metinler `messages.ts` anahtarı
     (tr + en); **`patient.ts`, şema, migration ve enum'a dokunulmadı** (`git diff`
     ile kanıtlanır); mevcut testler yeşil.
-- [ ] **Adım 2 — `patientStatusSchema` daraltma:** 9 değerli CRM hunisi
+- [x] **Adım 2 — `patientStatusSchema` daraltma:** 9 değerli CRM hunisi
   (`lead, contacted, qualified, scheduled, arrived, treated, follow_up, closed_won, closed_lost`)
   → operasyon değerlerine indirilir. Öneri: `scheduled, arrived, treated, follow_up, cancelled`.
   Lead tarafı (`lead/contacted/qualified/closed_won/closed_lost`) GHL'in; app'e **sync ile** düşer,
   app'te yazılmaz. Sözleşme önce `packages/shared/src/patient.ts`'te değişir (AGENTS.md ilke 7),
   sonra Drizzle migration + ETL eşlemesi + MSW + web.
-- [ ] **Adım 3 — Veri migrasyonu:** Demo Klinik'teki 757 hastanın mevcut `status` değerleri
+- [x] **Adım 3 — Veri migrasyonu:** Demo Klinik'teki 757 hastanın mevcut `status` değerleri
   yeni enum'a eşlenir. `lead/contacted/qualified` → yeni varsayılan; `closed_*` → `follow_up`
   veya `cancelled`. Eşleme tablosu `docs/legacy-reference/ETL-ESLEME.md` §2.5'e işlenir.
-- [ ] **Adım 4 — GHL sahiplik kuralını "planlanan"dan çıkar:** `settings.ghl.ownership.heading`
+- [x] **Adım 4 — GHL sahiplik kuralını "planlanan"dan çıkar:** `settings.ghl.ownership.heading`
   başlığındaki "(planlanan)" kaldırılır; kural yazılı olduğu gibi uygulanır
   (çakışmada kaynak sahibi kazanır + audit). İdeal akış: GHL'de lead olgunlaşınca
   patient app'e düşer; **elle oluşturma yedek yol olarak kalır**, birincil akış değil.
-- [ ] **Adım 5 — Raporlarda huni vurgusunu ayır:** `/reports` "Hasta durum dağılımı" ve
+- [x] **Adım 5 — Raporlarda huni vurgusunu ayır:** `/reports` "Hasta durum dağılımı" ve
   "Kaynak dağılımı" kartları operasyon diline çevrilir veya pazarlama bloğuna taşınır.
   `source` alanı kalır (ROAS/hasta-başı-maliyet buna bağlı) ama **satış hunisi olarak sunulmaz**.
-- [ ] **Adım 6 — MSW demo notunu ayır:** Demo/fixture verisindeki lead dili "demo" etiketiyle
+- [x] **Adım 6 — MSW demo notunu ayır:** Demo/fixture verisindeki lead dili "demo" etiketiyle
   işaretlenir; gerçek panelde operasyon dili görünür.
 - **Dosyalar:** `packages/shared/src/patient.ts`, `apps/api/src/db/schema/patients.ts` + yeni migration,
   `apps/api/src/patients/patients.service.ts`, `apps/web/src/routes/patients/**`,
@@ -306,7 +306,13 @@
 - **Kabul:** `/patients` ekranında hiçbir yerde satış hunisi dili yok; `patientStatusSchema`
   yalnız operasyon değerleri içeriyor; 757 hastanın statüsü yeni enum'a taşınmış;
   GHL sahiplik metni "(planlanan)" değil; tenant izolasyon testleri yeşil.
-- **Görüş:** _(doldurulacak)_
+- **Görüş:** 2026-08-08 cloud agent (`cursor/pilot-prep-domain-gap-a84b`). Adım 1–6 tek
+  PR'da; Adım 1 ve 2 ayrı commit değil (form default `scheduled` ile birlikte). Enum:
+  `scheduled|arrived|treated|follow_up|cancelled`; default `scheduled`. Migration
+  `0029_patient_status_operations.sql` legacy CRM→operasyon eşlemesi; prod apply deploy
+  sırasında. `closed_won`→`treated`, `closed_lost`→`cancelled`, CRM üçlüsü→`scheduled`.
+  Pazarlama sekmesi CPL/lead metinleri bilinçli bırakıldı (ROAS yüzeyi); özet kartları
+  operasyon diline çevrildi. Patient merge yüzeyi açık soru §2 — dokunulmadı.
 
 ---
 
@@ -344,14 +350,14 @@
     eklendikten sonra YEŞİL; MSW kapalı ortamda tip **eklenip → GET'te görünüp → silinebiliyor**
     (kalıcılık kanıtı); mevcut varsayılan tipler aynı ID'lerle korunmuş;
     tenant izolasyon spec'i geçiyor. **GAP-02/03'e dokunulmaz.** ✅
-- [ ] **GAP-02 (G-02) — Üye rolü değiştirme yüzeyi.** `members.controller.ts` yalnız `@Get()`;
+- [x] **GAP-02 (G-02) — Üye rolü değiştirme yüzeyi.** `members.controller.ts` yalnız `@Get()`;
   `settings/team/+page.svelte` rolü salt-okunur rozet gösteriyor. Tracker'da
   `PATCH /members/{user_id}` vardı (`tenant_admin.py:64`). Org sahibi bir üyenin rolünü
   panelden değiştiremiyor.
   - **Kabul (GAP-02):** `PATCH /v1/members/:id` var; org sahibi `/settings/team`'den rolü
     değiştirebiliyor; kullanıcı kendi rolünü düşüremiyor; audit kaydı düşüyor;
     tenant izolasyon spec'i geçiyor.
-- [ ] **GAP-03 (G-01) — İşlem listesi filtre seti.** Tracker `GET /transactions` 16 query param
+- [x] **GAP-03 (G-01) — İşlem listesi filtre seti.** Tracker `GET /transactions` 16 query param
   alıyordu (`transactions.py:176-280`); Verimaya `transactionListQuerySchema`
   (`list-query.ts:30-38`) yalnız `patient_id, contact_id, from, to` + `.strict()` —
   tanımsız parametre 400 döner. Pilot minimum seti: **`kind`, `status`, `category`, `q`**.
@@ -364,7 +370,10 @@
   `apps/web/src/routes/finance/+page.svelte`, `apps/web/src/routes/settings/team/+page.svelte`,
   `apps/web/src/lib/mocks/handlers.ts`
 - **Bağımlı:** yok. **Üç kalem bağımsız — ayrı commit, ayrı kabul kriteri.**
-- **Görüş:** _(doldurulacak)_
+- **Görüş:** GAP-02/03 2026-08-08 (`ba9cb10`, `a0472b5`). GAP-02: `PATCH /v1/members/:id`,
+  self-role 403, audit `user` entity, team `<select>`, MSW patch. GAP-03: `kind|status|category|q`
+  shared schema + service `textSearchCondition` + finance filtre çubuğu. İzolasyon spec'leri
+  Postgres gerektirir — CI'da docker yoksa manuel doğrulama deploy öncesi.
 - **Görüş (GAP-01, 2026-08-08):** Coverage `api-paths-coverage.spec.ts` önce yalnız
   `settingsAppointmentType` eksikliğini gösterdi (KIRMIZI); POST+DELETE sonrası YEŞİL.
   `0028_appointment_types` + RLS + `app.default_appointment_type_id` SQL fonksiyonu Node
