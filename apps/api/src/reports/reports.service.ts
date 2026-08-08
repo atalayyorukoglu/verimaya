@@ -443,7 +443,14 @@ export class ReportsService {
 				})
 				.from(transactions)
 				.leftJoin(contacts, eq(transactions.contactId, contacts.id))
-				.where(and(isNotNull(transactions.contactId), isNull(transactions.deletedAt)));
+				.where(
+					and(
+						isNotNull(transactions.contactId),
+						isNull(transactions.deletedAt),
+						// Policy B: contact is the row subject — soft-deleted contacts leave the ledger.
+						isNull(contacts.deletedAt)
+					)
+				);
 
 			const map = new Map<
 				string,

@@ -310,4 +310,42 @@ describe('GAP-06 soft-delete isolation', () => {
 
 		await expectAuditDelete(tenantId, 'contact', label);
 	});
+
+	it('deleted contact does not appear in balances (policy B)', async () => {
+		const label = 'Balance Soft Contact';
+		let contactId = '';
+		let txnId = '';
+
+		await withTenantSession(tenantId, async () => {
+			const c = await contactsService.createWithDb(db, tenantId, {
+				contact_type_id: contactTypeId,
+				display_name: label
+			});
+			contactId = c.id;
+			const txn = await transactionsService.createWithDb(db, tenantId, {
+				kind: 'expense',
+				title: 'Balance Soft Expense',
+				occurred_on: '2026-08-01',
+				status: 'unpaid',
+				amount: 4000,
+				contact_id: contactId,
+				contact_label: label
+			});
+			txnId = txn.id;
+		});
+
+		const before = await reportsService.balances(tenantId);
+		expect(before.items.some((row) => row.contact_id === contactId)).toBe(true);
+
+		await withTenantSession(tenantId, async () => {
+			await contactsService.softDeleteWithDb(db, tenantId, contactId, actor);
+		});
+
+		const after = await reportsService.balances(tenantId);
+		expect(after.items.some((row) => row.contact_id === contactId)).toBe(false);
+
+		// Policy A: transaction itself stays listable (contact was embellishment + label).
+		const list = await transactionsService.list(tenantId, { limit: 50 });
+		expect(list.items.some((t) => t.id === txnId)).toBe(true);
+	});
 });
