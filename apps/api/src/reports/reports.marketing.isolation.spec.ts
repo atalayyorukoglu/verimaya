@@ -87,7 +87,8 @@ describe('reports marketing tenant isolation', () => {
 					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, patient_id
 				)
 				values
-					(${tenantA}, 'income', 'A tahsilat', ${period.from}, 'paid', 300000, 300000, 300000, 'TRY', ${patientA})
+					-- Tracker model: paid + paid_amount NULL = fully paid (must count as tahsilat)
+					(${tenantA}, 'income', 'A tahsilat', ${period.from}, 'paid', 300000, 300000, null, 'TRY', ${patientA})
 			`;
 		});
 

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Transaction } from '@verimaya/shared';
-import { amountInBase } from './money-base';
+import { amountInBase, paidAmountInBase } from './money-base';
 
 /** Minimal Transaction-shaped fixtures for amountInBase parity with API resolveBaseAmount. */
 function tx(
 	partial: Pick<Transaction, 'amount' | 'currency'> &
-		Partial<Pick<Transaction, 'amount_base' | 'base_currency'>>
+		Partial<
+			Pick<Transaction, 'amount_base' | 'base_currency' | 'status' | 'paid_amount'>
+		>
 ): Transaction {
 	return {
 		id: '00000000-0000-0000-0000-000000000001',
@@ -83,5 +85,28 @@ describe('amountInBase (parity with resolveBaseAmount)', () => {
 		for (const c of cases) {
 			expect(amountInBase(c.row, c.tenantBase)).toBe(c.expected);
 		}
+	});
+});
+
+describe('paidAmountInBase (parity with resolvePaidBaseAmount)', () => {
+	it('paid + paid_amount null contributes full amount', () => {
+		expect(
+			paidAmountInBase(tx({ amount: 18_062_100, currency: 'GBP', status: 'paid' }), 'GBP')
+		).toBe(18_062_100);
+	});
+
+	it('partial uses paid_amount', () => {
+		expect(
+			paidAmountInBase(
+				tx({ amount: 10_000, currency: 'GBP', status: 'partial', paid_amount: 4_000 }),
+				'GBP'
+			)
+		).toBe(4_000);
+	});
+
+	it('unpaid contributes 0', () => {
+		expect(
+			paidAmountInBase(tx({ amount: 10_000, currency: 'GBP', status: 'unpaid' }), 'GBP')
+		).toBe(0);
 	});
 });

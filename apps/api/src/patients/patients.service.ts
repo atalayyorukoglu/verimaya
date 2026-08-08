@@ -128,6 +128,7 @@ export class PatientsService {
 			const rows = await db
 				.select({
 					kind: transactions.kind,
+					status: transactions.status,
 					amount: transactions.amount,
 					amountBase: transactions.amountBase,
 					baseCurrency: transactions.baseCurrency,

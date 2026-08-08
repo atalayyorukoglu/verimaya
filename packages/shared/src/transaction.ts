@@ -19,6 +19,24 @@ export type TransactionKind = z.infer<typeof transactionKindSchema>;
 export const transactionStatusSchema = z.enum(['paid', 'partial', 'unpaid']);
 export type TransactionStatus = z.infer<typeof transactionStatusSchema>;
 
+/**
+ * Collected amount in the transaction's native currency (minor units).
+ *
+ * Tracker model (legacy ETL): `paid` means fully paid — `paid_amount` is often
+ * NULL. `paid_amount` is only required for `partial`. Callers in API/web must
+ * use this helper; do not use `paid_amount ?? 0`.
+ */
+export function resolveCollectedAmount(input: {
+	status: TransactionStatus | string;
+	amount: number;
+	paidAmount: number | null;
+}): number {
+	if (input.status === 'unpaid') return 0;
+	if (input.status === 'partial') return input.paidAmount ?? 0;
+	// paid — and defensive fallback for unknown status
+	return input.paidAmount ?? input.amount;
+}
+
 export const invoiceStatusSchema = z.enum(['none', 'issued', 'not_issued']);
 export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
 

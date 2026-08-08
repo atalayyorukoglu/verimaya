@@ -1,4 +1,4 @@
-import type { SupportedCurrency, Transaction } from '@verimaya/shared';
+import { resolveCollectedAmount, type SupportedCurrency, type Transaction } from '@verimaya/shared';
 
 /**
  * Amount in tenant reporting currency (minor units), or null if not convertible.
@@ -15,13 +15,21 @@ export function amountInBase(tx: Transaction, tenantBase: SupportedCurrency): nu
 	return null;
 }
 
+/**
+ * Collected (tahsil) amount in tenant base — mirrors resolvePaidBaseAmount.
+ * Status↔paid_amount via {@link resolveCollectedAmount}.
+ */
 export function paidAmountInBase(tx: Transaction, tenantBase: SupportedCurrency): number | null {
 	const base = amountInBase(tx, tenantBase);
 	if (base == null) return null;
-	if (tx.paid_amount == null) return null;
+	const paid = resolveCollectedAmount({
+		status: tx.status,
+		amount: tx.amount,
+		paidAmount: tx.paid_amount
+	});
 	if (tx.amount <= 0) return 0;
-	if (tx.currency === tenantBase) return tx.paid_amount;
-	return Math.round((tx.paid_amount / tx.amount) * base);
+	if (tx.currency === tenantBase) return paid;
+	return Math.round((paid / tx.amount) * base);
 }
 
 export function isFxMissing(tx: Transaction, tenantBase: SupportedCurrency): boolean {

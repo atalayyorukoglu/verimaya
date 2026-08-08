@@ -116,8 +116,8 @@ Rapor kartları ve bakiye ekranı **yalnız sunucu aggregate endpoint'lerinden**
 
 **İşlem bazında (orijinal para biriminde):**
 
-- **Açık tutar** (`open_amount`) = `amount − (paid_amount ?? 0)`, işlem türüne göre işaretli: gelir (+), gider (−).
-- **Tahsil edilmiş** (`collected_amount`) = `paid_amount ?? 0`, aynı işaret kuralı.
+- **Açık tutar** (`open_amount`) = `amount − collected`, işlem türüne göre işaretli: gelir (+), gider (−).
+- **Tahsil edilmiş** (`collected_amount`) = `resolveCollectedAmount` (Tracker: `paid` + boş `paid_amount` → `amount`; `partial` → `paid_amount`; `unpaid` → 0), aynı işaret kuralı.
 
 Satır gösterim eşiği: `open_amount !== 0` veya `collected_amount !== 0`.
 

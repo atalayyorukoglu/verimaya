@@ -33,6 +33,7 @@ import {
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	tenantDayRange,
 	toTenantDayKey,
+	resolveCollectedAmount,
 	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
@@ -47,11 +48,13 @@ import {
 	type Patient,
 	type PatientCaseNote,
 	type PatientFile,
+	type SupportedCurrency,
 	type Tenant,
 	type Transaction,
 	type TransactionDraft,
 	type WebhookSubscription
 } from '@verimaya/shared';
+import { amountInBase, paidAmountInBase } from '$lib/money-base';
 import { parseWhatsappMessage } from './whatsapp-parse';
 import { findContactDuplicateGroups, findPatientDuplicateGroups } from './duplicates';
 import {
@@ -145,22 +148,12 @@ function normalizeTxFx(
 }
 
 function amountInBaseMock(tx: Transaction, tenantBase: string): number | null {
-	if (tx.currency === tenantBase) {
-		return tx.amount_base ?? tx.amount;
-	}
-	if (tx.amount_base != null && tx.base_currency === tenantBase) {
-		return tx.amount_base;
-	}
-	return null;
+	return amountInBase(tx, tenantBase as SupportedCurrency);
 }
 
-/** Tahsilat in tenant base — mirrors resolvePaidBaseAmount (TRY-simple for demo). */
+/** Tahsilat in tenant base — mirrors resolvePaidBaseAmount. */
 function paidInBaseMock(tx: Transaction, tenantBase: string): number {
-	if (tx.paid_amount == null) return 0;
-	if (tx.currency === tenantBase) return tx.paid_amount;
-	const base = amountInBaseMock(tx, tenantBase);
-	if (base == null || tx.amount <= 0) return 0;
-	return Math.round((tx.paid_amount / tx.amount) * base);
+	return paidAmountInBase(tx, tenantBase as SupportedCurrency) ?? 0;
 }
 
 function sourceLabel(source: string | null | undefined): string {
@@ -533,7 +526,11 @@ function buildReportBalances(store: ReturnType<typeof getStore>) {
 	for (const t of store.transactions) {
 		if (!t.contact_id) continue;
 		const key = `${t.contact_id}\0${t.currency}`;
-		const paid = t.paid_amount ?? 0;
+		const paid = resolveCollectedAmount({
+			status: t.status,
+			amount: t.amount,
+			paidAmount: t.paid_amount
+		});
 		const sign = t.kind === 'income' ? 1 : -1;
 		const openDelta = sign * (t.amount - paid);
 		const collectedDelta = sign * paid;

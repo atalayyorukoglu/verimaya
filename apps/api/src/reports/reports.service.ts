@@ -15,6 +15,7 @@ import {
 	tenantDayRange,
 	calculateRealRoas,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
+	resolveCollectedAmount,
 	type MarketingReport,
 	type MarketingReportParams,
 	type MarketingSourceRow,
@@ -41,6 +42,7 @@ type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]
 
 type TxRow = {
 	kind: string;
+	status: string;
 	category: string | null;
 	subtitle: string | null;
 	occurredOn: string;
@@ -53,6 +55,7 @@ type TxRow = {
 
 type IncomeWithSourceRow = {
 	kind: string;
+	status: string;
 	amount: number;
 	amountBase: number | null;
 	baseCurrency: string | null;
@@ -454,6 +457,7 @@ export class ReportsService {
 					contactLabel: transactions.contactLabel,
 					contactDisplayName: contacts.displayName,
 					kind: transactions.kind,
+					status: transactions.status,
 					amount: transactions.amount,
 					paidAmount: transactions.paidAmount,
 					currency: transactions.currency
@@ -486,7 +490,11 @@ export class ReportsService {
 				const contactId = row.contactId;
 				const currency = row.currency as ReportBalanceRow['currency'];
 				const key = `${contactId}\0${currency}`;
-				const paid = row.paidAmount ?? 0;
+				const paid = resolveCollectedAmount({
+					status: row.status,
+					amount: row.amount,
+					paidAmount: row.paidAmount
+				});
 				const openDelta = signedMinor(row.kind, row.amount - paid);
 				const collectedDelta = signedMinor(row.kind, paid);
 
@@ -659,7 +667,7 @@ export class ReportsService {
 
 	/**
 	 * Real ROAS report: ad spend vs tahsilat (paid income) + file/treated cohort by source.
-	 * Revenue denominator = TAHSİLAT (paid_amount → tenant base), not invoice amount.
+	 * Revenue denominator = TAHSİLAT (resolveCollectedAmount → tenant base), not invoice amount.
 	 */
 	async marketing(tenantId: string, params: MarketingReportParams): Promise<MarketingReport> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
@@ -738,6 +746,7 @@ export class ReportsService {
 		return db
 			.select({
 				kind: transactions.kind,
+				status: transactions.status,
 				category: transactions.category,
 				subtitle: transactions.subtitle,
 				occurredOn: transactions.occurredOn,
@@ -815,6 +824,7 @@ export class ReportsService {
 		const rows: IncomeWithSourceRow[] = await db
 			.select({
 				kind: transactions.kind,
+				status: transactions.status,
 				amount: transactions.amount,
 				amountBase: transactions.amountBase,
 				baseCurrency: transactions.baseCurrency,
