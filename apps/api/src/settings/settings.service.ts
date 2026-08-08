@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { asc, desc, eq } from 'drizzle-orm';
 import type {
+	AppointmentTypeCreate,
 	ContactTypeCreate,
 	CredentialUpsert,
 	FinanceCategoryCreate,
@@ -10,6 +11,7 @@ import type {
 	WhatsappAiDisclosureUpdate
 } from '@verimaya/shared';
 import {
+	DEFAULT_APPOINTMENT_TYPE_NAMES,
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS,
 	defaultWhatsappAiDisclosure,
@@ -17,17 +19,18 @@ import {
 	whatsappAiDisclosureSchema
 } from '@verimaya/shared';
 import {
+	appointmentTypes,
 	contactTypes,
 	contacts,
 	financeCategories,
 	tenantCredentials,
 	tenantSettings
 } from '../db/schema';
-import { toContactType, toFinanceCategory } from '../common/mappers';
+import { toAppointmentType, toContactType, toFinanceCategory } from '../common/mappers';
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
-import { buildDefaultAppointmentTypes } from './appointment-type-defaults';
+import { defaultAppointmentTypeId } from './appointment-type-defaults';
 
 const TRUST_SCORE_KEY = 'trust_score';
 const WHATSAPP_AI_DISCLOSURE_KEY = 'whatsapp_ai_disclosure';
@@ -213,8 +216,79 @@ export class SettingsService {
 		});
 	}
 
-	listAppointmentTypes(tenantId: string) {
-		return { items: buildDefaultAppointmentTypes(tenantId) };
+	async listAppointmentTypes(tenantId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			let rows = await db
+				.select()
+				.from(appointmentTypes)
+				.orderBy(asc(appointmentTypes.sortOrder), asc(appointmentTypes.name));
+
+			if (rows.length === 0) {
+				await db.insert(appointmentTypes).values(
+					DEFAULT_APPOINTMENT_TYPE_NAMES.map((name, i) => ({
+						id: defaultAppointmentTypeId(tenantId, name),
+						tenantId,
+						name,
+						sortOrder: i
+					}))
+				);
+				rows = await db
+					.select()
+					.from(appointmentTypes)
+					.orderBy(asc(appointmentTypes.sortOrder), asc(appointmentTypes.name));
+			}
+
+			return { items: rows.map(toAppointmentType) };
+		});
+	}
+
+	async createAppointmentType(tenantId: string, input: AppointmentTypeCreate) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.createAppointmentTypeWithDb(db, tenantId, input)
+		);
+	}
+
+	/** IDEM-01 (Faz 4.1): see createFinanceCategoryWithDb — same split, same reason. */
+	async createAppointmentTypeWithDb(db: TenantDb, tenantId: string, input: AppointmentTypeCreate) {
+		const name = input.name.trim();
+
+		const existingRows = await db.select({ name: appointmentTypes.name }).from(appointmentTypes);
+		if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+			throw new BadRequestException({
+				error: { code: 'validation_error', message: 'Bu tip zaten var' }
+			});
+		}
+
+		const [maxRow] = await db
+			.select({ sortOrder: appointmentTypes.sortOrder })
+			.from(appointmentTypes)
+			.orderBy(desc(appointmentTypes.sortOrder))
+			.limit(1);
+
+		const [row] = await db
+			.insert(appointmentTypes)
+			.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
+			.returning();
+
+		return toAppointmentType(row!);
+	}
+
+	async deleteAppointmentType(tenantId: string, id: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select()
+				.from(appointmentTypes)
+				.where(eq(appointmentTypes.id, id))
+				.limit(1);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Appointment type not found' }
+				});
+			}
+
+			// Free-text on appointments.appointment_type — no FK / in-use check.
+			await db.delete(appointmentTypes).where(eq(appointmentTypes.id, id));
+		});
 	}
 
 	async getCredentialStatus(tenantId: string, provider: string) {

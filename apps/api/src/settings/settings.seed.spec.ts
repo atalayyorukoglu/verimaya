@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+	DEFAULT_APPOINTMENT_TYPE_NAMES,
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS
 } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { CryptoService } from '../common/crypto.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
+import { defaultAppointmentTypeId } from './appointment-type-defaults';
 import { SettingsService } from './settings.service';
 
 const databaseUrl =
@@ -55,6 +57,7 @@ describe('settings default seed', () => {
 		await withTenantSession(tenantId, async () => {
 			await sql`delete from finance_categories where tenant_id = ${tenantId}`;
 			await sql`delete from contact_types where tenant_id = ${tenantId}`;
+			await sql`delete from appointment_types where tenant_id = ${tenantId}`;
 		});
 		await sql`delete from tenants where id = ${tenantId}`;
 		await sql`delete from organization where id = ${tenantId}`;
@@ -83,5 +86,15 @@ describe('settings default seed', () => {
 
 		expect(second.items).toHaveLength(first.items.length);
 		expect(second.items.map((t) => t.id)).toEqual(first.items.map((t) => t.id));
+	});
+
+	it('seeds default appointment types with deterministic IDs when tenant has none', async () => {
+		const result = await settingsService.listAppointmentTypes(tenantId);
+
+		expect(result.items).toHaveLength(DEFAULT_APPOINTMENT_TYPE_NAMES.length);
+		expect(result.items.map((t) => t.name)).toEqual([...DEFAULT_APPOINTMENT_TYPE_NAMES]);
+		for (const item of result.items) {
+			expect(item.id).toBe(defaultAppointmentTypeId(tenantId, item.name));
+		}
 	});
 });

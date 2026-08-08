@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
+	appointmentTypeCreateSchema,
 	contactTypeCreateSchema,
 	credentialUpsertSchema,
 	financeCategoryCreateSchema,
@@ -141,6 +142,40 @@ export class SettingsController {
 	@RequireOrgPermission('settings', 'read')
 	listAppointmentTypes(@Req() req: FastifyRequest) {
 		return this.settingsService.listAppointmentTypes(getActiveOrgId(req));
+	}
+
+	@Post('appointment-types')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async createAppointmentType(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(appointmentTypeCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/settings/appointment-types',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.settingsService.createAppointmentTypeWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Delete('appointment-types/:id')
+	@HttpCode(204)
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE-by-id; retrying after a successful delete 404s (row already gone) rather than silently duplicating. Low-stakes settings config, not financial/domain data.'
+	)
+	async removeAppointmentType(@Req() req: FastifyRequest, @Param('id') id: string) {
+		await this.settingsService.deleteAppointmentType(getActiveOrgId(req), id);
 	}
 
 	@Get('credentials/:provider')

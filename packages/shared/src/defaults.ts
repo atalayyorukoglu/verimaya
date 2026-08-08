@@ -7,7 +7,7 @@ export const DEFAULT_CONTACT_TYPE_NAMES = [
 	'Diğer'
 ] as const;
 
-/** Default appointment type names (no DB table — returned statically per tenant). */
+/** Default appointment type names seeded per tenant (deterministic IDs via defaultAppointmentTypeId). */
 export const DEFAULT_APPOINTMENT_TYPE_NAMES = [
 	'Konsültasyon',
 	'Tedavi',

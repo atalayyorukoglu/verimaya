@@ -316,12 +316,12 @@
 > Üçü de PILOT-02 feature-freeze'den **önce** kapanmalı; freeze sırasında bunlar keşfedilirse
 > pilot verisi güvenilmez olur.
 
-- [ ] **GAP-01 (G-30) — Randevu tipi CRUD sözleşme kopukluğu.** `settings/appointment-types/+page.svelte:37,49`
+- [x] **GAP-01 (G-30) — Randevu tipi CRUD sözleşme kopukluğu.** `settings/appointment-types/+page.svelte:37,49`
   `POST /v1/settings/appointment-types` ve `DELETE .../:id` çağırıyor; MSW karşılıyor
   (`handlers.ts:1712,1728`); **gerçek NestJS controller'da yalnız `@Get` var**
   (`settings.controller.ts:140`). MSW kapalıyken randevu tipi eklenemez → 404.
   **Bu PILOT-01 Görüş'ündeki `case-notes` 404'ünün birebir aynı sınıfı** — desen tekrarlıyor.
-  - [ ] **Kalıcılık (2026-08-07 tespiti):** Arkada tablo **yok**. `appointment-type-defaults.ts`
+  - [x] **Kalıcılık (2026-08-07 tespiti):** Arkada tablo **yok**. `appointment-type-defaults.ts`
     tipleri `DEFAULT_APPOINTMENT_TYPE_NAMES`'den deterministik SHA-256 ID ile üretiyor →
     POST'un yazacağı yer yok. **Karar: `contact_types` aynası** — `appointment_types` tablosu
     + migration + RLS + service CRUD (`db/schema/contact-types.ts` birebir örnek alınır).
@@ -336,14 +336,14 @@
     - **Yan kazanç:** `ETL-ESLEME.md` §2.2 "Tracker tiplerini pilot settings'e ek seed olarak
       yaz" kalemi ancak bu tabloyla mümkün — migration'a `Yeni Hasta` / `Devam Hastası` / `RPT`
       seed'i eklenebilir (pilot tenant için).
-  - [ ] Controller'a POST + DELETE ekle, tenant izolasyon spec'i yaz
-  - [ ] **Kök neden:** MSW ↔ gerçek API sözleşme kayması. `apiPaths` içindeki her yolun
+  - [x] Controller'a POST + DELETE ekle, tenant izolasyon spec'i yaz
+  - [x] **Kök neden:** MSW ↔ gerçek API sözleşme kayması. `apiPaths` içindeki her yolun
     NestJS'te karşılığı olduğunu doğrulayan reflection-based coverage testi ekle
     (AUDIT-F09-04 / idempotency-coverage kalıbı). Bu üçüncü kez olmasın.
   - **Kabul (GAP-01):** Coverage testi önce KIRMIZI (eksiği gösteriyor), controller
     eklendikten sonra YEŞİL; MSW kapalı ortamda tip **eklenip → GET'te görünüp → silinebiliyor**
     (kalıcılık kanıtı); mevcut varsayılan tipler aynı ID'lerle korunmuş;
-    tenant izolasyon spec'i geçiyor. **GAP-02/03'e dokunulmaz.**
+    tenant izolasyon spec'i geçiyor. **GAP-02/03'e dokunulmaz.** ✅
 - [ ] **GAP-02 (G-02) — Üye rolü değiştirme yüzeyi.** `members.controller.ts` yalnız `@Get()`;
   `settings/team/+page.svelte` rolü salt-okunur rozet gösteriyor. Tracker'da
   `PATCH /members/{user_id}` vardı (`tenant_admin.py:64`). Org sahibi bir üyenin rolünü
@@ -365,6 +365,14 @@
   `apps/web/src/lib/mocks/handlers.ts`
 - **Bağımlı:** yok. **Üç kalem bağımsız — ayrı commit, ayrı kabul kriteri.**
 - **Görüş:** _(doldurulacak)_
+- **Görüş (GAP-01, 2026-08-08):** Coverage `api-paths-coverage.spec.ts` önce yalnız
+  `settingsAppointmentType` eksikliğini gösterdi (KIRMIZI); POST+DELETE sonrası YEŞİL.
+  `0028_appointment_types` + RLS + `app.default_appointment_type_id` SQL fonksiyonu Node
+  `defaultAppointmentTypeId` ile birebir eşleşiyor (hash parity doğrulandı). Lazy seed yeni
+  tenantlar için aynı ID'leri üretir. `appointments.appointment_type` FK yapılmadı.
+  İzolasyon: create→list→delete + Tenant B delete 404. Varsayım: ekstra Tracker seed
+  (`Yeni Hasta`/`Devam`/`RPT`) pilot tenant'a ertelendi — blok metninde "eklenebilir";
+  DEFAULT dört tip yeterli. **GAP-02/03 dokunulmadı.**
 
 ---
 
@@ -548,6 +556,12 @@ Sıra dışıdır; PILOT-02 geri bildirimi hangisinin gerçekten istendiğini g�
   tabloları 0 satır, `ayarlar.md` "çoğu tenant'ta kullanılmıyor" diyor. Tamamen `skip` olabilir. **(L)**
 - **GAP-F09-21 (G-21)** Randevu listesi agregat istatistikleri (`type_counts`, `status_counts`).
   Tek `GROUP BY`, ucuz kazanç. **(S)**
+- **GAP-F09-25 (GAP-01 takibi, 2026-08-07 review)** `appointment_types` sözlük hijyeni — iki kalem,
+  tek migration: (a) `UNIQUE (tenant_id, name)` yok → aynı tenant'ta mükerrer tip adı oluşturulabilir
+  (`ON CONFLICT (id)` bunu yakalamaz, ID'ler farklı olur); (b) lazy-seed `rows.length === 0` görünce
+  varsayılanları geri yazıyor → kullanıcı tüm tipleri silerse bir sonraki GET'te geri gelirler.
+  (b) `listFinanceCategories` ile tutarlı, yani yeni davranış değil — ama DELETE eklendiği için
+  artık kullanıcıya görünür. `contact_types` için de aynı kontrol yapılmalı. **(S)**
 - **GAP-F09-22 (G-22)** Case ↔ işlem otomatik bağlama (`POST /cases/:id/auto-link-transactions`).
   ETL sonrası değeri yüksek; basitleştirilmiş halde (yalnız `contact_id` eşleşmesi) taşınabilir. **(S)**
 - **GAP-F09-23 (G-23)** Dosya silme endpoint'i. `dosyalar.md` zaten "İleri (Faz 1)" listesinde;

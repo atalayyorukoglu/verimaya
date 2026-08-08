@@ -1,9 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AuditLog, Contact, ContactType, FinanceCategory, Patient, PatientCaseNote, PatientFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, Contact, ContactType, FinanceCategory, Patient, PatientCaseNote, PatientFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
 import type { AiCorrectionRow } from '../db/schema/ai-corrections';
 import type { ApiKeyRow } from '../db/schema/api-keys';
+import type { AppointmentTypeRow } from '../db/schema/appointment-types';
 import type { AppointmentRow } from '../db/schema/appointments';
 import type { AuditLogRow } from '../db/schema/audit';
 import type { CaseNoteRow } from '../db/schema/case-notes';
@@ -155,6 +156,15 @@ export function toContactType(row: ContactTypeRow): ContactType {
 		name: row.name,
 		sort_order: row.sortOrder,
 		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toAppointmentType(row: AppointmentTypeRow): AppointmentTypeSetting {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		name: row.name,
+		sort_order: row.sortOrder
 	};
 }
 

@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import type { AppointmentTypeSetting } from '@verimaya/shared';
 import { DEFAULT_APPOINTMENT_TYPE_NAMES } from '@verimaya/shared';
 
-function defaultAppointmentTypeId(tenantId: string, name: string): string {
+/** Deterministic UUID for a default appointment type name (migration seed must match). */
+export function defaultAppointmentTypeId(tenantId: string, name: string): string {
 	const hash = createHash('sha256')
 		.update(`appointment-type:${tenantId}:${name}`)
 		.digest('hex');

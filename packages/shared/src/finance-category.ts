@@ -40,3 +40,9 @@ export const appointmentTypeSettingSchema = z.object({
 });
 
 export type AppointmentTypeSetting = z.infer<typeof appointmentTypeSettingSchema>;
+
+export const appointmentTypeCreateSchema = z.object({
+	name: z.string().min(1).max(128)
+});
+
+export type AppointmentTypeCreate = z.infer<typeof appointmentTypeCreateSchema>;

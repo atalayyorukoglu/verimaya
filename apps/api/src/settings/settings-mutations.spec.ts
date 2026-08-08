@@ -52,6 +52,7 @@ describe('settings mutations (finance categories + contact types)', () => {
 			await sql`delete from contacts where tenant_id = ${tenantId}`;
 			await sql`delete from finance_categories where tenant_id = ${tenantId}`;
 			await sql`delete from contact_types where tenant_id = ${tenantId}`;
+			await sql`delete from appointment_types where tenant_id = ${tenantId}`;
 		});
 		await sql`delete from tenants where id = ${tenantId}`;
 		await sql`delete from organization where id = ${tenantId}`;
@@ -137,6 +138,20 @@ describe('settings mutations (finance categories + contact types)', () => {
 
 	it('throws not_found when deleting an unknown contact type', async () => {
 		await expect(settingsService.deleteContactType(tenantId, randomUUID())).rejects.toThrow(
+			NotFoundException
+		);
+	});
+
+	it('creates and deletes appointment types; rejects duplicates case-insensitively', async () => {
+		const created = await settingsService.createAppointmentType(tenantId, { name: 'Özel Tip' });
+		expect(created.name).toBe('Özel Tip');
+
+		await expect(
+			settingsService.createAppointmentType(tenantId, { name: 'özel tip' })
+		).rejects.toThrow(BadRequestException);
+
+		await settingsService.deleteAppointmentType(tenantId, created.id);
+		await expect(settingsService.deleteAppointmentType(tenantId, created.id)).rejects.toThrow(
 			NotFoundException
 		);
 	});

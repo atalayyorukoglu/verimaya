@@ -52,6 +52,8 @@ const settingsPermissions: Array<[keyof SettingsController, OrgPermissionRequire
 	['createContactType', { resource: 'settings', action: 'update' }],
 	['removeContactType', { resource: 'settings', action: 'update' }],
 	['listAppointmentTypes', { resource: 'settings', action: 'read' }],
+	['createAppointmentType', { resource: 'settings', action: 'update' }],
+	['removeAppointmentType', { resource: 'settings', action: 'update' }],
 	['getCredential', { resource: 'settings', action: 'read' }],
 	['putCredential', { resource: 'settings', action: 'update' }],
 	['getTrustScore', { resource: 'settings', action: 'read' }],

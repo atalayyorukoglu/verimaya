@@ -2,6 +2,7 @@ export * from './auth';
 export * from './queue';
 export * from './tenants';
 export * from './contact-types';
+export * from './appointment-types';
 export * from './contacts';
 export * from './patients';
 export * from './appointments';
