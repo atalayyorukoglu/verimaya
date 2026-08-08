@@ -50,3 +50,21 @@ export type AppointmentCreate = z.infer<typeof appointmentCreateSchema>;
 export const appointmentUpdateSchema = appointmentCreateSchema.partial();
 
 export type AppointmentUpdate = z.infer<typeof appointmentUpdateSchema>;
+
+export const appointmentStatusCountSchema = z.object({
+	status: appointmentStatusSchema,
+	count: z.number().int().nonnegative()
+});
+export type AppointmentStatusCount = z.infer<typeof appointmentStatusCountSchema>;
+
+export const appointmentTypeCountSchema = z.object({
+	appointment_type: z.string(),
+	count: z.number().int().nonnegative()
+});
+export type AppointmentTypeCount = z.infer<typeof appointmentTypeCountSchema>;
+
+export const appointmentListAggregatesSchema = z.object({
+	status_counts: z.array(appointmentStatusCountSchema),
+	type_counts: z.array(appointmentTypeCountSchema)
+});
+export type AppointmentListAggregates = z.infer<typeof appointmentListAggregatesSchema>;

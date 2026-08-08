@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, gte, isNull, lt, type SQL } from 'drizzle-orm';
-import type { AppointmentCreate, AppointmentListQuery, AppointmentUpdate } from '@verimaya/shared';
+import type { AppointmentCreate, AppointmentListQuery, AppointmentStatus, AppointmentUpdate } from '@verimaya/shared';
 import { tenantDayRange } from '@verimaya/shared';
 import { appointments, patients, tenants } from '../db/schema';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
@@ -54,9 +54,36 @@ export class AppointmentsService {
 				.limit(params.limit + 1);
 
 			const page = buildCursorPage(rows, params.limit);
+			const aggregateRows = await db
+				.select({
+					status: appointments.status,
+					appointmentType: appointments.appointmentType
+				})
+				.from(appointments)
+				.where(filters.length > 0 ? and(...filters) : undefined);
+
+			const statusCounts = new Map<string, number>();
+			const typeCounts = new Map<string, number>();
+			for (const row of aggregateRows) {
+				statusCounts.set(row.status, (statusCounts.get(row.status) ?? 0) + 1);
+				const typeLabel = (row.appointmentType ?? '').trim() || 'Belirtilmemiş';
+				typeCounts.set(typeLabel, (typeCounts.get(typeLabel) ?? 0) + 1);
+			}
+
 			return {
 				items: page.items.map(toAppointment),
-				next_cursor: page.next_cursor
+				next_cursor: page.next_cursor,
+				aggregates: {
+					status_counts: [...statusCounts.entries()]
+						.map(([status, count]) => ({
+							status: status as AppointmentStatus,
+							count
+						}))
+						.sort((a, b) => b.count - a.count),
+					type_counts: [...typeCounts.entries()]
+						.map(([appointment_type, count]) => ({ appointment_type, count }))
+						.sort((a, b) => b.count - a.count)
+				}
 			};
 		});
 	}

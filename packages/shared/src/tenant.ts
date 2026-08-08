@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { isoDateTime, supportedCurrencySchema, uuid } from './common.js';
 
-/** IANA timezones exposed in tenant settings (expand as needed). */
+/** IANA timezones exposed in tenant settings UI (subset of all valid zones). */
 export const TENANT_TIMEZONES = [
 	'Europe/Istanbul',
 	'Asia/Riyadh',
@@ -12,7 +12,17 @@ export const TENANT_TIMEZONES = [
 /** TIME-01 varsayılanı — DB kolon default'u (`tenants.timezone`) ile aynı kalmalı. */
 export const DEFAULT_TENANT_TIMEZONE = 'Europe/Istanbul' as const;
 
-export const tenantTimezoneSchema = z.enum(TENANT_TIMEZONES);
+const IANA_TIMEZONES = new Set(Intl.supportedValuesOf('timeZone'));
+
+/** AUDIT-F09-19: reject invalid IANA identifiers at the contract boundary. */
+export function isValidIanaTimezone(value: string): boolean {
+	return IANA_TIMEZONES.has(value);
+}
+
+export const tenantTimezoneSchema = z
+	.string()
+	.refine(isValidIanaTimezone, { message: 'Invalid IANA timezone' })
+	.default(DEFAULT_TENANT_TIMEZONE);
 
 export type TenantTimezone = z.infer<typeof tenantTimezoneSchema>;
 
