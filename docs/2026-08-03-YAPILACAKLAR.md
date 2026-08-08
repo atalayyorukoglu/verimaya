@@ -6,6 +6,13 @@
 > Durum anı: branch `main`, HEAD `60ea531` (hub dil değiştirici + Veri Maya markası;
 > DOC-03a senkronu 2026-08-07). Opus denetim raporu: `AUDIT-REPORT.md` (38 bulgu).
 > 2026-08-03 sonrası hub/marka/CSP/i18n özeti: `git log 627e506..HEAD` + CHANGELOG `0.7.0`.
+>
+> **2026-08-07 eki — Tracker gap analizi.** `docs/tracker-verimaya-ozellik-gap.md`
+> (32 gap + 9 bilinçli fark) ve ürün gözden geçirmesi bu listeye işlendi:
+> **5A DOMAIN-01** (patient = operasyon dosyası, CRM değil), **5B GAP-P0** (3 pilot bloğu,
+> biri canlı 404 hatası), **6B GAP-P1** (5 saha kalemi), Faz 9'a 11 P2 kalemi,
+> Bekleyen'e 5 P3 kalemi, "Bilinçli yapılmayacaklar"a 6 satır, yeni
+> **"Açık sorular / ürün kararı"** bölümü (9 madde).
 
 ---
 
@@ -16,6 +23,10 @@
 3. **Bitirince bu dosyayı güncelle:** `- [ ]` → `- [x]` ve **Görüş** satırını doldur.
 4. **Soru sorma, en savunulabilir varsayımı seç**, Görüş'te yaz.
 5. **Sır yazma.** Hiçbir token/parola/anahtar değeri koda, teste, commit mesajına girmez.
+6. **Bir blokta birden çok numaralı kalem varsa (GAP-01/02/03, Adım 1/2/3…), her kalem
+   ayrı commit ve ayrı kabul kriteridir.** Kaleme ait `**Kabul (X):**` satırı varsa
+   bağlayıcı olan odur; blok sonundaki `**Kabul:**` satırı bloğun tamamının bitiş şartıdır.
+   **Sana tek bir kalem söylendiyse yalnız onu yap, diğerlerine dokunma, soru sorma.**
 
 **Durum işaretleri:** `- [ ]` yapılmadı · `- [x]` yapıldı · `- [~]` ksmi
 
@@ -240,6 +251,123 @@
 
 ---
 
+### 5A. DOMAIN-01 — Patient = operasyon dosyası (CRM değil)
+
+> **Kaynak:** `docs/tracker-verimaya-ozellik-gap.md` + 2026-08-07 ürün gözden geçirmesi.
+> **Bu yeni bir yön değil, uygulanmamış bir karar.** `apps/web/src/lib/i18n/messages.ts:217-220`
+> zaten şunu yazıyor: *"Lead durumu ve pipeline aşaması: GHL sahibi / Randevu, finans ve
+> operasyon alanları: Veri Maya sahibi"* — ama başlık **"Alan sahipliği (planlanan)"**.
+> `packages/shared/src/patient.ts:6` de kodda not düşmüş: *"Status pipeline is a first draft;
+> refine after legacy notes.md is filled"* → o `notes.md` hiç yazılmadı
+> (`docs/legacy-reference/README.md`'de işaretsiz kutu). Boşluk buradan geldi.
+>
+> **Sınır:** `crm.verimaya` (GHL) = lead, görüşme, aşama, "gelecek mi?".
+> `app.verimaya` = randevu, otel/transfer/klinik (contacts), dosya, not, finans.
+> Omurga **patient = operasyon dosyası**. Aynı kişinin 2. gelişi = **yeni patient**;
+> kimlik `Contact`'ta, epizot `Patient`'ta.
+>
+> **Neden şimdi:** PILOT-01 apply'ı 757 hasta yazdı, hepsi `status='lead'` varsayılanıyla.
+> PILOT-02 feature-freeze başlayıp 2–4 hafta gerçek operasyon verisi biriktikten sonra
+> enum değişimi pahalılaşır. Kritik tarih ETL değil, **PILOT-02 başlangıcı**.
+
+- [ ] **Adım 1 — Kopya / UI dili (şema dokunulmaz):** "Yeni hasta = yeni lead" hissini kaldır.
+  `/patients` liste kolonları, `PatientFormDialog`, `PanelHome` ve boş-durum metinleri
+  operasyon dosyası diline çevrilir (yeni metinler doğrudan gömülmez → `messages.ts`
+  anahtarı, AGENTS.md dil kuralı). Pipeline vurgusu yerine **randevu / dosya / para** vurgusu.
+  - **Kabul (Adım 1):** `/patients`, `PatientFormDialog`, `PanelHome` ve boş-durum
+    metinlerinde satış hunisi dili yok; tüm yeni metinler `messages.ts` anahtarı
+    (tr + en); **`patient.ts`, şema, migration ve enum'a dokunulmadı** (`git diff`
+    ile kanıtlanır); mevcut testler yeşil.
+- [ ] **Adım 2 — `patientStatusSchema` daraltma:** 9 değerli CRM hunisi
+  (`lead, contacted, qualified, scheduled, arrived, treated, follow_up, closed_won, closed_lost`)
+  → operasyon değerlerine indirilir. Öneri: `scheduled, arrived, treated, follow_up, cancelled`.
+  Lead tarafı (`lead/contacted/qualified/closed_won/closed_lost`) GHL'in; app'e **sync ile** düşer,
+  app'te yazılmaz. Sözleşme önce `packages/shared/src/patient.ts`'te değişir (AGENTS.md ilke 7),
+  sonra Drizzle migration + ETL eşlemesi + MSW + web.
+- [ ] **Adım 3 — Veri migrasyonu:** Demo Klinik'teki 757 hastanın mevcut `status` değerleri
+  yeni enum'a eşlenir. `lead/contacted/qualified` → yeni varsayılan; `closed_*` → `follow_up`
+  veya `cancelled`. Eşleme tablosu `docs/legacy-reference/ETL-ESLEME.md` §2.5'e işlenir.
+- [ ] **Adım 4 — GHL sahiplik kuralını "planlanan"dan çıkar:** `settings.ghl.ownership.heading`
+  başlığındaki "(planlanan)" kaldırılır; kural yazılı olduğu gibi uygulanır
+  (çakışmada kaynak sahibi kazanır + audit). İdeal akış: GHL'de lead olgunlaşınca
+  patient app'e düşer; **elle oluşturma yedek yol olarak kalır**, birincil akış değil.
+- [ ] **Adım 5 — Raporlarda huni vurgusunu ayır:** `/reports` "Hasta durum dağılımı" ve
+  "Kaynak dağılımı" kartları operasyon diline çevrilir veya pazarlama bloğuna taşınır.
+  `source` alanı kalır (ROAS/hasta-başı-maliyet buna bağlı) ama **satış hunisi olarak sunulmaz**.
+- [ ] **Adım 6 — MSW demo notunu ayır:** Demo/fixture verisindeki lead dili "demo" etiketiyle
+  işaretlenir; gerçek panelde operasyon dili görünür.
+- **Dosyalar:** `packages/shared/src/patient.ts`, `apps/api/src/db/schema/patients.ts` + yeni migration,
+  `apps/api/src/patients/patients.service.ts`, `apps/web/src/routes/patients/**`,
+  `apps/web/src/routes/reports/+page.svelte`, `apps/web/src/lib/components/PatientFormDialog.svelte`,
+  `apps/web/src/lib/components/PanelHome.svelte`, `apps/web/src/lib/i18n/messages.ts`,
+  `apps/web/src/lib/mocks/handlers.ts`, `docs/legacy-reference/ETL-ESLEME.md`
+- **Bağımlı:** Adım 2–3 için PILOT-01 apply tamam (✅). **MARKET-01(a)** segment kararı
+  (acente / klinik) Adım 5'in tonunu etkiler ama Adım 1–4'ü bloklamaz.
+- **Kabul:** `/patients` ekranında hiçbir yerde satış hunisi dili yok; `patientStatusSchema`
+  yalnız operasyon değerleri içeriyor; 757 hastanın statüsü yeni enum'a taşınmış;
+  GHL sahiplik metni "(planlanan)" değil; tenant izolasyon testleri yeşil.
+- **Görüş:** _(doldurulacak)_
+
+---
+
+### 5B. GAP-P0 — Gap analizi P0 kalemleri (pilot bloğu)
+
+> **Kaynak:** `docs/tracker-verimaya-ozellik-gap.md` — G-30, G-02, G-01.
+> Üçü de PILOT-02 feature-freeze'den **önce** kapanmalı; freeze sırasında bunlar keşfedilirse
+> pilot verisi güvenilmez olur.
+
+- [ ] **GAP-01 (G-30) — Randevu tipi CRUD sözleşme kopukluğu.** `settings/appointment-types/+page.svelte:37,49`
+  `POST /v1/settings/appointment-types` ve `DELETE .../:id` çağırıyor; MSW karşılıyor
+  (`handlers.ts:1712,1728`); **gerçek NestJS controller'da yalnız `@Get` var**
+  (`settings.controller.ts:140`). MSW kapalıyken randevu tipi eklenemez → 404.
+  **Bu PILOT-01 Görüş'ündeki `case-notes` 404'ünün birebir aynı sınıfı** — desen tekrarlıyor.
+  - [ ] **Kalıcılık (2026-08-07 tespiti):** Arkada tablo **yok**. `appointment-type-defaults.ts`
+    tipleri `DEFAULT_APPOINTMENT_TYPE_NAMES`'den deterministik SHA-256 ID ile üretiyor →
+    POST'un yazacağı yer yok. **Karar: `contact_types` aynası** — `appointment_types` tablosu
+    + migration + RLS + service CRUD (`db/schema/contact-types.ts` birebir örnek alınır).
+    - **Tuzak 1 — ID sürekliliği:** Mevcut varsayılanlar tenant başına
+      `defaultAppointmentTypeId(tenantId, name)` ile üretilmiş sentetik UUID taşıyor.
+      Migration bu ID'lerle **seed** etmeli; yeni rastgele UUID üretilirse kayıtlı
+      seçimler ve `sort_order` kopar.
+    - **Tuzak 2 — serbest metin bağı:** `appointments.appointment_type` FK değil,
+      serbest metin (`packages/shared/src/appointment.ts:22`). **Bu iş kapsamında FK'ya
+      çevrilmez** — tablo yalnız ayarlar sözlüğü olarak kullanılır. Tip silinince
+      mevcut randevular etkilenmez.
+    - **Yan kazanç:** `ETL-ESLEME.md` §2.2 "Tracker tiplerini pilot settings'e ek seed olarak
+      yaz" kalemi ancak bu tabloyla mümkün — migration'a `Yeni Hasta` / `Devam Hastası` / `RPT`
+      seed'i eklenebilir (pilot tenant için).
+  - [ ] Controller'a POST + DELETE ekle, tenant izolasyon spec'i yaz
+  - [ ] **Kök neden:** MSW ↔ gerçek API sözleşme kayması. `apiPaths` içindeki her yolun
+    NestJS'te karşılığı olduğunu doğrulayan reflection-based coverage testi ekle
+    (AUDIT-F09-04 / idempotency-coverage kalıbı). Bu üçüncü kez olmasın.
+  - **Kabul (GAP-01):** Coverage testi önce KIRMIZI (eksiği gösteriyor), controller
+    eklendikten sonra YEŞİL; MSW kapalı ortamda tip **eklenip → GET'te görünüp → silinebiliyor**
+    (kalıcılık kanıtı); mevcut varsayılan tipler aynı ID'lerle korunmuş;
+    tenant izolasyon spec'i geçiyor. **GAP-02/03'e dokunulmaz.**
+- [ ] **GAP-02 (G-02) — Üye rolü değiştirme yüzeyi.** `members.controller.ts` yalnız `@Get()`;
+  `settings/team/+page.svelte` rolü salt-okunur rozet gösteriyor. Tracker'da
+  `PATCH /members/{user_id}` vardı (`tenant_admin.py:64`). Org sahibi bir üyenin rolünü
+  panelden değiştiremiyor.
+  - **Kabul (GAP-02):** `PATCH /v1/members/:id` var; org sahibi `/settings/team`'den rolü
+    değiştirebiliyor; kullanıcı kendi rolünü düşüremiyor; audit kaydı düşüyor;
+    tenant izolasyon spec'i geçiyor.
+- [ ] **GAP-03 (G-01) — İşlem listesi filtre seti.** Tracker `GET /transactions` 16 query param
+  alıyordu (`transactions.py:176-280`); Verimaya `transactionListQuerySchema`
+  (`list-query.ts:30-38`) yalnız `patient_id, contact_id, from, to` + `.strict()` —
+  tanımsız parametre 400 döner. Pilot minimum seti: **`kind`, `status`, `category`, `q`**.
+  Sözleşme önce `packages/shared`'da (AGENTS.md ilke 7), sonra API + MSW + `/finance` filtre çubuğu.
+  - **Kabul (GAP-03):** `transactionListQuerySchema` dört filtreyi kabul ediyor; API, MSW ve web
+    aynı şemadan türüyor; `/finance` sayfasında filtre çubuğu çalışıyor;
+    tanımsız parametre hâlâ 400 dönüyor (`.strict()` korunur).
+- **Dosyalar:** `apps/api/src/settings/settings.controller.ts`, `apps/api/src/members/members.controller.ts`,
+  `packages/shared/src/list-query.ts`, `apps/api/src/transactions/transactions.{controller,service}.ts`,
+  `apps/web/src/routes/finance/+page.svelte`, `apps/web/src/routes/settings/team/+page.svelte`,
+  `apps/web/src/lib/mocks/handlers.ts`
+- **Bağımlı:** yok. **Üç kalem bağımsız — ayrı commit, ayrı kabul kriteri.**
+- **Görüş:** _(doldurulacak)_
+
+---
+
 ### 6. PILOT-01 — ETL dry-run → apply → verify (kendi firmamız ilk tenant)
 
 > **Bağımlı:** 1+1A+1B+2+3+4+5 (WEBHOOK-01, AUDIT-01, AUDIT-02, sırlar temiz, hukuk onayı, yedek, operasyonel hijyen).
@@ -281,6 +409,47 @@
   Prod Demo Klinik GBP doğrulandı → kilit deploy.
 - **Görüş (Adım 1–3):** Sunucu coverage adet bazlı; canlı kur yok. Kilidi Adım 1–2
   ile birlikte göndermedik; doğrulama sonrası ayrı commit.
+---
+
+### 6B. GAP-P1 — Gap analizi P1 kalemleri (saha kullanımı)
+
+> **Kaynak:** `docs/tracker-verimaya-ozellik-gap.md`. Pilotu bloklamaz ama saha kullanımında
+> günlük sürtünme yaratır. PILOT-02 sırasında hangisinin gerçekten eksik olduğu ölçülsün;
+> freeze bitince sıraya girsin.
+
+- [ ] **GAP-04 (G-05) — Randevu arama + durum filtresi.** `appointmentListQuerySchema` yalnız
+  `patient_id, from, to`. Tracker'da `status_id`, `q` (not/kişi adı/**tarih**), `contact_involves`
+  vardı (`appointments.py:138-205`). En az `q` + `status` taşınmalı.
+- [ ] **GAP-05 (G-03/G-04) — Sunucu tarafı işlem denetim motoru.** Tracker
+  `services/transaction_audit.py` (310 satır, 8 kural: `case_required`, `case_forbidden`,
+  `contact_type_mismatch`, `responsible_not_internal`, `contact_equals_responsible`,
+  `personal_payer_payee_required`, `currency_equivalent_missing`, `partial_amount_out_of_range`)
+  + kaydedilmemiş taslak için canlı uyarı (`POST /transactions/audit-draft`).
+  Verimaya'da yalnız `reports/+page.svelte:355-405` içinde **istemci tarafı 6 basit kural** var —
+  sayfalı listeden hesaplandığı için büyük tenant'ta yanlış "temiz" sonucu verir.
+  **`AUDIT-F09-17` ile aynı sınıf** (istemci O(N) agregasyon); birlikte ele alınmalı.
+  Not: BF-04/BF-05 gereği `responsible_party` ve payer/payee kuralları **taşınmaz**.
+- [ ] **GAP-06 (G-06/G-07/G-08) — Silme yüzeyleri: işlem / randevu / kişi.** Üçünde de
+  `@Delete` yok (doğrulandı: 0 eşleşme). **Önce politika kararı gerekir** — hard-delete mi
+  soft-delete mi? Türk mali mevzuatı 10 yıl saklama (`AUDIT-F09-06`) ile KVKK silme hakkı
+  (`AUDIT-F09-07`) çatışıyor. Öneri: soft-delete + audit, `AUDIT-F09-06` ile aynı desen.
+- [ ] **GAP-07 (G-12) — Randevu operasyon metrikleri raporu.** Tracker'da **canlı**
+  (`ReportsPage.tsx:33,668` → `DashboardOzetContent`; ayrı rotası yoktu ama Summary sekmesinde
+  render ediliyordu — "ölü kod" değil). Eksik olanlar: tamamlanma / no-show / iptal oranı,
+  klinik performansı, aylık randevu trendi, vaka türü dağılımı. Veri zaten var
+  (`appointmentStatusSchema` `no_show`/`cancelled`/`completed` içeriyor, `clinic_contact_id` var);
+  agregasyon yok. `AUDIT-01`'deki `tenantDayRange` altyapısı kullanılmalı.
+  **DOMAIN-01 ile uyumlu:** bu operasyon raporu, huni raporu değil.
+- [ ] **GAP-08 (G-09/G-10) — İçe/dışa aktarım kapsamını ETL eşlemesine bağla.** Tracker
+  `tenant_import_export.py` 1482 satır: üç kapsam için şablon → export → dry-run → commit,
+  ayrıca 26 sütunluk kişi şablonu + legacy başlık eşleme + formül enjeksiyonu sanitizasyonu
+  (`_sanitize_cell`). Verimaya'da 29 satırlık "Faz 8'de" yer tutucu.
+  **Yeni iş değil** — kapsam netleştirmesi: Faz 8 planı `ETL-ESLEME.md` §3 alan eşlemesini
+  yeniden kullanmalı, sanitizasyon korunmalı. İkinci müşteriden önce zorunlu, pilot için değil.
+- **Bağımlı:** GAP-06 için silme politikası kararı (bkz. "Açık sorular / ürün kararı" §2).
+- **Kabul:** Her kalem kendi commit'inde; sözleşme değişiklikleri önce `packages/shared`'da.
+- **Görüş:** _(doldurulacak)_
+
 ---
 
 ### 7. MARKET-01 — Üç stratejik karar (17 Ağustos review öncesi)
@@ -351,6 +520,43 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 - **AUDIT-F09-19** `tenants.timezone` IANA doğrulaması (`Intl.supportedValuesOf`). **(S)**
 - **AUDIT-F09-20** `corsOrigins` allowlist hot-reload (read-at-boot artı prod restart gerektirir). **(M, düşük öncelik)**
 
+### Faz 9 — Tracker gap analizi P2 kalemleri (2026-08-07)
+
+Kaynak: `docs/tracker-verimaya-ozellik-gap.md`. Pilotu bloklamayan, saha konforu kalemleri.
+Sıra dışıdır; PILOT-02 geri bildirimi hangisinin gerçekten istendiğini gösterecek.
+
+- **GAP-F09-13 (G-13)** Denetim kaydı filtreleri. Tracker `audit_logs.py:39-62` 7 param
+  (`actor_user_id`, `action`, `entity_type`, `entity_id`, `created_from/to`, `limit`);
+  Verimaya yalnız `cursor` + `limit`. "Bu kaydı kim değiştirdi" elle taranıyor. **(S–M)**
+- **GAP-F09-14 (G-14)** Sunucu tarafı veri kalitesi raporu. Tracker `GET /whatsapp/data-quality`
+  SQL agregasyon; Verimaya `settings/data-quality` sayfalı listeden istemcide hesaplıyor →
+  büyük tenant'ta yalnız ilk sayfa denetlenir. **GAP-05 ile aynı kök neden.** **(M)**
+- **GAP-F09-15 (G-15)** AI düzeltme raporu agregasyonu. Tracker `GET /whatsapp/corrections-report`
+  alan bazlı hata sıklığı + tekrar sayısı veriyordu; Verimaya düz liste. "AI en çok hangi alanda
+  yanılıyor" ölçülemiyor → prompt iyileştirme körlemesine. Tek `GROUP BY`. **(S)**
+- **GAP-F09-16 (G-16)** WhatsApp içe aktarımda satır içi kayıt oluşturma (kişi / hasta /
+  kategori / alt kategori). Tracker'da 4 endpoint (`whatsapp_import.py:544-685`);
+  Verimaya'da taslak onayı yalnız mevcut kayıtlardan seçiyor → akış kopuyor. **(M)**
+- **GAP-F09-17 (G-17/G-18)** Kişi toplu tür atama (`PATCH /contacts/bulk-type`) + kişi türü
+  yeniden adlandırma (`PATCH /contact-types/:id` — Verimaya'da POST/DELETE var, PATCH yok).
+  İkisi de ucuz; GAP-08 (içe aktarım) ile birlikte anlamlı. **(S)**
+- **GAP-F09-19 (G-19)** Kişiye bağlı not thread'i. Tracker `GET/POST/DELETE /contacts/:id/case-notes`;
+  Verimaya'da yalnız hasta tarafı var, kişide tek `notes` alanı. Klinik/otel yazışma geçmişi
+  tutulamıyor. **(M)** — bkz. Açık sorular §5 (tek not modeli mi, ayrı mı?)
+- **GAP-F09-20 (G-20)** Randevu checklist şablonları + randevu başına ilerleme.
+  Verimaya'da "Faz 1" yer tutucu. **Önce §4'e bakın** — Tracker canlı DB'de checklist
+  tabloları 0 satır, `ayarlar.md` "çoğu tenant'ta kullanılmıyor" diyor. Tamamen `skip` olabilir. **(L)**
+- **GAP-F09-21 (G-21)** Randevu listesi agregat istatistikleri (`type_counts`, `status_counts`).
+  Tek `GROUP BY`, ucuz kazanç. **(S)**
+- **GAP-F09-22 (G-22)** Case ↔ işlem otomatik bağlama (`POST /cases/:id/auto-link-transactions`).
+  ETL sonrası değeri yüksek; basitleştirilmiş halde (yalnız `contact_id` eşleşmesi) taşınabilir. **(S)**
+- **GAP-F09-23 (G-23)** Dosya silme endpoint'i. `dosyalar.md` zaten "İleri (Faz 1)" listesinde;
+  KVKK açısından önemli. Soft-delete + audit. **(M)**
+- **GAP-F09-24 (G-24)** Satır içi güvenli dosya önizleme. `dosyalar.md` "Legacy MIME allowlist +
+  indirme zorlaması korunur" **kararını vermiş ama uygulanmamış** — controller her dosyayı
+  `attachment` gönderiyor (`patients.controller.ts:180`). Pasaport/onam için her belge indiriliyor.
+  **AUDIT-F09-08** (magic-byte sniff) ile birlikte gitmeli. **(M)**
+
 ---
 
 ## Bekleyen (öncelik sırası yok; 10. madde sonrası değerlendirilir)
@@ -365,6 +571,25 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 - **Veri işleme envanteri (tamamı):** WhatsApp→LLM dışındaki işlemler
 - **AB veri lokasyonu envanteri + DPA şablonları (tenant onboarding)**
 
+### Tracker gap analizi P3 kalemleri (2026-08-07)
+
+Kaynak: `docs/tracker-verimaya-ozellik-gap.md`. Ertelenebilir; pilot sonrası değerlendirilir.
+
+- **GAP-25 (G-25):** Kapsamlı veri silme (`POST /data/delete-scope`) + operasyonel wipe
+  (`POST /data/wipe`), org adı yazarak onay. Test verisi temizliği bugün elle SQL.
+  Dikkat: `ayarlar.md` bunu "karmaşık ve **tehlikeli**" diye işaretlemiş — taşınırsa
+  onay mekanizması korunmalı.
+- **GAP-26 (G-26):** AI prompt özelleştirme (`GET/POST/DELETE /ai-prompt`). Verimaya
+  `ai-disclosure`'ı taşımış, prompt'u taşımamış. Bkz. Açık sorular §6 (tenant'a açılmalı mı?).
+- **GAP-27 (G-27):** Kategori / randevu tipi / durum sıralaması için toplu `reorder` endpoint'i.
+  `sort_order` şemada var, `PATCH` ile tek tek yazılabiliyor → kısmen karşılanıyor.
+  Sürükle-bırak isteniyorsa gerekir.
+- **GAP-28 (G-28):** Dev panel gerçek arka uç. `/dev` sayfası `/v1/dev/tenants` çağırıyor ama
+  **yalnız MSW'de var** (`handlers.ts:1804+`), NestJS'te modül yok. `dev-panel.md` "Faz 0b
+  süper-admin" diyor. Pilotta gerekmeyecekse **ekran gizlenmeli** — bugün yanlış izlenim veriyor.
+- **GAP-29 (G-29):** Randevu öncesi eksik iletişim bilgisi uyarısı (`contact_info_incomplete` →
+  Tracker'da "Check the details!"). Küçük UX kazancı.
+
 ---
 
 ## Bilinçli olarak yapılmayacaklar (MARKET-02 kapısına kadar)
@@ -376,6 +601,46 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 | TikTok / Instagram entegrasyonları | MARKET-02 öncesi yatırım yok |
 | Klinik entegrasyonları (e-Nabız, e-Fatura) | Acente segmenti seçilmezse gereksiz |
 | Ürün içi karnenin genişletilmesi | Pilotla birlikte gelir |
+| **Etiketler (Tags) modülü** | Tracker'da da hiç doldurulmadı (`SettingsTagsPage.tsx` 16 satırlık yer tutucu); `ayarlar.md`: "Tags hiç doldurulmadı → taşınmaz" |
+| **Kişilerden toplu case oluşturma / toplu auto-link** | Tracker'da bile `require_dev_user` ile korunan tek seferlik migrasyon aracı; ETL boru hattı aynı işi yapıyor (`cases.py:135,183`) |
+| **Lead / pipeline / satış aşaması yönetimi app tarafında** | **DOMAIN-01 kararı:** satış CRM'de (GHL) kalır. App'te patient = operasyon dosyası. Lead durumu app'te yazılmaz, sync ile gelir |
+| **Randevu durumu tenant-CRUD'u** | `ETL-ESLEME.md` §2.3 enum'a kilitledi (5 Tracker durumu + `in_progress`). Bir tenant kendi durumunu isterse enum → FK migrasyonu; bkz. Açık sorular §3 |
+| **Canlı kur çevirici (Frankfurter)** | `doviz.md`: "Raporlar snapshot ile bazda toplanır; **canlı kur yok**". FX-01 snapshot modeliyle kapandı |
+| **`responsible_party` alanı** | `raporlar.md`: "serbest metin + sabit preset karışımı — Contact modeliyle örtüşüyor". Contact modeli bunu absorbe etti |
+
+---
+
+## Açık sorular / ürün kararı bekleyenler (2026-08-07)
+
+> Gap analizinden çıkan, kod yazılmadan **önce** cevaplanması gerekenler.
+> Kaynak: `docs/tracker-verimaya-ozellik-gap.md` § Açık sorular.
+
+1. **Silme politikası — GAP-06'yı bloklar.** İşlem / randevu / kişi için hard-delete mi
+   soft-delete mi? Türk mali mevzuatı 10 yıl saklama (`AUDIT-F09-06`) ile KVKK silme hakkı
+   (`AUDIT-F09-07`) çatışıyor. Karar verilmeden üç endpoint yazılamaz.
+2. **Patient merge semantiği — DOMAIN-01'in açık ucu.** DOMAIN-01 "aynı kişide 2. geliş =
+   yeni patient" diyor; ama `/patients/duplicate-groups` + `/patients/merge` bugün var ve
+   **iki meşru operasyon dosyasını birleştirebilir**. Kimlik `Contact`'ta, epizot `Patient`'ta
+   olacaksa hasta birleştirme yüzeyi ya kaldırılmalı ya "yanlışlıkla iki kez açılmış aynı
+   epizot" ile sınırlandırılmalı. **Bu kapsam dışı bırakıldı (Adım 2 = kopya + status);
+   ayrı karar gerekiyor.**
+3. **Randevu durumu enum kalacak mı?** Pilot bir tenant'ın kendi durumunu istemesi durumunda
+   enum → FK migrasyonu gerekir. PILOT-02 bunu cevaplayacak mı?
+4. **Checklist ölü özellik mi?** `ayarlar.md` "çoğu tenant'ta kullanılmıyor"; Tracker canlı
+   DB'de checklist tabloları **0 satır** (`ETL-ESLEME.md` §1). GAP-F09-20 tamamen `skip` olabilir.
+5. **Kişi notları hasta notlarından ayrı mı kalmalı** (GAP-F09-19), yoksa tek "notlar" modeli mi?
+   Tracker ikisini ayrı tutmuştu; Verimaya yalnız hasta tarafını taşıdı.
+6. **AI prompt tenant'a açılmalı mı?** (GAP-26) Açılırsa çıkarım kalitesi tenant'a göre değişir →
+   destek yükü. `ayarlar.md` Faz 3 diyordu; disclosure taşındı, prompt taşınmadı.
+7. **Tenant düzeyinde izin matrisi gerçekten isteniyor mu?** (G-11, gap analizinde P1)
+   Tracker'da 9 özellik × 5 rol düzenlenebilir matris vardı (`transaction_amounts` ile
+   tutarları rollerden gizleme dahil); Verimaya'da kodda sabit 3 kaynak × 6 rol.
+   Tracker'da kaç tenant kullandı bilinmiyor (yerel snapshot: 2 tenant, 1 kullanıcı).
+   **Pilotta ölçülsün; talep yoksa `skip`.** `AUDIT-F09-02` ile kısmen örtüşür.
+8. **P2P payer/payee geri gelecek mi?** `kisiler.md` "sonraki faz" diyor — iptal değil, ertelendi.
+   Gelecekse `transactions` şeması değişir; **PILOT-02 freeze'inden önce karar ucuz, sonra pahalı.**
+9. **İçe/dışa aktarım ikinci müşteriden önce mi gerekli?** (GAP-08) Pilot tek tenant + ETL ile
+   taşındı. MARKET-02 kapısı geçilmeden yatırım yapılmalı mı?
 
 ---
 
@@ -424,6 +689,9 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 
 ## Kaynaklar
 
+- `docs/tracker-verimaya-ozellik-gap.md` — Tracker → Verimaya özellik gap analizi
+  (32 gap + 9 bilinçli fark; 5A/5B/6B, Faz 9 GAP-F09-*, P3 ve Açık sorular bölümlerinin kaynağı)
+- `docs/tracker-verimaya-sayfa-karsilastirma.md` — sayfa envanteri (gap analizinin başlangıç noktası)
 - `AUDIT-REPORT.md` — Opus denetimi (38 bulgu; Faz 8 planının kaynağı)
 - `docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md` — kanıtlı bulgular (tarihli, arşiv)
 - `docs/Arşiv/2026-08-03-KONTROL-RAPORU.md` — Faz 7 denetim çıktısı (arşiv)

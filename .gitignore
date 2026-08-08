@@ -19,5 +19,8 @@ coverage/
 .idea/
 *.local
 
+# Cursor — kişisel ajan izinleri (auto-review allowlist); .cursor/rules/ paylaşılır
+.cursor/permissions.json
+
 # geçici oturum dosyaları
 _tmp_*
