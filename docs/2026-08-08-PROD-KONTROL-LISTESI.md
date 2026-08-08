@@ -30,6 +30,22 @@ Tarih: 2026-08-08 · Tenant: Demo Klinik (kendi firmamız) · Kaynak: bu turda k
 - [x] **A4 — Randevu tipleri seed olmuş mu?** ✅ Konsültasyon / Tedavi / Kontrol / Transfer.
 - [x] **A5 — `0030` doğrulaması.** ✅ `deleted_at` dört tabloda da var
       (`appointments`, `contacts`, `patients`, `transactions`).
+- [ ] **A6 — `0032_ad_metrics_fx_coherence` (OPS-02c-fx, prod'da çalıştırılacak).**
+      `spend_base` varsa `base_currency`/`fx_rate`/`fx_dated` zorunlu. Migration
+      tutarsız satırları null'lar — **null'lanan satır çıkarsa backfill'i tekrar
+      çalıştır**, yoksa Pazarlama'da "Kur bilgisi eksik" görünür (yanlış sayı değil).
+      ```sql
+      -- migration sonrası: kaynağı eksik çevrim kalmamalı → 0 dönmeli
+      SELECT count(*) FROM ad_metrics_daily
+      WHERE spend_base IS NOT NULL
+        AND (base_currency IS NULL OR fx_rate IS NULL OR fx_dated IS NULL);
+
+      -- backfill gerekiyor mu? (tenant base'inden farklı, snapshot'ı olmayan satırlar)
+      SELECT count(*) FROM ad_metrics_daily
+      WHERE currency IS NOT NULL AND currency <> 'GBP' AND spend_base IS NULL;
+      ```
+      İkinci sorgu > 0 ise: `node scripts/backfill-ad-spend-fx.js --tenant-id <uuid>`
+      (önce dry-run), sonra `--apply`.
 
 ---
 
@@ -109,6 +125,11 @@ Burada "çalışıyor mu" değil, **"sayı mantıklı mı"** soruyorsun.
 - [ ] **F5 — Raporlarda tek kaynak kartı.** "Kaynak dağılımı" gitmiş olmalı,
       pazarlamadaki "Kaynak kırılımı" kalmalı. Kolon başlıkları:
       Kaynak / Dosya / Tedavi edilen / Tahsilat *(eski "Lead" ve "Kapalı" olmamalı)*.
+- [x] **F6 — Pazarlama ROAS guard (OPS-02d, 2026-08-08).** ✅ Kod: `attribution_missing`
+      + efektif pencere (ad_metrics MIN/MAX) + `spend_fx_missing`. Prod Demo Klinik'te
+      tüm `patients.source` boş → ROAS kartı **"Attribution verisi yok"** göstermeli
+      (yanlış 19× yok). Kapatmak için OPS-02e (`patients.source` doldurma) gerekir;
+      attribution kapanana kadar ROAS müşteri önünde gösterilmemeli.
 
 ---
 

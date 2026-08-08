@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { parseAdsCurrency } from '../integrations/ads/ads-currency';
 import { adMetricsDaily, tenantCredentials, tenants } from '../db/schema';
 import { AdsAdapterRegistry } from '../integrations/ads/ads-adapter.registry';
@@ -15,6 +15,30 @@ const AD_PROVIDERS = ['meta', 'google'] as const;
  * (~10 years — enough for typical health-tourism ad accounts.)
  */
 const AD_METRICS_SYNC_LOOKBACK_DAYS = 3650;
+
+/**
+ * FX snapshot columns to carry over on upsert, cleared when the row's money changed.
+ *
+ * Ads providers restate recent-day cost after the fact, so an upsert can move
+ * spend_minor (or the account currency) underneath a spend_base that was
+ * converted from the old figure. Keeping that snapshot would report a stale
+ * conversion as if it were current, and the non-force backfill would never
+ * revisit the row — it only looks for `spend_base is null`. Clearing it makes
+ * the report raise spend_fx_missing and puts the row back in the backfill's path.
+ *
+ * The bare column references read the existing row (Postgres evaluates every SET
+ * expression against it); the parameters are the incoming values.
+ */
+function carryFxSnapshotUnlessChanged(spendMinor: number, currency: string | null | undefined) {
+	const nextCurrency = currency ?? null;
+	const changed = sql`(${adMetricsDaily.spendMinor} is distinct from ${spendMinor}::integer or ${adMetricsDaily.currency} is distinct from ${nextCurrency}::text)`;
+	return {
+		spendBase: sql`case when ${changed} then null else ${adMetricsDaily.spendBase} end`,
+		baseCurrency: sql`case when ${changed} then null else ${adMetricsDaily.baseCurrency} end`,
+		fxRate: sql`case when ${changed} then null else ${adMetricsDaily.fxRate} end`,
+		fxDated: sql`case when ${changed} then null else ${adMetricsDaily.fxDated} end`
+	};
+}
 
 function sinceDaysAgo(days: number): string {
 	const d = new Date();
@@ -86,7 +110,8 @@ export class AdMetricsSyncService {
 								spendMinor: row.spendMinor,
 								currency,
 								impressions: row.impressions,
-								clicks: row.clicks
+								clicks: row.clicks,
+								...carryFxSnapshotUnlessChanged(row.spendMinor, currency)
 							}
 						});
 				}
@@ -127,7 +152,8 @@ export class AdMetricsSyncService {
 							spendMinor: row.spendMinor,
 							currency: row.currency,
 							impressions: row.impressions,
-							clicks: row.clicks
+							clicks: row.clicks,
+							...carryFxSnapshotUnlessChanged(row.spendMinor, row.currency)
 						}
 					});
 			}

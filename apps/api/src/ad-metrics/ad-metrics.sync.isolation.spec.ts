@@ -83,4 +83,67 @@ describe('AdMetricsSyncService tenant isolation', () => {
 		});
 		expect(rowsB).toHaveLength(0);
 	});
+
+	/**
+	 * Ads providers restate recent-day cost, so a re-sync can move spend_minor
+	 * under a spend_base converted from the old figure. The stale snapshot must
+	 * not survive: reports would show it as current, and the non-force backfill
+	 * only revisits rows where spend_base is null (OPS-02c).
+	 */
+	it('clears the FX snapshot when a re-sync restates spend, keeps it when spend is unchanged', async () => {
+		await syncService.sync(tenantA);
+		const { sql } = getDb(databaseUrl);
+
+		const [restated, untouched] = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select id, spend_minor from ad_metrics_daily
+				where tenant_id = ${tenantA}
+				order by provider, campaign_id, date
+				limit 2
+			`;
+		});
+
+		// Both rows get a backfill-shaped snapshot; only the first has its spend moved.
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`
+				update ad_metrics_daily
+				set spend_minor = ${Number(restated.spend_minor) + 12345},
+					spend_base = 999, base_currency = 'GBP',
+					fx_rate = 0.5, fx_dated = '2026-01-01'
+				where id = ${restated.id}
+			`;
+			await tx`
+				update ad_metrics_daily
+				set spend_base = 777, base_currency = 'GBP',
+					fx_rate = 0.25, fx_dated = '2026-01-02'
+				where id = ${untouched.id}
+			`;
+		});
+
+		await syncService.sync(tenantA);
+
+		const after = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select id, spend_minor, spend_base, base_currency, fx_rate, fx_dated
+				from ad_metrics_daily
+				where id in (${restated.id}, ${untouched.id})
+			`;
+		});
+		const restatedAfter = after.find((r) => r.id === restated.id);
+		const untouchedAfter = after.find((r) => r.id === untouched.id);
+
+		// Sync put the real figure back and dropped the snapshot converted from the old one.
+		expect(Number(restatedAfter?.spend_minor)).toBe(Number(restated.spend_minor));
+		expect(restatedAfter?.spend_base).toBeNull();
+		expect(restatedAfter?.base_currency).toBeNull();
+		expect(restatedAfter?.fx_rate).toBeNull();
+		expect(restatedAfter?.fx_dated).toBeNull();
+
+		// A row whose money did not move keeps its snapshot — no needless re-backfill.
+		expect(Number(untouchedAfter?.spend_base)).toBe(777);
+		expect(untouchedAfter?.base_currency).toBe('GBP');
+	});
 });

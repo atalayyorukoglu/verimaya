@@ -488,3 +488,20 @@ pnpm --filter @verimaya/api ads:fx-backfill -- --apply --force --tenant-id <uuid
 
 Env: `DATABASE_URL_APP` (RLS). Hafta sonu/tatil için Frankfurter son ECB gününü döner;
 gerçek fetch hatasında satır atlanır ve `missing_rate_keys` raporlanır.
+
+### Yeniden sync sonrası (OPS-02c-fx)
+
+Google Ads son günlerin maliyetini sonradan düzeltir. Sync bir satırın `spend_minor`
+veya `currency` değerini değiştirirse FX snapshot'ı (`spend_base` / `base_currency` /
+`fx_rate` / `fx_dated`) **otomatik null'lanır** — eski rakamdan çevrilmiş bir tutar
+güncelmiş gibi raporlanmasın diye. Sonuç: o dönem için Pazarlama'da "Kur bilgisi eksik"
+çıkar. **Her ads sync'ten sonra backfill'i tekrar çalıştır** (varsayılan mod yeter,
+`--force` gerekmez — yalnız null satırlara bakar):
+
+```bash
+node scripts/backfill-ad-spend-fx.js --apply --tenant-id <TENANT_UUID>
+```
+
+`0032_ad_metrics_fx_coherence` bunu DB seviyesinde de garanti eder: `spend_base` varsa
+`base_currency` + `fx_rate` + `fx_dated` zorunlu. Kaynağı olmayan bir çevrim — elle
+SQL ile bile — tabloya giremez.

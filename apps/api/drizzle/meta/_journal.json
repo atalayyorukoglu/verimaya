@@ -225,6 +225,13 @@
       "when": 1754000000000,
       "tag": "0031_ad_metrics_fx",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1754050000000,
+      "tag": "0032_ad_metrics_fx_coherence",
+      "breakpoints": true
     }
   ]
 }

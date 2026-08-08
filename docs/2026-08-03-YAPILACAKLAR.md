@@ -630,8 +630,9 @@
   (2026-04-08 → 08-01), `spend_minor` toplamı 574.459,57 — bu **₺**, panel **£** sanıyor.
   Gerçek karşılığı ≈ **£9.099** (kur 0,01584). Panel **ROAS 0,31×** gösteriyor;
   doğrusu **≈19,8×**. **63 kat hata — varsayım değil, doğrulandı.**
-  ⚠️ Düzeltilene kadar pazarlama kartındaki ROAS/CPL rakamları pilotta veya
-  müşteri önünde gösterilmemeli.
+  ⚠️ Para birimi hatası kapandı; ROAS/CPL artık yanlış sayı göstermiyor.
+  Ancak attribution (OPS-02e) kapanana kadar ROAS müşteri önünde
+  gösterilmemeli — bkz. OPS-02d/OPS-02e.
   - `ad_metrics_daily`'ye `currency` + FX-01 deseniyle `spend_base` / `fx_rate` / `fx_dated`.
   - Sync sırasında hesabın para birimi API'den okunup yazılmalı (tahmin edilmemeli).
   - Rapor tarafı `resolveBaseAmount` mantığını kullanmalı — işlemlerde zaten var,
@@ -645,6 +646,45 @@
     Backfill: `scripts/backfill-ad-spend-fx.js` (Frankfurter **v1/ECB** tarihsel; dry-run
     asla yazmaz; `--force` ile yeniden yazılabilir; `docs/DEPLOY-COOLIFY.md` § OPS-02c).
     Sync `spend_base` yazmaz — tek kaynak backfill.
+  - [x] **OPS-02c-fx — `fx_rate` kaynağı kapandı (2026-08-08).** Soru: bir satırdaki
+    `fx_rate` nereden geldi? Cevap artık tek ve yapısal:
+    - **Tek yazıcı:** `scripts/backfill-ad-spend-fx.js`, Frankfurter **v1/ECB** tarihsel.
+      Sync yalnız `spend_minor` + `currency` yazar (kod okunarak doğrulandı);
+      `ad-metrics.sync.service.ts` tablonun tek diğer yazıcısı.
+    - **`fx_rate` denetim kolonu:** `resolveBaseAmount` yalnız `spend_base` +
+      `base_currency` + `currency` okur — rapor rakamı `fx_rate`'e bağlı değil.
+    - **Bulunan gerçek hata:** upsert `spend_minor`'ı güncellerken FX snapshot'ı
+      olduğu gibi bırakıyordu. Google Ads son günlerin maliyetini sonradan
+      düzeltir → `spend_minor` değişir, `spend_base` eski rakamdan çevrilmiş
+      hâliyle kalır. Guard tetiklenmez (snapshot dolu), backfill de düzeltmez
+      (varsayılan mod yalnız `spend_base is null` satırlara bakar) → **sessizce
+      yanlış ROAS.** Artık `spend_minor` veya `currency` değişirse snapshot
+      null'lanıyor: guard "Kur bilgisi eksik" gösteriyor ve satır backfill'in
+      kapsamına geri giriyor. Değişmeyen satırlar snapshot'ını korur.
+    - **Migration `0032_ad_metrics_fx_coherence`:** `spend_base` varsa
+      `base_currency` + `fx_rate` + `fx_dated` zorunlu (CHECK); tutarsız eski
+      satırlar null'lanıp backfill'e bırakılır. Kaynağı belirsiz bir çevrim artık
+      tabloda duramaz — elle SQL ile bile.
+    - Test: `ad-metrics.sync.isolation.spec.ts` — fix geri alındığında kırmızı
+      (`expected 999 to be null`) olduğu doğrulandı.
+  - [x] **OPS-02d — ROAS pencere + attribution guard (2026-08-08).** OPS-02c sonrası
+    panelde ROAS 19,41× görünüyordu; hesap doğru, payda yanlıştı. İki sebep:
+    (1) "Tüm zamanlar"da `sumAdSpend` yalnız `ad_metrics_daily` günlerini toplarken
+    tahsilat tüm geçmişi topluyordu — efektif pencere artık ad_metrics MIN/MAX'ten
+    türetiliyor (provider filtresi dahil) ve spend + tahsilat + cohort üç sorgusuna
+    birlikte uygulanıyor; `period.effective_from/to` response'a eklendi.
+    (2) 757 dosyanın tamamında `patients.source` boş → `attribution_missing` guard'ı
+    ROAS/CPL/CPT'yi null'lıyor, panelde "Attribution verisi yok" rozeti çıkıyor.
+    `spend_fx_missing` guard'ı bağımsız korundu. iOS `spendBase` nullable yapıldı
+    (mevcut decode bug'ı), `closedCount` → `treatedCount` API ile hizalandı.
+    Isolation + MSW testleri yeşil; iOS derlemesi bu ortamda doğrulanmadı.
+  - [ ] **OPS-02e — patients.source doldurulmalı.** Attribution kaynağı olmadan
+    ROAS gerçek bir reklam getirisi değil. Lead girişinde UTM/form kaynağı →
+    `patients.source` eşlemesi yapılmadan Pazarlama sekmesi müşteri önünde
+    gösterilmemeli. OPS-02'nin kabul kriterine dahil.
+    *Not (zamanlama sınırı):* pencere içinde gelen hastanın tahsilatı pencereden
+    sonra gerçekleşirse ROAS o dönemde düşük görünür (cohort/nakit zamanlama farkı).
+    Kohort bazlı ROAS ayrı bir iş; attribution (OPS-02e) kapanmadan anlamlı değil.
 
 ---
 

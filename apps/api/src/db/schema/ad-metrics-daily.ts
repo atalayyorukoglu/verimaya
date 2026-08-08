@@ -36,6 +36,12 @@ export const adMetricsDaily = pgTable(
 			'ad_metrics_daily_spend_base_nonneg_chk',
 			sql`${table.spendBase} IS NULL OR ${table.spendBase} >= 0`
 		),
+		// A converted amount is only trustworthy with the currency and rate it came
+		// from — no spend_base without its provenance (OPS-02c).
+		check(
+			'ad_metrics_daily_fx_snapshot_chk',
+			sql`${table.spendBase} IS NULL OR (${table.baseCurrency} IS NOT NULL AND ${table.fxRate} IS NOT NULL AND ${table.fxDated} IS NOT NULL)`
+		),
 		uniqueIndex('ad_metrics_daily_tenant_provider_date_campaign_uidx').on(
 			table.tenantId,
 			table.provider,
