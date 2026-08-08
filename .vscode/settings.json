@@ -1,0 +1,4 @@
+{
+  "npm.autoDetect": "off",
+  "typescript.tsdk": "node_modules/typescript/lib"
+}
