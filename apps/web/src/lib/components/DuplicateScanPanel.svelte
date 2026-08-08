@@ -51,8 +51,14 @@
 	function groupKey(g: AnyGroup): string {
 		const members =
 			'contacts' in g
-				? g.contacts.map((c) => c.id).sort().join(',')
-				: g.patients.map((p) => p.id).sort().join(',');
+				? g.contacts
+						.map((c) => c.id)
+						.sort()
+						.join(',')
+				: g.patients
+						.map((p) => p.id)
+						.sort()
+						.join(',');
 		return `${g.match_type}:${g.label}:${members}`;
 	}
 
@@ -101,7 +107,9 @@
 			await apiSend(path, 'POST', { keep_id, merge_ids });
 			await queryClient.invalidateQueries({
 				queryKey:
-					kind === 'contacts' ? qs.keys.contacts.duplicateGroups() : qs.keys.patients.duplicateGroups()
+					kind === 'contacts'
+						? qs.keys.contacts.duplicateGroups()
+						: qs.keys.patients.duplicateGroups()
 			});
 			await queryClient.invalidateQueries({
 				queryKey: kind === 'contacts' ? qs.keys.contacts.all() : qs.keys.patients.all()
@@ -133,8 +141,8 @@
 	<p class="mb-4 text-sm text-text-muted">{t('patients.duplicates.hint')}</p>
 {:else}
 	<p class="mb-4 text-sm text-text-muted">
-		E-posta, telefon (normalize) veya ada göre olası çift kayıtlar. Bir kayıt seçip diğerlerini içine
-		birleştirin — bağlı işlem ve randevular taşınır.
+		E-posta, telefon (normalize) veya ada göre olası çift kayıtlar. Bir kayıt seçip diğerlerini
+		içine birleştirin — bağlı işlem ve randevular taşınır.
 	</p>
 {/if}
 

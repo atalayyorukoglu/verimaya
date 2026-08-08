@@ -5,9 +5,7 @@ import { amountInBase, paidAmountInBase } from './money-base';
 /** Minimal Transaction-shaped fixtures for amountInBase parity with API resolveBaseAmount. */
 function tx(
 	partial: Pick<Transaction, 'amount' | 'currency'> &
-		Partial<
-			Pick<Transaction, 'amount_base' | 'base_currency' | 'status' | 'paid_amount'>
-		>
+		Partial<Pick<Transaction, 'amount_base' | 'base_currency' | 'status' | 'paid_amount'>>
 ): Transaction {
 	return {
 		id: '00000000-0000-0000-0000-000000000001',
@@ -105,8 +103,8 @@ describe('paidAmountInBase (parity with resolvePaidBaseAmount)', () => {
 	});
 
 	it('unpaid contributes 0', () => {
-		expect(
-			paidAmountInBase(tx({ amount: 10_000, currency: 'GBP', status: 'unpaid' }), 'GBP')
-		).toBe(0);
+		expect(paidAmountInBase(tx({ amount: 10_000, currency: 'GBP', status: 'unpaid' }), 'GBP')).toBe(
+			0
+		);
 	});
 });

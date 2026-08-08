@@ -18,8 +18,16 @@ export const marketingSourceRow = z.object({
 });
 export type MarketingSourceRow = z.infer<typeof marketingSourceRow>;
 
+/** Requested period plus the window actually applied to spend/tahsilat. */
+export const marketingReportPeriodSchema = reportPeriodSchema.extend({
+	/** Window used for spend + tahsilat (ad_metrics MIN/MAX when from/to omitted). */
+	effective_from: isoDate.nullable(),
+	effective_to: isoDate.nullable()
+});
+export type MarketingReportPeriod = z.infer<typeof marketingReportPeriodSchema>;
+
 export const marketingReportSchema = z.object({
-	period: reportPeriodSchema,
+	period: marketingReportPeriodSchema,
 	/** Sum of ad spend resolved to tenant base; null when any row lacks FX. */
 	spend_base: moneyMinor.nullable(),
 	revenue_base: moneyMinor,
@@ -30,6 +38,11 @@ export const marketingReportSchema = z.object({
 	cost_per_treated: moneyMinor.nullable(),
 	/** True when at least one spend row cannot be converted to tenant base. */
 	spend_fx_missing: z.boolean(),
+	/**
+	 * True when by_source is non-empty and every row is source "Bilinmeyen"
+	 * (patients have no attribution). ROAS/CPL/CPT are withheld.
+	 */
+	attribution_missing: z.boolean(),
 	by_source: z.array(marketingSourceRow)
 });
 export type MarketingReport = z.infer<typeof marketingReportSchema>;

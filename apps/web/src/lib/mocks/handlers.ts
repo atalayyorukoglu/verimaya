@@ -165,7 +165,7 @@ function patientCreatedDay(iso: string): string {
 	return iso.slice(0, 10);
 }
 
-function buildMarketingReport(
+export function buildMarketingReport(
 	store: ReturnType<typeof getStore>,
 	from: string | null,
 	to: string | null,
@@ -173,9 +173,33 @@ function buildMarketingReport(
 ): MarketingReport {
 	const tenantBase = store.tenant.base_currency;
 
+	let effective_from: string | null = from;
+	let effective_to: string | null = to;
+	let spendFrom = from;
+	let spendTo = to;
+
+	if (!from && !to) {
+		let rangeRows = store.adMetricsDaily;
+		if (provider === 'meta' || provider === 'google') {
+			rangeRows = rangeRows.filter((r) => r.provider === provider);
+		}
+		const dates = rangeRows.map((r) => r.date).sort();
+		if (dates.length === 0) {
+			effective_from = null;
+			effective_to = null;
+			spendFrom = null;
+			spendTo = null;
+		} else {
+			effective_from = dates[0]!;
+			effective_to = dates[dates.length - 1]!;
+			spendFrom = effective_from;
+			spendTo = effective_to;
+		}
+	}
+
 	let spendRows = store.adMetricsDaily;
-	if (from) spendRows = spendRows.filter((r) => r.date >= from);
-	if (to) spendRows = spendRows.filter((r) => r.date <= to);
+	if (spendFrom) spendRows = spendRows.filter((r) => r.date >= spendFrom);
+	if (spendTo) spendRows = spendRows.filter((r) => r.date <= spendTo);
 	if (provider === 'meta' || provider === 'google') {
 		spendRows = spendRows.filter((r) => r.provider === provider);
 	}
@@ -199,7 +223,7 @@ function buildMarketingReport(
 		spendSum += resolved;
 	}
 
-	const incomeRows = filterTransactionsByPeriod(store.transactions, from, to).filter(
+	const incomeRows = filterTransactionsByPeriod(store.transactions, spendFrom, spendTo).filter(
 		(t) => t.kind === 'income'
 	);
 	const patientById = new Map(store.patients.map((p) => [p.id, p]));
@@ -213,10 +237,11 @@ function buildMarketingReport(
 		revenueBySource.set(label, (revenueBySource.get(label) ?? 0) + paid);
 	}
 
+	// Cohort uses the same spend/tahsilat window (created_at via dayRange).
 	const cohortPatients = store.patients.filter((p) => {
 		const day = patientCreatedDay(p.created_at);
-		if (from && day < from) return false;
-		if (to && day > to) return false;
+		if (spendFrom && day < spendFrom) return false;
+		if (spendTo && day > spendTo) return false;
 		return true;
 	});
 	const cohortBySource = new Map<string, { leads: number; treated: number }>();
@@ -252,9 +277,14 @@ function buildMarketingReport(
 				(Math.abs(a.leads) + Math.abs(a.treated) + Math.abs(a.revenue_base))
 		);
 
+	const attribution_missing =
+		by_source.length > 0 && by_source.every((r) => r.source === 'Bilinmeyen');
+
+	const period = { from, to, effective_from, effective_to };
+
 	if (spend_fx_missing) {
 		return {
-			period: { from, to },
+			period,
 			spend_base: null,
 			revenue_base,
 			real_roas: null,
@@ -263,6 +293,7 @@ function buildMarketingReport(
 			cost_per_lead: null,
 			cost_per_treated: null,
 			spend_fx_missing: true,
+			attribution_missing,
 			by_source
 		};
 	}
@@ -274,8 +305,24 @@ function buildMarketingReport(
 		treated: treated_count
 	});
 
+	if (attribution_missing) {
+		return {
+			period,
+			spend_base: spendSum,
+			revenue_base,
+			real_roas: null,
+			leads_count,
+			treated_count,
+			cost_per_lead: null,
+			cost_per_treated: null,
+			spend_fx_missing: false,
+			attribution_missing: true,
+			by_source
+		};
+	}
+
 	return {
-		period: { from, to },
+		period,
 		spend_base: spendSum,
 		revenue_base,
 		real_roas: metrics.realRoas,
@@ -284,6 +331,7 @@ function buildMarketingReport(
 		cost_per_lead: metrics.costPerLead,
 		cost_per_treated: metrics.costPerTreated,
 		spend_fx_missing: false,
+		attribution_missing: false,
 		by_source
 	};
 }
@@ -337,7 +385,8 @@ function buildReportSummary(
 		fx_missing_amount_by_currency: [...fxMissingByCurrency.entries()]
 			.map(([currency, amount_minor]) => ({ currency, amount_minor }))
 			.sort((a, b) => a.currency.localeCompare(b.currency)),
-		coverage_ratio: transactionCount === 0 ? 1 : (transactionCount - fxMissingCount) / transactionCount
+		coverage_ratio:
+			transactionCount === 0 ? 1 : (transactionCount - fxMissingCount) / transactionCount
 	};
 }
 
@@ -872,8 +921,7 @@ export const handlers = [
 				{
 					error: {
 						code: 'patient_has_records',
-						message:
-							'Cannot complete empty-file merge: a file has appointments or transactions'
+						message: 'Cannot complete empty-file merge: a file has appointments or transactions'
 					}
 				},
 				{ status: 409 }
@@ -888,8 +936,7 @@ export const handlers = [
 				{
 					error: {
 						code: 'patient_contact_mismatch',
-						message:
-							'Cannot complete empty-file merge: files link to different contacts'
+						message: 'Cannot complete empty-file merge: files link to different contacts'
 					}
 				},
 				{ status: 409 }

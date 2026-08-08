@@ -81,8 +81,7 @@ const tr = {
 	'patients.list.documentTitle': 'Hastalar · Veri Maya',
 	'patients.duplicates.documentTitle': 'Çift kayıt · Hastalar · Veri Maya',
 	'patients.duplicates.title': 'Hasta çift kayıtları',
-	'patients.duplicates.description':
-		'Aynı telefon, e-posta veya adla birden fazla hasta dosyası.',
+	'patients.duplicates.description': 'Aynı telefon, e-posta veya adla birden fazla hasta dosyası.',
 	'patients.duplicates.hint':
 		'Yalnız randevusuz ve işlemsiz (boş) dosyalar listelenir. Hedefi seçip eksik bilgiyi tamamlayın; fazla dosya kapanır. Randevu veya işlemi olan dosyalar burada görünmez.',
 	'patients.duplicates.scanning': 'Taranıyor…',
@@ -323,8 +322,13 @@ const tr = {
 	'reports.marketing.fxMissing': 'Kur bilgisi eksik',
 	'reports.marketing.fxMissingHint':
 		'Reklam harcaması tenant baz para birimine çevrilemedi; ROAS/CPL gösterilmiyor.',
+	'reports.marketing.attributionMissing': 'Attribution verisi yok',
+	'reports.marketing.attributionMissingHint':
+		'Hasta kayıtlarında kaynak bilgisi boş; ROAS/CPL gösterilmiyor.',
+	'reports.marketing.noData': 'Veri yok',
+	'reports.marketing.noDataHint': 'Bu dönemde hasta veya tahsilat kaydı yok.',
 	'reports.marketing.footnote':
-		'Gerçek ROAS = dönem tahsilatı ÷ reklam harcaması. Platform ROAS\'tan farklıdır.',
+		"Gerçek ROAS = dönem tahsilatı ÷ reklam harcaması. Platform ROAS'tan farklıdır.",
 	'reports.marketing.loadError': 'Pazarlama raporu yüklenemedi.',
 	'reports.consistency.title': 'Tutarlılık uyarıları',
 	'reports.consistency.description':
@@ -1145,6 +1149,10 @@ const en: Record<MessageKey, string> = {
 	'reports.marketing.fxMissing': 'FX rate missing',
 	'reports.marketing.fxMissingHint':
 		'Ad spend could not be converted to the tenant base currency; ROAS/CPL are hidden.',
+	'reports.marketing.attributionMissing': 'No attribution data',
+	'reports.marketing.attributionMissingHint': 'Patient records have no source; ROAS/CPL is hidden.',
+	'reports.marketing.noData': 'No data',
+	'reports.marketing.noDataHint': 'No patients or collections in this period.',
 	'reports.marketing.footnote':
 		'Real ROAS = period collections ÷ ad spend. Differs from platform ROAS.',
 	'reports.marketing.loadError': 'Marketing report failed to load.',

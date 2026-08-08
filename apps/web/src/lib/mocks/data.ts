@@ -22,7 +22,7 @@ import type {
 	TrustScoreSettings
 } from '@verimaya/shared';
 
-export type MockScenario = 'default' | 'empty' | 'large';
+export type MockScenario = 'default' | 'empty' | 'large' | 'attribution_missing';
 
 export const DEMO_TENANT_ID = '11111111-1111-4111-8111-111111111111';
 export const DEMO_USER_ID = '22222222-2222-4222-8222-222222222222';
@@ -63,13 +63,7 @@ export const demoUser: MembershipUser = {
 	role: 'owner'
 };
 
-const STATUSES: PatientStatus[] = [
-	'scheduled',
-	'arrived',
-	'treated',
-	'follow_up',
-	'cancelled'
-];
+const STATUSES: PatientStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];
 
 const SOURCES = ['Meta Ads', 'Google Ads', 'WhatsApp', 'Referans', 'GHL', 'Website'];
 
@@ -1038,6 +1032,13 @@ function buildStore(scenario: MockScenario): DemoStore {
 		})
 	);
 
+	// Prod-shaped gap: spend + tahsilat exist but patient.source is unset → attribution_missing.
+	if (scenario === 'attribution_missing') {
+		for (const p of patients) {
+			p.source = null;
+		}
+	}
+
 	const appointmentPatients = patients.slice(1, Math.min(40, patients.length));
 	const appointments = [
 		...atalay.appointments,
@@ -1317,7 +1318,14 @@ export function getStore(scenario: MockScenario = 'default'): DemoStore {
 }
 
 export function parseScenario(value: string | null): MockScenario {
-	if (value === 'empty' || value === 'large' || value === 'default') return value;
+	if (
+		value === 'empty' ||
+		value === 'large' ||
+		value === 'default' ||
+		value === 'attribution_missing'
+	) {
+		return value;
+	}
 	return 'default';
 }
 

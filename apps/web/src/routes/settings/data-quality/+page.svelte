@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { ReportConsistency, ReportSummary, SupportedCurrency, Tenant, Transaction } from '@verimaya/shared';
+	import type {
+		ReportConsistency,
+		ReportSummary,
+		SupportedCurrency,
+		Tenant,
+		Transaction
+	} from '@verimaya/shared';
 	import { reportUrl, toTenantDayKey } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
@@ -21,9 +27,7 @@
 	}));
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
-	const baseCurrency = $derived(
-		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
-	);
+	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	function daysAgoIso(days: number): string {
 		const d = new Date();
@@ -189,8 +193,12 @@
 		</section>
 
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
-			<h2 class="text-sm font-semibold text-text">{t('settings.dataQuality.duplicatesNav.title')}</h2>
-			<p class="mt-0.5 text-xs text-text-muted">{t('settings.dataQuality.duplicatesNav.description')}</p>
+			<h2 class="text-sm font-semibold text-text">
+				{t('settings.dataQuality.duplicatesNav.title')}
+			</h2>
+			<p class="mt-0.5 text-xs text-text-muted">
+				{t('settings.dataQuality.duplicatesNav.description')}
+			</p>
 			<div class="mt-3 flex flex-wrap gap-3 text-sm">
 				<a href="/contacts/duplicates" class="text-brand hover:underline"
 					>{t('settings.dataQuality.duplicatesNav.contacts')}</a
@@ -202,7 +210,9 @@
 		</section>
 
 		<p class="mt-3 text-xs text-text-faint">
-			<a href="/reports" class="text-brand hover:underline">{t('settings.dataQuality.reportsLink')}</a>
+			<a href="/reports" class="text-brand hover:underline"
+				>{t('settings.dataQuality.reportsLink')}</a
+			>
 		</p>
 	{/if}
 </div>

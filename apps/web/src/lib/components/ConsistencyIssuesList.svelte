@@ -21,7 +21,9 @@
 
 	const warningGroups = $derived(
 		(Object.entries(data.counts_by_code) as Array<[ReportConsistencyCode, number]>)
-			.filter(([code, count]) => count > 0 && reportConsistencyCodeMeta[code].severity === 'warning')
+			.filter(
+				([code, count]) => count > 0 && reportConsistencyCodeMeta[code].severity === 'warning'
+			)
 			.sort((a, b) => b[1] - a[1])
 			.map(([code, count]) => ({
 				code,
@@ -52,7 +54,7 @@
 		>
 			{#if !compact}
 				<span
-					class="mt-0.5 shrink-0 rounded-[6px] bg-danger/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-danger"
+					class="mt-0.5 shrink-0 rounded-[6px] bg-danger/15 px-2 py-0.5 text-[10px] font-semibold text-danger uppercase"
 				>
 					{t('reports.consistency.error')}
 				</span>
@@ -61,7 +63,7 @@
 				<p class="truncate {compact ? 'font-medium text-text' : 'text-sm font-medium text-text'}">
 					{issue.title}
 				</p>
-				<p class="{compact ? 'mt-0.5 text-text-muted' : 'mt-0.5 text-sm text-text-muted'}">
+				<p class={compact ? 'mt-0.5 text-text-muted' : 'mt-0.5 text-sm text-text-muted'}>
 					{t(issue.message_key as MessageKey)}
 				</p>
 			</div>
@@ -77,17 +79,17 @@
 	{/each}
 
 	{#each warningGroups as group (group.code)}
-		<li class="{compact ? 'py-2' : 'py-3 first:pt-0 last:pb-0'}">
+		<li class={compact ? 'py-2' : 'py-3 first:pt-0 last:pb-0'}>
 			<div class="flex min-w-0 items-start gap-3">
 				{#if !compact}
 					<span
-						class="mt-0.5 shrink-0 rounded-[6px] bg-warning/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-warning"
+						class="mt-0.5 shrink-0 rounded-[6px] bg-warning/15 px-2 py-0.5 text-[10px] font-semibold text-warning uppercase"
 					>
 						{t('reports.consistency.warning')}
 					</span>
 				{/if}
 				<div class="min-w-0 flex-1">
-					<p class="{compact ? 'text-sm font-medium text-text' : 'text-sm font-medium text-text'}">
+					<p class={compact ? 'text-sm font-medium text-text' : 'text-sm font-medium text-text'}>
 						{t('reports.consistency.groupSummary', {
 							count: group.count,
 							message: t(group.message_key as MessageKey)

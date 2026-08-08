@@ -84,8 +84,7 @@
 				<Button type="button" variant="outline" onclick={() => goto('/patients/duplicates')}
 					>{t('patients.list.duplicates')}</Button
 				>
-				<Button type="button" onclick={() => (formOpen = true)}
-					>{t('patients.list.newFile')}</Button
+				<Button type="button" onclick={() => (formOpen = true)}>{t('patients.list.newFile')}</Button
 				>
 			</form>
 		{/snippet}

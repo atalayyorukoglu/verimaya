@@ -51,14 +51,35 @@ final class VerimayaTests: XCTestCase {
     XCTAssertEqual(cp.nextCursor, "abc")
 
     let mkt = """
-    {"period":{"from":"2026-07-01","to":"2026-07-31"},
+    {"period":{"from":"2026-07-01","to":"2026-07-31","effective_from":"2026-07-01","effective_to":"2026-07-31"},
      "spend_base":100000,"revenue_base":500000,"real_roas":5.0,
-     "leads_count":40,"closed_count":8,"cost_per_lead":2500,"cost_per_closed":12500,
-     "by_source":[{"source":"meta","leads":30,"closed":6,"revenue_base":400000}]}
+     "leads_count":40,"treated_count":8,"cost_per_lead":2500,"cost_per_treated":12500,
+     "spend_fx_missing":false,"attribution_missing":false,
+     "by_source":[{"source":"meta","leads":30,"treated":6,"revenue_base":400000}]}
     """
     let r = try decode(MarketingReport.self, mkt)
     XCTAssertEqual(r.realRoas, 5.0)
+    XCTAssertEqual(r.treatedCount, 8)
     XCTAssertEqual(r.bySource.first?.source, "meta")
+    XCTAssertEqual(r.bySource.first?.treated, 6)
     XCTAssertEqual(r.costPerLead, 2500)
+    XCTAssertEqual(r.costPerTreated, 12500)
+    XCTAssertEqual(r.period.effectiveFrom, "2026-07-01")
+  }
+
+  func testMarketingReportDecodesNullSpendBase() throws {
+    let mkt = """
+    {"period":{"from":null,"to":null,"effective_from":null,"effective_to":null},
+     "spend_base":null,"revenue_base":150000,"real_roas":null,
+     "leads_count":2,"treated_count":1,"cost_per_lead":null,"cost_per_treated":null,
+     "spend_fx_missing":true,"attribution_missing":false,
+     "by_source":[{"source":"Bilinmeyen","leads":2,"treated":1,"revenue_base":150000}]}
+    """
+    let r = try decode(MarketingReport.self, mkt)
+    XCTAssertNil(r.spendBase)
+    XCTAssertTrue(r.spendFxMissing)
+    XCTAssertFalse(r.attributionMissing)
+    XCTAssertNil(r.realRoas)
+    XCTAssertNil(r.period.effectiveFrom)
   }
 }

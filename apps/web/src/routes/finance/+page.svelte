@@ -74,9 +74,7 @@
 		enabled: qs.ready
 	}));
 
-	const baseCurrency = $derived(
-		(tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency
-	);
+	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	/** Base equivalent only when txn currency differs and snapshot exists. */
 	function baseLine(tx: Transaction): string | null {

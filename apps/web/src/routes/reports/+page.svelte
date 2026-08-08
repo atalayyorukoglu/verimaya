@@ -720,7 +720,7 @@
 					<div class="mt-4 grid grid-cols-6 items-end gap-2 sm:gap-4" style="height: 180px">
 						{#each opsMonthly.list as bucket (bucket.key)}
 							<div class="flex h-full min-w-0 flex-col justify-end">
-								<p class="mb-1 text-center text-[10px] tabular-nums text-text-muted">
+								<p class="mb-1 text-center text-[10px] text-text-muted tabular-nums">
 									{bucket.count > 0 ? bucket.count : '\u00a0'}
 								</p>
 								<div class="flex min-h-0 flex-1 items-end justify-center">
@@ -881,13 +881,24 @@
 		{#if !marketing}
 			<p class="text-sm text-text-muted">{t('reports.marketing.loadError')}</p>
 		{:else}
-			{#if marketing.spend_fx_missing}
+			{@const metricsMissing = marketing.real_roas == null}
+			{@const missingTitleKey = marketing.spend_fx_missing
+				? 'reports.marketing.fxMissing'
+				: marketing.attribution_missing
+					? 'reports.marketing.attributionMissing'
+					: 'reports.marketing.noData'}
+			{@const missingHintKey = marketing.spend_fx_missing
+				? 'reports.marketing.fxMissingHint'
+				: marketing.attribution_missing
+					? 'reports.marketing.attributionMissingHint'
+					: 'reports.marketing.noDataHint'}
+			{#if metricsMissing}
 				<div
 					class="mb-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-text"
 					role="status"
 				>
-					<p class="font-medium">{t('reports.marketing.fxMissing')}</p>
-					<p class="mt-0.5 text-text-muted">{t('reports.marketing.fxMissingHint')}</p>
+					<p class="font-medium">{t(missingTitleKey)}</p>
+					<p class="mt-0.5 text-text-muted">{t(missingHintKey)}</p>
 				</div>
 			{/if}
 			<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -914,18 +925,18 @@
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{t('reports.marketing.roas')}</p>
 					<p class="mt-1 truncate text-lg font-semibold text-text tabular-nums">
-						{#if marketing.spend_fx_missing}
-							<span class="text-warning">{t('reports.marketing.fxMissing')}</span>
+						{#if metricsMissing}
+							<span class="text-warning">{t(missingTitleKey)}</span>
 						{:else}
-							{marketing.real_roas == null ? '—' : formatRatio(marketing.real_roas)}
+							{formatRatio(marketing.real_roas!)}
 						{/if}
 					</p>
 				</div>
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{t('reports.marketing.cplLabel')}</p>
-					{#if marketing.spend_fx_missing}
+					{#if metricsMissing}
 						<p class="mt-1 text-sm font-semibold text-warning">
-							{t('reports.marketing.fxMissing')}
+							{t(missingTitleKey)}
 						</p>
 					{:else}
 						<p class="mt-1 text-sm font-semibold text-text tabular-nums">

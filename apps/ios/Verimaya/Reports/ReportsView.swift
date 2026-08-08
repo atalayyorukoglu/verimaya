@@ -69,23 +69,27 @@ struct ReportsView: View {
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(VerimayaTheme.brand)
 
-      Text(roasText(vm.marketing?.realRoas))
+      Text(roasText(vm.marketing))
         .font(.system(size: 36, weight: .bold, design: .rounded))
         .foregroundStyle(VerimayaTheme.text)
 
       if let m = vm.marketing {
         HStack(spacing: 8) {
-          metricChip(label: "Harcama", value: Money.format(minor: m.spendBase), color: VerimayaTheme.danger)
+          metricChip(
+            label: "Harcama",
+            value: m.spendBase.map { Money.format(minor: $0) } ?? "—",
+            color: VerimayaTheme.danger
+          )
           metricChip(label: "Gelir", value: Money.format(minor: m.revenueBase), color: VerimayaTheme.success)
         }
         HStack(spacing: 8) {
           metricChip(label: "Lead", value: "\(m.leadsCount)", color: VerimayaTheme.text)
-          metricChip(label: "Kapanan", value: "\(m.closedCount)", color: VerimayaTheme.text)
+          metricChip(label: "Kapanan", value: "\(m.treatedCount)", color: VerimayaTheme.text)
         }
 
         VStack(alignment: .leading, spacing: 6) {
           secondaryRow(label: "Lead başı maliyet", value: optionalMoney(m.costPerLead))
-          secondaryRow(label: "Kapanan başı maliyet", value: optionalMoney(m.costPerClosed))
+          secondaryRow(label: "Kapanan başı maliyet", value: optionalMoney(m.costPerTreated))
         }
         .padding(.top, 4)
 
@@ -106,7 +110,7 @@ struct ReportsView: View {
                 Text(row.source)
                   .font(.subheadline.weight(.medium))
                   .foregroundStyle(VerimayaTheme.text)
-                Text("\(row.leads) lead · \(row.closed) kapanan")
+                Text("\(row.leads) lead · \(row.treated) kapanan")
                   .font(.caption)
                   .foregroundStyle(VerimayaTheme.textMuted)
               }
@@ -285,14 +289,19 @@ struct ReportsView: View {
     }
   }
 
-  private func roasText(_ value: Double?) -> String {
-    guard let value else { return "—" }
-    let f = NumberFormatter()
-    f.locale = Locale(identifier: "tr_TR")
-    f.minimumFractionDigits = 2
-    f.maximumFractionDigits = 2
-    let number = f.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
-    return "\(number)×"
+  private func roasText(_ report: MarketingReport?) -> String {
+    guard let report else { return "—" }
+    if let value = report.realRoas {
+      let f = NumberFormatter()
+      f.locale = Locale(identifier: "tr_TR")
+      f.minimumFractionDigits = 2
+      f.maximumFractionDigits = 2
+      let number = f.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
+      return "\(number)×"
+    }
+    if report.spendFxMissing { return "Kur bilgisi eksik" }
+    if report.attributionMissing { return "Attribution verisi yok" }
+    return "Veri yok"
   }
 
   private func optionalMoney(_ minor: Int?) -> String {

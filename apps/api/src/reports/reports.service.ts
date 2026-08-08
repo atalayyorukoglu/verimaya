@@ -669,21 +669,33 @@ export class ReportsService {
 	 * Real ROAS report: ad spend vs tahsilat (paid income) + file/treated cohort by source.
 	 * Revenue denominator = TAHSİLAT (resolveCollectedAmount → tenant base), not invoice amount.
 	 * Spend uses the same resolveBaseAmount FX snapshot rules as transactions (OPS-02c).
+	 *
+	 * When from/to are omitted, spend + tahsilat + cohort use ad_metrics_daily MIN/MAX
+	 * dates as the effective window (provider-scoped). Empty ad metrics → no date
+	 * filter, spend_base 0, ratio metrics null via calculateRealRoas.
 	 */
 	async marketing(tenantId: string, params: MarketingReportParams): Promise<MarketingReport> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const tenantBase = await this.getTenantBase(db, tenantId);
+			const { windowParams, effective_from, effective_to } = await this.resolveMarketingWindow(
+				db,
+				params
+			);
 
-			const { spend_base, spend_fx_missing } = await this.sumAdSpend(db, params, tenantBase);
+			const { spend_base, spend_fx_missing } = await this.sumAdSpend(
+				db,
+				windowParams,
+				tenantBase
+			);
 			const { revenue_base, revenueBySource } = await this.sumTahsilatBySource(
 				db,
-				params,
+				windowParams,
 				tenantBase
 			);
 			const { leads_count, treated_count, cohortBySource } = await this.patientCohortBySource(
 				db,
 				tenantId,
-				params
+				windowParams
 			);
 
 			const sourceKeys = new Set([...revenueBySource.keys(), ...cohortBySource.keys()]);
@@ -705,10 +717,20 @@ export class ReportsService {
 						(Math.abs(a.leads) + Math.abs(a.treated) + Math.abs(a.revenue_base))
 				);
 
+			const attribution_missing =
+				by_source.length > 0 && by_source.every((row) => row.source === 'Bilinmeyen');
+
+			const period = {
+				from: params.from ?? null,
+				to: params.to ?? null,
+				effective_from,
+				effective_to
+			};
+
 			// Do not publish ROAS/CPL when any spend row lacks convertible FX.
 			if (spend_fx_missing || spend_base == null) {
 				return {
-					period: { from: params.from ?? null, to: params.to ?? null },
+					period,
 					spend_base: null,
 					revenue_base,
 					real_roas: null,
@@ -717,6 +739,7 @@ export class ReportsService {
 					cost_per_lead: null,
 					cost_per_treated: null,
 					spend_fx_missing: true,
+					attribution_missing,
 					by_source
 				};
 			}
@@ -728,8 +751,24 @@ export class ReportsService {
 				treated: treated_count
 			});
 
+			if (attribution_missing) {
+				return {
+					period,
+					spend_base,
+					revenue_base,
+					real_roas: null,
+					leads_count,
+					treated_count,
+					cost_per_lead: null,
+					cost_per_treated: null,
+					spend_fx_missing: false,
+					attribution_missing: true,
+					by_source
+				};
+			}
+
 			return {
-				period: { from: params.from ?? null, to: params.to ?? null },
+				period,
 				spend_base,
 				revenue_base,
 				real_roas: metrics.realRoas,
@@ -738,6 +777,7 @@ export class ReportsService {
 				cost_per_lead: metrics.costPerLead,
 				cost_per_treated: metrics.costPerTreated,
 				spend_fx_missing: false,
+				attribution_missing: false,
 				by_source
 			};
 		});
@@ -803,15 +843,55 @@ export class ReportsService {
 	}
 
 	/**
-	 * Ad spend in tenant base via resolveBaseAmount (FX-01 / OPS-02c).
-	 * Any row that cannot be converted sets spend_fx_missing — caller must not show ROAS.
+	 * Resolve the effective spend/tahsilat window.
+	 * Explicit from/to → used as-is. Omitted → ad_metrics MIN/MAX (provider-scoped).
+	 * Empty ad metrics on all-time → no date filter; effective_* null.
 	 */
-	private async sumAdSpend(
+	private async resolveMarketingWindow(
 		db: TenantDb,
-		params: MarketingReportParams,
-		tenantBase: string
-	): Promise<{ spend_base: number | null; spend_fx_missing: boolean }> {
-		const conditions = [];
+		params: MarketingReportParams
+	): Promise<{
+		windowParams: MarketingReportParams;
+		effective_from: string | null;
+		effective_to: string | null;
+	}> {
+		if (params.from || params.to) {
+			return {
+				windowParams: params,
+				effective_from: params.from ?? null,
+				effective_to: params.to ?? null
+			};
+		}
+
+		const conditions = this.adMetricsConditions({ provider: params.provider });
+		const [row] = await db
+			.select({
+				minDate: sql<string | null>`min(${adMetricsDaily.date})`,
+				maxDate: sql<string | null>`max(${adMetricsDaily.date})`
+			})
+			.from(adMetricsDaily)
+			.where(conditions.length ? and(...conditions) : undefined);
+
+		const minDate = row?.minDate ?? null;
+		const maxDate = row?.maxDate ?? null;
+		if (!minDate || !maxDate) {
+			return {
+				windowParams: params,
+				effective_from: null,
+				effective_to: null
+			};
+		}
+
+		return {
+			windowParams: { ...params, from: minDate, to: maxDate },
+			effective_from: minDate,
+			effective_to: maxDate
+		};
+	}
+
+	/** Shared where fragments for ad_metrics_daily (date + optional provider). */
+	private adMetricsConditions(params: MarketingReportParams): SQL[] {
+		const conditions: SQL[] = [];
 		if (params.from) {
 			conditions.push(gte(adMetricsDaily.date, params.from));
 		}
@@ -821,6 +901,19 @@ export class ReportsService {
 		if (params.provider) {
 			conditions.push(eq(adMetricsDaily.provider, params.provider));
 		}
+		return conditions;
+	}
+
+	/**
+	 * Ad spend in tenant base via resolveBaseAmount (FX-01 / OPS-02c).
+	 * Any row that cannot be converted sets spend_fx_missing — caller must not show ROAS.
+	 */
+	private async sumAdSpend(
+		db: TenantDb,
+		params: MarketingReportParams,
+		tenantBase: string
+	): Promise<{ spend_base: number | null; spend_fx_missing: boolean }> {
+		const conditions = this.adMetricsConditions(params);
 
 		const rows = await db
 			.select({

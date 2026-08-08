@@ -266,6 +266,8 @@ struct TransactionUpdate: Encodable {
 struct ReportPeriod: Decodable {
   let from: String?
   let to: String?
+  let effectiveFrom: String?
+  let effectiveTo: String?
 }
 
 struct ReportSummary: Decodable {
@@ -309,20 +311,22 @@ struct ReportMonthly: Decodable {
 struct MarketingSourceRow: Decodable, Identifiable {
   let source: String
   let leads: Int
-  let closed: Int
+  let treated: Int
   let revenueBase: Int
   var id: String { source }
 }
 
 struct MarketingReport: Decodable {
   let period: ReportPeriod
-  let spendBase: Int
+  let spendBase: Int?
   let revenueBase: Int
   let realRoas: Double?
   let leadsCount: Int
-  let closedCount: Int
+  let treatedCount: Int
   let costPerLead: Int?
-  let costPerClosed: Int?
+  let costPerTreated: Int?
+  let spendFxMissing: Bool
+  let attributionMissing: Bool
   let bySource: [MarketingSourceRow]
 }
 
