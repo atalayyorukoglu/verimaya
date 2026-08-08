@@ -30,7 +30,13 @@ Tarih: 2026-08-08 · Tenant: Demo Klinik (kendi firmamız) · Kaynak: bu turda k
 - [x] **A4 — Randevu tipleri seed olmuş mu?** ✅ Konsültasyon / Tedavi / Kontrol / Transfer.
 - [x] **A5 — `0030` doğrulaması.** ✅ `deleted_at` dört tabloda da var
       (`appointments`, `contacts`, `patients`, `transactions`).
-- [ ] **A6 — `0032_ad_metrics_fx_coherence` (OPS-02c-fx, prod'da çalıştırılacak).**
+- [x] **A6 — `0032_ad_metrics_fx_coherence` (OPS-02c-fx).** ✅ 2026-08-08.
+      Constraint prod'da mevcut; tablo: tenant base **GBP**, 146 satır **TRY**,
+      146'sı snapshot'lı, **0 eksik** → migration null'layacak tutarsız satır
+      bulamadı, backfill gerekmedi. `fx_rate` kaynağı sorusu kapandı.
+      *Not:* bundan sonraki her ads sync, maliyeti düzelttiği satırların
+      snapshot'ını null'lar — o zaman backfill'i tekrar çalıştır (aşağıdaki
+      ikinci sorgu > 0 olur).
       `spend_base` varsa `base_currency`/`fx_rate`/`fx_dated` zorunlu. Migration
       tutarsız satırları null'lar — **null'lanan satır çıkarsa backfill'i tekrar
       çalıştır**, yoksa Pazarlama'da "Kur bilgisi eksik" görünür (yanlış sayı değil).
