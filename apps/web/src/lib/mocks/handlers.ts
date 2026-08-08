@@ -23,6 +23,7 @@ import {
 	financeCategoryUpdateSchema,
 	mergeRecordsSchema,
 	userRoleSchema,
+	memberUpdateSchema,
 	apiKeyCreateSchema,
 	webhookSubscriptionCreateSchema,
 	aiCorrectionCreateSchema,
@@ -541,6 +542,26 @@ export const handlers = [
 		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
 	}),
 
+	http.patch('/v1/members/:id', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as unknown;
+		const parsed = memberUpdateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz rol');
+		const idx = store.members.findIndex(
+			(m) => m.id === params.id && m.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Üye bulunamadı');
+		const existing = store.members[idx]!;
+		if (existing.email === demoUser.email) {
+			return HttpResponse.json(
+				{ error: { code: 'forbidden', message: 'You cannot change your own role' } },
+				{ status: 403 }
+			);
+		}
+		existing.role = parsed.data.role;
+		return HttpResponse.json(existing);
+	}),
+
 	http.get('/v1/audit-logs', ({ request }) => {
 		const url = new URL(request.url);
 		const store = getStore(scenarioFrom(request));
@@ -779,11 +800,24 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.transactions];
-		const { patient_id: patientId, contact_id: contactId, from, to } = parsed.data;
+		const { patient_id: patientId, contact_id: contactId, from, to, kind, status, category, q } =
+			parsed.data;
 		if (patientId) items = items.filter((t) => t.patient_id === patientId);
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
+		if (kind) items = items.filter((t) => t.kind === kind);
+		if (status) items = items.filter((t) => t.status === status);
+		if (category) items = items.filter((t) => t.category === category);
+		if (q) {
+			const needle = q.toLowerCase();
+			items = items.filter(
+				(t) =>
+					t.title.toLowerCase().includes(needle) ||
+					(t.patient_display_name?.toLowerCase().includes(needle) ?? false) ||
+					(t.category?.toLowerCase().includes(needle) ?? false)
+			);
+		}
 		// CONTRACT-02 exception: API orders transactions by occurred_on desc, id desc.
 		const sorted = items.sort(compareByOccurredOnDesc);
 		return HttpResponse.json(paginate(sorted, parsed.data.cursor ?? null, parsed.data.limit));

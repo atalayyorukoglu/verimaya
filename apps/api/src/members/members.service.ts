@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
-import type { MembershipUser, UserRole } from '@verimaya/shared';
+import type { MemberUpdate, MembershipUser, UserRole } from '@verimaya/shared';
 import { member, user } from '../db/schema';
+import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
@@ -53,6 +54,69 @@ export class MembersService {
 				items: page.items.map((row) => toMembershipUser(row, tenantId)),
 				next_cursor: page.next_cursor
 			};
+		});
+	}
+
+	async updateRole(
+		tenantId: string,
+		memberId: string,
+		input: MemberUpdate,
+		actor: AuditActor
+	): Promise<MembershipUser> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select({
+					id: member.id,
+					userId: member.userId,
+					role: member.role,
+					createdAt: member.createdAt,
+					email: user.email,
+					displayName: user.name
+				})
+				.from(member)
+				.innerJoin(user, eq(member.userId, user.id))
+				.where(and(eq(member.id, memberId), eq(member.organizationId, tenantId)))
+				.limit(1);
+
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Member not found' }
+				});
+			}
+
+			if (row.userId === actor.actorId) {
+				throw new ForbiddenException({
+					error: {
+						code: 'forbidden',
+						message: 'You cannot change your own role'
+					}
+				});
+			}
+
+			const previousRole = row.role as UserRole;
+			const [updated] = await db
+				.update(member)
+				.set({ role: input.role })
+				.where(and(eq(member.id, memberId), eq(member.organizationId, tenantId)))
+				.returning({
+					id: member.id,
+					role: member.role,
+					createdAt: member.createdAt
+				});
+
+			const label = `${row.displayName}: ${previousRole} → ${input.role}`;
+			await writeAuditLog(db, tenantId, actor, 'update', 'user', label);
+
+			return toMembershipUser(
+				{
+					id: updated!.id,
+					role: updated!.role,
+					createdAt: updated!.createdAt,
+					email: row.email,
+					displayName: row.displayName
+				},
+				tenantId
+			);
 		});
 	}
 }

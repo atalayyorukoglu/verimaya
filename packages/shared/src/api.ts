@@ -9,6 +9,7 @@ export const apiPaths = {
 	me: `${API_V1_PREFIX}/me`,
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
 	members: `${API_V1_PREFIX}/members`,
+	member: (id: string) => `${API_V1_PREFIX}/members/${id}`,
 	patients: `${API_V1_PREFIX}/patients`,
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
 	patientFinanceSummary: (id: string) => `${API_V1_PREFIX}/patients/${id}/finance-summary`,
@@ -134,7 +135,7 @@ import {
 } from './duplicate.js';
 import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-category.js';
 import { tenantSchema } from './tenant.js';
-import { membershipUserSchema } from './user.js';
+import { membershipUserSchema, memberUpdateSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
 import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
@@ -272,6 +273,10 @@ export const apiContract = {
 	},
 	'GET /v1/members': {
 		response: cursorPageSchema(membershipUserSchema)
+	},
+	'PATCH /v1/members/:id': {
+		body: memberUpdateSchema,
+		response: membershipUserSchema
 	},
 	'GET /v1/audit-logs': {
 		response: cursorPageSchema(auditLogSchema)
