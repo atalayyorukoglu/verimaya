@@ -142,6 +142,13 @@ const tr = {
 	'finance.filters.apply': 'Filtrele',
 	'finance.filters.clear': 'Temizle',
 
+	'appointments.filters.search': 'Ara',
+	'appointments.filters.searchPlaceholder': 'Hasta, klinik, otel veya not…',
+	'appointments.filters.status': 'Durum',
+	'appointments.filters.statusAll': 'Tüm durumlar',
+	'appointments.filters.apply': 'Filtrele',
+	'appointments.filters.clear': 'Temizle',
+
 	// Ücretsiz karne — sonuç ve lead kapısı (LEG-01)
 	'karne.result.gate.eyebrow': 'Sonuç hazır',
 	'karne.result.gate.title': 'Detaylı özeti e-posta ile alın',
@@ -840,6 +847,13 @@ const en: Record<MessageKey, string> = {
 	'finance.filters.categoryAll': 'All categories',
 	'finance.filters.apply': 'Filter',
 	'finance.filters.clear': 'Clear',
+
+	'appointments.filters.search': 'Search',
+	'appointments.filters.searchPlaceholder': 'Patient, clinic, hotel, or notes…',
+	'appointments.filters.status': 'Status',
+	'appointments.filters.statusAll': 'All statuses',
+	'appointments.filters.apply': 'Filter',
+	'appointments.filters.clear': 'Clear',
 
 	'karne.result.gate.eyebrow': 'Result ready',
 	'karne.result.gate.title': 'Get the detailed summary by email',

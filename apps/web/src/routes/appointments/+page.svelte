@@ -9,11 +9,12 @@
 		ContractResponse,
 		Tenant
 	} from '@verimaya/shared';
-	import { apiPaths, appointmentStatusLabels, listUrl, toTenantDayKey } from '@verimaya/shared';
+	import { apiPaths, appointmentStatusLabels, appointmentStatusSchema, listUrl, toTenantDayKey } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatTime } from '$lib/format';
 	import { appointmentStatusTone } from '$lib/status-tone';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
@@ -38,6 +39,11 @@
 	let editing = $state<Appointment | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
+	let q = $state('');
+	let search = $state('');
+	let statusFilter = $state('');
+
+	const hasActiveFilters = $derived(Boolean(search || statusFilter));
 
 	function startOfDay(d: Date) {
 		const x = new Date(d);
@@ -81,7 +87,9 @@
 		queryKey: qs.keys.appointments.list({
 			from: rangeFromDay,
 			to: rangeToDay,
-			patient_id: patientFilterId
+			patient_id: patientFilterId,
+			q: search || null,
+			status: statusFilter || null
 		}),
 		queryFn: () =>
 			apiGet<AppointmentsPage>(
@@ -89,7 +97,9 @@
 					limit: 100,
 					from: rangeFromDay,
 					to: rangeToDay,
-					patient_id: patientFilterId
+					patient_id: patientFilterId,
+					q: search || undefined,
+					status: statusFilter || undefined
 				})
 			),
 		enabled: qs.ready && !!tenantQuery.data
@@ -136,6 +146,17 @@
 	function openCreate() {
 		editing = null;
 		formOpen = true;
+	}
+
+	function submitFilters(e: Event) {
+		e.preventDefault();
+		search = q.trim();
+	}
+
+	function clearFilters() {
+		q = '';
+		search = '';
+		statusFilter = '';
 	}
 
 	function openEdit(appt: Appointment) {
@@ -233,6 +254,41 @@
 			</div>
 		{/snippet}
 	</PageHeader>
+
+	<form
+		class="mb-4 grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4"
+		onsubmit={submitFilters}
+	>
+		<label class="flex flex-col gap-1 text-xs text-text-muted sm:col-span-2">
+			<span>{t('appointments.filters.search')}</span>
+			<input
+				type="search"
+				class="h-9 rounded-md border border-border bg-surface px-3 text-sm text-text"
+				placeholder={t('appointments.filters.searchPlaceholder')}
+				bind:value={q}
+			/>
+		</label>
+		<label class="flex flex-col gap-1 text-xs text-text-muted">
+			<span>{t('appointments.filters.status')}</span>
+			<select
+				class="h-9 rounded-md border border-border bg-surface px-2 text-sm text-text"
+				bind:value={statusFilter}
+			>
+				<option value="">{t('appointments.filters.statusAll')}</option>
+				{#each appointmentStatusSchema.options as status (status)}
+					<option value={status}>{appointmentStatusLabels[status]}</option>
+				{/each}
+			</select>
+		</label>
+		<div class="flex items-end gap-2">
+			<Button type="submit" class="h-9">{t('appointments.filters.apply')}</Button>
+			{#if hasActiveFilters}
+				<Button type="button" variant="outline" class="h-9" onclick={clearFilters}>
+					{t('appointments.filters.clear')}
+				</Button>
+			{/if}
+		</div>
+	</form>
 
 	{#if patientFilterId}
 		<div

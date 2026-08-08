@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
+import { appointmentStatusSchema } from './appointment.js';
 import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
 
 /**
@@ -22,7 +23,9 @@ export const appointmentListQuerySchema = cursorPageParams
 	.extend({
 		patient_id: uuid.optional(),
 		from: isoDate.optional(),
-		to: isoDate.optional()
+		to: isoDate.optional(),
+		status: appointmentStatusSchema.optional(),
+		q: z.string().trim().min(1).max(255).optional()
 	})
 	.strict();
 

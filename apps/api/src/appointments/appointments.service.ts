@@ -5,6 +5,7 @@ import { tenantDayRange } from '@verimaya/shared';
 import { appointments, patients, tenants } from '../db/schema';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toAppointment } from '../common/mappers';
+import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
@@ -29,6 +30,19 @@ export class AppointmentsService {
 			if (params.to) {
 				const { endExclusive } = tenantDayRange(params.to, timezone);
 				filters.push(lt(appointments.startsAt, endExclusive));
+			}
+			if (params.status) filters.push(eq(appointments.status, params.status));
+			if (params.q) {
+				const searchCond = textSearchCondition(params.q, [
+					appointments.patientDisplayName,
+					appointments.title,
+					appointments.notes,
+					appointments.clinicName,
+					appointments.hotelName,
+					appointments.transferNote,
+					appointments.appointmentType
+				]);
+				if (searchCond) filters.push(searchCond);
 			}
 
 			const rows = await db

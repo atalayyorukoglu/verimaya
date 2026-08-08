@@ -727,7 +727,7 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.appointments];
-		const { patient_id: patientId, from, to } = parsed.data;
+		const { patient_id: patientId, from, to, status, q } = parsed.data;
 		if (patientId) items = items.filter((a) => a.patient_id === patientId);
 		const tz = store.tenant.timezone;
 		if (from) {
@@ -737,6 +737,20 @@ export const handlers = [
 		if (to) {
 			const { endExclusive } = tenantDayRange(to, tz);
 			items = items.filter((a) => a.starts_at < endExclusive.toISOString());
+		}
+		if (status) items = items.filter((a) => a.status === status);
+		if (q) {
+			const needle = q.toLowerCase();
+			items = items.filter(
+				(a) =>
+					a.patient_display_name.toLowerCase().includes(needle) ||
+					(a.title?.toLowerCase().includes(needle) ?? false) ||
+					(a.notes?.toLowerCase().includes(needle) ?? false) ||
+					(a.clinic_name?.toLowerCase().includes(needle) ?? false) ||
+					(a.hotel_name?.toLowerCase().includes(needle) ?? false) ||
+					(a.transfer_note?.toLowerCase().includes(needle) ?? false) ||
+					(a.appointment_type?.toLowerCase().includes(needle) ?? false)
+			);
 		}
 		// CONTRACT-02: match the real API's order (created_at desc) — the calendar UI
 		// re-sorts by starts_at client-side regardless, so this doesn't change behavior.
