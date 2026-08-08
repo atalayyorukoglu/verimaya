@@ -685,6 +685,29 @@
     *Not (zamanlama sınırı):* pencere içinde gelen hastanın tahsilatı pencereden
     sonra gerçekleşirse ROAS o dönemde düşük görünür (cohort/nakit zamanlama farkı).
     Kohort bazlı ROAS ayrı bir iş; attribution (OPS-02e) kapanmadan anlamlı değil.
+    - **Kod izi sürüldü (2026-08-08, Cursor + doğrulandı):** `patients.source`'u
+      yazabilecek **iki** yol var, üçüncüsü yok:
+      1. `etl.js:608` — legacy tracker `cases.extra->>'source'` **passthrough**.
+         Sessiz düşüren bir eşleme hatası **yok**; alan neyse o geçiyor.
+      2. `ghl.sync.service.ts:172` — yeni hastada sabit `source='ghl'`
+         (attribution değil, yalnız köken etiketi). Güncellemede hiç yazılmıyor,
+         GHL payload'undaki UTM/form alanları kullanılmıyor.
+    - ⚠️ **ETL'i yeniden çalıştırmak düzeltmez.** `etl.js:922-926` zaten eşlenmiş
+      hastayı `skipped` sayıp atlıyor. Legacy'de veri olsa bile hedefli bir
+      backfill gerekir — düz `etl.js` koşusu değil.
+    - **Karar noktası (tek sorguyla kapanır):** legacy `cases.extra->>'source'`
+      dolu mu?
+      - **Boşsa:** hiçbir backfill attribution'ı icat edemez. Geçmiş ROAS kanal
+        kırılımı kurtarılamaz; yapılacak iş lead girişinde UTM/form kaynağını
+        yakalamak (ileriye dönük), geçmişi doldurmak değil.
+      - **Doluysa:** `cases.extra->>'source'` → `patients.source` hedefli backfill.
+      ```sql
+      -- legacy tracker DB
+      SELECT count(*) FILTER (WHERE nullif(btrim(extra->>'source'), '') IS NOT NULL)
+               AS source_dolu,
+             count(*) AS toplam
+      FROM cases WHERE tenant_id = :tracker_tenant_id;
+      ```
 
 ---
 
