@@ -537,13 +537,19 @@
     `financeSummary`/`patientIdsWithRecords`/`resolveAppointmentLink`; contact
     `duplicateGroups`+settings in-use. `tenants.hasTransactions` bilinçli filtrelenmedi
     (silinmiş mali satır base currency kilidini korur).
-- [ ] **GAP-07 (G-12) — Randevu operasyon metrikleri raporu.** Tracker'da **canlı**
+- [x] **GAP-07 (G-12) — Randevu operasyon metrikleri raporu.** Tracker'da **canlı**
   (`ReportsPage.tsx:33,668` → `DashboardOzetContent`; ayrı rotası yoktu ama Summary sekmesinde
   render ediliyordu — "ölü kod" değil). Eksik olanlar: tamamlanma / no-show / iptal oranı,
   klinik performansı, aylık randevu trendi, vaka türü dağılımı. Veri zaten var
   (`appointmentStatusSchema` `no_show`/`cancelled`/`completed` içeriyor, `clinic_contact_id` var);
   agregasyon yok. `AUDIT-01`'deki `tenantDayRange` altyapısı kullanılmalı.
   **DOMAIN-01 ile uyumlu:** bu operasyon raporu, huni raporu değil.
+  - **Kabul (GAP-07):** `GET /v1/reports/appointment-metrics?from=&to=` sözleşmede; oranlar
+    (completed|no_show|cancelled ÷ toplam) + klinik + tip + aylık trend SQL GROUP BY ile;
+    `tenantDayRange` + `isNull(deletedAt)`; `/reports` özetinde Operasyon bloğu üstte;
+    izolasyon + Istanbul/London timezone + oran testleri yeşil. ✅
+  - **Görüş (GAP-07):** Agregasyon SQL FILTER/GROUP BY (ham satır yok). Klinik null →
+    `Atanmamış`; tip null → `Belirtilmemiş`. Oranlar 0–1. GAP-05/08 dokunulmadı.
 - [ ] **GAP-08 (G-09/G-10) — İçe/dışa aktarım kapsamını ETL eşlemesine bağla.** Tracker
   `tenant_import_export.py` 1482 satır: üç kapsam için şablon → export → dry-run → commit,
   ayrıca 26 sütunluk kişi şablonu + legacy başlık eşleme + formül enjeksiyonu sanitizasyonu
@@ -622,6 +628,12 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
 - **AUDIT-F09-17** Contacts duplicate-detection — sayfalama/cap ekle (şu an O(N) bellek). **(M)**
 - **AUDIT-F09-18** Per-method vs class-level guard standardizasyonu (`ads.controller.ts`, `ghl.controller.ts`); reflection-based `@UseGuards` coverage. **(S)**
 - **AUDIT-F09-19** `tenants.timezone` IANA doğrulaması (`Intl.supportedValuesOf`). **(S)**
+  ⚠️ **Öncelik yükseldi (2026-08-07, GAP-07 review):** GAP-07 ile `tenants.timezone` artık
+  ham SQL'e gömülüyor (`reports.service.ts` `appointmentMetrics` → `sql.raw(tzLiteral)`,
+  `AT TIME ZONE`). Tırnak kaçırma var (`'` → `''`) yani string break-out kapalı; kalan risk
+  doğrulanmamış değerle Postgres hatası → rapor 500. Bu commit'ten **önce** timezone hiçbir
+  ham SQL yolunda değildi. Doğrulama eklenene kadar `appointmentMetrics` bozuk tz değerine
+  karşı savunmasız. **GAP-05'ten önce yapılmalı** — tek satırlık zod refine.
 - **AUDIT-F09-20** `corsOrigins` allowlist hot-reload (read-at-boot artı prod restart gerektirir). **(M, düşük öncelik)**
 
 ### Faz 9 — Tracker gap analizi P2 kalemleri (2026-08-07)

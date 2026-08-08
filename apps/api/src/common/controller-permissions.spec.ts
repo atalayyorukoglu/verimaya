@@ -116,6 +116,7 @@ const reportsPermissions: Array<[keyof ReportsController, OrgPermissionRequireme
 	['monthly', { resource: 'finance', action: 'read' }],
 	['marketing', { resource: 'finance', action: 'read' }],
 	['patientDistribution', { resource: 'finance', action: 'read' }],
+	['appointmentMetrics', { resource: 'finance', action: 'read' }],
 	['balances', { resource: 'finance', action: 'read' }]
 ];
 

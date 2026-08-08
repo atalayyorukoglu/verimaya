@@ -302,6 +302,19 @@ const tr = {
 
 	'reports.statusDist.title': 'Dosya durumu',
 	'reports.statusDist.empty': 'Dosya kaydı yok.',
+	'reports.ops.title': 'Operasyon',
+	'reports.ops.description': 'Randevu tamamlanma, no-show ve klinik performansı.',
+	'reports.ops.empty': 'Bu dönemde randevu yok.',
+	'reports.ops.total': 'Toplam randevu',
+	'reports.ops.completion': 'Tamamlanma',
+	'reports.ops.noShow': 'No-show',
+	'reports.ops.cancellation': 'İptal',
+	'reports.ops.clinics': 'Klinik kırılımı',
+	'reports.ops.types': 'Randevu tipi',
+	'reports.ops.monthly': 'Aylık randevu trendi',
+	'reports.ops.col.count': 'Adet',
+	'reports.ops.col.completion': 'Tamamlanma',
+	'reports.ops.col.ratio': 'Oran',
 
 	'settings.ads.title': 'Reklamlar',
 	'settings.ads.description':
@@ -1054,6 +1067,19 @@ const en: Record<MessageKey, string> = {
 
 	'reports.statusDist.title': 'File status',
 	'reports.statusDist.empty': 'No files yet.',
+	'reports.ops.title': 'Operations',
+	'reports.ops.description': 'Appointment completion, no-show, and clinic performance.',
+	'reports.ops.empty': 'No appointments in this period.',
+	'reports.ops.total': 'Total appointments',
+	'reports.ops.completion': 'Completion',
+	'reports.ops.noShow': 'No-show',
+	'reports.ops.cancellation': 'Cancellation',
+	'reports.ops.clinics': 'Clinic breakdown',
+	'reports.ops.types': 'Appointment type',
+	'reports.ops.monthly': 'Monthly appointment trend',
+	'reports.ops.col.count': 'Count',
+	'reports.ops.col.completion': 'Completion',
+	'reports.ops.col.ratio': 'Share',
 
 	'settings.ads.title': 'Ads',
 	'settings.ads.description':

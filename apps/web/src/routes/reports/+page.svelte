@@ -5,6 +5,7 @@
 	import type {
 		MarketingReport,
 		Patient,
+		ReportAppointmentMetrics,
 		ReportByCategory,
 		ReportByCategoryDetail,
 		ReportMonthly,
@@ -28,7 +29,7 @@
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
-	import { formatDate, formatMoney, formatRatio } from '$lib/format';
+	import { formatDate, formatMoney, formatPercent, formatRatio } from '$lib/format';
 	import { amountInBase, isFxMissing, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -169,6 +170,15 @@
 		queryFn: () =>
 			apiGet<ReportPatientDistribution>(
 				reportUrl('patient-distribution', { from: dateRange.from, to: dateRange.to })
+			),
+		enabled: qs.ready
+	}));
+
+	const appointmentMetricsQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.appointmentMetrics({ from: dateRange.from, to: dateRange.to }),
+		queryFn: () =>
+			apiGet<ReportAppointmentMetrics>(
+				reportUrl('appointment-metrics', { from: dateRange.from, to: dateRange.to })
 			),
 		enabled: qs.ready
 	}));
@@ -507,6 +517,7 @@
 		txQuery.isPending ||
 			summaryQuery.isPending ||
 			patientDistributionQuery.isPending ||
+			appointmentMetricsQuery.isPending ||
 			marketingQuery.isPending ||
 			(!USE_MSW && (byCategoryQuery.isPending || monthlyQuery.isPending))
 	);
@@ -514,6 +525,7 @@
 		txQuery.isError ||
 			summaryQuery.isError ||
 			patientDistributionQuery.isError ||
+			appointmentMetricsQuery.isError ||
 			marketingQuery.isError ||
 			(!USE_MSW && (byCategoryQuery.isError || monthlyQuery.isError)) ||
 			(!USE_MSW && drillCategoryLabel != null && byCategoryDetailQuery.isError)
@@ -661,6 +673,98 @@
 	{:else if failed}
 		<p class="text-sm text-danger">Rapor verisi yüklenemedi.</p>
 	{:else if tab === 'ozet'}
+		{@const ops = appointmentMetricsQuery.data}
+		{@const opsMonthMax = Math.max(1, ...(ops?.monthly.map((m) => m.count) ?? [1]))}
+		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
+			<div class="mb-4">
+				<h2 class="text-sm font-semibold text-text">{t('reports.ops.title')}</h2>
+				<p class="mt-0.5 text-xs text-text-muted">{t('reports.ops.description')}</p>
+			</div>
+			{#if !ops || ops.total === 0}
+				<p class="text-sm text-text-muted">{t('reports.ops.empty')}</p>
+			{:else}
+				<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
+						<p class="text-xs text-text-muted">{t('reports.ops.total')}</p>
+						<p class="mt-1 text-lg font-semibold text-text tabular-nums">{ops.total}</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
+						<p class="text-xs text-text-muted">{t('reports.ops.completion')}</p>
+						<p class="mt-1 text-lg font-semibold text-success tabular-nums">
+							{formatPercent(ops.completion_rate)}
+						</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
+						<p class="text-xs text-text-muted">{t('reports.ops.noShow')}</p>
+						<p class="mt-1 text-lg font-semibold text-warning tabular-nums">
+							{formatPercent(ops.no_show_rate)}
+						</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
+						<p class="text-xs text-text-muted">{t('reports.ops.cancellation')}</p>
+						<p class="mt-1 text-lg font-semibold text-danger tabular-nums">
+							{formatPercent(ops.cancellation_rate)}
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-4 grid gap-4 lg:grid-cols-2">
+					<div>
+						<h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">
+							{t('reports.ops.clinics')}
+						</h3>
+						<ul class="mt-2 divide-y divide-border">
+							{#each ops.by_clinic as row (`${row.clinic_contact_id ?? ''}:${row.clinic_name}`)}
+								<li class="flex items-center justify-between gap-2 py-2 text-sm">
+									<span class="min-w-0 truncate text-text">{row.clinic_name}</span>
+									<span class="shrink-0 text-xs text-text-muted tabular-nums">
+										{row.count} · {formatPercent(row.completion_rate, 0)}
+									</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+					<div>
+						<h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">
+							{t('reports.ops.types')}
+						</h3>
+						<ul class="mt-2 divide-y divide-border">
+							{#each ops.by_appointment_type as row (row.appointment_type)}
+								<li class="flex items-center justify-between gap-2 py-2 text-sm">
+									<span class="min-w-0 truncate text-text">{row.appointment_type}</span>
+									<span class="shrink-0 text-xs text-text-muted tabular-nums">
+										{row.count} · {formatPercent(row.ratio, 0)}
+									</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+
+				<div class="mt-4">
+					<h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">
+						{t('reports.ops.monthly')}
+					</h3>
+					<div class="mt-3 grid grid-cols-6 items-end gap-2 sm:gap-4" style="height: 120px">
+						{#each ops.monthly as bucket (bucket.month)}
+							<div class="flex h-full min-w-0 flex-col justify-end">
+								<div class="flex h-full items-end justify-center">
+									<div
+										class="w-4 rounded-t-[3px] bg-brand/80 sm:w-6"
+										style="height: {Math.max(2, (bucket.count / opsMonthMax) * 100)}%"
+										title="{bucket.month}: {bucket.count}"
+									></div>
+								</div>
+								<p class="mt-2 truncate text-center text-[10px] text-text-muted">
+									{bucket.month.slice(5)}
+								</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</section>
+
 		<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
 			<div class="rounded-lg border border-border bg-surface p-4">
 				<p class="text-xs text-text-muted">

@@ -1,8 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq, gte, isNotNull, isNull, lt, lte } from 'drizzle-orm';
-import { tenantDayRange, calculateRealRoas, type MarketingReport, type MarketingReportParams, type MarketingSourceRow, type ReportBalances, type ReportBalanceRow, type ReportByCategory, type ReportByCategoryDetail, type ReportByCategoryDetailParams, type ReportMonthly, type ReportPatientDistribution, type ReportPeriodParams, type ReportSummary } from '@verimaya/shared';
+import { and, count, eq, gte, isNotNull, isNull, lt, lte, sql, type SQL } from 'drizzle-orm';
+import {
+	tenantDayRange,
+	calculateRealRoas,
+	type MarketingReport,
+	type MarketingReportParams,
+	type MarketingSourceRow,
+	type ReportAppointmentMetrics,
+	type ReportBalances,
+	type ReportBalanceRow,
+	type ReportByCategory,
+	type ReportByCategoryDetail,
+	type ReportByCategoryDetailParams,
+	type ReportMonthly,
+	type ReportPatientDistribution,
+	type ReportPeriodParams,
+	type ReportSummary
+} from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
-import { adMetricsDaily, contacts, patients, tenants, transactions } from '../db/schema';
+import { adMetricsDaily, appointments, contacts, patients, tenants, transactions } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
@@ -56,6 +72,10 @@ function subtitleLabel(subtitle: string | null): string {
 function sourceLabel(source: string | null | undefined): string {
 	const trimmed = (source ?? '').trim();
 	return trimmed || 'Bilinmeyen';
+}
+
+function rate(part: number, total: number): number {
+	return total === 0 ? 0 : part / total;
 }
 
 /**
@@ -170,6 +190,112 @@ export class ReportsService {
 				by_status,
 				by_source,
 				total: rows.length
+			};
+		});
+	}
+
+	/**
+	 * GAP-07: appointment ops metrics. Aggregation is SQL GROUP BY / FILTER only —
+	 * never pull raw appointment rows for client-side counting (legacy raporlar.md).
+	 * Day/month buckets honor tenant timezone via tenantDayRange + AT TIME ZONE.
+	 */
+	async appointmentMetrics(
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<ReportAppointmentMetrics> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const conditions: SQL[] = [isNull(appointments.deletedAt)];
+			if (params.from) {
+				const { start } = await dayRange(db, tenantId, params.from);
+				conditions.push(gte(appointments.startsAt, start));
+			}
+			if (params.to) {
+				const { endExclusive } = await dayRange(db, tenantId, params.to);
+				conditions.push(lt(appointments.startsAt, endExclusive));
+			}
+			const where = and(...conditions);
+			const timezone = await getTenantTz(db, tenantId);
+
+			const [statusRow] = await db
+				.select({
+					total: count(),
+					completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`,
+					noShow: sql<number>`count(*) filter (where ${appointments.status} = 'no_show')`,
+					cancelled: sql<number>`count(*) filter (where ${appointments.status} = 'cancelled')`
+				})
+				.from(appointments)
+				.where(where);
+
+			const total = Number(statusRow?.total ?? 0);
+			const completed = Number(statusRow?.completed ?? 0);
+			const noShow = Number(statusRow?.noShow ?? 0);
+			const cancelled = Number(statusRow?.cancelled ?? 0);
+
+			const clinicNameExpr = sql<string>`coalesce(nullif(trim("appointments"."clinic_name"), ''), 'Atanmamış')`;
+			const clinicRows = await db
+				.select({
+					clinicContactId: appointments.clinicContactId,
+					clinicName: clinicNameExpr,
+					count: count(),
+					completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`
+				})
+				.from(appointments)
+				.where(where)
+				.groupBy(appointments.clinicContactId, clinicNameExpr)
+				.orderBy(sql`count(*) desc`);
+
+			const typeExpr = sql<string>`coalesce(nullif(trim("appointments"."appointment_type"), ''), 'Belirtilmemiş')`;
+			const typeRows = await db
+				.select({
+					appointmentType: typeExpr,
+					count: count()
+				})
+				.from(appointments)
+				.where(where)
+				.groupBy(typeExpr)
+				.orderBy(sql`count(*) desc`);
+
+			// Embed timezone as a literal so SELECT/GROUP BY SQL text matches (drizzle
+			// otherwise binds the column differently across clauses → PG 42803).
+			const tzLiteral = timezone.replace(/'/g, "''");
+			const monthExpr = sql<string>`to_char("appointments"."starts_at" AT TIME ZONE '${sql.raw(tzLiteral)}', 'YYYY-MM')`;
+			const monthRows = await db
+				.select({
+					month: monthExpr,
+					count: count()
+				})
+				.from(appointments)
+				.where(where)
+				.groupBy(monthExpr)
+				.orderBy(monthExpr);
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				total,
+				completion_rate: rate(completed, total),
+				no_show_rate: rate(noShow, total),
+				cancellation_rate: rate(cancelled, total),
+				by_clinic: clinicRows.map((row) => {
+					const n = Number(row.count);
+					return {
+						clinic_contact_id: row.clinicContactId,
+						clinic_name: row.clinicName,
+						count: n,
+						completion_rate: rate(Number(row.completed), n)
+					};
+				}),
+				by_appointment_type: typeRows.map((row) => {
+					const n = Number(row.count);
+					return {
+						appointment_type: row.appointmentType,
+						count: n,
+						ratio: rate(n, total)
+					};
+				}),
+				monthly: monthRows.map((row) => ({
+					month: row.month,
+					count: Number(row.count)
+				}))
 			};
 		});
 	}

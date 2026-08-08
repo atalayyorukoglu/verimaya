@@ -84,6 +84,17 @@ export class ReportsController {
 		return this.reportsService.patientDistribution(getActiveOrgId(req), params);
 	}
 
+	@Get('appointment-metrics')
+	@RequireOrgPermission('finance', 'read')
+	appointmentMetrics(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		return this.reportsService.appointmentMetrics(getActiveOrgId(req), params);
+	}
+
 	@Get('balances')
 	@RequireOrgPermission('finance', 'read')
 	balances(@Req() req: FastifyRequest) {

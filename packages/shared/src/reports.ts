@@ -133,13 +133,53 @@ export const reportMonthlySchema = z.object({
 });
 export type ReportMonthly = z.infer<typeof reportMonthlySchema>;
 
+/** GAP-07: rates are fractions in [0, 1] (UI formats as percent). Total 0 → rates 0. */
+export const reportClinicMetricsRowSchema = z.object({
+	clinic_contact_id: uuid.nullable(),
+	clinic_name: z.string().min(1).max(255),
+	count: z.number().int().nonnegative(),
+	completion_rate: z.number().min(0).max(1)
+});
+export type ReportClinicMetricsRow = z.infer<typeof reportClinicMetricsRowSchema>;
+
+export const reportAppointmentTypeMetricsRowSchema = z.object({
+	appointment_type: z.string().min(1).max(128),
+	count: z.number().int().nonnegative(),
+	ratio: z.number().min(0).max(1)
+});
+export type ReportAppointmentTypeMetricsRow = z.infer<
+	typeof reportAppointmentTypeMetricsRowSchema
+>;
+
+export const reportAppointmentMonthRowSchema = z.object({
+	month: reportMonthKey,
+	count: z.number().int().nonnegative()
+});
+export type ReportAppointmentMonthRow = z.infer<typeof reportAppointmentMonthRowSchema>;
+
+export const reportAppointmentMetricsSchema = z.object({
+	period: reportPeriodSchema,
+	total: z.number().int().nonnegative(),
+	/** completed ÷ total */
+	completion_rate: z.number().min(0).max(1),
+	/** no_show ÷ total */
+	no_show_rate: z.number().min(0).max(1),
+	/** cancelled ÷ total */
+	cancellation_rate: z.number().min(0).max(1),
+	by_clinic: z.array(reportClinicMetricsRowSchema),
+	by_appointment_type: z.array(reportAppointmentTypeMetricsRowSchema),
+	monthly: z.array(reportAppointmentMonthRowSchema)
+});
+export type ReportAppointmentMetrics = z.infer<typeof reportAppointmentMetricsSchema>;
+
 export type ReportUrlPath =
 	| 'summary'
 	| 'by-category'
 	| 'monthly'
 	| 'by-category-detail'
 	| 'patient-distribution'
-	| 'balances';
+	| 'balances'
+	| 'appointment-metrics';
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(

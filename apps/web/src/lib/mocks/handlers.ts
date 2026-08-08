@@ -31,6 +31,7 @@ import {
 	compareByCreatedAtDesc,
 	compareByOccurredOnDesc,
 	tenantDayRange,
+	toTenantDayKey,
 	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
@@ -345,6 +346,85 @@ function buildReportPatientDistribution(
 		by_status,
 		by_source,
 		total: patients.length
+	};
+}
+
+function buildReportAppointmentMetrics(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+) {
+	const tz = store.tenant.timezone;
+	let items = [...store.appointments];
+	if (from) {
+		const { start } = tenantDayRange(from, tz);
+		items = items.filter((a) => a.starts_at >= start.toISOString());
+	}
+	if (to) {
+		const { endExclusive } = tenantDayRange(to, tz);
+		items = items.filter((a) => a.starts_at < endExclusive.toISOString());
+	}
+
+	const total = items.length;
+	const rate = (n: number) => (total === 0 ? 0 : n / total);
+	const completed = items.filter((a) => a.status === 'completed').length;
+	const noShow = items.filter((a) => a.status === 'no_show').length;
+	const cancelled = items.filter((a) => a.status === 'cancelled').length;
+
+	const clinicMap = new Map<
+		string,
+		{ clinic_contact_id: string | null; clinic_name: string; count: number; completed: number }
+	>();
+	for (const a of items) {
+		const clinic_name = (a.clinic_name ?? '').trim() || 'Atanmamış';
+		const key = `${a.clinic_contact_id ?? ''}\0${clinic_name}`;
+		const cur = clinicMap.get(key) ?? {
+			clinic_contact_id: a.clinic_contact_id,
+			clinic_name,
+			count: 0,
+			completed: 0
+		};
+		cur.count += 1;
+		if (a.status === 'completed') cur.completed += 1;
+		clinicMap.set(key, cur);
+	}
+
+	const typeMap = new Map<string, number>();
+	for (const a of items) {
+		const label = (a.appointment_type ?? '').trim() || 'Belirtilmemiş';
+		typeMap.set(label, (typeMap.get(label) ?? 0) + 1);
+	}
+
+	const monthMap = new Map<string, number>();
+	for (const a of items) {
+		const month = toTenantDayKey(new Date(a.starts_at), tz).slice(0, 7);
+		monthMap.set(month, (monthMap.get(month) ?? 0) + 1);
+	}
+
+	return {
+		period: { from, to },
+		total,
+		completion_rate: rate(completed),
+		no_show_rate: rate(noShow),
+		cancellation_rate: rate(cancelled),
+		by_clinic: [...clinicMap.values()]
+			.map((c) => ({
+				clinic_contact_id: c.clinic_contact_id,
+				clinic_name: c.clinic_name,
+				count: c.count,
+				completion_rate: c.count === 0 ? 0 : c.completed / c.count
+			}))
+			.sort((a, b) => b.count - a.count),
+		by_appointment_type: [...typeMap.entries()]
+			.map(([appointment_type, count]) => ({
+				appointment_type,
+				count,
+				ratio: rate(count)
+			}))
+			.sort((a, b) => b.count - a.count),
+		monthly: [...monthMap.entries()]
+			.map(([month, count]) => ({ month, count }))
+			.sort((a, b) => a.month.localeCompare(b.month))
 	};
 }
 
@@ -921,6 +1001,14 @@ export const handlers = [
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
 		return HttpResponse.json(buildReportPatientDistribution(store, from, to));
+	}),
+
+	http.get('/v1/reports/appointment-metrics', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildReportAppointmentMetrics(store, from, to));
 	}),
 
 	http.get('/v1/reports/balances', ({ request }) => {

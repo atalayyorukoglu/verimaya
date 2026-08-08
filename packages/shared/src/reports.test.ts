@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	reportAppointmentMetricsSchema,
 	reportBalanceRowSchema,
 	reportBalancesSchema,
 	reportPatientDistributionSchema,
@@ -34,6 +35,30 @@ describe('reportPatientDistributionSchema', () => {
 			total: 3
 		});
 		expect(parsed.total).toBe(3);
+	});
+});
+
+describe('reportAppointmentMetricsSchema (GAP-07)', () => {
+	it('accepts rates as 0–1 fractions plus clinic/type/monthly breakdowns', () => {
+		const parsed = reportAppointmentMetricsSchema.parse({
+			period: { from: '2026-01-01', to: '2026-03-31' },
+			total: 4,
+			completion_rate: 0.5,
+			no_show_rate: 0.25,
+			cancellation_rate: 0.25,
+			by_clinic: [
+				{
+					clinic_contact_id: null,
+					clinic_name: 'Atanmamış',
+					count: 2,
+					completion_rate: 0.5
+				}
+			],
+			by_appointment_type: [{ appointment_type: 'Belirtilmemiş', count: 4, ratio: 1 }],
+			monthly: [{ month: '2026-01', count: 4 }]
+		});
+		expect(parsed.completion_rate).toBe(0.5);
+		expect(parsed.by_clinic[0]?.clinic_name).toBe('Atanmamış');
 	});
 });
 

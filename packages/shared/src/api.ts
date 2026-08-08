@@ -87,7 +87,8 @@ export const apiPaths = {
 	reportsByCategoryDetail: `${API_V1_PREFIX}/reports/by-category-detail`,
 	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`,
 	reportsPatientDistribution: `${API_V1_PREFIX}/reports/patient-distribution`,
-	reportsBalances: `${API_V1_PREFIX}/reports/balances`
+	reportsBalances: `${API_V1_PREFIX}/reports/balances`,
+	reportsAppointmentMetrics: `${API_V1_PREFIX}/reports/appointment-metrics`
 } as const;
 
 export type ListQueryParams = {
@@ -146,6 +147,7 @@ import { auditLogSchema } from './audit.js';
 import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
 import {
+	reportAppointmentMetricsSchema,
 	reportBalancesSchema,
 	reportByCategoryDetailSchema,
 	reportByCategorySchema,
@@ -365,6 +367,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/balances': {
 		response: reportBalancesSchema
+	},
+	'GET /v1/reports/appointment-metrics': {
+		response: reportAppointmentMetricsSchema
 	}
 } as const;
 
