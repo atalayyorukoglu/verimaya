@@ -83,6 +83,18 @@ const tr = {
 	'patients.duplicates.title': 'Hasta çift kayıtları',
 	'patients.duplicates.description':
 		'Aynı telefon, e-posta veya adla birden fazla hasta dosyası.',
+	'patients.duplicates.hint':
+		'Yalnız randevusuz ve işlemsiz (boş) dosyalar listelenir. Hedefi seçip eksik bilgiyi tamamlayın; fazla dosya kapanır. Randevu veya işlemi olan dosyalar burada görünmez.',
+	'patients.duplicates.scanning': 'Taranıyor…',
+	'patients.duplicates.loadError': 'Çift kayıt listesi yüklenemedi.',
+	'patients.duplicates.emptyTitle': 'Çift kayıt bulunamadı',
+	'patients.duplicates.emptyBody': 'Telefon, e-posta veya ad çakışması yok.',
+	'patients.duplicates.recordCount': '{count} kayıt',
+	'patients.duplicates.open': 'Aç',
+	'patients.duplicates.complete': 'Eksik bilgiyi tamamla, fazla dosyayı kapat',
+	'patients.duplicates.completing': 'Tamamlanıyor…',
+	'patients.duplicates.success': '{count} fazla dosya kapatıldı.',
+	'patients.duplicates.error': 'Tamamlama başarısız',
 	'patients.form.createTitle': 'Yeni dosya aç',
 	'patients.form.editTitle': 'Dosyayı düzenle',
 	'patients.form.description': 'Bu geliş için operasyon dosyası oluşturulur.',
@@ -276,7 +288,7 @@ const tr = {
 	'settings.ghl.loading': 'Bağlantı durumu yükleniyor…',
 	'settings.ghl.loadError': 'Bağlantı durumu yüklenemedi.',
 	'settings.ghl.disconnectError': 'Bağlantı kesilemedi',
-	'settings.ghl.ownership.heading': 'Alan sahipliği (planlanan)',
+	'settings.ghl.ownership.heading': 'Alan sahipliği',
 	'settings.ghl.ownership.lead': 'Lead durumu ve pipeline aşaması: GHL sahibi',
 	'settings.ghl.ownership.ops': 'Randevu, finans ve operasyon alanları: Veri Maya sahibi',
 	'settings.ghl.ownership.conflict': 'Çakışmada kaynak sahibi kazanır, olay denetim kaydına düşer.',
@@ -285,6 +297,11 @@ const tr = {
 		"OAuth olmadan gelen GHL webhook'ları kuyrukta işlenir; contact alanları yeterliyse tenant içinde hasta upsert edilir (source=ghl). Sync özeti jobs ledger'ına yazılır. 6 saatlik ghl.reconcile için ENABLE_INTEGRATION_SCHEDULERS=true gerekir.",
 	'settings.ghl.footnote':
 		'Token AES-GCM ile saklanır. Refresh Adım 41 HTTP istemcisinde kullanılır; access ~24s, refresh kullanıma kadar ~1 yıl.',
+
+	'demo.banner': 'Demo verisi — gerçek kayıt değil',
+
+	'reports.statusDist.title': 'Dosya durumu',
+	'reports.statusDist.empty': 'Dosya kaydı yok.',
 
 	'settings.ads.title': 'Reklamlar',
 	'settings.ads.description':
@@ -798,6 +815,18 @@ const en: Record<MessageKey, string> = {
 	'patients.duplicates.title': 'Patient duplicates',
 	'patients.duplicates.description':
 		'More than one patient file with the same phone, email, or name.',
+	'patients.duplicates.hint':
+		'Only empty files (no appointments or transactions) are listed. Pick a target to fill missing fields; the extra file is closed. Files with appointments or transactions never appear here.',
+	'patients.duplicates.scanning': 'Scanning…',
+	'patients.duplicates.loadError': 'Could not load duplicate groups.',
+	'patients.duplicates.emptyTitle': 'No duplicates found',
+	'patients.duplicates.emptyBody': 'No phone, email, or name collisions.',
+	'patients.duplicates.recordCount': '{count} records',
+	'patients.duplicates.open': 'Open',
+	'patients.duplicates.complete': 'Fill missing info, close extra file',
+	'patients.duplicates.completing': 'Completing…',
+	'patients.duplicates.success': '{count} extra file(s) closed.',
+	'patients.duplicates.error': 'Could not complete',
 	'patients.form.createTitle': 'Open new file',
 	'patients.form.editTitle': 'Edit file',
 	'patients.form.description': 'Creates an operations file for this visit.',
@@ -987,7 +1016,7 @@ const en: Record<MessageKey, string> = {
 	'settings.ghl.loading': 'Loading connection status…',
 	'settings.ghl.loadError': 'Could not load connection status.',
 	'settings.ghl.disconnectError': 'Could not disconnect',
-	'settings.ghl.ownership.heading': 'Field ownership (planned)',
+	'settings.ghl.ownership.heading': 'Field ownership',
 	'settings.ghl.ownership.lead': 'Lead status and pipeline stage: GHL owns',
 	'settings.ghl.ownership.ops': 'Appointments, finance, and ops fields: Veri Maya owns',
 	'settings.ghl.ownership.conflict': 'On conflict the source owner wins; the event is audited.',
@@ -996,6 +1025,11 @@ const en: Record<MessageKey, string> = {
 		'GHL webhooks without OAuth are still processed; clean contacts upsert patients (source=ghl). Sync summary goes to the jobs ledger. 6h ghl.reconcile needs ENABLE_INTEGRATION_SCHEDULERS=true.',
 	'settings.ghl.footnote':
 		'Tokens are stored with AES-GCM. Refresh is used by the Adım 41 HTTP client; access ~24h, refresh ~1y until used.',
+
+	'demo.banner': 'Demo data — not real records',
+
+	'reports.statusDist.title': 'File status',
+	'reports.statusDist.empty': 'No files yet.',
 
 	'settings.ads.title': 'Ads',
 	'settings.ads.description':

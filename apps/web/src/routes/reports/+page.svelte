@@ -27,6 +27,7 @@
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { formatDate, formatMoney, formatRatio } from '$lib/format';
 	import { amountInBase, isFxMissing, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
@@ -331,17 +332,6 @@
 			status,
 			count,
 			pct: Math.round((count / distribution.total) * 100)
-		}));
-	});
-
-	const sourceDist = $derived.by(() => {
-		const distribution = patientDistributionQuery.data;
-		if (!distribution || distribution.by_source.length === 0) return [];
-		const max = Math.max(1, ...distribution.by_source.map((row) => row.count));
-		return distribution.by_source.map(({ source, count }) => ({
-			source,
-			count,
-			pct: Math.round((count / max) * 100)
 		}));
 	});
 
@@ -761,50 +751,27 @@
 			</div>
 		</div>
 
-		<div class="mt-4 grid gap-4 lg:grid-cols-2">
-			<div class="rounded-lg border border-border bg-surface p-4 sm:p-6">
-				<h2 class="text-sm font-semibold text-text">Hasta durum dağılımı</h2>
-				{#if statusDist.length === 0}
-					<p class="mt-3 text-sm text-text-muted">Hasta kaydı yok.</p>
-				{:else}
-					<ul class="mt-4 space-y-3">
-						{#each statusDist as row (row.status)}
-							<li>
-								<div class="flex items-center justify-between gap-2 text-xs">
-									<span class="truncate text-text">{patientStatusLabels[row.status]}</span>
-									<span class="shrink-0 text-text-muted tabular-nums">
-										{row.count} · %{row.pct}
-									</span>
-								</div>
-								<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-									<div class="h-full rounded-full bg-brand" style="width: {row.pct}%"></div>
-								</div>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-
-			<div class="rounded-lg border border-border bg-surface p-4 sm:p-6">
-				<h2 class="text-sm font-semibold text-text">Kaynak dağılımı</h2>
-				{#if sourceDist.length === 0}
-					<p class="mt-3 text-sm text-text-muted">Hasta kaydı yok.</p>
-				{:else}
-					<ul class="mt-4 space-y-3">
-						{#each sourceDist as row (row.source)}
-							<li>
-								<div class="flex items-center justify-between gap-2 text-xs">
-									<span class="truncate text-text">{row.source}</span>
-									<span class="shrink-0 text-text-muted tabular-nums">{row.count}</span>
-								</div>
-								<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-									<div class="h-full rounded-full bg-info" style="width: {row.pct}%"></div>
-								</div>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
+		<div class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
+			<h2 class="text-sm font-semibold text-text">{t('reports.statusDist.title')}</h2>
+			{#if statusDist.length === 0}
+				<p class="mt-3 text-sm text-text-muted">{t('reports.statusDist.empty')}</p>
+			{:else}
+				<ul class="mt-4 space-y-3">
+					{#each statusDist as row (row.status)}
+						<li>
+							<div class="flex items-center justify-between gap-2 text-xs">
+								<span class="truncate text-text">{patientStatusLabels[row.status]}</span>
+								<span class="shrink-0 text-text-muted tabular-nums">
+									{row.count} · %{row.pct}
+								</span>
+							</div>
+							<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+								<div class="h-full rounded-full bg-brand" style="width: {row.pct}%"></div>
+							</div>
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		</div>
 
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">

@@ -638,7 +638,15 @@ export const handlers = [
 
 	http.get('/v1/patients/duplicate-groups', ({ request }) => {
 		const store = getStore(scenarioFrom(request));
-		return HttpResponse.json({ items: findPatientDuplicateGroups(store.patients) });
+		const busy = new Set<string>();
+		for (const a of store.appointments) {
+			if (a.patient_id) busy.add(a.patient_id);
+		}
+		for (const t of store.transactions) {
+			if (t.patient_id) busy.add(t.patient_id);
+		}
+		const empty = store.patients.filter((p) => !busy.has(p.id));
+		return HttpResponse.json({ items: findPatientDuplicateGroups(empty) });
 	}),
 
 	http.post('/v1/patients/merge', async ({ request }) => {
@@ -653,35 +661,52 @@ export const handlers = [
 		const sources = merge_ids.map((id) => store.patients.find((p) => p.id === id));
 		if (sources.some((p) => !p)) return notFound('Birleştirilecek hasta bulunamadı');
 
+		const involved = [keep_id, ...merge_ids];
+		const hasRecords = involved.some(
+			(id) =>
+				store.appointments.some((a) => a.patient_id === id) ||
+				store.transactions.some((t) => t.patient_id === id)
+		);
+		if (hasRecords) {
+			return HttpResponse.json(
+				{
+					error: {
+						code: 'patient_has_records',
+						message:
+							'Cannot complete empty-file merge: a file has appointments or transactions'
+					}
+				},
+				{ status: 409 }
+			);
+		}
+
+		const contactIds = [keep, ...sources]
+			.map((p) => p?.contact_id ?? null)
+			.filter((id): id is string => id != null);
+		if (new Set(contactIds).size > 1) {
+			return HttpResponse.json(
+				{
+					error: {
+						code: 'patient_contact_mismatch',
+						message:
+							'Cannot complete empty-file merge: files link to different contacts'
+					}
+				},
+				{ status: 409 }
+			);
+		}
+
 		for (const src of sources) {
 			if (!src) continue;
 			if (!keep.phone && src.phone) keep.phone = src.phone;
 			if (!keep.email && src.email) keep.email = src.email;
 			if (!keep.notes && src.notes) keep.notes = src.notes;
-			if (!keep.contact_id && src.contact_id) keep.contact_id = src.contact_id;
 			if (!keep.source && src.source) keep.source = src.source;
+			if (!keep.contact_id && src.contact_id) keep.contact_id = src.contact_id;
 		}
 		keep.updated_at = nowIso();
 
 		const drop = new Set(merge_ids);
-		for (const a of store.appointments) {
-			if (a.patient_id && drop.has(a.patient_id)) {
-				a.patient_id = keep_id;
-				a.patient_display_name = keep.full_name;
-			}
-		}
-		for (const t of store.transactions) {
-			if (t.patient_id && drop.has(t.patient_id)) {
-				t.patient_id = keep_id;
-				t.patient_display_name = keep.full_name;
-			}
-		}
-		for (const f of store.files) {
-			if (drop.has(f.patient_id)) f.patient_id = keep_id;
-		}
-		for (const n of store.caseNotes) {
-			if (drop.has(n.patient_id)) n.patient_id = keep_id;
-		}
 		store.patients = store.patients.filter((p) => !drop.has(p.id));
 		return HttpResponse.json(keep);
 	}),

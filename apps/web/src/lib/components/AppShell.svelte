@@ -476,6 +476,15 @@
 			</div>
 		</header>
 
+		{#if USE_MSW}
+			<div
+				class="shrink-0 border-b border-warning/40 bg-warning/10 px-4 py-2 text-center text-sm text-warning"
+				role="status"
+			>
+				{t('demo.banner')}
+			</div>
+		{/if}
+
 		<main
 			class="min-w-0 flex-1 overflow-x-hidden p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-6 md:min-h-0 md:overflow-y-auto md:pb-6"
 		>

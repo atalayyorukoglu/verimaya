@@ -312,16 +312,23 @@
   - **Görüş (Adım 2+3):** Tek migration `0029_patient_status_operational.sql`: legacy →
     `scheduled`, DEFAULT `scheduled`, CHECK daraltıldı. Marketing `closed_*` → `treated_*`
     (`status === 'treated'`). ETL/MSW/web güncellendi. iOS bilinçli atlandı (IOS-01 drift notu).
-- [ ] **Adım 4 — GHL sahiplik kuralını "planlanan"dan çıkar:** `settings.ghl.ownership.heading`
+- [x] **Adım 4 — GHL sahiplik kuralını "planlanan"dan çıkar:** `settings.ghl.ownership.heading`
   başlığındaki "(planlanan)" kaldırılır; kural yazılı olduğu gibi uygulanır
   (çakışmada kaynak sahibi kazanır + audit). İdeal akış: GHL'de lead olgunlaşınca
   patient app'e düşer; **elle oluşturma yedek yol olarak kalır**, birincil akış değil.
-- [ ] **Adım 5 — Raporlarda huni vurgusunu ayır:** `/reports` "Hasta durum dağılımı" ve
+  - **Görüş (Adım 4):** `settings.ghl.ownership.heading` → "Alan sahipliği" / "Field ownership"
+    (tr+en); "(planlanan)/(planned)" kalktı.
+- [x] **Adım 5 — Raporlarda huni vurgusunu ayır:** `/reports` "Hasta durum dağılımı" ve
   "Kaynak dağılımı" kartları operasyon diline çevrilir veya pazarlama bloğuna taşınır.
   `source` alanı kalır (ROAS/hasta-başı-maliyet buna bağlı) ama **satış hunisi olarak sunulmaz**.
-- [ ] **Adım 6 — MSW demo notunu ayır:** Demo/fixture verisindeki lead dili "demo" etiketiyle
+  - **Görüş (Adım 5):** "Hasta durum dağılımı" → "Dosya durumu" (i18n). Özet'teki
+    `by_source` "Kaynak dağılımı" kartı kaldırıldı (ölü `sourceDist` dahil); pazarlama
+    "Kaynak kırılımı" kaldı (Dosya / Tedavi edilen).
+- [x] **Adım 6 — MSW demo notunu ayır:** Demo/fixture verisindeki lead dili "demo" etiketiyle
   işaretlenir; gerçek panelde operasyon dili görünür.
-- [ ] **Adım 7 — Hasta birleştirmeyi "boş dosya" ile sınırla (karar: Açık sorular §2).**
+  - **Görüş (Adım 6):** Fixture kirletilmedi; MSW açıkken AppShell üstünde tek şerit
+    (`demo.banner`); MSW kapalıyken render yok. DevToolbar senaryo seçici ayrı kaldı.
+- [x] **Adım 7 — Hasta birleştirmeyi "boş dosya" ile sınırla (karar: Açık sorular §2).**
   Dedup'ın amacı aynı **kişinin kayıt bilgisini** birleştirmek; kişinin **gelişlerini** tek
   dosyada toplamak değil. Bugünkü `merge` bu ikisini ayırmıyor — aynı işlemde hem kapak
   bilgisini topluyor hem randevu/işlem taşıyor. Ayrılacak.
@@ -346,6 +353,9 @@
     merge denemesi 409 dönüyor (negatif test); iki boş kayıtta telefon+e-posta tek kayıtta
     birleşiyor ve diğeri siliniyor (pozitif test); tenant izolasyon spec'i geçiyor;
     `docs/legacy-reference/kisiler.md` hasta-merge satırı bu kararla güncellenmiş.
+  - **Görüş (Adım 7):** Boş kapak dedup: randevu/işlem → grup dışı + 409 `patient_has_records`;
+    FK taşıma kalktı; boş alan doldurma (telefon/e-posta/kaynak/notlar/`contact_id`); farklı
+    `contact_id` → grupta ayrılır + 409 `patient_contact_mismatch`. Contacts dedup dokunulmadı.
 - **Dosyalar:** `packages/shared/src/patient.ts`, `apps/api/src/db/schema/patients.ts` + yeni migration,
   `apps/api/src/patients/patients.service.ts`, `apps/web/src/routes/patients/**`,
   `apps/web/src/routes/reports/+page.svelte`, `apps/web/src/lib/components/PatientFormDialog.svelte`,
@@ -356,7 +366,8 @@
 - **Kabul:** `/patients` ekranında hiçbir yerde satış hunisi dili yok; `patientStatusSchema`
   yalnız operasyon değerleri içeriyor; 757 hastanın statüsü yeni enum'a taşınmış;
   GHL sahiplik metni "(planlanan)" değil; tenant izolasyon testleri yeşil.
-- **Görüş:** _(doldurulacak)_
+- **Görüş:** DOMAIN-01 Adım 1–7 kapandı. Ownership metni kesin; raporlarda durum = dosya
+  durumu, özet kaynak kartı kalktı (pazarlama kırılımı kaldı); MSW demo şeridi AppShell'de.
 
 ---
 
