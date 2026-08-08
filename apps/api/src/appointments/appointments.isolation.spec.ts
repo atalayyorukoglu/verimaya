@@ -165,4 +165,61 @@ describe('appointments tenant isolation', () => {
 		const stillB = await appointmentsService.list(tenantB, { limit: 25 });
 		expect(stillB.items.find((a) => a.id === appointmentB)?.title).toBe('Appointment B');
 	});
+
+	it("GAP-04: status='no_show' returns only matching appointments", async () => {
+		const noShowId = await withTenantSession(tenantA, async () => {
+			const a = await appointmentsService.createWithDb(db, tenantA, {
+				patient_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'No-show slot',
+				appointment_type: null,
+				status: 'no_show',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+			return a.id;
+		});
+
+		const byStatus = await appointmentsService.list(tenantA, { limit: 25, status: 'no_show' });
+		expect(byStatus.items.every((a) => a.status === 'no_show')).toBe(true);
+		expect(byStatus.items.map((a) => a.id)).toEqual([noShowId]);
+		expect(byStatus.items.map((a) => a.id)).not.toContain(appointmentA);
+	});
+
+	it('GAP-04: q matches patient display name substring only', async () => {
+		const searchablePatientId = await withTenantSession(tenantA, async () => {
+			const p = await patientsService.createWithDb(db, tenantA, {
+				full_name: 'Zeynep UniqueGap04'
+			});
+			return p.id;
+		});
+		const matchId = await withTenantSession(tenantA, async () => {
+			const a = await appointmentsService.createWithDb(db, tenantA, {
+				patient_id: searchablePatientId,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Searchable visit',
+				appointment_type: null,
+				status: 'confirmed',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+			return a.id;
+		});
+
+		const byQ = await appointmentsService.list(tenantA, { limit: 25, q: 'UniqueGap04' });
+		expect(byQ.items.map((a) => a.id)).toEqual([matchId]);
+		expect(byQ.items.map((a) => a.id)).not.toContain(appointmentA);
+	});
 });

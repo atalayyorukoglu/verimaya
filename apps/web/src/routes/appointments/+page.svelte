@@ -5,14 +5,22 @@
 	import type {
 		Appointment,
 		AppointmentCreate,
+		AppointmentStatus,
 		AppointmentUpdate,
 		ContractResponse,
 		Tenant
 	} from '@verimaya/shared';
-	import { apiPaths, appointmentStatusLabels, listUrl, toTenantDayKey } from '@verimaya/shared';
+	import {
+		apiPaths,
+		appointmentStatusLabels,
+		appointmentStatusSchema,
+		listUrl,
+		toTenantDayKey
+	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatTime } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { appointmentStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -38,6 +46,12 @@
 	let editing = $state<Appointment | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
+
+	let qInput = $state('');
+	let appliedQ = $state('');
+	let status = $state('');
+
+	const statusOptions = $derived(appointmentStatusSchema.options);
 
 	function startOfDay(d: Date) {
 		const x = new Date(d);
@@ -73,23 +87,35 @@
 		toTenantDayKey(view === 'day' ? rangeStart : addDays(rangeStart, 6), tenantTimezone)
 	);
 
+	const listFilters = $derived({
+		from: rangeFromDay,
+		to: rangeToDay,
+		patient_id: patientFilterId,
+		q: appliedQ || undefined,
+		status: (status || undefined) as AppointmentStatus | undefined
+	});
+
 	const days = $derived(
 		view === 'day' ? [rangeStart] : Array.from({ length: 7 }, (_, i) => addDays(rangeStart, i))
 	);
 
 	const appointmentsQuery = createQuery(() => ({
 		queryKey: qs.keys.appointments.list({
-			from: rangeFromDay,
-			to: rangeToDay,
-			patient_id: patientFilterId
+			from: listFilters.from,
+			to: listFilters.to,
+			patient_id: listFilters.patient_id,
+			q: listFilters.q,
+			status: listFilters.status
 		}),
 		queryFn: () =>
 			apiGet<AppointmentsPage>(
 				listUrl('appointments', {
 					limit: 100,
-					from: rangeFromDay,
-					to: rangeToDay,
-					patient_id: patientFilterId
+					from: listFilters.from,
+					to: listFilters.to,
+					patient_id: listFilters.patient_id,
+					q: listFilters.q,
+					status: listFilters.status
 				})
 			),
 		enabled: qs.ready && !!tenantQuery.data
@@ -133,6 +159,17 @@
 		)
 	);
 
+	function applyFilters(e: Event) {
+		e.preventDefault();
+		appliedQ = qInput.trim();
+	}
+
+	function clearFilters() {
+		qInput = '';
+		appliedQ = '';
+		status = '';
+	}
+
 	function openCreate() {
 		editing = null;
 		formOpen = true;
@@ -156,7 +193,7 @@
 			formOpen = false;
 			editing = null;
 		} catch (err) {
-			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			formError = err instanceof Error ? err.message : t('appointments.saveFailed');
 		} finally {
 			saving = false;
 		}
@@ -172,11 +209,11 @@
 </script>
 
 <svelte:head>
-	<title>Randevular · Veri Maya</title>
+	<title>{t('appointments.title')} · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
-	<PageHeader title="Randevular" description="Gün ve hafta takvim görünümü.">
+	<PageHeader title={t('appointments.title')} description={t('appointments.description')}>
 		{#snippet actions()}
 			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 				<div class="flex rounded-[6px] border border-border bg-surface p-0.5">
@@ -187,7 +224,7 @@
 							: 'text-text-muted'}"
 						onclick={() => (view = 'day')}
 					>
-						Gün
+						{t('appointments.view.day')}
 					</button>
 					<button
 						type="button"
@@ -196,7 +233,7 @@
 							: 'text-text-muted'}"
 						onclick={() => (view = 'week')}
 					>
-						Hafta
+						{t('appointments.view.week')}
 					</button>
 				</div>
 				<div class="flex items-center gap-1">
@@ -204,7 +241,7 @@
 						variant="ghost"
 						size="icon"
 						type="button"
-						aria-label="Önceki"
+						aria-label={t('appointments.prev')}
 						onclick={() => shift(-1)}
 					>
 						<ChevronLeft class="size-4" />
@@ -214,7 +251,7 @@
 						variant="ghost"
 						size="icon"
 						type="button"
-						aria-label="Sonraki"
+						aria-label={t('appointments.next')}
 						onclick={() => shift(1)}
 					>
 						<ChevronRight class="size-4" />
@@ -226,10 +263,10 @@
 							anchor = startOfDay(new Date());
 						}}
 					>
-						Bugün
+						{t('appointments.today')}
 					</Button>
 				</div>
-				<Button type="button" onclick={openCreate}>Yeni randevu</Button>
+				<Button type="button" onclick={openCreate}>{t('appointments.new')}</Button>
 			</div>
 		{/snippet}
 	</PageHeader>
@@ -238,9 +275,9 @@
 		<div
 			class="mb-4 flex flex-wrap items-center gap-2 rounded-[6px] border border-border bg-surface-2/50 px-3 py-2 text-sm"
 		>
-			<span class="text-text-muted">Hasta filtresi:</span>
+			<span class="text-text-muted">{t('appointments.filter.patient')}</span>
 			<span class="font-medium text-text">
-				{filterPatient?.full_name ?? 'Yükleniyor…'}
+				{filterPatient?.full_name ?? t('appointments.loading')}
 			</span>
 			<button
 				type="button"
@@ -248,15 +285,43 @@
 				onclick={clearPatientFilter}
 			>
 				<X class="size-3.5" />
-				Temizle
+				{t('appointments.filter.clearPatient')}
 			</button>
 		</div>
 	{/if}
 
+	<form
+		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center"
+		onsubmit={applyFilters}
+	>
+		<input
+			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:min-w-[12rem]"
+			placeholder={t('appointments.filter.qPlaceholder')}
+			bind:value={qInput}
+		/>
+		<select
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
+			bind:value={status}
+		>
+			<option value="">{t('appointments.filter.statusAll')}</option>
+			{#each statusOptions as s (s)}
+				<option value={s}>{appointmentStatusLabels[s]}</option>
+			{/each}
+		</select>
+		<div class="flex gap-2">
+			<Button type="submit" variant="secondary">{t('appointments.filter.apply')}</Button>
+			{#if appliedQ || status}
+				<Button type="button" variant="outline" onclick={clearFilters}
+					>{t('appointments.filter.clear')}</Button
+				>
+			{/if}
+		</div>
+	</form>
+
 	{#if appointmentsQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('appointments.loading')}</p>
 	{:else if appointmentsQuery.isError}
-		<p class="text-sm text-danger">Randevular yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('appointments.loadError')}</p>
 	{:else}
 		<div class="grid min-w-0 gap-3 {view === 'week' ? 'md:grid-cols-7' : 'grid-cols-1'}">
 			{#each days as day (day.toISOString())}
@@ -276,7 +341,9 @@
 					</header>
 					<ul class="min-h-24 space-y-1.5 p-2">
 						{#if items.length === 0}
-							<li class="px-1 py-3 text-center text-xs text-text-faint">Boş</li>
+							<li class="px-1 py-3 text-center text-xs text-text-faint">
+								{t('appointments.emptyDay')}
+							</li>
 						{:else}
 							{#each items as appt (appt.id)}
 								<li>
@@ -292,7 +359,7 @@
 											{appt.patient_display_name}
 										</p>
 										<p class="truncate text-[11px] text-text-faint">
-											{appt.title ?? appt.appointment_type ?? 'Randevu'}
+											{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
 										</p>
 										<div class="mt-1">
 											<StatusBadge
@@ -311,9 +378,9 @@
 
 		<section class="mt-8 min-w-0">
 			<div class="mb-3">
-				<h2 class="text-sm font-semibold text-text">Operasyon listesi</h2>
+				<h2 class="text-sm font-semibold text-text">{t('appointments.ops.heading')}</h2>
 				<p class="mt-0.5 text-xs text-text-muted">
-					Seçili aralıktaki randevular — hasta notları kart üzerinde (takvim değişmeden).
+					{t('appointments.ops.description')}
 				</p>
 			</div>
 			<AppointmentOpsList appointments={rangeAppointments} onedit={openEdit} />

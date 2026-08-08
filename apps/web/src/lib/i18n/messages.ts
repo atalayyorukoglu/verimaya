@@ -369,6 +369,30 @@ const tr = {
 	'finance.filter.apply': 'Filtrele',
 	'finance.filter.clear': 'Temizle',
 
+	// Randevular (GAP-04)
+	'appointments.title': 'Randevular',
+	'appointments.description': 'Gün ve hafta takvim görünümü.',
+	'appointments.view.day': 'Gün',
+	'appointments.view.week': 'Hafta',
+	'appointments.prev': 'Önceki',
+	'appointments.next': 'Sonraki',
+	'appointments.today': 'Bugün',
+	'appointments.new': 'Yeni randevu',
+	'appointments.loading': 'Yükleniyor…',
+	'appointments.loadError': 'Randevular yüklenemedi.',
+	'appointments.emptyDay': 'Boş',
+	'appointments.fallbackTitle': 'Randevu',
+	'appointments.saveFailed': 'Kayıt başarısız',
+	'appointments.filter.patient': 'Hasta filtresi:',
+	'appointments.filter.clearPatient': 'Temizle',
+	'appointments.filter.qPlaceholder': 'Hasta, not, klinik, otel…',
+	'appointments.filter.statusAll': 'Tüm durumlar',
+	'appointments.filter.apply': 'Filtrele',
+	'appointments.filter.clear': 'Temizle',
+	'appointments.ops.heading': 'Operasyon listesi',
+	'appointments.ops.description':
+		'Seçili aralıktaki randevular — hasta notları kart üzerinde (takvim değişmeden).',
+
 	// Finans · AI ile işlem (MONEY-01)
 	'finance.ai.title': 'AI ile İşlem',
 	'finance.ai.description':
@@ -1094,6 +1118,29 @@ const en: Record<MessageKey, string> = {
 	'finance.filter.categoryPlaceholder': 'Category (exact name)',
 	'finance.filter.apply': 'Filter',
 	'finance.filter.clear': 'Clear',
+
+	'appointments.title': 'Appointments',
+	'appointments.description': 'Day and week calendar view.',
+	'appointments.view.day': 'Day',
+	'appointments.view.week': 'Week',
+	'appointments.prev': 'Previous',
+	'appointments.next': 'Next',
+	'appointments.today': 'Today',
+	'appointments.new': 'New appointment',
+	'appointments.loading': 'Loading…',
+	'appointments.loadError': 'Could not load appointments.',
+	'appointments.emptyDay': 'Empty',
+	'appointments.fallbackTitle': 'Appointment',
+	'appointments.saveFailed': 'Save failed',
+	'appointments.filter.patient': 'Patient filter:',
+	'appointments.filter.clearPatient': 'Clear',
+	'appointments.filter.qPlaceholder': 'Patient, notes, clinic, hotel…',
+	'appointments.filter.statusAll': 'All statuses',
+	'appointments.filter.apply': 'Filter',
+	'appointments.filter.clear': 'Clear',
+	'appointments.ops.heading': 'Operations list',
+	'appointments.ops.description':
+		'Appointments in the selected range — patient notes on cards (calendar unchanged).',
 
 	'finance.ai.title': 'AI Transaction',
 	'finance.ai.description':

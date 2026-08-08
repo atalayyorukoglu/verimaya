@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { appointmentStatusSchema } from './appointment.js';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
 import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
 
@@ -18,11 +19,14 @@ import { transactionKindSchema, transactionStatusSchema } from './transaction.js
  *   each to UTC `[start, endExclusive)` bounds on `starts_at` (TIME-01).
  */
 
+/** GAP-04 (G-05): status (exact) + q (patient name / notes / clinic / hotel). */
 export const appointmentListQuerySchema = cursorPageParams
 	.extend({
 		patient_id: uuid.optional(),
 		from: isoDate.optional(),
-		to: isoDate.optional()
+		to: isoDate.optional(),
+		status: appointmentStatusSchema.optional(),
+		q: z.string().trim().min(1).max(255).optional()
 	})
 	.strict();
 

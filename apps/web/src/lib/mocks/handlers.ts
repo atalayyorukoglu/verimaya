@@ -772,8 +772,9 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.appointments];
-		const { patient_id: patientId, from, to } = parsed.data;
+		const { patient_id: patientId, from, to, status, q } = parsed.data;
 		if (patientId) items = items.filter((a) => a.patient_id === patientId);
+		if (status) items = items.filter((a) => a.status === status);
 		const tz = store.tenant.timezone;
 		if (from) {
 			const { start } = tenantDayRange(from, tz);
@@ -782,6 +783,16 @@ export const handlers = [
 		if (to) {
 			const { endExclusive } = tenantDayRange(to, tz);
 			items = items.filter((a) => a.starts_at < endExclusive.toISOString());
+		}
+		if (q) {
+			const needle = q.toLowerCase();
+			items = items.filter(
+				(a) =>
+					a.patient_display_name.toLowerCase().includes(needle) ||
+					(a.notes?.toLowerCase().includes(needle) ?? false) ||
+					(a.clinic_name?.toLowerCase().includes(needle) ?? false) ||
+					(a.hotel_name?.toLowerCase().includes(needle) ?? false)
+			);
 		}
 		// CONTRACT-02: match the real API's order (created_at desc) — the calendar UI
 		// re-sorts by starts_at client-side regardless, so this doesn't change behavior.

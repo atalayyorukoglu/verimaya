@@ -498,9 +498,14 @@
 > günlük sürtünme yaratır. PILOT-02 sırasında hangisinin gerçekten eksik olduğu ölçülsün;
 > freeze bitince sıraya girsin.
 
-- [ ] **GAP-04 (G-05) — Randevu arama + durum filtresi.** `appointmentListQuerySchema` yalnız
+- [x] **GAP-04 (G-05) — Randevu arama + durum filtresi.** `appointmentListQuerySchema` yalnız
   `patient_id, from, to`. Tracker'da `status_id`, `q` (not/kişi adı/**tarih**), `contact_involves`
   vardı (`appointments.py:138-205`). En az `q` + `status` taşınmalı.
+  - **Kabul (GAP-04):** `appointmentListQuerySchema` `q` + `status` kabul ediyor; API, MSW ve web
+    aynı şemadan türüyor; `/appointments` filtre çubuğu (GAP-03 finance deseni) çalışıyor; `q`
+    hasta adı / not / klinik / otel ilike; tanımsız parametre hâlâ 400 (`.strict()` korunur). ✅
+  - **Görüş (GAP-04):** `contact_involves` ve tarih-q taşınmadı (pilot minimum). Status exact enum.
+    Sayfa metinleri `messages.ts`'e alındı. **GAP-05/07/08 dokunulmadı.**
 - [ ] **GAP-05 (G-03/G-04) — Sunucu tarafı işlem denetim motoru.** Tracker
   `services/transaction_audit.py` (310 satır, 8 kural: `case_required`, `case_forbidden`,
   `contact_type_mismatch`, `responsible_not_internal`, `contact_equals_responsible`,

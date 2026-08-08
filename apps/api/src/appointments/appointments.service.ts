@@ -6,6 +6,7 @@ import { appointments, patients, tenants } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toAppointment } from '../common/mappers';
+import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
@@ -31,6 +32,14 @@ export class AppointmentsService {
 				const { endExclusive } = tenantDayRange(params.to, timezone);
 				filters.push(lt(appointments.startsAt, endExclusive));
 			}
+			if (params.status) filters.push(eq(appointments.status, params.status));
+			const searchCond = textSearchCondition(params.q, [
+				appointments.patientDisplayName,
+				appointments.notes,
+				appointments.clinicName,
+				appointments.hotelName
+			]);
+			if (searchCond) filters.push(searchCond);
 
 			const rows = await db
 				.select()
