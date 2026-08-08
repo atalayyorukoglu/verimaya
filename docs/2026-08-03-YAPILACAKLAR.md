@@ -622,6 +622,18 @@
 - [ ] Meta: 7 gün veri, idempotent sync, log denetimi
 - [ ] Google: aynı
 - [ ] Hata yüzeyleme + sync penceresi doğrulaması
+- [ ] **OPS-02c — Reklam harcamasında para birimi yok (2026-08-08 prod doğrulaması).**
+  `ad_metrics_daily` tablosunda **currency kolonu yok** (`spend_minor` tek başına);
+  `reports/marketing` bunu doğrudan tenant base'i (GBP) sayıyor. Google Ads API maliyeti
+  **reklam hesabının para biriminde** döner — hesap TRY ise 574.459 "GBP" olarak okunur,
+  gerçek karşılığı ~£9.100'dür. **Gerçek ROAS'ta 60 kata varan hata riski.**
+  Prod'da bugün: google, 146 gün (2026-04-08 → 08-01), toplam 574.459,57 → ROAS 0,31×
+  görünüyor; doğru para birimiyle ~20× olabilir.
+  - `ad_metrics_daily`'ye `currency` + FX-01 deseniyle `spend_base` / `fx_rate` / `fx_dated`.
+  - Sync sırasında hesabın para birimi API'den okunup yazılmalı (tahmin edilmemeli).
+  - Rapor tarafı `resolveBaseAmount` mantığını kullanmalı — işlemlerde zaten var,
+    reklam harcamasında yok. İki yerde iki farklı doğru olmasın.
+  - **OPS-02 kabulünün parçası:** para birimi doğrulanmadan ROAS rakamı müşteriye gösterilmez.
 
 ---
 
