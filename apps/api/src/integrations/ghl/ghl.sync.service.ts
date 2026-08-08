@@ -94,7 +94,7 @@ export class GhlSyncService {
 				fullName,
 				phone: normStr(remote.phone),
 				email: normEmail(remote.email),
-				status: 'lead',
+				status: 'scheduled',
 				notes: 'ignored-by-ownership'
 			},
 			'ghl'
@@ -168,7 +168,7 @@ export class GhlSyncService {
 					fullName: String(ownedPatch.fullName),
 					phone: ownedPatch.phone != null ? String(ownedPatch.phone) : null,
 					email: ownedPatch.email != null ? String(ownedPatch.email) : null,
-					status: String(ownedPatch.status ?? 'lead'),
+					status: String(ownedPatch.status ?? 'scheduled'),
 					source: GHL_SOURCE,
 					notes: null
 				})

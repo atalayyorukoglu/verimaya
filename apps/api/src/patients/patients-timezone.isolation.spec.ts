@@ -82,7 +82,7 @@ describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §
 					email: null,
 					notes: null,
 					source: null,
-					status: 'lead',
+					status: 'scheduled',
 					assigned_user_id: null,
 					contact_id: null
 				});

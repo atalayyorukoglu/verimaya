@@ -7,15 +7,11 @@ import type { AuditAction, AuditEntity } from './audit.js';
 import type { UserRole } from './user.js';
 
 export const patientStatusLabels: Record<PatientStatus, string> = {
-	lead: 'Lead',
-	contacted: 'İletişime geçildi',
-	qualified: 'Nitelikli',
-	scheduled: 'Randevu alındı',
+	scheduled: 'Planlandı',
 	arrived: 'Geldi',
-	treated: 'Tedavi edildi',
+	treated: 'Tedavi tamamlandı',
 	follow_up: 'Takip',
-	closed_won: 'Kazanıldı',
-	closed_lost: 'Kaybedildi'
+	cancelled: 'İptal'
 };
 
 export const appointmentStatusLabels: Record<AppointmentStatus, string> = {

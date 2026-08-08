@@ -63,17 +63,7 @@ export const demoUser: MembershipUser = {
 	role: 'owner'
 };
 
-const STATUSES: PatientStatus[] = [
-	'lead',
-	'contacted',
-	'qualified',
-	'scheduled',
-	'arrived',
-	'treated',
-	'follow_up',
-	'closed_won',
-	'closed_lost'
-];
+const STATUSES: PatientStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];
 
 const SOURCES = ['Meta Ads', 'Google Ads', 'WhatsApp', 'Referans', 'GHL', 'Website'];
 
@@ -1014,7 +1004,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 	// Edge case: very long display name near the top of the list
 	patients[1] = makePatient({
 		full_name: LONG_NAME,
-		status: 'qualified',
+		status: 'scheduled',
 		source: 'WhatsApp',
 		notes: 'Uzun isim uç durumu — tablo/kart kırılımını test eder.'
 	});
@@ -1027,7 +1017,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			full_name: 'Atalay Demir',
 			phone: '0555 111 22 33',
 			email: null,
-			status: 'lead',
+			status: 'scheduled',
 			source: 'GHL',
 			notes: 'Çift kayıt demosu — aynı telefon / aynı ad.',
 			assigned_user_id: null,

@@ -13,7 +13,7 @@ export const patients = pgTable(
 		fullName: text('full_name').notNull(),
 		phone: text('phone'),
 		email: text('email'),
-		status: text('status').notNull().default('lead'),
+		status: text('status').notNull().default('scheduled'),
 		source: text('source'),
 		notes: text('notes'),
 		assignedUserId: uuid('assigned_user_id').references(() => user.id, {

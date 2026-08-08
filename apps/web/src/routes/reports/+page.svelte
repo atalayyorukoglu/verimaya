@@ -28,6 +28,7 @@
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatMoney, formatRatio } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { amountInBase, isFxMissing, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -763,9 +764,9 @@
 
 		<div class="mt-4 grid gap-4 lg:grid-cols-2">
 			<div class="rounded-lg border border-border bg-surface p-4 sm:p-6">
-				<h2 class="text-sm font-semibold text-text">Hasta durum dağılımı</h2>
+				<h2 class="text-sm font-semibold text-text">{t('reports.ops.statusDistribution')}</h2>
 				{#if statusDist.length === 0}
-					<p class="mt-3 text-sm text-text-muted">Hasta kaydı yok.</p>
+					<p class="mt-3 text-sm text-text-muted">{t('reports.ops.statusEmpty')}</p>
 				{:else}
 					<ul class="mt-4 space-y-3">
 						{#each statusDist as row (row.status)}
@@ -786,9 +787,9 @@
 			</div>
 
 			<div class="rounded-lg border border-border bg-surface p-4 sm:p-6">
-				<h2 class="text-sm font-semibold text-text">Kaynak dağılımı</h2>
+				<h2 class="text-sm font-semibold text-text">{t('reports.ops.sourceDistribution')}</h2>
 				{#if sourceDist.length === 0}
-					<p class="mt-3 text-sm text-text-muted">Hasta kaydı yok.</p>
+					<p class="mt-3 text-sm text-text-muted">{t('reports.ops.sourceEmpty')}</p>
 				{:else}
 					<ul class="mt-4 space-y-3">
 						{#each sourceDist as row (row.source)}

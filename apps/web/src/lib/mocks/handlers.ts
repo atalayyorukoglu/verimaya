@@ -212,7 +212,7 @@ function buildMarketingReport(
 	let closed_count = 0;
 	for (const p of cohortPatients) {
 		leads_count += 1;
-		const isClosed = p.status === 'closed_won';
+		const isClosed = p.status === 'treated';
 		if (isClosed) closed_count += 1;
 		const label = sourceLabel(p.source);
 		const cur = cohortBySource.get(label) ?? { leads: 0, closed: 0 };
@@ -1607,7 +1607,7 @@ export const handlers = [
 				full_name: contact.display_name,
 				phone: contact.phone,
 				email: contact.email,
-				status: 'lead',
+				status: 'scheduled',
 				source: 'Kişiler',
 				notes: null,
 				assigned_user_id: null,

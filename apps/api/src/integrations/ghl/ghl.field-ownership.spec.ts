@@ -30,7 +30,7 @@ describe('GHL field ownership (Adım 42)', () => {
 				fullName: 'Ada',
 				phone: '+1',
 				email: 'a@b.c',
-				status: 'lead',
+				status: 'scheduled',
 				notes: 'should not apply'
 			},
 			'ghl'
@@ -39,7 +39,7 @@ describe('GHL field ownership (Adım 42)', () => {
 			fullName: 'Ada',
 			phone: '+1',
 			email: 'a@b.c',
-			status: 'lead'
+			status: 'scheduled'
 		});
 		expect(picked.notes).toBeUndefined();
 	});

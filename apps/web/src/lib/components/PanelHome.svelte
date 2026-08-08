@@ -10,6 +10,7 @@
 	import { patientStatusLabels, reportUrl } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { USE_MSW } from '$lib/env';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { formatDateTime, formatMoney, formatTime, isSameLocalDay } from '$lib/format';
 	import { patientStatusTone } from '$lib/status-tone';
 	import { canAccessPath, DEFAULT_ROLE } from '$lib/rbac';
@@ -79,6 +80,38 @@
 	const pendingCount = $derived(
 		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new').length
 	);
+
+	const activeFileCount = $derived(
+		recentPatients.filter((p) => !['treated', 'cancelled'].includes(p.status)).length
+	);
+
+	const metricCards = $derived([
+		{
+			label: t('panel.home.activeFiles'),
+			value: String(activeFileCount),
+			hint: t('panel.home.activeFilesHint')
+		},
+		{
+			label: t('panel.home.todayAppointments'),
+			value: String(todayAppointments.length),
+			hint: t('panel.home.todayHint')
+		},
+		{
+			label: t('panel.home.waPending'),
+			value: canFinance ? String(pendingCount) : '—',
+			hint: canFinance ? t('panel.home.waHint') : t('panel.home.waNoAccess')
+		},
+		{
+			label: t('panel.home.netMonth'),
+			value:
+				!USE_MSW && canFinance && summaryQuery.data
+					? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY')
+					: (tenantQuery.data?.base_currency ?? '—'),
+			hint: !USE_MSW && canFinance
+				? t('panel.home.netServer')
+				: (tenantQuery.data?.name ?? 'Organizasyon')
+		}
+	]);
 
 	const anyError = $derived(
 		patientsQuery.isError ||
@@ -224,9 +257,9 @@
 	</div>
 
 	<section>
-		<h2 class="mb-3 text-sm font-semibold text-text">Özet metrikler</h2>
+		<h2 class="mb-3 text-sm font-semibold text-text">{t('panel.home.metrics')}</h2>
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [{ label: 'Yeni lead', value: String(recentPatients.filter((p) => p.status === 'lead').length), hint: 'Son sayfada' }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' }, { label: 'Net (bu ay)', value: !USE_MSW && canFinance && summaryQuery.data ? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY') : (tenantQuery.data?.base_currency ?? '—'), hint: !USE_MSW && canFinance ? 'Sunucu aggregate' : (tenantQuery.data?.name ?? 'Organizasyon') }] as card (card.label)}
+			{#each metricCards as card (card.label)}
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{card.label}</p>
 					<p class="mt-1 text-2xl font-semibold tracking-tight text-text">{card.value}</p>

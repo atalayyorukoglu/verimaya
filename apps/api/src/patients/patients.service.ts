@@ -615,7 +615,7 @@ export class PatientsService {
 				fullName: input.full_name,
 				phone: input.phone ?? null,
 				email: input.email ?? null,
-				status: input.status ?? 'lead',
+				status: input.status ?? 'scheduled',
 				source: input.source ?? null,
 				notes: input.notes ?? null,
 				assignedUserId: input.assigned_user_id ?? null,

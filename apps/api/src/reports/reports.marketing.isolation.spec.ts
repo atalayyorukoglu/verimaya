@@ -51,7 +51,7 @@ describe('reports marketing tenant isolation', () => {
 					${tenantA},
 					'Patient A Meta',
 					'Meta Ads',
-					'closed_won',
+					'treated',
 					timestamptz '2026-01-15 12:00:00+00'
 				)
 				returning id
@@ -66,7 +66,7 @@ describe('reports marketing tenant isolation', () => {
 					${tenantB},
 					'Patient B Google',
 					'Google Ads',
-					'closed_won',
+					'treated',
 					timestamptz '2026-01-15 12:00:00+00'
 				)
 				returning id

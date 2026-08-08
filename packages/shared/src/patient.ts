@@ -2,19 +2,15 @@ import { z } from 'zod';
 import { isoDateTime, moneyMinor, uuid } from './common.js';
 
 /**
- * Patient (legacy: Case). Lead/hasta kaydı — sağlık turizmi operasyonunun çekirdeği.
- * Status pipeline is a first draft; refine after legacy notes.md is filled.
+ * Patient = operasyon dosyası (epizot). Lead/pipeline GHL'de kalır; app yalnız
+ * randevu, dosya ve finans operasyon durumlarını tutar.
  */
 export const patientStatusSchema = z.enum([
-	'lead',
-	'contacted',
-	'qualified',
 	'scheduled',
 	'arrived',
 	'treated',
 	'follow_up',
-	'closed_won',
-	'closed_lost'
+	'cancelled'
 ]);
 
 export type PatientStatus = z.infer<typeof patientStatusSchema>;
@@ -25,7 +21,7 @@ export const patientSchema = z.object({
 	full_name: z.string().min(1).max(255),
 	phone: z.string().max(64).nullable(),
 	email: z.string().email().max(255).nullable(),
-	status: patientStatusSchema.default('lead'),
+	status: patientStatusSchema.default('scheduled'),
 	source: z.string().max(128).nullable(),
 	notes: z.string().max(8000).nullable(),
 	assigned_user_id: uuid.nullable(),
@@ -60,3 +56,21 @@ export const patientFinanceSummarySchema = z.object({
 });
 
 export type PatientFinanceSummary = z.infer<typeof patientFinanceSummarySchema>;
+
+/** Maps legacy CRM pipeline values to operation statuses (ETL + one-time migration). */
+export const LEGACY_PATIENT_STATUS_MAP: Record<string, PatientStatus> = {
+	lead: 'scheduled',
+	contacted: 'scheduled',
+	qualified: 'scheduled',
+	scheduled: 'scheduled',
+	arrived: 'arrived',
+	treated: 'treated',
+	follow_up: 'follow_up',
+	closed_won: 'treated',
+	closed_lost: 'cancelled'
+};
+
+export function mapLegacyPatientStatus(raw: string | null | undefined): PatientStatus {
+	if (!raw) return 'scheduled';
+	return LEGACY_PATIENT_STATUS_MAP[raw] ?? 'scheduled';
+}

@@ -80,7 +80,16 @@ Tracker canlı seed (11 üst + 52 alt) Verimaya `DEFAULT_FINANCE_CATEGORY_SEEDS`
 
 | Alan | Tracker | Verimaya | Karar |
 | --- | --- | --- | --- |
-| `patients.status` | `cases` tablosunda yok (`extra` JSON opsiyonel) | enum `lead`…`closed_lost`, default `lead` | `extra.status` varsa map; yoksa **`lead`** |
+| `patients.status` | `cases` tablosunda yok (`extra` JSON opsiyonel) | `scheduled`…`cancelled`, default `scheduled` | `extra.status` varsa legacy map (§2.5.1); yoksa **`scheduled`** |
+
+#### 2.5.1 Legacy CRM → operasyon status eşlemesi (DOMAIN-01)
+
+| Eski (CRM) | Yeni (operasyon) |
+| --- | --- |
+| `lead`, `contacted`, `qualified` | `scheduled` |
+| `scheduled`, `arrived`, `treated`, `follow_up` | aynı |
+| `closed_won` | `treated` |
+| `closed_lost` | `cancelled` |
 | `transactions.kind` | `income` \| `expense` | aynı | birebir |
 | `transactions.status` | `paid` \| `partial` \| `unpaid` | aynı | birebir |
 | `invoice_status` | `none` \| `issued` \| `not_issued` | aynı | birebir; boş → `none` |

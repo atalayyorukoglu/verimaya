@@ -27,17 +27,18 @@ const SOURCE = 'legacy_tracker';
 const DEFAULT_BATCH = 1000;
 const FALLBACK_CONTACT_TYPE = 'Diğer';
 const SUPPORTED_CURRENCIES = new Set(['TRY', 'GBP', 'EUR', 'USD']);
-const PATIENT_STATUSES = new Set([
-	'lead',
-	'contacted',
-	'qualified',
-	'scheduled',
-	'arrived',
-	'treated',
-	'follow_up',
-	'closed_won',
-	'closed_lost'
-]);
+const PATIENT_STATUSES = new Set(['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled']);
+const LEGACY_PATIENT_STATUS_MAP = {
+	lead: 'scheduled',
+	contacted: 'scheduled',
+	qualified: 'scheduled',
+	scheduled: 'scheduled',
+	arrived: 'arrived',
+	treated: 'treated',
+	follow_up: 'follow_up',
+	closed_won: 'treated',
+	closed_lost: 'cancelled'
+};
 const APPOINTMENT_STATUS_MAP = {
 	'randevu ayarlanıyor': 'scheduled',
 	planlandı: 'confirmed',
@@ -195,7 +196,8 @@ function extId(legacyId) {
 function normalizePatientStatus(status) {
 	const s = (status ?? '').trim().toLowerCase();
 	if (PATIENT_STATUSES.has(s)) return s;
-	return 'lead';
+	if (s in LEGACY_PATIENT_STATUS_MAP) return LEGACY_PATIENT_STATUS_MAP[s];
+	return 'scheduled';
 }
 
 /**

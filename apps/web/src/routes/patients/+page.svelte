@@ -7,6 +7,7 @@
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
+	import { USE_MSW } from '$lib/env';
 	import { patientStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -39,7 +40,7 @@
 	const totalCount = $derived(patientsQuery.data?.pages[0]?.total_count);
 	const listDescription = $derived(
 		totalCount == null
-			? 'Lead ve hasta kayıtları.'
+			? t('patients.list.description')
 			: search
 				? t('patients.list.totalFiltered', { count: String(totalCount) })
 				: t('patients.list.total', { count: String(totalCount) })
@@ -77,40 +78,42 @@
 				<input
 					bind:value={q}
 					type="search"
-					placeholder="Ad, e-posta veya telefon…"
+					placeholder={t('patients.list.searchPlaceholder')}
 					class="h-9 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:w-56"
 				/>
-				<Button type="submit" variant="secondary">Ara</Button>
+				<Button type="submit" variant="secondary">{t('patients.list.search')}</Button>
 				<Button type="button" variant="outline" onclick={() => goto('/patients/duplicates')}
-					>Çift kayıt tara</Button
+					>{t('patients.list.scanDuplicates')}</Button
 				>
-				<Button type="button" onclick={() => (formOpen = true)}>Yeni hasta</Button>
+				<Button type="button" onclick={() => (formOpen = true)}>{t('patients.list.newPatient')}</Button>
 			</form>
 		{/snippet}
 	</PageHeader>
 
 	{#if patientsQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('patients.list.loading')}</p>
 	{:else if patientsQuery.isError}
-		<p class="text-sm text-danger">Hasta listesi yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('patients.list.loadError')}</p>
 	{:else if patients.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-8 text-center">
-			<p class="text-sm font-medium text-text">Hasta bulunamadı</p>
+			<p class="text-sm font-medium text-text">{t('patients.list.emptyTitle')}</p>
 			<p class="mt-1 text-sm text-text-muted">
-				Yeni hasta ekleyin veya MSW senaryosunu değiştirin.
+				{USE_MSW ? t('patients.list.emptyDescriptionDemo') : t('patients.list.emptyDescription')}
 			</p>
-			<Button class="mt-4" type="button" onclick={() => (formOpen = true)}>Yeni hasta</Button>
+			<Button class="mt-4" type="button" onclick={() => (formOpen = true)}
+				>{t('patients.list.newPatient')}</Button
+			>
 		</div>
 	{:else}
 		<div class="hidden min-w-0 overflow-hidden rounded-lg border border-border bg-surface md:block">
 			<table class="w-full table-fixed text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						<th class="w-[32%] px-4 py-3 font-medium">Ad</th>
-						<th class="w-[18%] px-4 py-3 font-medium">Durum</th>
-						<th class="w-[16%] px-4 py-3 font-medium">Kaynak</th>
-						<th class="w-[18%] px-4 py-3 font-medium">Telefon</th>
-						<th class="w-[16%] px-4 py-3 font-medium">Güncelleme</th>
+						<th class="w-[32%] px-4 py-3 font-medium">{t('patients.list.col.name')}</th>
+						<th class="w-[18%] px-4 py-3 font-medium">{t('patients.list.col.status')}</th>
+						<th class="w-[16%] px-4 py-3 font-medium">{t('patients.list.col.source')}</th>
+						<th class="w-[18%] px-4 py-3 font-medium">{t('patients.list.col.phone')}</th>
+						<th class="w-[16%] px-4 py-3 font-medium">{t('patients.list.col.updated')}</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-border">

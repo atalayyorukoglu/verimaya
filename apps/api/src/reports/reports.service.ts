@@ -593,7 +593,7 @@ export class ReportsService {
 
 		for (const row of rows) {
 			leads_count += 1;
-			const isClosed = row.status === 'closed_won';
+			const isClosed = row.status === 'treated';
 			if (isClosed) closed_count += 1;
 
 			const label = sourceLabel(row.source);

@@ -83,14 +83,14 @@ describe('AUDIT-01: reports date boundaries honor tenant timezone (Opus §[MEDIU
 			const [p1] = await withTenantSession(tenantId, async () => {
 				return sql<Array<{ id: string }>>`
 					insert into patients (tenant_id, full_name, status, created_at, updated_at)
-					values (${tenantId}, ${`Late ${tenantId.slice(0, 6)}`}, 'lead', ${rowAtUtcAug1Late.toISOString()}, ${rowAtUtcAug1Late.toISOString()})
+					values (${tenantId}, ${`Late ${tenantId.slice(0, 6)}`}, 'scheduled', ${rowAtUtcAug1Late.toISOString()}, ${rowAtUtcAug1Late.toISOString()})
 					returning id
 				`;
 			});
 			const [p2] = await withTenantSession(tenantId, async () => {
 				return sql<Array<{ id: string }>>`
 					insert into patients (tenant_id, full_name, status, created_at, updated_at)
-					values (${tenantId}, ${`Evening ${tenantId.slice(0, 6)}`}, 'lead', ${rowAtUtcAug1Evening.toISOString()}, ${rowAtUtcAug1Evening.toISOString()})
+					values (${tenantId}, ${`Evening ${tenantId.slice(0, 6)}`}, 'scheduled', ${rowAtUtcAug1Evening.toISOString()}, ${rowAtUtcAug1Evening.toISOString()})
 					returning id
 				`;
 			});
