@@ -30,13 +30,13 @@
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
-	import type { MessageKey } from '$lib/i18n/messages';
 	import { formatDate, formatMoney, formatPercent, formatRatio } from '$lib/format';
 	import { amountInBase, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
+	import ConsistencyIssuesList from '$lib/components/ConsistencyIssuesList.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -371,7 +371,6 @@
 		}));
 	});
 
-	const consistencyIssues = $derived(consistencyQuery.data?.items ?? []);
 	const consistencyIssueCount = $derived(
 		(consistencyQuery.data?.counts.error ?? 0) + (consistencyQuery.data?.counts.warning ?? 0)
 	);
@@ -873,37 +872,8 @@
 				>
 					{t('reports.consistency.clean')}
 				</div>
-			{:else}
-				<ul class="mt-4 divide-y divide-border">
-					{#each consistencyIssues as issue (`${issue.transaction_id}-${issue.code}`)}
-						<li class="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0">
-							<span
-								class="mt-0.5 shrink-0 rounded-[6px] px-2 py-0.5 text-[10px] font-semibold uppercase {issue.severity ===
-								'error'
-									? 'bg-danger/15 text-danger'
-									: 'bg-warning/15 text-warning'}"
-							>
-								{issue.severity === 'error'
-									? t('reports.consistency.error')
-									: t('reports.consistency.warning')}
-							</span>
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium text-text">{issue.title}</p>
-								<p class="mt-0.5 text-sm text-text-muted">
-									{t(issue.message_key as MessageKey)}
-								</p>
-							</div>
-							<a href="/finance" class="shrink-0 text-xs font-medium text-brand hover:underline">
-								{t('reports.consistency.fix')}
-							</a>
-						</li>
-					{/each}
-				</ul>
-				{#if consistencyQuery.data?.truncated}
-					<p class="mt-3 text-xs text-text-muted">
-						{t('reports.consistency.truncated', { count: consistencyIssueCount })}
-					</p>
-				{/if}
+			{:else if consistencyQuery.data}
+				<ConsistencyIssuesList data={consistencyQuery.data} />
 			{/if}
 		</section>
 	{:else if tab === 'pazarlama'}

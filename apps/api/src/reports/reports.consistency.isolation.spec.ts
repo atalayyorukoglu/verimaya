@@ -301,6 +301,9 @@ describe('GAP-05: reports consistency', () => {
 		);
 		expect(report.counts.error).toBeGreaterThanOrEqual(3);
 		expect(report.counts.warning).toBeGreaterThanOrEqual(4);
+		expect(report.counts_by_code.category_missing).toBeGreaterThanOrEqual(2);
+		expect(report.counts_by_code.expense_contact_missing).toBe(1);
+		expect(report.counts_by_code.paid_amount_mismatch).toBe(1);
 		expect(report.truncated).toBe(false);
 		expect(report.counts.error + report.counts.warning).toBe(report.items.length);
 	});

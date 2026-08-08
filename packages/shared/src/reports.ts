@@ -198,8 +198,43 @@ export const reportConsistencyItemSchema = z.object({
 });
 export type ReportConsistencyItem = z.infer<typeof reportConsistencyItemSchema>;
 
-/** Max issue rows returned in `items` (full totals live in `counts`). */
+/** Max issue rows returned in `items` (full totals live in `counts` / `counts_by_code`). */
 export const REPORT_CONSISTENCY_ITEMS_LIMIT = 100;
+
+/** Severity + i18n key for each consistency code (UI grouping / labels). */
+export const reportConsistencyCodeMeta: Record<
+	ReportConsistencyCode,
+	{ severity: ReportConsistencySeverity; message_key: string }
+> = {
+	category_missing: {
+		severity: 'warning',
+		message_key: 'reports.consistency.category_missing'
+	},
+	income_patient_missing: {
+		severity: 'warning',
+		message_key: 'reports.consistency.income_patient_missing'
+	},
+	expense_contact_missing: {
+		severity: 'warning',
+		message_key: 'reports.consistency.expense_contact_missing'
+	},
+	fx_missing: {
+		severity: 'warning',
+		message_key: 'reports.consistency.fx_missing'
+	},
+	paid_amount_mismatch: {
+		severity: 'error',
+		message_key: 'reports.consistency.paid_amount_mismatch'
+	},
+	unpaid_with_payment: {
+		severity: 'error',
+		message_key: 'reports.consistency.unpaid_with_payment'
+	},
+	partial_amount_invalid: {
+		severity: 'error',
+		message_key: 'reports.consistency.partial_amount_invalid'
+	}
+};
 
 export const reportConsistencySchema = z.object({
 	period: reportPeriodSchema,
@@ -208,6 +243,8 @@ export const reportConsistencySchema = z.object({
 		error: z.number().int().nonnegative(),
 		warning: z.number().int().nonnegative()
 	}),
+	/** Full-period issue counts keyed by rule code (includes codes beyond the items limit). */
+	counts_by_code: z.record(reportConsistencyCodeSchema, z.number().int().nonnegative()),
 	/** True when error+warning exceeds items.length (list is capped). */
 	truncated: z.boolean()
 });

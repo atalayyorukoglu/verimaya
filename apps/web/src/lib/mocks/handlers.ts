@@ -500,7 +500,9 @@ function buildReportConsistency(
 
 	let error = 0;
 	let warning = 0;
+	const counts_by_code: Record<string, number> = {};
 	for (const item of items) {
+		counts_by_code[item.code] = (counts_by_code[item.code] ?? 0) + 1;
 		if (item.severity === 'error') error += 1;
 		else warning += 1;
 	}
@@ -510,6 +512,7 @@ function buildReportConsistency(
 		period: { from, to },
 		items: truncated ? items.slice(0, REPORT_CONSISTENCY_ITEMS_LIMIT) : items,
 		counts: { error, warning },
+		counts_by_code,
 		truncated
 	};
 }

@@ -78,9 +78,11 @@ describe('reportConsistencySchema (GAP-05)', () => {
 				}
 			],
 			counts: { error: 0, warning: 1 },
+			counts_by_code: { category_missing: 1 },
 			truncated: false
 		});
 		expect(parsed.counts.warning).toBe(1);
+		expect(parsed.counts_by_code.category_missing).toBe(1);
 		expect(parsed.truncated).toBe(false);
 		expect(parsed.items[0]?.message_key).toBe('reports.consistency.category_missing');
 	});

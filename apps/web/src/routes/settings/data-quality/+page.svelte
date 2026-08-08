@@ -5,10 +5,10 @@
 	import { apiGet, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
-	import type { MessageKey } from '$lib/i18n/messages';
 	import { formatMoney } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
+	import ConsistencyIssuesList from '$lib/components/ConsistencyIssuesList.svelte';
 
 	type TxPage = { items: Transaction[]; next_cursor: string | null };
 
@@ -123,25 +123,8 @@
 			<p class="mt-0.5 text-xs text-text-muted">{t('settings.dataQuality.consistencyHint')}</p>
 			{#if issueCount === 0}
 				<p class="mt-3 text-sm text-success">{t('reports.consistency.clean')}</p>
-			{:else}
-				<ul class="mt-3 divide-y divide-border">
-					{#each consistency?.items ?? [] as issue (`${issue.transaction_id}-${issue.code}`)}
-						<li class="flex min-w-0 items-start justify-between gap-2 py-2 text-sm">
-							<div class="min-w-0">
-								<p class="truncate font-medium text-text">{issue.title}</p>
-								<p class="mt-0.5 text-text-muted">{t(issue.message_key as MessageKey)}</p>
-							</div>
-							<a href="/finance" class="shrink-0 text-xs text-brand hover:underline">
-								{t('reports.consistency.fix')}
-							</a>
-						</li>
-					{/each}
-				</ul>
-				{#if consistency?.truncated}
-					<p class="mt-3 text-xs text-text-muted">
-						{t('reports.consistency.truncated', { count: issueCount })}
-					</p>
-				{/if}
+			{:else if consistency}
+				<ConsistencyIssuesList data={consistency} compact />
 			{/if}
 		</section>
 

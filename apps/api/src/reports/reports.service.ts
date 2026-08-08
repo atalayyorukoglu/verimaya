@@ -344,23 +344,39 @@ export class ReportsService {
 
 			const [agg] = await db
 				.select({
-					warning: sql<number>`(
-						count(*) filter (where ${emptyCategory})
-						+ count(*) filter (where ${incomeNoPatient})
-						+ count(*) filter (where ${expenseNoContact})
-						+ count(*) filter (where ${fxMissing})
-					)::int`,
-					error: sql<number>`(
-						count(*) filter (where ${paidMismatch})
-						+ count(*) filter (where ${unpaidWithPay})
-						+ count(*) filter (where ${partialInvalid})
-					)::int`
+					category_missing: sql<number>`(count(*) filter (where ${emptyCategory}))::int`,
+					income_patient_missing: sql<number>`(count(*) filter (where ${incomeNoPatient}))::int`,
+					expense_contact_missing: sql<number>`(count(*) filter (where ${expenseNoContact}))::int`,
+					fx_missing: sql<number>`(count(*) filter (where ${fxMissing}))::int`,
+					paid_amount_mismatch: sql<number>`(count(*) filter (where ${paidMismatch}))::int`,
+					unpaid_with_payment: sql<number>`(count(*) filter (where ${unpaidWithPay}))::int`,
+					partial_amount_invalid: sql<number>`(count(*) filter (where ${partialInvalid}))::int`
 				})
 				.from(transactions)
 				.where(periodWhere);
 
-			const error = Number(agg?.error ?? 0);
-			const warning = Number(agg?.warning ?? 0);
+			const counts_by_code: ReportConsistency['counts_by_code'] = {};
+			const addCount = (code: ReportConsistencyCode, raw: number | null | undefined) => {
+				const n = Number(raw ?? 0);
+				if (n > 0) counts_by_code[code] = n;
+			};
+			addCount('category_missing', agg?.category_missing);
+			addCount('income_patient_missing', agg?.income_patient_missing);
+			addCount('expense_contact_missing', agg?.expense_contact_missing);
+			addCount('fx_missing', agg?.fx_missing);
+			addCount('paid_amount_mismatch', agg?.paid_amount_mismatch);
+			addCount('unpaid_with_payment', agg?.unpaid_with_payment);
+			addCount('partial_amount_invalid', agg?.partial_amount_invalid);
+
+			const warning =
+				(counts_by_code.category_missing ?? 0) +
+				(counts_by_code.income_patient_missing ?? 0) +
+				(counts_by_code.expense_contact_missing ?? 0) +
+				(counts_by_code.fx_missing ?? 0);
+			const error =
+				(counts_by_code.paid_amount_mismatch ?? 0) +
+				(counts_by_code.unpaid_with_payment ?? 0) +
+				(counts_by_code.partial_amount_invalid ?? 0);
 
 			const branch = (
 				severity: ReportConsistencySeverity,
@@ -424,6 +440,7 @@ export class ReportsService {
 				period: { from: params.from ?? null, to: params.to ?? null },
 				items,
 				counts: { error, warning },
+				counts_by_code,
 				truncated: error + warning > items.length
 			};
 		});
