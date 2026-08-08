@@ -12,6 +12,8 @@ import {
 	UseGuards
 } from '@nestjs/common';
 import {
+	reportPeriodParams,
+	transactionAuditDraftInputSchema,
 	transactionCreateSchema,
 	transactionListQuerySchema,
 	transactionUpdateSchema
@@ -41,6 +43,24 @@ export class TransactionsController {
 	list(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
 		const params = parseQuery(transactionListQuerySchema, query, req);
 		return this.transactionsService.list(getActiveOrgId(req), params);
+	}
+
+	@Get('audit')
+	@RequireOrgPermission('finance', 'read')
+	audit(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		return this.transactionsService.audit(getActiveOrgId(req), params);
+	}
+
+	@Post('audit-draft')
+	@RequireOrgPermission('finance', 'read')
+	auditDraft(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(transactionAuditDraftInputSchema, body, req);
+		return this.transactionsService.auditDraft(getActiveOrgId(req), input);
 	}
 
 	@Post()

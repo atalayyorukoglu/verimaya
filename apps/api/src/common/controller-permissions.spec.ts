@@ -39,6 +39,8 @@ const transactionPermissions: Array<
 	[keyof TransactionsController, OrgPermissionRequirement]
 > = [
 	['list', { resource: 'finance', action: 'read' }],
+	['audit', { resource: 'finance', action: 'read' }],
+	['auditDraft', { resource: 'finance', action: 'read' }],
 	['create', { resource: 'finance', action: 'create' }],
 	['update', { resource: 'finance', action: 'update' }],
 	['remove', { resource: 'finance', action: 'delete' }]
@@ -116,6 +118,7 @@ const reportsPermissions: Array<[keyof ReportsController, OrgPermissionRequireme
 	['monthly', { resource: 'finance', action: 'read' }],
 	['marketing', { resource: 'finance', action: 'read' }],
 	['patientDistribution', { resource: 'finance', action: 'read' }],
+	['appointmentOperations', { resource: 'finance', action: 'read' }],
 	['balances', { resource: 'finance', action: 'read' }]
 ];
 

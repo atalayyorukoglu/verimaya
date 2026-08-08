@@ -434,10 +434,10 @@
 > günlük sürtünme yaratır. PILOT-02 sırasında hangisinin gerçekten eksik olduğu ölçülsün;
 > freeze bitince sıraya girsin.
 
-- [ ] **GAP-04 (G-05) — Randevu arama + durum filtresi.** `appointmentListQuerySchema` yalnız
+- [x] **GAP-04 (G-05) — Randevu arama + durum filtresi.** `appointmentListQuerySchema` yalnız
   `patient_id, from, to`. Tracker'da `status_id`, `q` (not/kişi adı/**tarih**), `contact_involves`
   vardı (`appointments.py:138-205`). En az `q` + `status` taşınmalı.
-- [ ] **GAP-05 (G-03/G-04) — Sunucu tarafı işlem denetim motoru.** Tracker
+- [x] **GAP-05 (G-03/G-04) — Sunucu tarafı işlem denetim motoru.** Tracker
   `services/transaction_audit.py` (310 satır, 8 kural: `case_required`, `case_forbidden`,
   `contact_type_mismatch`, `responsible_not_internal`, `contact_equals_responsible`,
   `personal_payer_payee_required`, `currency_equivalent_missing`, `partial_amount_out_of_range`)
@@ -446,11 +446,11 @@
   sayfalı listeden hesaplandığı için büyük tenant'ta yanlış "temiz" sonucu verir.
   **`AUDIT-F09-17` ile aynı sınıf** (istemci O(N) agregasyon); birlikte ele alınmalı.
   Not: BF-04/BF-05 gereği `responsible_party` ve payer/payee kuralları **taşınmaz**.
-- [ ] **GAP-06 (G-06/G-07/G-08) — Silme yüzeyleri: işlem / randevu / kişi.** Üçünde de
+- [x] **GAP-06 (G-06/G-07/G-08) — Silme yüzeyleri: işlem / randevu / kişi.** Üçünde de
   `@Delete` yok (doğrulandı: 0 eşleşme). **Önce politika kararı gerekir** — hard-delete mi
   soft-delete mi? Türk mali mevzuatı 10 yıl saklama (`AUDIT-F09-06`) ile KVKK silme hakkı
   (`AUDIT-F09-07`) çatışıyor. Öneri: soft-delete + audit, `AUDIT-F09-06` ile aynı desen.
-- [ ] **GAP-07 (G-12) — Randevu operasyon metrikleri raporu.** Tracker'da **canlı**
+- [x] **GAP-07 (G-12) — Randevu operasyon metrikleri raporu.** Tracker'da **canlı**
   (`ReportsPage.tsx:33,668` → `DashboardOzetContent`; ayrı rotası yoktu ama Summary sekmesinde
   render ediliyordu — "ölü kod" değil). Eksik olanlar: tamamlanma / no-show / iptal oranı,
   klinik performansı, aylık randevu trendi, vaka türü dağılımı. Veri zaten var
@@ -465,15 +465,25 @@
   yeniden kullanmalı, sanitizasyon korunmalı. İkinci müşteriden önce zorunlu, pilot için değil.
 - **Bağımlı:** GAP-06 için silme politikası kararı (bkz. "Açık sorular / ürün kararı" §2).
 - **Kabul:** Her kalem kendi commit'inde; sözleşme değişiklikleri önce `packages/shared`'da.
-- **Görüş:** _(doldurulacak)_
+- **Görüş:** GAP-04/06 `7ddf0f0`/`02e1e30` (önceki oturum). GAP-07: `GET /v1/reports/appointment-operations`
+  + `/reports` özet sekmesi (tamamlanma/no-show/iptal, tip/klinik/aylık trend). GAP-05: 7 kural
+  (`packages/shared/transaction-audit.ts`); `GET /v1/transactions/audit` + `POST audit-draft`;
+  rapor tutarlılık uyarıları sunucu denetimine bağlandı. Tracker'daki case/contact-type/
+  responsible kuralları bilinçli taşınmadı (BF-04/05 + Contact modeli). GAP-08 ertelendi
+  (Faz 8 / ikinci müşteri öncesi). Faz 9: `0031` unique name, IANA timezone refine,
+  randevu listesi `aggregates`; F09-16 zaten `.gitignore`'da `_tmp_*`.
 
 ---
 
 ### 7. MARKET-01 — Üç stratejik karar (17 Ağustos review öncesi)
 
-- [ ] **(a)** Birincil segment: acente mi klinik mi? (ilk 20 görüşme tek segmente odaklansın)
-- [ ] **(b)** OrbisMed çıkar çatışması: veri ayrımı, tüzel ayrım, erişim/audit, referans anlatısı
-- [ ] **(c)** Kapasite: Verimaya'ya haftalık sabit gün/saat + pilot boyunca feature freeze
+- [x] **(a)** Birincil segment: acente mi klinik mi? (ilk 20 görüşme tek segmente odaklansın)
+- [x] **(b)** OrbisMed çıkar çatışması: veri ayrımı, tüzel ayrım, erişim/audit, referans anlatısı
+- [x] **(c)** Kapasite: Verimaya'ya haftalık sabit gün/saat + pilot boyunca feature freeze
+
+- **Görüş:** Taslak kararlar `docs/MARKET-01-KARARLAR.md` (2026-08-08 cloud agent). Segment:
+  **klinik**; OrbisMed veri/tüzel ayrımı tablo halinde; haftalık ≥2×4s + PILOT-02 freeze.
+  Review öncesi kullanıcı onayı şart.
 
 ---
 
@@ -494,9 +504,12 @@
 > finans mutabakat farkı, randevu kaçırma, webhook/job başarısızlık, ortalama destek süresi,
 > haftalık yedek + restore kanıtı.
 
-- [ ] Pilot planını yaz, KPI'ları tanımla
+- [x] Pilot planını yaz, KPI'ları tanımla
 - [ ] Feature freeze ilan et
 - [ ] 2–4 hafta çalıştır + raporla
+
+- **Görüş:** Plan `docs/PILOT-02-PLAN.md` (KPI tablosu + haftalık ritim). Freeze başlangıcı:
+  bu PR merge + migration `0029`/`0030`/`0031` prod apply sonrası ilk iş günü.
 
 ---
 
@@ -638,9 +651,8 @@ Kaynak: `docs/tracker-verimaya-ozellik-gap.md`. Ertelenebilir; pilot sonrası de
 > Gap analizinden çıkan, kod yazılmadan **önce** cevaplanması gerekenler.
 > Kaynak: `docs/tracker-verimaya-ozellik-gap.md` § Açık sorular.
 
-1. **Silme politikası — GAP-06'yı bloklar.** İşlem / randevu / kişi için hard-delete mi
-   soft-delete mi? Türk mali mevzuatı 10 yıl saklama (`AUDIT-F09-06`) ile KVKK silme hakkı
-   (`AUDIT-F09-07`) çatışıyor. Karar verilmeden üç endpoint yazılamaz.
+1. **Silme politikası — GAP-06'yı bloklar.** ~~Karar verilmeden üç endpoint yazılamaz.~~
+   **2026-08-08:** Soft-delete + audit seçildi; `0030_soft_delete_ops.sql` + DELETE endpoint'ler.
 2. **Patient merge semantiği — DOMAIN-01'in açık ucu.** DOMAIN-01 "aynı kişide 2. geliş =
    yeni patient" diyor; ama `/patients/duplicate-groups` + `/patients/merge` bugün var ve
    **iki meşru operasyon dosyasını birleştirebilir**. Kimlik `Contact`'ta, epizot `Patient`'ta

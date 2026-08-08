@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
-import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from '@verimaya/shared';
+import type {
+	ReportPeriodParams,
+	TransactionAuditDraftInput,
+	TransactionCreate,
+	TransactionListQuery,
+	TransactionUpdate
+} from '@verimaya/shared';
+import { auditTransactionInput } from '@verimaya/shared';
 import { contacts, patients, tenants, transactions } from '../db/schema';
 import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
@@ -51,6 +58,85 @@ export class TransactionsService {
 				items: page.items.map(toTransaction),
 				next_cursor: page.next_cursor
 			};
+		});
+	}
+
+	async audit(tenantId: string, params: ReportPeriodParams) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const tenantBase = await this.getTenantBase(db, tenantId);
+			const filters: SQL[] = [isNull(transactions.deletedAt)];
+			if (params.from) filters.push(gte(transactions.occurredOn, params.from));
+			if (params.to) filters.push(lte(transactions.occurredOn, params.to));
+
+			const rows = await db
+				.select()
+				.from(transactions)
+				.where(filters.length > 0 ? and(...filters) : undefined)
+				.orderBy(desc(transactions.occurredOn), desc(transactions.id));
+
+			const items = [];
+			let issue_count = 0;
+
+			for (const row of rows) {
+				const issues = auditTransactionInput(
+					{
+						kind: row.kind as TransactionCreate['kind'],
+						title: row.title,
+						category: row.category,
+						status: row.status as TransactionCreate['status'],
+						amount: row.amount,
+						paid_amount: row.paidAmount,
+						currency: row.currency as TransactionCreate['currency'],
+						amount_base: row.amountBase,
+						base_currency: row.baseCurrency as TransactionCreate['base_currency'],
+						patient_id: row.patientId,
+						contact_label: row.contactLabel
+					},
+					tenantBase
+				);
+				if (issues.length === 0) continue;
+				issue_count += issues.length;
+				items.push({
+					transaction_id: row.id,
+					title: row.title,
+					occurred_on: row.occurredOn,
+					issues
+				});
+			}
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				issue_count,
+				items
+			};
+		});
+	}
+
+	auditDraft(tenantId: string, input: TransactionAuditDraftInput) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const tenantBase = await this.getTenantBase(db, tenantId);
+			const kind = input.kind ?? 'expense';
+			const amount = input.amount ?? 0;
+			if (amount <= 0) {
+				return { issues: [] as ReturnType<typeof auditTransactionInput> };
+			}
+			const issues = auditTransactionInput(
+				{
+					kind,
+					title: input.title ?? '',
+					category: input.category ?? null,
+					status: input.status ?? 'unpaid',
+					amount,
+					paid_amount: input.paid_amount ?? null,
+					currency: input.currency ?? 'TRY',
+					amount_base: input.amount_base ?? null,
+					base_currency: input.base_currency ?? null,
+					patient_id: input.patient_id ?? null,
+					contact_label: input.contact_label ?? null
+				},
+				tenantBase
+			);
+			return { issues };
 		});
 	}
 
@@ -241,5 +327,14 @@ export class TransactionsService {
 		}
 
 		return { patientDisplayName, contactLabel, amountBase, baseCurrency };
+	}
+
+	private async getTenantBase(db: TenantDb, tenantId: string): Promise<string> {
+		const [tenant] = await db
+			.select({ baseCurrency: tenants.baseCurrency })
+			.from(tenants)
+			.where(eq(tenants.id, tenantId))
+			.limit(1);
+		return tenant?.baseCurrency ?? 'TRY';
 	}
 }
