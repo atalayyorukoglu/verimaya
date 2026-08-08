@@ -4,6 +4,7 @@ import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from 
 import { contacts, patients, tenants, transactions } from '../db/schema';
 import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
+import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
@@ -24,6 +25,18 @@ export class TransactionsService {
 			// CONTRACT-01: inclusive range over the naive occurred_on date (see list-query.ts doc).
 			if (params.from) filters.push(gte(transactions.occurredOn, params.from));
 			if (params.to) filters.push(lte(transactions.occurredOn, params.to));
+			if (params.kind) filters.push(eq(transactions.kind, params.kind));
+			if (params.status) filters.push(eq(transactions.status, params.status));
+			if (params.category) filters.push(eq(transactions.category, params.category));
+			if (params.q) {
+				const searchCond = textSearchCondition(params.q, [
+					transactions.title,
+					transactions.subtitle,
+					transactions.patientDisplayName,
+					transactions.category
+				]);
+				if (searchCond) filters.push(searchCond);
+			}
 
 			const rows = await db
 				.select()

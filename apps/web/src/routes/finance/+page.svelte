@@ -14,13 +14,16 @@
 		apiPaths,
 		listUrl,
 		transactionKindLabels,
-		transactionStatusLabels
+		transactionStatusLabels,
+		transactionKindSchema,
+		transactionStatusSchema
 	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { amountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
@@ -30,11 +33,18 @@
 
 	type TransactionsPage = ContractResponse<'GET /v1/transactions'>;
 	type PatientsPage = ContractResponse<'GET /v1/patients'>;
+	type FinanceCategoriesPage = ContractResponse<'GET /v1/settings/finance-categories'>;
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
 
 	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
+
+	let q = $state('');
+	let search = $state('');
+	let kindFilter = $state('');
+	let statusFilter = $state('');
+	let categoryFilter = $state('');
 
 	let formOpen = $state(false);
 	let editing = $state<Transaction | null>(null);
@@ -61,19 +71,40 @@
 	}
 
 	const txQuery = createInfiniteQuery(() => ({
-		queryKey: qs.keys.transactions.list({ patient_id: patientFilterId }),
+		queryKey: qs.keys.transactions.list({
+			patient_id: patientFilterId,
+			q: search || null,
+			kind: kindFilter || null,
+			status: statusFilter || null,
+			category: categoryFilter || null
+		}),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<TransactionsPage>(
 				listUrl('transactions', {
 					limit: 25,
 					cursor: pageParam,
-					patient_id: patientFilterId
+					patient_id: patientFilterId,
+					q: search || undefined,
+					kind: kindFilter || undefined,
+					status: statusFilter || undefined,
+					category: categoryFilter || undefined
 				})
 			),
 		initialPageParam: null as string | null,
 		getNextPageParam: (last: TransactionsPage) => last.next_cursor,
 		enabled: qs.ready
 	}));
+
+	const categoriesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.financeCategories(),
+		queryFn: () => apiGet<FinanceCategoriesPage>(apiPaths.settingsFinanceCategories),
+		enabled: qs.ready
+	}));
+
+	const categories = $derived(categoriesQuery.data?.items ?? []);
+	const hasActiveFilters = $derived(
+		Boolean(search || kindFilter || statusFilter || categoryFilter)
+	);
 
 	const patientsQuery = createQuery(() => ({
 		queryKey: qs.keys.patients.list({ limit: 100, for: 'picker' }),
@@ -96,6 +127,19 @@
 	);
 
 	const items = $derived(txQuery.data?.pages.flatMap((p) => p.items) ?? []);
+
+	function submitFilters(e: Event) {
+		e.preventDefault();
+		search = q.trim();
+	}
+
+	function clearFilters() {
+		q = '';
+		search = '';
+		kindFilter = '';
+		statusFilter = '';
+		categoryFilter = '';
+	}
 
 	function openCreate() {
 		editing = null;
@@ -177,6 +221,65 @@
 			</a>
 		</div>
 	{/if}
+
+	<form
+		class="mb-4 grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5"
+		onsubmit={submitFilters}
+	>
+		<label class="flex flex-col gap-1 text-xs text-text-muted sm:col-span-2">
+			<span>{t('finance.filters.search')}</span>
+			<input
+				type="search"
+				class="h-9 rounded-md border border-border bg-surface px-3 text-sm text-text"
+				placeholder={t('finance.filters.searchPlaceholder')}
+				bind:value={q}
+			/>
+		</label>
+		<label class="flex flex-col gap-1 text-xs text-text-muted">
+			<span>{t('finance.filters.kind')}</span>
+			<select
+				class="h-9 rounded-md border border-border bg-surface px-2 text-sm text-text"
+				bind:value={kindFilter}
+			>
+				<option value="">{t('finance.filters.kindAll')}</option>
+				{#each transactionKindSchema.options as kind (kind)}
+					<option value={kind}>{transactionKindLabels[kind]}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="flex flex-col gap-1 text-xs text-text-muted">
+			<span>{t('finance.filters.status')}</span>
+			<select
+				class="h-9 rounded-md border border-border bg-surface px-2 text-sm text-text"
+				bind:value={statusFilter}
+			>
+				<option value="">{t('finance.filters.statusAll')}</option>
+				{#each transactionStatusSchema.options as status (status)}
+					<option value={status}>{transactionStatusLabels[status]}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="flex flex-col gap-1 text-xs text-text-muted">
+			<span>{t('finance.filters.category')}</span>
+			<select
+				class="h-9 rounded-md border border-border bg-surface px-2 text-sm text-text"
+				bind:value={categoryFilter}
+			>
+				<option value="">{t('finance.filters.categoryAll')}</option>
+				{#each categories as cat (cat.id)}
+					<option value={cat.name}>{cat.name}</option>
+				{/each}
+			</select>
+		</label>
+		<div class="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
+			<Button type="submit" class="h-9">{t('finance.filters.apply')}</Button>
+			{#if hasActiveFilters}
+				<Button type="button" variant="outline" class="h-9" onclick={clearFilters}>
+					{t('finance.filters.clear')}
+				</Button>
+			{/if}
+		</div>
+	</form>
 
 	{#if txQuery.isPending}
 		<p class="text-sm text-text-muted">Yükleniyor…</p>
