@@ -16,6 +16,7 @@
 		"etl:dry-run": "node scripts/etl.js",
 		"etl:verify": "node scripts/etl-verify.js",
 		"etl:reset": "node scripts/reset-tenant-data.js",
+		"demo:seed-month": "node scripts/seed-demo-month.js",
 		"fx:backfill": "node scripts/backfill-fx.js",
 		"ads:fx-backfill": "node scripts/backfill-ad-spend-fx.js",
 		"karne:stats": "node scripts/karne-stats.js",

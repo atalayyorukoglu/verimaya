@@ -250,4 +250,4 @@ if (require.main === module) {
 	});
 }
 
-module.exports = { parseArgs, DELETE_ORDER };
+module.exports = { parseArgs, DELETE_ORDER, deletePerTable, countPerTable };

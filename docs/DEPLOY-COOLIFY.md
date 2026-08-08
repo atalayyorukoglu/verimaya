@@ -548,3 +548,33 @@ node scripts/etl-verify.js --tenant-id <TENANT_UUID>
 
 Env: `DATABASE_URL_APP` (RLS). Script’i prod’a karşı çalıştırmadan önce dry-run JSON özetini
 oku; `would_delete_total` beklediğin gibi değilse `--apply` verme.
+
+## OPS — Tek ay demo tenant (`demo:seed-month`)
+
+İkinci bir demo tenant (“Demo Tek Ay Klinik”, slug `demo-tek-ay-klinik`, `base_currency=GBP`)
+üretir; yalnızca **bir takvim ayı** (varsayılan: bir önceki ay) için hasta / randevu / işlem /
+günlük reklam satırları basar. Amaç Raporlar rakamlarını elle doğrulamak — veri yığını değil.
+
+Script: `apps/api/scripts/seed-demo-month.js` (`pnpm --filter @verimaya/api demo:seed-month`).
+
+**Özellikler:** deterministik UUID (slug’dan); sabit TRY→GBP kuru (`0.0235`, Frankfurter yok);
+sonunda panel ile kıyaslanacak `beklenen` JSON (hasta, randevu completion/no-show, gelir/gider/
+tahsilat base, reklam spend_base, ROAS). `--owner-email` ile `member` (role `owner`) yoksa
+tenant panelde görünmez. Var olan tenant’ta yeniden basmak için `--force` (önce
+`etl:reset` `DELETE_ORDER` + `ad_metrics_daily` silinir).
+
+**Coolify — API container Terminal:**
+
+```bash
+# Dry-run: beklenen toplamlar + insert sayıları (DB'ye yazmaz)
+node scripts/seed-demo-month.js
+node scripts/seed-demo-month.js --month 2026-07
+
+# Yaz (owner paneli görebilir)
+node scripts/seed-demo-month.js --apply --owner-email you@example.com
+
+# Var olan demo tenant’ı silip yeniden bas
+node scripts/seed-demo-month.js --apply --force --owner-email you@example.com --month 2026-07
+```
+
+Env: `DATABASE_URL_APP` (RLS). Prod’a karşı çalıştırmadan önce dry-run `beklenen` bloğunu oku.
