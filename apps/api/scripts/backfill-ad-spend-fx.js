@@ -2,25 +2,29 @@
 /**
  * Backfill ad_metrics_daily FX snapshots (OPS-02c).
  *
- * One-shot historical rates from Frankfurter (ECB) — NOT a live FX converter.
- * Writes spend_base / base_currency / fx_rate / fx_dated once; reports read the snapshot.
- * See docs/legacy-reference/doviz.md (snapshot model) and DEPLOY-COOLIFY.md.
+ * One-shot historical rates from Frankfurter v1 (ECB) — NOT a live FX converter,
+ * NOT v2 blended rates. Writes spend_base / base_currency / fx_rate / fx_dated once;
+ * reports read the snapshot. Sync never converts — only this script (or manual SQL).
  *
- * Default dry-run. Pass --apply to UPDATE.
- * Idempotent: rows with spend_base already set are skipped.
+ * See docs/legacy-reference/doviz.md and docs/DEPLOY-COOLIFY.md § OPS-02c.
+ *
+ * Default dry-run (never writes). Pass --apply to UPDATE.
+ * Idempotent unless --force: rows with spend_base already set are skipped.
  * Missing rates are skipped and listed — never invented.
  *
  * Usage:
  *   pnpm --filter @verimaya/api ads:fx-backfill -- --tenant-id <uuid>
  *   pnpm --filter @verimaya/api ads:fx-backfill -- --apply --tenant-id <uuid>
+ *   pnpm --filter @verimaya/api ads:fx-backfill -- --apply --force --tenant-id <uuid>
  *
- * Coolify (API container):
+ * Coolify (API container, WORKDIR apps/api):
  *   node scripts/backfill-ad-spend-fx.js --tenant-id <uuid>
  *   node scripts/backfill-ad-spend-fx.js --apply --tenant-id <uuid>
+ *   node scripts/backfill-ad-spend-fx.js --apply --force --tenant-id <uuid>
  *
  * Env:
  *   DATABASE_URL_APP  Verimaya app role (RLS)
- *   FRANKFURTER_BASE  optional override (default https://api.frankfurter.app)
+ *   FRANKFURTER_BASE  optional override (default https://api.frankfurter.dev/v1)
  */
 
 const path = require('node:path');
@@ -29,18 +33,20 @@ const postgres = require('postgres');
 
 loadEnv({ path: path.join(__dirname, '..', '.env') });
 
-const DEFAULT_FRANKFURTER = 'https://api.frankfurter.app';
+/** Explicit v1/ECB path — do not use v2 blended rates (rates diverge). */
+const DEFAULT_FRANKFURTER = 'https://api.frankfurter.dev/v1';
 
 /**
  * @param {string[]} argv
  */
 function parseArgs(argv) {
-	/** @type {{ apply: boolean, help: boolean, tenantId: string | null, from: string | null, to: string | null }} */
-	const out = { apply: false, help: false, tenantId: null, from: null, to: null };
+	/** @type {{ apply: boolean, force: boolean, help: boolean, tenantId: string | null, from: string | null, to: string | null }} */
+	const out = { apply: false, force: false, help: false, tenantId: null, from: null, to: null };
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
 		if (arg === '--') continue;
 		if (arg === '--apply') out.apply = true;
+		else if (arg === '--force') out.force = true;
 		else if (arg === '--dry-run') out.apply = false;
 		else if (arg === '--help' || arg === '-h') out.help = true;
 		else if (arg === '--tenant-id') {
@@ -63,11 +69,21 @@ function parseArgs(argv) {
 }
 
 /**
+ * Calendar date only — never Date#toISOString (TZ shift can move the day).
  * @param {unknown} value
  * @returns {string}
  */
 function toIsoDate(value) {
-	if (value instanceof Date) return value.toISOString().slice(0, 10);
+	if (typeof value === 'string') {
+		const m = value.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+		if (m) return m[1];
+	}
+	if (value instanceof Date && !Number.isNaN(value.getTime())) {
+		const y = value.getUTCFullYear();
+		const mo = String(value.getUTCMonth() + 1).padStart(2, '0');
+		const d = String(value.getUTCDate()).padStart(2, '0');
+		return `${y}-${mo}-${d}`;
+	}
 	return String(value).slice(0, 10);
 }
 
@@ -76,11 +92,11 @@ function toIsoDate(value) {
  * @param {string} from
  * @param {string} to
  * @param {string} apiBase
- * @returns {Promise<{ rate: number, rateDate: string } | null>}
+ * @returns {Promise<{ rate: number, rateDate: string, url: string } | null>}
  */
 async function fetchFrankfurterRate(date, from, to, apiBase) {
 	const url = `${apiBase.replace(/\/$/, '')}/${date}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-	const res = await fetch(url);
+	const res = await fetch(url, { redirect: 'follow' });
 	if (!res.ok) {
 		return null;
 	}
@@ -90,8 +106,8 @@ async function fetchFrankfurterRate(date, from, to, apiBase) {
 	if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) {
 		return null;
 	}
-	const rateDate = body.date ? String(body.date).slice(0, 10) : date;
-	return { rate, rateDate };
+	const rateDate = body.date ? toIsoDate(body.date) : date;
+	return { rate, rateDate, url: res.url || url };
 }
 
 async function main() {
@@ -101,20 +117,23 @@ async function main() {
   --tenant-id <uuid>   Verimaya tenant (required)
   --from YYYY-MM-DD    optional lower bound on ad_metrics_daily.date
   --to YYYY-MM-DD      optional upper bound
-  --dry-run            (default) report only
+  --dry-run            (default) report only — never writes
   --apply              UPDATE spend_base / base_currency / fx_rate / fx_dated
+  --force              with --apply: overwrite rows that already have spend_base
 
 Env: DATABASE_URL_APP (or DATABASE_URL)
 Optional: FRANKFURTER_BASE (default ${DEFAULT_FRANKFURTER})
 
-Frankfurter returns the last ECB publish date for weekends/holidays; we use that
-rate and set fx_dated to the returned rate date (not inventing mid-weekend prices).
-True fetch/parse failures are skipped and listed.`);
+Rate source is Frankfurter v1/ECB only. Ads sync does not write spend_base.`);
 		process.exit(0);
 	}
 
 	if (!args.tenantId) {
 		console.error('--tenant-id is required');
+		process.exit(1);
+	}
+	if (args.force && !args.apply) {
+		console.error('--force requires --apply (dry-run never writes)');
 		process.exit(1);
 	}
 
@@ -153,32 +172,30 @@ True fetch/parse failures are skipped and listed.`);
 					campaign_id
 				from ad_metrics_daily
 				where tenant_id = ${args.tenantId}
-					and spend_base is null
 					and currency is not null
 					and currency <> ${tenantBase}
+					${args.force ? tx`` : tx`and spend_base is null`}
 					${args.from ? tx`and date >= ${args.from}` : tx``}
 					${args.to ? tx`and date <= ${args.to}` : tx``}
 				order by date, provider, campaign_id
 			`;
 		});
 
-		/** @type {Map<string, { rate: number, rateDate: string } | null>} */
+		/** @type {Map<string, { rate: number, rateDate: string, url: string } | null>} */
 		const rateByDate = new Map();
 		/** @type {string[]} */
 		const missingRateDates = [];
 		/** @type {Set<string>} */
 		const missingSeen = new Set();
+		/** @type {{ cache_key: string, rate: number, rate_date: string, url: string }[]} */
+		const rateAudit = [];
 
-		const uniqueDates = [
-			...new Set(rows.map((r) => toIsoDate(r.date)))
-		].sort();
+		const uniqueDates = [...new Set(rows.map((r) => toIsoDate(r.date)))].sort();
 
 		for (const date of uniqueDates) {
 			const currencies = [
 				...new Set(
-					rows
-						.filter((r) => toIsoDate(r.date) === date)
-						.map((r) => String(r.currency))
+					rows.filter((r) => toIsoDate(r.date) === date).map((r) => String(r.currency))
 				)
 			];
 			for (const currency of currencies) {
@@ -186,28 +203,39 @@ True fetch/parse failures are skipped and listed.`);
 				if (rateByDate.has(cacheKey)) continue;
 				const fetched = await fetchFrankfurterRate(date, currency, tenantBase, apiBase);
 				rateByDate.set(cacheKey, fetched);
-				if (!fetched && !missingSeen.has(cacheKey)) {
-					missingSeen.add(cacheKey);
-					missingRateDates.push(cacheKey);
+				if (!fetched) {
+					if (!missingSeen.has(cacheKey)) {
+						missingSeen.add(cacheKey);
+						missingRateDates.push(cacheKey);
+					}
+				} else {
+					rateAudit.push({
+						cache_key: cacheKey,
+						rate: fetched.rate,
+						rate_date: fetched.rateDate,
+						url: fetched.url
+					});
 				}
-				// Be polite to the public API
 				await new Promise((r) => setTimeout(r, 50));
 			}
 		}
 
 		const stats = {
-			mode: args.apply ? 'apply' : 'dry-run',
+			mode: args.apply ? (args.force ? 'apply+force' : 'apply') : 'dry-run',
+			rate_source: apiBase,
 			tenant_id: args.tenantId,
 			tenant_base: tenantBase,
 			candidates: rows.length,
 			unique_dates: uniqueDates.length,
 			skipped_no_rate: 0,
+			skipped_unchanged: 0,
 			would_update: 0,
 			applied: 0,
-			missing_rate_keys: missingRateDates
+			missing_rate_keys: missingRateDates,
+			rate_audit_sample: rateAudit.slice(0, 8)
 		};
 
-		/** @type {{ id: string, date: string, currency: string, spend_minor: number, spend_base: number, fx_rate: number, fx_dated: string }[]} */
+		/** @type {{ id: string, date: string, currency: string, spend_minor: number, spend_base: number, fx_rate: number, fx_dated: string, previous_spend_base: number | null, previous_fx_rate: number | null }[]} */
 		const updates = [];
 
 		for (const row of rows) {
@@ -221,6 +249,18 @@ True fetch/parse failures are skipped and listed.`);
 			}
 			const spendMinor = Number(row.spend_minor);
 			const spendBase = Math.round(spendMinor * fx.rate);
+			const prevBase = row.spend_base == null ? null : Number(row.spend_base);
+			const prevRate = row.fx_rate == null ? null : Number(row.fx_rate);
+			if (
+				args.force &&
+				prevBase === spendBase &&
+				prevRate === fx.rate &&
+				String(row.base_currency) === tenantBase &&
+				toIsoDate(row.fx_dated) === fx.rateDate
+			) {
+				stats.skipped_unchanged += 1;
+				continue;
+			}
 			stats.would_update += 1;
 			updates.push({
 				id: String(row.id),
@@ -229,14 +269,19 @@ True fetch/parse failures are skipped and listed.`);
 				spend_minor: spendMinor,
 				spend_base: spendBase,
 				fx_rate: fx.rate,
-				fx_dated: fx.rateDate
+				fx_dated: fx.rateDate,
+				previous_spend_base: prevBase,
+				previous_fx_rate: prevRate
 			});
 		}
+
+		const plannedSpendBaseSum = updates.reduce((s, u) => s + u.spend_base, 0);
 
 		console.log(
 			JSON.stringify(
 				{
 					...stats,
+					planned_spend_base_sum: plannedSpendBaseSum,
 					sample: updates.slice(0, 5)
 				},
 				null,
@@ -245,23 +290,35 @@ True fetch/parse failures are skipped and listed.`);
 		);
 
 		if (!args.apply) {
-			console.log('Dry-run only. Re-run with --apply to UPDATE.');
+			console.log('Dry-run only (no DB writes). Re-run with --apply to UPDATE.');
 			return;
 		}
 
 		await app.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${args.tenantId}, true)`;
 			for (const u of updates) {
-				await tx`
-					update ad_metrics_daily
-					set
-						spend_base = ${u.spend_base},
-						base_currency = ${tenantBase},
-						fx_rate = ${u.fx_rate},
-						fx_dated = ${u.fx_dated}
-					where id = ${u.id}
-						and spend_base is null
-				`;
+				if (args.force) {
+					await tx`
+						update ad_metrics_daily
+						set
+							spend_base = ${u.spend_base},
+							base_currency = ${tenantBase},
+							fx_rate = ${u.fx_rate},
+							fx_dated = ${u.fx_dated}
+						where id = ${u.id}
+					`;
+				} else {
+					await tx`
+						update ad_metrics_daily
+						set
+							spend_base = ${u.spend_base},
+							base_currency = ${tenantBase},
+							fx_rate = ${u.fx_rate},
+							fx_dated = ${u.fx_dated}
+						where id = ${u.id}
+							and spend_base is null
+					`;
+				}
 				stats.applied += 1;
 			}
 		});
@@ -272,6 +329,9 @@ True fetch/parse failures are skipped and listed.`);
 					applied: stats.applied,
 					would_update: stats.would_update,
 					skipped_no_rate: stats.skipped_no_rate,
+					skipped_unchanged: stats.skipped_unchanged,
+					planned_spend_base_sum: plannedSpendBaseSum,
+					rate_source: apiBase,
 					missing_rate_keys: stats.missing_rate_keys
 				},
 				null,
@@ -290,4 +350,4 @@ if (require.main === module) {
 	});
 }
 
-module.exports = { parseArgs, fetchFrankfurterRate, toIsoDate };
+module.exports = { parseArgs, fetchFrankfurterRate, toIsoDate, DEFAULT_FRANKFURTER };
