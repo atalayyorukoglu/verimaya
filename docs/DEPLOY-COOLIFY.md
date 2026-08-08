@@ -505,3 +505,46 @@ node scripts/backfill-ad-spend-fx.js --apply --tenant-id <TENANT_UUID>
 `0032_ad_metrics_fx_coherence` bunu DB seviyesinde de garanti eder: `spend_base` varsa
 `base_currency` + `fx_rate` + `fx_dated` zorunlu. Kaynağı olmayan bir çevrim — elle
 SQL ile bile — tabloya giremez.
+
+## OPS — ETL tenant operasyonel veriyi sıfırla (`etl:reset`)
+
+`etl.js` **append-only**: `external_ids`’te eşlemesi olan kayıtlar atlanır; `--force` / update
+modu yok. Dolu bir tenant’a yeniden import sessizce hiçbir şey yazmaz. Tekrar ETL
+çalıştırmadan önce o tenant’ın import edilmiş operasyonel verisini hard-DELETE etmek gerekir.
+
+Script: `apps/api/scripts/reset-tenant-data.js` (`pnpm --filter @verimaya/api etl:reset`).
+
+**Kapsam (silinir):** `external_ids`, `case_notes`, `files`, `transactions`, `appointments`,
+`patients`, `contacts`, `contact_types`, `finance_categories` — FK-güvenli sırada, tek
+transaction, soft-delete satırları dahil.
+
+**Kasıtlı korunur:** `tenants`, `tenant_settings` / credentials / provider identities,
+üyeler/kullanıcılar, `api_keys`, reklam (`ad_metrics_daily`), kuyruk/outbox, skor kartı vb.
+Giriş ve entegrasyon ayarları bozulmaz.
+
+**İki bayraklı güvenlik:** varsayılan dry-run (yazmaz). Yazmak için hem `--apply` hem
+`--confirm <tenant-slug>` gerekir; slug `tenants.slug` ile birebir eşleşmezse abort —
+yanlış tenant silinmez.
+
+**Coolify — API container Terminal:**
+
+```bash
+# Dry-run: tablo başına silinecek satır sayısı (DB'ye yazmaz)
+node scripts/reset-tenant-data.js --tenant-id <TENANT_UUID>
+
+# Hard-DELETE (slug tenants.slug ile aynı olmalı)
+node scripts/reset-tenant-data.js --apply --confirm <TENANT_SLUG> --tenant-id <TENANT_UUID>
+```
+
+**Sıra (reset → import → doğrula):**
+
+```bash
+node scripts/reset-tenant-data.js --apply --confirm <TENANT_SLUG> --tenant-id <TENANT_UUID>
+# Tracker kaynağı veya fixture — mevcut etl bayrakları
+node scripts/etl.js --apply --tenant-id <TENANT_UUID> --tracker-tenant-id <TRACKER_UUID>
+# veya: node scripts/etl.js --apply --tenant-id <TENANT_UUID> --fixture ./fixtures/….json
+node scripts/etl-verify.js --tenant-id <TENANT_UUID>
+```
+
+Env: `DATABASE_URL_APP` (RLS). Script’i prod’a karşı çalıştırmadan önce dry-run JSON özetini
+oku; `would_delete_total` beklediğin gibi değilse `--apply` verme.
