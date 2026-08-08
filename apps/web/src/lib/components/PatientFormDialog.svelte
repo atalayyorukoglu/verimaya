@@ -12,6 +12,7 @@
 	import {
 		initPatientSourceSelect,
 		PATIENT_SOURCE_SELECT_OTHER,
+		PATIENT_SOURCE_SELECT_UNKNOWN,
 		resolvePatientSource
 	} from '$lib/patient-source-select';
 	import { useQueryScope } from '$lib/query-scope.svelte';
@@ -48,7 +49,7 @@
 	let phone = $state('');
 	let email = $state('');
 	let status = $state<PatientStatus>('scheduled');
-	let sourceSelect = $state('');
+	let sourceSelect = $state(PATIENT_SOURCE_SELECT_UNKNOWN);
 	let sourceCustom = $state('');
 	let notes = $state('');
 	let assigned_user_id = $state('');
@@ -123,8 +124,8 @@
 			</div>
 			<div>
 				<label class={labelClass} for="patient-source">{t('patients.form.source')}</label>
-				<select id="patient-source" class={fieldClass} bind:value={sourceSelect}>
-					<option value="">{t('patients.form.sourceEmpty')}</option>
+				<select id="patient-source" class={fieldClass} bind:value={sourceSelect} required>
+					<option value={PATIENT_SOURCE_SELECT_UNKNOWN}>{t('patients.form.sourceUnknown')}</option>
 					{#each PATIENT_SOURCE_PRESETS as preset (preset)}
 						<option value={preset}>{preset}</option>
 					{/each}

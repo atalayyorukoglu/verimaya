@@ -3,6 +3,7 @@ import { PATIENT_SOURCE_PRESETS } from '@verimaya/shared';
 import {
 	initPatientSourceSelect,
 	PATIENT_SOURCE_SELECT_OTHER,
+	PATIENT_SOURCE_SELECT_UNKNOWN,
 	resolvePatientSource
 } from './patient-source-select';
 
@@ -14,7 +15,12 @@ describe('patient source select mapping', () => {
 		}
 	});
 
-	it('empty select submits null (source stays optional)', () => {
+	it("Bilinmiyor (UNKNOWN sentinel) submits null — never stored as a literal", () => {
+		expect(resolvePatientSource(PATIENT_SOURCE_SELECT_UNKNOWN, '')).toBeNull();
+		expect(resolvePatientSource(PATIENT_SOURCE_SELECT_UNKNOWN, 'ignored')).toBeNull();
+	});
+
+	it('empty select still submits null (defensive)', () => {
 		expect(resolvePatientSource('', '')).toBeNull();
 		expect(resolvePatientSource('   ', 'anything')).toBeNull();
 	});
@@ -26,10 +32,19 @@ describe('patient source select mapping', () => {
 		expect(resolvePatientSource(init.selectValue, init.customSource)).toBe('ghl');
 	});
 
-	it('null/empty stored source opens on the empty option', () => {
-		expect(initPatientSourceSelect(null)).toEqual({ selectValue: '', customSource: '' });
-		expect(initPatientSourceSelect('')).toEqual({ selectValue: '', customSource: '' });
-		expect(initPatientSourceSelect('   ')).toEqual({ selectValue: '', customSource: '' });
+	it('null/empty stored source opens on Bilinmiyor (UNKNOWN)', () => {
+		expect(initPatientSourceSelect(null)).toEqual({
+			selectValue: PATIENT_SOURCE_SELECT_UNKNOWN,
+			customSource: ''
+		});
+		expect(initPatientSourceSelect('')).toEqual({
+			selectValue: PATIENT_SOURCE_SELECT_UNKNOWN,
+			customSource: ''
+		});
+		expect(initPatientSourceSelect('   ')).toEqual({
+			selectValue: PATIENT_SOURCE_SELECT_UNKNOWN,
+			customSource: ''
+		});
 	});
 
 	it('preset label opens on that preset option', () => {
