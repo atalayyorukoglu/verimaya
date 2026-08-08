@@ -105,9 +105,15 @@ curl -s -X POST http://localhost:3000/v1/whatsapp/parse \
 
 ## Faz 5 — Reklam metrikleri (stub)
 
-- Tablo: `ad_metrics_daily` (`tenant_id`, `provider` meta|google, `date`, `campaign_id`, `spend_minor`, `impressions`, `clicks`; `UNIQUE(tenant_id, provider, date, campaign_id)`; RLS).
+- Tablo: `ad_metrics_daily` (`tenant_id`, `provider` meta|google, `date`, `campaign_id`,
+  `spend_minor`, `currency`, `spend_base`, `base_currency`, `fx_rate`, `fx_dated`,
+  `impressions`, `clicks`; `UNIQUE(tenant_id, provider, date, campaign_id)`; RLS).
 - API: `GET /v1/ad-metrics?from=&to=&provider=` — SessionGuard + ActiveOrgGuard; boş liste geçerli.
-- Worker stub: `ad_metrics.sync` ve `integration_event.process` + `provider=meta|google` → noop (6 saatlik incremental sync + OAuth ileride).
+- Sync OAuth: hesap para birimi provider API'den yazılır (varsayılan yok).
+- FX snapshot backfill (OPS-02c, bir kez): `pnpm ads:fx-backfill -- --tenant-id <uuid>`
+  (dry-run); `--apply` ile yazar. Coolify yolu: `docs/DEPLOY-COOLIFY.md` § OPS-02c.
+- Worker stub: `ad_metrics.sync` ve `integration_event.process` + `provider=meta|google` → noop
+  (incremental sync + OAuth bağlanınca aktif).
 
 ## Faz 6 — Dış API + API key (stub)
 

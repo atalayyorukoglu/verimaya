@@ -447,4 +447,35 @@ Deploy/site düzelince çoğu kez kendiliğinden yeşile döner. Kalırsa: Serve
 pnpm --filter @verimaya/api db:migrate
 ```
 
+Owner `DATABASE_URL` ile; app runtime `DATABASE_URL_APP` kullanmaya devam eder.
 veya `RUN_MIGRATIONS=true`.
+
+## OPS-02c — Reklam harcaması `spend_base` backfill
+
+`ad_metrics_daily` satırları `currency` taşıyor ama yabancı para (ör. TRY Ads → GBP tenant)
+için `spend_base` boşsa ROAS **"Kur bilgisi eksik"** gösterir. Bu script Frankfurter
+**tarihsel** ECB kurunu bir kez yazar (canlı çevirici değil — `doviz.md` snapshot kuralı).
+
+**Coolify — API container Terminal:**
+
+```bash
+# Dry-run: ne yazacağını gösterir, DB'ye yazmaz
+node scripts/backfill-ad-spend-fx.js --tenant-id <TENANT_UUID>
+
+# Uygula (idempotent: spend_base dolu satırlara dokunmaz)
+node scripts/backfill-ad-spend-fx.js --apply --tenant-id <TENANT_UUID>
+
+# Opsiyonel tarih penceresi
+node scripts/backfill-ad-spend-fx.js --apply --tenant-id <TENANT_UUID> \
+  --from 2026-04-08 --to 2026-08-01
+```
+
+Repo kökünden lokal (yalnız test DB — prod URL'ye lokalden yazma):
+
+```bash
+pnpm --filter @verimaya/api ads:fx-backfill -- --tenant-id <uuid>
+pnpm --filter @verimaya/api ads:fx-backfill -- --apply --tenant-id <uuid>
+```
+
+Env: `DATABASE_URL_APP` (RLS). Hafta sonu/tatil için Frankfurter son ECB gününü döner;
+gerçek fetch hatasında satır atlanır ve `missing_rate_keys` raporlanır.

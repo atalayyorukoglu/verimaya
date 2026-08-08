@@ -16,6 +16,7 @@
 		"etl:dry-run": "node scripts/etl.js",
 		"etl:verify": "node scripts/etl-verify.js",
 		"fx:backfill": "node scripts/backfill-fx.js",
+		"ads:fx-backfill": "node scripts/backfill-ad-spend-fx.js",
 		"karne:stats": "node scripts/karne-stats.js",
 		"files:migrate-s3": "node scripts/migrate-files-to-s3.js",
 		"ghl:migrate-markers": "node scripts/migrate-ghl-markers.js"

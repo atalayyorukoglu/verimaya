@@ -642,6 +642,8 @@
     hesabın parasını API'den okur (`customer.currency_code` / ad account `currency`).
     `sumAdSpend` = `resolveBaseAmount`; `spend_fx_missing` → ROAS/CPL/spend kartında
     **"Kur bilgisi eksik"** (yanlış sayı yok). TRY+GBP tenant testi spend_base ile ~19,8×.
+    Backfill: `scripts/backfill-ad-spend-fx.js` (Frankfurter tarihsel; dry-run varsayılan;
+    `docs/DEPLOY-COOLIFY.md` § OPS-02c).
 
 ---
 
