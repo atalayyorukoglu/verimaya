@@ -222,4 +222,52 @@ describe('appointments tenant isolation', () => {
 		expect(byQ.items.map((a) => a.id)).toEqual([matchId]);
 		expect(byQ.items.map((a) => a.id)).not.toContain(appointmentA);
 	});
+
+	it('from/to narrow the result set to tenant-local calendar days', async () => {
+		const inRangeId = await withTenantSession(tenantA, async () => {
+			const a = await appointmentsService.createWithDb(db, tenantA, {
+				patient_id: patientA,
+				starts_at: '2026-04-15T10:00:00.000Z',
+				ends_at: null,
+				title: 'Mid-April visit',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+			return a.id;
+		});
+		const outOfRangeId = await withTenantSession(tenantA, async () => {
+			const a = await appointmentsService.createWithDb(db, tenantA, {
+				patient_id: patientA,
+				starts_at: '2026-05-20T10:00:00.000Z',
+				ends_at: null,
+				title: 'May visit',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+			return a.id;
+		});
+
+		const byRange = await appointmentsService.list(tenantA, {
+			limit: 25,
+			from: '2026-04-01',
+			to: '2026-04-30'
+		});
+		expect(byRange.items.map((a) => a.id)).toContain(inRangeId);
+		expect(byRange.items.map((a) => a.id)).not.toContain(outOfRangeId);
+		expect(byRange.items.map((a) => a.id)).not.toContain(appointmentA);
+	});
 });

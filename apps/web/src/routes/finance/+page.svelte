@@ -125,6 +125,14 @@
 	);
 
 	const items = $derived(txQuery.data?.pages.flatMap((p) => p.items) ?? []);
+	const totalCount = $derived(txQuery.data?.pages[0]?.total_count);
+	const listDescription = $derived(
+		totalCount == null
+			? t('finance.description')
+			: filtersActive
+				? `${t('finance.description')} · ${t('finance.list.totalFiltered', { count: String(totalCount) })}`
+				: `${t('finance.description')} · ${t('finance.list.total', { count: String(totalCount) })}`
+	);
 
 	function applyFilters(e: Event) {
 		e.preventDefault();
@@ -176,7 +184,7 @@
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
-	<PageHeader title={t('finance.title')} description={t('finance.description')}>
+	<PageHeader title={t('finance.title')} description={listDescription}>
 		{#snippet actions()}
 			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 				<a

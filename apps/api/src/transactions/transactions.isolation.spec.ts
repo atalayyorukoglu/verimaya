@@ -336,4 +336,53 @@ describe('transactions tenant isolation', () => {
 		});
 		expect(leak.items).toHaveLength(0);
 	});
+
+	it('total_count reflects filters and is not reduced by cursor', async () => {
+		const taggedId = await withTenantSession(tenantA, async () => {
+			const t = await transactionsService.createWithDb(db, tenantA, {
+				kind: 'income',
+				title: 'TotalCount Marker',
+				subtitle: null,
+				category: 'CountTag',
+				occurred_on: '2026-07-01',
+				status: 'paid',
+				invoice_status: 'none',
+				payment_method: null,
+				amount: 111,
+				paid_amount: 111,
+				currency: 'TRY',
+				amount_base: 111,
+				base_currency: 'TRY',
+				fx_rate: null,
+				fx_dated: null,
+				patient_id: patientA,
+				contact_id: contactA,
+				contact_label: null,
+				description: null
+			});
+			return t.id;
+		});
+
+		const filtered = await transactionsService.list(tenantA, {
+			limit: 25,
+			category: 'CountTag'
+		});
+		expect(filtered.items.map((t) => t.id)).toEqual([taggedId]);
+		expect(filtered.total_count).toBe(1);
+
+		const all = await transactionsService.list(tenantA, { limit: 25 });
+		expect(all.total_count).toBeGreaterThan(1);
+
+		const page1 = await transactionsService.list(tenantA, { limit: 1 });
+		expect(page1.items).toHaveLength(1);
+		expect(page1.next_cursor).toBeTruthy();
+		expect(page1.total_count).toBe(all.total_count);
+
+		const page2 = await transactionsService.list(tenantA, {
+			limit: 1,
+			cursor: page1.next_cursor!
+		});
+		expect(page2.total_count).toBe(all.total_count);
+		expect(page2.total_count).toBeGreaterThan(page2.items.length);
+	});
 });

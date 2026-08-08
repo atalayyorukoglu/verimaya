@@ -50,6 +50,8 @@
 	let qInput = $state('');
 	let appliedQ = $state('');
 	let status = $state('');
+	let from = $state('');
+	let to = $state('');
 
 	const statusOptions = $derived(appointmentStatusSchema.options);
 
@@ -88,8 +90,8 @@
 	);
 
 	const listFilters = $derived({
-		from: rangeFromDay,
-		to: rangeToDay,
+		from: from || rangeFromDay,
+		to: to || rangeToDay,
 		patient_id: patientFilterId,
 		q: appliedQ || undefined,
 		status: (status || undefined) as AppointmentStatus | undefined
@@ -168,6 +170,8 @@
 		qInput = '';
 		appliedQ = '';
 		status = '';
+		from = '';
+		to = '';
 	}
 
 	function openCreate() {
@@ -308,9 +312,21 @@
 				<option value={s}>{appointmentStatusLabels[s]}</option>
 			{/each}
 		</select>
+		<input
+			type="date"
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
+			aria-label={t('appointments.filter.from')}
+			bind:value={from}
+		/>
+		<input
+			type="date"
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
+			aria-label={t('appointments.filter.to')}
+			bind:value={to}
+		/>
 		<div class="flex gap-2">
 			<Button type="submit" variant="secondary">{t('appointments.filter.apply')}</Button>
-			{#if appliedQ || status}
+			{#if appliedQ || status || from || to}
 				<Button type="button" variant="outline" onclick={clearFilters}
 					>{t('appointments.filter.clear')}</Button
 				>

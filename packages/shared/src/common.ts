@@ -42,7 +42,7 @@ export function cursorPageSchema<T extends z.ZodTypeAny>(item: T) {
 	return z.object({
 		items: z.array(item),
 		next_cursor: z.string().nullable(),
-		/** Opt-in exact total for filter-aware lists (patients, contacts). */
+		/** Opt-in exact total for filter-aware lists (patients, contacts, transactions). */
 		total_count: z.number().int().nonnegative().optional()
 	});
 }

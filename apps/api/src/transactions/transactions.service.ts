@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from '@verimaya/shared';
 import { contacts, patients, tenants, transactions } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
@@ -14,21 +14,20 @@ export class TransactionsService {
 
 	async list(tenantId: string, params: TransactionListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const filters: SQL[] = [isNull(transactions.deletedAt)];
 			const cursorCond = occurredOnCursorCondition(
 				transactions.occurredOn,
 				transactions.id,
 				params.cursor
 			);
-			if (cursorCond) filters.push(cursorCond);
-			if (params.patient_id) filters.push(eq(transactions.patientId, params.patient_id));
-			if (params.contact_id) filters.push(eq(transactions.contactId, params.contact_id));
+			const baseFilters: SQL[] = [isNull(transactions.deletedAt)];
+			if (params.patient_id) baseFilters.push(eq(transactions.patientId, params.patient_id));
+			if (params.contact_id) baseFilters.push(eq(transactions.contactId, params.contact_id));
 			// CONTRACT-01: inclusive range over the naive occurred_on date (see list-query.ts doc).
-			if (params.from) filters.push(gte(transactions.occurredOn, params.from));
-			if (params.to) filters.push(lte(transactions.occurredOn, params.to));
-			if (params.kind) filters.push(eq(transactions.kind, params.kind));
-			if (params.status) filters.push(eq(transactions.status, params.status));
-			if (params.category) filters.push(eq(transactions.category, params.category));
+			if (params.from) baseFilters.push(gte(transactions.occurredOn, params.from));
+			if (params.to) baseFilters.push(lte(transactions.occurredOn, params.to));
+			if (params.kind) baseFilters.push(eq(transactions.kind, params.kind));
+			if (params.status) baseFilters.push(eq(transactions.status, params.status));
+			if (params.category) baseFilters.push(eq(transactions.category, params.category));
 			const searchCond = textSearchCondition(params.q, [
 				transactions.title,
 				transactions.subtitle,
@@ -37,19 +36,28 @@ export class TransactionsService {
 				transactions.contactLabel,
 				transactions.description
 			]);
-			if (searchCond) filters.push(searchCond);
+			if (searchCond) baseFilters.push(searchCond);
+
+			const [totalRow] = await db
+				.select({ n: count() })
+				.from(transactions)
+				.where(and(...baseFilters));
+
+			const pageFilters = [...baseFilters];
+			if (cursorCond) pageFilters.push(cursorCond);
 
 			const rows = await db
 				.select()
 				.from(transactions)
-				.where(and(...filters))
+				.where(and(...pageFilters))
 				.orderBy(desc(transactions.occurredOn), desc(transactions.id))
 				.limit(params.limit + 1);
 
 			const page = buildOccurredOnCursorPage(rows, params.limit);
 			return {
 				items: page.items.map(toTransaction),
-				next_cursor: page.next_cursor
+				next_cursor: page.next_cursor,
+				total_count: Number(totalRow?.n ?? 0)
 			};
 		});
 	}
