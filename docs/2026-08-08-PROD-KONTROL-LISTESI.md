@@ -1,0 +1,128 @@
+# Prod kontrol listesi — migration 0028–0030 sonrası
+
+Tarih: 2026-08-08 · Tenant: Demo Klinik (kendi firmamız) · Kaynak: bu turda kapanan
+5A DOMAIN-01 + 5B GAP-P0 + 6B GAP-04/05/06/07 + AUDIT-F09-19
+
+> **Amaç:** testlerin kanıtlayamadığı şeyleri gerçek veriyle görmek.
+> 757 hasta, 548 işlem, 703 randevu var — sayılar bu ölçekte anlamlı olmalı.
+> Bir madde takılırsa **dur**, not al, devam etme.
+
+---
+
+## A. Migration (önce bu)
+
+- [ ] **A1 — Yedek al.** Coolify → Backups → manuel snapshot. (R2 düzeni kurulu,
+      geri yükleme provası 2026-08-07'de yapıldı.)
+- [ ] **A2 — Migration çalıştır.** `pnpm db:migrate` → 0028, 0029, 0030 geçmeli.
+- [ ] **A3 — Kanıt sorgusu.**
+      ```sql
+      SELECT DISTINCT status FROM patients;
+      ```
+      **Beklenen:** yalnız `scheduled` / `arrived` / `treated` / `follow_up` / `cancelled`.
+      **Görürsen dur:** `lead`, `contacted`, `qualified`, `closed_won`, `closed_lost` →
+      `0029` UPDATE'i çalışmamış.
+- [ ] **A4 — Randevu tipleri seed olmuş mu?**
+      ```sql
+      SELECT name FROM appointment_types;
+      ```
+      **Beklenen:** Konsültasyon, Tedavi, Kontrol, Transfer.
+
+---
+
+## B. Soft-delete — en kritik bölüm
+
+12 sorguya filtre ekledik. Birini atladıysak test yakalamaz, **ekran yakalar.**
+
+- [ ] **B1 — Bir işlem sil.** İşlemler → herhangi bir kayıt → sil.
+      Not al: *tutar ve tarih ne idi?*
+- [ ] **B2 — Altı yere bak, kayıt hiçbirinde olmamalı:**
+
+      | Nereye | Ne bekliyorsun |
+      | --- | --- |
+      | İşlemler listesi | kayıt yok |
+      | Raporlar → aylık gelir/gider | toplam sildiğin tutar kadar düştü |
+      | Raporlar → kategori kırılımı | o kategorinin toplamı düştü |
+      | Hasta detayı → finans özeti (bağlıysa) | kayıt yok |
+      | Bakiyeler | kişinin bakiyesi değişti |
+      | Raporlar → pazarlama (tahsilat) | tahsilat düştü |
+
+      **Biri hâlâ gösteriyorsa** → o sorguda `deleted_at` filtresi atlanmış. Not al.
+
+- [ ] **B3 — Bir kişi sil**, sonra o kişiye bağlı eski bir işleme bak.
+      **Beklenen:** işlem duruyor, kişi adı hâlâ okunuyor (denormalize `contact_label`),
+      ama kişi listesinde kişi yok.
+- [ ] **B4 — Bir randevu sil**, randevu listesinde ve operasyon metriklerinde düştüğünü gör.
+
+---
+
+## C. Daha önce kırık olan yerler
+
+- [ ] **C1 — Randevu tipi ekle/sil.** Ayarlar → Randevu ayarları → yeni tip ekle →
+      sayfayı yenile → **hâlâ duruyor mu?** Sonra sil.
+      *(Eskiden 404 veriyordu — MSW'de vardı, API'de yoktu.)*
+- [ ] **C2 — Üye rolü değiştir.** Ayarlar → Ekip → bir üyenin rolünü değiştir.
+      Sonra **kendi rolünü** değiştirmeyi dene → engellenmeli.
+      *(Eskiden panelden hiç değiştirilemiyordu.)*
+
+---
+
+## D. Yeni filtreler — gerçek veriyle
+
+- [ ] **D1 — İşlem filtreleri.** İşlemler → sırayla dene: Gelir / Ödenmedi / bir kategori /
+      arama kutusuna bir başlık parçası.
+      **Beklenen:** her filtrede sayı azalıyor, sonuçlar filtreye uyuyor.
+- [ ] **D2 — Randevu arama.** Randevular → bir hasta adının parçasını yaz.
+      Sonra durum filtresinden "Gelmedi" seç.
+
+---
+
+## E. Yeni sayılar — inandırıcı mı?
+
+Burada "çalışıyor mu" değil, **"sayı mantıklı mı"** soruyorsun.
+
+- [ ] **E1 — Operasyon metrikleri** (Raporlar → Operasyon bloğu, dönemin en üstünde).
+      - No-show oranı: **%0 ise şüphelen** — 703 randevuda hiç gelmeyen olmaması zor.
+      - Tamamlanma oranı: %100 ise de şüphelen.
+      - Klinik kırılımı: klinik adları tanıdık mı?
+      - Toplam randevu, dönem filtresiyle değişiyor mu?
+- [ ] **E2 — Tutarlılık uyarıları** (Raporlar → Tutarlılık + Ayarlar → Veri kalitesi).
+      548 işlemle ilk kez karşılaşıyor.
+      - **Sıfır uyarı** → muhtemelen çalışmıyor, ETL verisi bu kadar temiz olmaz.
+      - **500+ uyarı** → kural fazla hassas, hangi `code` baskın bak.
+      - **10–100 arası** → sağlıklı. Birkaçını açıp gerçekten sorunlu mu kontrol et.
+      - 100'ü aşarsa "İlk 100 gösteriliyor, toplam N" satırı görünmeli.
+
+---
+
+## F. Dil ve görünüm (DOMAIN-01)
+
+- [ ] **F1 — Hastalar sayfası.** "Yeni dosya aç" yazıyor mu? Boş durumda "Henüz dosya yok"?
+      Hiçbir yerde "lead" / satış hunisi dili kalmamalı.
+- [ ] **F2 — Hasta durumu seçenekleri:** sadece beş operasyon değeri görünmeli.
+- [ ] **F3 — Demo şeridi YOK.** Prod'da MSW kapalı → sarı "Demo verisi" şeridi
+      görünmemeli. Görünüyorsa `PUBLIC_USE_MSW` yanlış.
+- [ ] **F4 — GHL ayarları:** "Alan sahipliği" başlığında "(planlanan)" yazmamalı.
+- [ ] **F5 — Raporlarda tek kaynak kartı.** "Kaynak dağılımı" gitmiş olmalı,
+      pazarlamadaki "Kaynak kırılımı" kalmalı. Kolon başlıkları:
+      Kaynak / Dosya / Tedavi edilen / Tahsilat *(eski "Lead" ve "Kapalı" olmamalı)*.
+
+---
+
+## G. Mükerrer (yeni kural)
+
+- [ ] **G1 — Hastalar → Çift kayıt tara.** Randevusu veya işlemi olan hastalar
+      listede **görünmemeli**.
+- [ ] **G2 — Kişiler → Çift kayıt tara.** Burası eski davranışta, "birleştir" demeli.
+
+---
+
+## Sonuç
+
+- [ ] Takılan madde yok → prod migration tamam, PILOT-02'ye hazır.
+- [ ] Takılan madde var → aşağıya yaz, YAPILACAKLAR'a kalem aç.
+
+**Bulgular:**
+
+| Madde | Ne oldu | Not |
+| --- | --- | --- |
+|  |  |  |
