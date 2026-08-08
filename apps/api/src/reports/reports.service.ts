@@ -188,7 +188,7 @@ export class ReportsService {
 				})
 				.from(transactions)
 				.leftJoin(contacts, eq(transactions.contactId, contacts.id))
-				.where(isNotNull(transactions.contactId));
+				.where(and(isNotNull(transactions.contactId), isNull(transactions.deletedAt)));
 
 			const map = new Map<
 				string,
@@ -448,7 +448,7 @@ export class ReportsService {
 	}
 
 	private async fetchTransactions(db: TenantDb, params: ReportPeriodParams): Promise<TxRow[]> {
-		const conditions = [];
+		const conditions = [isNull(transactions.deletedAt)];
 		if (params.from) {
 			conditions.push(gte(transactions.occurredOn, params.from));
 		}
@@ -469,7 +469,7 @@ export class ReportsService {
 				currency: transactions.currency
 			})
 			.from(transactions)
-			.where(conditions.length ? and(...conditions) : undefined);
+			.where(and(...conditions));
 	}
 
 	private async fetchPatientsForPeriod(
@@ -525,7 +525,7 @@ export class ReportsService {
 		params: MarketingReportParams,
 		tenantBase: string
 	): Promise<{ revenue_base: number; revenueBySource: Map<string, number> }> {
-		const conditions = [eq(transactions.kind, 'income')];
+		const conditions = [eq(transactions.kind, 'income'), isNull(transactions.deletedAt)];
 		if (params.from) {
 			conditions.push(gte(transactions.occurredOn, params.from));
 		}
@@ -544,7 +544,10 @@ export class ReportsService {
 				source: patients.source
 			})
 			.from(transactions)
-			.leftJoin(patients, eq(transactions.patientId, patients.id))
+			.leftJoin(
+				patients,
+				and(eq(transactions.patientId, patients.id), isNull(patients.deletedAt))
+			)
 			.where(and(...conditions));
 
 		const revenueBySource = new Map<string, number>();

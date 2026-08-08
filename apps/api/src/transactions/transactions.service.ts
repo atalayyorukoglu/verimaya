@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from '@verimaya/shared';
 import { contacts, patients, tenants, transactions } from '../db/schema';
+import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
@@ -13,7 +14,7 @@ export class TransactionsService {
 
 	async list(tenantId: string, params: TransactionListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const filters: SQL[] = [];
+			const filters: SQL[] = [isNull(transactions.deletedAt)];
 			const cursorCond = occurredOnCursorCondition(
 				transactions.occurredOn,
 				transactions.id,
@@ -41,7 +42,7 @@ export class TransactionsService {
 			const rows = await db
 				.select()
 				.from(transactions)
-				.where(filters.length > 0 ? and(...filters) : undefined)
+				.where(and(...filters))
 				.orderBy(desc(transactions.occurredOn), desc(transactions.id))
 				.limit(params.limit + 1);
 
@@ -85,7 +86,7 @@ export class TransactionsService {
 	}
 
 	async updateWithDb(db: TenantDb, tenantId: string, id: string, input: TransactionUpdate) {
-		const existing = await this.findRow(db, id);
+		const existing = await this.findActiveRow(db, id);
 		if (!existing) {
 			throw new NotFoundException({
 				error: { code: 'not_found', message: 'Transaction not found' }
@@ -153,11 +154,34 @@ export class TransactionsService {
 		return toTransaction(row!);
 	}
 
-	private async findRow(db: TenantDb, id: string) {
+	async softDeleteWithDb(
+		db: TenantDb,
+		tenantId: string,
+		id: string,
+		actor: AuditActor
+	) {
+		const existing = await this.findActiveRow(db, id);
+		if (!existing) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Transaction not found' }
+			});
+		}
+
+		await db
+			.update(transactions)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(eq(transactions.id, id));
+
+		await writeAuditLog(db, tenantId, actor, 'delete', 'transaction', existing.title);
+
+		return { id, deleted: true as const };
+	}
+
+	private async findActiveRow(db: TenantDb, id: string) {
 		const [row] = await db
 			.select()
 			.from(transactions)
-			.where(eq(transactions.id, id))
+			.where(and(eq(transactions.id, id), isNull(transactions.deletedAt)))
 			.limit(1);
 		return row;
 	}
@@ -196,7 +220,7 @@ export class TransactionsService {
 			const [contact] = await db
 				.select({ displayName: contacts.displayName })
 				.from(contacts)
-				.where(eq(contacts.id, input.contact_id))
+				.where(and(eq(contacts.id, input.contact_id), isNull(contacts.deletedAt)))
 				.limit(1);
 			if (!contact) {
 				throw new NotFoundException({

@@ -135,7 +135,9 @@ export class PatientsService {
 					paidAmount: transactions.paidAmount
 				})
 				.from(transactions)
-				.where(eq(transactions.patientId, patientId));
+				.where(
+					and(eq(transactions.patientId, patientId), isNull(transactions.deletedAt))
+				);
 
 			let incomeBase = 0;
 			let expenseBase = 0;
@@ -574,7 +576,13 @@ export class PatientsService {
 		const [appt] = await db
 			.select()
 			.from(appointments)
-			.where(and(eq(appointments.id, appointmentId), eq(appointments.patientId, patientId)))
+			.where(
+				and(
+					eq(appointments.id, appointmentId),
+					eq(appointments.patientId, patientId),
+					isNull(appointments.deletedAt)
+				)
+			)
 			.limit(1);
 		if (!appt) {
 			throw new BadRequestException({
@@ -662,7 +670,12 @@ export class PatientsService {
 		return toPatient(row!);
 	}
 
-	async softDeleteWithDb(db: TenantDb, id: string) {
+	async softDeleteWithDb(
+		db: TenantDb,
+		tenantId: string,
+		id: string,
+		actor: AuditActor
+	) {
 		const existing = await this.findActiveRow(db, id);
 		if (!existing) {
 			throw new NotFoundException({
@@ -674,6 +687,8 @@ export class PatientsService {
 			.update(patients)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
 			.where(eq(patients.id, id));
+
+		await writeAuditLog(db, tenantId, actor, 'delete', 'patient', existing.fullName);
 
 		return { id, deleted: true as const };
 	}
@@ -786,7 +801,7 @@ export class PatientsService {
 	): Promise<Set<string>> {
 		const busy = new Set<string>();
 
-		const apptConds = [isNotNull(appointments.patientId)];
+		const apptConds = [isNotNull(appointments.patientId), isNull(appointments.deletedAt)];
 		if (limitToIds?.length) {
 			apptConds.push(inArray(appointments.patientId, limitToIds));
 		}
@@ -798,7 +813,7 @@ export class PatientsService {
 			if (row.id) busy.add(row.id);
 		}
 
-		const txnConds = [isNotNull(transactions.patientId)];
+		const txnConds = [isNotNull(transactions.patientId), isNull(transactions.deletedAt)];
 		if (limitToIds?.length) {
 			txnConds.push(inArray(transactions.patientId, limitToIds));
 		}

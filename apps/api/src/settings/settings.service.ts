@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, and, isNull } from 'drizzle-orm';
 import type {
 	AppointmentTypeCreate,
 	ContactTypeCreate,
@@ -201,7 +201,7 @@ export class SettingsService {
 			const [inUse] = await db
 				.select({ id: contacts.id })
 				.from(contacts)
-				.where(eq(contacts.contactTypeId, id))
+				.where(and(eq(contacts.contactTypeId, id), isNull(contacts.deletedAt)))
 				.limit(1);
 			if (inUse) {
 				throw new BadRequestException({

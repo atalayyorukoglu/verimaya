@@ -365,7 +365,7 @@
   (acente / klinik) Adım 5'in tonunu etkiler ama Adım 1–4'ü bloklamaz.
 - **Kabul:** `/patients` ekranında hiçbir yerde satış hunisi dili yok; `patientStatusSchema`
   yalnız operasyon değerleri içeriyor; 757 hastanın statüsü yeni enum'a taşınmış;
-  GHL sahiplik metni "(planlanan)" değil; tenant izolasyon testleri yeşil.
+  GHL sahiplik metni "(planlanan)" değil; tenant izolasyon testleri yeşil. ✅
 - **Görüş:** DOMAIN-01 Adım 1–7 kapandı. Ownership metni kesin; raporlarda durum = dosya
   durumu, özet kaynak kartı kalktı (pazarlama kırılımı kaldı); MSW demo şeridi AppShell'de.
 
@@ -510,10 +510,28 @@
   sayfalı listeden hesaplandığı için büyük tenant'ta yanlış "temiz" sonucu verir.
   **`AUDIT-F09-17` ile aynı sınıf** (istemci O(N) agregasyon); birlikte ele alınmalı.
   Not: BF-04/BF-05 gereği `responsible_party` ve payer/payee kuralları **taşınmaz**.
-- [ ] **GAP-06 (G-06/G-07/G-08) — Silme yüzeyleri: işlem / randevu / kişi.** Üçünde de
-  `@Delete` yok (doğrulandı: 0 eşleşme). **Önce politika kararı gerekir** — hard-delete mi
-  soft-delete mi? Türk mali mevzuatı 10 yıl saklama (`AUDIT-F09-06`) ile KVKK silme hakkı
-  (`AUDIT-F09-07`) çatışıyor. Öneri: soft-delete + audit, `AUDIT-F09-06` ile aynı desen.
+- [x] **GAP-06 (G-06/G-07/G-08) — Silme yüzeyleri: işlem / randevu / kişi.** Üçünde de
+  `@Delete` yok (doğrulandı: 0 eşleşme). **Politika kararı verildi (Açık sorular §1):
+  üçünde de soft-delete, hard-delete yok.** Artık bloklu değil.
+  - Üç tabloya `deleted_at timestamptz` (yoksa) + migration. `patients.deletedAt` zaten var,
+    desen oradan alınır.
+  - `DELETE /v1/transactions/:id`, `/v1/appointments/:id`, `/v1/contacts/:id` → satırı silmez,
+    `deleted_at` damgalar, audit'e yazar.
+  - **Tüm liste ve detay sorgularına `isNull(deleted_at)` filtresi eklenir** — atlanan tek
+    sorgu silinen kaydı geri getirir. Rapor/aggregate sorguları da dahil.
+  - Silinen kişi/hasta bağlı işlemlerde `contact_label` / `patient_display_name` denormalize
+    alanları sayesinde geçmiş kayıtlar okunabilir kalır — bu alanlar temizlenmez.
+  - Mükerrer taramaları silinen kayıtları göstermez (hasta tarafında zaten böyle).
+  - **Kapsam dışı:** KVKK anonimleştirme → `AUDIT-F09-07`. Bu iş yalnız "listeden kaldır".
+  - **Kabul (GAP-06):** Üç kaynakta da DELETE var; silinen kayıt hiçbir listede, detayda,
+    raporda veya mükerrer grubunda görünmüyor (her biri için test); satır DB'de duruyor;
+    audit kaydı düşüyor; tenant izolasyon testleri yeşil. ✅
+  - **Görüş (GAP-06):** Migration `0030`. DELETE+audit (patient parity dahil). Contact merge
+    soft-delete. Filtre eklenen sorgu yüzeyi: txn/appt/contact list+find; reports
+    `fetchTransactions`/`balances`/`sumTahsilatBySource` (+ patient join); patient
+    `financeSummary`/`patientIdsWithRecords`/`resolveAppointmentLink`; contact
+    `duplicateGroups`+settings in-use. `tenants.hasTransactions` bilinçli filtrelenmedi
+    (silinmiş mali satır base currency kilidini korur).
 - [ ] **GAP-07 (G-12) — Randevu operasyon metrikleri raporu.** Tracker'da **canlı**
   (`ReportsPage.tsx:33,668` → `DashboardOzetContent`; ayrı rotası yoktu ama Summary sekmesinde
   render ediliyordu — "ölü kod" değil). Eksik olanlar: tamamlanma / no-show / iptal oranı,
@@ -707,9 +725,15 @@ Kaynak: `docs/tracker-verimaya-ozellik-gap.md`. Ertelenebilir; pilot sonrası de
 > Gap analizinden çıkan, kod yazılmadan **önce** cevaplanması gerekenler.
 > Kaynak: `docs/tracker-verimaya-ozellik-gap.md` § Açık sorular.
 
-1. **Silme politikası — GAP-06'yı bloklar.** İşlem / randevu / kişi için hard-delete mi
-   soft-delete mi? Türk mali mevzuatı 10 yıl saklama (`AUDIT-F09-06`) ile KVKK silme hakkı
-   (`AUDIT-F09-07`) çatışıyor. Karar verilmeden üç endpoint yazılamaz.
+1. ~~**Silme politikası**~~ → **KARAR VERİLDİ (2026-08-07, kullanıcı onayı): her üç kaynakta
+   da soft-delete; hard-delete yok.** Mali mevzuat (10 yıl saklama) ile KVKK silme hakkı
+   çatışması **GAP-06'yı bloklamıyor**, çünkü o çatışmanın cevabı silme değil
+   **anonimleştirme** ve bu ayrı bir kalem (`AUDIT-F09-07`). İkisi karıştırılmayacak:
+   - **GAP-06 (normal silme):** "bu kaydı listede görmek istemiyorum". Satır kalır,
+     `deleted_at` damgalanır, listelerden düşer, audit'e yazılır.
+   - **KVKK silme talebi (AUDIT-F09-07, sonra):** kişinin ad/telefon/e-posta alanları
+     anonimleştirilir; mali kayıtlar tutar bütünlüğü için yerinde kalır ama kimseyi
+     göstermez.
 2. ~~**Patient merge semantiği**~~ → **KARAR VERİLDİ (2026-08-07, kullanıcı onayı).**
    Dedup'ın amacı aynı **kişinin kayıt bilgisini** birleştirmek; kişinin **gelişlerini** tek
    dosyada toplamak değil. Aynı kişinin 2. gelişi ayrı `Patient` dosyasıdır ve birleştirilmez.

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cursorPageSchema } from './common.js';
+import { cursorPageSchema, softDeleteResultSchema } from './common.js';
 
 /** REST prefix for all Verimaya API routes. */
 export const API_V1_PREFIX = '/v1';
@@ -180,6 +180,9 @@ export const apiContract = {
 	'GET /v1/patients/:id': {
 		response: patientSchema
 	},
+	'DELETE /v1/patients/:id': {
+		response: softDeleteResultSchema
+	},
 	'GET /v1/patients/:id/finance-summary': {
 		response: patientFinanceSummarySchema
 	},
@@ -188,6 +191,9 @@ export const apiContract = {
 	},
 	'GET /v1/appointments/:id': {
 		response: appointmentSchema
+	},
+	'DELETE /v1/appointments/:id': {
+		response: softDeleteResultSchema
 	},
 	'GET /v1/patients/:id/files': {
 		response: z.object({ items: z.array(patientFileSchema) })
@@ -216,6 +222,9 @@ export const apiContract = {
 	'GET /v1/contacts/:id': {
 		response: contactSchema
 	},
+	'DELETE /v1/contacts/:id': {
+		response: softDeleteResultSchema
+	},
 	'GET /v1/contacts/duplicate-groups': {
 		response: z.object({ items: z.array(contactDuplicateGroupSchema) })
 	},
@@ -241,6 +250,9 @@ export const apiContract = {
 	},
 	'GET /v1/transactions/:id': {
 		response: transactionSchema
+	},
+	'DELETE /v1/transactions/:id': {
+		response: softDeleteResultSchema
 	},
 	'POST /v1/whatsapp/parse': {
 		response: z.object({ records: z.array(transactionDraftSchema) })

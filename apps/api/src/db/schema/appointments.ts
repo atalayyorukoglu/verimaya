@@ -32,6 +32,7 @@ export const appointments = pgTable(
 			onDelete: 'set null'
 		}),
 		notes: text('notes'),
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
 			.defaultNow(),
@@ -42,6 +43,7 @@ export const appointments = pgTable(
 	},
 	(table) => [
 		index('appointments_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
+		index('appointments_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt),
 		index('appointments_tenant_id_starts_at_idx').on(table.tenantId, table.startsAt),
 		index('appointments_tenant_id_patient_id_created_at_idx').on(
 			table.tenantId,

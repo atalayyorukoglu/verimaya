@@ -370,7 +370,7 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		});
 	});
 
-	it('contact merge reassigns transactions and hard-deletes losers', async () => {
+	it('contact merge reassigns transactions and soft-deletes losers', async () => {
 		const email = `contact-merge-${randomUUID()}@example.com`;
 		const { db } = getDb(databaseUrl);
 		let keepId = '';
@@ -428,10 +428,10 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		expect(txn[0]?.contactId).toBe(keepId);
 		expect(txn[0]?.contactLabel).toBe('Winner Contact');
 
-		const gone = await withTenantSession(tenantA, async () =>
-			db.select({ id: contacts.id }).from(contacts).where(eq(contacts.id, loserId))
+		const deleted = await withTenantSession(tenantA, async () =>
+			db.select({ deletedAt: contacts.deletedAt }).from(contacts).where(eq(contacts.id, loserId))
 		);
-		expect(gone).toHaveLength(0);
+		expect(deleted[0]?.deletedAt).not.toBeNull();
 	});
 
 	it('Tenant A contact merge cannot touch Tenant B records', async () => {

@@ -426,6 +426,7 @@ export class PatientsController {
 		@Res({ passthrough: true }) reply: FastifyReply
 	) {
 		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
 		const result = await this.idempotency.run(
 			tenantId,
 			getIdempotencyKey(req),
@@ -433,7 +434,7 @@ export class PatientsController {
 			'/v1/patients/:id',
 			async (db) => ({
 				statusCode: 200,
-				body: await this.patientsService.softDeleteWithDb(db, id)
+				body: await this.patientsService.softDeleteWithDb(db, tenantId, id, actor)
 			})
 		);
 		reply.status(result.statusCode);

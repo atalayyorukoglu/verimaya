@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
 	Patch,
@@ -121,6 +122,30 @@ export class ContactsController {
 			async (db) => ({
 				statusCode: 200,
 				body: await this.contactsService.updateWithDb(db, id, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Delete(':id')
+	@RequireOrgPermission('patient', 'delete')
+	@Idempotent()
+	async remove(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'DELETE',
+			'/v1/contacts/:id',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.contactsService.softDeleteWithDb(db, tenantId, id, actor)
 			})
 		);
 		reply.status(result.statusCode);

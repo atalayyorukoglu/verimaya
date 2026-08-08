@@ -3,6 +3,7 @@ import { and, desc, eq, gte, isNull, lt, type SQL } from 'drizzle-orm';
 import type { AppointmentCreate, AppointmentListQuery, AppointmentUpdate } from '@verimaya/shared';
 import { tenantDayRange } from '@verimaya/shared';
 import { appointments, patients, tenants } from '../db/schema';
+import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toAppointment } from '../common/mappers';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -14,7 +15,7 @@ export class AppointmentsService {
 	async list(tenantId: string, params: AppointmentListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const timezone = await this.getTenantTimezone(db, tenantId);
-			const filters: SQL[] = [];
+			const filters: SQL[] = [isNull(appointments.deletedAt)];
 			const cursorCond = createdAtCursorCondition(
 				appointments.createdAt,
 				appointments.id,
@@ -34,7 +35,7 @@ export class AppointmentsService {
 			const rows = await db
 				.select()
 				.from(appointments)
-				.where(filters.length > 0 ? and(...filters) : undefined)
+				.where(and(...filters))
 				.orderBy(desc(appointments.createdAt), desc(appointments.id))
 				.limit(params.limit + 1);
 
@@ -72,7 +73,7 @@ export class AppointmentsService {
 	}
 
 	async updateWithDb(db: TenantDb, id: string, input: AppointmentUpdate) {
-		const existing = await this.findRow(db, id);
+		const existing = await this.findActiveRow(db, id);
 		if (!existing) {
 			throw new NotFoundException({
 				error: { code: 'not_found', message: 'Appointment not found' }
@@ -130,6 +131,30 @@ export class AppointmentsService {
 		return toAppointment(row!);
 	}
 
+	async softDeleteWithDb(
+		db: TenantDb,
+		tenantId: string,
+		id: string,
+		actor: AuditActor
+	) {
+		const existing = await this.findActiveRow(db, id);
+		if (!existing) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Appointment not found' }
+			});
+		}
+
+		await db
+			.update(appointments)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(eq(appointments.id, id));
+
+		const label = existing.title ?? existing.patientDisplayName;
+		await writeAuditLog(db, tenantId, actor, 'delete', 'appointment', label);
+
+		return { id, deleted: true as const };
+	}
+
 	private async getTenantTimezone(db: TenantDb, tenantId: string) {
 		const [row] = await db
 			.select({ timezone: tenants.timezone })
@@ -144,11 +169,11 @@ export class AppointmentsService {
 		return row.timezone;
 	}
 
-	private async findRow(db: TenantDb, id: string) {
+	private async findActiveRow(db: TenantDb, id: string) {
 		const [row] = await db
 			.select()
 			.from(appointments)
-			.where(eq(appointments.id, id))
+			.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
 			.limit(1);
 		return row;
 	}

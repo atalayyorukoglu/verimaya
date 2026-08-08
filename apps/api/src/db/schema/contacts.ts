@@ -19,6 +19,7 @@ export const contacts = pgTable(
 		notes: text('notes'),
 		isInternal: boolean('is_internal').notNull().default(false),
 		usageCount: integer('usage_count').notNull().default(0),
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
 			.defaultNow(),
@@ -29,7 +30,8 @@ export const contacts = pgTable(
 	},
 	(table) => [
 		index('contacts_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
-		index('contacts_tenant_id_contact_type_id_idx').on(table.tenantId, table.contactTypeId)
+		index('contacts_tenant_id_contact_type_id_idx').on(table.tenantId, table.contactTypeId),
+		index('contacts_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt)
 	]
 );
 

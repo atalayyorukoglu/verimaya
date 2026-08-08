@@ -211,6 +211,13 @@
       "when": 1753914000000,
       "tag": "0029_patient_status_operational",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1753915000000,
+      "tag": "0030_soft_delete_txn_appt_contact",
+      "breakpoints": true
     }
   ]
 }

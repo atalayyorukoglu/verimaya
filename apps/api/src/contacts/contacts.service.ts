@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, count, desc, eq, inArray, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import type { ContactCreate, ContactListQuery, ContactUpdate, MergeRecords } from '@verimaya/shared';
 import { findContactDuplicateGroups } from '@verimaya/shared';
 import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
@@ -25,14 +25,14 @@ export class ContactsService {
 				contacts.email,
 				contacts.phone
 			]);
-			const baseFilters: SQL[] = [];
+			const baseFilters: SQL[] = [isNull(contacts.deletedAt)];
 			if (searchCond) baseFilters.push(searchCond);
 			if (params.type_id) baseFilters.push(eq(contacts.contactTypeId, params.type_id));
 
 			const [totalRow] = await db
 				.select({ n: count() })
 				.from(contacts)
-				.where(baseFilters.length > 0 ? and(...baseFilters) : undefined);
+				.where(and(...baseFilters));
 
 			const pageFilters = [...baseFilters];
 			if (cursorCond) pageFilters.push(cursorCond);
@@ -40,7 +40,7 @@ export class ContactsService {
 			const rows = await db
 				.select()
 				.from(contacts)
-				.where(pageFilters.length > 0 ? and(...pageFilters) : undefined)
+				.where(and(...pageFilters))
 				.orderBy(desc(contacts.createdAt), desc(contacts.id))
 				.limit(params.limit + 1);
 
@@ -55,7 +55,7 @@ export class ContactsService {
 
 	async get(tenantId: string, id: string) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const row = await this.findRow(db, id);
+			const row = await this.findActiveRow(db, id);
 			if (!row) {
 				throw new NotFoundException({
 					error: { code: 'not_found', message: 'Contact not found' }
@@ -84,7 +84,7 @@ export class ContactsService {
 	}
 
 	async updateWithDb(db: TenantDb, id: string, input: ContactUpdate) {
-		const existing = await this.findRow(db, id);
+		const existing = await this.findActiveRow(db, id);
 		if (!existing) {
 			throw new NotFoundException({
 				error: { code: 'not_found', message: 'Contact not found' }
@@ -116,9 +116,32 @@ export class ContactsService {
 		return toContact(row!);
 	}
 
+	async softDeleteWithDb(
+		db: TenantDb,
+		tenantId: string,
+		id: string,
+		actor: AuditActor
+	) {
+		const existing = await this.findActiveRow(db, id);
+		if (!existing) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+
+		await db
+			.update(contacts)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(eq(contacts.id, id));
+
+		await writeAuditLog(db, tenantId, actor, 'delete', 'contact', existing.displayName);
+
+		return { id, deleted: true as const };
+	}
+
 	async duplicateGroups(tenantId: string) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const rows = await db.select().from(contacts);
+			const rows = await db.select().from(contacts).where(isNull(contacts.deletedAt));
 			return { items: findContactDuplicateGroups(rows.map(toContact)) };
 		});
 	}
@@ -136,7 +159,7 @@ export class ContactsService {
 			});
 		}
 
-		const keep = await this.findRow(db, keep_id);
+		const keep = await this.findActiveRow(db, keep_id);
 		if (!keep) {
 			throw new NotFoundException({
 				error: { code: 'not_found', message: 'Contact not found' }
@@ -145,7 +168,7 @@ export class ContactsService {
 
 		const sources = [];
 		for (const id of merge_ids) {
-			const row = await this.findRow(db, id);
+			const row = await this.findActiveRow(db, id);
 			if (!row) {
 				throw new NotFoundException({
 					error: { code: 'not_found', message: 'Contact not found' }
@@ -177,37 +200,53 @@ export class ContactsService {
 		await db
 			.update(transactions)
 			.set({ contactId: keep_id, contactLabel: keepName, updatedAt: new Date() })
-			.where(inArray(transactions.contactId, dropIds));
+			.where(and(inArray(transactions.contactId, dropIds), isNull(transactions.deletedAt)));
 
 		await db
 			.update(appointments)
 			.set({ clinicContactId: keep_id, clinicName: keepName, updatedAt: new Date() })
-			.where(inArray(appointments.clinicContactId, dropIds));
+			.where(
+				and(inArray(appointments.clinicContactId, dropIds), isNull(appointments.deletedAt))
+			);
 
 		await db
 			.update(appointments)
 			.set({ hotelContactId: keep_id, hotelName: keepName, updatedAt: new Date() })
-			.where(inArray(appointments.hotelContactId, dropIds));
+			.where(
+				and(inArray(appointments.hotelContactId, dropIds), isNull(appointments.deletedAt))
+			);
 
 		await db
 			.update(appointments)
 			.set({ transferContactId: keep_id, updatedAt: new Date() })
-			.where(inArray(appointments.transferContactId, dropIds));
+			.where(
+				and(
+					inArray(appointments.transferContactId, dropIds),
+					isNull(appointments.deletedAt)
+				)
+			);
 
 		await db
 			.update(patients)
 			.set({ contactId: keep_id, updatedAt: new Date() })
-			.where(inArray(patients.contactId, dropIds));
+			.where(and(inArray(patients.contactId, dropIds), isNull(patients.deletedAt)));
 
-		await db.delete(contacts).where(inArray(contacts.id, dropIds));
+		await db
+			.update(contacts)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(inArray(contacts.id, dropIds));
 
 		await writeAuditLog(db, tenantId, actor, 'update', 'contact', keepName);
 
 		return toContact(updatedKeep!);
 	}
 
-	private async findRow(db: TenantDb, id: string) {
-		const [row] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+	private async findActiveRow(db: TenantDb, id: string) {
+		const [row] = await db
+			.select()
+			.from(contacts)
+			.where(and(eq(contacts.id, id), isNull(contacts.deletedAt)))
+			.limit(1);
 		return row;
 	}
 
