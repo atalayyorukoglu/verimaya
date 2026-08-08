@@ -346,6 +346,21 @@
 		return { list, max };
 	});
 
+	/** Same 6-bucket skeleton as income/expense chart — avoid wrapping grid-cols-6. */
+	const opsMonthly = $derived.by(() => {
+		const buckets = new Map<string, { key: string; label: string; count: number }>();
+		for (const b of emptyMonthBuckets().values()) {
+			buckets.set(b.key, { key: b.key, label: b.label, count: 0 });
+		}
+		for (const row of appointmentMetricsQuery.data?.monthly ?? []) {
+			const bucket = buckets.get(row.month);
+			if (bucket) bucket.count = row.count;
+		}
+		const list = [...buckets.values()];
+		const max = Math.max(1, ...list.map((b) => b.count));
+		return { list, max };
+	});
+
 	const statusDist = $derived.by(() => {
 		const distribution = patientDistributionQuery.data;
 		if (!distribution || distribution.total === 0) return [];
@@ -630,7 +645,6 @@
 		<p class="text-sm text-danger">Rapor verisi yüklenemedi.</p>
 	{:else if tab === 'ozet'}
 		{@const ops = appointmentMetricsQuery.data}
-		{@const opsMonthMax = Math.max(1, ...(ops?.monthly.map((m) => m.count) ?? [1]))}
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
 			<div class="mb-4">
 				<h2 class="text-sm font-semibold text-text">{t('reports.ops.title')}</h2>
@@ -704,19 +718,20 @@
 					<h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">
 						{t('reports.ops.monthly')}
 					</h3>
-					<div class="mt-3 grid grid-cols-6 items-end gap-2 sm:gap-4" style="height: 120px">
-						{#each ops.monthly as bucket (bucket.month)}
+					<div class="mt-4 grid grid-cols-6 items-end gap-2 sm:gap-4" style="height: 180px">
+						{#each opsMonthly.list as bucket (bucket.key)}
 							<div class="flex h-full min-w-0 flex-col justify-end">
-								<div class="flex h-full items-end justify-center">
+								<p class="mb-1 text-center text-[10px] tabular-nums text-text-muted">
+									{bucket.count > 0 ? bucket.count : '\u00a0'}
+								</p>
+								<div class="flex min-h-0 flex-1 items-end justify-center">
 									<div
-										class="w-4 rounded-t-[3px] bg-brand/80 sm:w-6"
-										style="height: {Math.max(2, (bucket.count / opsMonthMax) * 100)}%"
-										title="{bucket.month}: {bucket.count}"
+										class="w-3 rounded-t-[3px] bg-brand/80 sm:w-5"
+										style="height: {(bucket.count / opsMonthly.max) * 100}%"
+										title="{bucket.label}: {bucket.count}"
 									></div>
 								</div>
-								<p class="mt-2 truncate text-center text-[10px] text-text-muted">
-									{bucket.month.slice(5)}
-								</p>
+								<p class="mt-2 truncate text-center text-xs text-text-muted">{bucket.label}</p>
 							</div>
 						{/each}
 					</div>
