@@ -417,6 +417,11 @@ describe('reports marketing effective window + attribution', () => {
 					timestamptz '2025-06-01 12:00:00+00'
 				)
 			`;
+			// Window has patientKnown + patientUnknown; attribution must clear the threshold
+			// so CPL assertions stay about the window, not OPS-02d withholding.
+			await sql`
+				update patients set source = 'Meta Ads' where id = ${patientUnknown}
+			`;
 		});
 
 		try {
@@ -425,11 +430,14 @@ describe('reports marketing effective window + attribution', () => {
 			expect(report.leads_count).toBe(2);
 			expect(report.treated_count).toBe(2);
 			expect(report.spend_base).toBe(200000);
+			expect(report.attribution_missing).toBe(false);
+			expect(report.attribution_coverage).toBe(1);
 			// CPL = spend / window leads, not all-time headcount (would be 3 with pre-window)
 			expect(report.cost_per_lead).toBe(100000);
 		} finally {
 			await withTenantSession(tenantW, async () => {
 				await sql`delete from patients where tenant_id = ${tenantW} and full_name = 'Pre-window Patient'`;
+				await sql`update patients set source = null where id = ${patientUnknown}`;
 			});
 		}
 	});
@@ -454,6 +462,7 @@ describe('reports marketing effective window + attribution', () => {
 
 			expect(report.by_source.length).toBeGreaterThan(0);
 			expect(report.by_source.every((r) => r.source === 'Bilinmeyen')).toBe(true);
+			expect(report.attribution_coverage).toBe(0);
 			expect(report.attribution_missing).toBe(true);
 			expect(report.spend_fx_missing).toBe(false);
 			expect(report.spend_base).toBe(25000);
@@ -468,6 +477,45 @@ describe('reports marketing effective window + attribution', () => {
 		}
 	});
 
+	it('(b2) 1 of N attributed still below threshold → attribution_missing; ratio metrics null', async () => {
+		// All-time window: patientKnown (Meta Ads) + patientUnknown (null) → coverage 0.5
+		const report = await reportsService.marketing(tenantW, {});
+
+		expect(report.leads_count).toBe(2);
+		expect(report.attribution_coverage).toBe(0.5);
+		expect(report.attribution_coverage!).toBeLessThan(0.8);
+		expect(report.attribution_missing).toBe(true);
+		expect(report.spend_fx_missing).toBe(false);
+		expect(report.spend_base).toBeGreaterThan(0);
+		expect(report.real_roas).toBeNull();
+		expect(report.cost_per_lead).toBeNull();
+		expect(report.cost_per_treated).toBeNull();
+	});
+
+	it('(b3) coverage at or above threshold → ROAS/CPL/CPT published', async () => {
+		const { sql } = getDb(databaseUrl);
+		await withTenantSession(tenantW, async () => {
+			await sql`update patients set source = 'Google Ads' where id = ${patientUnknown}`;
+		});
+
+		try {
+			const report = await reportsService.marketing(tenantW, {});
+
+			expect(report.leads_count).toBe(2);
+			expect(report.attribution_coverage).toBe(1);
+			expect(report.attribution_missing).toBe(false);
+			expect(report.spend_fx_missing).toBe(false);
+			expect(report.spend_base).toBe(200000);
+			expect(report.real_roas).not.toBeNull();
+			expect(report.cost_per_lead).toBe(100000);
+			expect(report.cost_per_treated).toBe(100000);
+		} finally {
+			await withTenantSession(tenantW, async () => {
+				await sql`update patients set source = null where id = ${patientUnknown}`;
+			});
+		}
+	});
+
 	it('empty by_source window → attribution_missing false and real_roas null', async () => {
 		const report = await reportsService.marketing(tenantW, {
 			from: '2025-01-01',
@@ -475,6 +523,7 @@ describe('reports marketing effective window + attribution', () => {
 		});
 
 		expect(report.by_source).toEqual([]);
+		expect(report.attribution_coverage).toBeNull();
 		expect(report.attribution_missing).toBe(false);
 		expect(report.revenue_base).toBe(0);
 		expect(report.leads_count).toBe(0);

@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import {
+	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
 	patientCreateSchema,
 	patientUpdateSchema,
@@ -277,8 +278,11 @@ export function buildMarketingReport(
 				(Math.abs(a.leads) + Math.abs(a.treated) + Math.abs(a.revenue_base))
 		);
 
+	const unknownLeads = cohortBySource.get('Bilinmeyen')?.leads ?? 0;
+	const attribution_coverage =
+		leads_count === 0 ? null : (leads_count - unknownLeads) / leads_count;
 	const attribution_missing =
-		by_source.length > 0 && by_source.every((r) => r.source === 'Bilinmeyen');
+		attribution_coverage != null && attribution_coverage < ATTRIBUTION_COVERAGE_THRESHOLD;
 
 	const period = { from, to, effective_from, effective_to };
 
@@ -293,6 +297,7 @@ export function buildMarketingReport(
 			cost_per_lead: null,
 			cost_per_treated: null,
 			spend_fx_missing: true,
+			attribution_coverage,
 			attribution_missing,
 			by_source
 		};
@@ -316,6 +321,7 @@ export function buildMarketingReport(
 			cost_per_lead: null,
 			cost_per_treated: null,
 			spend_fx_missing: false,
+			attribution_coverage,
 			attribution_missing: true,
 			by_source
 		};
@@ -331,6 +337,7 @@ export function buildMarketingReport(
 		cost_per_lead: metrics.costPerLead,
 		cost_per_treated: metrics.costPerTreated,
 		spend_fx_missing: false,
+		attribution_coverage,
 		attribution_missing: false,
 		by_source
 	};

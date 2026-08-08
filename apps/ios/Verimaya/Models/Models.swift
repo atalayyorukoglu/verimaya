@@ -326,6 +326,8 @@ struct MarketingReport: Decodable {
   let costPerLead: Int?
   let costPerTreated: Int?
   let spendFxMissing: Bool
+  /// Share of cohort with non-empty source (0...1); nil when cohort empty or field absent.
+  let attributionCoverage: Double?
   let attributionMissing: Bool
   let bySource: [MarketingSourceRow]
 }

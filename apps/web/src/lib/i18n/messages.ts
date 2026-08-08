@@ -325,6 +325,7 @@ const tr = {
 	'reports.marketing.attributionMissing': 'Attribution verisi yok',
 	'reports.marketing.attributionMissingHint':
 		'Hasta kayıtlarında kaynak bilgisi boş; ROAS/CPL gösterilmiyor.',
+	'reports.marketing.attributionCoverage': "{count} dosyanın %{pct}'ında kaynak var",
 	'reports.marketing.noData': 'Veri yok',
 	'reports.marketing.noDataHint': 'Bu dönemde hasta veya tahsilat kaydı yok.',
 	'reports.marketing.footnote':
@@ -1151,6 +1152,7 @@ const en: Record<MessageKey, string> = {
 		'Ad spend could not be converted to the tenant base currency; ROAS/CPL are hidden.',
 	'reports.marketing.attributionMissing': 'No attribution data',
 	'reports.marketing.attributionMissingHint': 'Patient records have no source; ROAS/CPL is hidden.',
+	'reports.marketing.attributionCoverage': '{count} records have a source on {pct}%',
 	'reports.marketing.noData': 'No data',
 	'reports.marketing.noDataHint': 'No patients or collections in this period.',
 	'reports.marketing.footnote':

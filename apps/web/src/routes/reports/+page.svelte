@@ -899,6 +899,14 @@
 				>
 					<p class="font-medium">{t(missingTitleKey)}</p>
 					<p class="mt-0.5 text-text-muted">{t(missingHintKey)}</p>
+					{#if marketing.attribution_missing && marketing.attribution_coverage != null}
+						<p class="mt-0.5 text-text-muted">
+							{t('reports.marketing.attributionCoverage', {
+								count: marketing.leads_count,
+								pct: Math.round(marketing.attribution_coverage * 100)
+							})}
+						</p>
+					{/if}
 				</div>
 			{/if}
 			<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">

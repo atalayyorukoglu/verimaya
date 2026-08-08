@@ -26,6 +26,13 @@ export const marketingReportPeriodSchema = reportPeriodSchema.extend({
 });
 export type MarketingReportPeriod = z.infer<typeof marketingReportPeriodSchema>;
 
+/**
+ * Share of cohort patients that must have a non-empty `source` before ROAS/CPL/CPT
+ * are published. Below this, revenue attributed by source materially understates
+ * ROAS, so the ratio metrics must stay null (OPS-02c/02d).
+ */
+export const ATTRIBUTION_COVERAGE_THRESHOLD = 0.8;
+
 export const marketingReportSchema = z.object({
 	period: marketingReportPeriodSchema,
 	/** Sum of ad spend resolved to tenant base; null when any row lacks FX. */
@@ -39,8 +46,13 @@ export const marketingReportSchema = z.object({
 	/** True when at least one spend row cannot be converted to tenant base. */
 	spend_fx_missing: z.boolean(),
 	/**
-	 * True when by_source is non-empty and every row is source "Bilinmeyen"
-	 * (patients have no attribution). ROAS/CPL/CPT are withheld.
+	 * Share of cohort patients with a non-empty source (0..1).
+	 * Null when the patient cohort is empty.
+	 */
+	attribution_coverage: z.number().min(0).max(1).nullable(),
+	/**
+	 * True when the cohort is non-empty and attribution_coverage is below
+	 * ATTRIBUTION_COVERAGE_THRESHOLD. ROAS/CPL/CPT are withheld.
 	 */
 	attribution_missing: z.boolean(),
 	by_source: z.array(marketingSourceRow)

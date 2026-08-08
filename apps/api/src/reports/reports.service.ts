@@ -13,6 +13,7 @@ import {
 } from 'drizzle-orm';
 import {
 	tenantDayRange,
+	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	resolveCollectedAmount,
@@ -717,8 +718,13 @@ export class ReportsService {
 						(Math.abs(a.leads) + Math.abs(a.treated) + Math.abs(a.revenue_base))
 				);
 
+			// Coverage from the same cohort map — no extra round trip.
+			const unknownLeads = cohortBySource.get('Bilinmeyen')?.leads ?? 0;
+			const attribution_coverage =
+				leads_count === 0 ? null : (leads_count - unknownLeads) / leads_count;
 			const attribution_missing =
-				by_source.length > 0 && by_source.every((row) => row.source === 'Bilinmeyen');
+				attribution_coverage != null &&
+				attribution_coverage < ATTRIBUTION_COVERAGE_THRESHOLD;
 
 			const period = {
 				from: params.from ?? null,
@@ -739,6 +745,7 @@ export class ReportsService {
 					cost_per_lead: null,
 					cost_per_treated: null,
 					spend_fx_missing: true,
+					attribution_coverage,
 					attribution_missing,
 					by_source
 				};
@@ -762,6 +769,7 @@ export class ReportsService {
 					cost_per_lead: null,
 					cost_per_treated: null,
 					spend_fx_missing: false,
+					attribution_coverage,
 					attribution_missing: true,
 					by_source
 				};
@@ -777,6 +785,7 @@ export class ReportsService {
 				cost_per_lead: metrics.costPerLead,
 				cost_per_treated: metrics.costPerTreated,
 				spend_fx_missing: false,
+				attribution_coverage,
 				attribution_missing: false,
 				by_source
 			};
