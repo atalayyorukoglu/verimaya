@@ -541,6 +541,38 @@ export const handlers = [
 		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
 	}),
 
+	http.patch('/v1/members/:id', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as { role?: string };
+		const parsed = userRoleSchema.safeParse(body.role);
+		if (!parsed.success) return badRequest('Geçersiz rol');
+		const idx = store.members.findIndex(
+			(m) => m.id === params.id && m.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Üye bulunamadı');
+		const current = store.members[idx]!;
+		if (current.id === DEMO_USER_ID) {
+			return HttpResponse.json(
+				{
+					error: { code: 'cannot_change_own_role', message: 'You cannot change your own role' },
+					request_id: 'msw'
+				},
+				{ status: 403 }
+			);
+		}
+		if (current.role === 'owner' && parsed.data !== 'owner') {
+			const owners = store.members.filter(
+				(m) => m.tenant_id === store.tenant.id && m.role === 'owner'
+			);
+			if (owners.length <= 1) {
+				return badRequest('Cannot demote the last owner');
+			}
+		}
+		const updated: MembershipUser = { ...current, role: parsed.data };
+		store.members[idx] = updated;
+		return HttpResponse.json(updated);
+	}),
+
 	http.get('/v1/audit-logs', ({ request }) => {
 		const url = new URL(request.url);
 		const store = getStore(scenarioFrom(request));

@@ -28,3 +28,10 @@ export const membershipUserSchema = userSchema.extend({
 });
 
 export type MembershipUser = z.infer<typeof membershipUserSchema>;
+
+/** PATCH /v1/members/:id — change a member's org role. */
+export const memberRoleUpdateSchema = z.object({
+	role: userRoleSchema
+});
+
+export type MemberRoleUpdate = z.infer<typeof memberRoleUpdateSchema>;

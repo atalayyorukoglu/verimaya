@@ -142,6 +142,21 @@ const tr = {
 	'settings.organization.tzEuropeLondon': 'Europe/London (İngiltere)',
 	'settings.organization.tzUtc': 'UTC',
 
+	// Ayarlar · Ekip (GAP-02)
+	'settings.team.title': 'Ekip',
+	'settings.team.description': 'Tenant üyeleri ve rolleri.',
+	'settings.team.invite': 'Üye davet et',
+	'settings.team.inviteDisabled': 'Davet akışı better-auth organization ile gelecek',
+	'settings.team.loading': 'Yükleniyor…',
+	'settings.team.loadError': 'Ekip listesi yüklenemedi.',
+	'settings.team.empty': 'Üye yok.',
+	'settings.team.joined': 'Katılım',
+	'settings.team.roleLabel': 'Rol',
+	'settings.team.roleSelfDisabled': 'Kendi rolünüzü değiştiremezsiniz',
+	'settings.team.roleUpdateError': 'Rol güncellenemedi',
+	'settings.team.footnote':
+		'Davet ve üye çıkarma better-auth organization ile gelecek. Rol değiştirmek için sahip veya yönetici olmanız gerekir.',
+
 	// Ürün içi karne (Adım 36)
 	'scorecard.title': 'Yapay zeka karnesi',
 	'scorecard.description':
@@ -765,6 +780,20 @@ const en: Record<MessageKey, string> = {
 	'settings.organization.tzAsiaRiyadh': 'Asia/Riyadh (Saudi Arabia)',
 	'settings.organization.tzEuropeLondon': 'Europe/London (UK)',
 	'settings.organization.tzUtc': 'UTC',
+
+	'settings.team.title': 'Team',
+	'settings.team.description': 'Tenant members and roles.',
+	'settings.team.invite': 'Invite member',
+	'settings.team.inviteDisabled': 'Invite flow comes with better-auth organization',
+	'settings.team.loading': 'Loading…',
+	'settings.team.loadError': 'Could not load the team list.',
+	'settings.team.empty': 'No members.',
+	'settings.team.joined': 'Joined',
+	'settings.team.roleLabel': 'Role',
+	'settings.team.roleSelfDisabled': 'You cannot change your own role',
+	'settings.team.roleUpdateError': 'Could not update role',
+	'settings.team.footnote':
+		'Invite and remove come with better-auth organization. Changing roles requires owner or admin.',
 
 	'scorecard.title': 'AI scorecard',
 	'scorecard.description':

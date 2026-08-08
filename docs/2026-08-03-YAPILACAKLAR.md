@@ -344,13 +344,13 @@
     eklendikten sonra YEŞİL; MSW kapalı ortamda tip **eklenip → GET'te görünüp → silinebiliyor**
     (kalıcılık kanıtı); mevcut varsayılan tipler aynı ID'lerle korunmuş;
     tenant izolasyon spec'i geçiyor. **GAP-02/03'e dokunulmaz.** ✅
-- [ ] **GAP-02 (G-02) — Üye rolü değiştirme yüzeyi.** `members.controller.ts` yalnız `@Get()`;
+- [x] **GAP-02 (G-02) — Üye rolü değiştirme yüzeyi.** `members.controller.ts` yalnız `@Get()`;
   `settings/team/+page.svelte` rolü salt-okunur rozet gösteriyor. Tracker'da
   `PATCH /members/{user_id}` vardı (`tenant_admin.py:64`). Org sahibi bir üyenin rolünü
   panelden değiştiremiyor.
   - **Kabul (GAP-02):** `PATCH /v1/members/:id` var; org sahibi `/settings/team`'den rolü
     değiştirebiliyor; kullanıcı kendi rolünü düşüremiyor; audit kaydı düşüyor;
-    tenant izolasyon spec'i geçiyor.
+    tenant izolasyon spec'i geçiyor. ✅
 - [ ] **GAP-03 (G-01) — İşlem listesi filtre seti.** Tracker `GET /transactions` 16 query param
   alıyordu (`transactions.py:176-280`); Verimaya `transactionListQuerySchema`
   (`list-query.ts:30-38`) yalnız `patient_id, contact_id, from, to` + `.strict()` —
@@ -373,6 +373,11 @@
   İzolasyon: create→list→delete + Tenant B delete 404. Varsayım: ekstra Tracker seed
   (`Yeni Hasta`/`Devam`/`RPT`) pilot tenant'a ertelendi — blok metninde "eklenebilir";
   DEFAULT dört tip yeterli. **GAP-02/03 dokunulmadı.**
+- **Görüş (GAP-02, 2026-08-08):** `PATCH /v1/members/:id` membership id (liste ile aynı);
+  `settings:update` geçici (AUDIT-F09-02 `members` resource yorumu controller'da).
+  Self-role → 403 `cannot_change_own_role`; son owner demote → 400 `last_owner` (ayrı test).
+  Audit `entity_type=user`. UI: owner/admin select; self rozet+disabled. MSW PATCH eklendi.
+  **GAP-03 dokunulmadı.**
 
 ---
 

@@ -102,7 +102,8 @@ const auditLogsPermissions: Array<[keyof AuditLogsController, OrgPermissionRequi
 ];
 
 const membersPermissions: Array<[keyof MembersController, OrgPermissionRequirement]> = [
-	['list', { resource: 'settings', action: 'read' }]
+	['list', { resource: 'settings', action: 'read' }],
+	['update', { resource: 'settings', action: 'update' }]
 ];
 
 const reportsPermissions: Array<[keyof ReportsController, OrgPermissionRequirement]> = [

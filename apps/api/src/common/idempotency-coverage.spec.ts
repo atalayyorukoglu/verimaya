@@ -23,6 +23,7 @@ import { ContactsController } from '../contacts/contacts.controller';
 import { AdsController } from '../integrations/ads/ads.controller';
 import { GhlController } from '../integrations/ghl/ghl.controller';
 import { KarneController } from '../karne/karne.controller';
+import { MembersController } from '../members/members.controller';
 import { PatientsController } from '../patients/patients.controller';
 import { ScorecardController } from '../scorecard/scorecard.controller';
 import { SettingsController } from '../settings/settings.controller';
@@ -52,6 +53,7 @@ const ALL_CONTROLLERS: Function[] = [
 	WhatsappController,
 	SettingsController,
 	TenantsController,
+	MembersController,
 	ScorecardController,
 	GhlController,
 	AdsController,
@@ -101,7 +103,7 @@ describe('IDEM-01: every mutating endpoint declares an idempotency policy', () =
 	const handlers = findMutatingHandlers(ALL_CONTROLLERS);
 
 	it('the reflection walk actually finds handlers (guards the other assertions against passing vacuously)', () => {
-		expect(handlers.length).toBe(57);
+		expect(handlers.length).toBe(58);
 	});
 
 	it('every mutating handler has a policy — enforced, or exempt with a non-empty reason', () => {
