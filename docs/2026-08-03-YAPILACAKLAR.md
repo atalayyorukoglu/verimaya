@@ -528,7 +528,8 @@
     dönemde tarıyor; `/reports` istemci hesabı silindi; `/settings/data-quality` aynı
     endpoint; `message_key` i18n; izolasyon + kural pozitif/negatif + >100 satır sayım yeşil. ✅
   - **Görüş (GAP-05):** Kural seti: category / income patient / expense contact / FX
-    (yabancı kur + null amount_base; aynı-kur null bilinçli) / status↔paid_amount (3 code).
+    (yabancı kur + null amount_base; aynı-kur null bilinçli) / status↔paid_amount (3 code:
+    paid+NULL OK; paid+dolu≠amount hata; unpaid>0 hata; partial 0<x<amount).
     `counts` SQL FILTER agregasyonu; `items` UNION ALL + LIMIT 100 + `truncated`.
     responsible_party, payer/payee, contact_type_mismatch taşınmadı. **GAP-08 dokunulmadı.**
 - [x] **GAP-06 (G-06/G-07/G-08) — Silme yüzeyleri: işlem / randevu / kişi.** Üçünde de
@@ -559,7 +560,16 @@
   - **Kabul (GAP-06b):** Üç ekranda da silme butonu var; onay adımı kaydı gösteriyor;
     silme sonrası liste güncelleniyor; MSW kapalı ortamda uçtan uca çalışıyor.
   - **Ders:** Bu, GAP-01'deki hatanın ters yönü (orada web vardı API yoktu). Bundan sonra
-    kullanıcıya görünen her iş için kabul kriteri **hem API hem UI yüzeyini** yazmalı. ✅
+    kullanıcıya görünen her iş için kabul kriteri **hem API hem UI yüzeyini** yazmalı.
+- [ ] **GAP-03b — İşlem listesinde sonuç sayacı (2026-08-08 prod doğrulaması).**
+  Filtre uygulanınca kaç kayıt kaldığı görünmüyor → kullanıcı filtrenin işe yarayıp
+  yaramadığını anlayamıyor. `/patients` sayfasında zaten var (`patients.list.total`
+  → "{count} dosya"), aynı deseni `/finance`'a uygula. Filtreliyken
+  "{count} işlem (filtreli)" varyantı da olsun.
+- [ ] **GAP-04b — Randevu listesinde dönem seçici (2026-08-08 prod doğrulaması).**
+  `appointmentListQuerySchema` `from`/`to` kabul ediyor ama **UI'da tarih aralığı seçici yok**;
+  arama sonucu daraltılamıyor. `/reports`'taki dönem seçicinin aynısı `/appointments`'a
+  eklenmeli (varsayılan aralık ne olacağı da kararlaştırılmalı — bugün belirsiz). ✅
   - **Görüş (GAP-06):** Migration `0030`. DELETE+audit (patient parity dahil). Contact merge
     soft-delete. Filtre eklenen sorgu yüzeyi: txn/appt/contact list+find; reports
     `fetchTransactions`/`balances`/`sumTahsilatBySource` (+ patient join); patient
