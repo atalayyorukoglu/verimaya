@@ -5,6 +5,7 @@ import { contacts, patients, tenants, transactions } from '../db/schema';
 import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
+import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
@@ -13,7 +14,7 @@ export class TransactionsService {
 
 	async list(tenantId: string, params: TransactionListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const filters: SQL[] = [];
+			const filters: SQL[] = [isNull(transactions.deletedAt)];
 			const cursorCond = occurredOnCursorCondition(
 				transactions.occurredOn,
 				transactions.id,
@@ -153,11 +154,26 @@ export class TransactionsService {
 		return toTransaction(row!);
 	}
 
+	async softDeleteWithDb(db: TenantDb, tenantId: string, id: string, actor: AuditActor) {
+		const existing = await this.findRow(db, id);
+		if (!existing) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Transaction not found' }
+			});
+		}
+		await db
+			.update(transactions)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(eq(transactions.id, id));
+		await writeAuditLog(db, tenantId, actor, 'delete', 'transaction', existing.title);
+		return { id, deleted: true as const };
+	}
+
 	private async findRow(db: TenantDb, id: string) {
 		const [row] = await db
 			.select()
 			.from(transactions)
-			.where(eq(transactions.id, id))
+			.where(and(eq(transactions.id, id), isNull(transactions.deletedAt)))
 			.limit(1);
 		return row;
 	}

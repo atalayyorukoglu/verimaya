@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
 	Patch,
@@ -16,7 +17,7 @@ import {
 	transactionUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { Idempotent } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
@@ -103,6 +104,30 @@ export class TransactionsController {
 				result.body as unknown as Record<string, unknown>
 			);
 		}
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Delete(':id')
+	@RequireOrgPermission('finance', 'delete')
+	@Idempotent()
+	async remove(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'DELETE',
+			'/v1/transactions/:id',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.transactionsService.softDeleteWithDb(db, tenantId, id, actor)
+			})
+		);
 		reply.status(result.statusCode);
 		return result.body;
 	}

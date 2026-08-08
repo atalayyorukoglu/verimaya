@@ -6,6 +6,7 @@ import { appointments, patients, tenants } from '../db/schema';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toAppointment } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
+import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 @Injectable()
@@ -15,7 +16,7 @@ export class AppointmentsService {
 	async list(tenantId: string, params: AppointmentListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const timezone = await this.getTenantTimezone(db, tenantId);
-			const filters: SQL[] = [];
+			const filters: SQL[] = [isNull(appointments.deletedAt)];
 			const cursorCond = createdAtCursorCondition(
 				appointments.createdAt,
 				appointments.id,
@@ -144,6 +145,28 @@ export class AppointmentsService {
 		return toAppointment(row!);
 	}
 
+	async softDeleteWithDb(db: TenantDb, tenantId: string, id: string, actor: AuditActor) {
+		const existing = await this.findRow(db, id);
+		if (!existing) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Appointment not found' }
+			});
+		}
+		await db
+			.update(appointments)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(eq(appointments.id, id));
+		await writeAuditLog(
+			db,
+			tenantId,
+			actor,
+			'delete',
+			'appointment',
+			existing.title ?? existing.patientDisplayName
+		);
+		return { id, deleted: true as const };
+	}
+
 	private async getTenantTimezone(db: TenantDb, tenantId: string) {
 		const [row] = await db
 			.select({ timezone: tenants.timezone })
@@ -162,7 +185,7 @@ export class AppointmentsService {
 		const [row] = await db
 			.select()
 			.from(appointments)
-			.where(eq(appointments.id, id))
+			.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
 			.limit(1);
 		return row;
 	}

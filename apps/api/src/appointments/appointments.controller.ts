@@ -1,6 +1,7 @@
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
 	Patch,
@@ -16,7 +17,7 @@ import {
 	appointmentUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { ActiveOrgGuard, getActiveOrgId, getIdempotencyKey } from '../common/active-org.guard';
+import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { Idempotent } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
@@ -93,6 +94,30 @@ export class AppointmentsController {
 			async (db) => ({
 				statusCode: 200,
 				body: await this.appointmentsService.updateWithDb(db, id, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Delete(':id')
+	@RequireOrgPermission('patient', 'delete')
+	@Idempotent()
+	async remove(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'DELETE',
+			'/v1/appointments/:id',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.appointmentsService.softDeleteWithDb(db, tenantId, id, actor)
 			})
 		);
 		reply.status(result.statusCode);

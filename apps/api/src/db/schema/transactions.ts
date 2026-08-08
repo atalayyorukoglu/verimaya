@@ -30,6 +30,7 @@ export const transactions = pgTable(
 		contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
 		contactLabel: text('contact_label'),
 		description: text('description'),
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
 			.defaultNow(),
@@ -69,7 +70,8 @@ export const transactions = pgTable(
 			table.contactId,
 			table.occurredOn,
 			table.id
-		)
+		),
+		index('transactions_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt)
 	]
 );
 

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, count, desc, eq, inArray, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import type { ContactCreate, ContactListQuery, ContactUpdate, MergeRecords } from '@verimaya/shared';
 import { findContactDuplicateGroups } from '@verimaya/shared';
 import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
@@ -25,7 +25,7 @@ export class ContactsService {
 				contacts.email,
 				contacts.phone
 			]);
-			const baseFilters: SQL[] = [];
+			const baseFilters: SQL[] = [isNull(contacts.deletedAt)];
 			if (searchCond) baseFilters.push(searchCond);
 			if (params.type_id) baseFilters.push(eq(contacts.contactTypeId, params.type_id));
 
@@ -206,8 +206,27 @@ export class ContactsService {
 		return toContact(updatedKeep!);
 	}
 
+	async softDeleteWithDb(db: TenantDb, tenantId: string, id: string, actor: AuditActor) {
+		const existing = await this.findRow(db, id);
+		if (!existing) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+		await db
+			.update(contacts)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(eq(contacts.id, id));
+		await writeAuditLog(db, tenantId, actor, 'delete', 'contact', existing.displayName);
+		return { id, deleted: true as const };
+	}
+
 	private async findRow(db: TenantDb, id: string) {
-		const [row] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+		const [row] = await db
+			.select()
+			.from(contacts)
+			.where(and(eq(contacts.id, id), isNull(contacts.deletedAt)))
+			.limit(1);
 		return row;
 	}
 

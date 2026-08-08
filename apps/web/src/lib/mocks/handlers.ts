@@ -808,6 +808,14 @@ export const handlers = [
 		return HttpResponse.json(updated);
 	}),
 
+	http.delete('/v1/appointments/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.appointments.findIndex((a) => a.id === params.id);
+		if (idx < 0) return notFound('Randevu bulunamadı');
+		store.appointments.splice(idx, 1);
+		return HttpResponse.json({ id: params.id, deleted: true });
+	}),
+
 	http.get('/v1/transactions', ({ request }) => {
 		const url = new URL(request.url);
 		const parsed = parseListQuery(transactionListQuerySchema, url);
@@ -998,6 +1006,14 @@ export const handlers = [
 		store.transactions[idx] = updated;
 		refreshUsage(store);
 		return HttpResponse.json(updated);
+	}),
+
+	http.delete('/v1/transactions/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.transactions.findIndex((t) => t.id === params.id);
+		if (idx < 0) return notFound('İşlem bulunamadı');
+		store.transactions.splice(idx, 1);
+		return HttpResponse.json({ id: params.id, deleted: true });
 	}),
 
 	http.post('/v1/whatsapp/parse', async ({ request }) => {
@@ -1692,18 +1708,10 @@ export const handlers = [
 
 	http.delete('/v1/contacts/:id', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		refreshUsage(store);
 		const idx = store.contacts.findIndex((c) => c.id === params.id);
 		if (idx < 0) return notFound('Kişi bulunamadı');
-		if (store.contacts[idx].usage_count > 0) {
-			return badRequest('Kişi kullanımda — işlem/randevu bağlantılarını kaldırın');
-		}
-		const contactId = store.contacts[idx].id;
 		store.contacts.splice(idx, 1);
-		for (const p of store.patients) {
-			if (p.contact_id === contactId) p.contact_id = null;
-		}
-		return new HttpResponse(null, { status: 204 });
+		return HttpResponse.json({ id: params.id, deleted: true });
 	}),
 
 	http.post('/v1/settings/finance-categories', async ({ request }) => {

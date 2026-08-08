@@ -40,7 +40,8 @@ const transactionPermissions: Array<
 > = [
 	['list', { resource: 'finance', action: 'read' }],
 	['create', { resource: 'finance', action: 'create' }],
-	['update', { resource: 'finance', action: 'update' }]
+	['update', { resource: 'finance', action: 'update' }],
+	['remove', { resource: 'finance', action: 'delete' }]
 ];
 
 const settingsPermissions: Array<[keyof SettingsController, OrgPermissionRequirement]> = [
@@ -88,13 +89,15 @@ const contactPermissions: Array<[keyof ContactsController, OrgPermissionRequirem
 	['merge', { resource: 'patient', action: 'delete' }],
 	['get', { resource: 'patient', action: 'read' }],
 	['create', { resource: 'patient', action: 'create' }],
-	['update', { resource: 'patient', action: 'update' }]
+	['update', { resource: 'patient', action: 'update' }],
+	['remove', { resource: 'patient', action: 'delete' }]
 ];
 
 const appointmentPermissions: Array<[keyof AppointmentsController, OrgPermissionRequirement]> = [
 	['list', { resource: 'patient', action: 'read' }],
 	['create', { resource: 'patient', action: 'create' }],
-	['update', { resource: 'patient', action: 'update' }]
+	['update', { resource: 'patient', action: 'update' }],
+	['remove', { resource: 'patient', action: 'delete' }]
 ];
 
 const auditLogsPermissions: Array<[keyof AuditLogsController, OrgPermissionRequirement]> = [
