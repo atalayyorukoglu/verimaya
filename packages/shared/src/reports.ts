@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isoDate, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
+import { appointmentStatusSchema } from './appointment.js';
 import { patientStatusSchema } from './patient.js';
 
 export const reportPeriodParams = z.object({
@@ -133,12 +134,59 @@ export const reportMonthlySchema = z.object({
 });
 export type ReportMonthly = z.infer<typeof reportMonthlySchema>;
 
+export const reportAppointmentStatusCountSchema = z.object({
+	status: appointmentStatusSchema,
+	count: z.number().int().nonnegative()
+});
+export type ReportAppointmentStatusCount = z.infer<typeof reportAppointmentStatusCountSchema>;
+
+export const reportAppointmentTypeCountSchema = z.object({
+	appointment_type: z.string(),
+	count: z.number().int().nonnegative()
+});
+export type ReportAppointmentTypeCount = z.infer<typeof reportAppointmentTypeCountSchema>;
+
+export const reportAppointmentClinicRowSchema = z.object({
+	clinic_name: z.string(),
+	total: z.number().int().nonnegative(),
+	completed: z.number().int().nonnegative(),
+	no_show: z.number().int().nonnegative(),
+	cancelled: z.number().int().nonnegative(),
+	/** completed / max(completed + no_show + cancelled, 1) */
+	completion_rate: z.number().min(0).max(1)
+});
+export type ReportAppointmentClinicRow = z.infer<typeof reportAppointmentClinicRowSchema>;
+
+export const reportAppointmentMonthRowSchema = z.object({
+	month: reportMonthKey,
+	total: z.number().int().nonnegative(),
+	completed: z.number().int().nonnegative()
+});
+export type ReportAppointmentMonthRow = z.infer<typeof reportAppointmentMonthRowSchema>;
+
+export const reportAppointmentOperationsSchema = z.object({
+	period: reportPeriodSchema,
+	total: z.number().int().nonnegative(),
+	completed_count: z.number().int().nonnegative(),
+	cancelled_count: z.number().int().nonnegative(),
+	no_show_count: z.number().int().nonnegative(),
+	completion_rate: z.number().min(0).max(1),
+	no_show_rate: z.number().min(0).max(1),
+	cancellation_rate: z.number().min(0).max(1),
+	by_status: z.array(reportAppointmentStatusCountSchema),
+	by_type: z.array(reportAppointmentTypeCountSchema),
+	by_clinic: z.array(reportAppointmentClinicRowSchema),
+	by_month: z.array(reportAppointmentMonthRowSchema)
+});
+export type ReportAppointmentOperations = z.infer<typeof reportAppointmentOperationsSchema>;
+
 export type ReportUrlPath =
 	| 'summary'
 	| 'by-category'
 	| 'monthly'
 	| 'by-category-detail'
 	| 'patient-distribution'
+	| 'appointment-operations'
 	| 'balances';
 
 /** Build a report URL (path + query only, no origin). */

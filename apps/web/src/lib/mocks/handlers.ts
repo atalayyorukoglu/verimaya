@@ -28,14 +28,17 @@ import {
 	webhookSubscriptionCreateSchema,
 	aiCorrectionCreateSchema,
 	approveDraftsRequestSchema,
+	auditTransactionInput,
 	trustScoreSettings,
 	compareByCreatedAtDesc,
 	compareByOccurredOnDesc,
 	tenantDayRange,
+	toTenantDayKey,
 	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
 	type Appointment,
+	type AppointmentStatus,
 	type AppointmentTypeSetting,
 	type ApproveDraftsResponse,
 	type Contact,
@@ -46,8 +49,10 @@ import {
 	type Patient,
 	type PatientCaseNote,
 	type PatientFile,
+	type ReportAppointmentOperations,
 	type Tenant,
 	type Transaction,
+	type TransactionAuditReport,
 	type TransactionDraft,
 	type WebhookSubscription
 } from '@verimaya/shared';
@@ -346,6 +351,153 @@ function buildReportPatientDistribution(
 		by_status,
 		by_source,
 		total: patients.length
+	};
+}
+
+function filterAppointmentsByPeriod(
+	items: Appointment[],
+	from: string | null,
+	to: string | null,
+	timezone: string
+): Appointment[] {
+	let filtered = items;
+	if (from) {
+		const { start } = tenantDayRange(from, timezone);
+		filtered = filtered.filter((a) => a.starts_at >= start.toISOString());
+	}
+	if (to) {
+		const { endExclusive } = tenantDayRange(to, timezone);
+		filtered = filtered.filter((a) => a.starts_at < endExclusive.toISOString());
+	}
+	return filtered;
+}
+
+function buildReportAppointmentOperations(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+): ReportAppointmentOperations {
+	const tz = store.tenant.timezone;
+	const rows = filterAppointmentsByPeriod(store.appointments, from, to, tz);
+
+	const statusCounts = new Map<string, number>();
+	const typeCounts = new Map<string, number>();
+	const clinicMap = new Map<
+		string,
+		{ total: number; completed: number; no_show: number; cancelled: number }
+	>();
+	const monthMap = new Map<string, { total: number; completed: number }>();
+
+	let completed_count = 0;
+	let cancelled_count = 0;
+	let no_show_count = 0;
+
+	for (const row of rows) {
+		statusCounts.set(row.status, (statusCounts.get(row.status) ?? 0) + 1);
+		const typeLabel = (row.appointment_type ?? '').trim() || 'Belirtilmemiş';
+		typeCounts.set(typeLabel, (typeCounts.get(typeLabel) ?? 0) + 1);
+		if (row.status === 'completed') completed_count += 1;
+		if (row.status === 'cancelled') cancelled_count += 1;
+		if (row.status === 'no_show') no_show_count += 1;
+
+		const clinicLabel = (row.clinic_name ?? '').trim() || 'Belirtilmemiş';
+		const clinic = clinicMap.get(clinicLabel) ?? {
+			total: 0,
+			completed: 0,
+			no_show: 0,
+			cancelled: 0
+		};
+		clinic.total += 1;
+		if (row.status === 'completed') clinic.completed += 1;
+		if (row.status === 'no_show') clinic.no_show += 1;
+		if (row.status === 'cancelled') clinic.cancelled += 1;
+		clinicMap.set(clinicLabel, clinic);
+
+		const month = toTenantDayKey(new Date(row.starts_at), tz).slice(0, 7);
+		const monthRow = monthMap.get(month) ?? { total: 0, completed: 0 };
+		monthRow.total += 1;
+		if (row.status === 'completed') monthRow.completed += 1;
+		monthMap.set(month, monthRow);
+	}
+
+	const total = rows.length;
+	const outcomeBase = Math.max(completed_count + no_show_count + cancelled_count, 1);
+
+	return {
+		period: { from, to },
+		total,
+		completed_count,
+		cancelled_count,
+		no_show_count,
+		completion_rate: completed_count / outcomeBase,
+		no_show_rate: no_show_count / outcomeBase,
+		cancellation_rate: total === 0 ? 0 : cancelled_count / total,
+		by_status: [...statusCounts.entries()]
+			.map(([status, count]) => ({ status: status as AppointmentStatus, count }))
+			.sort((a, b) => b.count - a.count),
+		by_type: [...typeCounts.entries()]
+			.map(([appointment_type, count]) => ({ appointment_type, count }))
+			.sort((a, b) => b.count - a.count),
+		by_clinic: [...clinicMap.entries()]
+			.map(([clinic_name, v]) => {
+				const denom = Math.max(v.completed + v.no_show + v.cancelled, 1);
+				return {
+					clinic_name,
+					total: v.total,
+					completed: v.completed,
+					no_show: v.no_show,
+					cancelled: v.cancelled,
+					completion_rate: v.completed / denom
+				};
+			})
+			.sort((a, b) => b.total - a.total),
+		by_month: [...monthMap.entries()]
+			.map(([month, v]) => ({ month, total: v.total, completed: v.completed }))
+			.sort((a, b) => a.month.localeCompare(b.month))
+	};
+}
+
+function buildTransactionAudit(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+): TransactionAuditReport {
+	const base = store.tenant.base_currency;
+	const rows = filterTransactionsByPeriod(store.transactions, from, to);
+	const items = [];
+	let issue_count = 0;
+
+	for (const t of rows) {
+		const issues = auditTransactionInput(
+			{
+				kind: t.kind,
+				title: t.title,
+				category: t.category,
+				status: t.status,
+				amount: t.amount,
+				paid_amount: t.paid_amount,
+				currency: t.currency,
+				amount_base: t.amount_base,
+				base_currency: t.base_currency,
+				patient_id: t.patient_id,
+				contact_label: t.contact_label
+			},
+			base
+		);
+		if (issues.length === 0) continue;
+		issue_count += issues.length;
+		items.push({
+			transaction_id: t.id,
+			title: t.title,
+			occurred_on: t.occurred_on,
+			issues
+		});
+	}
+
+	return {
+		period: { from, to },
+		issue_count,
+		items
 	};
 }
 
@@ -845,6 +997,39 @@ export const handlers = [
 		return HttpResponse.json(paginate(sorted, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
+	http.get('/v1/transactions/audit', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildTransactionAudit(store, from, to));
+	}),
+
+	http.post('/v1/transactions/audit-draft', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as Record<string, unknown>;
+		const base = store.tenant.base_currency;
+		const amount = typeof body.amount === 'number' ? body.amount : 0;
+		if (amount <= 0) return HttpResponse.json({ issues: [] });
+		const issues = auditTransactionInput(
+			{
+				kind: (body.kind as Transaction['kind']) ?? 'expense',
+				title: String(body.title ?? ''),
+				category: (body.category as string | null) ?? null,
+				status: (body.status as Transaction['status']) ?? 'unpaid',
+				amount,
+				paid_amount: (body.paid_amount as number | null) ?? null,
+				currency: (body.currency as Transaction['currency']) ?? 'TRY',
+				amount_base: (body.amount_base as number | null) ?? null,
+				base_currency: (body.base_currency as Transaction['currency'] | null) ?? null,
+				patient_id: (body.patient_id as string | null) ?? null,
+				contact_label: (body.contact_label as string | null) ?? null
+			},
+			base
+		);
+		return HttpResponse.json({ issues });
+	}),
+
 	http.get('/v1/transactions/:id', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		const item = store.transactions.find((t) => t.id === params.id);
@@ -866,6 +1051,14 @@ export const handlers = [
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
 		return HttpResponse.json(buildReportPatientDistribution(store, from, to));
+	}),
+
+	http.get('/v1/reports/appointment-operations', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildReportAppointmentOperations(store, from, to));
 	}),
 
 	http.get('/v1/reports/balances', ({ request }) => {

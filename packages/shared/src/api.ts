@@ -87,7 +87,10 @@ export const apiPaths = {
 	reportsByCategoryDetail: `${API_V1_PREFIX}/reports/by-category-detail`,
 	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`,
 	reportsPatientDistribution: `${API_V1_PREFIX}/reports/patient-distribution`,
-	reportsBalances: `${API_V1_PREFIX}/reports/balances`
+	reportsAppointmentOperations: `${API_V1_PREFIX}/reports/appointment-operations`,
+	reportsBalances: `${API_V1_PREFIX}/reports/balances`,
+	transactionsAudit: `${API_V1_PREFIX}/transactions/audit`,
+	transactionsAuditDraft: `${API_V1_PREFIX}/transactions/audit-draft`
 } as const;
 
 export type ListQueryParams = {
@@ -121,7 +124,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	return `${url.pathname}${url.search}`;
 }
 import { patientSchema, patientFinanceSummarySchema } from './patient.js';
-import { appointmentSchema } from './appointment.js';
+import { appointmentListAggregatesSchema, appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
 import {
 	approveDraftsRequestSchema,
@@ -146,6 +149,7 @@ import { auditLogSchema } from './audit.js';
 import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
 import {
+	reportAppointmentOperationsSchema,
 	reportBalancesSchema,
 	reportByCategoryDetailSchema,
 	reportByCategorySchema,
@@ -153,6 +157,11 @@ import {
 	reportPatientDistributionSchema,
 	reportSummarySchema
 } from './reports.js';
+import {
+	transactionAuditDraftInputSchema,
+	transactionAuditDraftResultSchema,
+	transactionAuditReportSchema
+} from './transaction-audit.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 import { ghlConnectionStatus } from './ghl-connection.js';
 import {
@@ -184,7 +193,9 @@ export const apiContract = {
 		response: patientFinanceSummarySchema
 	},
 	'GET /v1/appointments': {
-		response: cursorPageSchema(appointmentSchema)
+		response: cursorPageSchema(appointmentSchema).extend({
+			aggregates: appointmentListAggregatesSchema.optional()
+		})
 	},
 	'GET /v1/appointments/:id': {
 		response: appointmentSchema
@@ -238,6 +249,13 @@ export const apiContract = {
 	},
 	'GET /v1/transactions': {
 		response: cursorPageSchema(transactionSchema)
+	},
+	'GET /v1/transactions/audit': {
+		response: transactionAuditReportSchema
+	},
+	'POST /v1/transactions/audit-draft': {
+		body: transactionAuditDraftInputSchema,
+		response: transactionAuditDraftResultSchema
 	},
 	'GET /v1/transactions/:id': {
 		response: transactionSchema
@@ -350,6 +368,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/patient-distribution': {
 		response: reportPatientDistributionSchema
+	},
+	'GET /v1/reports/appointment-operations': {
+		response: reportAppointmentOperationsSchema
 	},
 	'GET /v1/reports/balances': {
 		response: reportBalancesSchema

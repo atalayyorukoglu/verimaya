@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { and, eq, gte, isNotNull, isNull, lt, lte } from 'drizzle-orm';
-import { tenantDayRange, calculateRealRoas, type MarketingReport, type MarketingReportParams, type MarketingSourceRow, type ReportBalances, type ReportBalanceRow, type ReportByCategory, type ReportByCategoryDetail, type ReportByCategoryDetailParams, type ReportMonthly, type ReportPatientDistribution, type ReportPeriodParams, type ReportSummary } from '@verimaya/shared';
+import { tenantDayRange, calculateRealRoas, toTenantDayKey, type MarketingReport, type MarketingReportParams, type MarketingSourceRow, type ReportAppointmentOperations, type ReportBalances, type ReportBalanceRow, type ReportByCategory, type ReportByCategoryDetail, type ReportByCategoryDetailParams, type ReportMonthly, type ReportPatientDistribution, type ReportPeriodParams, type ReportSummary } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
-import { adMetricsDaily, contacts, patients, tenants, transactions } from '../db/schema';
+import { adMetricsDaily, appointments, contacts, patients, tenants, transactions } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
@@ -43,6 +43,13 @@ type PatientDistributionRow = {
 	source: string | null;
 };
 
+type AppointmentOpsRow = {
+	status: string;
+	appointmentType: string | null;
+	clinicName: string | null;
+	startsAt: Date;
+};
+
 function categoryLabel(category: string | null): string {
 	const trimmed = (category ?? '').trim();
 	return trimmed || 'Kategorisiz';
@@ -79,6 +86,10 @@ async function getTenantTz(db: TenantDb, tenantId: string): Promise<string> {
 		.where(eq(tenants.id, tenantId))
 		.limit(1);
 	return row?.timezone ?? 'Europe/Istanbul';
+}
+
+function toTenantMonthKey(date: Date, timeZone: string): string {
+	return toTenantDayKey(date, timeZone).slice(0, 7);
 }
 
 @Injectable()
@@ -170,6 +181,109 @@ export class ReportsService {
 				by_status,
 				by_source,
 				total: rows.length
+			};
+		});
+	}
+
+	async appointmentOperations(
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<ReportAppointmentOperations> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await this.fetchAppointmentsForPeriod(db, tenantId, params);
+
+			const statusCounts = new Map<string, number>();
+			const typeCounts = new Map<string, number>();
+			const clinicMap = new Map<
+				string,
+				{ total: number; completed: number; no_show: number; cancelled: number }
+			>();
+			const monthMap = new Map<string, { total: number; completed: number }>();
+
+			let completed_count = 0;
+			let cancelled_count = 0;
+			let no_show_count = 0;
+
+			const timezone = await getTenantTz(db, tenantId);
+
+			for (const row of rows) {
+				statusCounts.set(row.status, (statusCounts.get(row.status) ?? 0) + 1);
+
+				const typeLabel = (row.appointmentType ?? '').trim() || 'Belirtilmemiş';
+				typeCounts.set(typeLabel, (typeCounts.get(typeLabel) ?? 0) + 1);
+
+				if (row.status === 'completed') completed_count += 1;
+				if (row.status === 'cancelled') cancelled_count += 1;
+				if (row.status === 'no_show') no_show_count += 1;
+
+				const clinicLabel = (row.clinicName ?? '').trim() || 'Belirtilmemiş';
+				const clinic = clinicMap.get(clinicLabel) ?? {
+					total: 0,
+					completed: 0,
+					no_show: 0,
+					cancelled: 0
+				};
+				clinic.total += 1;
+				if (row.status === 'completed') clinic.completed += 1;
+				if (row.status === 'no_show') clinic.no_show += 1;
+				if (row.status === 'cancelled') clinic.cancelled += 1;
+				clinicMap.set(clinicLabel, clinic);
+
+				const month = toTenantMonthKey(row.startsAt, timezone);
+				const monthRow = monthMap.get(month) ?? { total: 0, completed: 0 };
+				monthRow.total += 1;
+				if (row.status === 'completed') monthRow.completed += 1;
+				monthMap.set(month, monthRow);
+			}
+
+			const total = rows.length;
+			const outcomeBase = Math.max(completed_count + no_show_count + cancelled_count, 1);
+			const completion_rate = completed_count / outcomeBase;
+			const no_show_rate = no_show_count / outcomeBase;
+			const cancellation_rate = total === 0 ? 0 : cancelled_count / total;
+
+			const by_status = [...statusCounts.entries()]
+				.map(([status, count]) => ({
+					status: status as ReportAppointmentOperations['by_status'][number]['status'],
+					count
+				}))
+				.sort((a, b) => b.count - a.count);
+
+			const by_type = [...typeCounts.entries()]
+				.map(([appointment_type, count]) => ({ appointment_type, count }))
+				.sort((a, b) => b.count - a.count);
+
+			const by_clinic = [...clinicMap.entries()]
+				.map(([clinic_name, v]) => {
+					const denom = Math.max(v.completed + v.no_show + v.cancelled, 1);
+					return {
+						clinic_name,
+						total: v.total,
+						completed: v.completed,
+						no_show: v.no_show,
+						cancelled: v.cancelled,
+						completion_rate: v.completed / denom
+					};
+				})
+				.sort((a, b) => b.total - a.total);
+
+			const by_month = [...monthMap.entries()]
+				.map(([month, v]) => ({ month, total: v.total, completed: v.completed }))
+				.sort((a, b) => a.month.localeCompare(b.month));
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				total,
+				completed_count,
+				cancelled_count,
+				no_show_count,
+				completion_rate,
+				no_show_rate,
+				cancellation_rate,
+				by_status,
+				by_type,
+				by_clinic,
+				by_month
 			};
 		});
 	}
@@ -493,6 +607,32 @@ export class ReportsService {
 				source: patients.source
 			})
 			.from(patients)
+			.where(and(...conditions));
+	}
+
+	private async fetchAppointmentsForPeriod(
+		db: TenantDb,
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<AppointmentOpsRow[]> {
+		const conditions = [isNull(appointments.deletedAt)];
+		if (params.from) {
+			const { start } = await dayRange(db, tenantId, params.from);
+			conditions.push(gte(appointments.startsAt, start));
+		}
+		if (params.to) {
+			const { endExclusive } = await dayRange(db, tenantId, params.to);
+			conditions.push(lt(appointments.startsAt, endExclusive));
+		}
+
+		return db
+			.select({
+				status: appointments.status,
+				appointmentType: appointments.appointmentType,
+				clinicName: appointments.clinicName,
+				startsAt: appointments.startsAt
+			})
+			.from(appointments)
 			.where(and(...conditions));
 	}
 

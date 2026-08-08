@@ -5,6 +5,7 @@
 	import type {
 		MarketingReport,
 		Patient,
+		ReportAppointmentOperations,
 		ReportByCategory,
 		ReportByCategoryDetail,
 		ReportMonthly,
@@ -13,10 +14,12 @@
 		SupportedCurrency,
 		Tenant,
 		Transaction,
+		TransactionAuditReport,
 		TransactionCreate,
 		TransactionUpdate
 	} from '@verimaya/shared';
 	import {
+		appointmentStatusLabels,
 		marketingReportUrl,
 		patientStatusLabels,
 		reportUrl,
@@ -170,6 +173,26 @@
 			apiGet<ReportPatientDistribution>(
 				reportUrl('patient-distribution', { from: dateRange.from, to: dateRange.to })
 			),
+		enabled: qs.ready
+	}));
+
+	const appointmentOpsQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.appointmentOperations({ from: dateRange.from, to: dateRange.to }),
+		queryFn: () =>
+			apiGet<ReportAppointmentOperations>(
+				reportUrl('appointment-operations', { from: dateRange.from, to: dateRange.to })
+			),
+		enabled: qs.ready
+	}));
+
+	const transactionAuditQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.transactionAudit({ from: dateRange.from, to: dateRange.to }),
+		queryFn: () => {
+			const url = new URL('/v1/transactions/audit', 'http://local');
+			if (dateRange.from) url.searchParams.set('from', dateRange.from);
+			if (dateRange.to) url.searchParams.set('to', dateRange.to);
+			return apiGet<TransactionAuditReport>(`${url.pathname}${url.search}`);
+		},
 		enabled: qs.ready
 	}));
 
@@ -354,6 +377,19 @@
 	};
 
 	const consistencyIssues = $derived.by(() => {
+		if (transactionAuditQuery.data) {
+			return transactionAuditQuery.data.items
+				.flatMap((row) =>
+					row.issues.map((issue) => ({
+						id: row.transaction_id ?? row.title,
+						title: row.title,
+						severity: issue.severity,
+						message: issue.message
+					}))
+				)
+				.slice(0, 12);
+		}
+
 		const issues: ConsistencyIssue[] = [];
 		for (const t of transactions) {
 			if (t.kind === 'income' && !t.patient_id) {
@@ -406,6 +442,28 @@
 			}
 		}
 		return issues.slice(0, 12);
+	});
+
+	const appointmentOps = $derived(appointmentOpsQuery.data);
+	const appointmentStatusDist = $derived.by(() => {
+		if (!appointmentOps || appointmentOps.total === 0) return [];
+		return appointmentOps.by_status.map(({ status, count }) => ({
+			status,
+			label: appointmentStatusLabels[status],
+			count,
+			pct: Math.round((count / appointmentOps.total) * 100)
+		}));
+	});
+	const appointmentMonthTrend = $derived.by(() => {
+		if (!appointmentOps?.by_month.length) return { max: 1, list: [] as { key: string; label: string; total: number; completed: number }[] };
+		const max = Math.max(1, ...appointmentOps.by_month.map((row) => row.total));
+		const list = appointmentOps.by_month.map((row) => ({
+			key: row.month,
+			label: row.month.slice(5),
+			total: row.total,
+			completed: row.completed
+		}));
+		return { max, list };
 	});
 
 	const clientByCategory = $derived.by(() => {
@@ -518,6 +576,8 @@
 		txQuery.isPending ||
 			summaryQuery.isPending ||
 			patientDistributionQuery.isPending ||
+			appointmentOpsQuery.isPending ||
+			transactionAuditQuery.isPending ||
 			marketingQuery.isPending ||
 			(!USE_MSW && (byCategoryQuery.isPending || monthlyQuery.isPending))
 	);
@@ -525,6 +585,8 @@
 		txQuery.isError ||
 			summaryQuery.isError ||
 			patientDistributionQuery.isError ||
+			appointmentOpsQuery.isError ||
+			transactionAuditQuery.isError ||
 			marketingQuery.isError ||
 			(!USE_MSW && (byCategoryQuery.isError || monthlyQuery.isError)) ||
 			(!USE_MSW && drillCategoryLabel != null && byCategoryDetailQuery.isError)
@@ -807,6 +869,107 @@
 				{/if}
 			</div>
 		</div>
+
+		<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
+			<h2 class="text-sm font-semibold text-text">{t('reports.appointments.title')}</h2>
+			{#if !appointmentOps || appointmentOps.total === 0}
+				<p class="mt-3 text-sm text-text-muted">{t('reports.appointments.empty')}</p>
+			{:else}
+				<div class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+					<div class="rounded-lg border border-border bg-surface-2 p-3">
+						<p class="text-xs text-text-muted">{t('reports.appointments.total')}</p>
+						<p class="mt-1 text-lg font-semibold tabular-nums text-text">{appointmentOps.total}</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface-2 p-3">
+						<p class="text-xs text-text-muted">{t('reports.appointments.completionRate')}</p>
+						<p class="mt-1 text-lg font-semibold tabular-nums text-success">
+							{formatRatio(appointmentOps.completion_rate)}
+						</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface-2 p-3">
+						<p class="text-xs text-text-muted">{t('reports.appointments.noShowRate')}</p>
+						<p class="mt-1 text-lg font-semibold tabular-nums text-warning">
+							{formatRatio(appointmentOps.no_show_rate)}
+						</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface-2 p-3">
+						<p class="text-xs text-text-muted">{t('reports.appointments.cancellationRate')}</p>
+						<p class="mt-1 text-lg font-semibold tabular-nums text-danger">
+							{formatRatio(appointmentOps.cancellation_rate)}
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-4 grid gap-4 lg:grid-cols-2">
+					<div>
+						<h3 class="text-xs font-medium text-text-muted">{t('reports.appointments.byStatus')}</h3>
+						<ul class="mt-3 space-y-2">
+							{#each appointmentStatusDist as row (row.status)}
+								<li class="flex items-center justify-between gap-2 text-xs">
+									<span class="truncate text-text">{row.label}</span>
+									<span class="shrink-0 text-text-muted tabular-nums">{row.count} · %{row.pct}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+					<div>
+						<h3 class="text-xs font-medium text-text-muted">{t('reports.appointments.byType')}</h3>
+						<ul class="mt-3 space-y-2">
+							{#each appointmentOps.by_type.slice(0, 8) as row (row.appointment_type)}
+								<li class="flex items-center justify-between gap-2 text-xs">
+									<span class="truncate text-text">{row.appointment_type}</span>
+									<span class="shrink-0 text-text-muted tabular-nums">{row.count}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+
+				{#if appointmentOps.by_clinic.length > 0}
+					<div class="mt-4">
+						<h3 class="text-xs font-medium text-text-muted">{t('reports.appointments.byClinic')}</h3>
+						<ul class="mt-3 space-y-2">
+							{#each appointmentOps.by_clinic.slice(0, 6) as row (row.clinic_name)}
+								<li class="flex items-center justify-between gap-2 text-xs">
+									<span class="truncate text-text">{row.clinic_name}</span>
+									<span class="shrink-0 text-text-muted tabular-nums">
+										{row.completed}/{row.total} · {formatRatio(row.completion_rate)}
+									</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+
+				{#if appointmentMonthTrend.list.length > 0}
+					<div class="mt-4">
+						<h3 class="text-xs font-medium text-text-muted">{t('reports.appointments.byMonth')}</h3>
+						<div
+							class="mt-3 grid gap-2"
+							style="grid-template-columns: repeat({appointmentMonthTrend.list.length}, minmax(0, 1fr))"
+						>
+							{#each appointmentMonthTrend.list as bucket (bucket.key)}
+								<div class="flex min-w-0 flex-col items-center gap-1">
+									<div class="flex h-24 w-full items-end justify-center gap-0.5">
+										<div
+											class="w-2 rounded-t bg-brand/70 sm:w-3"
+											style="height: {Math.max(4, (bucket.total / appointmentMonthTrend.max) * 100)}%"
+											title="Toplam: {bucket.total}"
+										></div>
+										<div
+											class="w-2 rounded-t bg-success/80 sm:w-3"
+											style="height: {Math.max(4, (bucket.completed / appointmentMonthTrend.max) * 100)}%"
+											title="Tamamlanan: {bucket.completed}"
+										></div>
+									</div>
+									<p class="text-[10px] text-text-muted">{bucket.label}</p>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+			{/if}
+		</section>
 
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
 			<div class="flex flex-wrap items-center justify-between gap-2">
