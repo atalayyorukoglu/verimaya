@@ -147,6 +147,46 @@ Burada "çalışıyor mu" değil, **"sayı mantıklı mı"** soruyorsun.
 
 ---
 
+---
+
+## Kod denetimi — 2026-08-08 (prod'a dokunmadan)
+
+> Aşağıdakiler **kod okunarak** doğrulandı. Manuel maddenin yerine tam geçmez
+> (API doğru filtreliyorsa bile ekran önbellekten eski kayıt gösterebilir), ama
+> "bir sorguda filtre atlanmış mı" sorusunu B'nin altı ekranından daha geniş
+> kapatıyor: 6 ekran değil, **33 okuma noktasının tamamı.**
+
+- **B — soft-delete: temiz.** `transactions` / `appointments` / `patients` /
+  `contacts` tablolarından okuyan 33 `.from()` noktasının tamamında
+  `isNull(deletedAt)` var (çoğu `conditions`/`filters` dizisinin ilk elemanı
+  olarak). Raporlarda `appointmentMetrics`, `consistency`, `fetchTransactions`,
+  `fetchPatientsForPeriod`, `sumTahsilatBySource`, `patientCohortBySource`
+  ayrı ayrı kontrol edildi; pazarlama tahsilatındaki `leftJoin(patients)` bile
+  `isNull(patients.deletedAt)` taşıyor.
+  - **Tek istisna — kasıtlı:** `tenants.service.ts` `hasTransactions()` filtre
+    koymuyor. Bu, işlem varken base para birimini kilitleyen guard; soft-delete
+    edilmiş işlem geri alınabileceği ve FX snapshot'ları eski base'te olduğu için
+    kilidin açılmaması **doğru** davranış. Hata değil.
+- **C1 — randevu tipi:** `settings.controller.ts`'te `@Get` + `@Post` +
+  `@Delete appointment-types/:id` üçü de var (eski 404 kapanmış).
+- **C2 — kendi rolünü değiştirme:** `members.service.ts` "You cannot change your
+  own role" ile engelliyor; `members.isolation.spec.ts` testi mevcut.
+- **F1/F2/F5 — dil:** web'de `closed_won` / `closed_lost` / `qualified` /
+  "Kaynak dağılımı" geçmiyor.
+- **F3 — MSW:** `apps/web/Dockerfile` `PUBLIC_USE_MSW=false` ile build ediyor.
+- **F4 — GHL "(planlanan)":** yalnız `features/+page.svelte` açıklamasında
+  kalmış, GHL ayarlarında yok.
+- **G1 — mükerrer tarama:** `patientIdsWithRecords()` randevusu veya işlemi olan
+  hastaları listeden çıkarıyor (ikisinde de `isNull(deletedAt)` ile).
+- **G2 — kişiler:** `DuplicateScanPanel.svelte` "Seçileni tut, diğerlerini
+  birleştir" davranışında.
+
+**Hâlâ insan gözü isteyen:** B1–B4'ün ekran tarafı, **D** (filtreler),
+**E** (sayı inandırıcılığı — no-show %0 mı, uyarı sayısı 10–100 aralığında mı).
+Bunlar "çalışıyor mu" değil "sayı mantıklı mı" soruları; kodla kapanmaz.
+
+---
+
 ## Sonuç
 
 - [ ] Takılan madde yok → prod migration tamam, PILOT-02'ye hazır.
