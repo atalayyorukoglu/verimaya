@@ -546,7 +546,20 @@
   - **Kapsam dışı:** KVKK anonimleştirme → `AUDIT-F09-07`. Bu iş yalnız "listeden kaldır".
   - **Kabul (GAP-06):** Üç kaynakta da DELETE var; silinen kayıt hiçbir listede, detayda,
     raporda veya mükerrer grubunda görünmüyor (her biri için test); satır DB'de duruyor;
-    audit kaydı düşüyor; tenant izolasyon testleri yeşil. ✅
+    audit kaydı düşüyor; tenant izolasyon testleri yeşil.
+- [ ] **GAP-06b — Silme UI yüzeyi (2026-08-08 prod doğrulamasında bulundu).**
+  GAP-06 **yalnız API'yi** getirdi; panelde hiçbir silme butonu yok
+  (`TransactionFormDialog`, `/finance`, randevu ve kişi ekranları — hepsinde yok).
+  Yani endpoint'ler bugün erişilemez durumda. **Kabul kriterini ben API diliyle yazdım,
+  arayüz yüzeyini hiç istemedim — eksik oradan geldi.**
+  - İşlem / randevu / kişi düzenleme dialoglarına silme butonu + onay adımı.
+  - Onay metni kaydın ne olduğunu göstersin (başlık + tutar/tarih), "emin misiniz?" yetmez.
+  - Silinen kayıt listeden anında düşsün (query invalidation).
+  - Metinler `messages.ts` (tr + en).
+  - **Kabul (GAP-06b):** Üç ekranda da silme butonu var; onay adımı kaydı gösteriyor;
+    silme sonrası liste güncelleniyor; MSW kapalı ortamda uçtan uca çalışıyor.
+  - **Ders:** Bu, GAP-01'deki hatanın ters yönü (orada web vardı API yoktu). Bundan sonra
+    kullanıcıya görünen her iş için kabul kriteri **hem API hem UI yüzeyini** yazmalı. ✅
   - **Görüş (GAP-06):** Migration `0030`. DELETE+audit (patient parity dahil). Contact merge
     soft-delete. Filtre eklenen sorgu yüzeyi: txn/appt/contact list+find; reports
     `fetchTransactions`/`balances`/`sumTahsilatBySource` (+ patient join); patient

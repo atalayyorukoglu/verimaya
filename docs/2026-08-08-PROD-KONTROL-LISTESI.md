@@ -11,21 +11,25 @@ Tarih: 2026-08-08 · Tenant: Demo Klinik (kendi firmamız) · Kaynak: bu turda k
 
 ## A. Migration (önce bu)
 
-- [ ] **A1 — Yedek al.** Coolify → Backups → manuel snapshot. (R2 düzeni kurulu,
-      geri yükleme provası 2026-08-07'de yapıldı.)
-- [ ] **A2 — Migration çalıştır.** `pnpm db:migrate` → 0028, 0029, 0030 geçmeli.
-- [ ] **A3 — Kanıt sorgusu.**
+> **✅ A bölümü tamamlandı — 2026-08-08.** Üç migration da prod'da doğrulandı.
+> Faydalı not: `psql` Postgres konteynerinde, owner rolü `verimaya` **değil**
+> (Coolify kendi kullanıcısını atıyor) ve `$POSTGRES_DB` app veritabanı değil.
+> Doğru komut: `psql -U "$POSTGRES_USER" -d verimaya -c "…"`.
+
+- [x] **A1 — Yedek al.** ✅ 2026-08-08 14:51, 500 KB, Local + S3 Storage.
+- [x] **A2 — Migration çalıştır.** ✅ `pnpm --filter @verimaya/api db:migrate`
+      (API konteyneri, `DATABASE_URL` = owner). NOTICE'lar zararsız (schema/tablo zaten var).
+- [x] **A3 — Kanıt sorgusu.** ✅ Yalnız `scheduled` döndü — 757 hastanın tamamı
+      eşlendi (yeni sette olmayan her değer → `scheduled`, beklenen sonuç).
       ```sql
       SELECT DISTINCT status FROM patients;
       ```
       **Beklenen:** yalnız `scheduled` / `arrived` / `treated` / `follow_up` / `cancelled`.
       **Görürsen dur:** `lead`, `contacted`, `qualified`, `closed_won`, `closed_lost` →
       `0029` UPDATE'i çalışmamış.
-- [ ] **A4 — Randevu tipleri seed olmuş mu?**
-      ```sql
-      SELECT name FROM appointment_types;
-      ```
-      **Beklenen:** Konsültasyon, Tedavi, Kontrol, Transfer.
+- [x] **A4 — Randevu tipleri seed olmuş mu?** ✅ Konsültasyon / Tedavi / Kontrol / Transfer.
+- [x] **A5 — `0030` doğrulaması.** ✅ `deleted_at` dört tabloda da var
+      (`appointments`, `contacts`, `patients`, `transactions`).
 
 ---
 
