@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import {
+	BadRequestException,
+	ConflictException,
+	Inject,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import type {
 	MergeRecords,
 	PatientCaseNoteCreate,
@@ -674,11 +680,10 @@ export class PatientsService {
 
 	async duplicateGroups(tenantId: string) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const rows = await db
-				.select()
-				.from(patients)
-				.where(isNull(patients.deletedAt));
-			return { items: findPatientDuplicateGroups(rows.map(toPatient)) };
+			const rows = await db.select().from(patients).where(isNull(patients.deletedAt));
+			const busyIds = await this.patientIdsWithRecords(db);
+			const emptyCovers = rows.filter((row) => !busyIds.has(row.id));
+			return { items: findPatientDuplicateGroups(emptyCovers.map(toPatient)) };
 		});
 	}
 
@@ -713,17 +718,42 @@ export class PatientsService {
 			sources.push(row);
 		}
 
+		const involvedIds = [keep_id, ...merge_ids];
+		const busyIds = await this.patientIdsWithRecords(db, involvedIds);
+		if (busyIds.size > 0) {
+			throw new ConflictException({
+				error: {
+					code: 'patient_has_records',
+					message:
+						'Cannot complete empty-file merge: a file has appointments or transactions'
+				}
+			});
+		}
+
+		const contactIds = [keep, ...sources]
+			.map((row) => row.contactId)
+			.filter((id): id is string => id != null);
+		if (new Set(contactIds).size > 1) {
+			throw new ConflictException({
+				error: {
+					code: 'patient_contact_mismatch',
+					message:
+						'Cannot complete empty-file merge: files link to different contacts'
+				}
+			});
+		}
+
 		let phone = keep.phone;
 		let email = keep.email;
 		let notes = keep.notes;
-		let contactId = keep.contactId;
 		let source = keep.source;
+		let contactId = keep.contactId;
 		for (const src of sources) {
 			if (!phone && src.phone) phone = src.phone;
 			if (!email && src.email) email = src.email;
 			if (!notes && src.notes) notes = src.notes;
-			if (!contactId && src.contactId) contactId = src.contactId;
 			if (!source && src.source) source = src.source;
+			if (!contactId && src.contactId) contactId = src.contactId;
 		}
 
 		const [updatedKeep] = await db
@@ -732,52 +762,55 @@ export class PatientsService {
 				phone,
 				email,
 				notes,
-				contactId,
 				source,
+				contactId,
 				updatedAt: new Date()
 			})
 			.where(eq(patients.id, keep_id))
 			.returning();
 
-		const dropIds = merge_ids;
-		const keepName = updatedKeep!.fullName;
-
-		await db
-			.update(appointments)
-			.set({
-				patientId: keep_id,
-				patientDisplayName: keepName,
-				updatedAt: new Date()
-			})
-			.where(inArray(appointments.patientId, dropIds));
-
-		await db
-			.update(transactions)
-			.set({
-				patientId: keep_id,
-				patientDisplayName: keepName,
-				updatedAt: new Date()
-			})
-			.where(inArray(transactions.patientId, dropIds));
-
-		await db
-			.update(caseNotes)
-			.set({ patientId: keep_id })
-			.where(inArray(caseNotes.patientId, dropIds));
-
-		await db
-			.update(files)
-			.set({ patientId: keep_id })
-			.where(inArray(files.patientId, dropIds));
-
 		await db
 			.update(patients)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
-			.where(inArray(patients.id, dropIds));
+			.where(inArray(patients.id, merge_ids));
 
-		await writeAuditLog(db, tenantId, actor, 'update', 'patient', keepName);
+		await writeAuditLog(db, tenantId, actor, 'update', 'patient', updatedKeep!.fullName);
 
 		return toPatient(updatedKeep!);
+	}
+
+	/** Patients that have ≥1 appointment or ≥1 transaction (busy operation files). */
+	private async patientIdsWithRecords(
+		db: TenantDb,
+		limitToIds?: string[]
+	): Promise<Set<string>> {
+		const busy = new Set<string>();
+
+		const apptConds = [isNotNull(appointments.patientId)];
+		if (limitToIds?.length) {
+			apptConds.push(inArray(appointments.patientId, limitToIds));
+		}
+		const apptRows = await db
+			.selectDistinct({ id: appointments.patientId })
+			.from(appointments)
+			.where(and(...apptConds));
+		for (const row of apptRows) {
+			if (row.id) busy.add(row.id);
+		}
+
+		const txnConds = [isNotNull(transactions.patientId)];
+		if (limitToIds?.length) {
+			txnConds.push(inArray(transactions.patientId, limitToIds));
+		}
+		const txnRows = await db
+			.selectDistinct({ id: transactions.patientId })
+			.from(transactions)
+			.where(and(...txnConds));
+		for (const row of txnRows) {
+			if (row.id) busy.add(row.id);
+		}
+
+		return busy;
 	}
 
 	private async findActiveRow(db: TenantDb, id: string) {

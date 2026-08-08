@@ -104,6 +104,35 @@ export function findContactDuplicateGroups(contacts: Contact[]): ContactDuplicat
 	return out;
 }
 
+/**
+ * Split a match bucket so patients with conflicting non-null contact_id never share a group.
+ * Null contact_id may sit with any single contact_id cluster (field fill on empty-file merge).
+ */
+export function partitionPatientsByCompatibleContactId(
+	items: Patient[]
+): Patient[][] {
+	const byContact = new Map<string | null, Patient[]>();
+	for (const p of items) {
+		const key = p.contact_id;
+		const list = byContact.get(key) ?? [];
+		list.push(p);
+		byContact.set(key, list);
+	}
+	const nulls = byContact.get(null) ?? [];
+	byContact.delete(null);
+
+	if (byContact.size === 0) {
+		return nulls.length >= 2 ? [nulls] : [];
+	}
+
+	const out: Patient[][] = [];
+	for (const group of byContact.values()) {
+		const combined = [...group, ...nulls];
+		if (combined.length >= 2) out.push(combined);
+	}
+	return out;
+}
+
 export function findPatientDuplicateGroups(patients: Patient[]): PatientDuplicateGroup[] {
 	const out: PatientDuplicateGroup[] = [];
 	const build = (
@@ -112,9 +141,19 @@ export function findPatientDuplicateGroups(patients: Patient[]): PatientDuplicat
 		items: Patient[]
 	): PatientDuplicateGroup => ({ match_type, label, patients: items });
 
-	pushGroups(out, 'email', buckets(patients, (p) => normEmailKey(p.email)), build);
-	pushGroups(out, 'phone', buckets(patients, (p) => normPhoneKey(p.phone)), build);
-	pushGroups(out, 'name', buckets(patients, (p) => normNameKey(p.full_name)), build);
+	for (const match_type of ['email', 'phone', 'name'] as const) {
+		const keyOf =
+			match_type === 'email'
+				? (p: Patient) => normEmailKey(p.email)
+				: match_type === 'phone'
+					? (p: Patient) => normPhoneKey(p.phone)
+					: (p: Patient) => normNameKey(p.full_name);
+		for (const [label, items] of buckets(patients, keyOf)) {
+			for (const compatible of partitionPatientsByCompatibleContactId(items)) {
+				out.push(build(match_type, label, compatible));
+			}
+		}
+	}
 
 	out.sort(
 		(a, b) =>

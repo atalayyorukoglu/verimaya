@@ -3,13 +3,13 @@
 	import type {
 		Contact,
 		ContactDuplicateGroup,
-		DuplicateMatchType,
 		Patient,
 		PatientDuplicateGroup
 	} from '@verimaya/shared';
 	import { apiPaths, duplicateMatchTypeLabels } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
@@ -48,8 +48,12 @@
 
 	const groups = $derived(groupsQuery.data?.items ?? []);
 
-	function groupKey(match_type: DuplicateMatchType, label: string): string {
-		return `${match_type}:${label}`;
+	function groupKey(g: AnyGroup): string {
+		const members =
+			'contacts' in g
+				? g.contacts.map((c) => c.id).sort().join(',')
+				: g.patients.map((p) => p.id).sort().join(',');
+		return `${g.match_type}:${g.label}:${members}`;
 	}
 
 	function contactRows(g: AnyGroup): Array<{
@@ -75,7 +79,7 @@
 	}
 
 	function ensureKeep(g: AnyGroup): string {
-		const key = groupKey(g.match_type, g.label);
+		const key = groupKey(g);
 		const rows = contactRows(g);
 		const current = keepByGroup[key];
 		if (current && rows.some((r) => r.id === current)) return current;
@@ -83,7 +87,7 @@
 	}
 
 	async function mergeGroup(g: AnyGroup) {
-		const key = groupKey(g.match_type, g.label);
+		const key = groupKey(g);
 		const keep_id = ensureKeep(g);
 		const rows = contactRows(g);
 		const merge_ids = rows.map((r) => r.id).filter((id) => id !== keep_id);
@@ -102,12 +106,21 @@
 			await queryClient.invalidateQueries({
 				queryKey: kind === 'contacts' ? qs.keys.contacts.all() : qs.keys.patients.all()
 			});
-			success = `${merge_ids.length} kayıt birleştirildi.`;
+			if (kind === 'patients') {
+				success = t('patients.duplicates.success', { count: String(merge_ids.length) });
+			} else {
+				success = `${merge_ids.length} kayıt birleştirildi.`;
+			}
 			const next = { ...keepByGroup };
 			delete next[key];
 			keepByGroup = next;
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Birleştirme başarısız';
+			error =
+				err instanceof Error
+					? err.message
+					: kind === 'patients'
+						? t('patients.duplicates.error')
+						: 'Birleştirme başarısız';
 		} finally {
 			mergingKey = null;
 		}
@@ -116,10 +129,14 @@
 
 <a href={listHref} class="mb-4 inline-block text-sm text-info hover:underline">← {listLabel}</a>
 
-<p class="mb-4 text-sm text-text-muted">
-	E-posta, telefon (normalize) veya ada göre olası çift kayıtlar. Bir kayıt seçip diğerlerini içine
-	birleştirin — bağlı işlem ve randevular taşınır.
-</p>
+{#if kind === 'patients'}
+	<p class="mb-4 text-sm text-text-muted">{t('patients.duplicates.hint')}</p>
+{:else}
+	<p class="mb-4 text-sm text-text-muted">
+		E-posta, telefon (normalize) veya ada göre olası çift kayıtlar. Bir kayıt seçip diğerlerini içine
+		birleştirin — bağlı işlem ve randevular taşınır.
+	</p>
+{/if}
 
 {#if error}
 	<p class="mb-3 text-sm text-danger">{error}</p>
@@ -129,25 +146,39 @@
 {/if}
 
 {#if groupsQuery.isPending}
-	<p class="text-sm text-text-muted">Taranıyor…</p>
+	<p class="text-sm text-text-muted">
+		{kind === 'patients' ? t('patients.duplicates.scanning') : 'Taranıyor…'}
+	</p>
 {:else if groupsQuery.isError}
-	<p class="text-sm text-danger">Çift kayıt listesi yüklenemedi.</p>
+	<p class="text-sm text-danger">
+		{kind === 'patients' ? t('patients.duplicates.loadError') : 'Çift kayıt listesi yüklenemedi.'}
+	</p>
 {:else if groups.length === 0}
 	<div class="rounded-lg border border-border bg-surface p-8 text-center">
-		<p class="text-sm font-medium text-text">Çift kayıt bulunamadı</p>
-		<p class="mt-1 text-xs text-text-muted">Telefon, e-posta veya ad çakışması yok.</p>
+		<p class="text-sm font-medium text-text">
+			{kind === 'patients' ? t('patients.duplicates.emptyTitle') : 'Çift kayıt bulunamadı'}
+		</p>
+		<p class="mt-1 text-xs text-text-muted">
+			{kind === 'patients'
+				? t('patients.duplicates.emptyBody')
+				: 'Telefon, e-posta veya ad çakışması yok.'}
+		</p>
 	</div>
 {:else}
 	<ul class="space-y-4">
-		{#each groups as g (groupKey(g.match_type, g.label))}
-			{@const key = groupKey(g.match_type, g.label)}
+		{#each groups as g (groupKey(g))}
+			{@const key = groupKey(g)}
 			{@const rows = contactRows(g)}
 			{@const keepId = keepByGroup[key] ?? rows[0]?.id ?? ''}
 			<li class="overflow-hidden rounded-lg border border-border bg-surface">
 				<div class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4">
 					<StatusBadge label={duplicateMatchTypeLabels[g.match_type]} tone="warning" />
 					<span class="truncate font-mono text-xs text-text-muted">{g.label}</span>
-					<span class="text-xs text-text-faint">{rows.length} kayıt</span>
+					<span class="text-xs text-text-faint">
+						{kind === 'patients'
+							? t('patients.duplicates.recordCount', { count: String(rows.length) })
+							: `${rows.length} kayıt`}
+					</span>
 				</div>
 				<ul class="divide-y divide-border">
 					{#each rows as row (row.id)}
@@ -172,7 +203,7 @@
 								href={kind === 'contacts' ? `/contacts/${row.id}` : `/patients/${row.id}`}
 								class="shrink-0 text-xs text-brand hover:underline"
 							>
-								Aç
+								{kind === 'patients' ? t('patients.duplicates.open') : 'Aç'}
 							</a>
 						</li>
 					{/each}
@@ -184,7 +215,13 @@
 						disabled={mergingKey === key || rows.length < 2}
 						onclick={() => mergeGroup(g)}
 					>
-						{mergingKey === key ? 'Birleştiriliyor…' : 'Seçileni tut, diğerlerini birleştir'}
+						{#if mergingKey === key}
+							{kind === 'patients' ? t('patients.duplicates.completing') : 'Birleştiriliyor…'}
+						{:else if kind === 'patients'}
+							{t('patients.duplicates.complete')}
+						{:else}
+							Seçileni tut, diğerlerini birleştir
+						{/if}
 					</Button>
 				</div>
 			</li>

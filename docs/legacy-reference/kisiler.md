@@ -16,7 +16,8 @@ Tracker: `/contacts` — hasta listesi değil, **cari / dizin**.
 - İşlem: `contact_id` + denormalize `contact_label`
 - Randevu: `clinic_contact_id` / `hotel_contact_id` / `transfer_contact_id`
 - Tip “Hasta” ile kişi oluşturunca otomatik Patient açılır
-- **Çift kayıt:** `/kisiler/cift-kayit` ve `/hastalar/cift-kayit` — e-posta / telefon (normalize) / ad grupları; birleştirmede FK taşıma (MSW)
+- **Çift kayıt (kişiler):** `/contacts/duplicates` — e-posta / telefon / ad; birleştirmede FK taşıma (işlem/randevu → keep)
+- **Çift kayıt (hastalar / dosyalar):** yalnız **boş kapak** (randevu 0, işlem 0). Eksik alanlar hedefe doldurulur, fazla dosya silinir. Randevusu veya işlemi olan dosya grupta görünmez; merge → 409 `patient_has_records`. Farklı `contact_id` → grupta birlikte yok; merge → 409 `patient_contact_mismatch`. FK taşıma yok.
 
 ## Gerçek implementasyon (Faz 1)
 
@@ -25,8 +26,8 @@ Tracker: `find_duplicate_contact_groups` + `merge_contacts` (işlem/randevu `con
 Verimaya’da:
 
 1. Aynı eşleme anahtarları (email lower, phone digits, name `tr` lower).
-2. Merge tek transaction: referanslar → `keep_id`, kaynak soft-delete veya hard-delete + audit.
-3. Hasta merge ayrı endpoint; Case notları / dosyalar / randevu / işlem hasta_id taşır.
+2. Kişi merge tek transaction: referanslar → `keep_id`, kaynak soft-delete veya hard-delete + audit.
+3. Hasta merge ayrı endpoint; **yalnız boş dosyalar**: telefon / e-posta / kaynak / notlar / `contact_id` (hedefte boşsa) doldurulur, kaynak soft-delete. Randevu/işlem/case note/file **taşınmaz**.
 4. İsteğe bağlı: oluştururken “benzer kayıt var” uyarısı (bloklamadan).
 
 ## Erteleme

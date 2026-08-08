@@ -36,7 +36,7 @@ async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Pro
 	}
 }
 
-describe('duplicate merge isolation and FK reassignment', () => {
+describe('duplicate merge isolation (patients empty-file + contacts FK)', () => {
 	const tenantA = randomUUID();
 	const tenantB = randomUUID();
 	let contactTypeA: string;
@@ -196,63 +196,178 @@ describe('duplicate merge isolation and FK reassignment', () => {
 		expect(stillThere).toHaveLength(1);
 	});
 
-	it('patient merge reassigns appointments and soft-deletes losers', async () => {
-		const email = `merge-fk-${randomUUID()}@example.com`;
+	it('patient merge with appointment returns 409 patient_has_records', async () => {
+		const email = `merge-appt-${randomUUID()}@example.com`;
 		const { db } = getDb(databaseUrl);
 		let keepId = '';
 		let loserId = '';
-		let appointmentId = '';
 
 		await withTenantSession(tenantA, async () => {
 			const keep = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Winner Patient',
+				full_name: 'Empty Keep',
 				email
 			});
 			const loser = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Loser Patient',
+				full_name: 'Busy Loser',
 				email
 			});
 			keepId = keep.id;
 			loserId = loser.id;
 
-			const [appt] = await db
-				.insert(appointments)
-				.values({
-					tenantId: tenantA,
-					patientId: loserId,
-					patientDisplayName: loser.full_name,
-					startsAt: new Date('2026-08-01T10:00:00Z')
-				})
-				.returning({ id: appointments.id });
-			appointmentId = appt!.id;
+			await db.insert(appointments).values({
+				tenantId: tenantA,
+				patientId: loserId,
+				patientDisplayName: loser.full_name,
+				startsAt: new Date('2026-08-01T10:00:00Z')
+			});
 		});
+
+		await expect(
+			withTenantSession(tenantA, async () =>
+				patientsService.mergeWithDb(
+					db,
+					tenantA,
+					{ keep_id: keepId, merge_ids: [loserId] },
+					actor
+				)
+			)
+		).rejects.toMatchObject({
+			response: { error: { code: 'patient_has_records' } }
+		});
+
+		const active = await withTenantSession(tenantA, async () =>
+			db
+				.select({ id: patients.id })
+				.from(patients)
+				.where(and(eq(patients.id, loserId), isNull(patients.deletedAt)))
+		);
+		expect(active).toHaveLength(1);
+	});
+
+	it('patient merge with transaction returns 409 patient_has_records', async () => {
+		const email = `merge-txn-${randomUUID()}@example.com`;
+		const { db } = getDb(databaseUrl);
+		let keepId = '';
+		let loserId = '';
 
 		await withTenantSession(tenantA, async () => {
-			const merged = await patientsService.mergeWithDb(
-				db,
-				tenantA,
-				{ keep_id: keepId, merge_ids: [loserId] },
-				actor
-			);
-			expect(merged.id).toBe(keepId);
+			const keep = await patientsService.createWithDb(db, tenantA, {
+				full_name: 'Empty Keep Txn',
+				email
+			});
+			const loser = await patientsService.createWithDb(db, tenantA, {
+				full_name: 'Busy Loser Txn',
+				email
+			});
+			keepId = keep.id;
+			loserId = loser.id;
+
+			await db.insert(transactions).values({
+				tenantId: tenantA,
+				kind: 'income',
+				title: 'Patient payment',
+				occurredOn: '2026-07-01',
+				status: 'paid',
+				amount: 5000,
+				patientId: loserId,
+				patientDisplayName: loser.full_name
+			});
 		});
 
-		const appt = await withTenantSession(tenantA, async () =>
-			db
-				.select({
-					patientId: appointments.patientId,
-					patientDisplayName: appointments.patientDisplayName
-				})
-				.from(appointments)
-				.where(eq(appointments.id, appointmentId))
+		await expect(
+			withTenantSession(tenantA, async () =>
+				patientsService.mergeWithDb(
+					db,
+					tenantA,
+					{ keep_id: keepId, merge_ids: [loserId] },
+					actor
+				)
+			)
+		).rejects.toMatchObject({
+			response: { error: { code: 'patient_has_records' } }
+		});
+	});
+
+	it('empty patient merge fills phone+email and soft-deletes source', async () => {
+		const { db } = getDb(databaseUrl);
+		let keepId = '';
+		let sourceId = '';
+
+		await withTenantSession(tenantA, async () => {
+			const keep = await patientsService.createWithDb(db, tenantA, {
+				full_name: 'Empty Cover',
+				phone: '+905551112233'
+			});
+			const source = await patientsService.createWithDb(db, tenantA, {
+				full_name: 'Empty Cover',
+				email: `empty-merge-${randomUUID()}@example.com`
+			});
+			keepId = keep.id;
+			sourceId = source.id;
+		});
+
+		const merged = await withTenantSession(tenantA, async () =>
+			patientsService.mergeWithDb(
+				db,
+				tenantA,
+				{ keep_id: keepId, merge_ids: [sourceId] },
+				actor
+			)
 		);
-		expect(appt[0]?.patientId).toBe(keepId);
-		expect(appt[0]?.patientDisplayName).toBe('Winner Patient');
+
+		expect(merged.id).toBe(keepId);
+		expect(merged.phone).toBe('+905551112233');
+		expect(merged.email).toContain('@example.com');
 
 		const deleted = await withTenantSession(tenantA, async () =>
-			db.select({ deletedAt: patients.deletedAt }).from(patients).where(eq(patients.id, loserId))
+			db.select({ deletedAt: patients.deletedAt }).from(patients).where(eq(patients.id, sourceId))
 		);
 		expect(deleted[0]?.deletedAt).not.toBeNull();
+	});
+
+	it('patient merge with different contact_ids returns 409 patient_contact_mismatch', async () => {
+		const email = `merge-contact-mismatch-${randomUUID()}@example.com`;
+		const { db } = getDb(databaseUrl);
+		let keepId = '';
+		let sourceId = '';
+
+		await withTenantSession(tenantA, async () => {
+			const c1 = await contactsService.createWithDb(db, tenantA, {
+				contact_type_id: contactTypeA,
+				display_name: 'Person One',
+				email: `c1-${randomUUID()}@example.com`
+			});
+			const c2 = await contactsService.createWithDb(db, tenantA, {
+				contact_type_id: contactTypeA,
+				display_name: 'Person Two',
+				email: `c2-${randomUUID()}@example.com`
+			});
+			const keep = await patientsService.createWithDb(db, tenantA, {
+				full_name: 'File One',
+				email,
+				contact_id: c1.id
+			});
+			const source = await patientsService.createWithDb(db, tenantA, {
+				full_name: 'File Two',
+				email,
+				contact_id: c2.id
+			});
+			keepId = keep.id;
+			sourceId = source.id;
+		});
+
+		await expect(
+			withTenantSession(tenantA, async () =>
+				patientsService.mergeWithDb(
+					db,
+					tenantA,
+					{ keep_id: keepId, merge_ids: [sourceId] },
+					actor
+				)
+			)
+		).rejects.toMatchObject({
+			response: { error: { code: 'patient_contact_mismatch' } }
+		});
 	});
 
 	it('contact merge reassigns transactions and hard-deletes losers', async () => {
