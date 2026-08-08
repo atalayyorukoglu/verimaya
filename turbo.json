@@ -17,7 +17,12 @@
 		},
 		"test": {
 			"dependsOn": ["^build"],
-			"cache": false
+			"cache": false,
+			"passThroughEnv": [
+				"DATABASE_URL",
+				"DATABASE_URL_APP",
+				"CREDENTIALS_ENCRYPTION_KEY"
+			]
 		},
 		"format": {
 			"cache": false
