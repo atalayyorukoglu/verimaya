@@ -57,9 +57,9 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 
 ## Süreç
 
-- **Aktif yapılacaklar listesi: `docs/2026-08-03-YAPILACAKLAR.md` — tek kaynak.** Fazlı; her adımın kabul kriteri, dokunulacak dosyaları ve model önerisi orada. Adım bitince o dosyadaki kutuyu işaretle ve **Görüş** satırını doldur. Listenin dışına çıkan işe başlama.
+- **Aktif yapılacaklar listesi: `docs/2026-08-09-YAPILACAKLAR.md` — tek kaynak.** Öncelik sıralı; her kalemin kabul kriteri ve dokunulacak dosyaları orada. Adım bitince o dosyadaki kutuyu işaretle, **Görüş** satırını doldur ve kalemi "Son kapananlar"a taşı. Listenin dışına çıkan işe başlama.
 - Obsidian yol haritası (`SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`) durum belgesidir (öncelik sırası YAPILACAKLAR'dadır); eski faz metni `Arşiv/2026-07-30-yol-haritasi.md`.
 - Ürünün kanıta dayalı gerçek durumu (arşiv, tarihli kanıt): `docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md`.
-- Eski plan/rapor/durum belgeleri (`CURSOR-PLAN.md`, `KONTROL-RAPORU.md`, `ROASMATE-GECIS.md`, `SAHA-TESTI-KAYDI.md`) `docs/Arşiv/`'e taşındı; aktif iş tek dosyada — `docs/2026-08-03-YAPILACAKLAR.md`.
+- Eski plan/rapor/durum belgeleri (`CURSOR-PLAN.md`, `KONTROL-RAPORU.md`, `ROASMATE-GECIS.md`, `SAHA-TESTI-KAYDI.md`, 2026-08-03 listesi) `docs/Arşiv/`'de; aktif iş tek dosyada — `docs/2026-08-09-YAPILACAKLAR.md`.
 - Önemli mimari kararlar `docs/MIMARI.md`'ye işlenir; proje takibi Obsidian'dadır (`SecondBrain-Remote/03-Areas/Verimaya`), oturum sonunda kullanıcıya log'a düşülecek 1-2 satır özet ver.
 - Faz 0a (MSW demo) ve Faz 0b (gerçek API) tamamlandı; panelde `PUBLIC_USE_MSW` ile MSW hâlâ açılabilir — canlıda kapalı.
