@@ -139,7 +139,6 @@
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
 
-- **GAP-F09-14** Sunucu tarafı veri kalitesi raporu (`settings/data-quality` istemci hesaplıyor; GAP-05 ile aynı kök neden). **(M)**
 - **GAP-F09-16** WhatsApp içe aktarımda satır içi kayıt oluşturma (kişi/hasta/kategori). **(M)**
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
@@ -212,6 +211,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-F09-14** — `GET /v1/reports/transaction-duplicates`: tam dönemde SQL `GROUP BY/HAVING` (amount+currency+occurred_on+kind), `total_groups` + 20 grup üst sınırı; `/settings/data-quality`'nin ilk-100-satır istemci taraması kalktı (2026-08-09). Görüş: from/to düz ISO `occurred_on` (summary/consistency deseni; `tenantDayRange` timestamp'ler içindir); Tracker'ın WA-import günlük özeti bilinçli taşınmadı (inbox/taslak modeli farklı). API 423/423 + shared 88 + web check yeşil.
 - ✅ **AUDIT-F09-01** — elle `openapi.yaml` bitti: `apiContract`'tan üretim (`scripts/generate-openapi-core.js` + `pnpm --filter @verimaya/api openapi:generate`), vitest drift guard byte-for-byte karşılaştırıyor (route-bazlı teşhis mesajlı); 67 operation, OpenAPI 3.1 (2026-08-09). Görüş: `@nestjs/swagger` bilinçli kullanılmadı (controller'lar DTO metadata'sı taşımıyor, zod parse ediyor); ayrı CI adımı yerine drift spec mevcut test job'unda. API 418/418 yeşil.
 - ✅ **GAP-F09-22** — `POST /v1/patients/:id/auto-link-transactions`: hastanın `contact_id`'siyle eşleşen, `patient_id IS NULL` + soft-delete'siz işlemleri bağlar (`updated` gerçek sayım; denormalize `patient_display_name` senkron) (2026-08-09). Görüş: P2P payer/payee eşleşmesi bilinçli yok (alanlar yok); izin `finance:update` (mutasyon transactions'ta, permission lock'a işlendi); idempotency-exempt (sorgu doğal yakınsıyor). API 416/416 + shared 86 + web check yeşil.
 - ✅ **GAP-F09-17** — `PATCH /v1/settings/contact-types/:id` rename (409 `duplicate_type_name`, denormalize `contact_type_name` senkronu) + `PATCH /v1/contacts/bulk-type` (max 500 id, yabancı id atlanır, `updated` gerçek sayım); `/contacts`'te çoklu seçim çubuğu, contact-types'ta satır içi rename (2026-08-09). Görüş: `contact_type_id` null desteklenmiyor — kolon NOT NULL, Tracker da null almıyor; iki endpoint de idempotency-exempt (absolute-set). API 409/409 + shared 86 + web check yeşil.

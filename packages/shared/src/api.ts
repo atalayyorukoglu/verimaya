@@ -99,7 +99,8 @@ export const apiPaths = {
 	reportsPatientDistribution: `${API_V1_PREFIX}/reports/patient-distribution`,
 	reportsBalances: `${API_V1_PREFIX}/reports/balances`,
 	reportsAppointmentMetrics: `${API_V1_PREFIX}/reports/appointment-metrics`,
-	reportsConsistency: `${API_V1_PREFIX}/reports/consistency`
+	reportsConsistency: `${API_V1_PREFIX}/reports/consistency`,
+	reportsTransactionDuplicates: `${API_V1_PREFIX}/reports/transaction-duplicates`
 } as const;
 
 export type ListQueryParams = {
@@ -186,7 +187,8 @@ import {
 	reportConsistencySchema,
 	reportMonthlySchema,
 	reportPatientDistributionSchema,
-	reportSummarySchema
+	reportSummarySchema,
+	reportTransactionDuplicatesSchema
 } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 import { ghlConnectionStatus } from './ghl-connection.js';
@@ -424,6 +426,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/consistency': {
 		response: reportConsistencySchema
+	},
+	'GET /v1/reports/transaction-duplicates': {
+		response: reportTransactionDuplicatesSchema
 	}
 } as const;
 

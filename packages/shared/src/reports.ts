@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isoDate, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
 import { patientStatusSchema } from './patient.js';
+import { transactionKindSchema } from './transaction.js';
 
 export const reportPeriodParams = z.object({
 	from: isoDate.optional(),
@@ -250,6 +251,45 @@ export const reportConsistencySchema = z.object({
 });
 export type ReportConsistency = z.infer<typeof reportConsistencySchema>;
 
+/**
+ * GAP-F09-14: duplicate-suspicion scan — server-side GROUP BY (full period, not page-capped).
+ * Query uses the same `occurred_on` ISO calendar-day filter as summary/consistency
+ * (plain `from`/`to` on the date column — not `tenantDayRange`; that helper is for timestamps).
+ */
+export const reportTransactionDuplicatesParams = z
+	.object({
+		from: isoDate.optional(),
+		to: isoDate.optional()
+	})
+	.strict();
+export type ReportTransactionDuplicatesParams = z.infer<
+	typeof reportTransactionDuplicatesParams
+>;
+
+/** Max duplicate groups returned in `items` (`total_groups` carries the uncapped total). */
+export const REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT = 20;
+
+export const reportTransactionDuplicateGroupSchema = z.object({
+	count: z.number().int().positive(),
+	amount: moneyMinor,
+	currency: supportedCurrencySchema,
+	occurred_on: isoDate,
+	kind: transactionKindSchema,
+	/** Representative title for the group (e.g. MIN(title)). */
+	title: z.string().min(1).max(255)
+});
+export type ReportTransactionDuplicateGroup = z.infer<
+	typeof reportTransactionDuplicateGroupSchema
+>;
+
+export const reportTransactionDuplicatesSchema = z.object({
+	items: z
+		.array(reportTransactionDuplicateGroupSchema)
+		.max(REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT),
+	total_groups: z.number().int().nonnegative()
+});
+export type ReportTransactionDuplicates = z.infer<typeof reportTransactionDuplicatesSchema>;
+
 export type ReportUrlPath =
 	| 'summary'
 	| 'by-category'
@@ -258,7 +298,8 @@ export type ReportUrlPath =
 	| 'patient-distribution'
 	| 'balances'
 	| 'appointment-metrics'
-	| 'consistency';
+	| 'consistency'
+	| 'transaction-duplicates';
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(

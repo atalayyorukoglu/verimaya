@@ -431,9 +431,12 @@ const tr = {
 	'settings.dataQuality.fx.summary': '{count} işlem · coverage {pct}%',
 	'settings.dataQuality.fx.loadError': 'Kur özeti yüklenemedi.',
 	'settings.dataQuality.dupes.title': 'Mükerrer şüphe',
-	'settings.dataQuality.dupes.description': 'Aynı tutar + tarih + tür + para birimi (örnekleme).',
+	'settings.dataQuality.dupes.description':
+		'Aynı tutar + tarih + tür + para birimi — sunucu taraflı tam dönem taraması.',
 	'settings.dataQuality.dupes.clean': 'Şüphe yok.',
 	'settings.dataQuality.dupes.count': '{count} kayıt',
+	'settings.dataQuality.dupes.truncated': 'İlk {shown} / toplam {total} grup',
+	'settings.dataQuality.dupes.loadError': 'Mükerrer taraması yüklenemedi.',
 	'settings.dataQuality.duplicatesNav.title': 'Kişi / hasta çift kayıt',
 	'settings.dataQuality.duplicatesNav.description':
 		'Telefon, e-posta veya ada göre dizin ve hasta mükerrerleri — birleştirme demosu.',
@@ -1341,9 +1344,12 @@ const en: Record<MessageKey, string> = {
 	'settings.dataQuality.fx.summary': '{count} transactions · coverage {pct}%',
 	'settings.dataQuality.fx.loadError': 'Could not load FX summary.',
 	'settings.dataQuality.dupes.title': 'Duplicate suspicion',
-	'settings.dataQuality.dupes.description': 'Same amount + date + kind + currency (sampled).',
+	'settings.dataQuality.dupes.description':
+		'Same amount + date + kind + currency — full-period server-side scan.',
 	'settings.dataQuality.dupes.clean': 'No suspicion.',
 	'settings.dataQuality.dupes.count': '{count} rows',
+	'settings.dataQuality.dupes.truncated': 'First {shown} / {total} groups',
+	'settings.dataQuality.dupes.loadError': 'Could not load duplicate scan.',
 	'settings.dataQuality.duplicatesNav.title': 'Contact / patient duplicates',
 	'settings.dataQuality.duplicatesNav.description':
 		'Directory and patient duplicates by phone, email, or name — merge demo.',

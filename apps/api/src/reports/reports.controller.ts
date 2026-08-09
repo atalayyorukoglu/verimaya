@@ -2,11 +2,13 @@ import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import {
 	marketingReportParams,
 	reportByCategoryDetailParams,
-	reportPeriodParams
+	reportPeriodParams,
+	reportTransactionDuplicatesParams
 } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
+import { parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { ReportsService } from './reports.service';
@@ -104,6 +106,16 @@ export class ReportsController {
 	) {
 		const params = reportPeriodParams.parse({ from, to });
 		return this.reportsService.consistency(getActiveOrgId(req), params);
+	}
+
+	@Get('transaction-duplicates')
+	@RequireOrgPermission('finance', 'read')
+	transactionDuplicates(
+		@Req() req: FastifyRequest,
+		@Query() query: Record<string, unknown>
+	) {
+		const params = parseQuery(reportTransactionDuplicatesParams, query, req);
+		return this.reportsService.transactionDuplicates(getActiveOrgId(req), params);
 	}
 
 	@Get('balances')

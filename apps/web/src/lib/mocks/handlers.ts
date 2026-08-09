@@ -38,6 +38,7 @@ import {
 	compareByCreatedAtAsc,
 	compareByOccurredOnDesc,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
+	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	DUPLICATE_SCAN_ROW_CAP,
 	tenantDayRange,
 	toTenantDayKey,
@@ -604,6 +605,49 @@ function buildReportConsistency(
 		counts: { error, warning },
 		counts_by_code,
 		truncated
+	};
+}
+
+function buildReportTransactionDuplicates(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null
+) {
+	const rows = filterTransactionsByPeriod(store.transactions, from, to);
+	const map = new Map<
+		string,
+		{
+			count: number;
+			amount: number;
+			currency: string;
+			occurred_on: string;
+			kind: string;
+			title: string;
+		}
+	>();
+	for (const t of rows) {
+		const key = `${t.amount}|${t.currency}|${t.occurred_on}|${t.kind}`;
+		const existing = map.get(key);
+		if (existing) {
+			existing.count += 1;
+			if (t.title.localeCompare(existing.title) < 0) existing.title = t.title;
+		} else {
+			map.set(key, {
+				count: 1,
+				amount: t.amount,
+				currency: t.currency,
+				occurred_on: t.occurred_on,
+				kind: t.kind,
+				title: t.title
+			});
+		}
+	}
+	const groups = [...map.values()]
+		.filter((g) => g.count > 1)
+		.sort((a, b) => b.count - a.count || a.occurred_on.localeCompare(b.occurred_on));
+	return {
+		items: groups.slice(0, REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT),
+		total_groups: groups.length
 	};
 }
 
@@ -1274,6 +1318,14 @@ export const handlers = [
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
 		return HttpResponse.json(buildReportConsistency(store, from, to));
+	}),
+
+	http.get('/v1/reports/transaction-duplicates', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		return HttpResponse.json(buildReportTransactionDuplicates(store, from, to));
 	}),
 
 	http.get('/v1/reports/balances', ({ request }) => {

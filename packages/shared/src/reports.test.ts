@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	reportAppointmentMetricsSchema,
 	reportBalanceRowSchema,
 	reportBalancesSchema,
 	reportConsistencySchema,
 	reportPatientDistributionSchema,
-	reportSummarySchema
+	reportSummarySchema,
+	reportTransactionDuplicatesParams,
+	reportTransactionDuplicatesSchema
 } from './reports.js';
 
 describe('reportSummarySchema', () => {
@@ -85,6 +88,33 @@ describe('reportConsistencySchema (GAP-05)', () => {
 		expect(parsed.counts_by_code.category_missing).toBe(1);
 		expect(parsed.truncated).toBe(false);
 		expect(parsed.items[0]?.message_key).toBe('reports.consistency.category_missing');
+	});
+});
+
+describe('reportTransactionDuplicatesSchema (GAP-F09-14)', () => {
+	it('accepts groups with total_groups and capped items', () => {
+		const parsed = reportTransactionDuplicatesSchema.parse({
+			items: [
+				{
+					count: 3,
+					amount: 10000,
+					currency: 'TRY',
+					occurred_on: '2026-05-01',
+					kind: 'income',
+					title: 'Dup sample'
+				}
+			],
+			total_groups: 1
+		});
+		expect(parsed.items[0]?.count).toBe(3);
+		expect(parsed.total_groups).toBe(1);
+		expect(REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT).toBe(20);
+	});
+
+	it('rejects unknown query keys (.strict)', () => {
+		expect(() =>
+			reportTransactionDuplicatesParams.parse({ from: '2026-05-01', limit: '100' })
+		).toThrow();
 	});
 });
 

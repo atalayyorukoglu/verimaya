@@ -16,6 +16,7 @@ import {
 	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
+	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	resolveCollectedAmount,
 	type MarketingReport,
 	type MarketingReportParams,
@@ -33,7 +34,9 @@ import {
 	type ReportMonthly,
 	type ReportPatientDistribution,
 	type ReportPeriodParams,
-	type ReportSummary
+	type ReportSummary,
+	type ReportTransactionDuplicates,
+	type ReportTransactionDuplicatesParams
 } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
 import { adMetricsDaily, appointments, contacts, patients, tenants, transactions } from '../db/schema';
@@ -447,6 +450,63 @@ export class ReportsService {
 				counts_by_code,
 				truncated: error + warning > items.length
 			};
+		});
+	}
+
+	/**
+	 * GAP-F09-14: duplicate-suspicion groups — amount + currency + occurred_on + kind.
+	 * Aggregation is SQL GROUP BY / HAVING over the full period (no client page cap).
+	 * Items are capped; `total_groups` is the uncapped group count.
+	 */
+	async transactionDuplicates(
+		tenantId: string,
+		params: ReportTransactionDuplicatesParams
+	): Promise<ReportTransactionDuplicates> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const period: SQL[] = [isNull(transactions.deletedAt)];
+			if (params.from) period.push(gte(transactions.occurredOn, params.from));
+			if (params.to) period.push(lte(transactions.occurredOn, params.to));
+			const periodWhere = and(...period)!;
+
+			const groups = await db
+				.select({
+					amount: transactions.amount,
+					currency: transactions.currency,
+					occurredOn: transactions.occurredOn,
+					kind: transactions.kind,
+					count: sql<number>`count(*)::int`,
+					title: sql<string>`min(${transactions.title})`
+				})
+				.from(transactions)
+				.where(periodWhere)
+				.groupBy(
+					transactions.amount,
+					transactions.currency,
+					transactions.occurredOn,
+					transactions.kind
+				)
+				.having(sql`count(*) > 1`)
+				.orderBy(sql`count(*) DESC`);
+
+			const total_groups = groups.length;
+			const items = groups.slice(0, REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT).map((row) => {
+				const occurred =
+					typeof row.occurredOn === 'string'
+						? row.occurredOn.slice(0, 10)
+						: row.occurredOn instanceof Date
+							? row.occurredOn.toISOString().slice(0, 10)
+							: String(row.occurredOn).slice(0, 10);
+				return {
+					count: Number(row.count),
+					amount: row.amount,
+					currency: row.currency as ReportTransactionDuplicates['items'][number]['currency'],
+					occurred_on: occurred,
+					kind: row.kind as ReportTransactionDuplicates['items'][number]['kind'],
+					title: String(row.title)
+				};
+			});
+
+			return { items, total_groups };
 		});
 	}
 

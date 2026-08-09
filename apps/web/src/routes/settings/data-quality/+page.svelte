@@ -3,20 +3,18 @@
 	import type {
 		ReportConsistency,
 		ReportSummary,
+		ReportTransactionDuplicates,
 		SupportedCurrency,
-		Tenant,
-		Transaction
+		Tenant
 	} from '@verimaya/shared';
 	import { reportUrl, toTenantDayKey } from '@verimaya/shared';
-	import { apiGet, listUrl } from '$lib/api';
+	import { apiGet } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { formatMoney } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import ConsistencyIssuesList from '$lib/components/ConsistencyIssuesList.svelte';
-
-	type TxPage = { items: Transaction[]; next_cursor: string | null };
 
 	const qs = useQueryScope();
 
@@ -49,9 +47,10 @@
 		enabled: qs.ready && !!tenantQuery.data
 	}));
 
-	const txQuery = createQuery(() => ({
-		queryKey: qs.keys.transactions.list({ for: 'data-quality-dupes', from }),
-		queryFn: () => apiGet<TxPage>(listUrl('transactions', { limit: 100, from })),
+	const dupesQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.transactionDuplicates({ from, to: null }),
+		queryFn: () =>
+			apiGet<ReportTransactionDuplicates>(reportUrl('transaction-duplicates', { from })),
 		enabled: qs.ready && !!tenantQuery.data
 	}));
 
@@ -60,21 +59,7 @@
 		(consistency?.counts.error ?? 0) + (consistency?.counts.warning ?? 0)
 	);
 	const fxSummary = $derived(summaryQuery.data);
-
-	const duplicates = $derived.by(() => {
-		const items = txQuery.data?.items ?? [];
-		const dupMap = new Map<string, Transaction[]>();
-		for (const t of items) {
-			const key = `${t.amount}|${t.currency}|${t.occurred_on}|${t.kind}`;
-			const bucket = dupMap.get(key) ?? [];
-			bucket.push(t);
-			dupMap.set(key, bucket);
-		}
-		return [...dupMap.entries()]
-			.filter(([, rows]) => rows.length > 1)
-			.map(([key, rows]) => ({ key, count: rows.length, sample: rows[0]! }))
-			.slice(0, 8);
-	});
+	const duplicates = $derived(dupesQuery.data);
 </script>
 
 <svelte:head>
@@ -169,26 +154,36 @@
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4">
 			<h2 class="text-sm font-semibold text-text">{t('settings.dataQuality.dupes.title')}</h2>
 			<p class="mt-0.5 text-xs text-text-muted">{t('settings.dataQuality.dupes.description')}</p>
-			{#if txQuery.isPending}
+			{#if dupesQuery.isPending}
 				<p class="mt-3 text-sm text-text-muted">{t('settings.dataQuality.loading')}</p>
-			{:else if duplicates.length === 0}
+			{:else if dupesQuery.isError}
+				<p class="mt-3 text-sm text-danger">{t('settings.dataQuality.dupes.loadError')}</p>
+			{:else if !duplicates || duplicates.total_groups === 0}
 				<p class="mt-3 text-sm text-success">{t('settings.dataQuality.dupes.clean')}</p>
 			{:else}
 				<ul class="mt-3 divide-y divide-border">
-					{#each duplicates as d (d.key)}
+					{#each duplicates.items as d (`${d.amount}|${d.currency}|${d.occurred_on}|${d.kind}`)}
 						<li class="flex justify-between gap-2 py-2 text-sm">
 							<span class="truncate text-text">
-								{d.sample.title}
+								{d.title}
 								<span class="text-text-faint">
 									· {t('settings.dataQuality.dupes.count', { count: d.count })}
 								</span>
 							</span>
 							<span class="shrink-0 text-text-muted tabular-nums">
-								{formatMoney(d.sample.amount, d.sample.currency)}
+								{formatMoney(d.amount, d.currency)}
 							</span>
 						</li>
 					{/each}
 				</ul>
+				{#if duplicates.total_groups > duplicates.items.length}
+					<p class="mt-2 text-xs text-text-faint">
+						{t('settings.dataQuality.dupes.truncated', {
+							shown: duplicates.items.length,
+							total: duplicates.total_groups
+						})}
+					</p>
+				{/if}
 			{/if}
 		</section>
 
