@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import {
 	aiCorrectionCreateSchema,
+	aiCorrectionsReportParamsSchema,
 	approveDraftsRequestSchema,
 	cursorPageParams,
 	whatsappParseRequestSchema
@@ -25,7 +26,7 @@ import {
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { Idempotent, IdempotencyExempt } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
-import { parseBody } from '../common/mappers';
+import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { AiCorrectionsService } from './ai-corrections.service';
@@ -160,5 +161,13 @@ export class WhatsappController {
 	) {
 		const params = cursorPageParams.parse({ cursor, limit });
 		return this.aiCorrectionsService.list(getActiveOrgId(req), params);
+	}
+
+	/** GAP-F09-15: field-level AI correction frequency (full period, no pagination). */
+	@Get('corrections-report')
+	@RequireOrgPermission('patient', 'read')
+	correctionsReport(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(aiCorrectionsReportParamsSchema, query, req);
+		return this.aiCorrectionsService.report(getActiveOrgId(req), params);
 	}
 }

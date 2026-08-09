@@ -143,7 +143,6 @@
 
 - **GAP-F09-13** Denetim kaydı filtreleri (Tracker 7 param; bizde yalnız cursor+limit). **(S–M)**
 - **GAP-F09-14** Sunucu tarafı veri kalitesi raporu (`settings/data-quality` istemci hesaplıyor; GAP-05 ile aynı kök neden). **(M)**
-- **GAP-F09-15** AI düzeltme raporu agregasyonu (alan bazlı hata sıklığı; tek GROUP BY). **(S)**
 - **GAP-F09-16** WhatsApp içe aktarımda satır içi kayıt oluşturma (kişi/hasta/kategori). **(M)**
 - **GAP-F09-17** Kişi toplu tür atama + kişi türü rename (`PATCH /contact-types/:id`). **(S)**
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
@@ -218,6 +217,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-F09-15** — `GET /v1/whatsapp/corrections-report` alan bazlı GROUP BY (correction_count + distinct_messages, from/to, `.strict()`); `/settings/ai-learning` istemci sayımından rapor API'sine geçti (2026-08-09). Görüş: Tracker'ın value-triple özeti bilinçli ertelendi (display-name çözümü gerekir); prompt tuning için alan frekansı yeterli.
 - ✅ **GAP-F09-21** — randevu listesi yanıtına filtreli tam küme `type_counts`/`status_counts` (GAP-03b deseni; cursor sayımda yok, soft-delete hariç); UI'da durum özeti şeridi (2026-08-09). API 390/390 + web check yeşil.
 - ✅ **GAP-F09-25** — `appointment_types`/`contact_types` UNIQUE (tenant_id, name) + `tenant_settings` seed bayrakları (finance_categories dahil); 409 `duplicate_type_name` + web i18n anahtarı; migration `0034` (2026-08-09). Görüş: boş liste ≠ "hiç seed edilmedi"; finance aynı geri-yazma bug'ına sahipti → aynı mekanizma. Tam paket 388/388 yeşil.
 - ✅ **AUDIT-F09-05** — outbox + zamanlanmış iş DLQ + admin requeue (`dead` status, migration `0033`) (2026-08-09). Spec 11/11 yeşil; `0033` prod'a kalem 1 ile gider.

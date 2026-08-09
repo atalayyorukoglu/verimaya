@@ -649,6 +649,64 @@ function daysAgo(days: number, hour = 10): Date {
 	return d;
 }
 
+/** GAP-F09-15 demo feed for `/settings/ai-learning` corrections-report. */
+function makeAiCorrections(): AiCorrection[] {
+	const base = {
+		kind: 'income' as const,
+		amount: 290000,
+		currency: 'GBP' as const,
+		title: '2. vizit ödemesi',
+		category: null as string | null,
+		subcategory: null as string | null,
+		patient_id: null as string | null,
+		patient_display_name: null as string | null,
+		contact_label: null as string | null,
+		occurred_on: '2026-01-15',
+		payment_method: null as string | null,
+		description: null as string | null
+	};
+	const msgA = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1';
+	const msgB = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2';
+	return [
+		{
+			id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
+			tenant_id: DEMO_TENANT_ID,
+			inbound_message_id: msgA,
+			original_parsed: [base],
+			corrected: [{ ...base, amount: 300000, category: 'Vizit' }],
+			created_by: DEMO_USER_ID,
+			created_at: iso(daysAgo(20))
+		},
+		{
+			id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc2',
+			tenant_id: DEMO_TENANT_ID,
+			inbound_message_id: msgA,
+			original_parsed: [base],
+			corrected: [{ ...base, category: 'Transfer' }],
+			created_by: DEMO_USER_ID,
+			created_at: iso(daysAgo(12))
+		},
+		{
+			id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3',
+			tenant_id: DEMO_TENANT_ID,
+			inbound_message_id: msgB,
+			original_parsed: [base],
+			corrected: [{ ...base, category: 'Vizit', contact_label: 'Klinik X' }],
+			created_by: DEMO_USER_ID,
+			created_at: iso(daysAgo(5))
+		},
+		{
+			id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc4',
+			tenant_id: DEMO_TENANT_ID,
+			inbound_message_id: null,
+			original_parsed: [base],
+			corrected: [{ ...base, kind: 'expense', occurred_on: '2026-01-16' }],
+			created_by: DEMO_USER_ID,
+			created_at: iso(daysAgo(3))
+		}
+	];
+}
+
 function isoDayLocal(d: Date): string {
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -1301,7 +1359,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		auditLogs,
 		apiKeys: makeApiKeys(),
 		webhookSubscriptions: makeWebhookSubscriptions(),
-		aiCorrections: [],
+		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] }
 	};
 }

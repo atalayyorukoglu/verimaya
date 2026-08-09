@@ -27,6 +27,8 @@ import {
 	apiKeyCreateSchema,
 	webhookSubscriptionCreateSchema,
 	aiCorrectionCreateSchema,
+	aiCorrectionsReportParamsSchema,
+	aggregateAiCorrectionsReport,
 	approveDraftsRequestSchema,
 	trustScoreSettings,
 	compareByCreatedAtDesc,
@@ -1578,6 +1580,25 @@ export const handlers = [
 		return HttpResponse.json(
 			paginate(store.aiCorrections, url.searchParams.get('cursor'), limitFrom(url))
 		);
+	}),
+
+	http.get('/v1/whatsapp/corrections-report', ({ request }) => {
+		const url = new URL(request.url);
+		const parsed = parseListQuery(aiCorrectionsReportParamsSchema, url);
+		if (!parsed.success) return parsed.response;
+		const store = getStore(scenarioFrom(request));
+		const { from, to } = parsed.data;
+		let items = store.aiCorrections;
+		if (from) {
+			items = items.filter((c) => c.created_at.slice(0, 10) >= from);
+		}
+		if (to) {
+			items = items.filter((c) => c.created_at.slice(0, 10) <= to);
+		}
+		return HttpResponse.json({
+			period: { from: from ?? null, to: to ?? null },
+			items: aggregateAiCorrectionsReport(items)
+		});
 	}),
 
 	http.get('/v1/patients/:id/files', ({ params, request }) => {

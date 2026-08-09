@@ -200,6 +200,20 @@ const tr = {
 	'settings.ai.prompt.footnote':
 		"Prompt demo: localStorage. Gerçek tenant prompt'u ayrı iş; ifşa ayarı API'de saklanır.",
 
+	// Ayarlar · AI öğrenme (GAP-F09-15)
+	'settings.aiLearning.title': 'AI öğrenme raporu',
+	'settings.aiLearning.description':
+		'Kullanıcının düzelttiği AI tahminleri — hangi alanlarda ne sıklıkla hata yapılıyor.',
+	'settings.aiLearning.loading': 'Yükleniyor…',
+	'settings.aiLearning.loadError': 'Rapor yüklenemedi.',
+	'settings.aiLearning.empty': 'Henüz düzeltme kaydı yok.',
+	'settings.aiLearning.summary.heading': 'En çok düzeltilen alanlar',
+	'settings.aiLearning.col.field': 'Alan',
+	'settings.aiLearning.col.corrections': 'Düzeltme',
+	'settings.aiLearning.col.messages': 'Mesaj',
+	'settings.aiLearning.footnote':
+		'AI ile İşlem ekranında kaydedilen/onaylanan taslaklar AI çıktısından farklıysa otomatik kaydedilir. Sık hata alanları prompt ve kategori sözlüğü iyileştirmesi için sinyaldir.',
+
 	// Ayarlar · Organizasyon
 	'settings.organization.timezone': 'Saat dilimi',
 	'settings.organization.timezoneHint':
@@ -1065,6 +1079,20 @@ const en: Record<MessageKey, string> = {
 	'settings.ai.prompt.saved': 'Saved.',
 	'settings.ai.prompt.footnote':
 		'Prompt is demo localStorage. Real tenant prompt is separate; disclosure is stored via API.',
+
+	// Settings · AI learning (GAP-F09-15)
+	'settings.aiLearning.title': 'AI learning report',
+	'settings.aiLearning.description':
+		'Human corrections to AI guesses — which fields go wrong how often.',
+	'settings.aiLearning.loading': 'Loading…',
+	'settings.aiLearning.loadError': 'Could not load the report.',
+	'settings.aiLearning.empty': 'No corrections yet.',
+	'settings.aiLearning.summary.heading': 'Most corrected fields',
+	'settings.aiLearning.col.field': 'Field',
+	'settings.aiLearning.col.corrections': 'Corrections',
+	'settings.aiLearning.col.messages': 'Messages',
+	'settings.aiLearning.footnote':
+		'Drafts saved or approved on AI → Transaction that differ from the AI output are logged automatically. Frequent fields are a signal for prompt and category-dictionary tuning.',
 
 	'settings.organization.timezone': 'Timezone',
 	'settings.organization.timezoneHint':

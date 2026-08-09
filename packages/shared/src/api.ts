@@ -76,6 +76,13 @@ export const apiPaths = {
 		if (params?.limit) url.searchParams.set('limit', String(params.limit));
 		return `${url.pathname}${url.search}`;
 	},
+	whatsappCorrectionsReport: `${API_V1_PREFIX}/whatsapp/corrections-report`,
+	whatsappCorrectionsReportQuery: (params?: { from?: string; to?: string }) => {
+		const url = new URL(`${API_V1_PREFIX}/whatsapp/corrections-report`, 'http://local');
+		if (params?.from) url.searchParams.set('from', params.from);
+		if (params?.to) url.searchParams.set('to', params.to);
+		return `${url.pathname}${url.search}`;
+	},
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
 	adMetricsSync: `${API_V1_PREFIX}/ad-metrics/sync`,
 	apiKeys: `${API_V1_PREFIX}/api-keys`,
@@ -164,7 +171,11 @@ import {
 	adConnectionStatus,
 	adGoogleCustomerIdUpdate
 } from './ads-connection.js';
-import { aiCorrectionCreateSchema, aiCorrectionSchema } from './ai-correction.js';
+import {
+	aiCorrectionCreateSchema,
+	aiCorrectionSchema,
+	aiCorrectionsReportSchema
+} from './ai-correction.js';
 import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
 
 /**
@@ -292,6 +303,9 @@ export const apiContract = {
 	},
 	'GET /v1/whatsapp/corrections': {
 		response: cursorPageSchema(aiCorrectionSchema)
+	},
+	'GET /v1/whatsapp/corrections-report': {
+		response: aiCorrectionsReportSchema
 	},
 	'GET /v1/members': {
 		response: cursorPageSchema(membershipUserSchema)

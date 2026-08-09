@@ -1,122 +1,68 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { AiCorrection, TransactionDraft } from '@verimaya/shared';
+	import type { AiCorrectionsReport } from '@verimaya/shared';
 	import { apiPaths } from '@verimaya/shared';
 	import { apiGet } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
-	import { USE_MSW } from '$lib/env';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 
-	type CorrectionRow = { field: string; corrections: number; rate: string };
-	type CorrectionsPage = { items: AiCorrection[]; next_cursor: string | null };
-
-	const FIELD_ORDER = [
-		'kind (gelir/gider)',
-		'amount / currency',
-		'category',
-		'contact_label',
-		'patient match',
-		'occurred_on'
-	] as const;
-
-	/** Demo sabit veri — sadece MSW modunda gösterilir. */
-	const DEMO_ROWS: CorrectionRow[] = [
-		{ field: 'kind (gelir/gider)', corrections: 12, rate: '18%' },
-		{ field: 'amount / currency', corrections: 9, rate: '14%' },
-		{ field: 'category', corrections: 21, rate: '32%' },
-		{ field: 'contact_label', corrections: 15, rate: '23%' },
-		{ field: 'patient match', corrections: 7, rate: '11%' },
-		{ field: 'occurred_on', corrections: 4, rate: '6%' }
-	];
-
 	const qs = useQueryScope();
 
-	const correctionsQuery = createQuery(() => ({
-		queryKey: qs.keys.whatsapp.corrections(),
-		queryFn: () => apiGet<CorrectionsPage>(apiPaths.whatsappCorrectionsList({ limit: 100 })),
-		enabled: !USE_MSW && qs.ready
+	const reportQuery = createQuery(() => ({
+		queryKey: qs.keys.whatsapp.correctionsReport({}),
+		queryFn: () => apiGet<AiCorrectionsReport>(apiPaths.whatsappCorrectionsReport),
+		enabled: qs.ready
 	}));
 
-	function fieldDiffs(a: TransactionDraft, b: TransactionDraft): Record<string, boolean> {
-		return {
-			'kind (gelir/gider)': a.kind !== b.kind,
-			'amount / currency': a.amount !== b.amount || a.currency !== b.currency,
-			category: (a.category ?? null) !== (b.category ?? null),
-			contact_label: (a.contact_label ?? null) !== (b.contact_label ?? null),
-			'patient match': (a.patient_id ?? null) !== (b.patient_id ?? null),
-			occurred_on: a.occurred_on !== b.occurred_on
-		};
-	}
-
-	/** Kaydedilen her correction'ın original/corrected taslak çiftlerini kıyaslayıp alan bazlı sayım çıkarır. */
-	function computeRows(items: AiCorrection[]): CorrectionRow[] {
-		const counts: Record<string, number> = {};
-		let totalRecords = 0;
-		for (const item of items) {
-			const len = Math.min(item.original_parsed.length, item.corrected.length);
-			for (let i = 0; i < len; i++) {
-				totalRecords++;
-				const diffs = fieldDiffs(item.original_parsed[i]!, item.corrected[i]!);
-				for (const [field, differs] of Object.entries(diffs)) {
-					if (differs) counts[field] = (counts[field] ?? 0) + 1;
-				}
-			}
-		}
-		return FIELD_ORDER.map((field) => {
-			const corrections = counts[field] ?? 0;
-			const rate = totalRecords > 0 ? `${Math.round((corrections / totalRecords) * 100)}%` : '0%';
-			return { field, corrections, rate };
-		});
-	}
-
-	const rows = $derived(USE_MSW ? DEMO_ROWS : computeRows(correctionsQuery.data?.items ?? []));
-	const totalCorrections = $derived(correctionsQuery.data?.items.length ?? 0);
+	const items = $derived(reportQuery.data?.items ?? []);
 </script>
 
 <svelte:head>
-	<title>AI öğrenme · Ayarlar · Veri Maya</title>
+	<title>{t('settings.aiLearning.title')} · {t('settings.ai.title')} · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
 	<PageHeader
-		title="AI öğrenme raporu"
-		description={USE_MSW
-			? 'Kullanıcının düzelttiği AI tahminleri — demo sabit veri.'
-			: 'Kullanıcının düzelttiği AI tahminleri — kayıtlı correction verisinden hesaplanır.'}
+		title={t('settings.aiLearning.title')}
+		description={t('settings.aiLearning.description')}
 	/>
 
-	{#if !USE_MSW && correctionsQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
-	{:else if !USE_MSW && totalCorrections === 0}
-		<p class="text-sm text-text-muted">Henüz correction kaydı yok.</p>
+	{#if reportQuery.isPending}
+		<p class="text-sm text-text-muted">{t('settings.aiLearning.loading')}</p>
+	{:else if reportQuery.isError}
+		<p class="text-sm text-danger">{t('settings.aiLearning.loadError')}</p>
+	{:else if items.length === 0}
+		<p class="text-sm text-text-muted">{t('settings.aiLearning.empty')}</p>
 	{:else}
-		<div class="overflow-hidden rounded-lg border border-border bg-surface">
+		<section class="overflow-hidden rounded-lg border border-border bg-surface">
+			<div class="border-b border-border px-4 py-3">
+				<h2 class="text-sm font-semibold text-text">{t('settings.aiLearning.summary.heading')}</h2>
+			</div>
 			<table class="w-full text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						<th class="px-4 py-2.5 font-medium">Alan</th>
-						<th class="px-4 py-2.5 font-medium">Düzeltme</th>
-						<th class="px-4 py-2.5 font-medium">Pay</th>
+						<th class="px-4 py-2.5 font-medium">{t('settings.aiLearning.col.field')}</th>
+						<th class="px-4 py-2.5 font-medium">{t('settings.aiLearning.col.corrections')}</th>
+						<th class="px-4 py-2.5 font-medium">{t('settings.aiLearning.col.messages')}</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-border">
-					{#each rows as row (row.field)}
-						<tr>
-							<td class="px-4 py-2.5 font-medium text-text">{row.field}</td>
-							<td class="px-4 py-2.5 text-text-muted tabular-nums">{row.corrections}</td>
-							<td class="px-4 py-2.5 text-text-muted tabular-nums">{row.rate}</td>
+					{#each items as row (row.field)}
+						<tr class={row.correction_count >= 3 ? 'bg-warning/10' : ''}>
+							<td class="px-4 py-2.5 font-medium text-text">
+								<code class="rounded bg-surface-2 px-1.5 py-0.5 text-xs font-mono">{row.field}</code>
+							</td>
+							<td class="px-4 py-2.5 text-text-muted tabular-nums">{row.correction_count}</td>
+							<td class="px-4 py-2.5 text-text-muted tabular-nums">{row.distinct_messages}</td>
 						</tr>
 					{/each}
 				</tbody>
 			</table>
-		</div>
+		</section>
 	{/if}
 
-	<p class="mt-3 text-xs text-text-faint">
-		Faz 3: AI correction kaydı tutuluyor — AI ile İşlem ekranında kaydedilen/onaylanan taslaklar AI
-		çıktısından farklıysa otomatik kaydedilir. En sık hata kategoride — prompt ve kategori sözlüğü
-		iyileştirmesi için sinyal.
-	</p>
+	<p class="mt-3 text-xs text-text-faint">{t('settings.aiLearning.footnote')}</p>
 </div>

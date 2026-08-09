@@ -82,7 +82,8 @@ export function queryKeys(scope: QueryScope) {
 		},
 		whatsapp: {
 			inbox: () => k('whatsapp', 'inbox'),
-			corrections: () => k('whatsapp', 'corrections')
+			corrections: () => k('whatsapp', 'corrections'),
+			correctionsReport: (params: Params = {}) => k('whatsapp', 'corrections-report', params)
 		},
 		reports: {
 			all: () => k('reports'),
