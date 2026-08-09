@@ -65,7 +65,13 @@ function parseGoogleCustomerId(secret: string): string | null {
 	}
 }
 
+/**
+ * Tenant-scoped Ads connection surface. Class-level guard triad matches the dominant
+ * controller pattern (AUDIT-F09-18). OAuth callback lives in AdsOAuthCallbackController
+ * — Nest merges class+method guards, so a public callback cannot share this class.
+ */
 @Controller('integrations/ads')
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class AdsController {
 	constructor(
 		private readonly registry: AdsAdapterRegistry,
@@ -75,7 +81,6 @@ export class AdsController {
 	) {}
 
 	@Get('status')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'read')
 	async status(@Req() req: FastifyRequest): Promise<AdConnectionsResponse> {
 		const tenantId = getActiveOrgId(req);
@@ -86,7 +91,6 @@ export class AdsController {
 	}
 
 	@Patch('google/customer-id')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'update')
 	@IdempotencyExempt(
 		'Re-stores the credential with the given customer_id via storeCredential (upsert-by-provider); repeat calls converge to the same stored value — PUT-like semantics despite the PATCH verb.'
@@ -125,7 +129,6 @@ export class AdsController {
 	}
 
 	@Get(':provider/authorize')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'update')
 	async authorize(
 		@Req() req: FastifyRequest,
@@ -140,28 +143,8 @@ export class AdsController {
 		return reply.redirect(url, 302);
 	}
 
-	@Get(':provider/callback')
-	async callback(
-		@Res() reply: FastifyReply,
-		@Param('provider') providerParam: string,
-		@Query('code') code?: string,
-		@Query('state') state?: string
-	) {
-		const provider = this.registry.parseProvider(providerParam);
-		const query = adOAuthCallbackQuery.parse({ code, state });
-		const payload = this.oauthState.decodeState(query.state, provider);
-		const redirectUri = redirectUriFor(provider);
-		const { secret } = await this.registry.get(provider).exchangeCode({
-			code: query.code,
-			redirectUri
-		});
-		await this.settings.storeCredential(payload.tenantId, provider, { secret });
-		return reply.redirect(`${webPublicUrl()}/settings/connections/ads?ads=${provider}`, 302);
-	}
-
 	@Delete(':provider')
 	@HttpCode(204)
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'update')
 	@IdempotencyExempt(
 		'DELETE-by-provider; deleting an already-removed credential is a silent 0-row no-op, not an error — naturally idempotent.'
@@ -201,5 +184,37 @@ export class AdsController {
 			last_sync_date,
 			customer_id
 		};
+	}
+}
+
+/**
+ * Public OAuth callback — provider redirects the browser here with `code`+`state`.
+ * No session/API-key; tenant is recovered from signed OAuth state (AUDIT-F09-18 split).
+ */
+@Controller('integrations/ads')
+export class AdsOAuthCallbackController {
+	constructor(
+		private readonly registry: AdsAdapterRegistry,
+		private readonly oauthState: AdsOAuthStateService,
+		private readonly settings: SettingsService
+	) {}
+
+	@Get(':provider/callback')
+	async callback(
+		@Res() reply: FastifyReply,
+		@Param('provider') providerParam: string,
+		@Query('code') code?: string,
+		@Query('state') state?: string
+	) {
+		const provider = this.registry.parseProvider(providerParam);
+		const query = adOAuthCallbackQuery.parse({ code, state });
+		const payload = this.oauthState.decodeState(query.state, provider);
+		const redirectUri = redirectUriFor(provider);
+		const { secret } = await this.registry.get(provider).exchangeCode({
+			code: query.code,
+			redirectUri
+		});
+		await this.settings.storeCredential(payload.tenantId, provider, { secret });
+		return reply.redirect(`${webPublicUrl()}/settings/connections/ads?ads=${provider}`, 302);
 	}
 }

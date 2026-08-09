@@ -13,45 +13,9 @@ import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { apiPaths } from '@verimaya/shared';
 import { describe, expect, it } from 'vitest';
-import { AdMetricsController } from '../ad-metrics/ad-metrics.controller';
-import { ApiKeysController } from '../api-keys/api-keys.controller';
-import { AppointmentsController } from '../appointments/appointments.controller';
-import { AuditLogsController } from '../audit-logs/audit-logs.controller';
-import { MeController } from '../auth/me.controller';
-import { ContactsController } from '../contacts/contacts.controller';
-import { AdsController } from '../integrations/ads/ads.controller';
-import { GhlController } from '../integrations/ghl/ghl.controller';
-import { MembersController } from '../members/members.controller';
-import { PatientsController } from '../patients/patients.controller';
-import { ReportsController } from '../reports/reports.controller';
-import { ScorecardController } from '../scorecard/scorecard.controller';
-import { SettingsController } from '../settings/settings.controller';
-import { TenantsController } from '../tenants/tenants.controller';
-import { TransactionsController } from '../transactions/transactions.controller';
-import { WebhookSubscriptionsController } from '../webhook-subscriptions/webhook-subscriptions.controller';
-import { WhatsappController } from '../whatsapp/whatsapp.controller';
+import { discoverAllControllers } from './all-controllers';
 
-/** Controllers that serve authenticated /v1 contract surfaces reflected by apiPaths. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ALL_CONTROLLERS: Function[] = [
-	MeController,
-	TenantsController,
-	MembersController,
-	PatientsController,
-	AppointmentsController,
-	ContactsController,
-	TransactionsController,
-	AuditLogsController,
-	SettingsController,
-	GhlController,
-	AdsController,
-	ScorecardController,
-	WhatsappController,
-	AdMetricsController,
-	ApiKeysController,
-	WebhookSubscriptionsController,
-	ReportsController
-];
+const ALL_CONTROLLERS = await discoverAllControllers();
 
 function joinPath(a: string, b: string): string {
 	const left = a.replace(/\/$/, '');
@@ -114,6 +78,10 @@ function expandApiPaths(): ApiPathEntry[] {
 describe('GAP-01: every apiPaths entry has a NestJS route', () => {
 	const nestPaths = nestRoutePathTemplates(ALL_CONTROLLERS);
 	const entries = expandApiPaths();
+
+	it('discovery finds a non-vacuous set of controllers (guards against broken glob/fs scan)', () => {
+		expect(ALL_CONTROLLERS.length).toBeGreaterThanOrEqual(15);
+	});
 
 	it('the reflection walk finds Nest routes (guards against vacuous pass)', () => {
 		expect(nestPaths.size).toBeGreaterThan(50);

@@ -45,7 +45,12 @@ function ghlCallbackRedirectUri(): string {
 	return `${ghlRedirectBase()}/v1/integrations/ghl/callback`;
 }
 
+/**
+ * Tenant-scoped GHL connection surface. Class-level guard triad matches the dominant
+ * controller pattern (AUDIT-F09-18). OAuth callback lives in GhlOAuthCallbackController.
+ */
 @Controller('integrations/ghl')
+@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class GhlController {
 	private readonly oauth: GhlOAuthClient;
 
@@ -57,7 +62,6 @@ export class GhlController {
 	}
 
 	@Get('status')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'read')
 	async status(@Req() req: FastifyRequest): Promise<GhlConnectionStatus> {
 		const tenantId = getActiveOrgId(req);
@@ -91,7 +95,6 @@ export class GhlController {
 	}
 
 	@Get('authorize')
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 	@RequireOrgPermission('settings', 'update')
 	async authorize(@Req() req: FastifyRequest, @Res() reply: FastifyReply) {
 		const tenantId = getActiveOrgId(req);
@@ -99,6 +102,32 @@ export class GhlController {
 		const state = this.oauthState.encodeState({ tenantId });
 		const url = this.oauth.buildAuthorizeUrl({ state, redirectUri });
 		return reply.redirect(url, 302);
+	}
+
+	@Delete()
+	@HttpCode(204)
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE-by-provider; deleting an already-removed credential is a silent 0-row no-op, not an error — naturally idempotent.'
+	)
+	async disconnect(@Req() req: FastifyRequest) {
+		await this.settings.deleteCredential(getActiveOrgId(req), GHL_OAUTH_PROVIDER);
+	}
+}
+
+/**
+ * Public OAuth callback — provider redirects the browser here with `code`+`state`.
+ * No session/API-key; tenant is recovered from signed OAuth state (AUDIT-F09-18 split).
+ */
+@Controller('integrations/ghl')
+export class GhlOAuthCallbackController {
+	private readonly oauth: GhlOAuthClient;
+
+	constructor(
+		private readonly oauthState: GhlOAuthStateService,
+		private readonly settings: SettingsService
+	) {
+		this.oauth = ghlOAuthClientFromEnv();
 	}
 
 	@Get('callback')
@@ -116,16 +145,5 @@ export class GhlController {
 		});
 		await this.settings.storeCredential(payload.tenantId, GHL_OAUTH_PROVIDER, { secret });
 		return reply.redirect(`${webPublicUrl()}/settings/connections/ghl?ghl=connected`, 302);
-	}
-
-	@Delete()
-	@HttpCode(204)
-	@UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
-	@RequireOrgPermission('settings', 'update')
-	@IdempotencyExempt(
-		'DELETE-by-provider; deleting an already-removed credential is a silent 0-row no-op, not an error — naturally idempotent.'
-	)
-	async disconnect(@Req() req: FastifyRequest) {
-		await this.settings.deleteCredential(getActiveOrgId(req), GHL_OAUTH_PROVIDER);
 	}
 }

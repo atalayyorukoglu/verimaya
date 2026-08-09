@@ -5,7 +5,7 @@ import { SettingsModule } from '../../settings/settings.module';
 import { SettingsService } from '../../settings/settings.service';
 import { GhlHttpClient, ghlHttpClientEnvConfigured } from './ghl.client.http';
 import { GhlClientStub } from './ghl.client.stub';
-import { GhlController } from './ghl.controller';
+import { GhlController, GhlOAuthCallbackController } from './ghl.controller';
 import { GhlOAuthStateService } from './ghl-oauth.state';
 import { GhlReconcileService } from './ghl.reconcile.service';
 import { GhlSyncService } from './ghl.sync.service';
@@ -13,7 +13,7 @@ import { GHL_CLIENT, type GhlClient } from './ghl.types';
 
 @Module({
 	imports: [AuthModule, CommonModule, SettingsModule],
-	controllers: [GhlController],
+	controllers: [GhlController, GhlOAuthCallbackController],
 	providers: [
 		GhlSyncService,
 		GhlOAuthStateService,

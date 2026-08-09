@@ -1,191 +1,253 @@
+/**
+ * AUDIT-F09-11: organization permission coverage via reflection (not a hand-maintained
+ * handler→permission table). Walks every controller route with Nest METHOD_METADATA,
+ * reads @RequireOrgPermission metadata, and asserts:
+ *   1) every org-auth-triad route declares a permission
+ *   2) resource/action exists in organizationPermissionStatements
+ *   3) GET → read; mutating verbs → write-class (create|update|delete), with a small
+ *      intentional-exception table for claims a naive heuristic cannot express
+ *
+ * Role-matrix canActivate tests below are kept — they exercise OrgPermissionGuard +
+ * permissions.ts runtime behaviour, which reflection alone cannot replace.
+ */
 import 'reflect-metadata';
-import { ForbiddenException, type ExecutionContext } from '@nestjs/common';
-import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { ForbiddenException, RequestMethod, type ExecutionContext } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
 import type { UserRole } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
-import { MeService } from '../auth/me.service';
-import { SessionGuard } from '../auth/session.guard';
-import { AppointmentsController } from '../appointments/appointments.controller';
-import { ContactsController } from '../contacts/contacts.controller';
-import { PatientsController } from '../patients/patients.controller';
-import { SettingsController } from '../settings/settings.controller';
-import { TransactionsController } from '../transactions/transactions.controller';
-import { AuditLogsController } from '../audit-logs/audit-logs.controller';
-import { MembersController } from '../members/members.controller';
-import { ReportsController } from '../reports/reports.controller';
 import { AdMetricsController } from '../ad-metrics/ad-metrics.controller';
-import { TenantsController } from '../tenants/tenants.controller';
-import { WebhookSubscriptionsController } from '../webhook-subscriptions/webhook-subscriptions.controller';
 import { ApiKeysController } from '../api-keys/api-keys.controller';
-import { WhatsappController } from '../whatsapp/whatsapp.controller';
+import { AppointmentsController } from '../appointments/appointments.controller';
+import { AuditLogsController } from '../audit-logs/audit-logs.controller';
+import { MeService } from '../auth/me.service';
+import { ContactsController } from '../contacts/contacts.controller';
 import { AdsController } from '../integrations/ads/ads.controller';
 import { GhlController } from '../integrations/ghl/ghl.controller';
+import { MembersController } from '../members/members.controller';
+import { PatientsController } from '../patients/patients.controller';
+import { ReportsController } from '../reports/reports.controller';
 import { ScorecardController } from '../scorecard/scorecard.controller';
-import { HealthController } from '../health/health.controller';
-import { KarneController } from '../karne/karne.controller';
-import { WebhooksController } from '../webhooks/webhooks.controller';
-import { MeController } from '../auth/me.controller';
-import { ActiveOrgGuard } from './active-org.guard';
-import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
+import { SettingsController } from '../settings/settings.controller';
+import { TenantsController } from '../tenants/tenants.controller';
+import { TransactionsController } from '../transactions/transactions.controller';
+import { WebhookSubscriptionsController } from '../webhook-subscriptions/webhook-subscriptions.controller';
+import { WhatsappController } from '../whatsapp/whatsapp.controller';
+import {
+	organizationPermissionStatements,
+	type OrgPermissionAction,
+	type OrgPermissionResource
+} from '../auth/permissions';
+import {
+	discoverAllControllers,
+	effectiveGuards,
+	hasOrgAuthTriad
+} from './all-controllers';
 import { OrgPermissionGuard } from './org-permission.guard';
 import {
 	ORG_PERMISSION_METADATA_KEY,
 	type OrgPermissionRequirement
 } from './require-org-permission.decorator';
 
-const transactionPermissions: Array<
-	[keyof TransactionsController, OrgPermissionRequirement]
-> = [
-	['list', { resource: 'finance', action: 'read' }],
-	['create', { resource: 'finance', action: 'create' }],
-	['update', { resource: 'finance', action: 'update' }],
-	['remove', { resource: 'finance', action: 'delete' }]
+/**
+ * Org-protected controllers are *derived*, not listed: every discovered controller with
+ * at least one route behind the guard triad. Public surfaces (health, karne, webhooks,
+ * OAuth callbacks, /me) fall out automatically and are covered by guard-coverage.spec.ts.
+ */
+const ORG_PROTECTED_CONTROLLERS = (await discoverAllControllers()).filter((controller) =>
+	Object.getOwnPropertyNames(controller.prototype as object).some((name) => {
+		if (name === 'constructor') return false;
+		const handler = (controller.prototype as Record<string, unknown>)[name];
+		if (typeof handler !== 'function') return false;
+		if (Reflect.getMetadata(METHOD_METADATA, handler) === undefined) return false;
+		return hasOrgAuthTriad(effectiveGuards(controller, handler));
+	})
+);
+
+const WRITE_ACTIONS = new Set(['create', 'update', 'delete']);
+
+type RoutePermission = {
+	controller: string;
+	handler: string;
+	key: string;
+	httpMethod: RequestMethod;
+	httpMethodName: string;
+	path: string;
+	permission: OrgPermissionRequirement | undefined;
+};
+
+/**
+ * Intentional permission choices that a GET→read / mutating→write-class heuristic
+ * cannot express (or would mispredict). Reflection still requires the decorator;
+ * this table locks the business choice so a silent change fails the spec.
+ *
+ * Why these cannot be derived from HTTP alone:
+ * - authorize is GET but starts OAuth (settings:update)
+ * - merge is POST but destroys a record (patient:delete)
+ * - financeSummary is on PatientsController but reads finance
+ * - approveDrafts is the money path (finance:create), not patient:update
+ * - settings resource has no create/delete actions — create/remove endpoints use update
+ */
+const INTENTIONAL_PERMISSION_LOCKS: Array<{
+	key: string;
+	permission: OrgPermissionRequirement;
+	reason: string;
+}> = [
+	{
+		key: 'AdsController.authorize',
+		permission: { resource: 'settings', action: 'update' },
+		reason: 'GET starts OAuth connect flow — write-class despite verb'
+	},
+	{
+		key: 'GhlController.authorize',
+		permission: { resource: 'settings', action: 'update' },
+		reason: 'GET starts OAuth connect flow — write-class despite verb'
+	},
+	{
+		key: 'PatientsController.merge',
+		permission: { resource: 'patient', action: 'delete' },
+		reason: 'POST merge destroys the loser patient record'
+	},
+	{
+		key: 'ContactsController.merge',
+		permission: { resource: 'patient', action: 'delete' },
+		reason: 'POST merge destroys the loser contact record'
+	},
+	{
+		key: 'PatientsController.financeSummary',
+		permission: { resource: 'finance', action: 'read' },
+		reason: 'Cross-resource: patient route exposes finance aggregates'
+	},
+	{
+		key: 'WhatsappController.approveDrafts',
+		permission: { resource: 'finance', action: 'create' },
+		reason: 'Money path — writes transactions, not patient inbox state'
+	},
+	{
+		key: 'AdMetricsController.sync',
+		permission: { resource: 'finance', action: 'update' },
+		reason: 'POST sync mutates ad_metrics_daily under finance'
+	}
 ];
 
-const settingsPermissions: Array<[keyof SettingsController, OrgPermissionRequirement]> = [
-	['listFinanceCategories', { resource: 'settings', action: 'read' }],
-	['createFinanceCategory', { resource: 'settings', action: 'update' }],
-	['updateFinanceCategory', { resource: 'settings', action: 'update' }],
-	['removeFinanceCategory', { resource: 'settings', action: 'update' }],
-	['listContactTypes', { resource: 'settings', action: 'read' }],
-	['createContactType', { resource: 'settings', action: 'update' }],
-	['removeContactType', { resource: 'settings', action: 'update' }],
-	['listAppointmentTypes', { resource: 'settings', action: 'read' }],
-	['createAppointmentType', { resource: 'settings', action: 'update' }],
-	['removeAppointmentType', { resource: 'settings', action: 'update' }],
-	['getCredential', { resource: 'settings', action: 'read' }],
-	['putCredential', { resource: 'settings', action: 'update' }],
-	['getTrustScore', { resource: 'settings', action: 'read' }],
-	['putTrustScore', { resource: 'settings', action: 'update' }],
-	['getAiDisclosure', { resource: 'settings', action: 'read' }],
-	['putAiDisclosure', { resource: 'settings', action: 'update' }]
-];
+function isKnownPermission(permission: OrgPermissionRequirement): boolean {
+	const actions = organizationPermissionStatements[permission.resource] as readonly string[] | undefined;
+	if (!actions) return false;
+	return actions.includes(permission.action);
+}
 
-const patientPermissions: Array<[keyof PatientsController, OrgPermissionRequirement]> = [
-	['list', { resource: 'patient', action: 'read' }],
-	['duplicateGroups', { resource: 'patient', action: 'read' }],
-	['merge', { resource: 'patient', action: 'delete' }],
-	['listFiles', { resource: 'patient', action: 'read' }],
-	['listCaseNotes', { resource: 'patient', action: 'read' }],
-	['createCaseNote', { resource: 'patient', action: 'update' }],
-	['deleteCaseNote', { resource: 'patient', action: 'update' }],
-	['downloadFile', { resource: 'patient', action: 'read' }],
-	['financeSummary', { resource: 'finance', action: 'read' }],
-	['presignFile', { resource: 'patient', action: 'update' }],
-	['putFileContent', { resource: 'patient', action: 'update' }],
-	['confirmFile', { resource: 'patient', action: 'update' }],
-	['createFile', { resource: 'patient', action: 'update' }],
-	['get', { resource: 'patient', action: 'read' }],
-	['create', { resource: 'patient', action: 'create' }],
-	['update', { resource: 'patient', action: 'update' }],
-	['remove', { resource: 'patient', action: 'delete' }]
-];
+function findProtectedRoutes(controllers: Function[]): RoutePermission[] {
+	const out: RoutePermission[] = [];
+	for (const controller of controllers) {
+		const proto = controller.prototype as Record<string, unknown>;
+		for (const name of Object.getOwnPropertyNames(proto)) {
+			if (name === 'constructor') continue;
+			const handler = proto[name];
+			if (typeof handler !== 'function') continue;
 
-const contactPermissions: Array<[keyof ContactsController, OrgPermissionRequirement]> = [
-	['list', { resource: 'patient', action: 'read' }],
-	['duplicateGroups', { resource: 'patient', action: 'read' }],
-	['merge', { resource: 'patient', action: 'delete' }],
-	['get', { resource: 'patient', action: 'read' }],
-	['create', { resource: 'patient', action: 'create' }],
-	['update', { resource: 'patient', action: 'update' }],
-	['remove', { resource: 'patient', action: 'delete' }]
-];
+			const httpMethod: RequestMethod | undefined = Reflect.getMetadata(METHOD_METADATA, handler);
+			if (httpMethod === undefined) continue;
 
-const appointmentPermissions: Array<[keyof AppointmentsController, OrgPermissionRequirement]> = [
-	['list', { resource: 'patient', action: 'read' }],
-	['create', { resource: 'patient', action: 'create' }],
-	['update', { resource: 'patient', action: 'update' }],
-	['remove', { resource: 'patient', action: 'delete' }]
-];
+			const permission = Reflect.getMetadata(
+				ORG_PERMISSION_METADATA_KEY,
+				handler
+			) as OrgPermissionRequirement | undefined;
 
-const auditLogsPermissions: Array<[keyof AuditLogsController, OrgPermissionRequirement]> = [
-	['list', { resource: 'settings', action: 'read' }]
-];
+			out.push({
+				controller: controller.name,
+				handler: name,
+				key: `${controller.name}.${name}`,
+				httpMethod,
+				httpMethodName: RequestMethod[httpMethod] ?? String(httpMethod),
+				path: (Reflect.getMetadata(PATH_METADATA, handler) as string | undefined) ?? '',
+				permission
+			});
+		}
+	}
+	return out;
+}
 
-const membersPermissions: Array<[keyof MembersController, OrgPermissionRequirement]> = [
-	['list', { resource: 'settings', action: 'read' }],
-	['update', { resource: 'settings', action: 'update' }]
-];
+function matchesVerbClass(route: RoutePermission): boolean {
+	if (!route.permission) return false;
+	const lock = INTENTIONAL_PERMISSION_LOCKS.find((l) => l.key === route.key);
+	if (lock) {
+		return (
+			lock.permission.resource === route.permission.resource &&
+			lock.permission.action === route.permission.action
+		);
+	}
+	if (route.httpMethod === RequestMethod.GET) {
+		return route.permission.action === 'read';
+	}
+	return WRITE_ACTIONS.has(route.permission.action);
+}
 
-const reportsPermissions: Array<[keyof ReportsController, OrgPermissionRequirement]> = [
-	['summary', { resource: 'finance', action: 'read' }],
-	['byCategory', { resource: 'finance', action: 'read' }],
-	['byCategoryDetail', { resource: 'finance', action: 'read' }],
-	['monthly', { resource: 'finance', action: 'read' }],
-	['marketing', { resource: 'finance', action: 'read' }],
-	['patientDistribution', { resource: 'finance', action: 'read' }],
-	['appointmentMetrics', { resource: 'finance', action: 'read' }],
-	['consistency', { resource: 'finance', action: 'read' }],
-	['balances', { resource: 'finance', action: 'read' }]
-];
+describe('AUDIT-F09-11: org permission metadata via reflection', () => {
+	const routes = findProtectedRoutes(ORG_PROTECTED_CONTROLLERS);
 
-const adMetricsPermissions: Array<[keyof AdMetricsController, OrgPermissionRequirement]> = [
-	['list', { resource: 'finance', action: 'read' }],
-	['sync', { resource: 'finance', action: 'update' }]
-];
+	it('the reflection walk actually finds handlers (guards against vacuous pass)', () => {
+		expect(routes.length).toBeGreaterThan(70);
+	});
 
-const tenantsPermissions: Array<[keyof TenantsController, OrgPermissionRequirement]> = [
-	['getCurrent', { resource: 'settings', action: 'read' }],
-	['updateCurrent', { resource: 'settings', action: 'update' }]
-];
+	it('every org-protected route declares @RequireOrgPermission', () => {
+		const missing = routes
+			.filter((r) => !r.permission)
+			.map((r) => `${r.key} (${r.httpMethodName} ${r.path})`);
+		expect(missing).toEqual([]);
+	});
 
-const webhookSubscriptionsPermissions: Array<
-	[keyof WebhookSubscriptionsController, OrgPermissionRequirement]
-> = [
-	['list', { resource: 'settings', action: 'read' }],
-	['create', { resource: 'settings', action: 'update' }],
-	['remove', { resource: 'settings', action: 'update' }]
-];
+	it('every declared permission exists in organizationPermissionStatements', () => {
+		const unknown = routes
+			.filter((r) => r.permission && !isKnownPermission(r.permission))
+			.map(
+				(r) =>
+					`${r.key} → ${r.permission!.resource}:${r.permission!.action as string}`
+			);
+		expect(unknown).toEqual([]);
+	});
 
-const apiKeysPermissions: Array<[keyof ApiKeysController, OrgPermissionRequirement]> = [
-	['list', { resource: 'settings', action: 'read' }],
-	['create', { resource: 'settings', action: 'update' }],
-	['revoke', { resource: 'settings', action: 'update' }]
-];
+	it('GET → read and mutating verbs → write-class, unless intentionally locked', () => {
+		const mismatches = routes
+			.filter((r) => r.permission && !matchesVerbClass(r))
+			.map(
+				(r) =>
+					`${r.key} (${r.httpMethodName}) has ${r.permission!.resource}:${r.permission!.action}`
+			);
+		expect(mismatches).toEqual([]);
+	});
 
-const whatsappPermissions: Array<[keyof WhatsappController, OrgPermissionRequirement]> = [
-	['parse', { resource: 'patient', action: 'create' }],
-	['listInbox', { resource: 'patient', action: 'read' }],
-	['getInboxItem', { resource: 'patient', action: 'read' }],
-	['processInbox', { resource: 'patient', action: 'update' }],
-	['parseInboxItem', { resource: 'patient', action: 'update' }],
-	['approveInboxItem', { resource: 'patient', action: 'update' }],
-	['approveDrafts', { resource: 'finance', action: 'create' }],
-	['ignoreInboxItem', { resource: 'patient', action: 'update' }],
-	['createCorrection', { resource: 'patient', action: 'create' }],
-	['listCorrections', { resource: 'patient', action: 'read' }]
-];
+	it('intentional permission locks still match decorator metadata', () => {
+		const byKey = new Map(routes.map((r) => [r.key, r]));
+		for (const lock of INTENTIONAL_PERMISSION_LOCKS) {
+			const route = byKey.get(lock.key);
+			expect(route, `lock references missing handler: ${lock.key} (${lock.reason})`).toBeDefined();
+			expect(route!.permission).toEqual(lock.permission);
+		}
+	});
 
-const adsPermissions: Array<[keyof AdsController, OrgPermissionRequirement]> = [
-	['status', { resource: 'settings', action: 'read' }],
-	['updateGoogleCustomerId', { resource: 'settings', action: 'update' }],
-	['authorize', { resource: 'settings', action: 'update' }],
-	['disconnect', { resource: 'settings', action: 'update' }]
-];
+	it('settings write endpoints use update (resource has no create/delete actions)', () => {
+		const settingsWrites = routes.filter(
+			(r) =>
+				r.permission?.resource === 'settings' &&
+				r.httpMethod !== RequestMethod.GET
+		);
+		expect(settingsWrites.length).toBeGreaterThan(0);
+		for (const route of settingsWrites) {
+			expect(
+				route.permission!.action,
+				`${route.key} — settings model only allows read|update`
+			).toBe('update' satisfies OrgPermissionAction<'settings'>);
+		}
+	});
 
-const ghlPermissions: Array<[keyof GhlController, OrgPermissionRequirement]> = [
-	['status', { resource: 'settings', action: 'read' }],
-	['authorize', { resource: 'settings', action: 'update' }],
-	['disconnect', { resource: 'settings', action: 'update' }]
-];
-
-const scorecardPermissions: Array<[keyof ScorecardController, OrgPermissionRequirement]> = [
-	['getCurrent', { resource: 'settings', action: 'read' }],
-	['listAssessments', { resource: 'settings', action: 'read' }],
-	['getAssessment', { resource: 'settings', action: 'read' }],
-	['compare', { resource: 'settings', action: 'read' }],
-	['getProfile', { resource: 'settings', action: 'read' }],
-	['createProfile', { resource: 'settings', action: 'update' }],
-	['patchProfile', { resource: 'settings', action: 'update' }],
-	['startAssessment', { resource: 'settings', action: 'update' }],
-	['completeAssessment', { resource: 'settings', action: 'update' }],
-	['upsertAnswer', { resource: 'settings', action: 'update' }],
-	['startBaseline', { resource: 'settings', action: 'update' }],
-	['autoFillOpen', { resource: 'settings', action: 'update' }],
-	['autoFillAssessment', { resource: 'settings', action: 'update' }]
-];
+	it('type-level OrgPermissionResource keys match the runtime statements export', () => {
+		const resources = Object.keys(organizationPermissionStatements).sort();
+		expect(resources).toEqual(
+			(['finance', 'patient', 'settings'] as OrgPermissionResource[]).slice().sort()
+		);
+	});
+});
 
 function makeContext(req: FastifyRequest, handler: () => unknown, target: object): ExecutionContext {
 	return {
@@ -214,211 +276,6 @@ function createGuard(roles: Record<string, UserRole>): OrgPermissionGuard {
 	} as unknown as MeService;
 	return new OrgPermissionGuard(new Reflector(), meService);
 }
-
-describe('transaction and settings organization permission metadata', () => {
-	it('sets the required guard order on both controllers', () => {
-		expect(Reflect.getMetadata(GUARDS_METADATA, TransactionsController)).toEqual([
-			AuthOrApiKeyGuard,
-			ActiveOrgGuard,
-			OrgPermissionGuard
-		]);
-		expect(Reflect.getMetadata(GUARDS_METADATA, SettingsController)).toEqual([
-			SessionGuard,
-			ActiveOrgGuard,
-			OrgPermissionGuard
-		]);
-	});
-
-	it('sets complete transaction permission metadata', () => {
-		for (const [method, permission] of transactionPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, TransactionsController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-
-	it('sets complete settings permission metadata', () => {
-		for (const [method, permission] of settingsPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, SettingsController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-});
-
-describe('patient-domain organization permission metadata', () => {
-	it('sets the required guard order on patient-domain controllers', () => {
-		for (const controller of [PatientsController, ContactsController, AppointmentsController]) {
-			expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toEqual([
-				AuthOrApiKeyGuard,
-				ActiveOrgGuard,
-				OrgPermissionGuard
-			]);
-		}
-	});
-
-	it('sets complete patients permission metadata', () => {
-		for (const [method, permission] of patientPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, PatientsController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-
-	it('sets complete contacts permission metadata', () => {
-		for (const [method, permission] of contactPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ContactsController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-
-	it('sets complete appointments permission metadata', () => {
-		for (const [method, permission] of appointmentPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AppointmentsController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-});
-
-describe('remaining authenticated controller organization permission metadata', () => {
-	it('sets the required guard order on class-level guarded controllers', () => {
-		for (const controller of [
-			AuditLogsController,
-			MembersController,
-			TenantsController,
-			WebhookSubscriptionsController,
-			ApiKeysController,
-			ScorecardController
-		]) {
-			expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toEqual([
-				SessionGuard,
-				ActiveOrgGuard,
-				OrgPermissionGuard
-			]);
-		}
-		for (const controller of [ReportsController, AdMetricsController, WhatsappController]) {
-			expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toEqual(
-				controller === AdMetricsController
-					? [SessionGuard, ActiveOrgGuard, OrgPermissionGuard]
-					: [AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard]
-			);
-		}
-	});
-
-	it('sets the required method-level guard order on OAuth integration controllers', () => {
-		for (const [method, requirement] of adsPermissions) {
-			expect(Reflect.getMetadata(GUARDS_METADATA, AdsController.prototype[method])).toEqual([
-				AuthOrApiKeyGuard,
-				ActiveOrgGuard,
-				OrgPermissionGuard
-			]);
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AdsController.prototype[method])
-			).toEqual(requirement);
-		}
-		for (const [method, requirement] of ghlPermissions) {
-			expect(Reflect.getMetadata(GUARDS_METADATA, GhlController.prototype[method])).toEqual([
-				AuthOrApiKeyGuard,
-				ActiveOrgGuard,
-				OrgPermissionGuard
-			]);
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, GhlController.prototype[method])
-			).toEqual(requirement);
-		}
-	});
-
-	it('leaves public/health/webhook/callback-adjacent controllers without an org guard', () => {
-		// Health checks, the public Karne funnel, and signature-verified webhooks
-		// are load-bearing public surfaces (AUTH-01C7) — they must never gain
-		// AuthOrApiKeyGuard/ActiveOrgGuard/OrgPermissionGuard by accident.
-		expect(Reflect.getMetadata(GUARDS_METADATA, HealthController)).toBeUndefined();
-		expect(Reflect.getMetadata(GUARDS_METADATA, HealthController.prototype.check)).toBeUndefined();
-		expect(Reflect.getMetadata(GUARDS_METADATA, HealthController.prototype.ready)).toBeUndefined();
-
-		expect(Reflect.getMetadata(GUARDS_METADATA, KarneController)).toBeUndefined();
-
-		expect(Reflect.getMetadata(GUARDS_METADATA, WebhooksController)).toBeUndefined();
-
-		// /me is session-only (own profile, not a tenant-scoped org resource) —
-		// intentionally has no OrgPermissionGuard/RequireOrgPermission.
-		expect(Reflect.getMetadata(GUARDS_METADATA, MeController)).toBeUndefined();
-		expect(Reflect.getMetadata(GUARDS_METADATA, MeController.prototype.me)).toEqual([SessionGuard]);
-		expect(
-			Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, MeController.prototype.me)
-		).toBeUndefined();
-	});
-
-	it('leaves the OAuth callback endpoints unguarded', () => {
-		expect(Reflect.getMetadata(GUARDS_METADATA, AdsController.prototype.callback)).toBeUndefined();
-		expect(
-			Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AdsController.prototype.callback)
-		).toBeUndefined();
-		expect(Reflect.getMetadata(GUARDS_METADATA, GhlController.prototype.callback)).toBeUndefined();
-		expect(
-			Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, GhlController.prototype.callback)
-		).toBeUndefined();
-	});
-
-	it('sets complete permission metadata for audit-logs, members, reports, ad-metrics', () => {
-		for (const [method, permission] of auditLogsPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AuditLogsController.prototype[method])
-			).toEqual(permission);
-		}
-		for (const [method, permission] of membersPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, MembersController.prototype[method])
-			).toEqual(permission);
-		}
-		for (const [method, permission] of reportsPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ReportsController.prototype[method])
-			).toEqual(permission);
-		}
-		for (const [method, permission] of adMetricsPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, AdMetricsController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-
-	it('sets complete permission metadata for tenants, webhook-subscriptions, api-keys, whatsapp', () => {
-		for (const [method, permission] of tenantsPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, TenantsController.prototype[method])
-			).toEqual(permission);
-		}
-		for (const [method, permission] of webhookSubscriptionsPermissions) {
-			expect(
-				Reflect.getMetadata(
-					ORG_PERMISSION_METADATA_KEY,
-					WebhookSubscriptionsController.prototype[method]
-				)
-			).toEqual(permission);
-		}
-		for (const [method, permission] of apiKeysPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ApiKeysController.prototype[method])
-			).toEqual(permission);
-		}
-		for (const [method, permission] of whatsappPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, WhatsappController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-
-	it('sets complete permission metadata for scorecard', () => {
-		for (const [method, permission] of scorecardPermissions) {
-			expect(
-				Reflect.getMetadata(ORG_PERMISSION_METADATA_KEY, ScorecardController.prototype[method])
-			).toEqual(permission);
-		}
-	});
-});
 
 describe('transaction and settings organization permissions', () => {
 	const guard = createGuard({

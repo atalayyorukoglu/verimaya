@@ -11,7 +11,8 @@ import type { UserRole } from '@verimaya/shared';
  * Verimaya org roles (packages/shared userRoleSchema) mapped onto better-auth AC.
  * Default org resources (organization/member/invitation) kept from better-auth.
  */
-const organizationPermissionStatements = {
+/** Exported so reflection-based coverage specs can validate declared permissions. */
+export const organizationPermissionStatements = {
 	patient: ['create', 'read', 'update', 'delete'],
 	finance: ['create', 'read', 'update', 'delete'],
 	settings: ['read', 'update']

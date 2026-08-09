@@ -9,29 +9,13 @@
  * decision "mandatory" instead of a convention someone can forget.
  *
  * No DB required — pure reflection over decorator metadata, same style/pattern as
- * controller-permissions.spec.ts (which does the equivalent walk for ORG_PERMISSION_METADATA_KEY,
- * just via a hand-maintained list instead of a metadata-driven scan).
+ * guard-coverage.spec.ts / controller-permissions.spec.ts (ORG_PERMISSION_METADATA_KEY).
  */
 import 'reflect-metadata';
 import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it } from 'vitest';
-import { AdMetricsController } from '../ad-metrics/ad-metrics.controller';
-import { ApiKeysController } from '../api-keys/api-keys.controller';
-import { AppointmentsController } from '../appointments/appointments.controller';
-import { ContactsController } from '../contacts/contacts.controller';
-import { AdsController } from '../integrations/ads/ads.controller';
-import { GhlController } from '../integrations/ghl/ghl.controller';
-import { KarneController } from '../karne/karne.controller';
-import { MembersController } from '../members/members.controller';
-import { PatientsController } from '../patients/patients.controller';
-import { ScorecardController } from '../scorecard/scorecard.controller';
-import { SettingsController } from '../settings/settings.controller';
-import { TenantsController } from '../tenants/tenants.controller';
-import { TransactionsController } from '../transactions/transactions.controller';
-import { WebhookSubscriptionsController } from '../webhook-subscriptions/webhook-subscriptions.controller';
-import { WebhooksController } from '../webhooks/webhooks.controller';
-import { WhatsappController } from '../whatsapp/whatsapp.controller';
+import { discoverAllControllers } from './all-controllers';
 import { IDEMPOTENCY_METADATA_KEY, type IdempotencyPolicy } from './idempotent.decorator';
 
 const MUTATING_METHODS = new Set<RequestMethod>([
@@ -41,26 +25,7 @@ const MUTATING_METHODS = new Set<RequestMethod>([
 	RequestMethod.DELETE
 ]);
 
-/** Every controller that exists in the API — new controllers must be added here to be covered. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ALL_CONTROLLERS: Function[] = [
-	PatientsController,
-	ContactsController,
-	TransactionsController,
-	AppointmentsController,
-	WebhookSubscriptionsController,
-	ApiKeysController,
-	WhatsappController,
-	SettingsController,
-	TenantsController,
-	MembersController,
-	ScorecardController,
-	GhlController,
-	AdsController,
-	AdMetricsController,
-	KarneController,
-	WebhooksController
-];
+const ALL_CONTROLLERS = await discoverAllControllers();
 
 type MutatingHandler = {
 	controller: string;
@@ -101,6 +66,10 @@ function findMutatingHandlers(controllers: Function[]): MutatingHandler[] {
 
 describe('IDEM-01: every mutating endpoint declares an idempotency policy', () => {
 	const handlers = findMutatingHandlers(ALL_CONTROLLERS);
+
+	it('discovery finds a non-vacuous set of controllers (guards against broken glob/fs scan)', () => {
+		expect(ALL_CONTROLLERS.length).toBeGreaterThanOrEqual(15);
+	});
 
 	it('the reflection walk actually finds handlers (guards the other assertions against passing vacuously)', () => {
 		expect(handlers.length).toBe(61);

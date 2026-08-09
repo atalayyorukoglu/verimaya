@@ -757,23 +757,39 @@
 AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmayan bulgular. Yukarıdaki yapılacaklar listesi **kilitli sırayı** taşır; Faz 9 sıralama-dışıdır ve biriken geliştirme kapasitesine göre işlenir.
 
 - **AUDIT-F09-01** OpenAPI'yi generator'a taşı (reconnaissance hedefi olmaktan çıkar); `@nestjs/swagger` veya elle yazılmış YAML'ı CI'da route'lardan üret. **(M)**
-- **AUDIT-F09-02** Permission resource modelini genişlet: `audit`, `members`, `api_keys`, `webhook_subscriptions`, `scorecard` resource'larını `permissions.ts`'e ekle; `controller-permissions.spec.ts`'i reflection-based yap. **(M)**
+- **AUDIT-F09-02** Permission resource modelini genişlet: `audit`, `members`, `api_keys`, `webhook_subscriptions`, `scorecard` resource'larını `permissions.ts`'e ekle. **(M)** — reflection yarısı AUDIT-F09-11'de kapandı; bu madde yalnız model genişletmesi.
 - **AUDIT-F09-03** Per-tenant webhook secret'ları outbox'a da yay (WEBHOOK-01 inbound'u kapsar; outbound `webhook_subscriptions.secretCiphertext` zaten per-subscription, değişiklik yok). **(0 — no-op)**
-- **AUDIT-F09-04** `@UseGuards` reflection-based coverage test (idempotency-coverage kalıbı). **(S–M)**
+- **AUDIT-F09-04** `@UseGuards` reflection-based coverage test (idempotency-coverage kalıbı). **(S–M)** ✅
+  - **Görüş (2026-08-09):** `guard-coverage.spec.ts` — Nest `GUARDS_METADATA` sınıf+metot birleşimi;
+    triad = `AuthOrApiKeyGuard|SessionGuard` + `ActiveOrgGuard` + `OrgPermissionGuard`. Public allowlist
+    (health, karne, webhooks, `/me`, OAuth callback controller'ları) gerekçeli. Controller listesi
+    **elle tutulmuyor**: `common/all-controllers.ts` `src/**/*.controller.ts` dosyalarını tarayıp
+    `PATH_METADATA` taşıyan sınıfları keşfediyor (`api-paths` + `idempotency` coverage spec'leri de
+    aynı kaynağa geçti). Yeni controller eklenip guard unutulursa KIRMIZI — mutasyon testiyle
+    doğrulandı (guard silindi → kırmızı; guard'sız yeni controller → kırmızı; triad'lı ama
+    permission'sız yeni controller → F09-11 kırmızı).
 - **AUDIT-F09-05** Outbox + scheduler DLQ; `attempts` artır veya `requeue-from-failed` job. **(M)**
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); Türk mali mevzuatı 10y tutma + KVKK silme-yetkisi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject rights endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. **(L)**
 - **AUDIT-F09-08** Magic-byte MIME sniff (`file-type`/`mmmagic`) + multipart `allowedMimeTypes` allowlist (S3 sürücüsü dahil). **(M)**
 - **AUDIT-F09-09** KVKK aydınlatma + lead capture — LEG-02 ile kapandı (2026-08-07). **(0 — done)**
 - **AUDIT-F09-10** i18n katalog süpürmesi — Türkçe hardcoded metinleri `messages.ts`'e taşı. **(L)**
-- **AUDIT-F09-11** `controller-permissions.spec.ts`'i reflection-based'e çevir. **(M)**
+- **AUDIT-F09-11** `controller-permissions.spec.ts`'i reflection-based'e çevir. **(M)** ✅
+  - **Görüş (2026-08-09):** Elle tablo kalktı; `@RequireOrgPermission` reflection + `organizationPermissionStatements`
+    export doğrulaması. GET→`read`, mutate→write-class; kasıtlı istisna kilidi (authorize GET+update, merge→delete,
+    financeSummary çapraz resource, approveDrafts money path, ad-metrics sync). Rol matrisi `canActivate`
+    testleri korundu. Model genişletme **AUDIT-F09-02**'de kaldı.
 - **AUDIT-F09-12** `tenants` controller için izolasyon spec (AUDIT-01 ile birlikte gidebilir; ayrı tutuldu çünkü bu madde bütünüyle AUDIT-F09 sayımına dahil).
 - **AUDIT-F09-13** CORS `allowedHeaders` — webhook header'ları (`X-Webhook-*`, `X-Tenant-Id`) browser'dan gerekirse ekle (bugün yok). **(S)**
 - **AUDIT-F09-14** OAuth state TTL düşür (10 dk → 60 sn) + one-time-use. **(S–M)**
 - **AUDIT-F09-15** Better-auth şema upgrade yolu `docs/DEPLOY-COOLIFY.md`'ye yaz. **(S)**
 - **AUDIT-F09-16** `_tmp_*` sıfır-byte dosyaları temizle + `.gitignore`/.dockerignore ekle. **(S)**
 - **AUDIT-F09-17** Contacts duplicate-detection — sayfalama/cap ekle (şu an O(N) bellek). **(M)**
-- **AUDIT-F09-18** Per-method vs class-level guard standardizasyonu (`ads.controller.ts`, `ghl.controller.ts`); reflection-based `@UseGuards` coverage. **(S)**
+- **AUDIT-F09-18** Per-method vs class-level guard standardizasyonu (`ads.controller.ts`, `ghl.controller.ts`); reflection-based `@UseGuards` coverage. **(S)** ✅
+  - **Görüş (2026-08-09):** Sayım: 14 controller class-level vs ads/ghl method-level. Class-level'a
+    hizalandı; Nest class+method merge yüzünden OAuth `callback` aynı sınıfta kalamazdı →
+    `AdsOAuthCallbackController` / `GhlOAuthCallbackController` (aynı path prefix, public). Guard kümesi
+    route bazında aynı. Açık (unguarded korunmalı route) bulunamadı.
 - **AUDIT-F09-19** `tenants.timezone` IANA doğrulaması (`Intl.DateTimeFormat` probe). **(S)** ✅
   ⚠️ ~~Öncelik yükseldi (2026-08-07, GAP-07 review):~~ Kapandı (2026-08-08).
   `tenantTimezoneSchema` → `new Intl.DateTimeFormat(..., { timeZone })` try/catch (UTC/Etc/UTC
