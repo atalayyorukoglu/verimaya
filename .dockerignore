@@ -14,6 +14,9 @@ build
 !**/.env.example
 *.log
 coverage
+# geçici oturum dosyaları (.gitignore ile aynı desen)
+_tmp_*
+**/_tmp_*
 .vscode
 .cursor
 **/*.spec.ts

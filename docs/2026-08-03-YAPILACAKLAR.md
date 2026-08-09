@@ -780,10 +780,24 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
     financeSummary çapraz resource, approveDrafts money path, ad-metrics sync). Rol matrisi `canActivate`
     testleri korundu. Model genişletme **AUDIT-F09-02**'de kaldı.
 - **AUDIT-F09-12** `tenants` controller için izolasyon spec (AUDIT-01 ile birlikte gidebilir; ayrı tutuldu çünkü bu madde bütünüyle AUDIT-F09 sayımına dahil).
-- **AUDIT-F09-13** CORS `allowedHeaders` — webhook header'ları (`X-Webhook-*`, `X-Tenant-Id`) browser'dan gerekirse ekle (bugün yok). **(S)**
+- **AUDIT-F09-13** CORS `allowedHeaders` — webhook header'ları (`X-Webhook-*`, `X-Tenant-Id`) browser'dan gerekirse ekle (bugün yok). **(S)** ✅ **eklenmedi — gerekmiyor**
+  - **Görüş (2026-08-09):** Şartı ("browser'dan gerekirse") kontrol ettik: `X-Webhook-*` ve
+    `X-Tenant-Id` yalnız sunucu→sunucu çağrılarında (n8n / WAHA inbound) ve testlerde
+    kullanılıyor; `apps/web` ve `packages/shared` içinde tek bir gönderim yok. Tarayıcı bu
+    header'ları hiç göndermediği için preflight de olmuyor. `main.ts:142` `allowedHeaders`
+    listesi bilinçli olarak dar bırakıldı (`Content-Type`, `Authorization`, `Idempotency-Key`,
+    `X-Admin-Queue-Token`); gereksiz genişletme sadece saldırı yüzeyi ekler. Panelden webhook
+    çağrısı yapılması gerekirse madde yeniden açılır.
 - **AUDIT-F09-14** OAuth state TTL düşür (10 dk → 60 sn) + one-time-use. **(S–M)**
-- **AUDIT-F09-15** Better-auth şema upgrade yolu `docs/DEPLOY-COOLIFY.md`'ye yaz. **(S)**
-- **AUDIT-F09-16** `_tmp_*` sıfır-byte dosyaları temizle + `.gitignore`/.dockerignore ekle. **(S)**
+- **AUDIT-F09-15** Better-auth şema upgrade yolu `docs/DEPLOY-COOLIFY.md`'ye yaz. **(S)** ✅
+  - **Görüş (2026-08-09):** `DEPLOY-COOLIFY.md` içine “better-auth sürüm yükseltme” runbook
+    eklendi (yedek→CLI generate→elle SQL/`db:generate`→doğrulama→restore). CLI gerçek:
+    npm `auth` (`npx auth@<pin> generate`); `migrate` Kysely-only — bizde yok.
+    Pin önerisi dokümanda (exact tercih); `package.json` bilinçli değiştirilmedi.
+- **AUDIT-F09-16** `_tmp_*` sıfır-byte dosyaları temizle + `.gitignore`/.dockerignore ekle. **(S)** ✅
+  - **Görüş (2026-08-09):** Çalışma ağacında `_tmp_*` dosyası kalmamış (`find` 0 sonuç,
+    `git ls-files` 0 sonuç) ve `.gitignore` deseni zaten vardı; eksik olan `.dockerignore`
+    idi — `_tmp_*` + `**/_tmp_*` eklendi.
 - **AUDIT-F09-17** Contacts duplicate-detection — sayfalama/cap ekle (şu an O(N) bellek). **(M)**
 - **AUDIT-F09-18** Per-method vs class-level guard standardizasyonu (`ads.controller.ts`, `ghl.controller.ts`); reflection-based `@UseGuards` coverage. **(S)** ✅
   - **Görüş (2026-08-09):** Sayım: 14 controller class-level vs ads/ghl method-level. Class-level'a

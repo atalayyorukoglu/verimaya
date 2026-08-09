@@ -450,6 +450,179 @@ pnpm --filter @verimaya/api db:migrate
 Owner `DATABASE_URL` ile; app runtime `DATABASE_URL_APP` kullanmaya devam eder.
 veya `RUN_MIGRATIONS=true`.
 
+## better-auth sürüm yükseltme
+
+**Sorun:** better-auth minor sürümlerde kendi tablolarına kolon/tablo ekleyebilir.
+Bizim şema `apps/api/src/db/schema/auth.ts` (Drizzle) + elle numaralı SQL
+(`apps/api/drizzle/0001_auth_rls.sql` ve sonrası). Prod’da “sürümü yükselttim,
+API ayağa kalktı” yetmez — şema farkı migration olmadan kırılır.
+
+**Kaynak (repo gerçeği):**
+
+| Parça | Yer |
+|---|---|
+| Auth factory | `apps/api/src/auth/auth.ts` — `betterAuth` + `@better-auth/drizzle-adapter` |
+| Plugin’ler | `bearer`, `organization`, `twoFactor` |
+| ID biçimi | `advanced.database.generateId: 'uuid'` → PK’lar `uuid` |
+| Drizzle tabloları | `user`, `session`, `account`, `verification`, `organization`, `member`, `invitation`, `two_factor` |
+| Domain köprüsü | `tenants.id` → `organization.id` (FK); org create/update hook’ları `tenants` yazar |
+| Migrate komutu | `pnpm --filter @verimaya/api db:migrate` → `drizzle-kit migrate` |
+| SQL + journal | `apps/api/drizzle/NNNN_*.sql` + `apps/api/drizzle/meta/_journal.json` (son numara: journal’daki en yüksek `tag`) |
+| Paketler | `apps/api`: `better-auth` + `@better-auth/drizzle-adapter`; `apps/web`: `better-auth` (client) — **üçünü birlikte** yükselt |
+
+Auth tablolarında domain RLS **yok** (kabul: `docs/TEHDIT-MODELI.md` §1). Yeni kolon
+için politika gerekmez; **yeni tablo** eklersen `verimaya_app` GRANT’siz kalır —
+mevcut desen: `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE … TO verimaya_app;`
+(`0003_app_role.sql` default privileges + sonraki migrasyonlardaki açık GRANT).
+
+### Ne zaman gerekir?
+
+| Değişiklik | Şema riski | Ne yap |
+|---|---|---|
+| **patch** (1.6.23 → 1.6.x patch) | Düşük; yine de changelog oku | Lockfile + smoke (aşağı) |
+| **minor** (1.6 → 1.7) | Orta–yüksek; kolon/tablo sık | Bu bölümün tamamı |
+| **major** (1.x → 2.x) | Yüksek; breaking API + şema | Staging’de tam regresyon; breaking notes’u satır satır |
+
+Sürüm notlarında “database”, “schema”, “migration”, plugin tablo alanları geçiyorsa
+şema farkı **varsay** — CLI ile doğrula.
+
+### Upgrade öncesi
+
+1. **Yedek.** Prod dump + R2 kopyası — yukarıdaki **Günlük Postgres yedeği + sunucu dışı
+   kopya (OPS-01 · R2)** bölümü. Restore: **Restore provası (zorunlu)**. Major/minor
+   öncesi ekstra elle backup koş (cron bekleme).
+2. **Önce yerel / staging.** Prod’a doğrudan `pnpm up` yok.
+3. Changelog: better-auth release notes + kullandığımız plugin’ler (`organization`, `twoFactor`).
+
+### Şema farkını çıkarma
+
+Resmi CLI paketi npm’de **`auth`** (docs: [CLI](https://www.better-auth.com/docs/concepts/cli)).
+Komut: `generate`. **`migrate` yalnız built-in Kysely adapter içindir** — bizde Drizzle
+var; `npx auth migrate` **çalıştırma** (şemayı ORM dışında direkt yazar; journal’ımızı
+baypas eder).
+
+CLI sürümünü kütüphane sürümüne **pinle** (`auth@1.6.23` gibi). `auth@latest` veya
+`@better-auth/cli` (npm’de eski 1.4.x hattına kilitli kalabiliyor) hedef sürümden sapabilir —
+önce kontrol et:
+
+```bash
+# Kurulu / hedef kütüphane
+node -p "require('./apps/api/node_modules/better-auth/package.json').version"
+
+# CLI sürümü = yukarıdaki major.minor.patch (ör. 1.6.23)
+npx auth@1.6.23 --version
+```
+
+`createAuth()` DB’ye bağlanır (`getDb()`). Generate için geçici config veya
+çalışan local Postgres + `DATABASE_URL` gerekir; yoksa CLI config’i yükleyemez.
+Çıktıyı **asla** `auth.ts` üzerine doğrudan yazma — UUID PK, indeksler ve
+domain ile uyumlu elle tutulan şemayı ezme riski.
+
+```bash
+# Geçici dosyaya üret (path’i doğrula; --config auth factory’nin export ettiği dosyaya işaret etmeli)
+# Not: createAuth() factory ise CLI’nin beklediği `auth` export şeklini kontrol et;
+# gerekirse geçici bir `auth.config.ts` ile `export const auth = createAuth()` yaz.
+npx auth@1.6.23 generate \
+  --config apps/api/src/auth/auth.ts \
+  --output /tmp/better-auth-schema-gen.ts \
+  --yes
+```
+
+Generate başarısız olursa (factory/export/DB): hedef `better-auth` sürümünün published
+örnek Drizzle şemasını / adapter docs’unu hedef checkout’ta oku; yine
+`apps/api/src/db/schema/auth.ts` ile kolon kolon karşılaştır — uydurma CLI flag kullanma.
+
+Karşılaştır:
+
+```bash
+# Örnek: gen çıktısı ile mevcut şema (manuel diff de olur)
+diff -u apps/api/src/db/schema/auth.ts /tmp/better-auth-schema-gen.ts | less
+```
+
+Kontrol listesi: yeni/eksik kolon, tip (`uuid` vs `text`), NOT NULL / default,
+yeni tablo, index/unique, plugin alanları (`two_factor_*`, `active_organization_id`, …).
+**Bizim `uuid` PK kararını bozma** — CLI metin `id` üretebilir; uyumsuzluğu migration’a
+çevirirken `uuid` + mevcut veriyi koru.
+
+### Migration yazma
+
+1. Farkı `apps/api/src/db/schema/auth.ts` (+ gerekirse `auth.ts` adapter `schema` map) güncelle.
+2. SQL: sıradaki numara = journal’daki son `NNNN` + 1 (ör. son `0032_…` ise `0033_better_auth_…sql`).
+3. Ya elle `ALTER TABLE … ADD COLUMN …` yaz **ya da** şema güncelken:
+
+```bash
+pnpm --filter @verimaya/api db:generate
+```
+
+Üretilen SQL’i gözden geçir (drop/rename/text-id gibi yıkıcı diff varsa red et, elle daralt).
+4. Journal: `drizzle-kit generate` yazar; elle SQL ekliyorsan `apps/api/drizzle/meta/_journal.json`
+   içine yeni `tag` satırını mevcut desene uyarak ekle (eksik journal → migrate atlar veya kırılır).
+5. Yeni **tablo** varsa `verimaya_app` GRANT ekle. Auth tablolarına RLS ekleme —
+   TEHDIT-MODELI kabulünü bilinçli bozmadıkça dokunma.
+6. Uygula (önce staging/lokal):
+
+```bash
+pnpm --filter @verimaya/api db:migrate
+```
+
+Prod: yukarıdaki **Migrasyon (tekrar)** — owner `DATABASE_URL`.
+
+### Doğrulama
+
+Migrate + API restart sonrası (staging’de birebir, sonra prod):
+
+```bash
+API=https://api.verimaya.com   # staging URL’inle değiştir
+
+curl -sfS "$API/v1/health/ready"
+
+# Auth tabloları ayakta mı (owner psql — kolon adlarını migration’a göre doğrula)
+# \d "user"  /  \d session  /  \d two_factor  /  \d organization
+```
+
+Uygulama smoke (tarayıcı, `app.` host):
+
+1. **Giriş** — e-posta/şifre (`authClient.signIn.email` → `/v1/auth/…`).
+2. **Oturum** — panel açılışı; `GET /v1/me` 200 (aktif org + üyelik).
+3. **2FA açıksa** — TOTP doğrulama akışı.
+4. **Organizasyon** — çok üyeliğe sahipsen org seç / `setActiveOrganization`; `/v1/me` yeni tenant.
+5. **Davet** — settings/team üzerinden davet oluşturma + accept (invitation tablosu).
+6. **Çıkış** — `signOut` sonrası korumalı route login’e düşer.
+
+Herhangi biri 5xx / “column does not exist” → sürümü ve migration’ı durdur; restore.
+
+### Geri alma
+
+Drizzle migrasyonları pratikte **down/rollback dosyası taşımıyor**. Şema değişimi
+canlıyı kırdıysa:
+
+1. API’yi önceki image / önceki `better-auth` lockfile commit’ine al.
+2. Veri/şema geri alma: OPS-01 dump’tan **Restore provası** prosedürü (prod’u
+   ezmeden önce staging prova). `ALTER` geri alınması karmaşıksa snapshot restore
+   tek güvenilir yol.
+3. Yeni migration’ı “ileride düzeltilmiş haliyle” tekrar yaz; journal’ı yarım bırakma.
+
+### Pin politikası (karar açık)
+
+Bugün: `better-auth` / `@better-auth/drizzle-adapter` / web `better-auth` → `^1.6.23`
+(caret). `pnpm-lock.yaml` şu an **1.6.23**’e kilitli; Coolify `pnpm install` lockfile
+doğruluyor — günlük deploy’da sürpriz minor gelmez.
+
+**Risk:** birinin `pnpm update` / lockfile regenerate etmesi caret ile **1.6.x**’in
+daha yenisini (şema değişmiş olabilir) alır; migration yazılmazsa prod auth kırılır.
+
+**Öneri (package.json’a dokunulmadı — seç):**
+
+- **Tercih:** `better-auth` + `@better-auth/drizzle-adapter` (+ web `better-auth`) için
+  **exact pin** (`1.6.23`, caret yok) + bilinçli upgrade PR’ı (bu bölümün checklist’i).
+  Gerekçe: auth şeması domain’den ayrı; caret’in “convenience” kazancı, tek başına
+  giriş kırılmasından ucuz değil.
+- **Alternatif:** caret kalsın; kural: lockfile’da `better-auth` değişen her PR’da
+  zorunlu şema diff (CLI generate) + migration veya “şema değişmedi” kanıtı. Deploy
+  her zaman frozen lockfile.
+
+Kararı ürün sahibi verir; ikisinden biri yazılı süreç olmadan caret tehlikeli.
+
 ## OPS-02c — Reklam harcaması `spend_base` backfill
 
 `ad_metrics_daily` satırları `currency` taşıyor ama yabancı para (ör. TRY Ads → GBP tenant)
