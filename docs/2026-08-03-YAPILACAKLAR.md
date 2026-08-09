@@ -779,7 +779,10 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
     export doğrulaması. GET→`read`, mutate→write-class; kasıtlı istisna kilidi (authorize GET+update, merge→delete,
     financeSummary çapraz resource, approveDrafts money path, ad-metrics sync). Rol matrisi `canActivate`
     testleri korundu. Model genişletme **AUDIT-F09-02**'de kaldı.
-- **AUDIT-F09-12** `tenants` controller için izolasyon spec (AUDIT-01 ile birlikte gidebilir; ayrı tutuldu çünkü bu madde bütünüyle AUDIT-F09 sayımına dahil).
+- **AUDIT-F09-12** `tenants` controller için izolasyon spec (AUDIT-01 ile birlikte gidebilir; ayrı tutuldu çünkü bu madde bütünüyle AUDIT-F09 sayımına dahil). ✅
+  - **Görüş (2026-08-09):** `tenants.isolation.spec.ts` — GET A/B org-scoped; PATCH yalnız aktif tenant;
+    B satırı snapshot eşit. `tenantUpdateSchema` **`.strict()` değil**: yabancı `id` / `slug` /
+    tanımsız alan **strip** (400 değil); aktif org değişmez. İzolasyon açığı yok.
 - **AUDIT-F09-13** CORS `allowedHeaders` — webhook header'ları (`X-Webhook-*`, `X-Tenant-Id`) browser'dan gerekirse ekle (bugün yok). **(S)** ✅ **eklenmedi — gerekmiyor**
   - **Görüş (2026-08-09):** Şartı ("browser'dan gerekirse") kontrol ettik: `X-Webhook-*` ve
     `X-Tenant-Id` yalnız sunucu→sunucu çağrılarında (n8n / WAHA inbound) ve testlerde
