@@ -142,7 +142,11 @@
 	});
 
 	const dialogTitle = $derived(
-		confirmingDelete ? t('finance.deleteConfirmTitle') : isEdit ? 'İşlemi düzenle' : 'Yeni işlem'
+		confirmingDelete
+			? t('finance.deleteConfirmTitle')
+			: isEdit
+				? t('finance.form.editTitle')
+				: t('finance.form.createTitle')
 	);
 
 	async function handleSubmit(e: Event) {
@@ -219,9 +223,7 @@
 <Dialog
 	bind:open
 	title={dialogTitle}
-	description={confirmingDelete
-		? undefined
-		: `Tutar işlem para biriminde; yabancıysa baz (${tenantBase}) karşılığı zorunlu.`}
+	description={confirmingDelete ? undefined : t('finance.form.description', { base: tenantBase })}
 >
 	{#if confirmingDelete}
 		<div class="space-y-3">
@@ -239,7 +241,7 @@
 		<form id="tx-form" class="space-y-3" onsubmit={handleSubmit}>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div>
-					<label class={labelClass} for="tx-kind">Tür</label>
+					<label class={labelClass} for="tx-kind">{t('finance.form.kind')}</label>
 					<select id="tx-kind" class={fieldClass} bind:value={kind}>
 						{#each kinds as k (k)}
 							<option value={k}>{transactionKindLabels[k]}</option>
@@ -256,7 +258,7 @@
 				</div>
 			</div>
 			<div>
-				<label class={labelClass} for="tx-title">Başlık</label>
+				<label class={labelClass} for="tx-title">{t('finance.form.title')}</label>
 				<input id="tx-title" class={fieldClass} bind:value={title} required maxlength={255} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-3">
@@ -298,7 +300,7 @@
 							required
 							placeholder="0,00"
 						/>
-						<p class="mt-1 text-[11px] text-text-faint">Kayıt anı kuru — sonradan değişmez.</p>
+						<p class="mt-1 text-[11px] text-text-faint">{t('finance.form.fxLocked')}</p>
 					</div>
 					<div>
 						<label class={labelClass} for="tx-fx">Kur (1 {currency} = ? {tenantBase})</label>
@@ -307,14 +309,16 @@
 							class={fieldClass}
 							bind:value={fxRate}
 							inputmode="decimal"
-							placeholder="örn. 43"
+							placeholder={t('finance.form.fxPlaceholder')}
 						/>
 					</div>
 				</div>
 			{/if}
 			{#if status === 'partial'}
 				<div>
-					<label class={labelClass} for="tx-paid">Ödenen tutar ({currency})</label>
+					<label class={labelClass} for="tx-paid"
+						>{t('finance.form.paidAmount', { currency })}</label
+					>
 					<input
 						id="tx-paid"
 						class={fieldClass}
@@ -355,7 +359,7 @@
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div>
-					<label class={labelClass} for="tx-contact">Kişi / firma</label>
+					<label class={labelClass} for="tx-contact">{t('finance.form.contact')}</label>
 					<select
 						id="tx-contact"
 						class={fieldClass}
@@ -379,7 +383,7 @@
 						class={fieldClass}
 						bind:value={contact_label}
 						maxlength={255}
-						placeholder="Dizinde yoksa yazın"
+						placeholder={t('finance.form.contactFreePlaceholder')}
 						disabled={!!contact_id}
 					/>
 				</div>
@@ -393,7 +397,7 @@
 				</select>
 			</div>
 			<div>
-				<label class={labelClass} for="tx-method">Ödeme yöntemi</label>
+				<label class={labelClass} for="tx-method">{t('finance.form.paymentMethod')}</label>
 				<input id="tx-method" class={fieldClass} bind:value={payment_method} maxlength={64} />
 			</div>
 			<div>
@@ -406,7 +410,7 @@
 				</select>
 			</div>
 			<div>
-				<label class={labelClass} for="tx-desc">Açıklama</label>
+				<label class={labelClass} for="tx-desc">{t('finance.form.descriptionLabel')}</label>
 				<textarea id="tx-desc" class={textareaClass} bind:value={description} maxlength={8000}
 				></textarea>
 			</div>
@@ -441,14 +445,14 @@
 				</Button>
 			{/if}
 			<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
-				>İptal</Button
+				>{t('common.cancel')}</Button
 			>
 			<Button
 				type="submit"
 				form="tx-form"
 				disabled={saving || !title.trim() || !amountMajor || (needsFx && !amountBaseMajor)}
 			>
-				{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
+				{saving ? t('common.saving') : isEdit ? t('common.save') : t('common.create')}
 			</Button>
 		{/if}
 	{/snippet}

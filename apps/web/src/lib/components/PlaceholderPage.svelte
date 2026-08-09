@@ -1,13 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 
 	let {
 		title,
 		description,
-		hint = 'Bu alan Faz 0b sonrası gerçek veriye bağlanacak. Şimdilik yer tutucu.',
+		hint = undefined,
 		ctaHref = '/features',
-		ctaLabel = 'Özelliklere bak',
+		ctaLabel = undefined,
 		children
 	}: {
 		title: string;
@@ -17,6 +18,9 @@
 		ctaLabel?: string;
 		children?: Snippet;
 	} = $props();
+
+	const resolvedHint = $derived(hint ?? t('placeholder.defaultHint'));
+	const resolvedCtaLabel = $derived(ctaLabel ?? t('placeholder.defaultCta'));
 </script>
 
 <div class="mx-auto max-w-3xl min-w-0">
@@ -26,13 +30,13 @@
 			{@render children()}
 		{:else}
 			<div class="text-center">
-				<p class="text-sm font-medium text-text">Henüz içerik yok</p>
-				<p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-text-muted">{hint}</p>
+				<p class="text-sm font-medium text-text">{t('placeholder.emptyTitle')}</p>
+				<p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-text-muted">{resolvedHint}</p>
 				<a
 					href={ctaHref}
 					class="mt-5 inline-flex h-9 items-center rounded-[6px] bg-surface-2 px-4 text-sm font-medium text-text hover:bg-border"
 				>
-					{ctaLabel}
+					{resolvedCtaLabel}
 				</a>
 			</div>
 		{/if}

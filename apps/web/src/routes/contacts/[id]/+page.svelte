@@ -61,12 +61,18 @@
 	const finance = $derived.by(() => {
 		let income = 0;
 		let expense = 0;
-		for (const t of txQuery.data?.items ?? []) {
-			if (t.kind === 'income') income += t.amount;
-			else expense += t.amount;
+		for (const tx of txQuery.data?.items ?? []) {
+			if (tx.kind === 'income') income += tx.amount;
+			else expense += tx.amount;
 		}
 		return { income, expense, net: income - expense };
 	});
+
+	const documentTitle = $derived(
+		t('contacts.detail.documentTitle', {
+			name: contact?.display_name ?? t('contacts.detail.fallbackName')
+		})
+	);
 
 	async function saveContact(data: ContactUpdate) {
 		saving = true;
@@ -77,7 +83,7 @@
 			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
 			formOpen = false;
 		} catch (err) {
-			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			formError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			saving = false;
 		}
@@ -101,24 +107,28 @@
 </script>
 
 <svelte:head>
-	<title>{contact?.display_name ?? 'Kişi'} · Veri Maya</title>
+	<title>{documentTitle}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
-	<a href="/contacts" class="mb-4 inline-block text-sm text-info hover:underline">← Kişiler</a>
+	<a href="/contacts" class="mb-4 inline-block text-sm text-info hover:underline"
+		>{t('contacts.detail.back')}</a
+	>
 
 	{#if contactQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('common.loading')}</p>
 	{:else if contactQuery.isError || !contact}
-		<p class="text-sm text-danger">Kişi bulunamadı.</p>
+		<p class="text-sm text-danger">{t('contacts.detail.notFound')}</p>
 	{:else}
 		<PageHeader title={contact.display_name}>
 			{#snippet actions()}
 				<StatusBadge label={contact.contact_type_name} tone="neutral" />
 				{#if contact.is_internal}
-					<StatusBadge label="İç personel" tone="info" />
+					<StatusBadge label={t('contacts.detail.internalStaff')} tone="info" />
 				{/if}
-				<Button type="button" variant="secondary" onclick={() => (formOpen = true)}>Düzenle</Button>
+				<Button type="button" variant="secondary" onclick={() => (formOpen = true)}
+					>{t('common.edit')}</Button
+				>
 			{/snippet}
 		</PageHeader>
 
@@ -134,8 +144,8 @@
 				<dd class="text-sm break-all">{contact.email ?? '—'}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr]">
-				<dt class="text-xs font-medium text-text-muted">Kullanım</dt>
-				<dd class="text-sm">{contact.usage_count} kayıt</dd>
+				<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.usage')}</dt>
+				<dd class="text-sm">{t('contacts.detail.usageRecords', { count: contact.usage_count })}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
 				<dt class="text-xs font-medium text-text-muted">Notlar</dt>
@@ -145,7 +155,7 @@
 
 		{#if linkedPatient}
 			<section class="mb-4 rounded-lg border border-border bg-surface p-4">
-				<h2 class="mb-2 text-sm font-semibold">Bağlı hasta</h2>
+				<h2 class="mb-2 text-sm font-semibold">{t('contacts.detail.linkedPatient')}</h2>
 				<a
 					href={`/patients/${linkedPatient.id}`}
 					class="text-sm font-medium text-brand hover:underline"
@@ -157,11 +167,11 @@
 
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold">Finans özeti</h2>
+				<h2 class="text-sm font-semibold">{t('contacts.detail.financeTitle')}</h2>
 				<a href="/finance/balances" class="text-xs text-brand hover:underline">Bakiyeler →</a>
 			</div>
 			{#if txQuery.isPending}
-				<p class="text-sm text-text-muted">Yükleniyor…</p>
+				<p class="text-sm text-text-muted">{t('common.loading')}</p>
 			{:else}
 				<div class="mb-3 grid grid-cols-3 gap-3">
 					<div>
@@ -182,23 +192,23 @@
 					</div>
 				</div>
 				{#if (txQuery.data?.items ?? []).length === 0}
-					<p class="text-sm text-text-muted">Bu kişiye bağlı işlem yok.</p>
+					<p class="text-sm text-text-muted">{t('contacts.detail.financeEmpty')}</p>
 				{:else}
 					<ul class="divide-y divide-border">
-						{#each txQuery.data?.items ?? [] as t (t.id)}
+						{#each txQuery.data?.items ?? [] as tx (tx.id)}
 							<li class="flex justify-between gap-3 py-2.5">
 								<div class="min-w-0">
-									<p class="truncate text-sm font-medium">{t.title}</p>
+									<p class="truncate text-sm font-medium">{tx.title}</p>
 									<p class="text-xs text-text-faint">
-										{formatDate(t.occurred_on)} · {transactionKindLabels[t.kind]}
+										{formatDate(tx.occurred_on)} · {transactionKindLabels[tx.kind]}
 									</p>
 								</div>
 								<p
-									class="shrink-0 text-sm font-semibold tabular-nums {t.kind === 'income'
+									class="shrink-0 text-sm font-semibold tabular-nums {tx.kind === 'income'
 										? 'text-success'
 										: 'text-text'}"
 								>
-									{t.kind === 'expense' ? '−' : '+'}{formatMoney(t.amount, t.currency)}
+									{tx.kind === 'expense' ? '−' : '+'}{formatMoney(tx.amount, tx.currency)}
 								</p>
 							</li>
 						{/each}
@@ -210,9 +220,9 @@
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4">
 			<h2 class="mb-3 text-sm font-semibold">Randevulardaki roller</h2>
 			{#if apptQuery.isPending}
-				<p class="text-sm text-text-muted">Yükleniyor…</p>
+				<p class="text-sm text-text-muted">{t('common.loading')}</p>
 			{:else if relatedAppointments.length === 0}
-				<p class="text-sm text-text-muted">Klinik / otel / transfer olarak geçmiyor.</p>
+				<p class="text-sm text-text-muted">{t('contacts.detail.opsEmpty')}</p>
 			{:else}
 				<ul class="divide-y divide-border">
 					{#each relatedAppointments as a (a.id)}

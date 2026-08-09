@@ -64,7 +64,7 @@
 	const filtered = $derived(Boolean(search || typeId));
 	const listDescription = $derived(
 		totalCount == null
-			? 'Otel, klinik, transfer, hasta ve diğer cariler — hasta iş kaydından ayrı dizin.'
+			? t('contacts.list.description')
 			: filtered
 				? t('contacts.list.totalFiltered', { count: String(totalCount) })
 				: t('contacts.list.total', { count: String(totalCount) })
@@ -150,7 +150,7 @@
 			formOpen = false;
 			editing = null;
 		} catch (err) {
-			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			formError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			saving = false;
 		}
@@ -175,16 +175,16 @@
 </script>
 
 <svelte:head>
-	<title>Kişiler · Veri Maya</title>
+	<title>{t('contacts.list.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">
-	<PageHeader title="Kişiler" description={listDescription}>
+	<PageHeader title={t('contacts.list.title')} description={listDescription}>
 		{#snippet actions()}
 			<Button type="button" variant="outline" onclick={() => goto('/contacts/duplicates')}
-				>Çift kayıt tara</Button
+				>{t('contacts.list.duplicates')}</Button
 			>
-			<Button type="button" onclick={openCreate}>Yeni kişi</Button>
+			<Button type="button" onclick={openCreate}>{t('contacts.list.new')}</Button>
 		{/snippet}
 	</PageHeader>
 
@@ -198,7 +198,7 @@
 			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:w-44"
 			bind:value={typeId}
 		>
-			<option value="">Tüm türler</option>
+			<option value="">{t('common.allTypes')}</option>
 			{#each contactTypes as ct (ct.id)}
 				<option value={ct.id}>{ct.name}</option>
 			{/each}
@@ -247,13 +247,13 @@
 	{/if}
 
 	{#if contactsQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('contacts.list.loading')}</p>
 	{:else if contactsQuery.isError}
-		<p class="text-sm text-danger">Kişiler yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('contacts.list.loadError')}</p>
 	{:else if items.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-6 text-center">
-			<p class="text-sm text-text-muted">Kişi bulunamadı.</p>
-			<Button class="mt-4" type="button" onclick={openCreate}>Yeni kişi</Button>
+			<p class="text-sm text-text-muted">{t('contacts.list.empty')}</p>
+			<Button class="mt-4" type="button" onclick={openCreate}>{t('contacts.list.new')}</Button>
 		</div>
 	{:else}
 		<ul class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
@@ -281,16 +281,16 @@
 							<p class="truncate text-sm font-medium text-text">{c.display_name}</p>
 							<StatusBadge label={c.contact_type_name} tone="neutral" />
 							{#if c.is_internal}
-								<StatusBadge label="İç" tone="info" />
+								<StatusBadge label={t('common.internal')} tone="info" />
 							{/if}
 						</div>
 						<p class="mt-0.5 truncate text-xs text-text-faint">
-							{[c.phone, c.email].filter(Boolean).join(' · ') || 'İletişim yok'}
-							· kullanım {c.usage_count}
+							{[c.phone, c.email].filter(Boolean).join(' · ') || t('common.noContact')}
+							· {t('common.usageCount', { count: c.usage_count })}
 						</p>
 					</a>
 					<Button type="button" size="sm" variant="outline" onclick={() => openEdit(c)}
-						>Düzenle</Button
+						>{t('common.edit')}</Button
 					>
 				</li>
 			{/each}
@@ -304,7 +304,7 @@
 					disabled={contactsQuery.isFetchingNextPage}
 					onclick={() => contactsQuery.fetchNextPage()}
 				>
-					{contactsQuery.isFetchingNextPage ? 'Yükleniyor…' : 'Daha fazla yükle'}
+					{contactsQuery.isFetchingNextPage ? t('common.loading') : t('contacts.list.loadMore')}
 				</Button>
 			</div>
 		{/if}

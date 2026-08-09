@@ -53,7 +53,8 @@
 					{#each items as row (row.field)}
 						<tr class={row.correction_count >= 3 ? 'bg-warning/10' : ''}>
 							<td class="px-4 py-2.5 font-medium text-text">
-								<code class="rounded bg-surface-2 px-1.5 py-0.5 text-xs font-mono">{row.field}</code>
+								<code class="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs">{row.field}</code
+								>
 							</td>
 							<td class="px-4 py-2.5 text-text-muted tabular-nums">{row.correction_count}</td>
 							<td class="px-4 py-2.5 text-text-muted tabular-nums">{row.distinct_messages}</td>

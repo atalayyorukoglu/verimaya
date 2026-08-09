@@ -96,7 +96,7 @@
 			d.setMonth(d.getMonth() - 1);
 			return new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(d);
 		}
-		if (key === 'tum') return 'Tüm zamanlar';
+		if (key === 'tum') return t('reports.period.allTime');
 		return `${from} → ${to}`;
 	}
 
@@ -267,7 +267,11 @@
 	const fxMissingPct = $derived(Math.round((1 - coverageRatio) * 100));
 	const fxHint = $derived(
 		fxMissingCount > 0
-			? `${baseCurrency} karşılığı olmayan ${fxMissingCount} işlem bu toplamın dışında (yaklaşık %${fxMissingPct})`
+			? t('reports.fxExcluded', {
+					currency: baseCurrency,
+					count: fxMissingCount,
+					pct: fxMissingPct
+				})
 			: null
 	);
 
@@ -536,7 +540,7 @@
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {
-			txFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			txFormError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			txSaving = false;
 		}
@@ -573,12 +577,12 @@
 </script>
 
 <svelte:head>
-	<title>Raporlar · Veri Maya</title>
+	<title>{t('reports.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
 	<div class="mb-4">
-		<PageHeader title="Raporlar" description="Dönem özeti, kategori kırılımı ve gerçek ROAS.">
+		<PageHeader title={t('reports.title')} description={t('reports.description')}>
 			{#snippet actions()}
 				<div class="flex shrink-0 flex-wrap gap-1.5">
 					<Button
@@ -588,7 +592,7 @@
 						onclick={() => setTab('ozet')}
 					>
 						<LayoutGrid class="size-3.5" />
-						Özet
+						{t('reports.tab.summary')}
 					</Button>
 					<Button
 						type="button"
@@ -616,11 +620,11 @@
 	<!-- Dönem seçici -->
 	<section class="mb-4 rounded-lg border border-border bg-surface p-3 sm:p-4">
 		<div class="flex flex-wrap items-center justify-between gap-2">
-			<p class="text-xs font-medium text-text-muted">Dönem</p>
+			<p class="text-xs font-medium text-text-muted">{t('reports.period.label')}</p>
 			<p class="text-xs font-semibold text-text">{periodText}</p>
 		</div>
 		<div class="mt-2 flex flex-wrap gap-1.5">
-			{#each [{ key: 'bu-ay', label: 'Bu ay' }, { key: 'gecen-ay', label: 'Geçen ay' }, { key: 'tum', label: 'Tüm zamanlar' }, { key: 'ozel', label: 'Özel' }] as opt (opt.key)}
+			{#each [{ key: 'bu-ay', label: t('reports.period.thisMonth') }, { key: 'gecen-ay', label: t('reports.period.lastMonth') }, { key: 'tum', label: t('reports.period.allTime') }, { key: 'ozel', label: t('reports.period.custom') }] as opt (opt.key)}
 				<button
 					type="button"
 					class="cursor-pointer rounded-[6px] px-2.5 py-1.5 text-xs font-medium transition-colors {periodKey ===
@@ -636,7 +640,7 @@
 		{#if periodKey === 'ozel'}
 			<div class="mt-3 grid grid-cols-2 gap-2 sm:max-w-md">
 				<label class="grid gap-1 text-xs text-text-muted">
-					Başlangıç
+					{t('reports.period.from')}
 					<input
 						type="date"
 						class="h-9 rounded-[6px] border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
@@ -644,7 +648,7 @@
 					/>
 				</label>
 				<label class="grid gap-1 text-xs text-text-muted">
-					Bitiş
+					{t('reports.period.to')}
 					<input
 						type="date"
 						class="h-9 rounded-[6px] border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
@@ -656,9 +660,9 @@
 	</section>
 
 	{#if loading}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('reports.loading')}</p>
 	{:else if failed}
-		<p class="text-sm text-danger">Rapor verisi yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('reports.loadError')}</p>
 	{:else if tab === 'ozet'}
 		{@const ops = appointmentMetricsQuery.data}
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
@@ -814,7 +818,7 @@
 
 		<div class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
 			<div class="flex items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">Aylık gelir / gider</h2>
+				<h2 class="text-sm font-semibold text-text">{t('reports.monthlyIoE')}</h2>
 				<div class="flex items-center gap-3 text-xs text-text-muted">
 					<span class="flex items-center gap-1.5">
 						<span class="inline-block size-2 rounded-full bg-success"></span> Gelir
@@ -986,7 +990,7 @@
 
 			<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
 				<div class="flex flex-wrap items-baseline justify-between gap-2">
-					<h2 class="text-sm font-semibold text-text">Kaynak kırılımı</h2>
+					<h2 class="text-sm font-semibold text-text">{t('reports.sourceBreakdown')}</h2>
 					<p class="text-xs text-text-muted">
 						{marketing.leads_count} dosya · {marketing.treated_count} tedavi edilen
 					</p>
@@ -1031,12 +1035,12 @@
 		{#if !drill}
 			<section class="mb-4 rounded-lg border border-border bg-surface p-3 sm:p-4">
 				<label class="grid max-w-xs gap-1 text-xs font-medium text-text-muted">
-					Tür
+					{t('reports.kind')}
 					<select
 						class="h-9 rounded-[6px] border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
 						bind:value={kindFilter}
 					>
-						<option value="all">Tümü</option>
+						<option value="all">{t('reports.kindAll')}</option>
 						<option value="income">Gelir</option>
 						<option value="expense">Gider</option>
 					</select>
@@ -1071,7 +1075,7 @@
 					</p>
 				</div>
 				<div class="rounded-lg border border-border bg-surface p-3 sm:p-4">
-					<p class="text-xs text-text-muted">İşlem</p>
+					<p class="text-xs text-text-muted">{t('reports.txLabel')}</p>
 					<p class="mt-1 text-base font-semibold text-text tabular-nums sm:text-lg">
 						{totals.count}
 					</p>
@@ -1082,7 +1086,7 @@
 				Kategori raporu
 			</p>
 			{#if byCategory.length === 0}
-				<p class="text-sm text-text-muted">Bu dönemde işlem yok. Dönemi genişletmeyi dene.</p>
+				<p class="text-sm text-text-muted">{t('reports.emptyPeriod')}</p>
 			{:else}
 				<div class="grid grid-cols-2 gap-3">
 					{#each byCategory as cat (cat.label)}
@@ -1105,7 +1109,9 @@
 									<p class="mt-1 text-lg font-semibold tabular-nums {toneClass(tone)}">
 										{formatMoney(cat.net, baseCurrency)}
 									</p>
-									<p class="text-xs text-text-faint">{cat.count} işlem</p>
+									<p class="text-xs text-text-faint">
+										{t('reports.txCount', { count: cat.count })}
+									</p>
 								</div>
 							</div>
 						</button>
@@ -1138,13 +1144,15 @@
 						<p class="mt-1 text-lg font-semibold tabular-nums {toneClass(tone)}">
 							{formatMoney(categoryHero.net, baseCurrency)}
 						</p>
-						<p class="text-xs text-text-faint">{categoryHero.count} işlem</p>
+						<p class="text-xs text-text-faint">
+							{t('reports.txCount', { count: categoryHero.count })}
+						</p>
 					</div>
 				</div>
 			</div>
 
 			{#if !USE_MSW && byCategoryDetailQuery.isPending}
-				<p class="text-sm text-text-muted">Alt kategoriler yükleniyor…</p>
+				<p class="text-sm text-text-muted">{t('reports.subcatsLoading')}</p>
 			{/if}
 
 			<ul class="space-y-2">
@@ -1168,7 +1176,9 @@
 							</span>
 							<div class="min-w-0 flex-1">
 								<p class="font-medium text-text">{sub.label}</p>
-								<p class="text-xs text-text-faint">{sub.count} işlem</p>
+								<p class="text-xs text-text-faint">
+									{t('reports.txCount', { count: sub.count })}
+								</p>
 							</div>
 							<span class="text-sm font-semibold tabular-nums {toneClass(st)}">
 								{formatMoney(sub.net, baseCurrency)}
@@ -1209,7 +1219,9 @@
 						<p class="mt-1 text-lg font-semibold tabular-nums {toneClass(tone)}">
 							{formatMoney(subcategoryHero.net, baseCurrency)}
 						</p>
-						<p class="text-xs text-text-faint">{subcategoryHero.count} işlem</p>
+						<p class="text-xs text-text-faint">
+							{t('reports.txCount', { count: subcategoryHero.count })}
+						</p>
 					</div>
 				</div>
 			</div>
@@ -1248,7 +1260,7 @@
 								onclick={() => openEditTx(tx)}
 							>
 								<Pencil class="size-3" />
-								Düzenle
+								{t('common.edit')}
 							</Button>
 						</div>
 					</li>
@@ -1258,8 +1270,7 @@
 	{/if}
 
 	<p class="mt-4 text-xs text-text-faint">
-		Özet, hasta dağılımı, kategori ve pazarlama toplamları sunucu aggregate endpoint'lerinden gelir;
-		grafik ve drill-down için işlem listesi ayrıca yüklenir.
+		{t('reports.footnote')}
 	</p>
 </div>
 

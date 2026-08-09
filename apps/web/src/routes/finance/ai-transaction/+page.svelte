@@ -64,8 +64,7 @@
 
 	const categoriesQuery = createQuery(() => ({
 		queryKey: qs.keys.settings.financeCategories(),
-		queryFn: () =>
-			apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
+		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
 		enabled: qs.ready
 	}));
 

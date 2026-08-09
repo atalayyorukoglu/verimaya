@@ -93,10 +93,12 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 			expectedStatus[a.status] = (expectedStatus[a.status] ?? 0) + 1;
 		}
 
-		const page = await fetchPage<{ id: string } & {
-			type_counts: Record<string, number>;
-			status_counts: Record<string, number>;
-		}>(`/v1/appointments?patient_id=${ATALAY_PATIENT_ID}&limit=1`);
+		const page = await fetchPage<
+			{ id: string } & {
+				type_counts: Record<string, number>;
+				status_counts: Record<string, number>;
+			}
+		>(`/v1/appointments?patient_id=${ATALAY_PATIENT_ID}&limit=1`);
 		expect(page.items).toHaveLength(1);
 		expect(page.next_cursor).toBeTruthy();
 		expect(page.type_counts).toEqual(expectedType);

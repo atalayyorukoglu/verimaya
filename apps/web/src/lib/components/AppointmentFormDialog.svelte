@@ -125,8 +125,8 @@
 		confirmingDelete
 			? t('appointments.deleteConfirmTitle')
 			: isEdit
-				? 'Randevuyu düzenle'
-				: 'Yeni randevu'
+				? t('appointments.form.editTitle')
+				: t('appointments.form.createTitle')
 	);
 
 	async function handleSubmit(e: Event) {
@@ -170,9 +170,7 @@
 <Dialog
 	bind:open
 	title={dialogTitle}
-	description={confirmingDelete
-		? undefined
-		: 'Hasta seçimi ve tarih zorunlu. Klinik / otel / transfer kişilerden seçilir.'}
+	description={confirmingDelete ? undefined : t('appointments.form.description')}
 >
 	{#if confirmingDelete}
 		<div class="space-y-3">
@@ -192,7 +190,7 @@
 				<label class={labelClass} for="appt-patient">Hasta</label>
 				<select id="appt-patient" class={fieldClass} bind:value={patient_id} required>
 					{#if patients.length === 0}
-						<option value="">Hasta yok — önce hasta ekleyin</option>
+						<option value="">{t('appointments.form.noPatients')}</option>
 					{:else}
 						{#each patients as p (p.id)}
 							<option value={p.id}>{p.full_name}</option>
@@ -201,16 +199,16 @@
 				</select>
 			</div>
 			<div>
-				<label class={labelClass} for="appt-title">Başlık</label>
+				<label class={labelClass} for="appt-title">{t('appointments.form.title')}</label>
 				<input id="appt-title" class={fieldClass} bind:value={title} maxlength={255} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div>
-					<label class={labelClass} for="appt-type">Tür</label>
+					<label class={labelClass} for="appt-type">{t('appointments.form.type')}</label>
 					{#if typeNames.length > 0}
 						<select id="appt-type" class={fieldClass} bind:value={appointment_type}>
-							{#each typeNames as t (t)}
-								<option value={t}>{t}</option>
+							{#each typeNames as typeName (typeName)}
+								<option value={typeName}>{typeName}</option>
 							{/each}
 						</select>
 					{:else}
@@ -233,7 +231,7 @@
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div>
-					<label class={labelClass} for="appt-start">Başlangıç</label>
+					<label class={labelClass} for="appt-start">{t('appointments.form.start')}</label>
 					<input
 						id="appt-start"
 						class={fieldClass}
@@ -243,7 +241,7 @@
 					/>
 				</div>
 				<div>
-					<label class={labelClass} for="appt-end">Bitiş</label>
+					<label class={labelClass} for="appt-end">{t('appointments.form.end')}</label>
 					<input id="appt-end" class={fieldClass} type="datetime-local" bind:value={endsLocal} />
 				</div>
 			</div>
@@ -268,7 +266,9 @@
 				</div>
 			</div>
 			<div>
-				<label class={labelClass} for="appt-transfer-c">Transfer firması</label>
+				<label class={labelClass} for="appt-transfer-c"
+					>{t('appointments.form.transferCompany')}</label
+				>
 				<select id="appt-transfer-c" class={fieldClass} bind:value={transfer_contact_id}>
 					<option value="">—</option>
 					{#each transferContacts.length ? transferContacts : contacts as c (c.id)}
@@ -316,14 +316,14 @@
 				</Button>
 			{/if}
 			<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
-				>İptal</Button
+				>{t('common.cancel')}</Button
 			>
 			<Button
 				type="submit"
 				form="appointment-form"
 				disabled={saving || !patient_id || !startsLocal}
 			>
-				{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
+				{saving ? t('common.saving') : isEdit ? t('common.save') : t('common.create')}
 			</Button>
 		{/if}
 	{/snippet}

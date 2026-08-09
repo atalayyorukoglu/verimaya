@@ -4,6 +4,7 @@
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 
@@ -51,7 +52,7 @@
 			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.caseNotes(patientId) });
 			requestAnimationFrame(() => requestAnimationFrame(scrollListToBottom));
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Not gönderilemedi';
+			error = err instanceof Error ? err.message : t('patients.notes.sendFailed');
 		} finally {
 			sending = false;
 		}
@@ -59,7 +60,7 @@
 
 	async function removeNote(id: string) {
 		if (!canWrite || deletingId) return;
-		if (!confirm('Bu notu silmek istediğinize emin misiniz?')) return;
+		if (!confirm(t('patients.notes.deleteConfirm'))) return;
 		deletingId = id;
 		error = null;
 		try {
@@ -85,14 +86,14 @@
 		bind:this={listEl}
 		class="{listMaxH} min-h-10 space-y-2 overflow-y-auto rounded-[6px] border border-border bg-surface-2/40 p-2.5"
 		role="log"
-		aria-label="Hasta notları"
+		aria-label={t('patients.notes.aria')}
 	>
 		{#if notesQuery.isPending}
-			<p class="text-sm text-text-faint">Yükleniyor…</p>
+			<p class="text-sm text-text-faint">{t('patients.notes.loading')}</p>
 		{:else if notesQuery.isError}
-			<p class="text-sm text-danger">Notlar yüklenemedi.</p>
+			<p class="text-sm text-danger">{t('patients.notes.loadError')}</p>
 		{:else if items.length === 0}
-			<p class="text-sm text-text-faint">Henüz not yok.</p>
+			<p class="text-sm text-text-faint">{t('patients.notes.empty')}</p>
 		{:else}
 			{#each items as note (note.id)}
 				<div class="rounded-[6px] border border-border bg-surface px-3 py-2 text-sm shadow-sm">
@@ -136,7 +137,7 @@
 			<button
 				type="button"
 				class="inline-flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-brand text-primary-foreground disabled:opacity-40"
-				aria-label="Gönder"
+				aria-label={t('patients.notes.sendAria')}
 				disabled={sending || !draft.trim()}
 				onclick={() => void send()}
 			>

@@ -77,14 +77,17 @@
 			return g.contacts.map((c: Contact) => ({
 				id: c.id,
 				title: c.display_name,
-				subtitle: [c.phone, c.email].filter(Boolean).join(' · ') || 'İletişim yok',
-				meta: `${c.contact_type_name} · kullanım ${c.usage_count}`
+				subtitle: [c.phone, c.email].filter(Boolean).join(' · ') || t('duplicates.noContact'),
+				meta: t('duplicates.usageMeta', {
+					type: c.contact_type_name,
+					count: String(c.usage_count)
+				})
 			}));
 		}
 		return g.patients.map((p: Patient) => ({
 			id: p.id,
 			title: p.full_name,
-			subtitle: [p.phone, p.email].filter(Boolean).join(' · ') || 'İletişim yok',
+			subtitle: [p.phone, p.email].filter(Boolean).join(' · ') || t('duplicates.noContact'),
 			meta: p.status
 		}));
 	}
@@ -122,7 +125,7 @@
 			if (kind === 'patients') {
 				success = t('patients.duplicates.success', { count: String(merge_ids.length) });
 			} else {
-				success = `${merge_ids.length} kayıt birleştirildi.`;
+				success = t('duplicates.mergeSuccess', { count: String(merge_ids.length) });
 			}
 			const next = { ...keepByGroup };
 			delete next[key];
@@ -133,7 +136,7 @@
 					? err.message
 					: kind === 'patients'
 						? t('patients.duplicates.error')
-						: 'Birleştirme başarısız';
+						: t('duplicates.mergeFailed');
 		} finally {
 			mergingKey = null;
 		}
@@ -145,10 +148,7 @@
 {#if kind === 'patients'}
 	<p class="mb-4 text-sm text-text-muted">{t('patients.duplicates.hint')}</p>
 {:else}
-	<p class="mb-4 text-sm text-text-muted">
-		E-posta, telefon (normalize) veya ada göre olası çift kayıtlar. Bir kayıt seçip diğerlerini
-		içine birleştirin — bağlı işlem ve randevular taşınır.
-	</p>
+	<p class="mb-4 text-sm text-text-muted">{t('duplicates.contactsHint')}</p>
 {/if}
 
 {#if error}
@@ -160,11 +160,11 @@
 
 {#if groupsQuery.isPending}
 	<p class="text-sm text-text-muted">
-		{kind === 'patients' ? t('patients.duplicates.scanning') : 'Taranıyor…'}
+		{kind === 'patients' ? t('patients.duplicates.scanning') : t('duplicates.scanning')}
 	</p>
 {:else if groupsQuery.isError}
 	<p class="text-sm text-danger">
-		{kind === 'patients' ? t('patients.duplicates.loadError') : 'Çift kayıt listesi yüklenemedi.'}
+		{kind === 'patients' ? t('patients.duplicates.loadError') : t('duplicates.loadError')}
 	</p>
 {:else}
 	{#if truncated}
@@ -175,12 +175,10 @@
 	{#if groups.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-8 text-center">
 			<p class="text-sm font-medium text-text">
-				{kind === 'patients' ? t('patients.duplicates.emptyTitle') : 'Çift kayıt bulunamadı'}
+				{kind === 'patients' ? t('patients.duplicates.emptyTitle') : t('duplicates.emptyTitle')}
 			</p>
 			<p class="mt-1 text-xs text-text-muted">
-				{kind === 'patients'
-					? t('patients.duplicates.emptyBody')
-					: 'Telefon, e-posta veya ad çakışması yok.'}
+				{kind === 'patients' ? t('patients.duplicates.emptyBody') : t('duplicates.emptyBody')}
 			</p>
 		</div>
 	{:else}
@@ -196,7 +194,7 @@
 						<span class="text-xs text-text-faint">
 							{kind === 'patients'
 								? t('patients.duplicates.recordCount', { count: String(rows.length) })
-								: `${rows.length} kayıt`}
+								: t('duplicates.recordCount', { count: String(rows.length) })}
 						</span>
 					</div>
 					<ul class="divide-y divide-border">
@@ -222,7 +220,7 @@
 									href={kind === 'contacts' ? `/contacts/${row.id}` : `/patients/${row.id}`}
 									class="shrink-0 text-xs text-brand hover:underline"
 								>
-									{kind === 'patients' ? t('patients.duplicates.open') : 'Aç'}
+									{kind === 'patients' ? t('patients.duplicates.open') : t('duplicates.open')}
 								</a>
 							</li>
 						{/each}
@@ -235,11 +233,13 @@
 							onclick={() => mergeGroup(g)}
 						>
 							{#if mergingKey === key}
-								{kind === 'patients' ? t('patients.duplicates.completing') : 'Birleştiriliyor…'}
+								{kind === 'patients'
+									? t('patients.duplicates.completing')
+									: t('duplicates.merging')}
 							{:else if kind === 'patients'}
 								{t('patients.duplicates.complete')}
 							{:else}
-								Seçileni tut, diğerlerini birleştir
+								{t('duplicates.mergeAction')}
 							{/if}
 						</Button>
 					</div>

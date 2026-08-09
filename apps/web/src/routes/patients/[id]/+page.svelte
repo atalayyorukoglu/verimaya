@@ -133,7 +133,7 @@
 			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
 			patientFormOpen = false;
 		} catch (err) {
-			patientFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			patientFormError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			patientSaving = false;
 		}
@@ -164,7 +164,7 @@
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {
-			txFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			txFormError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			txSaving = false;
 		}
@@ -211,7 +211,7 @@
 			apptFormOpen = false;
 			editingAppt = null;
 		} catch (err) {
-			apptFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			apptFormError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			apptSaving = false;
 		}
@@ -251,8 +251,7 @@
 				queryClient.invalidateQueries({ queryKey: qs.keys.patients.financeSummary(id) })
 			]);
 		} catch (err) {
-			autoLinkError =
-				err instanceof Error ? err.message : t('patients.finance.autoLinkFailed');
+			autoLinkError = err instanceof Error ? err.message : t('patients.finance.autoLinkFailed');
 		} finally {
 			autoLinking = false;
 		}
@@ -269,10 +268,10 @@
 	<a href="/patients" class="mb-4 inline-block text-sm text-info hover:underline">← Hastalar</a>
 
 	{#if patientQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('common.loading')}</p>
 	{:else if patientQuery.isError}
 		<div class="rounded-lg border border-border bg-surface p-6">
-			<p class="text-sm text-danger">Hasta bulunamadı veya yüklenemedi.</p>
+			<p class="text-sm text-danger">{t('patients.detail.notFound')}</p>
 		</div>
 	{:else if patientQuery.data}
 		{@const patient = patientQuery.data}
@@ -283,7 +282,7 @@
 					tone={patientStatusTone(patient.status)}
 				/>
 				<Button type="button" variant="secondary" onclick={() => (patientFormOpen = true)}
-					>Düzenle</Button
+					>{t('common.edit')}</Button
 				>
 			{/snippet}
 		</PageHeader>
@@ -300,9 +299,7 @@
 							disabled={autoLinking}
 							onclick={autoLinkTransactions}
 						>
-							{autoLinking
-								? t('patients.finance.autoLinking')
-								: t('patients.finance.autoLink')}
+							{autoLinking ? t('patients.finance.autoLinking') : t('patients.finance.autoLink')}
 						</Button>
 					{/if}
 					<a
@@ -421,7 +418,7 @@
 				{#if USE_MSW && finance.categories.length > 0}
 					<div class="mt-4 border-t border-border pt-4">
 						<h3 class="mb-3 text-xs font-semibold tracking-wide text-text-muted uppercase">
-							Kategori dağılımı
+							{t('patients.detail.categoryBreakdown')}
 						</h3>
 						<ul class="space-y-2">
 							{#each finance.categories as row (row.name)}
@@ -459,7 +456,7 @@
 				<dd class="text-sm break-words text-text">{patient.source ?? '—'}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-xs font-medium text-text-muted">Oluşturulma</dt>
+				<dt class="text-xs font-medium text-text-muted">{t('common.createdAt')}</dt>
 				<dd class="text-sm text-text">{formatDateTime(patient.created_at)}</dd>
 			</div>
 			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
@@ -482,7 +479,7 @@
 				</div>
 			</div>
 			{#if apptQuery.isPending}
-				<p class="text-sm text-text-muted">Yükleniyor…</p>
+				<p class="text-sm text-text-muted">{t('common.loading')}</p>
 			{:else if appointments.length === 0}
 				<p class="text-sm text-text-muted">Randevu yok.</p>
 			{:else}
@@ -513,23 +510,23 @@
 
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">İşlemler</h2>
+				<h2 class="text-sm font-semibold text-text">{t('patients.detail.transactions')}</h2>
 				<div class="flex flex-wrap items-center gap-2">
 					<a
 						href={`/finance?hasta=${patient.id}`}
 						class="text-xs font-medium text-brand hover:underline"
 					>
-						Tümü →
+						{t('patients.detail.allLink')}
 					</a>
 					<Button type="button" size="sm" variant="secondary" onclick={openCreateTx}
-						>Yeni işlem</Button
+						>{t('patients.detail.newTransaction')}</Button
 					>
 				</div>
 			</div>
 			{#if txQuery.isPending}
-				<p class="text-sm text-text-muted">Yükleniyor…</p>
+				<p class="text-sm text-text-muted">{t('patients.finance.loading')}</p>
 			{:else if transactions.length === 0}
-				<p class="text-sm text-text-muted">İşlem yok.</p>
+				<p class="text-sm text-text-muted">{t('patients.detail.transactionsEmpty')}</p>
 			{:else}
 				<ul class="-mx-1 divide-y divide-border">
 					{#each transactions as tx (tx.id)}
@@ -574,7 +571,7 @@
 										onclick={() => openEditTx(tx)}
 									>
 										<Pencil class="size-3" />
-										Düzenle
+										{t('common.edit')}
 									</Button>
 								</div>
 							</div>
@@ -583,9 +580,9 @@
 				</ul>
 				{#if txQuery.data?.next_cursor}
 					<p class="mt-3 text-xs text-text-faint">
-						Daha fazla işlem var —
+						{t('patients.detail.moreTransactions')}
 						<a href={`/finance?hasta=${patient.id}`} class="text-brand hover:underline"
-							>İşlemlerde gör</a
+							>{t('patients.detail.viewInFinance')}</a
 						>
 					</p>
 				{/if}

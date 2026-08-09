@@ -29,22 +29,21 @@
 	const heroTitleTr = splitHeroTitle(messages.tr['hub.hero.title']);
 	const heroTitleEn = splitHeroTitle(messages.en['hub.hero.title']);
 
-	const title = 'Veri Maya: Sağlık turizmi operasyon platformu';
-	const description =
-		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta. Ay sonunda kim geldi, kim ödedi bilinmiyor. Maya App, Maya CRM, Araçlar ve Kaynaklar ile sağlık turizmi için tek ekosistem.';
+	const title = $derived(t('hub.meta.title'));
+	const description = $derived(t('hub.meta.description'));
 	const canonical = `${PUBLIC_SITE_URL}/`;
 	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
 	const whatsappContactUrl = 'https://wa.me/905326566007';
 
-	const organizationLd = {
+	const organizationLd = $derived({
 		'@context': 'https://schema.org',
 		'@type': 'Organization',
 		name: 'Veri Maya',
 		url: PUBLIC_SITE_URL,
 		logo: `${PUBLIC_SITE_URL}/icon-512.png`,
 		description
-	};
+	});
 
 	const navItems = [
 		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },

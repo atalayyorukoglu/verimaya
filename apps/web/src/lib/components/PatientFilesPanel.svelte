@@ -60,7 +60,8 @@
 			};
 			xhr.onload = () => {
 				if (xhr.status >= 200 && xhr.status < 300) resolve();
-				else reject(new Error(t('patients.files.uploadFailedStatus', { status: String(xhr.status) })));
+				else
+					reject(new Error(t('patients.files.uploadFailedStatus', { status: String(xhr.status) })));
 			};
 			xhr.onerror = () => reject(new Error(t('patients.files.uploadNetworkError')));
 			xhr.send(file);

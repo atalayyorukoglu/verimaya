@@ -1,16 +1,17 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import DuplicateScanPanel from '$lib/components/DuplicateScanPanel.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 </script>
 
 <svelte:head>
-	<title>Çift kayıt · Kişiler · Veri Maya</title>
+	<title>{t('contacts.duplicates.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<PageHeader
-		title="Kişi çift kayıtları"
-		description="Aynı telefon, e-posta veya adla birden fazla kişi kaydı."
+		title={t('contacts.duplicates.title')}
+		description={t('contacts.duplicates.description')}
 	/>
-	<DuplicateScanPanel kind="contacts" listHref="/contacts" listLabel="Kişiler" />
+	<DuplicateScanPanel kind="contacts" listHref="/contacts" listLabel={t('contacts.list.title')} />
 </div>

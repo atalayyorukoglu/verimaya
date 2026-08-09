@@ -6,6 +6,7 @@
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PatientCaseNotesThread from '$lib/components/PatientCaseNotesThread.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { t } from '$lib/i18n/locale.svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 
@@ -28,7 +29,7 @@
 
 {#if sorted.length === 0}
 	<div class="rounded-lg border border-border bg-surface p-6 text-center">
-		<p class="text-sm text-text-muted">Bu aralıkta randevu yok.</p>
+		<p class="text-sm text-text-muted">{t('appointments.ops.emptyRange')}</p>
 	</div>
 {:else}
 	<ul class="grid min-w-0 gap-3 lg:grid-cols-2">
@@ -51,7 +52,7 @@
 								{appt.patient_display_name}
 							</a>
 							<p class="truncate text-xs text-text-faint">
-								{appt.title ?? appt.appointment_type ?? 'Randevu'}
+								{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
 							</p>
 						</div>
 						<StatusBadge
@@ -63,7 +64,7 @@
 
 				<div class="space-y-3 px-3 py-3 sm:px-4">
 					<p class="text-[11px] font-semibold tracking-wider text-text-faint uppercase">
-						Hasta notları
+						{t('appointments.ops.patientNotes')}
 					</p>
 					<PatientCaseNotesThread patientId={appt.patient_id} variant="card" />
 
@@ -100,14 +101,14 @@
 						>
 							{#if open}
 								<ChevronUp class="size-3.5" />
-								Detayı gizle
+								{t('appointments.ops.hideDetail')}
 							{:else}
 								<ChevronDown class="size-3.5" />
 								Detay
 							{/if}
 						</button>
 						<Button type="button" size="sm" variant="secondary" onclick={() => onedit(appt)}>
-							Düzenle
+							{t('appointments.ops.edit')}
 						</Button>
 					</div>
 				</div>

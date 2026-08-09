@@ -65,7 +65,11 @@
 	});
 
 	const dialogTitle = $derived(
-		confirmingDelete ? t('contacts.deleteConfirmTitle') : isEdit ? 'Kişiyi düzenle' : 'Yeni kişi'
+		confirmingDelete
+			? t('contacts.deleteConfirmTitle')
+			: isEdit
+				? t('contacts.form.editTitle')
+				: t('contacts.form.createTitle')
 	);
 
 	async function handleSubmit(e: Event) {
@@ -99,9 +103,7 @@
 <Dialog
 	bind:open
 	title={dialogTitle}
-	description={confirmingDelete
-		? undefined
-		: 'Otel, klinik, transfer veya hasta dizini. Tip “Hasta” ise otomatik hasta kaydı açılır.'}
+	description={confirmingDelete ? undefined : t('contacts.form.description')}
 >
 	{#if confirmingDelete}
 		<div class="space-y-3">
@@ -118,14 +120,14 @@
 	{:else}
 		<form id="contact-form" class="space-y-3" onsubmit={handleSubmit}>
 			<div>
-				<label class={labelClass} for="c-name">Ad / ünvan</label>
+				<label class={labelClass} for="c-name">{t('contacts.form.displayName')}</label>
 				<input id="c-name" class={fieldClass} bind:value={display_name} required maxlength={255} />
 			</div>
 			<div>
-				<label class={labelClass} for="c-type">Tür</label>
+				<label class={labelClass} for="c-type">{t('contacts.form.type')}</label>
 				<select id="c-type" class={fieldClass} bind:value={contact_type_id} required>
-					{#each typesQuery.data?.items ?? [] as t (t.id)}
-						<option value={t.id}>{t.name}</option>
+					{#each typesQuery.data?.items ?? [] as ct (ct.id)}
+						<option value={ct.id}>{ct.name}</option>
 					{/each}
 				</select>
 			</div>
@@ -141,7 +143,7 @@
 			</div>
 			<label class="flex items-center gap-2 text-sm text-text">
 				<input type="checkbox" bind:checked={is_internal} class="size-4 rounded border-border" />
-				İç personel
+				{t('contacts.form.internalStaff')}
 			</label>
 			<div>
 				<label class={labelClass} for="c-notes">Notlar</label>
@@ -178,14 +180,14 @@
 				</Button>
 			{/if}
 			<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
-				>İptal</Button
+				>{t('common.cancel')}</Button
 			>
 			<Button
 				type="submit"
 				form="contact-form"
 				disabled={saving || !display_name.trim() || !contact_type_id}
 			>
-				{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
+				{saving ? t('common.saving') : isEdit ? t('common.save') : t('common.create')}
 			</Button>
 		{/if}
 	{/snippet}

@@ -11,6 +11,7 @@
 	import { runAuthGate, isPublicPath } from '$lib/auth-gate';
 	import { isMarketingHost } from '$lib/host';
 	import { USE_MSW } from '$lib/env';
+	import { t } from '$lib/i18n/locale.svelte';
 
 	let { children } = $props();
 
@@ -108,6 +109,6 @@
 	</QueryClientProvider>
 {:else}
 	<div class="flex min-h-dvh items-center justify-center bg-bg text-sm text-text-muted">
-		Yükleniyor…
+		{t('app.boot.loading')}
 	</div>
 {/if}

@@ -133,7 +133,6 @@
 
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. Anonimleştirme yaklaşımı (silme değil) arşivdeki Açık sorular §1 kararına göre. **(L)**
-- **AUDIT-F09-10** i18n katalog süpürmesi — Türkçe hardcoded metinler `messages.ts`'e. **(L)**
 - **AUDIT-F09-20** `corsOrigins` allowlist hot-reload. **(M, düşük öncelik)**
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
@@ -207,6 +206,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **AUDIT-F09-10** — i18n katalog süpürmesi: uygulama sayfaları + `lib/components`'teki hardcoded TR metinler `t()` + `messages.ts`'e taşındı (336 tr + 336 en anahtar; 33 dosya i18n + 7 dosya prettier-only); Türkçe-karakter grep'i 775→41 (2026-08-09). Görüş: kalan 41 eşleşme bilinçli — `Konsültasyon` kaydedilen randevu tipi varsayılanı (locale'e bağlamak davranış değiştirir) + kod/HTML yorumları (süpürme kapsamı dışı); marketing/** (DOC-03e), (public)/** (hukuki metinler TR-only), dev/** (GAP-28) ve mocks (fixture verisi) kapsam dışı bırakıldı. Web check 0 hata + lint temiz + web 43/43 + API 445/445 yeşil.
 - ✅ **GAP-F09-16** — taslak onayında satır içi kayıt: `POST /v1/whatsapp/create-contact|create-patient|create-category` (mevcut service yollarının ince sarmalayıcısı + `@Idempotent`); taslak kartında "yeni …" formları, oluşan kayıt otomatik seçili (2026-08-09). Görüş: subcategory bilinçli yok (düz kategori modeli); create-category izni `finance:create` (permission lock); kategori duplicate'ı artık 409 `duplicate_type_name` (uidx 0004'ten beri vardı, pre-check eklendi). API 445/445 + shared 88 + web check yeşil.
 - ✅ **AUDIT-F09-08 + GAP-F09-24** — magic-byte sniff (`file-type`, tek choke point: `putFileContent` + `uploadLocalFileWithDb` → local+S3 ikisi de kapsamda) + allowlist pdf/png/jpeg/webp (`image/jpg` normalize; `image/gif` binaryTypes'tan çıktı); 415 `unsupported_media_type`/`mime_mismatch`. `GET .../files/:fileId/preview` — allowlist inline, legacy attachment, RFC 5987 filename*, nosniff; dosya panelinde önizle (2026-08-09). Görüş: `@fastify/multipart@10`'da `allowedMimeTypes` yok → declared MIME controller'da; appointment files kapsam dışı (bulgu patients'a işaret ediyor); S3 presigned-direct PUT yok, byte'lar API üzerinden geçiyor. API 432/432 + shared 88 + web check yeşil.
 - ✅ **GAP-F09-14** — `GET /v1/reports/transaction-duplicates`: tam dönemde SQL `GROUP BY/HAVING` (amount+currency+occurred_on+kind), `total_groups` + 20 grup üst sınırı; `/settings/data-quality`'nin ilk-100-satır istemci taraması kalktı (2026-08-09). Görüş: from/to düz ISO `occurred_on` (summary/consistency deseni; `tenantDayRange` timestamp'ler içindir); Tracker'ın WA-import günlük özeti bilinçli taşınmadı (inbox/taslak modeli farklı). API 423/423 + shared 88 + web check yeşil.

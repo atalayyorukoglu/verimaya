@@ -101,6 +101,35 @@
 			(canFinance && inboxQuery.isError) ||
 			(!USE_MSW && canFinance && summaryQuery.isError)
 	);
+
+	const metricCards = $derived([
+		{
+			label: t('panel.home.metric.openFiles'),
+			value: openFilesValue,
+			hint: t('panel.home.metric.openFilesHint')
+		},
+		{
+			label: t('panel.home.metric.todayAppts'),
+			value: String(todayAppointments.length),
+			hint: t('panel.home.metric.todayHint')
+		},
+		{
+			label: t('panel.home.metric.waPending'),
+			value: canFinance ? String(pendingCount) : '—',
+			hint: canFinance ? t('panel.home.aiTransaction') : t('panel.home.metric.noPermission')
+		},
+		{
+			label: t('panel.home.metric.netMonth'),
+			value:
+				!USE_MSW && canFinance && summaryQuery.data
+					? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY')
+					: (tenantQuery.data?.base_currency ?? '—'),
+			hint:
+				!USE_MSW && canFinance
+					? t('panel.home.metric.serverAggregate')
+					: (tenantQuery.data?.name ?? t('panel.home.metric.organization'))
+		}
+	]);
 </script>
 
 <svelte:head>
@@ -109,15 +138,15 @@
 
 <div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader
-		title="Kaldığın yerden devam et"
+		title={t('panel.home.title')}
 		description={tenantQuery.data
-			? `${tenantQuery.data.name} — bugünkü operasyona hızlı bakış`
-			: 'Bugünkü operasyona hızlı bakış'}
+			? t('panel.home.descriptionNamed', { name: tenantQuery.data.name })
+			: t('panel.home.description')}
 	/>
 
 	{#if anyError}
 		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
-			Bazı paneller yüklenemedi. Sayfayı yenileyin veya daha sonra tekrar deneyin.
+			{t('panel.home.partialError')}
 		</div>
 	{/if}
 
@@ -162,15 +191,15 @@
 
 		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 class="text-sm font-semibold text-text">Bugünün randevuları</h2>
-				<a href="/appointments" class="text-xs text-info hover:underline">Tümü</a>
+				<h2 class="text-sm font-semibold text-text">{t('panel.home.todayAppointments')}</h2>
+				<a href="/appointments" class="text-xs text-info hover:underline">{t('panel.home.all')}</a>
 			</div>
 			{#if appointmentsQuery.isPending}
-				<p class="text-sm text-text-faint">Yükleniyor…</p>
+				<p class="text-sm text-text-faint">{t('panel.home.appointmentsLoading')}</p>
 			{:else if appointmentsQuery.isError}
-				<p class="text-sm text-danger">Randevular yüklenemedi.</p>
+				<p class="text-sm text-danger">{t('panel.home.appointmentsError')}</p>
 			{:else if todayAppointments.length === 0}
-				<p class="text-sm text-text-faint">Bugün randevu yok.</p>
+				<p class="text-sm text-text-faint">{t('panel.home.appointmentsEmpty')}</p>
 			{:else}
 				<ul class="min-w-0 divide-y divide-border">
 					{#each todayAppointments as appt (appt.id)}
@@ -187,7 +216,7 @@
 								<div class="min-w-0 flex-1 overflow-hidden">
 									<p class="truncate text-sm font-medium text-text">{appt.patient_display_name}</p>
 									<p class="truncate text-xs text-text-faint">
-										{appt.title ?? appt.appointment_type ?? 'Randevu'}
+										{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
 									</p>
 								</div>
 							</a>
@@ -202,7 +231,9 @@
 				<h2 class="text-sm font-semibold text-text">Bekleyen WhatsApp</h2>
 				{#if canFinance}
 					<a href="/finance/ai-transaction" class="text-xs text-info hover:underline">
-						{pendingCount > 0 ? `${pendingCount} yeni` : 'AI ile işlem'}
+						{pendingCount > 0
+							? t('panel.home.pendingNew', { count: String(pendingCount) })
+							: t('panel.home.aiTransaction')}
 					</a>
 				{:else}
 					<span class="text-xs text-text-faint">Finans yetkisi gerekli</span>
@@ -210,14 +241,14 @@
 			</div>
 			{#if !canFinance}
 				<p class="text-sm text-text-faint">
-					Bu rol WhatsApp işlem aktarımını göremez. Rolü toolbar’dan değiştirin.
+					{t('panel.home.roleBlocked')}
 				</p>
 			{:else if inboxQuery.isPending}
-				<p class="text-sm text-text-faint">Yükleniyor…</p>
+				<p class="text-sm text-text-faint">{t('panel.home.messagesLoading')}</p>
 			{:else if inboxQuery.isError}
-				<p class="text-sm text-danger">Mesajlar yüklenemedi.</p>
+				<p class="text-sm text-danger">{t('panel.home.messagesError')}</p>
 			{:else if pendingMessages.length === 0}
-				<p class="text-sm text-text-faint">Bekleyen mesaj yok.</p>
+				<p class="text-sm text-text-faint">{t('finance.ai.pending.empty')}</p>
 			{:else}
 				<ul class="min-w-0 divide-y divide-border">
 					{#each pendingMessages as msg (msg.id)}
@@ -241,9 +272,9 @@
 	</div>
 
 	<section>
-		<h2 class="mb-3 text-sm font-semibold text-text">Özet metrikler</h2>
+		<h2 class="mb-3 text-sm font-semibold text-text">{t('panel.home.metricsHeading')}</h2>
 		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [{ label: t('panel.home.metric.openFiles'), value: openFilesValue, hint: t('panel.home.metric.openFilesHint') }, { label: 'Bugün randevu', value: String(todayAppointments.length), hint: 'Bugün' }, { label: 'WA bekleyen', value: canFinance ? String(pendingCount) : '—', hint: canFinance ? 'AI ile işlem' : 'Yetki yok' }, { label: 'Net (bu ay)', value: !USE_MSW && canFinance && summaryQuery.data ? formatMoney(summaryQuery.data.net_base, tenantQuery.data?.base_currency ?? 'TRY') : (tenantQuery.data?.base_currency ?? '—'), hint: !USE_MSW && canFinance ? 'Sunucu aggregate' : (tenantQuery.data?.name ?? 'Organizasyon') }] as card (card.label)}
+			{#each metricCards as card (card.label)}
 				<div class="rounded-lg border border-border bg-surface p-4">
 					<p class="text-xs text-text-muted">{card.label}</p>
 					<p class="mt-1 text-2xl font-semibold tracking-tight text-text">{card.value}</p>

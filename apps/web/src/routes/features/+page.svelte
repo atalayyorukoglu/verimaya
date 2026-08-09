@@ -8,6 +8,7 @@
 	import { featureStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 
 	const modules = [...new Set(features.map((f) => f.module))] as FeatureModule[];
 
@@ -28,14 +29,11 @@
 </script>
 
 <svelte:head>
-	<title>Özellikler · Veri Maya</title>
+	<title>{t('features.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl">
-	<PageHeader
-		title="Özellikler"
-		description="Mevcut ve planlanan yetenekler — veri kaynağı packages/shared/src/features.ts."
-	/>
+	<PageHeader title={t('features.title')} description={t('features.description')} />
 
 	<div class="mb-6 flex flex-wrap gap-2">
 		<button
@@ -46,7 +44,7 @@
 				: 'border-border text-text-muted hover:bg-surface-2'}"
 			onclick={() => (statusFilter = 'all')}
 		>
-			Tümü
+			{t('features.filterAll')}
 		</button>
 		{#each ['kod-hazir', 'pilotta', 'yayinda', 'harici-onay-bekliyor'] as const as status (status)}
 			<button
@@ -79,7 +77,7 @@
 							<p class="mt-2 text-sm leading-relaxed text-text-muted">{feature.description}</p>
 							{#if feature.status === 'yayinda' && feature.version}
 								<a href="/changelog" class="mt-2 inline-block text-xs text-info hover:underline">
-									Sürüm {feature.version} yenilikleri
+									{t('features.versionLink', { version: feature.version })}
 								</a>
 							{/if}
 						</li>

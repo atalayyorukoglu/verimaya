@@ -1,32 +1,53 @@
 <script lang="ts">
 	import { userRoleLabels, type UserRole } from '@verimaya/shared';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 
 	const roles = Object.keys(userRoleLabels) as UserRole[];
 
-	const permissions: { key: string; label: string; allow: UserRole[] }[] = [
+	const permissions = $derived([
 		{
 			key: 'patients',
-			label: 'Hastalar',
-			allow: ['owner', 'admin', 'manager', 'agent', 'readonly']
+			label: t('nav.patients'),
+			allow: ['owner', 'admin', 'manager', 'agent', 'readonly'] as UserRole[]
 		},
 		{
 			key: 'appointments',
-			label: 'Randevular',
-			allow: ['owner', 'admin', 'manager', 'agent', 'readonly']
+			label: t('nav.appointments'),
+			allow: ['owner', 'admin', 'manager', 'agent', 'readonly'] as UserRole[]
 		},
-		{ key: 'finance', label: 'Finans / işlemler', allow: ['owner', 'admin', 'manager', 'finance'] },
+		{
+			key: 'finance',
+			label: t('settings.access.perm.finance'),
+			allow: ['owner', 'admin', 'manager', 'finance'] as UserRole[]
+		},
 		{
 			key: 'reports',
-			label: 'Raporlar',
-			allow: ['owner', 'admin', 'manager', 'finance', 'readonly']
+			label: t('nav.reports'),
+			allow: ['owner', 'admin', 'manager', 'finance', 'readonly'] as UserRole[]
 		},
-		{ key: 'integrations', label: 'Bağlantılar (Ayarlar)', allow: ['owner', 'admin'] },
-		{ key: 'team', label: 'Ekip yönetimi', allow: ['owner', 'admin'] },
-		{ key: 'settings', label: 'Ayarlar', allow: ['owner', 'admin'] },
-		{ key: 'audit', label: 'Denetim kaydı', allow: ['owner', 'admin'] }
-	];
+		{
+			key: 'integrations',
+			label: t('settings.access.perm.integrations'),
+			allow: ['owner', 'admin'] as UserRole[]
+		},
+		{
+			key: 'team',
+			label: t('settings.access.perm.team'),
+			allow: ['owner', 'admin'] as UserRole[]
+		},
+		{
+			key: 'settings',
+			label: t('nav.settings'),
+			allow: ['owner', 'admin'] as UserRole[]
+		},
+		{
+			key: 'audit',
+			label: t('settings.access.perm.audit'),
+			allow: ['owner', 'admin'] as UserRole[]
+		}
+	]);
 
 	function cell(allow: UserRole[], role: UserRole): boolean {
 		return allow.includes(role);
@@ -34,21 +55,18 @@
 </script>
 
 <svelte:head>
-	<title>Erişim · Ayarlar · Veri Maya</title>
+	<title>{t('settings.access.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">
 	<SettingsBackLink />
-	<PageHeader
-		title="Erişim"
-		description="Rol → izin matrisi (demo). Üst bardaki rol değiştirici ile menü görünürlüğünü dene."
-	/>
+	<PageHeader title={t('settings.access.title')} description={t('settings.access.description')} />
 
 	<div class="overflow-x-auto rounded-lg border border-border bg-surface">
 		<table class="w-full min-w-[640px] text-left text-sm">
 			<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 				<tr>
-					<th class="px-3 py-2.5 font-medium">İzin</th>
+					<th class="px-3 py-2.5 font-medium">{t('settings.access.col.permission')}</th>
 					{#each roles as role (role)}
 						<th class="px-2 py-2.5 text-center font-medium">{userRoleLabels[role]}</th>
 					{/each}
@@ -74,7 +92,6 @@
 	</div>
 
 	<p class="mt-3 text-xs text-text-faint">
-		Gerçek yetkilendirme Faz 0b’de better-auth organization rolleri ile bağlanacak. Bu tablo
-		`rbac.ts` ile uyumlu bir önizleme.
+		{t('settings.access.footnote')}
 	</p>
 </div>

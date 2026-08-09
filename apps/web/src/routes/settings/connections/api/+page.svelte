@@ -10,6 +10,7 @@
 	import { apiPaths, webhookEventTypeSchema } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { formatDateTime } from '$lib/format';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -23,12 +24,12 @@
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
 	const scopeLabels: Record<ApiKeyScope, string> = { read: 'Okuma', write: 'Yazma' };
-	const webhookEventLabels: Record<WebhookEventType, string> = {
-		'transaction.created': 'İşlem oluşturuldu',
-		'transaction.updated': 'İşlem güncellendi',
-		'patient.created': 'Hasta oluşturuldu',
-		'appointment.created': 'Randevu oluşturuldu'
-	};
+	const webhookEventLabels = $derived<Record<WebhookEventType, string>>({
+		'transaction.created': t('settings.api.event.transactionCreated'),
+		'transaction.updated': t('settings.api.event.transactionUpdated'),
+		'patient.created': t('settings.api.event.patientCreated'),
+		'appointment.created': t('settings.api.event.appointmentCreated')
+	});
 	const webhookEventTypes = webhookEventTypeSchema.options;
 
 	const keysQuery = createQuery(() => ({
@@ -82,14 +83,14 @@
 			createdKey = created;
 			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.apiKeys() });
 		} catch (err) {
-			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			formError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			saving = false;
 		}
 	}
 
 	async function revoke(key: ApiKey) {
-		if (!confirm(`“${key.name}” anahtarı iptal edilsin mi? Bu işlem geri alınamaz.`)) return;
+		if (!confirm(t('settings.api.confirmRevokeKey', { name: key.name }))) return;
 		await apiSend(apiPaths.apiKey(key.id), 'DELETE');
 		await queryClient.invalidateQueries({ queryKey: qs.keys.settings.apiKeys() });
 	}
@@ -140,34 +141,30 @@
 			webhookDialogOpen = false;
 			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.webhookSubscriptions() });
 		} catch (err) {
-			webhookFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			webhookFormError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			webhookSaving = false;
 		}
 	}
 
 	async function removeWebhook(subscription: WebhookSubscription) {
-		if (!confirm(`“${subscription.url}” için abonelik silinsin mi? Bu işlem geri alınamaz.`))
-			return;
+		if (!confirm(t('settings.api.confirmDeleteWebhook', { url: subscription.url }))) return;
 		await apiSend(apiPaths.webhookSubscription(subscription.id), 'DELETE');
 		await queryClient.invalidateQueries({ queryKey: qs.keys.settings.webhookSubscriptions() });
 	}
 </script>
 
 <svelte:head>
-	<title>n8n / API · Ayarlar · Veri Maya</title>
+	<title>n8n / API · {t('nav.settings')} · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
-	<PageHeader
-		title="n8n / API"
-		description="Scope'lu API anahtarları ve outbox üzerinden giden webhook'lar."
-	>
+	<PageHeader title="n8n / API" description={t('settings.api.description')}>
 		{#snippet actions()}
 			<Button type="button" size="sm" onclick={openCreate}>
 				<Plus class="size-3.5" />
-				Anahtar oluştur
+				{t('settings.api.createKey')}
 			</Button>
 		{/snippet}
 	</PageHeader>
@@ -176,18 +173,17 @@
 		<section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="flex items-start justify-between gap-3">
 				<div class="min-w-0">
-					<h2 class="text-sm font-semibold text-text">API anahtarları</h2>
+					<h2 class="text-sm font-semibold text-text">{t('settings.api.keysHeading')}</h2>
 					<p class="mt-1 text-sm leading-relaxed text-text-muted">
-						Tenant'a özel, scope'lu anahtarlar. Anahtar yalnızca oluşturma anında bir kez
-						gösterilir.
+						{t('settings.api.keysLead')}
 					</p>
 				</div>
 			</div>
 
 			{#if keysQuery.isPending}
-				<p class="mt-4 text-sm text-text-muted">Yükleniyor…</p>
+				<p class="mt-4 text-sm text-text-muted">{t('settings.api.keysLoading')}</p>
 			{:else if keysQuery.isError}
-				<p class="mt-4 text-sm text-danger">Anahtarlar yüklenemedi.</p>
+				<p class="mt-4 text-sm text-danger">{t('settings.api.keysLoadError')}</p>
 			{:else if items.length === 0}
 				<div class="mt-4 flex flex-col items-center gap-2 py-4 text-center">
 					<span
@@ -195,9 +191,9 @@
 					>
 						<KeyRound class="size-5" />
 					</span>
-					<p class="text-sm font-medium text-text">Henüz aktif anahtar yok</p>
+					<p class="text-sm font-medium text-text">{t('settings.api.keysEmpty')}</p>
 					<Button class="mt-2" type="button" size="sm" onclick={openCreate}
-						>İlk anahtarı oluştur</Button
+						>{t('settings.api.keysEmptyCta')}</Button
 					>
 				</div>
 			{:else}
@@ -221,7 +217,7 @@
 							<button
 								type="button"
 								class="shrink-0 cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"
-								aria-label="Anahtarı iptal et"
+								aria-label={t('settings.api.revokeKeyAria')}
 								onclick={() => revoke(key)}
 							>
 								<Trash2 class="size-3.5" />
@@ -237,8 +233,7 @@
 				<div class="min-w-0">
 					<h2 class="text-sm font-semibold text-text">Giden webhook'lar</h2>
 					<p class="mt-1 text-sm leading-relaxed text-text-muted">
-						Seçili olaylar outbox tablosundan <code class="text-text">X-Verimaya-Signature</code>
-						(HMAC-SHA256) ile imzalanarak hedef URL'e iletilir; başarısız teslimat yeniden denenir.
+						{t('settings.api.webhooksLead')}
 					</p>
 				</div>
 				<Button type="button" size="sm" onclick={openWebhookCreate}>
@@ -248,9 +243,9 @@
 			</div>
 
 			{#if webhooksQuery.isPending}
-				<p class="mt-4 text-sm text-text-muted">Yükleniyor…</p>
+				<p class="mt-4 text-sm text-text-muted">{t('settings.api.webhooksLoading')}</p>
 			{:else if webhooksQuery.isError}
-				<p class="mt-4 text-sm text-danger">Abonelikler yüklenemedi.</p>
+				<p class="mt-4 text-sm text-danger">{t('settings.api.webhooksLoadError')}</p>
 			{:else if webhookItems.length === 0}
 				<div class="mt-4 flex flex-col items-center gap-2 py-4 text-center">
 					<span
@@ -258,9 +253,9 @@
 					>
 						<Webhook class="size-5" />
 					</span>
-					<p class="text-sm font-medium text-text">Henüz abonelik yok</p>
+					<p class="text-sm font-medium text-text">{t('settings.api.webhooksEmpty')}</p>
 					<Button class="mt-2" type="button" size="sm" onclick={openWebhookCreate}
-						>İlk aboneliği ekle</Button
+						>{t('settings.api.webhooksEmptyCta')}</Button
 					>
 				</div>
 			{:else}
@@ -285,7 +280,7 @@
 							<button
 								type="button"
 								class="shrink-0 cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"
-								aria-label="Aboneliği sil"
+								aria-label={t('settings.api.deleteWebhookAria')}
 								onclick={() => removeWebhook(subscription)}
 							>
 								<Trash2 class="size-3.5" />
@@ -297,16 +292,19 @@
 		</section>
 
 		<p class="text-xs text-text-faint">
-			API sözleşmesi <code class="text-text">packages/shared</code> içindeki zod şemalarından üretilir.
+			{t('settings.api.contractFootnote')}
 		</p>
 	</div>
 </div>
 
-<Dialog bind:open={dialogOpen} title={createdKey ? 'Anahtar oluşturuldu' : 'Yeni API anahtarı'}>
+<Dialog
+	bind:open={dialogOpen}
+	title={createdKey ? t('settings.api.keyCreatedTitle') : t('settings.api.newKeyTitle')}
+>
 	{#if createdKey}
 		<div class="space-y-3">
 			<p class="text-sm text-text-muted">
-				Bu anahtarı şimdi kopyalayın — bir daha gösterilmeyecek.
+				{t('settings.api.copyOnce')}
 			</p>
 			<div class="flex items-center gap-2 rounded-[6px] border border-border bg-surface-2 p-2">
 				<code class="min-w-0 flex-1 truncate text-xs text-text">{createdKey.key}</code>
@@ -328,7 +326,7 @@
 					bind:value={formName}
 					required
 					maxlength="120"
-					placeholder="ör. n8n entegrasyonu"
+					placeholder={t('settings.api.namePlaceholder')}
 				/>
 			</label>
 			<fieldset class="grid gap-1.5">
@@ -351,16 +349,18 @@
 				</label>
 			</fieldset>
 			<div class="mt-2 flex justify-end gap-2">
-				<Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>İptal</Button>
+				<Button type="button" variant="outline" onclick={() => (dialogOpen = false)}
+					>{t('common.cancel')}</Button
+				>
 				<Button type="submit" disabled={saving || formScopes.length === 0}>
-					{saving ? 'Oluşturuluyor…' : 'Oluştur'}
+					{saving ? t('common.creating') : t('common.create')}
 				</Button>
 			</div>
 		</form>
 	{/if}
 </Dialog>
 
-<Dialog bind:open={webhookDialogOpen} title="Yeni webhook aboneliği">
+<Dialog bind:open={webhookDialogOpen} title={t('settings.api.newWebhookTitle')}>
 	<form class="grid gap-3" onsubmit={saveWebhook}>
 		{#if webhookFormError}
 			<p class="text-sm text-danger">{webhookFormError}</p>
@@ -377,7 +377,7 @@
 			/>
 		</label>
 		<label class="grid gap-1">
-			<span class={labelClass}>Paylaşılan gizli anahtar (secret)</span>
+			<span class={labelClass}>{t('settings.api.secretLabel')}</span>
 			<input
 				class={fieldClass}
 				type="text"
@@ -388,11 +388,11 @@
 				placeholder="En az 16 karakter"
 			/>
 			<span class="text-xs text-text-faint">
-				İmza doğrulaması için kullanılır; kaydedildikten sonra bir daha gösterilmez.
+				{t('settings.api.secretHint')}
 			</span>
 		</label>
 		<fieldset class="grid gap-1.5">
-			<span class={labelClass}>Olay türleri</span>
+			<span class={labelClass}>{t('settings.api.eventsLabel')}</span>
 			{#each webhookEventTypes as eventType (eventType)}
 				<label class="flex items-center gap-2 text-sm text-text">
 					<input
@@ -406,7 +406,7 @@
 		</fieldset>
 		<div class="mt-2 flex justify-end gap-2">
 			<Button type="button" variant="outline" onclick={() => (webhookDialogOpen = false)}
-				>İptal</Button
+				>{t('common.cancel')}</Button
 			>
 			<Button
 				type="submit"
@@ -415,7 +415,7 @@
 					webhookFormSecret.trim().length < 16 ||
 					!webhookFormUrl.trim()}
 			>
-				{webhookSaving ? 'Oluşturuluyor…' : 'Oluştur'}
+				{webhookSaving ? t('common.creating') : t('common.create')}
 			</Button>
 		</div>
 	</form>

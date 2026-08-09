@@ -54,10 +54,7 @@
 			email?: string | null;
 		}) => Promise<void>;
 		onCreatePatient: (input: { full_name: string }) => Promise<void>;
-		onCreateCategory: (input: {
-			name: string;
-			kind: TransactionDraft['kind'];
-		}) => Promise<void>;
+		onCreateCategory: (input: { name: string; kind: TransactionDraft['kind'] }) => Promise<void>;
 	} = $props();
 
 	const kinds = Object.keys(transactionKindLabels) as TransactionDraft['kind'][];

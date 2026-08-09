@@ -1714,7 +1714,12 @@ export const handlers = [
 		);
 		if (dup) {
 			return HttpResponse.json(
-				{ error: { code: 'duplicate_type_name', message: 'A finance category with this name already exists' } },
+				{
+					error: {
+						code: 'duplicate_type_name',
+						message: 'A finance category with this name already exists'
+					}
+				},
 				{ status: 409 }
 			);
 		}

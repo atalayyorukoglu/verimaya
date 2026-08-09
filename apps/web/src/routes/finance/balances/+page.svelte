@@ -5,6 +5,7 @@
 	import { apiGet } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 
@@ -17,29 +18,31 @@
 	}));
 
 	const balances = $derived(balancesQuery.data?.items ?? []);
+	const footnoteParts = $derived(
+		t('finance.balances.footnote', { contactId: '\u0001' }).split('\u0001')
+	);
 </script>
 
 <svelte:head>
-	<title>Bakiyeler · Veri Maya</title>
+	<title>{t('finance.balances.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<div class="mb-4">
-		<a href="/finance" class="text-sm font-medium text-brand hover:underline">← İşlemler</a>
+		<a href="/finance" class="text-sm font-medium text-brand hover:underline"
+			>{t('finance.balances.back')}</a
+		>
 	</div>
 
-	<PageHeader
-		title="P2P net bakiyeler"
-		description="Kişi/firma etiketli işlemlerden net borç–alacak. Para birimi bazında; farklı birimler toplanmaz."
-	/>
+	<PageHeader title={t('finance.balances.title')} description={t('finance.balances.description')} />
 
 	{#if balancesQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('finance.balances.loading')}</p>
 	{:else if balancesQuery.isError}
-		<p class="text-sm text-danger">Bakiyeler yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('finance.balances.loadError')}</p>
 	{:else if balances.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-6 text-center">
-			<p class="text-sm text-text-muted">Kişi etiketli işlem yok veya tüm bakiyeler sıfır.</p>
+			<p class="text-sm text-text-muted">{t('finance.balances.empty')}</p>
 		</div>
 	{:else}
 		<ul class="space-y-2">
@@ -54,17 +57,17 @@
 						<div class="min-w-0 flex-1">
 							{#if row.open_amount < 0}
 								<p class="text-sm text-text">
-									<span class="text-text-muted">Borçlu</span>
+									<span class="text-text-muted">{t('finance.balances.debtor')}</span>
 									<span class="font-medium"> Biz</span>
-									<span class="text-text-muted"> → alacaklı </span>
+									<span class="text-text-muted">{t('finance.balances.creditor')}</span>
 									<span class="font-medium">{row.contact_label}</span>
 									<span class="text-text-faint"> ({row.currency})</span>
 								</p>
 							{:else}
 								<p class="text-sm text-text">
-									<span class="text-text-muted">Borçlu</span>
+									<span class="text-text-muted">{t('finance.balances.debtor')}</span>
 									<span class="font-medium"> {row.contact_label}</span>
-									<span class="text-text-muted"> → alacaklı </span>
+									<span class="text-text-muted">{t('finance.balances.creditor')}</span>
 									<span class="font-medium">Biz</span>
 									<span class="text-text-faint"> ({row.currency})</span>
 								</p>
@@ -74,7 +77,9 @@
 							</p>
 							{#if row.collected_amount !== 0}
 								<p class="mt-0.5 text-xs text-text-muted tabular-nums">
-									Tahsil edilmiş: {formatMoney(Math.abs(row.collected_amount), row.currency)}
+									{t('finance.balances.collected', {
+										amount: formatMoney(Math.abs(row.collected_amount), row.currency)
+									})}
 								</p>
 							{/if}
 						</div>
@@ -84,8 +89,7 @@
 		</ul>
 
 		<p class="mt-4 text-xs text-text-faint">
-			Bakiyeler <code class="text-text">contact_id</code> + para birimi bazında sunucudan gelir.
-			Dizindeki kişiler:
+			{footnoteParts[0]}<code class="text-text">contact_id</code>{footnoteParts[1]}
 			<a href="/contacts" class="text-brand hover:underline">/contacts</a>.
 		</p>
 	{/if}

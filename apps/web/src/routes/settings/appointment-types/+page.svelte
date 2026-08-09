@@ -58,19 +58,22 @@
 </script>
 
 <svelte:head>
-	<title>Randevu ayarları · Ayarlar · Veri Maya</title>
+	<title>{t('settings.appointmentTypes.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
-	<PageHeader title="Randevu ayarları" description="Randevu tipleri. Checklist şablonları Faz 1." />
+	<PageHeader
+		title={t('settings.appointmentTypes.title')}
+		description={t('settings.appointmentTypes.description')}
+	/>
 
 	<section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
 		<h2 class="text-sm font-semibold text-text">Tipler</h2>
 		{#if typesQuery.isPending}
-			<p class="mt-3 text-sm text-text-muted">Yükleniyor…</p>
+			<p class="mt-3 text-sm text-text-muted">{t('settings.appointmentTypes.loading')}</p>
 		{:else if typesQuery.isError}
-			<p class="mt-3 text-sm text-danger">Yüklenemedi.</p>
+			<p class="mt-3 text-sm text-danger">{t('settings.appointmentTypes.loadError')}</p>
 		{:else}
 			<ul class="mt-3 divide-y divide-border">
 				{#each items as item (item.id)}
@@ -93,7 +96,7 @@
 			<input
 				class={fieldClass}
 				bind:value={newName}
-				placeholder="Yeni tip adı"
+				placeholder={t('settings.appointmentTypes.newPlaceholder')}
 				maxlength="128"
 				required
 			/>
@@ -108,10 +111,9 @@
 	</section>
 
 	<div class="mt-4 rounded-lg border border-dashed border-border bg-surface/50 p-4">
-		<p class="text-sm font-medium text-text">Checklist şablonları</p>
+		<p class="text-sm font-medium text-text">{t('settings.appointmentTypes.checklistTitle')}</p>
 		<p class="mt-1 text-sm text-text-muted">
-			Tracker’daki “pasaport kopyası, onam formu…” maddeleri. Veri Maya’da dosya yükleme ile
-			birlikte Faz 1’de gelir; şimdilik yok.
+			{t('settings.appointmentTypes.checklistBody')}
 		</p>
 	</div>
 </div>

@@ -4,6 +4,7 @@
 	import { apiPaths, transactionKindLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -79,7 +80,7 @@
 			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.financeCategories() });
 			dialogOpen = false;
 		} catch (err) {
-			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+			formError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
 			saving = false;
 		}
@@ -108,13 +109,15 @@
 	</PageHeader>
 
 	{#if catsQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('settings.categories.loading')}</p>
 	{:else if catsQuery.isError}
-		<p class="text-sm text-danger">Kategoriler yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('settings.categories.loadError')}</p>
 	{:else if items.length === 0}
 		<div class="rounded-lg border border-border bg-surface p-8 text-center">
-			<p class="text-sm text-text-muted">Henüz kategori yok.</p>
-			<Button class="mt-4" type="button" onclick={openCreate}>İlk kategoriyi ekle</Button>
+			<p class="text-sm text-text-muted">{t('settings.categories.empty')}</p>
+			<Button class="mt-4" type="button" onclick={openCreate}
+				>{t('settings.categories.emptyCta')}</Button
+			>
 		</div>
 	{:else}
 		<ul class="space-y-2">
@@ -145,7 +148,7 @@
 						<button
 							type="button"
 							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
-							aria-label="Düzenle"
+							aria-label={t('settings.categories.editAria')}
 							onclick={() => openEdit(cat)}
 						>
 							<Pencil class="size-3.5" />
@@ -165,18 +168,20 @@
 	{/if}
 
 	<p class="mt-4 text-xs text-text-faint">
-		Raporlar → Kategori sekmesi bu sözlüğü kullanacak (Faz 1’de sunucu tarafı bağlanır). Demo’da
-		işlem `subtitle` alanları bu alt kategorilerle uyumlu seed edildi.
+		{t('settings.categories.footnote')}
 	</p>
 </div>
 
-<Dialog bind:open={dialogOpen} title={editing ? 'Kategori düzenle' : 'Yeni kategori'}>
+<Dialog
+	bind:open={dialogOpen}
+	title={editing ? t('settings.categories.editTitle') : t('settings.categories.createTitle')}
+>
 	<form class="grid gap-3" onsubmit={save}>
 		{#if formError}
 			<p class="text-sm text-danger">{formError}</p>
 		{/if}
 		<label class="grid gap-1">
-			<span class={labelClass}>Tür</span>
+			<span class={labelClass}>{t('settings.categories.kind')}</span>
 			<select class={fieldClass} bind:value={formKind}>
 				<option value="income">Gelir</option>
 				<option value="expense">Gider</option>
@@ -191,11 +196,15 @@
 			<textarea
 				class="min-h-20 w-full rounded-[6px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
 				bind:value={formSubs}
-				placeholder="Virgülle ayır: Saç ekimi, İmplant, Genel"></textarea>
+				placeholder={t('settings.categories.subcatsPlaceholder')}></textarea>
 		</label>
 		<div class="mt-2 flex justify-end gap-2">
-			<Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>İptal</Button>
-			<Button type="submit" disabled={saving}>{saving ? 'Kaydediliyor…' : 'Kaydet'}</Button>
+			<Button type="button" variant="outline" onclick={() => (dialogOpen = false)}
+				>{t('common.cancel')}</Button
+			>
+			<Button type="submit" disabled={saving}
+				>{saving ? t('common.saving') : t('common.save')}</Button
+			>
 		</div>
 	</form>
 </Dialog>

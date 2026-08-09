@@ -103,21 +103,21 @@
 </script>
 
 <svelte:head>
-	<title>Kişi türleri · Ayarlar · Veri Maya</title>
+	<title>{t('settings.contactTypes.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
 	<PageHeader
-		title="Kişi türleri"
-		description="Otel, klinik, transfer, hasta… Kişiler dizini bu türleri kullanır."
+		title={t('settings.contactTypes.title')}
+		description={t('settings.contactTypes.description')}
 	/>
 
 	<section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
 		{#if typesQuery.isPending}
-			<p class="text-sm text-text-muted">Yükleniyor…</p>
+			<p class="text-sm text-text-muted">{t('settings.contactTypes.loading')}</p>
 		{:else if typesQuery.isError}
-			<p class="text-sm text-danger">Türler yüklenemedi.</p>
+			<p class="text-sm text-danger">{t('settings.contactTypes.loadError')}</p>
 		{:else}
 			<ul class="divide-y divide-border">
 				{#each types as row (row.id)}
@@ -176,7 +176,12 @@
 				{/each}
 			</ul>
 			<form class="mt-4 flex gap-2" onsubmit={add}>
-				<input class={fieldClass} bind:value={newName} placeholder="Yeni tür" required />
+				<input
+					class={fieldClass}
+					bind:value={newName}
+					placeholder={t('settings.contactTypes.newPlaceholder')}
+					required
+				/>
 				<Button type="submit" size="sm" disabled={busy}>
 					<Plus class="size-3.5" />
 					Ekle
@@ -189,6 +194,6 @@
 	</section>
 
 	<p class="mt-3 text-xs text-text-faint">
-		Tip adı “Hasta” olan kişi oluşturulunca otomatik hasta kaydı açılır.
+		{t('settings.contactTypes.footnote')}
 	</p>
 </div>

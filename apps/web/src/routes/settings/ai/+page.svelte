@@ -13,12 +13,10 @@
 	import { t } from '$lib/i18n/locale.svelte';
 
 	const STORAGE_KEY = 'verimaya:ai-prompt';
-	const DEFAULT_PROMPT = `WhatsApp grup mesajından finans işlemi çıkar.
-Kurallar:
-- Tutarı minor unit (kuruş/cent) olarak düşünme; kullanıcıya major göster.
-- Tür: income veya expense.
-- Varsa hasta adı, kategori, alt kategori, kişi/firma etiketi, tarih.
-- Belirsiz alanları boş bırak; uydurma.`;
+
+	function getDefaultPrompt(): string {
+		return t('settings.ai.prompt.defaultBody');
+	}
 
 	let value = $state('');
 	let savedOk = $state(false);
@@ -46,7 +44,7 @@ Kurallar:
 			value = stored;
 			isDefault = false;
 		} else {
-			value = DEFAULT_PROMPT;
+			value = getDefaultPrompt();
 			isDefault = true;
 		}
 	});
@@ -68,7 +66,7 @@ Kurallar:
 
 	function resetPrompt() {
 		localStorage.removeItem(STORAGE_KEY);
-		value = DEFAULT_PROMPT;
+		value = getDefaultPrompt();
 		isDefault = true;
 		savedOk = true;
 		setTimeout(() => (savedOk = false), 2000);

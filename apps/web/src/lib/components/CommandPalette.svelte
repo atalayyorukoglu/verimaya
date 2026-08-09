@@ -7,6 +7,7 @@
 	import { formatDateTime, formatMoney } from '$lib/format';
 	import { focusTrap } from '$lib/actions/focus-trap';
 	import { portal } from '$lib/actions/portal';
+	import { t } from '$lib/i18n/locale.svelte';
 	import Search from '@lucide/svelte/icons/search';
 	import User from '@lucide/svelte/icons/user';
 	import Calendar from '@lucide/svelte/icons/calendar';
@@ -73,11 +74,11 @@
 	bind:this={triggerEl}
 	type="button"
 	class="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] border border-border bg-surface px-3 text-left text-sm text-text-faint transition-colors hover:border-text-faint hover:text-text-muted md:max-w-xl"
-	aria-label="Ara"
+	aria-label={t('command.aria')}
 	onclick={openPalette}
 >
 	<Search class="size-4 shrink-0" aria-hidden="true" />
-	<span class="truncate">Hasta, randevu veya işlem ara…</span>
+	<span class="truncate">{t('command.placeholder')}</span>
 	<kbd
 		class="ml-auto hidden items-center rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-text-faint sm:inline-flex"
 	>
@@ -95,7 +96,7 @@
 			use:focusTrap={{ returnFocusTo: triggerEl ?? null }}
 			role="dialog"
 			aria-modal="true"
-			aria-label="Hızlı arama"
+			aria-label={t('command.aria')}
 			tabindex="-1"
 			class="relative z-10 flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-[8px] border border-border bg-surface shadow-xl"
 		>
@@ -104,8 +105,8 @@
 				<input
 					bind:value={q}
 					class="h-12 w-full bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
-					placeholder="Hasta, randevu veya işlem ara…"
-					aria-label="Hasta, randevu veya işlem ara"
+					placeholder={t('command.placeholder')}
+					aria-label={t('command.ariaInput')}
 					autocomplete="off"
 				/>
 				<kbd
@@ -117,18 +118,22 @@
 			<div class="min-h-0 flex-1 overflow-y-auto p-2">
 				{#if !hasQuery}
 					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">
-						En az 2 karakter yazın
+						{t('command.minChars')}
 					</p>
 				{:else if searchQuery.isPending}
-					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">Aranıyor…</p>
+					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">
+						{t('command.searching')}
+					</p>
 				{:else if empty}
-					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">Sonuç yok</p>
+					<p class="px-2 py-6 text-center text-sm text-text-faint" aria-live="polite">
+						{t('command.empty')}
+					</p>
 				{:else if searchQuery.data}
 					{#if searchQuery.data.patients.length > 0}
 						<p
 							class="px-2 py-1.5 text-[11px] font-semibold tracking-wider text-text-faint uppercase"
 						>
-							Hastalar
+							{t('nav.patients')}
 						</p>
 						<ul class="mb-2">
 							{#each searchQuery.data.patients as p (p.id)}
@@ -149,7 +154,7 @@
 						<p
 							class="px-2 py-1.5 text-[11px] font-semibold tracking-wider text-text-faint uppercase"
 						>
-							Randevular
+							{t('nav.appointments')}
 						</p>
 						<ul class="mb-2">
 							{#each searchQuery.data.appointments as a (a.id)}
@@ -174,21 +179,21 @@
 						<p
 							class="px-2 py-1.5 text-[11px] font-semibold tracking-wider text-text-faint uppercase"
 						>
-							İşlemler
+							{t('command.group.transactions')}
 						</p>
 						<ul>
-							{#each searchQuery.data.transactions as t (t.id)}
+							{#each searchQuery.data.transactions as tx (tx.id)}
 								<li>
 									<button
 										type="button"
 										class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm hover:bg-surface-2"
 										onclick={() =>
-											navigate(t.patient_id ? `/finance?hasta=${t.patient_id}` : '/finance')}
+											navigate(tx.patient_id ? `/finance?hasta=${tx.patient_id}` : '/finance')}
 									>
 										<Wallet class="size-4 shrink-0 text-text-muted" />
-										<span class="min-w-0 flex-1 truncate text-text">{t.title}</span>
+										<span class="min-w-0 flex-1 truncate text-text">{tx.title}</span>
 										<span class="shrink-0 text-text-muted tabular-nums">
-											{formatMoney(t.amount, t.currency)}
+											{formatMoney(tx.amount, tx.currency)}
 										</span>
 									</button>
 								</li>

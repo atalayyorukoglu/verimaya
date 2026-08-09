@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { MockScenario } from '$lib/mocks/data';
+	import { t } from '$lib/i18n/locale.svelte';
 
-	const SCENARIOS: { value: MockScenario; label: string }[] = [
-		{ value: 'default', label: 'Demo (~48)' },
-		{ value: 'empty', label: 'Boş liste' },
-		{ value: 'large', label: '500 kayıt' }
-	];
+	const scenarios = $derived([
+		{ value: 'default' as const, label: 'Demo (~48)' },
+		{ value: 'empty' as const, label: t('dev.toolbar.scenario.empty') },
+		{ value: 'large' as const, label: t('dev.toolbar.scenario.large') }
+	]);
 
 	let scenario = $state<MockScenario>('default');
 
@@ -34,7 +35,7 @@
 			value={scenario}
 			onchange={onScenarioChange}
 		>
-			{#each SCENARIOS as s (s.value)}
+			{#each scenarios as s (s.value)}
 				<option value={s.value}>{s.label}</option>
 			{/each}
 		</select>

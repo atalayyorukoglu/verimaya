@@ -78,7 +78,7 @@
 			hydrateFrom(updated);
 			savedAt = Date.now();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Kaydetme başarısız';
+			error = err instanceof Error ? err.message : t('settings.organization.saveFailed');
 		} finally {
 			saving = false;
 		}
@@ -86,27 +86,32 @@
 </script>
 
 <svelte:head>
-	<title>Organizasyon · Ayarlar · Veri Maya</title>
+	<title>{t('settings.organization.title')} · {t('nav.settings')} · Veri Maya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
 	<SettingsBackLink />
-	<PageHeader title="Organizasyon" description="Firma profili ve varsayılanlar." />
+	<PageHeader
+		title={t('settings.organization.title')}
+		description={t('settings.organization.description')}
+	/>
 
 	{#if tenantQuery.isPending}
-		<p class="text-sm text-text-muted">Yükleniyor…</p>
+		<p class="text-sm text-text-muted">{t('settings.organization.loading')}</p>
 	{:else if tenantQuery.isError}
-		<p class="text-sm text-danger">Ayarlar yüklenemedi.</p>
+		<p class="text-sm text-danger">{t('settings.organization.loadError')}</p>
 	{:else if tenantQuery.data}
 		<form class="rounded-lg border border-border bg-surface p-4 sm:p-6" onsubmit={save}>
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div class="sm:col-span-2">
-					<label class={labelClass} for="tenant-name">Firma adı</label>
+					<label class={labelClass} for="tenant-name">{t('settings.organization.name')}</label>
 					<input id="tenant-name" class={fieldClass} bind:value={name} required maxlength="255" />
 				</div>
 
 				<div>
-					<label class={labelClass} for="tenant-currency">Varsayılan para birimi</label>
+					<label class={labelClass} for="tenant-currency"
+						>{t('settings.organization.currency')}</label
+					>
 					<select
 						id="tenant-currency"
 						class={fieldClass}
@@ -137,7 +142,9 @@
 				</div>
 
 				<div>
-					<label class={labelClass} for="tenant-patients-label">"Hastalar" bölüm etiketi</label>
+					<label class={labelClass} for="tenant-patients-label"
+						>{t('settings.organization.patientsLabel')}</label
+					>
 					<input
 						id="tenant-patients-label"
 						class={fieldClass}
@@ -146,14 +153,14 @@
 						placeholder="Hastalar"
 					/>
 					<p class="mt-1 text-xs text-text-faint">
-						Örn. diş kliniği "Hastalar", acente "Misafirler" diyebilir.
+						{t('settings.organization.patientsLabelHint')}
 					</p>
 				</div>
 			</div>
 
 			<div class="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-4">
 				<Button type="submit" disabled={saving}>
-					{saving ? 'Kaydediliyor…' : 'Kaydet'}
+					{saving ? t('common.saving') : t('common.save')}
 				</Button>
 				{#if savedAt}
 					<span class="text-sm text-success">Kaydedildi.</span>
@@ -172,15 +179,14 @@
 					<dd class="font-mono text-xs text-text sm:mt-1">{tenantQuery.data.slug}</dd>
 				</div>
 				<div class="flex justify-between gap-4 sm:block">
-					<dt class="text-xs text-text-muted">Oluşturulma</dt>
+					<dt class="text-xs text-text-muted">{t('settings.organization.createdAt')}</dt>
 					<dd class="text-xs text-text sm:mt-1">{formatDate(tenantQuery.data.created_at)}</dd>
 				</div>
 			</dl>
 			<p class="mt-3 text-xs text-text-faint">
-				Slug değiştirilemez. Üye ve rol yönetimi <a
-					href="/settings/team"
-					class="text-brand hover:underline">Ekip</a
-				> sayfasında.
+				{#each t( 'settings.organization.slugFootnote', { link: '\u0001' } ).split('\u0001') as part, i (i)}
+					{#if i > 0}<a href="/settings/team" class="text-brand hover:underline">Ekip</a>{/if}{part}
+				{/each}
 			</p>
 		</div>
 	{/if}

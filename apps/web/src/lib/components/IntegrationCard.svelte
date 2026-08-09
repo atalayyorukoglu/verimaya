@@ -1,6 +1,7 @@
 <script lang="ts">
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { t } from '$lib/i18n/locale.svelte';
 
 	type ConnectionStatus = 'connected' | 'disconnected' | 'planned';
 
@@ -25,14 +26,20 @@
 		onDisconnect?: () => void;
 	} = $props();
 
-	const statusInfo: Record<
-		ConnectionStatus,
-		{ label: string; tone: 'success' | 'neutral' | 'warning' }
-	> = {
-		connected: { label: 'Bağlı', tone: 'success' },
-		disconnected: { label: 'Bağlı değil', tone: 'neutral' },
-		planned: { label: 'Planlandı', tone: 'warning' }
-	};
+	const statusInfo = $derived({
+		connected: {
+			label: t('integration.status.connected'),
+			tone: 'success' as const
+		},
+		disconnected: {
+			label: t('integration.status.disconnected'),
+			tone: 'neutral' as const
+		},
+		planned: {
+			label: t('integration.status.planned'),
+			tone: 'warning' as const
+		}
+	});
 
 	const showActions = $derived(
 		Boolean(actionLabel) || (Boolean(onDisconnect) && status === 'connected')
@@ -75,7 +82,7 @@
 						variant="outline"
 						size="sm"
 						disabled
-						title="Gerçek bağlantı akışı backend ile birlikte gelecek"
+						title={t('integration.connectDisabledTitle')}
 					>
 						{actionLabel}
 					</Button>
@@ -83,7 +90,7 @@
 			{/if}
 			{#if onDisconnect && status === 'connected'}
 				<Button type="button" variant="outline" size="sm" onclick={onDisconnect}>
-					Bağlantıyı kes
+					{t('integration.disconnect')}
 				</Button>
 			{/if}
 		</div>

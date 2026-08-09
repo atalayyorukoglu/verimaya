@@ -14,6 +14,7 @@
 		type OrganizationSummary
 	} from '$lib/auth-org';
 	import { fieldClass, labelClass } from '$lib/api';
+	import { t } from '$lib/i18n/locale.svelte';
 
 	type Step = 'credentials' | 'twoFactor' | 'orgPick' | 'orgCreate';
 
@@ -68,7 +69,7 @@
 					code: totpCode.trim()
 				});
 				if (verifyError) {
-					error = verifyError.message ?? 'Doğrulama kodu geçersiz';
+					error = verifyError.message ?? t('login.error.invalidCode');
 					return;
 				}
 				await finishAuth();
@@ -81,7 +82,7 @@
 			});
 
 			if (signInError) {
-				error = signInError.message ?? 'Giriş başarısız';
+				error = signInError.message ?? t('login.error.signInFailed');
 				return;
 			}
 
@@ -94,7 +95,7 @@
 
 			await finishAuth();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Giriş başarısız';
+			error = err instanceof Error ? err.message : t('login.error.signInFailed');
 		} finally {
 			loading = false;
 		}
@@ -110,7 +111,7 @@
 			await clearSessionCache();
 			await goto('/');
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Organizasyon seçilemedi';
+			error = err instanceof Error ? err.message : t('login.error.orgSelectFailed');
 		} finally {
 			loading = false;
 		}
@@ -121,7 +122,7 @@
 		const name = orgName.trim();
 		const slug = (orgSlug.trim() || slugifyOrganizationName(name)).slice(0, 48);
 		if (!name || !slug) {
-			error = 'Organizasyon adı gerekli';
+			error = t('login.error.orgNameRequired');
 			return;
 		}
 		loading = true;
@@ -132,7 +133,7 @@
 			await clearSessionCache();
 			await goto('/');
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Organizasyon oluşturulamadı';
+			error = err instanceof Error ? err.message : t('login.error.orgCreateFailed');
 		} finally {
 			loading = false;
 		}
@@ -140,27 +141,27 @@
 
 	const title = $derived(
 		step === 'twoFactor'
-			? 'İki adımlı doğrulama'
+			? t('login.title.twoFactor')
 			: step === 'orgPick'
-				? 'Organizasyon seçin'
+				? t('login.title.chooseOrg')
 				: step === 'orgCreate'
-					? 'İlk organizasyonunuz'
-					: 'Giriş yap'
+					? t('login.title.createOrg')
+					: t('login.title.signIn')
 	);
 
 	const subtitle = $derived(
 		step === 'twoFactor'
-			? 'Authenticator uygulamanızdaki 6 haneli kodu girin.'
+			? t('login.desc.twoFactor')
 			: step === 'orgPick'
-				? 'Devam etmek için bir çalışma alanı seçin.'
+				? t('login.desc.chooseOrg')
 				: step === 'orgCreate'
-					? 'Henüz bir organizasyonunuz yok. İlk tenant kaydını oluşturun.'
-					: 'Veri Maya hesabınızla devam edin.'
+					? t('login.desc.createOrg')
+					: t('login.desc.signIn')
 	);
 </script>
 
 <svelte:head>
-	<title>Giriş · Veri Maya</title>
+	<title>{t('login.documentTitle')}</title>
 </svelte:head>
 
 <div class="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-12">
@@ -202,13 +203,13 @@
 					{/if}
 
 					<Button type="submit" class="w-full" disabled={loading || !selectedOrgId}>
-						{loading ? 'Bekleyin…' : 'Devam et'}
+						{loading ? t('common.wait') : 'Devam et'}
 					</Button>
 				</form>
 			{:else if step === 'orgCreate'}
 				<form class="mt-6 space-y-4" onsubmit={submitOrgCreate}>
 					<div>
-						<label class={labelClass} for="org-name">Organizasyon adı</label>
+						<label class={labelClass} for="org-name">{t('login.orgName')}</label>
 						<input
 							id="org-name"
 							type="text"
@@ -218,11 +219,11 @@
 								if (!orgSlug.trim()) orgSlug = slugifyOrganizationName(orgName);
 							}}
 							class={fieldClass}
-							placeholder="Örn. Demo Klinik"
+							placeholder={t('login.orgNamePlaceholder')}
 						/>
 					</div>
 					<div>
-						<label class={labelClass} for="org-slug">Kısa ad (slug)</label>
+						<label class={labelClass} for="org-slug">{t('login.orgSlug')}</label>
 						<input
 							id="org-slug"
 							type="text"
@@ -238,7 +239,7 @@
 					{/if}
 
 					<Button type="submit" class="w-full" disabled={loading}>
-						{loading ? 'Bekleyin…' : 'Organizasyonu oluştur'}
+						{loading ? t('common.wait') : t('login.createOrg')}
 					</Button>
 				</form>
 			{:else}
@@ -256,7 +257,7 @@
 							/>
 						</div>
 						<div>
-							<label class={labelClass} for="password">Şifre</label>
+							<label class={labelClass} for="password">{t('login.password')}</label>
 							<input
 								id="password"
 								type="password"
@@ -268,7 +269,7 @@
 						</div>
 					{:else}
 						<div>
-							<label class={labelClass} for="totp">Doğrulama kodu</label>
+							<label class={labelClass} for="totp">{t('login.totp')}</label>
 							<input
 								id="totp"
 								type="text"
@@ -287,7 +288,11 @@
 					{/if}
 
 					<Button type="submit" class="w-full" disabled={loading}>
-						{loading ? 'Bekleyin…' : step === 'twoFactor' ? 'Doğrula' : 'Giriş yap'}
+						{loading
+							? t('common.wait')
+							: step === 'twoFactor'
+								? t('login.verify')
+								: t('login.submit')}
 					</Button>
 
 					{#if step === 'twoFactor'}
@@ -302,7 +307,7 @@
 								error = null;
 							}}
 						>
-							Geri dön
+							{t('login.back')}
 						</Button>
 					{/if}
 				</form>

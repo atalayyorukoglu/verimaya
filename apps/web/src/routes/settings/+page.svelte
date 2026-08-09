@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Building2 from '@lucide/svelte/icons/building-2';
 	import FolderTree from '@lucide/svelte/icons/folder-tree';
@@ -26,32 +27,32 @@
 
 	type Section = { label: string; cards: Card[] };
 
-	const sections: Section[] = [
+	const sections = $derived<Section[]>([
 		{
 			label: 'Organizasyon',
 			cards: [
 				{
 					href: '/settings/organization',
-					title: 'Organizasyon',
-					description: 'Firma adı, baz para birimi ve bölüm etiketleri.',
+					title: t('settings.organization.title'),
+					description: t('settings.nav.org.description'),
 					icon: Building2
 				},
 				{
 					href: '/settings/team',
 					title: 'Ekip',
-					description: 'Üyeler ve roller.',
+					description: t('settings.nav.team.description'),
 					icon: Users
 				},
 				{
 					href: '/settings/access',
-					title: 'Erişim',
+					title: t('settings.nav.access.title'),
 					description: 'Rol → izin matrisi (demo, salt okunur).',
 					icon: Lock
 				},
 				{
 					href: '/settings/audit',
-					title: 'Denetim kaydı',
-					description: 'Kim ne yaptı — operasyon geçmişi.',
+					title: t('settings.nav.audit.title'),
+					description: t('settings.nav.audit.description'),
 					icon: ScrollText
 				}
 			]
@@ -62,24 +63,24 @@
 				{
 					href: '/settings/categories',
 					title: 'Kategoriler',
-					description: 'Gelir/gider kategorileri, alt kategoriler ve sıra.',
+					description: t('settings.nav.categories.description'),
 					icon: FolderTree
 				},
 				{
 					href: '/settings/appointment-types',
-					title: 'Randevu ayarları',
-					description: 'Randevu tipleri (checklist şablonları Faz 1).',
+					title: t('settings.nav.appointmentTypes.title'),
+					description: t('settings.nav.appointmentTypes.description'),
 					icon: CalendarDays
 				},
 				{
 					href: '/settings/contact-types',
-					title: 'Kişi türleri',
+					title: t('settings.nav.contactTypes.title'),
 					description: 'Otel, klinik, transfer, hasta…',
 					icon: Contact
 				},
 				{
 					href: '/settings/import-export',
-					title: 'İçe / dışa aktar',
+					title: t('settings.nav.importExport.title'),
 					description: 'Toplu import-export (ETL).',
 					icon: FileSpreadsheet,
 					badge: 'Faz 8'
@@ -87,12 +88,12 @@
 			]
 		},
 		{
-			label: 'Bağlantılar',
+			label: t('settings.nav.connections'),
 			cards: [
 				{
 					href: '/settings/connections/ghl',
 					title: 'GHL',
-					description: 'GoHighLevel lead/iletişim senkronu.',
+					description: t('settings.nav.ghl.description'),
 					icon: Link2
 				},
 				{
@@ -104,7 +105,7 @@
 				{
 					href: '/settings/connections/api',
 					title: 'n8n / API',
-					description: 'API anahtarları ve giden webhook’lar.',
+					description: t('settings.nav.api.description'),
 					icon: Webhook
 				}
 			]
@@ -114,39 +115,36 @@
 			cards: [
 				{
 					href: '/settings/ai',
-					title: 'AI ayarları',
-					description: 'WhatsApp işlem aktarımı prompt’u.',
+					title: t('settings.nav.ai.title'),
+					description: t('settings.nav.ai.description'),
 					icon: Bot,
 					badge: 'Demo'
 				},
 				{
 					href: '/settings/ai-learning',
-					title: 'AI öğrenme raporu',
-					description: 'İnsan düzeltmeleri — hangi alanda ne sıklıkla.',
+					title: t('settings.nav.aiLearning.title'),
+					description: t('settings.nav.aiLearning.description'),
 					icon: ChartColumn,
 					badge: 'Demo'
 				},
 				{
 					href: '/settings/data-quality',
 					title: 'Veri kalitesi',
-					description: 'İşlem özeti, eksik alanlar; kişi/hasta çift kayıt linkleri.',
+					description: t('settings.nav.dataQuality.description'),
 					icon: ShieldCheck,
 					badge: 'Demo'
 				}
 			]
 		}
-	];
+	]);
 </script>
 
 <svelte:head>
-	<title>Ayarlar · Veri Maya</title>
+	<title>{t('settings.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
-	<PageHeader
-		title="Ayarlar"
-		description="Organizasyon, bağlantılar, finans kategorileri ve tercihler."
-	/>
+	<PageHeader title={t('settings.title')} description={t('settings.description')} />
 
 	<div class="space-y-8">
 		{#each sections as section (section.label)}
