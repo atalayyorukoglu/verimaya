@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CryptoService } from '../../common/crypto.service';
 import type { OAuthStateUsedStore } from '../oauth-state-used.store';
-import { GhlOAuthStateService } from './ghl-oauth.state';
+import { AdsOAuthStateService } from './ads-oauth.state';
 
 function memoryUsedStore(): OAuthStateUsedStore {
 	const used = new Set<string>();
@@ -24,42 +24,33 @@ function errorCode(err: unknown): string | undefined {
 	return body.error?.code;
 }
 
-describe('GhlOAuthStateService', () => {
+describe('AdsOAuthStateService', () => {
 	beforeEach(() => {
 		process.env.CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('hex');
 	});
 
 	it('decodes a valid state once', async () => {
-		const svc = new GhlOAuthStateService(new CryptoService(), memoryUsedStore());
-		const token = svc.encodeState({ tenantId: 'tenant-aaa' });
-		const payload = await svc.decodeState(token);
+		const svc = new AdsOAuthStateService(new CryptoService(), memoryUsedStore());
+		const token = svc.encodeState({ tenantId: 'tenant-aaa', provider: 'meta' });
+		const payload = await svc.decodeState(token, 'meta');
 		expect(payload.tenantId).toBe('tenant-aaa');
-		expect(payload.provider).toBe('ghl');
+		expect(payload.provider).toBe('meta');
 		expect(payload.jti.length).toBeGreaterThan(0);
 	});
 
 	it('rejects the same state on second decode (replay)', async () => {
-		const svc = new GhlOAuthStateService(new CryptoService(), memoryUsedStore());
-		const token = svc.encodeState({ tenantId: 'tenant-aaa' });
-		await svc.decodeState(token);
-		await expect(svc.decodeState(token)).rejects.toSatisfy(
+		const svc = new AdsOAuthStateService(new CryptoService(), memoryUsedStore());
+		const token = svc.encodeState({ tenantId: 'tenant-aaa', provider: 'meta' });
+		await svc.decodeState(token, 'meta');
+		await expect(svc.decodeState(token, 'meta')).rejects.toSatisfy(
 			(err: unknown) => errorCode(err) === 'oauth_state_replayed'
-		);
-	});
-
-	it('rejects tampered state', async () => {
-		const svc = new GhlOAuthStateService(new CryptoService(), memoryUsedStore());
-		const token = svc.encodeState({ tenantId: 'tenant-aaa' });
-		const mangled = `${token.slice(0, -4)}xxxx`;
-		await expect(svc.decodeState(mangled)).rejects.toSatisfy(
-			(err: unknown) => errorCode(err) === 'invalid_oauth_state'
 		);
 	});
 
 	it('rejects expired state', async () => {
 		const crypto = new CryptoService();
-		const svc = new GhlOAuthStateService(crypto, memoryUsedStore());
-		const token = svc.encodeState({ tenantId: 'tenant-aaa' });
+		const svc = new AdsOAuthStateService(crypto, memoryUsedStore());
+		const token = svc.encodeState({ tenantId: 'tenant-aaa', provider: 'meta' });
 		const plaintext = crypto.decrypt(Buffer.from(token, 'base64url'));
 		const parsed = JSON.parse(plaintext) as {
 			tenantId: string;
@@ -69,25 +60,24 @@ describe('GhlOAuthStateService', () => {
 		};
 		parsed.exp = Date.now() - 1;
 		const expired = crypto.encrypt(JSON.stringify(parsed)).toString('base64url');
-		await expect(svc.decodeState(expired)).rejects.toSatisfy(
+		await expect(svc.decodeState(expired, 'meta')).rejects.toSatisfy(
 			(err: unknown) => errorCode(err) === 'oauth_state_expired'
 		);
 	});
 
 	it('rejects provider mismatch', async () => {
-		const crypto = new CryptoService();
-		const svc = new GhlOAuthStateService(crypto, memoryUsedStore());
-		const token = svc.encodeState({ tenantId: 'tenant-aaa' });
-		const plaintext = crypto.decrypt(Buffer.from(token, 'base64url'));
-		const parsed = JSON.parse(plaintext) as {
-			tenantId: string;
-			provider: string;
-			exp: number;
-			jti: string;
-		};
-		parsed.provider = 'meta';
-		const mismatched = crypto.encrypt(JSON.stringify(parsed)).toString('base64url');
-		await expect(svc.decodeState(mismatched)).rejects.toSatisfy(
+		const svc = new AdsOAuthStateService(new CryptoService(), memoryUsedStore());
+		const token = svc.encodeState({ tenantId: 'tenant-aaa', provider: 'meta' });
+		await expect(svc.decodeState(token, 'google')).rejects.toSatisfy(
+			(err: unknown) => errorCode(err) === 'invalid_oauth_state'
+		);
+	});
+
+	it('rejects tampered / undecryptable state', async () => {
+		const svc = new AdsOAuthStateService(new CryptoService(), memoryUsedStore());
+		const token = svc.encodeState({ tenantId: 'tenant-aaa', provider: 'meta' });
+		const mangled = `${token.slice(0, -4)}xxxx`;
+		await expect(svc.decodeState(mangled, 'meta')).rejects.toSatisfy(
 			(err: unknown) => errorCode(err) === 'invalid_oauth_state'
 		);
 	});

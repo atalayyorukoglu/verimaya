@@ -208,7 +208,7 @@ export class AdsOAuthCallbackController {
 	) {
 		const provider = this.registry.parseProvider(providerParam);
 		const query = adOAuthCallbackQuery.parse({ code, state });
-		const payload = this.oauthState.decodeState(query.state, provider);
+		const payload = await this.oauthState.decodeState(query.state, provider);
 		const redirectUri = redirectUriFor(provider);
 		const { secret } = await this.registry.get(provider).exchangeCode({
 			code: query.code,

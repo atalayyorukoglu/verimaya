@@ -788,7 +788,13 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
     listesi bilinçli olarak dar bırakıldı (`Content-Type`, `Authorization`, `Idempotency-Key`,
     `X-Admin-Queue-Token`); gereksiz genişletme sadece saldırı yüzeyi ekler. Panelden webhook
     çağrısı yapılması gerekirse madde yeniden açılır.
-- **AUDIT-F09-14** OAuth state TTL düşür (10 dk → 60 sn) + one-time-use. **(S–M)**
+- **AUDIT-F09-14** OAuth state TTL düşür (10 dk → 5 dk) + one-time-use. **(S–M)** ✅
+  - **Görüş (2026-08-09):** TTL **5 dk** (300 sn) — 60 sn değil. Gerçek OAuth’ta hesap
+    seçimi + izin + bazen giriş/2FA 60 sn’yi rutin aşar; asıl güvenlik kazancı
+    **tek kullanımlık `jti`** (`oauth:state:used:<jti>`, Redis `SET NX PX`). 10→5 dk
+    pencereyi yarıya indirir, akışı kırmaz. Redis erişilemezse **fail-closed**
+    (`oauth_state_store_unavailable`) — replay koruması doğrulanamıyorsa callback
+    reddedilir. Claim, `exchangeCode` öncesi (başarısız takas da state’i yakar).
 - **AUDIT-F09-15** Better-auth şema upgrade yolu `docs/DEPLOY-COOLIFY.md`'ye yaz. **(S)** ✅
   - **Görüş (2026-08-09):** `DEPLOY-COOLIFY.md` içine “better-auth sürüm yükseltme” runbook
     eklendi (yedek→CLI generate→elle SQL/`db:generate`→doğrulama→restore). CLI gerçek:

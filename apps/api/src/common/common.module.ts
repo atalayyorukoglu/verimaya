@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ApiKeyGuard } from '../api-keys/api-key.guard';
 import { AuthModule } from '../auth/auth.module';
 import { SessionGuard } from '../auth/session.guard';
+import { OAuthStateUsedStore } from '../integrations/oauth-state-used.store';
 import { ActiveOrgGuard } from './active-org.guard';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { CryptoService } from './crypto.service';
@@ -17,7 +18,8 @@ import { OrgPermissionGuard } from './org-permission.guard';
 		AuthOrApiKeyGuard,
 		CryptoService,
 		IdempotencyService,
-		OrgPermissionGuard
+		OrgPermissionGuard,
+		OAuthStateUsedStore
 	],
 	exports: [
 		ActiveOrgGuard,
@@ -26,7 +28,8 @@ import { OrgPermissionGuard } from './org-permission.guard';
 		AuthOrApiKeyGuard,
 		CryptoService,
 		IdempotencyService,
-		OrgPermissionGuard
+		OrgPermissionGuard,
+		OAuthStateUsedStore
 	]
 })
 export class CommonModule {}

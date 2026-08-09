@@ -137,7 +137,7 @@ export class GhlOAuthCallbackController {
 		@Query('state') state?: string
 	) {
 		const query = ghlOAuthCallbackQuery.parse({ code, state });
-		const payload = this.oauthState.decodeState(query.state);
+		const payload = await this.oauthState.decodeState(query.state);
 		const redirectUri = ghlCallbackRedirectUri();
 		const { secret } = await this.oauth.exchangeCode({
 			code: query.code,
