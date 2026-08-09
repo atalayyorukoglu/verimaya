@@ -25,6 +25,9 @@
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { t } from '$lib/i18n/locale.svelte';
+	import { formatDate, formatMoney } from '$lib/format';
+	import { type DeleteConfirmPhase, runConfirmedDelete } from '$lib/components/delete-confirm-flow';
 
 	let {
 		open = $bindable(false),
@@ -33,7 +36,8 @@
 		defaultPatientId = null,
 		saving = false,
 		error = null,
-		onsubmit
+		onsubmit,
+		ondelete
 	}: {
 		open?: boolean;
 		transaction?: Transaction | null;
@@ -42,6 +46,7 @@
 		saving?: boolean;
 		error?: string | null;
 		onsubmit: (data: TransactionCreate | TransactionUpdate) => void | Promise<void>;
+		ondelete?: () => void | Promise<void>;
 	} = $props();
 
 	const kinds = Object.keys(transactionKindLabels) as TransactionKind[];
@@ -88,6 +93,7 @@
 	let contact_label = $state('');
 	let payment_method = $state('');
 	let description = $state('');
+	let deletePhase = $state<DeleteConfirmPhase>('form');
 
 	const categoryOptions = $derived(
 		(catsQuery.data?.items ?? [])
@@ -100,7 +106,10 @@
 	const needsFx = $derived(currency !== tenantBase);
 
 	$effect(() => {
-		if (!open) return;
+		if (!open) {
+			deletePhase = 'form';
+			return;
+		}
 		kind = transaction?.kind ?? 'income';
 		title = transaction?.title ?? '';
 		subtitle = transaction?.subtitle ?? '';
@@ -118,12 +127,27 @@
 		contact_label = transaction?.contact_label ?? '';
 		payment_method = transaction?.payment_method ?? '';
 		description = transaction?.description ?? '';
+		deletePhase = 'form';
 	});
 
 	const isEdit = $derived(!!transaction);
+	const confirmingDelete = $derived(deletePhase === 'confirm');
+
+	const deleteDetail = $derived.by(() => {
+		if (!transaction) return '';
+		const label = transaction.category
+			? `${transaction.title} (${transaction.category})`
+			: transaction.title;
+		return `${label} · ${formatMoney(transaction.amount, transaction.currency)} · ${formatDate(transaction.occurred_on)}`;
+	});
+
+	const dialogTitle = $derived(
+		confirmingDelete ? t('finance.deleteConfirmTitle') : isEdit ? 'İşlemi düzenle' : 'Yeni işlem'
+	);
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
+		if (confirmingDelete) return;
 		const amount = Math.round(Number.parseFloat(amountMajor.replace(',', '.')) * 100);
 		if (!Number.isFinite(amount) || amount <= 0) return;
 
@@ -177,201 +201,255 @@
 		};
 		await onsubmit(payload);
 	}
+
+	function requestDelete() {
+		deletePhase = 'confirm';
+	}
+
+	function cancelDelete() {
+		deletePhase = 'form';
+	}
+
+	async function confirmDelete() {
+		if (!ondelete) return;
+		await runConfirmedDelete(deletePhase, () => Promise.resolve(ondelete()));
+	}
 </script>
 
 <Dialog
 	bind:open
-	title={isEdit ? 'İşlemi düzenle' : 'Yeni işlem'}
-	description="Tutar işlem para biriminde; yabancıysa baz ({tenantBase}) karşılığı zorunlu."
+	title={dialogTitle}
+	description={confirmingDelete
+		? undefined
+		: `Tutar işlem para biriminde; yabancıysa baz (${tenantBase}) karşılığı zorunlu.`}
 >
-	<form id="tx-form" class="space-y-3" onsubmit={handleSubmit}>
-		<div class="grid gap-3 sm:grid-cols-2">
-			<div>
-				<label class={labelClass} for="tx-kind">Tür</label>
-				<select id="tx-kind" class={fieldClass} bind:value={kind}>
-					{#each kinds as k (k)}
-						<option value={k}>{transactionKindLabels[k]}</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label class={labelClass} for="tx-status">Durum</label>
-				<select id="tx-status" class={fieldClass} bind:value={status}>
-					{#each statuses as s (s)}
-						<option value={s}>{transactionStatusLabels[s]}</option>
-					{/each}
-				</select>
-			</div>
-		</div>
-		<div>
-			<label class={labelClass} for="tx-title">Başlık</label>
-			<input id="tx-title" class={fieldClass} bind:value={title} required maxlength={255} />
-		</div>
-		<div class="grid gap-3 sm:grid-cols-3">
-			<div>
-				<label class={labelClass} for="tx-currency">Para birimi</label>
-				<select id="tx-currency" class={fieldClass} bind:value={currency}>
-					{#each SUPPORTED_CURRENCIES as c (c)}
-						<option value={c}>{c}</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label class={labelClass} for="tx-amount">Tutar ({currency})</label>
-				<input
-					id="tx-amount"
-					class={fieldClass}
-					bind:value={amountMajor}
-					inputmode="decimal"
-					required
-					placeholder="0,00"
-				/>
-			</div>
-			<div>
-				<label class={labelClass} for="tx-date">Tarih</label>
-				<input id="tx-date" class={fieldClass} type="date" bind:value={occurred_on} required />
-			</div>
-		</div>
-		{#if needsFx}
-			<div
-				class="grid gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2"
+	{#if confirmingDelete}
+		<div class="space-y-3">
+			<p class="text-sm text-text">{t('finance.deleteConfirmBody')}</p>
+			<p
+				class="rounded-[6px] border border-danger/30 bg-danger/10 px-3 py-2 text-sm font-medium text-text"
 			>
+				{deleteDetail}
+			</p>
+			{#if error}
+				<p class="text-sm text-danger">{error}</p>
+			{/if}
+		</div>
+	{:else}
+		<form id="tx-form" class="space-y-3" onsubmit={handleSubmit}>
+			<div class="grid gap-3 sm:grid-cols-2">
 				<div>
-					<label class={labelClass} for="tx-base">Baz tutar ({tenantBase})</label>
+					<label class={labelClass} for="tx-kind">Tür</label>
+					<select id="tx-kind" class={fieldClass} bind:value={kind}>
+						{#each kinds as k (k)}
+							<option value={k}>{transactionKindLabels[k]}</option>
+						{/each}
+					</select>
+				</div>
+				<div>
+					<label class={labelClass} for="tx-status">Durum</label>
+					<select id="tx-status" class={fieldClass} bind:value={status}>
+						{#each statuses as s (s)}
+							<option value={s}>{transactionStatusLabels[s]}</option>
+						{/each}
+					</select>
+				</div>
+			</div>
+			<div>
+				<label class={labelClass} for="tx-title">Başlık</label>
+				<input id="tx-title" class={fieldClass} bind:value={title} required maxlength={255} />
+			</div>
+			<div class="grid gap-3 sm:grid-cols-3">
+				<div>
+					<label class={labelClass} for="tx-currency">Para birimi</label>
+					<select id="tx-currency" class={fieldClass} bind:value={currency}>
+						{#each SUPPORTED_CURRENCIES as c (c)}
+							<option value={c}>{c}</option>
+						{/each}
+					</select>
+				</div>
+				<div>
+					<label class={labelClass} for="tx-amount">Tutar ({currency})</label>
 					<input
-						id="tx-base"
+						id="tx-amount"
 						class={fieldClass}
-						bind:value={amountBaseMajor}
+						bind:value={amountMajor}
 						inputmode="decimal"
 						required
 						placeholder="0,00"
 					/>
-					<p class="mt-1 text-[11px] text-text-faint">Kayıt anı kuru — sonradan değişmez.</p>
 				</div>
 				<div>
-					<label class={labelClass} for="tx-fx">Kur (1 {currency} = ? {tenantBase})</label>
+					<label class={labelClass} for="tx-date">Tarih</label>
+					<input id="tx-date" class={fieldClass} type="date" bind:value={occurred_on} required />
+				</div>
+			</div>
+			{#if needsFx}
+				<div
+					class="grid gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2"
+				>
+					<div>
+						<label class={labelClass} for="tx-base">Baz tutar ({tenantBase})</label>
+						<input
+							id="tx-base"
+							class={fieldClass}
+							bind:value={amountBaseMajor}
+							inputmode="decimal"
+							required
+							placeholder="0,00"
+						/>
+						<p class="mt-1 text-[11px] text-text-faint">Kayıt anı kuru — sonradan değişmez.</p>
+					</div>
+					<div>
+						<label class={labelClass} for="tx-fx">Kur (1 {currency} = ? {tenantBase})</label>
+						<input
+							id="tx-fx"
+							class={fieldClass}
+							bind:value={fxRate}
+							inputmode="decimal"
+							placeholder="örn. 43"
+						/>
+					</div>
+				</div>
+			{/if}
+			{#if status === 'partial'}
+				<div>
+					<label class={labelClass} for="tx-paid">Ödenen tutar ({currency})</label>
 					<input
-						id="tx-fx"
+						id="tx-paid"
 						class={fieldClass}
-						bind:value={fxRate}
+						bind:value={paidMajor}
 						inputmode="decimal"
-						placeholder="örn. 43"
+						required
+						placeholder="0,00"
+					/>
+				</div>
+			{/if}
+			<div class="grid gap-3 sm:grid-cols-2">
+				<div>
+					<label class={labelClass} for="tx-category">Kategori</label>
+					{#if categoryOptions.length > 0}
+						<select id="tx-category" class={fieldClass} bind:value={category}>
+							<option value="">—</option>
+							{#each categoryOptions as c (c.id)}
+								<option value={c.name}>{c.name}</option>
+							{/each}
+						</select>
+					{:else}
+						<input id="tx-category" class={fieldClass} bind:value={category} maxlength={128} />
+					{/if}
+				</div>
+				<div>
+					<label class={labelClass} for="tx-subtitle">Alt kategori</label>
+					{#if subtitleOptions.length > 0}
+						<select id="tx-subtitle" class={fieldClass} bind:value={subtitle}>
+							<option value="">—</option>
+							{#each subtitleOptions as s (s)}
+								<option value={s}>{s}</option>
+							{/each}
+						</select>
+					{:else}
+						<input id="tx-subtitle" class={fieldClass} bind:value={subtitle} maxlength={255} />
+					{/if}
+				</div>
+			</div>
+			<div class="grid gap-3 sm:grid-cols-2">
+				<div>
+					<label class={labelClass} for="tx-contact">Kişi / firma</label>
+					<select
+						id="tx-contact"
+						class={fieldClass}
+						bind:value={contact_id}
+						onchange={() => {
+							if (!contact_id) return;
+							const c = contactsQuery.data?.items.find((x) => x.id === contact_id);
+							if (c) contact_label = c.display_name;
+						}}
+					>
+						<option value="">— serbest etiket —</option>
+						{#each contactsQuery.data?.items ?? [] as c (c.id)}
+							<option value={c.id}>{c.display_name} ({c.contact_type_name})</option>
+						{/each}
+					</select>
+				</div>
+				<div>
+					<label class={labelClass} for="tx-contact-label">Etiket (yedek)</label>
+					<input
+						id="tx-contact-label"
+						class={fieldClass}
+						bind:value={contact_label}
+						maxlength={255}
+						placeholder="Dizinde yoksa yazın"
+						disabled={!!contact_id}
 					/>
 				</div>
 			</div>
-		{/if}
-		{#if status === 'partial'}
 			<div>
-				<label class={labelClass} for="tx-paid">Ödenen tutar ({currency})</label>
-				<input
-					id="tx-paid"
-					class={fieldClass}
-					bind:value={paidMajor}
-					inputmode="decimal"
-					required
-					placeholder="0,00"
-				/>
-			</div>
-		{/if}
-		<div class="grid gap-3 sm:grid-cols-2">
-			<div>
-				<label class={labelClass} for="tx-category">Kategori</label>
-				{#if categoryOptions.length > 0}
-					<select id="tx-category" class={fieldClass} bind:value={category}>
-						<option value="">—</option>
-						{#each categoryOptions as c (c.id)}
-							<option value={c.name}>{c.name}</option>
-						{/each}
-					</select>
-				{:else}
-					<input id="tx-category" class={fieldClass} bind:value={category} maxlength={128} />
-				{/if}
-			</div>
-			<div>
-				<label class={labelClass} for="tx-subtitle">Alt kategori</label>
-				{#if subtitleOptions.length > 0}
-					<select id="tx-subtitle" class={fieldClass} bind:value={subtitle}>
-						<option value="">—</option>
-						{#each subtitleOptions as s (s)}
-							<option value={s}>{s}</option>
-						{/each}
-					</select>
-				{:else}
-					<input id="tx-subtitle" class={fieldClass} bind:value={subtitle} maxlength={255} />
-				{/if}
-			</div>
-		</div>
-		<div class="grid gap-3 sm:grid-cols-2">
-			<div>
-				<label class={labelClass} for="tx-contact">Kişi / firma</label>
-				<select
-					id="tx-contact"
-					class={fieldClass}
-					bind:value={contact_id}
-					onchange={() => {
-						if (!contact_id) return;
-						const c = contactsQuery.data?.items.find((x) => x.id === contact_id);
-						if (c) contact_label = c.display_name;
-					}}
-				>
-					<option value="">— serbest etiket —</option>
-					{#each contactsQuery.data?.items ?? [] as c (c.id)}
-						<option value={c.id}>{c.display_name} ({c.contact_type_name})</option>
+				<label class={labelClass} for="tx-invoice">Fatura</label>
+				<select id="tx-invoice" class={fieldClass} bind:value={invoice_status}>
+					{#each invoiceStatuses as s (s)}
+						<option value={s}>{invoiceStatusLabels[s]}</option>
 					{/each}
 				</select>
 			</div>
 			<div>
-				<label class={labelClass} for="tx-contact-label">Etiket (yedek)</label>
-				<input
-					id="tx-contact-label"
-					class={fieldClass}
-					bind:value={contact_label}
-					maxlength={255}
-					placeholder="Dizinde yoksa yazın"
-					disabled={!!contact_id}
-				/>
+				<label class={labelClass} for="tx-method">Ödeme yöntemi</label>
+				<input id="tx-method" class={fieldClass} bind:value={payment_method} maxlength={64} />
 			</div>
-		</div>
-		<div>
-			<label class={labelClass} for="tx-invoice">Fatura</label>
-			<select id="tx-invoice" class={fieldClass} bind:value={invoice_status}>
-				{#each invoiceStatuses as s (s)}
-					<option value={s}>{invoiceStatusLabels[s]}</option>
-				{/each}
-			</select>
-		</div>
-		<div>
-			<label class={labelClass} for="tx-method">Ödeme yöntemi</label>
-			<input id="tx-method" class={fieldClass} bind:value={payment_method} maxlength={64} />
-		</div>
-		<div>
-			<label class={labelClass} for="tx-patient">Hasta (opsiyonel)</label>
-			<select id="tx-patient" class={fieldClass} bind:value={patient_id}>
-				<option value="">—</option>
-				{#each patients as p (p.id)}
-					<option value={p.id}>{p.full_name}</option>
-				{/each}
-			</select>
-		</div>
-		<div>
-			<label class={labelClass} for="tx-desc">Açıklama</label>
-			<textarea id="tx-desc" class={textareaClass} bind:value={description} maxlength={8000}
-			></textarea>
-		</div>
-		{#if error}
-			<p class="text-sm text-danger">{error}</p>
-		{/if}
-	</form>
+			<div>
+				<label class={labelClass} for="tx-patient">Hasta (opsiyonel)</label>
+				<select id="tx-patient" class={fieldClass} bind:value={patient_id}>
+					<option value="">—</option>
+					{#each patients as p (p.id)}
+						<option value={p.id}>{p.full_name}</option>
+					{/each}
+				</select>
+			</div>
+			<div>
+				<label class={labelClass} for="tx-desc">Açıklama</label>
+				<textarea id="tx-desc" class={textareaClass} bind:value={description} maxlength={8000}
+				></textarea>
+			</div>
+			{#if error}
+				<p class="text-sm text-danger">{error}</p>
+			{/if}
+		</form>
+	{/if}
 	{#snippet footer()}
-		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
-			>İptal</Button
-		>
-		<Button
-			type="submit"
-			form="tx-form"
-			disabled={saving || !title.trim() || !amountMajor || (needsFx && !amountBaseMajor)}
-		>
-			{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
-		</Button>
+		{#if confirmingDelete}
+			<Button variant="ghost" type="button" onclick={cancelDelete} disabled={saving}>
+				{t('finance.deleteBack')}
+			</Button>
+			<Button
+				variant="destructive"
+				type="button"
+				onclick={confirmDelete}
+				disabled={saving || !ondelete}
+			>
+				{saving ? t('finance.deleting') : t('finance.deleteConfirmAction')}
+			</Button>
+		{:else}
+			{#if isEdit && ondelete}
+				<Button
+					variant="outline"
+					type="button"
+					class="mr-auto text-danger hover:bg-danger/10 hover:text-danger"
+					onclick={requestDelete}
+					disabled={saving}
+				>
+					{t('finance.delete')}
+				</Button>
+			{/if}
+			<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
+				>İptal</Button
+			>
+			<Button
+				type="submit"
+				form="tx-form"
+				disabled={saving || !title.trim() || !amountMajor || (needsFx && !amountBaseMajor)}
+			>
+				{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
+			</Button>
+		{/if}
 	{/snippet}
 </Dialog>

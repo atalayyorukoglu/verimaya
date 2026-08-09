@@ -14,6 +14,9 @@
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { t } from '$lib/i18n/locale.svelte';
+	import { formatDateTime } from '$lib/format';
+	import { type DeleteConfirmPhase, runConfirmedDelete } from '$lib/components/delete-confirm-flow';
 
 	let {
 		open = $bindable(false),
@@ -22,7 +25,8 @@
 		defaultPatientId = null,
 		saving = false,
 		error = null,
-		onsubmit
+		onsubmit,
+		ondelete
 	}: {
 		open?: boolean;
 		appointment?: Appointment | null;
@@ -31,6 +35,7 @@
 		saving?: boolean;
 		error?: string | null;
 		onsubmit: (data: AppointmentCreate | AppointmentUpdate) => void | Promise<void>;
+		ondelete?: () => void | Promise<void>;
 	} = $props();
 
 	const statuses = Object.keys(appointmentStatusLabels) as AppointmentStatus[];
@@ -71,6 +76,7 @@
 	let transfer_contact_id = $state('');
 	let transfer_note = $state('');
 	let notes = $state('');
+	let deletePhase = $state<DeleteConfirmPhase>('form');
 
 	function toLocalInput(iso: string | null | undefined): string {
 		if (!iso) return '';
@@ -84,7 +90,10 @@
 	}
 
 	$effect(() => {
-		if (!open) return;
+		if (!open) {
+			deletePhase = 'form';
+			return;
+		}
 		patient_id = appointment?.patient_id ?? defaultPatientId ?? patients[0]?.id ?? '';
 		title = appointment?.title ?? '';
 		appointment_type = appointment?.appointment_type ?? typeNames[0] ?? 'Konsültasyon';
@@ -100,12 +109,29 @@
 		transfer_contact_id = appointment?.transfer_contact_id ?? '';
 		transfer_note = appointment?.transfer_note ?? '';
 		notes = appointment?.notes ?? '';
+		deletePhase = 'form';
 	});
 
 	const isEdit = $derived(!!appointment);
+	const confirmingDelete = $derived(deletePhase === 'confirm');
+
+	const deleteDetail = $derived.by(() => {
+		if (!appointment) return '';
+		const patientName = appointment.patient_display_name ?? '—';
+		return `${patientName} · ${formatDateTime(appointment.starts_at)}`;
+	});
+
+	const dialogTitle = $derived(
+		confirmingDelete
+			? t('appointments.deleteConfirmTitle')
+			: isEdit
+				? 'Randevuyu düzenle'
+				: 'Yeni randevu'
+	);
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
+		if (confirmingDelete) return;
 		if (!patient_id || !startsLocal) return;
 		const clinic = contacts.find((c) => c.id === clinic_contact_id);
 		const hotel = contacts.find((c) => c.id === hotel_contact_id);
@@ -126,116 +152,179 @@
 		};
 		await onsubmit(payload);
 	}
+
+	function requestDelete() {
+		deletePhase = 'confirm';
+	}
+
+	function cancelDelete() {
+		deletePhase = 'form';
+	}
+
+	async function confirmDelete() {
+		if (!ondelete) return;
+		await runConfirmedDelete(deletePhase, () => Promise.resolve(ondelete()));
+	}
 </script>
 
 <Dialog
 	bind:open
-	title={isEdit ? 'Randevuyu düzenle' : 'Yeni randevu'}
-	description="Hasta seçimi ve tarih zorunlu. Klinik / otel / transfer kişilerden seçilir."
+	title={dialogTitle}
+	description={confirmingDelete
+		? undefined
+		: 'Hasta seçimi ve tarih zorunlu. Klinik / otel / transfer kişilerden seçilir.'}
 >
-	<form id="appointment-form" class="space-y-3" onsubmit={handleSubmit}>
-		<div>
-			<label class={labelClass} for="appt-patient">Hasta</label>
-			<select id="appt-patient" class={fieldClass} bind:value={patient_id} required>
-				{#if patients.length === 0}
-					<option value="">Hasta yok — önce hasta ekleyin</option>
-				{:else}
-					{#each patients as p (p.id)}
-						<option value={p.id}>{p.full_name}</option>
-					{/each}
-				{/if}
-			</select>
+	{#if confirmingDelete}
+		<div class="space-y-3">
+			<p class="text-sm text-text">{t('appointments.deleteConfirmBody')}</p>
+			<p
+				class="rounded-[6px] border border-danger/30 bg-danger/10 px-3 py-2 text-sm font-medium text-text"
+			>
+				{deleteDetail}
+			</p>
+			{#if error}
+				<p class="text-sm text-danger">{error}</p>
+			{/if}
 		</div>
-		<div>
-			<label class={labelClass} for="appt-title">Başlık</label>
-			<input id="appt-title" class={fieldClass} bind:value={title} maxlength={255} />
-		</div>
-		<div class="grid gap-3 sm:grid-cols-2">
+	{:else}
+		<form id="appointment-form" class="space-y-3" onsubmit={handleSubmit}>
 			<div>
-				<label class={labelClass} for="appt-type">Tür</label>
-				{#if typeNames.length > 0}
-					<select id="appt-type" class={fieldClass} bind:value={appointment_type}>
-						{#each typeNames as t (t)}
-							<option value={t}>{t}</option>
+				<label class={labelClass} for="appt-patient">Hasta</label>
+				<select id="appt-patient" class={fieldClass} bind:value={patient_id} required>
+					{#if patients.length === 0}
+						<option value="">Hasta yok — önce hasta ekleyin</option>
+					{:else}
+						{#each patients as p (p.id)}
+							<option value={p.id}>{p.full_name}</option>
+						{/each}
+					{/if}
+				</select>
+			</div>
+			<div>
+				<label class={labelClass} for="appt-title">Başlık</label>
+				<input id="appt-title" class={fieldClass} bind:value={title} maxlength={255} />
+			</div>
+			<div class="grid gap-3 sm:grid-cols-2">
+				<div>
+					<label class={labelClass} for="appt-type">Tür</label>
+					{#if typeNames.length > 0}
+						<select id="appt-type" class={fieldClass} bind:value={appointment_type}>
+							{#each typeNames as t (t)}
+								<option value={t}>{t}</option>
+							{/each}
+						</select>
+					{:else}
+						<input
+							id="appt-type"
+							class={fieldClass}
+							bind:value={appointment_type}
+							maxlength={128}
+						/>
+					{/if}
+				</div>
+				<div>
+					<label class={labelClass} for="appt-status">Durum</label>
+					<select id="appt-status" class={fieldClass} bind:value={status}>
+						{#each statuses as s (s)}
+							<option value={s}>{appointmentStatusLabels[s]}</option>
 						{/each}
 					</select>
-				{:else}
-					<input id="appt-type" class={fieldClass} bind:value={appointment_type} maxlength={128} />
-				{/if}
+				</div>
+			</div>
+			<div class="grid gap-3 sm:grid-cols-2">
+				<div>
+					<label class={labelClass} for="appt-start">Başlangıç</label>
+					<input
+						id="appt-start"
+						class={fieldClass}
+						type="datetime-local"
+						bind:value={startsLocal}
+						required
+					/>
+				</div>
+				<div>
+					<label class={labelClass} for="appt-end">Bitiş</label>
+					<input id="appt-end" class={fieldClass} type="datetime-local" bind:value={endsLocal} />
+				</div>
+			</div>
+			<div class="grid gap-3 sm:grid-cols-2">
+				<div>
+					<label class={labelClass} for="appt-clinic">Klinik</label>
+					<select id="appt-clinic" class={fieldClass} bind:value={clinic_contact_id}>
+						<option value="">—</option>
+						{#each clinicContacts.length ? clinicContacts : contacts as c (c.id)}
+							<option value={c.id}>{c.display_name}</option>
+						{/each}
+					</select>
+				</div>
+				<div>
+					<label class={labelClass} for="appt-hotel">Otel</label>
+					<select id="appt-hotel" class={fieldClass} bind:value={hotel_contact_id}>
+						<option value="">—</option>
+						{#each hotelContacts.length ? hotelContacts : contacts as c (c.id)}
+							<option value={c.id}>{c.display_name}</option>
+						{/each}
+					</select>
+				</div>
 			</div>
 			<div>
-				<label class={labelClass} for="appt-status">Durum</label>
-				<select id="appt-status" class={fieldClass} bind:value={status}>
-					{#each statuses as s (s)}
-						<option value={s}>{appointmentStatusLabels[s]}</option>
-					{/each}
-				</select>
-			</div>
-		</div>
-		<div class="grid gap-3 sm:grid-cols-2">
-			<div>
-				<label class={labelClass} for="appt-start">Başlangıç</label>
-				<input
-					id="appt-start"
-					class={fieldClass}
-					type="datetime-local"
-					bind:value={startsLocal}
-					required
-				/>
-			</div>
-			<div>
-				<label class={labelClass} for="appt-end">Bitiş</label>
-				<input id="appt-end" class={fieldClass} type="datetime-local" bind:value={endsLocal} />
-			</div>
-		</div>
-		<div class="grid gap-3 sm:grid-cols-2">
-			<div>
-				<label class={labelClass} for="appt-clinic">Klinik</label>
-				<select id="appt-clinic" class={fieldClass} bind:value={clinic_contact_id}>
+				<label class={labelClass} for="appt-transfer-c">Transfer firması</label>
+				<select id="appt-transfer-c" class={fieldClass} bind:value={transfer_contact_id}>
 					<option value="">—</option>
-					{#each clinicContacts.length ? clinicContacts : contacts as c (c.id)}
+					{#each transferContacts.length ? transferContacts : contacts as c (c.id)}
 						<option value={c.id}>{c.display_name}</option>
 					{/each}
 				</select>
 			</div>
 			<div>
-				<label class={labelClass} for="appt-hotel">Otel</label>
-				<select id="appt-hotel" class={fieldClass} bind:value={hotel_contact_id}>
-					<option value="">—</option>
-					{#each hotelContacts.length ? hotelContacts : contacts as c (c.id)}
-						<option value={c.id}>{c.display_name}</option>
-					{/each}
-				</select>
+				<label class={labelClass} for="appt-transfer">Transfer notu</label>
+				<input id="appt-transfer" class={fieldClass} bind:value={transfer_note} maxlength={8000} />
 			</div>
-		</div>
-		<div>
-			<label class={labelClass} for="appt-transfer-c">Transfer firması</label>
-			<select id="appt-transfer-c" class={fieldClass} bind:value={transfer_contact_id}>
-				<option value="">—</option>
-				{#each transferContacts.length ? transferContacts : contacts as c (c.id)}
-					<option value={c.id}>{c.display_name}</option>
-				{/each}
-			</select>
-		</div>
-		<div>
-			<label class={labelClass} for="appt-transfer">Transfer notu</label>
-			<input id="appt-transfer" class={fieldClass} bind:value={transfer_note} maxlength={8000} />
-		</div>
-		<div>
-			<label class={labelClass} for="appt-notes">Notlar</label>
-			<textarea id="appt-notes" class={textareaClass} bind:value={notes} maxlength={8000}
-			></textarea>
-		</div>
-		{#if error}
-			<p class="text-sm text-danger">{error}</p>
-		{/if}
-	</form>
+			<div>
+				<label class={labelClass} for="appt-notes">Notlar</label>
+				<textarea id="appt-notes" class={textareaClass} bind:value={notes} maxlength={8000}
+				></textarea>
+			</div>
+			{#if error}
+				<p class="text-sm text-danger">{error}</p>
+			{/if}
+		</form>
+	{/if}
 	{#snippet footer()}
-		<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
-			>İptal</Button
-		>
-		<Button type="submit" form="appointment-form" disabled={saving || !patient_id || !startsLocal}>
-			{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
-		</Button>
+		{#if confirmingDelete}
+			<Button variant="ghost" type="button" onclick={cancelDelete} disabled={saving}>
+				{t('appointments.deleteBack')}
+			</Button>
+			<Button
+				variant="destructive"
+				type="button"
+				onclick={confirmDelete}
+				disabled={saving || !ondelete}
+			>
+				{saving ? t('appointments.deleting') : t('appointments.deleteConfirmAction')}
+			</Button>
+		{:else}
+			{#if isEdit && ondelete}
+				<Button
+					variant="outline"
+					type="button"
+					class="mr-auto text-danger hover:bg-danger/10 hover:text-danger"
+					onclick={requestDelete}
+					disabled={saving}
+				>
+					{t('appointments.delete')}
+				</Button>
+			{/if}
+			<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
+				>İptal</Button
+			>
+			<Button
+				type="submit"
+				form="appointment-form"
+				disabled={saving || !patient_id || !startsLocal}
+			>
+				{saving ? 'Kaydediliyor…' : isEdit ? 'Kaydet' : 'Oluştur'}
+			</Button>
+		{/if}
 	{/snippet}
 </Dialog>

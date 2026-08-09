@@ -548,7 +548,7 @@
   - **Kabul (GAP-06):** Üç kaynakta da DELETE var; silinen kayıt hiçbir listede, detayda,
     raporda veya mükerrer grubunda görünmüyor (her biri için test); satır DB'de duruyor;
     audit kaydı düşüyor; tenant izolasyon testleri yeşil.
-- [ ] **GAP-06b — Silme UI yüzeyi (2026-08-08 prod doğrulamasında bulundu).**
+- [x] **GAP-06b — Silme UI yüzeyi (2026-08-08 prod doğrulamasında bulundu).**
   GAP-06 **yalnız API'yi** getirdi; panelde hiçbir silme butonu yok
   (`TransactionFormDialog`, `/finance`, randevu ve kişi ekranları — hepsinde yok).
   Yani endpoint'ler bugün erişilemez durumda. **Kabul kriterini ben API diliyle yazdım,
@@ -558,18 +558,30 @@
   - Silinen kayıt listeden anında düşsün (query invalidation).
   - Metinler `messages.ts` (tr + en).
   - **Kabul (GAP-06b):** Üç ekranda da silme butonu var; onay adımı kaydı gösteriyor;
-    silme sonrası liste güncelleniyor; MSW kapalı ortamda uçtan uca çalışıyor.
+    silme sonrası liste güncelleniyor; MSW kapalı ortamda uçtan uca çalışıyor. ✅
+  - **Görüş (GAP-06b):** Dialog içi iki aşamalı onay (`delete-confirm-flow`); native
+    `confirm` yok. Parent sayfalar (`/finance`, `/appointments`, `/contacts` + detay,
+    hasta dosyası, raporlar) `apiSend(..., 'DELETE')` + mevcut invalidate. MSW DELETE
+    handler'ları zaten vardı. Test: confirm gate + DELETE MSW.
   - **Ders:** Bu, GAP-01'deki hatanın ters yönü (orada web vardı API yoktu). Bundan sonra
     kullanıcıya görünen her iş için kabul kriteri **hem API hem UI yüzeyini** yazmalı.
-- [ ] **GAP-03b — İşlem listesinde sonuç sayacı (2026-08-08 prod doğrulaması).**
+- [x] **GAP-03b — İşlem listesinde sonuç sayacı (2026-08-08 prod doğrulaması).**
   Filtre uygulanınca kaç kayıt kaldığı görünmüyor → kullanıcı filtrenin işe yarayıp
   yaramadığını anlayamıyor. `/patients` sayfasında zaten var (`patients.list.total`
   → "{count} dosya"), aynı deseni `/finance`'a uygula. Filtreliyken
   "{count} işlem (filtreli)" varyantı da olsun.
-- [ ] **GAP-04b — Randevu listesinde dönem seçici (2026-08-08 prod doğrulaması).**
+  - **Kabul (GAP-03b):** `transactions.list()` hasta listesi desenini birebir izliyor
+    (`baseFilters` üzerinden ayrı `count()`; cursor sayıya dahil değil), `total_count`
+    sözleşmede, `/finance` başlığında "{count} işlem" / filtreliyken "(filtreli)"
+    varyantı. İzolasyon testi eklendi. ✅ (commit `db0e9c8`)
+- [x] **GAP-04b — Randevu listesinde dönem seçici (2026-08-08 prod doğrulaması).**
   `appointmentListQuerySchema` `from`/`to` kabul ediyor ama **UI'da tarih aralığı seçici yok**;
   arama sonucu daraltılamıyor. `/reports`'taki dönem seçicinin aynısı `/appointments`'a
-  eklenmeli (varsayılan aralık ne olacağı da kararlaştırılmalı — bugün belirsiz). ✅
+  eklenmeli (varsayılan aralık ne olacağı da kararlaştırılmalı — bugün belirsiz).
+  - **Kabul (GAP-04b):** `/appointments` sayfasında `from`/`to` tarih girişleri var;
+    dolduğunda takvim aralığını eziyor, "filtreleri temizle" ikisini de sıfırlıyor;
+    varsayılan aralık = mevcut takvim penceresi. İzolasyon testi eklendi. ✅
+    (commit `db0e9c8`)
   - **Görüş (GAP-06):** Migration `0030`. DELETE+audit (patient parity dahil). Contact merge
     soft-delete. Filtre eklenen sorgu yüzeyi: txn/appt/contact list+find; reports
     `fetchTransactions`/`balances`/`sumTahsilatBySource` (+ patient join); patient
@@ -678,6 +690,9 @@
     `spend_fx_missing` guard'ı bağımsız korundu. iOS `spendBase` nullable yapıldı
     (mevcut decode bug'ı), `closedCount` → `treatedCount` API ile hizalandı.
     Isolation + MSW testleri yeşil; iOS derlemesi bu ortamda doğrulanmadı.
+    Takip (`e0fc05d`): `attribution_missing` hep-ya-hiç değildi — tek dolu
+    kaynak guard'ı susturuyordu. Artık kapsam oranı
+    (`attribution_coverage`) + `ATTRIBUTION_COVERAGE_THRESHOLD` (%80).
   - [ ] **OPS-02e — patients.source doldurulmalı.** Attribution kaynağı olmadan
     ROAS gerçek bir reklam getirisi değil. Lead girişinde UTM/form kaynağı →
     `patients.source` eşlemesi yapılmadan Pazarlama sekmesi müşteri önünde
@@ -695,35 +710,21 @@
     - ⚠️ **ETL'i yeniden çalıştırmak düzeltmez.** `etl.js:922-926` zaten eşlenmiş
       hastayı `skipped` sayıp atlıyor. Legacy'de veri olsa bile hedefli bir
       backfill gerekir — düz `etl.js` koşusu değil.
-    - **Karar noktası (tek sorguyla kapanır):** legacy `cases.extra->>'source'`
-      dolu mu?
-      - **Boşsa:** hiçbir backfill attribution'ı icat edemez. Geçmiş ROAS kanal
-        kırılımı kurtarılamaz; yapılacak iş lead girişinde UTM/form kaynağını
-        yakalamak (ileriye dönük), geçmişi doldurmak değil.
-      - **Doluysa:** `cases.extra->>'source'` → `patients.source` hedefli backfill.
-      ```sql
-      -- legacy tracker DB
-      SELECT count(*) FILTER (WHERE nullif(btrim(extra->>'source'), '') IS NOT NULL)
-               AS source_dolu,
-             count(*) AS toplam
-      FROM cases WHERE tenant_id = :tracker_tenant_id;
-      ```
-    - **Görüş (2026-08-08):** Panel formunda serbest metin → preset select
-      (`Meta`/`Google`/`WhatsApp`/`Tavsiye`/`Organik` + `Diğer…`). Değerler ham
-      etiket olarak saklanır (report `sourceLabel` kırılımı okunabilir kalsın diye;
-      mapping katmanı yok). Zod `source` hâlâ nullable. Legacy/`ghl` gibi
-      preset-dışı değerler düzenlemede `Diğer…` + metin kutusunda korunur.
-      Component harness yok → mapping `patient-source-select` saf yardımcıda
-      test edildi.
-    - ⚠️ **OPS-02e AÇIK kalmaya devam ediyor.** Preset select yalnız *girişi*
-      düzeltiyor; hiçbir satırı doldurmuyor. Kapanma şartı: yeni dosyalarda
-      kaynak doluluğu `ATTRIBUTION_COVERAGE_THRESHOLD`'u (%80) geçmeli — o güne
-      kadar `attribution_missing` tetiklenmeye devam eder ve Pazarlama sekmesi
-      müşteri önüne çıkmaz. Geçmiş 757 satır kalıcı olarak kaynaksız
-      (legacy'de veri yok — yukarıdaki sorgu 0/757 döndü).
-    - **Karar bekleyen:** alan hâlâ **isteğe bağlı**. Zorunlu yapmak operatör
-      akışını değiştirir; kapsam kendiliğinden %80'e çıkmazsa tek gerçek kaldıraç
-      bu.
+    - **Karar noktası (kapatıldı, 2026-08-08):** legacy `cases.extra->>'source'`
+      **0/757 boş** → backfill attribution icat edemez; geçmiş kanal kırılımı
+      kurtarılamaz. İleriye dönük giriş + kapsam eşiği kaldı.
+    - [x] **OPS-02e dilim — preset select (2026-08-08, `a3c0f86`).** Serbest
+      metin → `Meta`/`Google`/`WhatsApp`/`Tavsiye`/`Organik` + `Diğer…`. Değerler
+      ham etiket; mapping katmanı yok. Legacy/`ghl` → düzenlemede `Diğer…` + metin.
+      Mapping `patient-source-select` saf yardımcıda test edildi.
+    - [x] **OPS-02e dilim — alan zorunlu + "Bilinmiyor" (`4205470`).** UI'da
+      zorunlu; varsayılan **"Bilinmiyor"** (`__unknown__` sentinel → API'ye
+      **null** yazar, literal saklanmaz — aksi halde attribution guard susturulur).
+      Zod `source` hâlâ nullable (bilinmeyen = null). Personel tıkanmaz.
+    - ⚠️ **OPS-02e AÇIK kalmaya devam ediyor.** Giriş düzeldi; geçmiş 757 satır
+      kalıcı kaynaksız. Kapanma şartı: yeni dosyalarda kaynak doluluğu
+      `ATTRIBUTION_COVERAGE_THRESHOLD`'u (%80) geçmeli — o güne kadar
+      `attribution_missing` devam eder, Pazarlama müşteri önüne çıkmaz.
 ---
 
 ### 9. PILOT-02 — 2–4 haftalık feature-freeze dahili pilot

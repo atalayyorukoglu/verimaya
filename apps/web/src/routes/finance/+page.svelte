@@ -177,6 +177,22 @@
 			saving = false;
 		}
 	}
+
+	async function deleteTransaction() {
+		if (!editing) return;
+		saving = true;
+		formError = null;
+		try {
+			await apiSend(apiPaths.transaction(editing.id), 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
+			formOpen = false;
+			editing = null;
+		} catch (err) {
+			formError = err instanceof Error ? err.message : t('finance.deleteFailed');
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -401,4 +417,5 @@
 	{saving}
 	error={formError}
 	onsubmit={saveTransaction}
+	ondelete={editing ? deleteTransaction : undefined}
 />

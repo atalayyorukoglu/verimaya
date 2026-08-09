@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { Appointment, Contact, ContactUpdate, Patient, Transaction } from '@verimaya/shared';
 	import { apiPaths, transactionKindLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatMoney, formatTime } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
-
 	type PageOf<T> = { items: T[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
@@ -77,6 +78,22 @@
 			formOpen = false;
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Kayıt başarısız';
+		} finally {
+			saving = false;
+		}
+	}
+
+	async function deleteContact() {
+		saving = true;
+		formError = null;
+		try {
+			await apiSend(apiPaths.contact(id), 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
+			formOpen = false;
+			await goto('/contacts');
+		} catch (err) {
+			formError = err instanceof Error ? err.message : t('contacts.deleteFailed');
 		} finally {
 			saving = false;
 		}
@@ -220,6 +237,7 @@
 			{saving}
 			error={formError}
 			onsubmit={saveContact}
+			ondelete={deleteContact}
 		/>
 	{/if}
 </div>

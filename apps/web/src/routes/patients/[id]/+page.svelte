@@ -165,6 +165,22 @@
 		}
 	}
 
+	async function deleteTransaction() {
+		if (!editingTx) return;
+		txSaving = true;
+		txFormError = null;
+		try {
+			await apiSend(apiPaths.transaction(editingTx.id), 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
+			txFormOpen = false;
+			editingTx = null;
+		} catch (err) {
+			txFormError = err instanceof Error ? err.message : t('finance.deleteFailed');
+		} finally {
+			txSaving = false;
+		}
+	}
+
 	function openCreateAppt() {
 		editingAppt = null;
 		apptFormError = null;
@@ -191,6 +207,22 @@
 			editingAppt = null;
 		} catch (err) {
 			apptFormError = err instanceof Error ? err.message : 'Kayıt başarısız';
+		} finally {
+			apptSaving = false;
+		}
+	}
+
+	async function deleteAppointment() {
+		if (!editingAppt) return;
+		apptSaving = true;
+		apptFormError = null;
+		try {
+			await apiSend(apiPaths.appointment(editingAppt.id), 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.appointments.all() });
+			apptFormOpen = false;
+			editingAppt = null;
+		} catch (err) {
+			apptFormError = err instanceof Error ? err.message : t('appointments.deleteFailed');
 		} finally {
 			apptSaving = false;
 		}
@@ -526,6 +558,7 @@
 			saving={txSaving}
 			error={txFormError}
 			onsubmit={saveTransaction}
+			ondelete={editingTx ? deleteTransaction : undefined}
 		/>
 
 		<AppointmentFormDialog
@@ -536,6 +569,7 @@
 			saving={apptSaving}
 			error={apptFormError}
 			onsubmit={saveAppointment}
+			ondelete={editingAppt ? deleteAppointment : undefined}
 		/>
 	{/if}
 </div>

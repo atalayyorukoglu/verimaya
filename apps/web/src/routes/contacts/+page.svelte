@@ -101,6 +101,23 @@
 			saving = false;
 		}
 	}
+
+	async function deleteContact() {
+		if (!editing) return;
+		saving = true;
+		formError = null;
+		try {
+			await apiSend(apiPaths.contact(editing.id), 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
+			formOpen = false;
+			editing = null;
+		} catch (err) {
+			formError = err instanceof Error ? err.message : t('contacts.deleteFailed');
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -189,4 +206,5 @@
 	{saving}
 	error={formError}
 	onsubmit={saveContact}
+	ondelete={editing ? deleteContact : undefined}
 />

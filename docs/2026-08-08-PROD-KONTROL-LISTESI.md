@@ -83,22 +83,25 @@ Tarih: 2026-08-08 · Tenant: Demo Klinik (kendi firmamız) · Kaynak: bu turda k
 
 ## C. Daha önce kırık olan yerler
 
-- [ ] **C1 — Randevu tipi ekle/sil.** Ayarlar → Randevu ayarları → yeni tip ekle →
-      sayfayı yenile → **hâlâ duruyor mu?** Sonra sil.
-      *(Eskiden 404 veriyordu — MSW'de vardı, API'de yoktu.)*
-- [ ] **C2 — Üye rolü değiştir.** Ayarlar → Ekip → bir üyenin rolünü değiştir.
-      Sonra **kendi rolünü** değiştirmeyi dene → engellenmeli.
-      *(Eskiden panelden hiç değiştirilemiyordu.)*
+- [x] **C1 — Randevu tipi ekle/sil.** ✅ Kod denetimi (2026-08-08): `settings.controller`
+      `@Get`/`@Post`/`@Delete appointment-types` mevcut (eski 404 kapandı).
+      *İsteğe bağlı smoke:* Ayarlar → Randevu ayarları → ekle → yenile → sil.
+- [x] **C2 — Üye rolü değiştir.** ✅ Kod denetimi (2026-08-08): `members.service`
+      "You cannot change your own role" + `members.isolation.spec.ts`.
 
 ---
 
 ## D. Yeni filtreler — gerçek veriyle
 
+> **Kod tarafı (2026-08-08, `db0e9c8`):** işlem listesi `total_count` dönüyor
+> (filtre sonucu sayısal görünür); randevularda `from`/`to` dönem girişi eklendi.
+> Aşağıdaki kutular hâlâ **prod ekran smoke** ister.
+
 - [ ] **D1 — İşlem filtreleri.** İşlemler → sırayla dene: Gelir / Ödenmedi / bir kategori /
       arama kutusuna bir başlık parçası.
       **Beklenen:** her filtrede sayı azalıyor, sonuçlar filtreye uyuyor.
 - [ ] **D2 — Randevu arama.** Randevular → bir hasta adının parçasını yaz.
-      Sonra durum filtresinden "Gelmedi" seç.
+      Sonra durum filtresinden "Gelmedi" seç. Dönem (`from`/`to`) da dene.
 
 ---
 
@@ -122,17 +125,17 @@ Burada "çalışıyor mu" değil, **"sayı mantıklı mı"** soruyorsun.
 
 ## F. Dil ve görünüm (DOMAIN-01)
 
-- [ ] **F1 — Hastalar sayfası.** "Yeni dosya aç" yazıyor mu? Boş durumda "Henüz dosya yok"?
-      Hiçbir yerde "lead" / satış hunisi dili kalmamalı.
-- [ ] **F2 — Hasta durumu seçenekleri:** sadece beş operasyon değeri görünmeli.
-- [ ] **F3 — Demo şeridi YOK.** Prod'da MSW kapalı → sarı "Demo verisi" şeridi
-      görünmemeli. Görünüyorsa `PUBLIC_USE_MSW` yanlış.
-- [ ] **F4 — GHL ayarları:** "Alan sahipliği" başlığında "(planlanan)" yazmamalı.
-- [ ] **F5 — Raporlarda tek kaynak kartı.** "Kaynak dağılımı" gitmiş olmalı,
-      pazarlamadaki "Kaynak kırılımı" kalmalı. Kolon başlıkları:
-      Kaynak / Dosya / Tedavi edilen / Tahsilat *(eski "Lead" ve "Kapalı" olmamalı)*.
+- [x] **F1 — Hastalar sayfası.** ✅ Kod denetimi (2026-08-08): web'de `closed_won` /
+      `closed_lost` / `qualified` / satış hunisi dili yok.
+- [x] **F2 — Hasta durumu seçenekleri.** ✅ Kod denetimi: yalnız beş operasyon değeri.
+- [x] **F3 — Demo şeridi YOK.** ✅ Kod denetimi: `Dockerfile` `PUBLIC_USE_MSW=false`.
+- [x] **F4 — GHL ayarları.** ✅ Kod denetimi: "(planlanan)" GHL ayarlarında yok
+      (yalnız `features` sayfası açıklamasında kalmış).
+- [x] **F5 — Raporlarda tek kaynak kartı.** ✅ Kod denetimi: "Kaynak dağılımı" yok;
+      pazarlama "Kaynak kırılımı" kalır. Kolon dili Lead/Kapalı değil.
 - [x] **F6 — Pazarlama ROAS guard (OPS-02d, 2026-08-08).** ✅ Kod: `attribution_missing`
-      + efektif pencere (ad_metrics MIN/MAX) + `spend_fx_missing`. Prod Demo Klinik'te
+      (kapsam oranı + `ATTRIBUTION_COVERAGE_THRESHOLD` %80 — `e0fc05d`) + efektif
+      pencere (ad_metrics MIN/MAX) + `spend_fx_missing`. Prod Demo Klinik'te
       tüm `patients.source` boş → ROAS kartı **"Attribution verisi yok"** göstermeli
       (yanlış 19× yok). Kapatmak için OPS-02e (`patients.source` doldurma) gerekir;
       attribution kapanana kadar ROAS müşteri önünde gösterilmemeli.
@@ -141,9 +144,10 @@ Burada "çalışıyor mu" değil, **"sayı mantıklı mı"** soruyorsun.
 
 ## G. Mükerrer (yeni kural)
 
-- [ ] **G1 — Hastalar → Çift kayıt tara.** Randevusu veya işlemi olan hastalar
-      listede **görünmemeli**.
-- [ ] **G2 — Kişiler → Çift kayıt tara.** Burası eski davranışta, "birleştir" demeli.
+- [x] **G1 — Hastalar → Çift kayıt tara.** ✅ Kod denetimi (2026-08-08):
+      `patientIdsWithRecords()` randevu/işlemi olanları dışlar (`deleted_at` dahil).
+- [x] **G2 — Kişiler → Çift kayıt tara.** ✅ Kod denetimi: `DuplicateScanPanel`
+      "Seçileni tut, diğerlerini birleştir".
 
 ---
 
@@ -181,9 +185,10 @@ Burada "çalışıyor mu" değil, **"sayı mantıklı mı"** soruyorsun.
 - **G2 — kişiler:** `DuplicateScanPanel.svelte` "Seçileni tut, diğerlerini
   birleştir" davranışında.
 
-**Hâlâ insan gözü isteyen:** B1–B4'ün ekran tarafı, **D** (filtreler),
+**Hâlâ insan gözü isteyen:** **B1–B4** (ekran soft-delete), **D** (filtre smoke),
 **E** (sayı inandırıcılığı — no-show %0 mı, uyarı sayısı 10–100 aralığında mı).
-Bunlar "çalışıyor mu" değil "sayı mantıklı mı" soruları; kodla kapanmaz.
+C / F / G kod denetimiyle işaretlendi. D kodu güçlendirildi (`total_count` + dönem);
+prod smoke açık.
 
 ---
 

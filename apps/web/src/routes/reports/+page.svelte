@@ -542,6 +542,23 @@
 		}
 	}
 
+	async function deleteTransaction() {
+		if (!editingTx) return;
+		txSaving = true;
+		txFormError = null;
+		try {
+			await apiSend(`/v1/transactions/${editingTx.id}`, 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.reports.all() });
+			txFormOpen = false;
+			editingTx = null;
+		} catch (err) {
+			txFormError = err instanceof Error ? err.message : t('finance.deleteFailed');
+		} finally {
+			txSaving = false;
+		}
+	}
+
 	function toneClass(tone: 'pos' | 'neg' | 'neu') {
 		if (tone === 'pos') return 'text-success';
 		if (tone === 'neg') return 'text-danger';
@@ -1253,4 +1270,5 @@
 	saving={txSaving}
 	error={txFormError}
 	onsubmit={saveTransaction}
+	ondelete={editingTx ? deleteTransaction : undefined}
 />

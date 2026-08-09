@@ -15,7 +15,7 @@ describe('patient source select mapping', () => {
 		}
 	});
 
-	it("Bilinmiyor (UNKNOWN sentinel) submits null — never stored as a literal", () => {
+	it('Bilinmiyor (UNKNOWN sentinel) submits null — never stored as a literal', () => {
 		expect(resolvePatientSource(PATIENT_SOURCE_SELECT_UNKNOWN, '')).toBeNull();
 		expect(resolvePatientSource(PATIENT_SOURCE_SELECT_UNKNOWN, 'ignored')).toBeNull();
 	});

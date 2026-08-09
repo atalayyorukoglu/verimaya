@@ -203,6 +203,22 @@
 		}
 	}
 
+	async function deleteAppointment() {
+		if (!editing) return;
+		saving = true;
+		formError = null;
+		try {
+			await apiSend(apiPaths.appointment(editing.id), 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.appointments.all() });
+			formOpen = false;
+			editing = null;
+		} catch (err) {
+			formError = err instanceof Error ? err.message : t('appointments.deleteFailed');
+		} finally {
+			saving = false;
+		}
+	}
+
 	function shift(dir: -1 | 1) {
 		anchor = addDays(anchor, view === 'day' ? dir : dir * 7);
 	}
@@ -412,4 +428,5 @@
 	{saving}
 	error={formError}
 	onsubmit={saveAppointment}
+	ondelete={editing ? deleteAppointment : undefined}
 />
