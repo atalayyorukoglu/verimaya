@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { closeDb, getDb } from '../db/client';
 import type { CryptoService } from '../common/crypto.service';
 import type { TenantContextService } from '../tenant/tenant-context.service';
@@ -53,6 +53,7 @@ describe('settings mutations (finance categories + contact types)', () => {
 			await sql`delete from finance_categories where tenant_id = ${tenantId}`;
 			await sql`delete from contact_types where tenant_id = ${tenantId}`;
 			await sql`delete from appointment_types where tenant_id = ${tenantId}`;
+			await sql`delete from tenant_settings where tenant_id = ${tenantId}`;
 		});
 		await sql`delete from tenants where id = ${tenantId}`;
 		await sql`delete from organization where id = ${tenantId}`;
@@ -99,13 +100,20 @@ describe('settings mutations (finance categories + contact types)', () => {
 		await settingsService.deleteFinanceCategory(tenantId, second.id);
 	});
 
-	it('rejects duplicate contact type names case-insensitively', async () => {
+	it('rejects duplicate contact type names case-insensitively with 409 duplicate_type_name', async () => {
 		const created = await settingsService.createContactType(tenantId, { name: 'Klinik' });
 		expect(created.name).toBe('Klinik');
 
-		await expect(
-			settingsService.createContactType(tenantId, { name: 'klinik' })
-		).rejects.toThrow(BadRequestException);
+		try {
+			await settingsService.createContactType(tenantId, { name: 'klinik' });
+			expect.unreachable('expected ConflictException');
+		} catch (err) {
+			expect(err).toBeInstanceOf(ConflictException);
+			const body = (err as ConflictException).getResponse() as {
+				error?: { code?: string };
+			};
+			expect(body.error?.code).toBe('duplicate_type_name');
+		}
 
 		await settingsService.deleteContactType(tenantId, created.id);
 	});
@@ -142,13 +150,20 @@ describe('settings mutations (finance categories + contact types)', () => {
 		);
 	});
 
-	it('creates and deletes appointment types; rejects duplicates case-insensitively', async () => {
+	it('creates and deletes appointment types; rejects duplicates with 409 duplicate_type_name', async () => {
 		const created = await settingsService.createAppointmentType(tenantId, { name: 'Özel Tip' });
 		expect(created.name).toBe('Özel Tip');
 
-		await expect(
-			settingsService.createAppointmentType(tenantId, { name: 'özel tip' })
-		).rejects.toThrow(BadRequestException);
+		try {
+			await settingsService.createAppointmentType(tenantId, { name: 'özel tip' });
+			expect.unreachable('expected ConflictException');
+		} catch (err) {
+			expect(err).toBeInstanceOf(ConflictException);
+			const body = (err as ConflictException).getResponse() as {
+				error?: { code?: string };
+			};
+			expect(body.error?.code).toBe('duplicate_type_name');
+		}
 
 		await settingsService.deleteAppointmentType(tenantId, created.id);
 		await expect(settingsService.deleteAppointmentType(tenantId, created.id)).rejects.toThrow(

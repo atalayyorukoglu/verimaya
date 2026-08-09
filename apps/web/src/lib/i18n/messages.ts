@@ -226,6 +226,9 @@ const tr = {
 	'settings.team.footnote':
 		'Davet ve üye çıkarma better-auth organization ile gelecek. Rol değiştirmek için sahip veya yönetici olmanız gerekir.',
 
+	// Ayarlar · Sözlükler (randevu / kişi tipleri)
+	'settings.dictionaries.duplicateName': 'Bu isimde bir kayıt zaten var',
+
 	// Ürün içi karne (Adım 36)
 	'scorecard.title': 'Yapay zeka karnesi',
 	'scorecard.description':
@@ -1084,6 +1087,8 @@ const en: Record<MessageKey, string> = {
 	'settings.team.roleUpdateError': 'Could not update role',
 	'settings.team.footnote':
 		'Invite and remove come with better-auth organization. Changing roles requires owner or admin.',
+
+	'settings.dictionaries.duplicateName': 'An entry with this name already exists',
 
 	'scorecard.title': 'AI scorecard',
 	'scorecard.description':

@@ -61,9 +61,11 @@ describe('settings appointment-types tenant isolation (GAP-01)', () => {
 		const { sql } = getDb(databaseUrl);
 		await withTenantSession(tenantA, async () => {
 			await sql`delete from appointment_types where tenant_id = ${tenantA}`;
+			await sql`delete from tenant_settings where tenant_id = ${tenantA}`;
 		});
 		await withTenantSession(tenantB, async () => {
 			await sql`delete from appointment_types where tenant_id = ${tenantB}`;
+			await sql`delete from tenant_settings where tenant_id = ${tenantB}`;
 		});
 		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
 		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;

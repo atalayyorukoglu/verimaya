@@ -58,6 +58,7 @@ describe('settings default seed', () => {
 			await sql`delete from finance_categories where tenant_id = ${tenantId}`;
 			await sql`delete from contact_types where tenant_id = ${tenantId}`;
 			await sql`delete from appointment_types where tenant_id = ${tenantId}`;
+			await sql`delete from tenant_settings where tenant_id = ${tenantId}`;
 		});
 		await sql`delete from tenants where id = ${tenantId}`;
 		await sql`delete from organization where id = ${tenantId}`;

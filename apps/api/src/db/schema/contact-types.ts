@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 
 export const contactTypes = pgTable(
@@ -15,7 +15,8 @@ export const contactTypes = pgTable(
 			.defaultNow()
 	},
 	(table) => [
-		index('contact_types_tenant_id_created_at_idx').on(table.tenantId, table.createdAt)
+		index('contact_types_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
+		uniqueIndex('contact_types_tenant_id_name_uidx').on(table.tenantId, table.name)
 	]
 );
 

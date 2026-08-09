@@ -2,8 +2,9 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { ContactType } from '@verimaya/shared';
 	import { apiPaths } from '@verimaya/shared';
-	import { apiGet, apiSend, fieldClass } from '$lib/api';
+	import { apiGet, apiSend, ApiRequestError, fieldClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -38,7 +39,12 @@
 			newName = '';
 			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.contactTypes() });
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Eklenemedi';
+			error =
+				err instanceof ApiRequestError && err.code === 'duplicate_type_name'
+					? t('settings.dictionaries.duplicateName')
+					: err instanceof Error
+						? err.message
+						: 'Eklenemedi';
 		} finally {
 			busy = false;
 		}

@@ -5,9 +5,9 @@
 > `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de durur. Kapanan işin kanıtı oradadır,
 > buraya taşınmaz.
 >
-> **Durum anı:** branch `main`, HEAD `019d73a` + çalışma ağacında AUDIT-F09-05
-> (commit bekliyor → kalem 0). Prod DB `0032`'de doğrulandı (2026-08-08,
-> kanıt: `docs/2026-08-08-PROD-KONTROL-LISTESI.md` § A); `0033` bekliyor.
+> **Durum anı:** branch `main`, HEAD `c41872e` (AUDIT-F09-05). Prod DB `0032`'de
+> doğrulandı (2026-08-08, kanıt: `docs/2026-08-08-PROD-KONTROL-LISTESI.md` § A);
+> `0033` sıradaki API deploy'uyla gider.
 > Pilot tenant: `Demo Klinik` (`afb4a68b…`) — 757 dosya, 548 işlem, 703 randevu.
 
 ---
@@ -34,21 +34,6 @@
 
 ## Öncelik sırası
 
-### 0. WIP — AUDIT-F09-05 commit'i (çalışma ağacı açık)
-
-> Çalışma ağacındaki outbox/scheduler DLQ işi tamam, Görüş arşivdeki listede yazılı
-> (`Arşiv/2026-08-03-YAPILACAKLAR.md` § AUDIT-F09-05). Tek eksik: commit.
-
-- [ ] Tek commit'le kapat (`feat: outbox + zamanlanmış iş DLQ + admin requeue (AUDIT-F09-05)`)
-- **Dosyalar:** `apps/api/src/queue/{outbox.processor,queue.service,queue.module,bull-board.mount}.ts`,
-  `apps/api/src/main.ts`, `apps/api/src/db/schema/queue.ts`, `apps/api/drizzle/0033_outbox_dead_letter.sql`,
-  `apps/api/drizzle/meta/_journal.json`, yeni `apps/api/src/queue/{admin-outbox.mount,admin-queue.auth,
-  outbox-admin.service}.ts` + 4 spec, `docs/DEPLOY-COOLIFY.md` (Outbox DLQ bölümü)
-- **Kabul:** CI yeşil; bu dosyanın "Son kapananlar"ına tek satır düşüldü.
-- **Not:** Migration `0033` prod'a bu deploy ile gider → kalem 1'in migration runbook'u geçerli.
-
----
-
 ### 1. PILOT-01 kapanış — prod smoke + artıklar
 
 > Prod migration 0028–0032 **tamam** (2026-08-08; kanıt PROD-KONTROL § A1–A6: 757 dosya
@@ -59,11 +44,11 @@
   altı ekranda düştü mü), § D1–D2 (işlem/randevu filtreleri gerçek veriyle), § E1–E2
   (no-show oranı %0 değil mi; tutarlılık uyarısı 10–100 bandında mı). Takılan maddeye
   bu dosyada kalem aç; takılan yoksa Sonuç tablosunu işaretle.
-- [ ] **Migration `0033` prod'a** (kalem 0 deploy'uyla): yedek → `pnpm db:migrate` → kanıt
+- [ ] **Migration `0033` prod'a** (sıradaki API deploy'uyla): yedek → `pnpm db:migrate` → kanıt
   (`outbox_events`'ta `status='dead'` + `dead_lettered_at` kolonları). Runbook: PROD-KONTROL § A.
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org dahil) — devam eden kural.
 - [ ] **Tenant adı:** `Demo Klinik` rename veya olduğu gibi bırak — karar ver, Görüş'e yaz (ucuz).
-- **Bağımlı:** kalem 0.
+- **Bağımlı:** yok.
 - **Kabul:** PROD-KONTROL Sonuç tablosu "takılan yok" ile kapandı; prod `0033`'te.
 
 ---
@@ -147,7 +132,6 @@
 ## Faz 9 — kalan denetim işleri (öncelik sırası yok; kapasiteye göre)
 
 - **AUDIT-F09-01** OpenAPI'yi generator'a taşı (`@nestjs/swagger` veya elle YAML → CI'da route'lardan üret). **(M)**
-- **AUDIT-F09-03** No-op (outbound zaten per-subscription secret). Kutuyu kapat, Görüş'e "no-op" yaz. **(0)**
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. Anonimleştirme yaklaşımı (silme değil) arşivdeki Açık sorular §1 kararına göre. **(L)**
 - **AUDIT-F09-08** Magic-byte MIME sniff (`file-type`/`mmmagic`) + multipart `allowedMimeTypes` allowlist (S3 sürücüsü dahil). GAP-F09-24 ile birlikte gitmeli. **(M)**
@@ -165,8 +149,6 @@
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
 - **GAP-F09-21** Randevu listesi agregat istatistikleri (`type_counts`, `status_counts`). **(S)**
-- **GAP-F09-25** `appointment_types` hijyeni: `UNIQUE (tenant_id, name)` + lazy-seed geri-yazma
-  davranışı (kullanıcı hepsini silerse geri geliyor); `contact_types` için de aynı kontrol. **(S)**
 - **GAP-F09-22** Case ↔ işlem otomatik bağlama (basitleştirilmiş: yalnız `contact_id`). **(S)**
 - **GAP-F09-23** Dosya silme endpoint'i (soft-delete + audit; KVKK). **(M)**
 - **GAP-F09-24** Satır içi güvenli dosya önizleme (MIME allowlist + attachment zorlaması kararı
@@ -236,7 +218,9 @@
 > Kural 3: kapanan kalem buraya tek satırla taşınır; Görüş özeti + commit hash.
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
-_(henüz yok — ilk satır kalem 0'ın commit'i olacak)_
+- ✅ **GAP-F09-25** — `appointment_types`/`contact_types` UNIQUE (tenant_id, name) + `tenant_settings` seed bayrakları (finance_categories dahil); 409 `duplicate_type_name` + web i18n anahtarı; migration `0034` (2026-08-09). Görüş: boş liste ≠ "hiç seed edilmedi"; finance aynı geri-yazma bug'ına sahipti → aynı mekanizma. Tam paket 388/388 yeşil.
+- ✅ **AUDIT-F09-05** — outbox + zamanlanmış iş DLQ + admin requeue (`dead` status, migration `0033`) (2026-08-09). Spec 11/11 yeşil; `0033` prod'a kalem 1 ile gider.
+- ✅ **AUDIT-F09-03** — no-op (2026-08-09): outbound webhook secret zaten per-subscription (`webhook_subscriptions.secretCiphertext`); değişiklik gerekmiyor.
 
 ---
 

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ConflictException,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common';
 import { asc, desc, eq, and, isNull } from 'drizzle-orm';
 import type {
 	AppointmentTypeCreate,
@@ -29,12 +34,21 @@ import {
 import { toAppointmentType, toContactType, toFinanceCategory } from '../common/mappers';
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
+import { isUniqueViolation } from '../common/postgres-errors';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { defaultAppointmentTypeId } from './appointment-type-defaults';
 
 const TRUST_SCORE_KEY = 'trust_score';
 const WHATSAPP_AI_DISCLOSURE_KEY = 'whatsapp_ai_disclosure';
 const AI_DISCLOSURE_AUDIT_LABEL = 'whatsapp_ai_disclosure';
+
+/** Presence in tenant_settings ⇒ defaults were applied once; empty list must not re-seed. */
+const APPOINTMENT_TYPES_SEEDED_KEY = 'appointment_types_defaults_seeded';
+const CONTACT_TYPES_SEEDED_KEY = 'contact_types_defaults_seeded';
+const FINANCE_CATEGORIES_SEEDED_KEY = 'finance_categories_defaults_seeded';
+
+const APPOINTMENT_TYPES_NAME_UIDX = 'appointment_types_tenant_id_name_uidx';
+const CONTACT_TYPES_NAME_UIDX = 'contact_types_tenant_id_name_uidx';
 
 @Injectable()
 export class SettingsService {
@@ -50,16 +64,22 @@ export class SettingsService {
 				.from(financeCategories)
 				.orderBy(asc(financeCategories.sortOrder), asc(financeCategories.name));
 
-			if (rows.length === 0) {
-				await db.insert(financeCategories).values(
-					DEFAULT_FINANCE_CATEGORY_SEEDS.map((seed, i) => ({
-						tenantId,
-						kind: seed.kind,
-						name: seed.name,
-						sortOrder: i,
-						subcategories: seed.subcategories
-					}))
-				);
+			if (rows.length === 0 && !(await this.hasDefaultsSeeded(db, FINANCE_CATEGORIES_SEEDED_KEY))) {
+				await db
+					.insert(financeCategories)
+					.values(
+						DEFAULT_FINANCE_CATEGORY_SEEDS.map((seed, i) => ({
+							tenantId,
+							kind: seed.kind,
+							name: seed.name,
+							sortOrder: i,
+							subcategories: seed.subcategories
+						}))
+					)
+					.onConflictDoNothing({
+						target: [financeCategories.tenantId, financeCategories.kind, financeCategories.name]
+					});
+				await this.markDefaultsSeeded(db, tenantId, FINANCE_CATEGORIES_SEEDED_KEY);
 				rows = await db
 					.select()
 					.from(financeCategories)
@@ -77,14 +97,20 @@ export class SettingsService {
 				.from(contactTypes)
 				.orderBy(asc(contactTypes.sortOrder), asc(contactTypes.name));
 
-			if (rows.length === 0) {
-				await db.insert(contactTypes).values(
-					DEFAULT_CONTACT_TYPE_NAMES.map((name, i) => ({
-						tenantId,
-						name,
-						sortOrder: i
-					}))
-				);
+			if (rows.length === 0 && !(await this.hasDefaultsSeeded(db, CONTACT_TYPES_SEEDED_KEY))) {
+				await db
+					.insert(contactTypes)
+					.values(
+						DEFAULT_CONTACT_TYPE_NAMES.map((name, i) => ({
+							tenantId,
+							name,
+							sortOrder: i
+						}))
+					)
+					.onConflictDoNothing({
+						target: [contactTypes.tenantId, contactTypes.name]
+					});
+				await this.markDefaultsSeeded(db, tenantId, CONTACT_TYPES_SEEDED_KEY);
 				rows = await db
 					.select()
 					.from(contactTypes)
@@ -170,9 +196,7 @@ export class SettingsService {
 
 		const existingRows = await db.select({ name: contactTypes.name }).from(contactTypes);
 		if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
-			throw new BadRequestException({
-				error: { code: 'validation_error', message: 'Bu tür zaten var' }
-			});
+			throw this.duplicateTypeNameConflict('A contact type with this name already exists');
 		}
 
 		const [maxRow] = await db
@@ -181,12 +205,19 @@ export class SettingsService {
 			.orderBy(desc(contactTypes.sortOrder))
 			.limit(1);
 
-		const [row] = await db
-			.insert(contactTypes)
-			.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
-			.returning();
+		try {
+			const [row] = await db
+				.insert(contactTypes)
+				.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
+				.returning();
 
-		return toContactType(row!);
+			return toContactType(row!);
+		} catch (err) {
+			if (isUniqueViolation(err, CONTACT_TYPES_NAME_UIDX)) {
+				throw this.duplicateTypeNameConflict('A contact type with this name already exists');
+			}
+			throw err;
+		}
 	}
 
 	async deleteContactType(tenantId: string, id: string) {
@@ -223,15 +254,23 @@ export class SettingsService {
 				.from(appointmentTypes)
 				.orderBy(asc(appointmentTypes.sortOrder), asc(appointmentTypes.name));
 
-			if (rows.length === 0) {
-				await db.insert(appointmentTypes).values(
-					DEFAULT_APPOINTMENT_TYPE_NAMES.map((name, i) => ({
-						id: defaultAppointmentTypeId(tenantId, name),
-						tenantId,
-						name,
-						sortOrder: i
-					}))
-				);
+			if (
+				rows.length === 0 &&
+				!(await this.hasDefaultsSeeded(db, APPOINTMENT_TYPES_SEEDED_KEY))
+			) {
+				await db
+					.insert(appointmentTypes)
+					.values(
+						DEFAULT_APPOINTMENT_TYPE_NAMES.map((name, i) => ({
+							id: defaultAppointmentTypeId(tenantId, name),
+							tenantId,
+							name,
+							sortOrder: i
+						}))
+					)
+					// Concurrent GETs collide on deterministic PK ids (not only name).
+					.onConflictDoNothing();
+				await this.markDefaultsSeeded(db, tenantId, APPOINTMENT_TYPES_SEEDED_KEY);
 				rows = await db
 					.select()
 					.from(appointmentTypes)
@@ -254,9 +293,7 @@ export class SettingsService {
 
 		const existingRows = await db.select({ name: appointmentTypes.name }).from(appointmentTypes);
 		if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
-			throw new BadRequestException({
-				error: { code: 'validation_error', message: 'Bu tip zaten var' }
-			});
+			throw this.duplicateTypeNameConflict('An appointment type with this name already exists');
 		}
 
 		const [maxRow] = await db
@@ -265,12 +302,19 @@ export class SettingsService {
 			.orderBy(desc(appointmentTypes.sortOrder))
 			.limit(1);
 
-		const [row] = await db
-			.insert(appointmentTypes)
-			.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
-			.returning();
+		try {
+			const [row] = await db
+				.insert(appointmentTypes)
+				.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
+				.returning();
 
-		return toAppointmentType(row!);
+			return toAppointmentType(row!);
+		} catch (err) {
+			if (isUniqueViolation(err, APPOINTMENT_TYPES_NAME_UIDX)) {
+				throw this.duplicateTypeNameConflict('An appointment type with this name already exists');
+			}
+			throw err;
+		}
 	}
 
 	async deleteAppointmentType(tenantId: string, id: string) {
@@ -450,6 +494,37 @@ export class SettingsService {
 		});
 
 		return value;
+	}
+
+	private duplicateTypeNameConflict(message: string): ConflictException {
+		return new ConflictException({
+			error: {
+				code: 'duplicate_type_name',
+				message
+			}
+		});
+	}
+
+	private async hasDefaultsSeeded(db: TenantDb, key: string): Promise<boolean> {
+		const [row] = await db
+			.select({ key: tenantSettings.key })
+			.from(tenantSettings)
+			.where(eq(tenantSettings.key, key))
+			.limit(1);
+		return row != null;
+	}
+
+	private async markDefaultsSeeded(db: TenantDb, tenantId: string, key: string): Promise<void> {
+		await db
+			.insert(tenantSettings)
+			.values({
+				tenantId,
+				key,
+				value: true
+			})
+			.onConflictDoNothing({
+				target: [tenantSettings.tenantId, tenantSettings.key]
+			});
 	}
 
 	private async findFinanceCategoryRow(db: TenantDb, id: string) {
