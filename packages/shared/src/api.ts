@@ -137,9 +137,9 @@ import { patientFileCreateSchema, patientFileSchema } from './file.js';
 import { patientCaseNoteCreateSchema, patientCaseNoteSchema } from './case-note.js';
 import { contactSchema, contactTypeSchema } from './contact.js';
 import {
-	contactDuplicateGroupSchema,
+	contactDuplicateGroupsResponseSchema,
 	mergeRecordsSchema,
-	patientDuplicateGroupSchema
+	patientDuplicateGroupsResponseSchema
 } from './duplicate.js';
 import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-category.js';
 import { tenantSchema } from './tenant.js';
@@ -230,14 +230,14 @@ export const apiContract = {
 		response: softDeleteResultSchema
 	},
 	'GET /v1/contacts/duplicate-groups': {
-		response: z.object({ items: z.array(contactDuplicateGroupSchema) })
+		response: contactDuplicateGroupsResponseSchema
 	},
 	'POST /v1/contacts/merge': {
 		body: mergeRecordsSchema,
 		response: contactSchema
 	},
 	'GET /v1/patients/duplicate-groups': {
-		response: z.object({ items: z.array(patientDuplicateGroupSchema) })
+		response: patientDuplicateGroupsResponseSchema
 	},
 	'POST /v1/patients/merge': {
 		body: mergeRecordsSchema,

@@ -78,6 +78,14 @@ export function compareByCreatedAtDesc<T extends { created_at: string; id: strin
 	return b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id);
 }
 
+/** Duplicate-scan order / MSW parity (`created_at ASC, id ASC`). */
+export function compareByCreatedAtAsc<T extends { created_at: string; id: string }>(
+	a: T,
+	b: T
+): number {
+	return a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
+}
+
 /** Transactions list order / MSW parity (`occurred_on DESC, id DESC`). */
 export function compareByOccurredOnDesc<T extends { occurred_on: string; id: string }>(
 	a: T,

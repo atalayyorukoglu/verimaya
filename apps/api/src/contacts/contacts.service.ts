@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, count, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import type { ContactCreate, ContactListQuery, ContactUpdate, MergeRecords } from '@verimaya/shared';
-import { findContactDuplicateGroups } from '@verimaya/shared';
+import { DUPLICATE_SCAN_ROW_CAP, findContactDuplicateGroups } from '@verimaya/shared';
 import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
@@ -139,10 +139,21 @@ export class ContactsService {
 		return { id, deleted: true as const };
 	}
 
-	async duplicateGroups(tenantId: string) {
+	async duplicateGroups(tenantId: string, rowCap = DUPLICATE_SCAN_ROW_CAP) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const rows = await db.select().from(contacts).where(isNull(contacts.deletedAt));
-			return { items: findContactDuplicateGroups(rows.map(toContact)) };
+			const rows = await db
+				.select()
+				.from(contacts)
+				.where(isNull(contacts.deletedAt))
+				.orderBy(asc(contacts.createdAt), asc(contacts.id))
+				.limit(rowCap + 1);
+			const truncated = rows.length > rowCap;
+			const scanned = truncated ? rows.slice(0, rowCap) : rows;
+			return {
+				items: findContactDuplicateGroups(scanned.map(toContact)),
+				truncated,
+				scanned_count: scanned.length
+			};
 		});
 	}
 

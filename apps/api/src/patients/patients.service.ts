@@ -18,6 +18,7 @@ import type {
 } from '@verimaya/shared';
 import {
 	DEFAULT_TENANT_TIMEZONE,
+	DUPLICATE_SCAN_ROW_CAP,
 	findPatientDuplicateGroups,
 	toTenantDayKey
 } from '@verimaya/shared';
@@ -694,12 +695,26 @@ export class PatientsService {
 		return { id, deleted: true as const };
 	}
 
-	async duplicateGroups(tenantId: string) {
+	async duplicateGroups(tenantId: string, rowCap = DUPLICATE_SCAN_ROW_CAP) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const rows = await db.select().from(patients).where(isNull(patients.deletedAt));
-			const busyIds = await this.patientIdsWithRecords(db);
-			const emptyCovers = rows.filter((row) => !busyIds.has(row.id));
-			return { items: findPatientDuplicateGroups(emptyCovers.map(toPatient)) };
+			const rows = await db
+				.select()
+				.from(patients)
+				.where(isNull(patients.deletedAt))
+				.orderBy(asc(patients.createdAt), asc(patients.id))
+				.limit(rowCap + 1);
+			const truncated = rows.length > rowCap;
+			const scanned = truncated ? rows.slice(0, rowCap) : rows;
+			const busyIds = await this.patientIdsWithRecords(
+				db,
+				scanned.map((row) => row.id)
+			);
+			const emptyCovers = scanned.filter((row) => !busyIds.has(row.id));
+			return {
+				items: findPatientDuplicateGroups(emptyCovers.map(toPatient)),
+				truncated,
+				scanned_count: scanned.length
+			};
 		});
 	}
 

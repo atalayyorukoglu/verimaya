@@ -30,8 +30,10 @@ import {
 	approveDraftsRequestSchema,
 	trustScoreSettings,
 	compareByCreatedAtDesc,
+	compareByCreatedAtAsc,
 	compareByOccurredOnDesc,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
+	DUPLICATE_SCAN_ROW_CAP,
 	tenantDayRange,
 	toTenantDayKey,
 	resolveCollectedAmount,
@@ -901,8 +903,15 @@ export const handlers = [
 		for (const t of store.transactions) {
 			if (t.patient_id) busy.add(t.patient_id);
 		}
-		const empty = store.patients.filter((p) => !busy.has(p.id));
-		return HttpResponse.json({ items: findPatientDuplicateGroups(empty) });
+		const sorted = [...store.patients].sort(compareByCreatedAtAsc);
+		const truncated = sorted.length > DUPLICATE_SCAN_ROW_CAP;
+		const scanned = truncated ? sorted.slice(0, DUPLICATE_SCAN_ROW_CAP) : sorted;
+		const empty = scanned.filter((p) => !busy.has(p.id));
+		return HttpResponse.json({
+			items: findPatientDuplicateGroups(empty),
+			truncated,
+			scanned_count: scanned.length
+		});
 	}),
 
 	http.post('/v1/patients/merge', async ({ request }) => {
@@ -1873,7 +1882,14 @@ export const handlers = [
 	http.get('/v1/contacts/duplicate-groups', ({ request }) => {
 		const store = getStore(scenarioFrom(request));
 		refreshUsage(store);
-		return HttpResponse.json({ items: findContactDuplicateGroups(store.contacts) });
+		const sorted = [...store.contacts].sort(compareByCreatedAtAsc);
+		const truncated = sorted.length > DUPLICATE_SCAN_ROW_CAP;
+		const scanned = truncated ? sorted.slice(0, DUPLICATE_SCAN_ROW_CAP) : sorted;
+		return HttpResponse.json({
+			items: findContactDuplicateGroups(scanned),
+			truncated,
+			scanned_count: scanned.length
+		});
 	}),
 
 	http.post('/v1/contacts/merge', async ({ request }) => {

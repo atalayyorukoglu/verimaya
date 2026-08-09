@@ -94,6 +94,7 @@ const tr = {
 	'patients.duplicates.completing': 'Tamamlanıyor…',
 	'patients.duplicates.success': '{count} fazla dosya kapatıldı.',
 	'patients.duplicates.error': 'Tamamlama başarısız',
+	'duplicates.scan.truncated': 'İlk {scanned_count} kayıt tarandı; sonuç eksik olabilir.',
 	'patients.form.createTitle': 'Yeni dosya aç',
 	'patients.form.editTitle': 'Dosyayı düzenle',
 	'patients.form.description': 'Bu geliş için operasyon dosyası oluşturulur.',
@@ -954,6 +955,8 @@ const en: Record<MessageKey, string> = {
 	'patients.duplicates.completing': 'Completing…',
 	'patients.duplicates.success': '{count} extra file(s) closed.',
 	'patients.duplicates.error': 'Could not complete',
+	'duplicates.scan.truncated':
+		'First {scanned_count} records were scanned; results may be incomplete.',
 	'patients.form.createTitle': 'Open new file',
 	'patients.form.editTitle': 'Edit file',
 	'patients.form.description': 'Creates an operations file for this visit.',

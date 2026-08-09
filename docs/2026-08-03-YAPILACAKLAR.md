@@ -804,7 +804,12 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
   - **Görüş (2026-08-09):** Çalışma ağacında `_tmp_*` dosyası kalmamış (`find` 0 sonuç,
     `git ls-files` 0 sonuç) ve `.gitignore` deseni zaten vardı; eksik olan `.dockerignore`
     idi — `_tmp_*` + `**/_tmp_*` eklendi.
-- **AUDIT-F09-17** Contacts duplicate-detection — sayfalama/cap ekle (şu an O(N) bellek). **(M)**
+- **AUDIT-F09-17** Contacts duplicate-detection — sayfalama/cap ekle (şu an O(N) bellek). **(M)** ✅
+  - **Görüş (2026-08-09):** SQL'e taşınmadı — TR `İ/I`/telefon/e-posta normalizasyonu
+    `packages/shared/src/duplicate.ts`'de istemci+sunucu paylaşıyor; SQL kopyası sapardı.
+    Sert cap `DUPLICATE_SCAN_ROW_CAP=5000`, `LIMIT cap+1` + `ORDER BY created_at ASC, id ASC`;
+    yanıt `{ items, truncated, scanned_count }` (GAP-05 stili). Aynı defekt patients'ta da
+    düzeltildi. Cap testte `duplicateGroups(tenantId, rowCap)` parametresiyle override.
 - **AUDIT-F09-18** Per-method vs class-level guard standardizasyonu (`ads.controller.ts`, `ghl.controller.ts`); reflection-based `@UseGuards` coverage. **(S)** ✅
   - **Görüş (2026-08-09):** Sayım: 14 controller class-level vs ads/ghl method-level. Class-level'a
     hizalandı; Nest class+method merge yüzünden OAuth `callback` aynı sınıfta kalamazdı →

@@ -3,6 +3,13 @@ import { uuid } from './common.js';
 import { contactSchema, type Contact } from './contact.js';
 import { patientSchema, type Patient } from './patient.js';
 
+/**
+ * Hard row cap for in-memory duplicate scans (contacts + patients).
+ * Normalization stays in this module (not SQL) — shared client/server logic;
+ * we bound memory with LIMIT instead of reimplementing TR phone/email/name folds.
+ */
+export const DUPLICATE_SCAN_ROW_CAP = 5000;
+
 /** How records were grouped as likely duplicates. */
 export const duplicateMatchTypeSchema = z.enum(['email', 'phone', 'name']);
 
@@ -23,6 +30,29 @@ export const patientDuplicateGroupSchema = z.object({
 });
 
 export type PatientDuplicateGroup = z.infer<typeof patientDuplicateGroupSchema>;
+
+/** GET …/duplicate-groups envelope (GAP-05 truncated naming). */
+export const contactDuplicateGroupsResponseSchema = z.object({
+	items: z.array(contactDuplicateGroupSchema),
+	/** True when more active rows exist beyond the scan cap. */
+	truncated: z.boolean(),
+	/** Rows actually scanned (≤ DUPLICATE_SCAN_ROW_CAP). */
+	scanned_count: z.number().int().nonnegative()
+});
+
+export type ContactDuplicateGroupsResponse = z.infer<
+	typeof contactDuplicateGroupsResponseSchema
+>;
+
+export const patientDuplicateGroupsResponseSchema = z.object({
+	items: z.array(patientDuplicateGroupSchema),
+	truncated: z.boolean(),
+	scanned_count: z.number().int().nonnegative()
+});
+
+export type PatientDuplicateGroupsResponse = z.infer<
+	typeof patientDuplicateGroupsResponseSchema
+>;
 
 /** Keep one record; merge_ids are absorbed then removed. */
 export const mergeRecordsSchema = z.object({

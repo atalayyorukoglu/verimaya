@@ -3,8 +3,10 @@
 	import type {
 		Contact,
 		ContactDuplicateGroup,
+		ContactDuplicateGroupsResponse,
 		Patient,
-		PatientDuplicateGroup
+		PatientDuplicateGroup,
+		PatientDuplicateGroupsResponse
 	} from '@verimaya/shared';
 	import { apiPaths, duplicateMatchTypeLabels } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
@@ -15,6 +17,7 @@
 
 	type Kind = 'contacts' | 'patients';
 	type AnyGroup = ContactDuplicateGroup | PatientDuplicateGroup;
+	type DuplicateGroupsResponse = ContactDuplicateGroupsResponse | PatientDuplicateGroupsResponse;
 
 	let {
 		kind,
@@ -37,16 +40,18 @@
 	const groupsQuery = createQuery(() => ({
 		queryKey:
 			kind === 'contacts' ? qs.keys.contacts.duplicateGroups() : qs.keys.patients.duplicateGroups(),
-		queryFn: async (): Promise<{ items: AnyGroup[] }> => {
+		queryFn: async (): Promise<DuplicateGroupsResponse> => {
 			if (kind === 'contacts') {
-				return apiGet<{ items: ContactDuplicateGroup[] }>(apiPaths.contactsDuplicateGroups);
+				return apiGet<ContactDuplicateGroupsResponse>(apiPaths.contactsDuplicateGroups);
 			}
-			return apiGet<{ items: PatientDuplicateGroup[] }>(apiPaths.patientsDuplicateGroups);
+			return apiGet<PatientDuplicateGroupsResponse>(apiPaths.patientsDuplicateGroups);
 		},
 		enabled: qs.ready
 	}));
 
 	const groups = $derived(groupsQuery.data?.items ?? []);
+	const truncated = $derived(groupsQuery.data?.truncated ?? false);
+	const scannedCount = $derived(groupsQuery.data?.scanned_count ?? 0);
 
 	function groupKey(g: AnyGroup): string {
 		const members =
@@ -161,78 +166,85 @@
 	<p class="text-sm text-danger">
 		{kind === 'patients' ? t('patients.duplicates.loadError') : 'Çift kayıt listesi yüklenemedi.'}
 	</p>
-{:else if groups.length === 0}
-	<div class="rounded-lg border border-border bg-surface p-8 text-center">
-		<p class="text-sm font-medium text-text">
-			{kind === 'patients' ? t('patients.duplicates.emptyTitle') : 'Çift kayıt bulunamadı'}
-		</p>
-		<p class="mt-1 text-xs text-text-muted">
-			{kind === 'patients'
-				? t('patients.duplicates.emptyBody')
-				: 'Telefon, e-posta veya ad çakışması yok.'}
-		</p>
-	</div>
 {:else}
-	<ul class="space-y-4">
-		{#each groups as g (groupKey(g))}
-			{@const key = groupKey(g)}
-			{@const rows = contactRows(g)}
-			{@const keepId = keepByGroup[key] ?? rows[0]?.id ?? ''}
-			<li class="overflow-hidden rounded-lg border border-border bg-surface">
-				<div class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4">
-					<StatusBadge label={duplicateMatchTypeLabels[g.match_type]} tone="warning" />
-					<span class="truncate font-mono text-xs text-text-muted">{g.label}</span>
-					<span class="text-xs text-text-faint">
-						{kind === 'patients'
-							? t('patients.duplicates.recordCount', { count: String(rows.length) })
-							: `${rows.length} kayıt`}
-					</span>
-				</div>
-				<ul class="divide-y divide-border">
-					{#each rows as row (row.id)}
-						<li class="flex min-w-0 items-start gap-3 px-3 py-3 sm:px-4">
-							<input
-								type="radio"
-								name={`keep-${key}`}
-								class="mt-1"
-								checked={keepId === row.id}
-								onchange={() => {
-									keepByGroup = { ...keepByGroup, [key]: row.id };
-								}}
-							/>
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium text-text">{row.title}</p>
-								<p class="mt-0.5 truncate text-xs text-text-faint">{row.subtitle}</p>
-								{#if row.meta}
-									<p class="mt-0.5 text-xs text-text-muted">{row.meta}</p>
-								{/if}
-							</div>
-							<a
-								href={kind === 'contacts' ? `/contacts/${row.id}` : `/patients/${row.id}`}
-								class="shrink-0 text-xs text-brand hover:underline"
-							>
-								{kind === 'patients' ? t('patients.duplicates.open') : 'Aç'}
-							</a>
-						</li>
-					{/each}
-				</ul>
-				<div class="flex justify-end border-t border-border px-3 py-2.5 sm:px-4">
-					<Button
-						type="button"
-						size="sm"
-						disabled={mergingKey === key || rows.length < 2}
-						onclick={() => mergeGroup(g)}
-					>
-						{#if mergingKey === key}
-							{kind === 'patients' ? t('patients.duplicates.completing') : 'Birleştiriliyor…'}
-						{:else if kind === 'patients'}
-							{t('patients.duplicates.complete')}
-						{:else}
-							Seçileni tut, diğerlerini birleştir
-						{/if}
-					</Button>
-				</div>
-			</li>
-		{/each}
-	</ul>
+	{#if truncated}
+		<p class="mb-3 text-sm text-warning" role="status">
+			{t('duplicates.scan.truncated', { scanned_count: String(scannedCount) })}
+		</p>
+	{/if}
+	{#if groups.length === 0}
+		<div class="rounded-lg border border-border bg-surface p-8 text-center">
+			<p class="text-sm font-medium text-text">
+				{kind === 'patients' ? t('patients.duplicates.emptyTitle') : 'Çift kayıt bulunamadı'}
+			</p>
+			<p class="mt-1 text-xs text-text-muted">
+				{kind === 'patients'
+					? t('patients.duplicates.emptyBody')
+					: 'Telefon, e-posta veya ad çakışması yok.'}
+			</p>
+		</div>
+	{:else}
+		<ul class="space-y-4">
+			{#each groups as g (groupKey(g))}
+				{@const key = groupKey(g)}
+				{@const rows = contactRows(g)}
+				{@const keepId = keepByGroup[key] ?? rows[0]?.id ?? ''}
+				<li class="overflow-hidden rounded-lg border border-border bg-surface">
+					<div class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4">
+						<StatusBadge label={duplicateMatchTypeLabels[g.match_type]} tone="warning" />
+						<span class="truncate font-mono text-xs text-text-muted">{g.label}</span>
+						<span class="text-xs text-text-faint">
+							{kind === 'patients'
+								? t('patients.duplicates.recordCount', { count: String(rows.length) })
+								: `${rows.length} kayıt`}
+						</span>
+					</div>
+					<ul class="divide-y divide-border">
+						{#each rows as row (row.id)}
+							<li class="flex min-w-0 items-start gap-3 px-3 py-3 sm:px-4">
+								<input
+									type="radio"
+									name={`keep-${key}`}
+									class="mt-1"
+									checked={keepId === row.id}
+									onchange={() => {
+										keepByGroup = { ...keepByGroup, [key]: row.id };
+									}}
+								/>
+								<div class="min-w-0 flex-1">
+									<p class="truncate text-sm font-medium text-text">{row.title}</p>
+									<p class="mt-0.5 truncate text-xs text-text-faint">{row.subtitle}</p>
+									{#if row.meta}
+										<p class="mt-0.5 text-xs text-text-muted">{row.meta}</p>
+									{/if}
+								</div>
+								<a
+									href={kind === 'contacts' ? `/contacts/${row.id}` : `/patients/${row.id}`}
+									class="shrink-0 text-xs text-brand hover:underline"
+								>
+									{kind === 'patients' ? t('patients.duplicates.open') : 'Aç'}
+								</a>
+							</li>
+						{/each}
+					</ul>
+					<div class="flex justify-end border-t border-border px-3 py-2.5 sm:px-4">
+						<Button
+							type="button"
+							size="sm"
+							disabled={mergingKey === key || rows.length < 2}
+							onclick={() => mergeGroup(g)}
+						>
+							{#if mergingKey === key}
+								{kind === 'patients' ? t('patients.duplicates.completing') : 'Birleştiriliyor…'}
+							{:else if kind === 'patients'}
+								{t('patients.duplicates.complete')}
+							{:else}
+								Seçileni tut, diğerlerini birleştir
+							{/if}
+						</Button>
+					</div>
+				</li>
+			{/each}
+		</ul>
+	{/if}
 {/if}
