@@ -120,6 +120,11 @@ const INTENTIONAL_PERMISSION_LOCKS: Array<{
 		reason: 'Cross-resource: patient route exposes finance aggregates'
 	},
 	{
+		key: 'PatientsController.autoLinkTransactions',
+		permission: { resource: 'finance', action: 'update' },
+		reason: 'Cross-resource: patient route mutates transactions (patient_id link)'
+	},
+	{
 		key: 'WhatsappController.approveDrafts',
 		permission: { resource: 'finance', action: 'create' },
 		reason: 'Money path — writes transactions, not patient inbox state'

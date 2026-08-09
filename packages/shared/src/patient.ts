@@ -73,3 +73,15 @@ export const patientFinanceSummarySchema = z.object({
 });
 
 export type PatientFinanceSummary = z.infer<typeof patientFinanceSummarySchema>;
+
+/**
+ * GAP-F09-22 (G-22): bulk-link unassigned transactions that share the patient's contact_id.
+ * Bodyless POST; `updated` is the real row count mutated.
+ */
+export const patientAutoLinkTransactionsResultSchema = z.object({
+	updated: z.number().int().nonnegative()
+});
+
+export type PatientAutoLinkTransactionsResult = z.infer<
+	typeof patientAutoLinkTransactionsResultSchema
+>;

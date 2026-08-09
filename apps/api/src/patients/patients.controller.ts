@@ -193,6 +193,15 @@ export class PatientsController {
 		return this.patientsService.financeSummary(getActiveOrgId(req), id);
 	}
 
+	@Post(':id/auto-link-transactions')
+	@RequireOrgPermission('finance', 'update')
+	@IdempotencyExempt(
+		'Naturally idempotent by query: only contact-matched rows with patient_id IS NULL are updated; a repeat call finds nothing left to link and returns updated: 0.'
+	)
+	autoLinkTransactions(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.patientsService.autoLinkTransactions(getActiveOrgId(req), id);
+	}
+
 	@Post(':id/files/presign')
 	@RequireOrgPermission('patient', 'update')
 	@Idempotent()

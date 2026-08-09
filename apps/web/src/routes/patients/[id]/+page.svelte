@@ -6,6 +6,7 @@
 		AppointmentCreate,
 		AppointmentUpdate,
 		Patient,
+		PatientAutoLinkTransactionsResult,
 		PatientFinanceSummary,
 		PatientUpdate,
 		SupportedCurrency,
@@ -59,6 +60,10 @@
 	let editingAppt = $state<Appointment | null>(null);
 	let apptSaving = $state(false);
 	let apptFormError = $state<string | null>(null);
+
+	let autoLinking = $state(false);
+	let autoLinkMessage = $state<string | null>(null);
+	let autoLinkError = $state<string | null>(null);
 
 	const patientQuery = createQuery(() => ({
 		queryKey: qs.keys.patients.detail(id),
@@ -227,6 +232,31 @@
 			apptSaving = false;
 		}
 	}
+
+	async function autoLinkTransactions() {
+		autoLinking = true;
+		autoLinkMessage = null;
+		autoLinkError = null;
+		try {
+			const result = await apiSend<PatientAutoLinkTransactionsResult>(
+				apiPaths.patientAutoLinkTransactions(id),
+				'POST'
+			);
+			autoLinkMessage =
+				result.updated > 0
+					? t('patients.finance.autoLinkSuccess', { count: result.updated })
+					: t('patients.finance.autoLinkNone');
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() }),
+				queryClient.invalidateQueries({ queryKey: qs.keys.patients.financeSummary(id) })
+			]);
+		} catch (err) {
+			autoLinkError =
+				err instanceof Error ? err.message : t('patients.finance.autoLinkFailed');
+		} finally {
+			autoLinking = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -261,13 +291,35 @@
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 				<h2 class="text-sm font-semibold text-text">{t('patients.finance.title')}</h2>
-				<a
-					href={`/finance?hasta=${patient.id}`}
-					class="text-xs font-medium text-brand hover:underline"
-				>
-					{t('patients.finance.openInTransactions')}
-				</a>
+				<div class="flex flex-wrap items-center gap-2">
+					{#if patient.contact_id}
+						<Button
+							type="button"
+							size="sm"
+							variant="secondary"
+							disabled={autoLinking}
+							onclick={autoLinkTransactions}
+						>
+							{autoLinking
+								? t('patients.finance.autoLinking')
+								: t('patients.finance.autoLink')}
+						</Button>
+					{/if}
+					<a
+						href={`/finance?hasta=${patient.id}`}
+						class="text-xs font-medium text-brand hover:underline"
+					>
+						{t('patients.finance.openInTransactions')}
+					</a>
+				</div>
 			</div>
+
+			{#if autoLinkMessage}
+				<p class="mb-3 text-sm text-success">{autoLinkMessage}</p>
+			{/if}
+			{#if autoLinkError}
+				<p class="mb-3 text-sm text-danger">{autoLinkError}</p>
+			{/if}
 
 			{#if !USE_MSW && financeSummaryQuery.isPending}
 				<p class="text-sm text-text-muted">{t('patients.finance.loading')}</p>

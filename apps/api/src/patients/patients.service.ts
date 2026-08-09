@@ -170,6 +170,48 @@ export class PatientsService {
 		});
 	}
 
+	/**
+	 * GAP-F09-22 (G-22): link unassigned transactions that share the patient's contact_id.
+	 * Soft-deleted rows and transactions already linked to any patient are skipped.
+	 * Repeat calls converge (`updated: 0` once nothing remains to link).
+	 */
+	async autoLinkTransactions(tenantId: string, patientId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) =>
+			this.autoLinkTransactionsWithDb(db, patientId)
+		);
+	}
+
+	async autoLinkTransactionsWithDb(db: TenantDb, patientId: string) {
+		const patient = await this.findActiveRow(db, patientId);
+		if (!patient) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Patient not found' }
+			});
+		}
+
+		if (!patient.contactId) {
+			return { updated: 0 };
+		}
+
+		const updatedRows = await db
+			.update(transactions)
+			.set({
+				patientId,
+				patientDisplayName: patient.fullName,
+				updatedAt: new Date()
+			})
+			.where(
+				and(
+					eq(transactions.contactId, patient.contactId),
+					isNull(transactions.patientId),
+					isNull(transactions.deletedAt)
+				)
+			)
+			.returning({ id: transactions.id });
+
+		return { updated: updatedRows.length };
+	}
+
 	async listFiles(tenantId: string, patientId: string) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const patient = await this.findActiveRow(db, patientId);

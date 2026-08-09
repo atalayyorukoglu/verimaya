@@ -1070,6 +1070,26 @@ export const handlers = [
 		return HttpResponse.json({ id, deleted: true as const });
 	}),
 
+	http.post('/v1/patients/:id/auto-link-transactions', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const patient = store.patients.find((p) => p.id === params.id);
+		if (!patient) return notFound('Hasta bulunamadı');
+		if (!patient.contact_id) {
+			return HttpResponse.json({ updated: 0 });
+		}
+		let updated = 0;
+		const now = nowIso();
+		for (const t of store.transactions) {
+			if (t.contact_id !== patient.contact_id) continue;
+			if (t.patient_id != null) continue;
+			t.patient_id = patient.id;
+			t.patient_display_name = patient.full_name;
+			t.updated_at = now;
+			updated += 1;
+		}
+		return HttpResponse.json({ updated });
+	}),
+
 	http.get('/v1/appointments', ({ request }) => {
 		const url = new URL(request.url);
 		const parsed = parseListQuery(appointmentListQuerySchema, url);

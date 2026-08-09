@@ -13,6 +13,8 @@ export const apiPaths = {
 	patients: `${API_V1_PREFIX}/patients`,
 	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
 	patientFinanceSummary: (id: string) => `${API_V1_PREFIX}/patients/${id}/finance-summary`,
+	patientAutoLinkTransactions: (id: string) =>
+		`${API_V1_PREFIX}/patients/${id}/auto-link-transactions`,
 	patientFiles: (id: string) => `${API_V1_PREFIX}/patients/${id}/files`,
 	patientFilesPresign: (id: string) => `${API_V1_PREFIX}/patients/${id}/files/presign`,
 	patientFileConfirm: (patientId: string, fileId: string) =>
@@ -141,7 +143,11 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.created_to) url.searchParams.set('created_to', params.created_to);
 	return `${url.pathname}${url.search}`;
 }
-import { patientSchema, patientFinanceSummarySchema } from './patient.js';
+import {
+	patientSchema,
+	patientFinanceSummarySchema,
+	patientAutoLinkTransactionsResultSchema
+} from './patient.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
 import {
@@ -218,6 +224,9 @@ export const apiContract = {
 	},
 	'GET /v1/patients/:id/finance-summary': {
 		response: patientFinanceSummarySchema
+	},
+	'POST /v1/patients/:id/auto-link-transactions': {
+		response: patientAutoLinkTransactionsResultSchema
 	},
 	'GET /v1/appointments': {
 		response: appointmentListPageSchema
