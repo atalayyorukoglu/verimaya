@@ -5,9 +5,9 @@
 > `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de durur. Kapanan işin kanıtı oradadır,
 > buraya taşınmaz.
 >
-> **Durum anı:** branch `main`, HEAD `c41872e` (AUDIT-F09-05). Prod DB `0032`'de
+> **Durum anı:** branch `main`, HEAD `ba42830` (AUDIT-F09-10). Prod DB `0032`'de
 > doğrulandı (2026-08-08, kanıt: `docs/2026-08-08-PROD-KONTROL-LISTESI.md` § A);
-> `0033` sıradaki API deploy'uyla gider.
+> `0033` + `0034` sıradaki API deploy'uyla gider.
 > Pilot tenant: `Demo Klinik` (`afb4a68b…`) — 757 dosya, 548 işlem, 703 randevu.
 
 ---
@@ -24,6 +24,11 @@
    **Sana tek bir kalem söylendiyse yalnız onu yap, diğerlerine dokunma, soru sorma.**
 7. **Sözleşme önce `packages/shared`'da** değişir (AGENTS.md ilke 7); tenant'lı her endpoint'e
    negatif izolasyon testi zorunlu; kullanıcı metni `messages.ts` anahtarıdır (tr + en).
+   OpenAPI artık `apiContract`'tan üretilir — sözleşme değişince `pnpm --filter @verimaya/api
+   openapi:generate` zorunlu (drift spec'i byte-compare yapıyor). Spec'lerde tenant bağlamı
+   yalnız drizzle transaction + `SET LOCAL` (`set_config(..., true)`); session-level
+   `set_config(..., false)` YASAK (postgres.js pool sızıntısı → sıralama flake'i, kanıt:
+   2026-08-09 flaky-spec düzeltmesi).
 8. **Re-base:** Bu dosya dönem kapanınca veya okunamaz boyuta gelince yeni tarihli dosyaya
    taşınır; eskisi `docs/Arşiv/`'e gider, AGENTS.md + README.md referansları güncellenir
    (bu dosya böyle doğdu).
@@ -44,8 +49,12 @@
   altı ekranda düştü mü), § D1–D2 (işlem/randevu filtreleri gerçek veriyle), § E1–E2
   (no-show oranı %0 değil mi; tutarlılık uyarısı 10–100 bandında mı). Takılan maddeye
   bu dosyada kalem aç; takılan yoksa Sonuç tablosunu işaretle.
-- [ ] **Migration `0033` prod'a** (sıradaki API deploy'uyla): yedek → `pnpm db:migrate` → kanıt
-  (`outbox_events`'ta `status='dead'` + `dead_lettered_at` kolonları). Runbook: PROD-KONTROL § A.
+- [ ] **Migration `0033` + `0034` prod'a** (sıradaki API deploy'uyla): yedek → `pnpm db:migrate`
+  → kanıt (`outbox_events`'ta `status='dead'` + `dead_lettered_at`; `appointment_types` /
+  `contact_types` tenant+name UNIQUE index'leri, `tenant_settings` seed bayrakları).
+  Runbook: PROD-KONTROL § A. Not (2026-08-09): `0034` kendi içinde mükerrer (tenant, name)
+  çiftlerini önce dedupe edip sonra index kuruyor — elle ön temizlik gerekmiyor, yine de
+  migrate log'unda dedupe adımına göz at.
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org dahil) — devam eden kural.
 - [ ] **Tenant adı:** `Demo Klinik` rename veya olduğu gibi bırak — karar ver, Görüş'e yaz (ucuz).
 - **Bağımlı:** yok.
@@ -114,6 +123,10 @@
   **Dosyalar:** `apps/api/src/api-keys/**`, `apps/api/src/common/org-permission.guard.ts`,
   `apps/api/src/auth/**`, `packages/shared/src/api-key.ts`, yeni migration,
   `apps/web/src/routes/settings/**` (issuance UX).
+  Not (2026-08-09): bugün eklenen endpoint'ler de scope haritasına dahil edilmeli —
+  `reports/transaction-duplicates`, `whatsapp/corrections-report`, `whatsapp/create-*` (3 adet),
+  `patients/:id/auto-link-transactions`, `contacts/bulk-type`, `settings/contact-types PATCH`,
+  `patients/:id/files/:fileId/preview`.
 
 ---
 
@@ -140,6 +153,10 @@
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
 - **GAP-F09-23** Dosya silme endpoint'i (soft-delete + audit; KVKK). **(M)**
+  Not (2026-08-09): dosya yükleme/okuma tek choke point'ten geçiyor (`file-mime.ts` sniff +
+  `putFileContent`/`uploadLocalFileWithDb`, preview'da RFC 5987 + nosniff) — silme de aynı
+  servis katmanına eklensin; storage tarafı RoutingFileStorage sayesinde local+S3 tek noktadan
+  kapsanır.
 
 ---
 
