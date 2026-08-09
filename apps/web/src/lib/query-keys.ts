@@ -74,7 +74,7 @@ export function queryKeys(scope: QueryScope) {
 			ghlStatus: () => k('integrations', 'ghl', 'status')
 		},
 		auditLogs: {
-			list: () => k('audit-logs')
+			list: (params: Params = {}) => k('audit-logs', params)
 		},
 		members: {
 			all: () => k('members'),

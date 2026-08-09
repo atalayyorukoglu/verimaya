@@ -240,6 +240,22 @@ const tr = {
 	'settings.team.footnote':
 		'Davet ve üye çıkarma better-auth organization ile gelecek. Rol değiştirmek için sahip veya yönetici olmanız gerekir.',
 
+	// Ayarlar · Denetim kaydı (GAP-F09-13)
+	'settings.audit.title': 'Denetim kaydı',
+	'settings.audit.description': 'Tenant içindeki oluşturma, güncelleme ve silme olayları.',
+	'settings.audit.loading': 'Yükleniyor…',
+	'settings.audit.loadError': 'Denetim kaydı yüklenemedi.',
+	'settings.audit.empty': 'Henüz kayıt yok.',
+	'settings.audit.loadMore': 'Daha fazla yükle',
+	'settings.audit.filter.actionAll': 'Tüm eylemler',
+	'settings.audit.filter.entityAll': 'Tüm varlıklar',
+	'settings.audit.filter.actorPlaceholder': 'Aktör kullanıcı kimliği (UUID)',
+	'settings.audit.filter.qPlaceholder': 'Hedef etiketi (içerir)',
+	'settings.audit.filter.from': 'Başlangıç',
+	'settings.audit.filter.to': 'Bitiş',
+	'settings.audit.filter.apply': 'Filtrele',
+	'settings.audit.filter.clear': 'Temizle',
+
 	// Ayarlar · Sözlükler (randevu / kişi tipleri)
 	'settings.dictionaries.duplicateName': 'Bu isimde bir kayıt zaten var',
 
@@ -1117,6 +1133,22 @@ const en: Record<MessageKey, string> = {
 	'settings.team.roleUpdateError': 'Could not update role',
 	'settings.team.footnote':
 		'Invite and remove come with better-auth organization. Changing roles requires owner or admin.',
+
+	// Settings · Audit log (GAP-F09-13)
+	'settings.audit.title': 'Audit log',
+	'settings.audit.description': 'Create, update, and delete events within the tenant.',
+	'settings.audit.loading': 'Loading…',
+	'settings.audit.loadError': 'Could not load the audit log.',
+	'settings.audit.empty': 'No entries yet.',
+	'settings.audit.loadMore': 'Load more',
+	'settings.audit.filter.actionAll': 'All actions',
+	'settings.audit.filter.entityAll': 'All entities',
+	'settings.audit.filter.actorPlaceholder': 'Actor user id (UUID)',
+	'settings.audit.filter.qPlaceholder': 'Target label (contains)',
+	'settings.audit.filter.from': 'From',
+	'settings.audit.filter.to': 'To',
+	'settings.audit.filter.apply': 'Filter',
+	'settings.audit.filter.clear': 'Clear',
 
 	'settings.dictionaries.duplicateName': 'An entry with this name already exists',
 

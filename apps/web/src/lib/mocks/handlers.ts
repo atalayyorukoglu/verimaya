@@ -8,6 +8,7 @@ import {
 	appointmentCreateSchema,
 	appointmentUpdateSchema,
 	appointmentListQuerySchema,
+	auditLogListQuerySchema,
 	transactionCreateSchema,
 	transactionUpdateSchema,
 	transactionListQuerySchema,
@@ -835,10 +836,36 @@ export const handlers = [
 
 	http.get('/v1/audit-logs', ({ request }) => {
 		const url = new URL(request.url);
+		const parsed = parseListQuery(auditLogListQuerySchema, url);
+		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
-		return HttpResponse.json(
-			paginate(store.auditLogs, url.searchParams.get('cursor'), limitFrom(url))
-		);
+		let items = [...store.auditLogs];
+		const {
+			actor_id: actorId,
+			action,
+			entity_type: entityType,
+			created_from: createdFrom,
+			created_to: createdTo,
+			q
+		} = parsed.data;
+		if (actorId) items = items.filter((l) => l.actor_id === actorId);
+		if (action) items = items.filter((l) => l.action === action);
+		if (entityType) items = items.filter((l) => l.entity_type === entityType);
+		const tz = store.tenant.timezone;
+		if (createdFrom) {
+			const { start } = tenantDayRange(createdFrom, tz);
+			items = items.filter((l) => l.created_at >= start.toISOString());
+		}
+		if (createdTo) {
+			const { endExclusive } = tenantDayRange(createdTo, tz);
+			items = items.filter((l) => l.created_at < endExclusive.toISOString());
+		}
+		if (q) {
+			const needle = q.toLowerCase();
+			items = items.filter((l) => l.entity_label?.toLowerCase().includes(needle) ?? false);
+		}
+		items.sort(compareByCreatedAtDesc);
+		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
 	http.get('/v1/search', ({ request }) => {

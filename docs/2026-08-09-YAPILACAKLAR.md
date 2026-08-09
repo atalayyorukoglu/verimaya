@@ -140,7 +140,6 @@
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
 
-- **GAP-F09-13** Denetim kaydı filtreleri (Tracker 7 param; bizde yalnız cursor+limit). **(S–M)**
 - **GAP-F09-14** Sunucu tarafı veri kalitesi raporu (`settings/data-quality` istemci hesaplıyor; GAP-05 ile aynı kök neden). **(M)**
 - **GAP-F09-16** WhatsApp içe aktarımda satır içi kayıt oluşturma (kişi/hasta/kategori). **(M)**
 - **GAP-F09-17** Kişi toplu tür atama + kişi türü rename (`PATCH /contact-types/:id`). **(S)**
@@ -216,6 +215,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-F09-13** — `GET /v1/audit-logs` filtreleri: `actor_id`, `action`, `entity_type`, `created_from/to` (tenant-timezone takvim günü, `tenantDayRange`), `q` (`entity_label` ILIKE); `/settings/audit`'te filtre çubuğu (2026-08-09). Görüş: Tracker'ın `entity_id` parametresi bilinçli dışarıda — tabloda kolon yok; `q` label araması işlevi karşılıyor. Spec'te session-GUC deseni yakalanıp SET LOCAL'e çevrildi. API 402/402 + shared 84 + web check yeşil.
 - ✅ **Flaky spec** — `auth-or-api-key.isolation.spec.ts` sıralama bağımlılığı giderildi (2026-08-09). Görüş: kök neden session-level `set_config(..., false)` + postgres.js pool sızıntısı; test başına fixture + `SET LOCAL` (production deseni) — her test kendi A/B çiftini kuruyor, izolasyon/scope iddiaları aynı. 3× + 2× shuffle + tam paket 394/394 yeşil.
 - ✅ **GAP-F09-15** — `GET /v1/whatsapp/corrections-report` alan bazlı GROUP BY (correction_count + distinct_messages, from/to, `.strict()`); `/settings/ai-learning` istemci sayımından rapor API'sine geçti (2026-08-09). Görüş: Tracker'ın value-triple özeti bilinçli ertelendi (display-name çözümü gerekir); prompt tuning için alan frekansı yeterli.
 - ✅ **GAP-F09-21** — randevu listesi yanıtına filtreli tam küme `type_counts`/`status_counts` (GAP-03b deseni; cursor sayımda yok, soft-delete hariç); UI'da durum özeti şeridi (2026-08-09). API 390/390 + web check yeşil.

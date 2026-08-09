@@ -111,6 +111,12 @@ export type ListQueryParams = {
 	kind?: string;
 	status?: string;
 	category?: string;
+	/** GAP-F09-13: audit-logs list filters */
+	actor_id?: string;
+	action?: string;
+	entity_type?: string;
+	created_from?: string;
+	created_to?: string;
 };
 
 /** Build a cursor-paginated list URL (path + query only, no origin). */
@@ -127,6 +133,11 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.kind) url.searchParams.set('kind', params.kind);
 	if (params?.status) url.searchParams.set('status', params.status);
 	if (params?.category) url.searchParams.set('category', params.category);
+	if (params?.actor_id) url.searchParams.set('actor_id', params.actor_id);
+	if (params?.action) url.searchParams.set('action', params.action);
+	if (params?.entity_type) url.searchParams.set('entity_type', params.entity_type);
+	if (params?.created_from) url.searchParams.set('created_from', params.created_from);
+	if (params?.created_to) url.searchParams.set('created_to', params.created_to);
 	return `${url.pathname}${url.search}`;
 }
 import { patientSchema, patientFinanceSummarySchema } from './patient.js';
