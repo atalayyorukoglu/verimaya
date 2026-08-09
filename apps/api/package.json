@@ -21,7 +21,8 @@
 		"ads:fx-backfill": "node scripts/backfill-ad-spend-fx.js",
 		"karne:stats": "node scripts/karne-stats.js",
 		"files:migrate-s3": "node scripts/migrate-files-to-s3.js",
-		"ghl:migrate-markers": "node scripts/migrate-ghl-markers.js"
+		"ghl:migrate-markers": "node scripts/migrate-ghl-markers.js",
+		"openapi:generate": "node scripts/generate-openapi.js"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.1098.0",
@@ -54,6 +55,8 @@
 		"@types/node": "^24.13.3",
 		"drizzle-kit": "^0.31.4",
 		"typescript": "^5.9.2",
-		"vitest": "^4.1.10"
+		"vitest": "^4.1.10",
+		"yaml": "^2.9.0",
+		"zod-to-json-schema": "^3.25.2"
 	}
 }
