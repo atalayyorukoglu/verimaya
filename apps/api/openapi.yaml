@@ -843,6 +843,25 @@ paths:
           required: true
           schema:
             type: string
+  /patients/{id}/files/{fileId}/preview:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
   /patients/{id}/case-notes:
     get:
       responses:

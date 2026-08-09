@@ -11,9 +11,11 @@ import {
 	Query,
 	Req,
 	Res,
+	UnsupportedMediaTypeException,
 	UseGuards
 } from '@nestjs/common';
 import {
+	isAllowedPatientFileMimeType,
 	mergeRecordsSchema,
 	patientCaseNoteCreateSchema,
 	patientCreateSchema,
@@ -49,6 +51,21 @@ function multipartFieldString(field: unknown): string | null {
 	if (!item || typeof item !== 'object') return null;
 	const value = (item as { value?: unknown }).value;
 	return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/** RFC 6266 + RFC 5987 filename* for non-ASCII / quotes. */
+function contentDispositionHeader(
+	disposition: 'inline' | 'attachment',
+	filename: string
+): string {
+	const asciiFallback = filename
+		.replace(/[^\x20-\x7E]/g, '_')
+		.replace(/["\\]/g, '_')
+		.slice(0, 180);
+	const safeAscii = asciiFallback.length > 0 ? asciiFallback : 'file';
+	const encoded = encodeURIComponent(filename)
+		.replace(/['()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+	return `${disposition}; filename="${safeAscii}"; filename*=UTF-8''${encoded}`;
 }
 
 @Controller('patients')
@@ -176,15 +193,37 @@ export class PatientsController {
 			fileId
 		);
 		reply.header('Content-Type', download.mimeType);
-		reply.header(
-			'Content-Disposition',
-			`attachment; filename="${download.filename.replace(/"/g, '')}"`
-		);
+		reply.header('Content-Disposition', contentDispositionHeader('attachment', download.filename));
 		reply.header('X-Content-Type-Options', 'nosniff');
 		if (download.sizeBytes > 0) {
 			reply.header('Content-Length', String(download.sizeBytes));
 		}
 		return reply.send(download.stream);
+	}
+
+	@Get(':id/files/:fileId/preview')
+	@RequireOrgPermission('patient', 'read')
+	async previewFile(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('fileId') fileId: string,
+		@Res() reply: FastifyReply
+	) {
+		const preview = await this.patientsService.openFilePreview(
+			getActiveOrgId(req),
+			id,
+			fileId
+		);
+		reply.header('Content-Type', preview.mimeType);
+		reply.header(
+			'Content-Disposition',
+			contentDispositionHeader(preview.disposition, preview.filename)
+		);
+		reply.header('X-Content-Type-Options', 'nosniff');
+		if (preview.sizeBytes > 0) {
+			reply.header('Content-Length', String(preview.sizeBytes));
+		}
+		return reply.send(preview.stream);
 	}
 
 	@Get(':id/finance-summary')
@@ -306,6 +345,17 @@ export class PatientsController {
 					error: { code: 'validation_error', message: 'Expected multipart file field' }
 				});
 			}
+			const declaredMime = part.mimetype || 'application/octet-stream';
+			// AUDIT-F09-08: @fastify/multipart@10 has no allowedMimeTypes option — declared
+			// MIME checked here; magic-byte sniff runs in uploadLocalFileWithDb.
+			if (!isAllowedPatientFileMimeType(declaredMime)) {
+				throw new UnsupportedMediaTypeException({
+					error: {
+						code: 'unsupported_media_type',
+						message: `MIME type not allowed: ${declaredMime}`
+					}
+				});
+			}
 			const data = await part.toBuffer();
 			if (data.byteLength > MAX_UPLOAD_BYTES) {
 				throw new BadRequestException({
@@ -330,7 +380,7 @@ export class PatientsController {
 						id,
 						{
 							filename: part.filename || 'upload.bin',
-							mimeType: part.mimetype || 'application/octet-stream',
+							mimeType: declaredMime,
 							appointmentId,
 							data
 						},

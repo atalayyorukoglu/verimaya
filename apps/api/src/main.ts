@@ -145,12 +145,10 @@ async function bootstrap() {
 		exposedHeaders: ['set-auth-token']
 	});
 
-	// AUDIT-03 (Faz 8): cap multipart upload size. Magic-byte MIME sniff (file-type /
-	// mmmagic) is the audit-recommended deeper defense and is deferred to AUDIT-F09-08.
-	// For the pilot we rely on the client declaring the MIME type via the
-	// `mime_type` field on `createFileWithDb`; the `binaryTypes` allowlist below
-	// constrains what Fastify's content-type parser will accept, and a downstream
-	// review-of-content on the patient's first file load is the operator's job.
+	// AUDIT-03 (Faz 8) + AUDIT-F09-08: multipart size cap. Magic-byte MIME sniff
+	// (`file-type`) runs in PatientsService putFileContent / uploadLocalFileWithDb.
+	// @fastify/multipart@10 has no `allowedMimeTypes` option — declared MIME is checked
+	// in the multipart handler; sniff rejects allowlist-off / mismatch / undetectable.
 	await app.register(multipart, {
 		limits: { fileSize: MAX_UPLOAD_BYTES }
 	});
@@ -162,8 +160,7 @@ async function bootstrap() {
 		'image/png',
 		'image/jpeg',
 		'image/jpg',
-		'image/webp',
-		'image/gif'
+		'image/webp'
 	];
 	for (const type of binaryTypes) {
 		fastify.addContentTypeParser(

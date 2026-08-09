@@ -2,6 +2,7 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import {
 		apiPaths,
+		isInlineSafePatientFileMimeType,
 		type Appointment,
 		type PatientFile,
 		type PatientFilePresignResponse
@@ -9,8 +10,10 @@
 	import { apiGet, apiSend, resolveApiUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatBytes, formatDateTime } from '$lib/format';
+	import { t } from '$lib/i18n/locale.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Download from '@lucide/svelte/icons/download';
+	import Eye from '@lucide/svelte/icons/eye';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Upload from '@lucide/svelte/icons/upload';
@@ -33,7 +36,7 @@
 
 	const filesQuery = createQuery(() => ({
 		queryKey: qs.keys.patients.files(patientId),
-		queryFn: () => apiGet<{ items: PatientFile[] }>(`/v1/patients/${patientId}/files`),
+		queryFn: () => apiGet<{ items: PatientFile[] }>(apiPaths.patientFiles(patientId)),
 		enabled: qs.ready
 	}));
 
@@ -57,9 +60,9 @@
 			};
 			xhr.onload = () => {
 				if (xhr.status >= 200 && xhr.status < 300) resolve();
-				else reject(new Error(`Yükleme başarısız (${xhr.status})`));
+				else reject(new Error(t('patients.files.uploadFailedStatus', { status: String(xhr.status) })));
 			};
-			xhr.onerror = () => reject(new Error('Yükleme ağı hatası'));
+			xhr.onerror = () => reject(new Error(t('patients.files.uploadNetworkError')));
 			xhr.send(file);
 		});
 	}
@@ -97,7 +100,7 @@
 			await uploadViaPresign(file);
 			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.files(patientId) });
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : 'Yükleme başarısız';
+			uploadError = err instanceof Error ? err.message : t('patients.files.uploadFailed');
 		} finally {
 			uploading = false;
 			uploadProgress = null;
@@ -109,7 +112,7 @@
 			await apiSend(`/v1/patients/${patientId}/files/${file.id}`, 'DELETE');
 			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.files(patientId) });
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : 'Silme başarısız';
+			uploadError = err instanceof Error ? err.message : t('patients.files.deleteFailed');
 		}
 	}
 
@@ -121,7 +124,7 @@
 				headers: { Accept: '*/*' }
 			});
 			if (!res.ok) {
-				throw new Error(`İndirme başarısız (${res.status})`);
+				throw new Error(t('patients.files.downloadFailedStatus', { status: String(res.status) }));
 			}
 			const blob = await res.blob();
 			const url = URL.createObjectURL(blob);
@@ -131,25 +134,53 @@
 			a.click();
 			URL.revokeObjectURL(url);
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : 'İndirme başarısız';
+			uploadError = err instanceof Error ? err.message : t('patients.files.downloadFailed');
+		}
+	}
+
+	async function previewFile(file: PatientFile) {
+		uploadError = null;
+		try {
+			const res = await fetch(resolveApiUrl(apiPaths.patientFilePreview(patientId, file.id)), {
+				credentials: 'include',
+				headers: { Accept: '*/*' }
+			});
+			if (!res.ok) {
+				throw new Error(t('patients.files.previewFailedStatus', { status: String(res.status) }));
+			}
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			if (isInlineSafePatientFileMimeType(file.mime_type)) {
+				window.open(url, '_blank', 'noopener,noreferrer');
+				// Revoke after the tab has a chance to load the blob URL.
+				window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+			} else {
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = file.filename;
+				a.click();
+				URL.revokeObjectURL(url);
+			}
+		} catch (err) {
+			uploadError = err instanceof Error ? err.message : t('patients.files.previewFailed');
 		}
 	}
 </script>
 
 <section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
 	<div class="flex flex-wrap items-center justify-between gap-2">
-		<h2 class="text-sm font-semibold text-text">Dosyalar</h2>
+		<h2 class="text-sm font-semibold text-text">{t('patients.files.title')}</h2>
 		<div class="flex flex-wrap items-center gap-2">
 			{#if appointments.length > 0}
 				<select
 					class="h-8 max-w-[14rem] rounded-[6px] border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40"
 					bind:value={linkAppointmentId}
-					aria-label="Randevuya bağla"
+					aria-label={t('patients.files.linkAppointment')}
 				>
-					<option value="">Hasta dosyası (randevusuz)</option>
+					<option value="">{t('patients.files.noAppointment')}</option>
 					{#each appointments as a (a.id)}
 						<option value={a.id}>
-							{a.starts_at.slice(0, 10)} · {a.title ?? 'Randevu'}
+							{a.starts_at.slice(0, 10)} · {a.title ?? t('patients.files.appointmentFallback')}
 						</option>
 					{/each}
 				</select>
@@ -159,7 +190,7 @@
 				type="file"
 				class="sr-only"
 				onchange={onFilePicked}
-				accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
+				accept=".pdf,.png,.jpg,.jpeg,.webp"
 			/>
 			<Button
 				type="button"
@@ -171,9 +202,9 @@
 				<Upload class="size-3.5" />
 				{uploading
 					? uploadProgress != null
-						? `Yükleniyor ${uploadProgress}%`
-						: 'Yükleniyor…'
-					: 'Yükle'}
+						? t('patients.files.uploadingProgress', { progress: String(uploadProgress) })
+						: t('patients.files.uploading')
+					: t('patients.files.upload')}
 			</Button>
 		</div>
 	</div>
@@ -195,7 +226,7 @@
 	{/if}
 
 	{#if filesQuery.isPending}
-		<p class="mt-3 text-sm text-text-muted">Yükleniyor…</p>
+		<p class="mt-3 text-sm text-text-muted">{t('patients.files.loading')}</p>
 	{:else if files.length === 0}
 		<div class="mt-3 flex flex-col items-center gap-2 py-4 text-center">
 			<span
@@ -203,10 +234,9 @@
 			>
 				<Paperclip class="size-5" />
 			</span>
-			<p class="text-sm font-medium text-text">Henüz dosya yok</p>
+			<p class="text-sm font-medium text-text">{t('patients.files.emptyTitle')}</p>
 			<p class="max-w-sm text-xs leading-relaxed text-text-muted">
-				Pasaport, onam formu veya ziyaret fotoğraflarını yükleyin. Büyük dosyalar doğrudan
-				depolamaya gider (presigned).
+				{t('patients.files.emptyBody')}
 			</p>
 		</div>
 	{:else}
@@ -224,7 +254,7 @@
 							<p class="text-xs text-text-faint">
 								{formatBytes(file.size_bytes)} · {formatDateTime(file.created_at)}
 								{#if file.status === 'pending'}
-									· bekliyor
+									· {t('patients.files.pending')}
 								{/if}
 								{#if file.uploaded_by_display_name}
 									· {file.uploaded_by_display_name}
@@ -244,7 +274,15 @@
 							<button
 								type="button"
 								class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
-								aria-label="Dosyayı indir"
+								aria-label={t('patients.files.previewAria')}
+								onclick={() => previewFile(file)}
+							>
+								<Eye class="size-3.5" />
+							</button>
+							<button
+								type="button"
+								class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
+								aria-label={t('patients.files.downloadAria')}
 								onclick={() => downloadFile(file)}
 							>
 								<Download class="size-3.5" />
@@ -253,7 +291,7 @@
 						<button
 							type="button"
 							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"
-							aria-label="Dosyayı sil"
+							aria-label={t('patients.files.deleteAria')}
 							onclick={() => removeFile(file)}
 						>
 							<Trash2 class="size-3.5" />

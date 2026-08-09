@@ -5,6 +5,39 @@ export const patientFileStatusSchema = z.enum(['pending', 'ready']);
 export type PatientFileStatus = z.infer<typeof patientFileStatusSchema>;
 
 /**
+ * AUDIT-F09-08 / GAP-F09-24: MIME allowlist for new patient file uploads and
+ * safe inline preview. Aligned with Fastify binary content-type parsers
+ * (pdf/png/jpeg/webp); `image/jpg` is normalized to `image/jpeg`.
+ */
+export const PATIENT_FILE_ALLOWED_MIME_TYPES = [
+	'application/pdf',
+	'image/png',
+	'image/jpeg',
+	'image/webp'
+] as const;
+
+export type PatientFileAllowedMimeType = (typeof PATIENT_FILE_ALLOWED_MIME_TYPES)[number];
+
+/** Strip parameters (`image/jpeg; charset=…`) and alias `image/jpg` → `image/jpeg`. */
+export function normalizePatientFileMimeType(raw: string): string {
+	const base = raw.split(';')[0]?.trim().toLowerCase() ?? '';
+	if (base === 'image/jpg') return 'image/jpeg';
+	return base;
+}
+
+export function isAllowedPatientFileMimeType(
+	mime: string
+): mime is PatientFileAllowedMimeType {
+	const normalized = normalizePatientFileMimeType(mime);
+	return (PATIENT_FILE_ALLOWED_MIME_TYPES as readonly string[]).includes(normalized);
+}
+
+/** GAP-F09-24: same set as upload allowlist — safe for `Content-Disposition: inline`. */
+export function isInlineSafePatientFileMimeType(mime: string): boolean {
+	return isAllowedPatientFileMimeType(mime);
+}
+
+/**
  * Patient / appointment attachment metadata.
  * Binary lives in object storage (`local://…` or `s3://…`).
  * Presign → client PUT → confirm; `pending` until confirm.

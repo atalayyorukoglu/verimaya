@@ -133,7 +133,6 @@
 
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. Anonimleştirme yaklaşımı (silme değil) arşivdeki Açık sorular §1 kararına göre. **(L)**
-- **AUDIT-F09-08** Magic-byte MIME sniff (`file-type`/`mmmagic`) + multipart `allowedMimeTypes` allowlist (S3 sürücüsü dahil). GAP-F09-24 ile birlikte gitmeli. **(M)**
 - **AUDIT-F09-10** i18n katalog süpürmesi — Türkçe hardcoded metinler `messages.ts`'e. **(L)**
 - **AUDIT-F09-20** `corsOrigins` allowlist hot-reload. **(M, düşük öncelik)**
 
@@ -143,8 +142,6 @@
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
 - **GAP-F09-23** Dosya silme endpoint'i (soft-delete + audit; KVKK). **(M)**
-- **GAP-F09-24** Satır içi güvenli dosya önizleme (MIME allowlist + attachment zorlaması kararı
-  uygulanmamış; AUDIT-F09-08 ile birlikte). **(M)**
 
 ---
 
@@ -211,6 +208,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **AUDIT-F09-08 + GAP-F09-24** — magic-byte sniff (`file-type`, tek choke point: `putFileContent` + `uploadLocalFileWithDb` → local+S3 ikisi de kapsamda) + allowlist pdf/png/jpeg/webp (`image/jpg` normalize; `image/gif` binaryTypes'tan çıktı); 415 `unsupported_media_type`/`mime_mismatch`. `GET .../files/:fileId/preview` — allowlist inline, legacy attachment, RFC 5987 filename*, nosniff; dosya panelinde önizle (2026-08-09). Görüş: `@fastify/multipart@10`'da `allowedMimeTypes` yok → declared MIME controller'da; appointment files kapsam dışı (bulgu patients'a işaret ediyor); S3 presigned-direct PUT yok, byte'lar API üzerinden geçiyor. API 432/432 + shared 88 + web check yeşil.
 - ✅ **GAP-F09-14** — `GET /v1/reports/transaction-duplicates`: tam dönemde SQL `GROUP BY/HAVING` (amount+currency+occurred_on+kind), `total_groups` + 20 grup üst sınırı; `/settings/data-quality`'nin ilk-100-satır istemci taraması kalktı (2026-08-09). Görüş: from/to düz ISO `occurred_on` (summary/consistency deseni; `tenantDayRange` timestamp'ler içindir); Tracker'ın WA-import günlük özeti bilinçli taşınmadı (inbox/taslak modeli farklı). API 423/423 + shared 88 + web check yeşil.
 - ✅ **AUDIT-F09-01** — elle `openapi.yaml` bitti: `apiContract`'tan üretim (`scripts/generate-openapi-core.js` + `pnpm --filter @verimaya/api openapi:generate`), vitest drift guard byte-for-byte karşılaştırıyor (route-bazlı teşhis mesajlı); 67 operation, OpenAPI 3.1 (2026-08-09). Görüş: `@nestjs/swagger` bilinçli kullanılmadı (controller'lar DTO metadata'sı taşımıyor, zod parse ediyor); ayrı CI adımı yerine drift spec mevcut test job'unda. API 418/418 yeşil.
 - ✅ **GAP-F09-22** — `POST /v1/patients/:id/auto-link-transactions`: hastanın `contact_id`'siyle eşleşen, `patient_id IS NULL` + soft-delete'siz işlemleri bağlar (`updated` gerçek sayım; denormalize `patient_display_name` senkron) (2026-08-09). Görüş: P2P payer/payee eşleşmesi bilinçli yok (alanlar yok); izin `finance:update` (mutasyon transactions'ta, permission lock'a işlendi); idempotency-exempt (sorgu doğal yakınsıyor). API 416/416 + shared 86 + web check yeşil.

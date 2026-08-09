@@ -23,6 +23,8 @@ export const apiPaths = {
 		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/content`,
 	patientFileDownload: (patientId: string, fileId: string) =>
 		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/download`,
+	patientFilePreview: (patientId: string, fileId: string) =>
+		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/preview`,
 	patientsDuplicateGroups: `${API_V1_PREFIX}/patients/duplicate-groups`,
 	patientsMerge: `${API_V1_PREFIX}/patients/merge`,
 	appointments: `${API_V1_PREFIX}/appointments`,
@@ -248,6 +250,10 @@ export const apiContract = {
 	},
 	'GET /v1/patients/:id/files/:fileId/download': {
 		/** Binary stream — not a JSON zod body */
+		response: z.unknown()
+	},
+	'GET /v1/patients/:id/files/:fileId/preview': {
+		/** Binary stream — not a JSON zod body (inline for allowlisted MIME) */
 		response: z.unknown()
 	},
 	'GET /v1/patients/:id/case-notes': {

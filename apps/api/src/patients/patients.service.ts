@@ -20,8 +20,10 @@ import {
 	DEFAULT_TENANT_TIMEZONE,
 	DUPLICATE_SCAN_ROW_CAP,
 	findPatientDuplicateGroups,
+	isInlineSafePatientFileMimeType,
 	toTenantDayKey
 } from '@verimaya/shared';
+import { assertUploadMimeMatchesBytes } from './file-mime';
 import {
 	appointments,
 	caseNotes,
@@ -441,8 +443,12 @@ export class PatientsService {
 				});
 			}
 
+			// AUDIT-F09-08: sniff before storage.put — covers local + S3 via RoutingFileStorage.
+			const declaredMime = contentType ?? row.mimeType;
+			const verifiedMime = await assertUploadMimeMatchesBytes(data, declaredMime);
+
 			await this.storage.put(row.storageKey, data, {
-				contentType: contentType ?? row.mimeType,
+				contentType: verifiedMime,
 				filename: row.filename
 			});
 
@@ -533,10 +539,13 @@ export class PatientsService {
 			});
 		}
 
+		// AUDIT-F09-08: sniff before storage.put — covers local + S3 via RoutingFileStorage.
+		const verifiedMime = await assertUploadMimeMatchesBytes(input.data, input.mimeType);
+
 		const fileId = randomUUID();
 		const storageKey = this.storage.buildKey(tenantId, patientId, fileId);
 		await this.storage.put(storageKey, input.data, {
-			contentType: input.mimeType,
+			contentType: verifiedMime,
 			filename: input.filename
 		});
 
@@ -546,7 +555,7 @@ export class PatientsService {
 			patientId,
 			{
 				filename: input.filename,
-				mime_type: input.mimeType,
+				mime_type: verifiedMime,
 				size_bytes: input.data.byteLength,
 				appointment_id: input.appointmentId ?? null
 			},
@@ -556,6 +565,30 @@ export class PatientsService {
 	}
 
 	async openFileDownload(tenantId: string, patientId: string, fileId: string) {
+		return this.openFileStream(tenantId, patientId, fileId);
+	}
+
+	/**
+	 * GAP-F09-24: allowlisted MIME → inline; legacy/non-allowlist rows → attachment
+	 * (same as download). Streamed — never buffered in memory.
+	 */
+	async openFilePreview(tenantId: string, patientId: string, fileId: string): Promise<{
+		filename: string;
+		mimeType: string;
+		sizeBytes: number;
+		stream: NonNullable<Awaited<ReturnType<FileStoragePort['getStream']>>>;
+		disposition: 'inline' | 'attachment';
+	}> {
+		const download = await this.openFileStream(tenantId, patientId, fileId);
+		const disposition: 'inline' | 'attachment' = isInlineSafePatientFileMimeType(
+			download.mimeType
+		)
+			? 'inline'
+			: 'attachment';
+		return { ...download, disposition };
+	}
+
+	private async openFileStream(tenantId: string, patientId: string, fileId: string) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const patient = await this.findActiveRow(db, patientId);
 			if (!patient) {
