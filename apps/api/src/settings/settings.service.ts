@@ -8,6 +8,7 @@ import { asc, desc, eq, and, isNull } from 'drizzle-orm';
 import type {
 	AppointmentTypeCreate,
 	ContactTypeCreate,
+	ContactTypeUpdate,
 	CredentialUpsert,
 	FinanceCategoryCreate,
 	FinanceCategoryUpdate,
@@ -218,6 +219,56 @@ export class SettingsService {
 			}
 			throw err;
 		}
+	}
+
+	async updateContactType(tenantId: string, id: string, input: ContactTypeUpdate) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [existing] = await db
+				.select()
+				.from(contactTypes)
+				.where(eq(contactTypes.id, id))
+				.limit(1);
+			if (!existing) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact type not found' }
+				});
+			}
+
+			const name = input.name.trim();
+			const siblings = await db
+				.select({ id: contactTypes.id, name: contactTypes.name })
+				.from(contactTypes);
+			if (
+				siblings.some(
+					(r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase()
+				)
+			) {
+				throw this.duplicateTypeNameConflict('A contact type with this name already exists');
+			}
+
+			try {
+				const [row] = await db
+					.update(contactTypes)
+					.set({ name })
+					.where(eq(contactTypes.id, id))
+					.returning();
+
+				// Keep denormalized contact_type_name in sync (FK stays; lists stay correct).
+				if (name !== existing.name) {
+					await db
+						.update(contacts)
+						.set({ contactTypeName: name, updatedAt: new Date() })
+						.where(eq(contacts.contactTypeId, id));
+				}
+
+				return toContactType(row!);
+			} catch (err) {
+				if (isUniqueViolation(err, CONTACT_TYPES_NAME_UIDX)) {
+					throw this.duplicateTypeNameConflict('A contact type with this name already exists');
+				}
+				throw err;
+			}
+		});
 	}
 
 	async deleteContactType(tenantId: string, id: string) {

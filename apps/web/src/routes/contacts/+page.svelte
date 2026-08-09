@@ -4,6 +4,7 @@
 	import type {
 		Contact,
 		ContactCreate,
+		ContactsBulkTypeResult,
 		ContactType,
 		ContactUpdate,
 		ContractResponse
@@ -29,6 +30,10 @@
 	let editing = $state<Contact | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
+	let selectedIds = $state<string[]>([]);
+	let bulkTypeId = $state('');
+	let bulkBusy = $state(false);
+	let bulkError = $state<string | null>(null);
 
 	const typesQuery = createQuery(() => ({
 		queryKey: qs.keys.settings.contactTypes(),
@@ -64,10 +69,14 @@
 				? t('contacts.list.totalFiltered', { count: String(totalCount) })
 				: t('contacts.list.total', { count: String(totalCount) })
 	);
+	const allPageSelected = $derived(
+		items.length > 0 && items.every((c) => selectedIds.includes(c.id))
+	);
 
 	function submitSearch(e: Event) {
 		e.preventDefault();
 		search = q.trim();
+		selectedIds = [];
 	}
 
 	function openCreate() {
@@ -80,6 +89,51 @@
 		editing = c;
 		formError = null;
 		formOpen = true;
+	}
+
+	function toggleRow(id: string, checked: boolean) {
+		if (checked) {
+			if (!selectedIds.includes(id)) selectedIds = [...selectedIds, id];
+		} else {
+			selectedIds = selectedIds.filter((x) => x !== id);
+		}
+	}
+
+	function toggleAllPage(checked: boolean) {
+		if (checked) {
+			const next = [...selectedIds];
+			for (const c of items) {
+				if (!next.includes(c.id)) next.push(c.id);
+			}
+			selectedIds = next;
+		} else {
+			const pageIds = items.map((c) => c.id);
+			selectedIds = selectedIds.filter((id) => !pageIds.includes(id));
+		}
+	}
+
+	function clearSelection() {
+		selectedIds = [];
+		bulkTypeId = '';
+		bulkError = null;
+	}
+
+	async function applyBulkType() {
+		if (!bulkTypeId || selectedIds.length === 0) return;
+		bulkBusy = true;
+		bulkError = null;
+		try {
+			await apiSend<ContactsBulkTypeResult>(apiPaths.contactsBulkType, 'PATCH', {
+				contact_ids: selectedIds,
+				contact_type_id: bulkTypeId
+			});
+			clearSelection();
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+		} catch (err) {
+			bulkError = err instanceof Error ? err.message : t('contacts.bulk.failed');
+		} finally {
+			bulkBusy = false;
+		}
 	}
 
 	async function saveContact(data: ContactCreate | ContactUpdate) {
@@ -152,6 +206,46 @@
 		<Button type="submit" variant="secondary">Ara</Button>
 	</form>
 
+	{#if selectedIds.length > 0}
+		<div
+			class="mb-4 flex flex-col gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5 sm:flex-row sm:items-center"
+		>
+			<p class="text-sm text-text">
+				{t('contacts.bulk.selected', { count: String(selectedIds.length) })}
+			</p>
+			<select
+				class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:ml-auto sm:w-48"
+				bind:value={bulkTypeId}
+				disabled={bulkBusy}
+			>
+				<option value="">{t('contacts.bulk.selectType')}</option>
+				{#each contactTypes as ct (ct.id)}
+					<option value={ct.id}>{ct.name}</option>
+				{/each}
+			</select>
+			<Button
+				type="button"
+				size="sm"
+				disabled={bulkBusy || !bulkTypeId}
+				onclick={() => void applyBulkType()}
+			>
+				{bulkBusy ? t('contacts.bulk.assigning') : t('contacts.bulk.assignType')}
+			</Button>
+			<Button
+				type="button"
+				size="sm"
+				variant="outline"
+				disabled={bulkBusy}
+				onclick={clearSelection}
+			>
+				{t('contacts.bulk.clearSelection')}
+			</Button>
+		</div>
+		{#if bulkError}
+			<p class="mb-4 text-sm text-danger">{bulkError}</p>
+		{/if}
+	{/if}
+
 	{#if contactsQuery.isPending}
 		<p class="text-sm text-text-muted">Yükleniyor…</p>
 	{:else if contactsQuery.isError}
@@ -163,8 +257,25 @@
 		</div>
 	{:else}
 		<ul class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+			<li class="flex items-center gap-3 px-3 py-2 sm:px-4">
+				<input
+					type="checkbox"
+					class="size-4 rounded border-border"
+					checked={allPageSelected}
+					aria-label={t('contacts.bulk.selectAll')}
+					onchange={(e) => toggleAllPage(e.currentTarget.checked)}
+				/>
+				<span class="text-xs text-text-faint">{t('contacts.bulk.selectAll')}</span>
+			</li>
 			{#each items as c (c.id)}
 				<li class="flex min-w-0 items-center gap-3 px-3 py-3 sm:px-4">
+					<input
+						type="checkbox"
+						class="size-4 shrink-0 rounded border-border"
+						checked={selectedIds.includes(c.id)}
+						aria-label={t('contacts.bulk.selectRow')}
+						onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
+					/>
 					<a href={`/contacts/${c.id}`} class="min-w-0 flex-1 hover:opacity-90">
 						<div class="flex flex-wrap items-center gap-2">
 							<p class="truncate text-sm font-medium text-text">{c.display_name}</p>

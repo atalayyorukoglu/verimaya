@@ -142,7 +142,6 @@
 
 - **GAP-F09-14** Sunucu tarafı veri kalitesi raporu (`settings/data-quality` istemci hesaplıyor; GAP-05 ile aynı kök neden). **(M)**
 - **GAP-F09-16** WhatsApp içe aktarımda satır içi kayıt oluşturma (kişi/hasta/kategori). **(M)**
-- **GAP-F09-17** Kişi toplu tür atama + kişi türü rename (`PATCH /contact-types/:id`). **(S)**
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
 - **GAP-F09-22** Case ↔ işlem otomatik bağlama (basitleştirilmiş: yalnız `contact_id`). **(S)**
@@ -215,6 +214,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-F09-17** — `PATCH /v1/settings/contact-types/:id` rename (409 `duplicate_type_name`, denormalize `contact_type_name` senkronu) + `PATCH /v1/contacts/bulk-type` (max 500 id, yabancı id atlanır, `updated` gerçek sayım); `/contacts`'te çoklu seçim çubuğu, contact-types'ta satır içi rename (2026-08-09). Görüş: `contact_type_id` null desteklenmiyor — kolon NOT NULL, Tracker da null almıyor; iki endpoint de idempotency-exempt (absolute-set). API 409/409 + shared 86 + web check yeşil.
 - ✅ **GAP-F09-13** — `GET /v1/audit-logs` filtreleri: `actor_id`, `action`, `entity_type`, `created_from/to` (tenant-timezone takvim günü, `tenantDayRange`), `q` (`entity_label` ILIKE); `/settings/audit`'te filtre çubuğu (2026-08-09). Görüş: Tracker'ın `entity_id` parametresi bilinçli dışarıda — tabloda kolon yok; `q` label araması işlevi karşılıyor. Spec'te session-GUC deseni yakalanıp SET LOCAL'e çevrildi. API 402/402 + shared 84 + web check yeşil.
 - ✅ **Flaky spec** — `auth-or-api-key.isolation.spec.ts` sıralama bağımlılığı giderildi (2026-08-09). Görüş: kök neden session-level `set_config(..., false)` + postgres.js pool sızıntısı; test başına fixture + `SET LOCAL` (production deseni) — her test kendi A/B çiftini kuruyor, izolasyon/scope iddiaları aynı. 3× + 2× shuffle + tam paket 394/394 yeşil.
 - ✅ **GAP-F09-15** — `GET /v1/whatsapp/corrections-report` alan bazlı GROUP BY (correction_count + distinct_messages, from/to, `.strict()`); `/settings/ai-learning` istemci sayımından rapor API'sine geçti (2026-08-09). Görüş: Tracker'ın value-triple özeti bilinçli ertelendi (display-name çözümü gerekir); prompt tuning için alan frekansı yeterli.

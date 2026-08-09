@@ -18,6 +18,8 @@ import {
 	patientFilePresignSchema,
 	patientCaseNoteCreateSchema,
 	contactTypeCreateSchema,
+	contactTypeUpdateSchema,
+	contactsBulkTypeSchema,
 	contactCreateSchema,
 	contactUpdateSchema,
 	contactListQuerySchema,
@@ -748,6 +750,16 @@ function notFound(message: string) {
 			request_id: crypto.randomUUID()
 		},
 		{ status: 404 }
+	);
+}
+
+function conflict(code: string, message: string) {
+	return HttpResponse.json(
+		{
+			error: { code, message },
+			request_id: crypto.randomUUID()
+		},
+		{ status: 409 }
 	);
 }
 
@@ -1893,7 +1905,7 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const name = parsed.data.name.trim();
 		if (store.contactTypes.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
-			return badRequest('Bu tür zaten var');
+			return conflict('duplicate_type_name', 'A contact type with this name already exists');
 		}
 		const maxOrder = store.contactTypes.reduce((m, c) => Math.max(m, c.sort_order), -1);
 		const item: ContactType = {
@@ -1905,6 +1917,28 @@ export const handlers = [
 		};
 		store.contactTypes.push(item);
 		return HttpResponse.json(item, { status: 201 });
+	}),
+
+	http.patch('/v1/settings/contact-types/:id', async ({ params, request }) => {
+		const body = await request.json();
+		const parsed = contactTypeUpdateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz tür', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const idx = store.contactTypes.findIndex((t) => t.id === params.id);
+		if (idx < 0) return notFound('Tür bulunamadı');
+		const name = parsed.data.name.trim();
+		if (
+			store.contactTypes.some(
+				(t) => t.id !== params.id && t.name.toLowerCase() === name.toLowerCase()
+			)
+		) {
+			return conflict('duplicate_type_name', 'A contact type with this name already exists');
+		}
+		store.contactTypes[idx] = { ...store.contactTypes[idx], name };
+		for (const c of store.contacts) {
+			if (c.contact_type_id === params.id) c.contact_type_name = name;
+		}
+		return HttpResponse.json(store.contactTypes[idx]);
 	}),
 
 	http.delete('/v1/settings/contact-types/:id', ({ params, request }) => {
@@ -2000,6 +2034,25 @@ export const handlers = [
 		store.contacts = store.contacts.filter((c) => !drop.has(c.id));
 		refreshUsage(store);
 		return HttpResponse.json(keep);
+	}),
+
+	http.patch('/v1/contacts/bulk-type', async ({ request }) => {
+		const body = await request.json();
+		const parsed = contactsBulkTypeSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz toplu tür atama', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const type = store.contactTypes.find((t) => t.id === parsed.data.contact_type_id);
+		if (!type) return notFound('Tür bulunamadı');
+		let updated = 0;
+		const idSet = new Set(parsed.data.contact_ids);
+		for (const c of store.contacts) {
+			if (!idSet.has(c.id)) continue;
+			c.contact_type_id = type.id;
+			c.contact_type_name = type.name;
+			c.updated_at = nowIso();
+			updated += 1;
+		}
+		return HttpResponse.json({ updated });
 	}),
 
 	http.get('/v1/contacts/:id', ({ params, request }) => {

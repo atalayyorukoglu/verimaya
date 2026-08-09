@@ -16,6 +16,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
 	appointmentTypeCreateSchema,
 	contactTypeCreateSchema,
+	contactTypeUpdateSchema,
 	credentialUpsertSchema,
 	financeCategoryCreateSchema,
 	financeCategoryUpdateSchema,
@@ -126,6 +127,20 @@ export class SettingsController {
 		);
 		reply.status(result.statusCode);
 		return result.body;
+	}
+
+	@Patch('contact-types/:id')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'Sets absolute name to the caller-supplied value — repeat calls converge to the same state.'
+	)
+	updateContactType(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown
+	) {
+		const input = parseBody(contactTypeUpdateSchema, body, req);
+		return this.settingsService.updateContactType(getActiveOrgId(req), id, input);
 	}
 
 	@Delete('contact-types/:id')

@@ -8,6 +8,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
@@ -23,6 +24,8 @@
 	let newName = $state('');
 	let error = $state<string | null>(null);
 	let busy = $state(false);
+	let editingId = $state<string | null>(null);
+	let editName = $state('');
 
 	const types = $derived(
 		[...(typesQuery.data?.items ?? [])].sort((a, b) => a.sort_order - b.sort_order)
@@ -50,11 +53,46 @@
 		}
 	}
 
+	function startRename(row: ContactType) {
+		editingId = row.id;
+		editName = row.name;
+		error = null;
+	}
+
+	function cancelRename() {
+		editingId = null;
+		editName = '';
+	}
+
+	async function saveRename(id: string) {
+		const name = editName.trim();
+		if (!name) return;
+		busy = true;
+		error = null;
+		try {
+			await apiSend(apiPaths.settingsContactType(id), 'PATCH', { name });
+			editingId = null;
+			editName = '';
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.contactTypes() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+		} catch (err) {
+			error =
+				err instanceof ApiRequestError && err.code === 'duplicate_type_name'
+					? t('settings.dictionaries.duplicateName')
+					: err instanceof Error
+						? err.message
+						: t('settings.contactTypes.renameFailed');
+		} finally {
+			busy = false;
+		}
+	}
+
 	async function remove(id: string) {
 		busy = true;
 		error = null;
 		try {
 			await apiSend(apiPaths.settingsContactType(id), 'DELETE');
+			if (editingId === id) cancelRename();
 			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.contactTypes() });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Silinemedi';
@@ -82,18 +120,58 @@
 			<p class="text-sm text-danger">Türler yüklenemedi.</p>
 		{:else}
 			<ul class="divide-y divide-border">
-				{#each types as t (t.id)}
+				{#each types as row (row.id)}
 					<li class="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-						<span class="text-sm text-text">{t.name}</span>
-						<button
-							type="button"
-							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger disabled:opacity-40"
-							aria-label="Sil"
-							disabled={busy}
-							onclick={() => void remove(t.id)}
-						>
-							<Trash2 class="size-3.5" />
-						</button>
+						{#if editingId === row.id}
+							<form
+								class="flex min-w-0 flex-1 items-center gap-2"
+								onsubmit={(e) => {
+									e.preventDefault();
+									void saveRename(row.id);
+								}}
+							>
+								<input
+									class={fieldClass}
+									bind:value={editName}
+									disabled={busy}
+									aria-label={t('settings.contactTypes.rename')}
+								/>
+								<Button type="submit" size="sm" disabled={busy || !editName.trim()}>
+									{t('settings.contactTypes.renameSave')}
+								</Button>
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									disabled={busy}
+									onclick={cancelRename}
+								>
+									{t('settings.contactTypes.renameCancel')}
+								</Button>
+							</form>
+						{:else}
+							<span class="min-w-0 flex-1 truncate text-sm text-text">{row.name}</span>
+							<div class="flex shrink-0 items-center gap-0.5">
+								<button
+									type="button"
+									class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text disabled:opacity-40"
+									aria-label={t('settings.contactTypes.rename')}
+									disabled={busy}
+									onclick={() => startRename(row)}
+								>
+									<Pencil class="size-3.5" />
+								</button>
+								<button
+									type="button"
+									class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger disabled:opacity-40"
+									aria-label={t('settings.contactTypes.delete')}
+									disabled={busy}
+									onclick={() => void remove(row.id)}
+								>
+									<Trash2 class="size-3.5" />
+								</button>
+							</div>
+						{/if}
 					</li>
 				{/each}
 			</ul>

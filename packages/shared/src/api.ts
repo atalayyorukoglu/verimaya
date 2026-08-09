@@ -27,6 +27,7 @@ export const apiPaths = {
 	appointment: (id: string) => `${API_V1_PREFIX}/appointments/${id}`,
 	contacts: `${API_V1_PREFIX}/contacts`,
 	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
+	contactsBulkType: `${API_V1_PREFIX}/contacts/bulk-type`,
 	contactsDuplicateGroups: `${API_V1_PREFIX}/contacts/duplicate-groups`,
 	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
 	transactions: `${API_V1_PREFIX}/transactions`,
@@ -153,7 +154,13 @@ import {
 } from './inbound-message.js';
 import { patientFileCreateSchema, patientFileSchema } from './file.js';
 import { patientCaseNoteCreateSchema, patientCaseNoteSchema } from './case-note.js';
-import { contactSchema, contactTypeSchema } from './contact.js';
+import {
+	contactSchema,
+	contactsBulkTypeResultSchema,
+	contactsBulkTypeSchema,
+	contactTypeSchema,
+	contactTypeUpdateSchema
+} from './contact.js';
 import {
 	contactDuplicateGroupsResponseSchema,
 	mergeRecordsSchema,
@@ -251,6 +258,10 @@ export const apiContract = {
 	'DELETE /v1/contacts/:id': {
 		response: softDeleteResultSchema
 	},
+	'PATCH /v1/contacts/bulk-type': {
+		body: contactsBulkTypeSchema,
+		response: contactsBulkTypeResultSchema
+	},
 	'GET /v1/contacts/duplicate-groups': {
 		response: contactDuplicateGroupsResponseSchema
 	},
@@ -267,6 +278,10 @@ export const apiContract = {
 	},
 	'GET /v1/settings/contact-types': {
 		response: z.object({ items: z.array(contactTypeSchema) })
+	},
+	'PATCH /v1/settings/contact-types/:id': {
+		body: contactTypeUpdateSchema,
+		response: contactTypeSchema
 	},
 	'GET /v1/appointments/:id/files': {
 		response: z.object({ items: z.array(patientFileSchema) })

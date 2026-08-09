@@ -21,6 +21,31 @@ export const contactTypeCreateSchema = z.object({
 
 export type ContactTypeCreate = z.infer<typeof contactTypeCreateSchema>;
 
+/** GAP-F09-17 (G-18): rename — same fields as create, reject unknown keys. */
+export const contactTypeUpdateSchema = contactTypeCreateSchema.strict();
+
+export type ContactTypeUpdate = z.infer<typeof contactTypeUpdateSchema>;
+
+/**
+ * GAP-F09-17 (G-17): bulk assign contact type.
+ * Tracker (`ContactBulkSetTypeBody`) requires a UUID — not null. Verimaya
+ * `contacts.contact_type_id` is NOT NULL, so clearing a type is unsupported.
+ */
+export const contactsBulkTypeSchema = z
+	.object({
+		contact_ids: z.array(uuid).min(1).max(500),
+		contact_type_id: uuid
+	})
+	.strict();
+
+export type ContactsBulkType = z.infer<typeof contactsBulkTypeSchema>;
+
+export const contactsBulkTypeResultSchema = z.object({
+	updated: z.number().int().nonnegative()
+});
+
+export type ContactsBulkTypeResult = z.infer<typeof contactsBulkTypeResultSchema>;
+
 /**
  * Contact (Tracker: contacts) — CRM directory / cari.
  * Not a patient episode; Patient (Case) may optionally link via contact_id.

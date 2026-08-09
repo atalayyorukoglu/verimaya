@@ -1,6 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, count, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
-import type { ContactCreate, ContactListQuery, ContactUpdate, MergeRecords } from '@verimaya/shared';
+import type {
+	ContactCreate,
+	ContactListQuery,
+	ContactsBulkType,
+	ContactUpdate,
+	MergeRecords
+} from '@verimaya/shared';
 import { DUPLICATE_SCAN_ROW_CAP, findContactDuplicateGroups } from '@verimaya/shared';
 import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
@@ -114,6 +120,31 @@ export class ContactsService {
 			.returning();
 
 		return toContact(row!);
+	}
+
+	/**
+	 * GAP-F09-17 (G-17): assign one contact type to many contacts.
+	 * Unknown / other-tenant ids are skipped (RLS + isNull deletedAt); `updated` is the real count.
+	 */
+	async bulkSetType(tenantId: string, input: ContactsBulkType) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.bulkSetTypeWithDb(db, input)
+		);
+	}
+
+	async bulkSetTypeWithDb(db: TenantDb, input: ContactsBulkType) {
+		const typeName = await this.requireContactTypeName(db, input.contact_type_id);
+		const updatedRows = await db
+			.update(contacts)
+			.set({
+				contactTypeId: input.contact_type_id,
+				contactTypeName: typeName,
+				updatedAt: new Date()
+			})
+			.where(and(inArray(contacts.id, input.contact_ids), isNull(contacts.deletedAt)))
+			.returning({ id: contacts.id });
+
+		return { updated: updatedRows.length };
 	}
 
 	async softDeleteWithDb(

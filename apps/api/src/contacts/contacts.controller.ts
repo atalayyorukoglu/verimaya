@@ -14,13 +14,14 @@ import {
 import {
 	contactCreateSchema,
 	contactListQuerySchema,
+	contactsBulkTypeSchema,
 	contactUpdateSchema,
 	mergeRecordsSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
-import { Idempotent } from '../common/idempotent.decorator';
+import { Idempotent, IdempotencyExempt } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -71,6 +72,16 @@ export class ContactsController {
 		);
 		reply.status(result.statusCode);
 		return result.body;
+	}
+
+	@Patch('bulk-type')
+	@RequireOrgPermission('patient', 'update')
+	@IdempotencyExempt(
+		'Sets absolute contact_type_id on the given ids — repeat calls with the same body converge to the same rows.'
+	)
+	bulkSetType(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(contactsBulkTypeSchema, body, req);
+		return this.contactsService.bulkSetType(getActiveOrgId(req), input);
 	}
 
 	@Get(':id')
