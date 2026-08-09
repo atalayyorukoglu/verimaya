@@ -137,7 +137,6 @@
 - **AUDIT-F09-08** Magic-byte MIME sniff (`file-type`/`mmmagic`) + multipart `allowedMimeTypes` allowlist (S3 sürücüsü dahil). GAP-F09-24 ile birlikte gitmeli. **(M)**
 - **AUDIT-F09-10** i18n katalog süpürmesi — Türkçe hardcoded metinler `messages.ts`'e. **(L)**
 - **AUDIT-F09-20** `corsOrigins` allowlist hot-reload. **(M, düşük öncelik)**
-- **(taşındı)** `auth-or-api-key.isolation.spec.ts` sıralama flake'i — pre-existing; Tenant B testi Tenant A state'ine bağlı. DOC-03f'den Faz 9'a alındı. **(S)**
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
 
@@ -217,6 +216,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **Flaky spec** — `auth-or-api-key.isolation.spec.ts` sıralama bağımlılığı giderildi (2026-08-09). Görüş: kök neden session-level `set_config(..., false)` + postgres.js pool sızıntısı; test başına fixture + `SET LOCAL` (production deseni) — her test kendi A/B çiftini kuruyor, izolasyon/scope iddiaları aynı. 3× + 2× shuffle + tam paket 394/394 yeşil.
 - ✅ **GAP-F09-15** — `GET /v1/whatsapp/corrections-report` alan bazlı GROUP BY (correction_count + distinct_messages, from/to, `.strict()`); `/settings/ai-learning` istemci sayımından rapor API'sine geçti (2026-08-09). Görüş: Tracker'ın value-triple özeti bilinçli ertelendi (display-name çözümü gerekir); prompt tuning için alan frekansı yeterli.
 - ✅ **GAP-F09-21** — randevu listesi yanıtına filtreli tam küme `type_counts`/`status_counts` (GAP-03b deseni; cursor sayımda yok, soft-delete hariç); UI'da durum özeti şeridi (2026-08-09). API 390/390 + web check yeşil.
 - ✅ **GAP-F09-25** — `appointment_types`/`contact_types` UNIQUE (tenant_id, name) + `tenant_settings` seed bayrakları (finance_categories dahil); 409 `duplicate_type_name` + web i18n anahtarı; migration `0034` (2026-08-09). Görüş: boş liste ≠ "hiç seed edilmedi"; finance aynı geri-yazma bug'ına sahipti → aynı mekanizma. Tam paket 388/388 yeşil.
