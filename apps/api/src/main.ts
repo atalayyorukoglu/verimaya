@@ -14,6 +14,8 @@ import { initSentry } from './common/sentry';
 import { mountOpenApiDocs } from './docs/openapi.mount';
 import { MAX_UPLOAD_BYTES } from './storage/storage.types';
 import { mountBullBoard } from './queue/bull-board.mount';
+import { mountAdminOutboxRoutes } from './queue/admin-outbox.mount';
+import { OutboxAdminService } from './queue/outbox-admin.service';
 import { QueueService } from './queue/queue.service';
 import type { WebhookRequestWithRawBody } from './webhooks/webhooks.signature';
 
@@ -232,11 +234,15 @@ async function bootstrap() {
 
 	await app.init();
 	const queueService = app.get(QueueService);
-	// AUDIT-03: Bull Board is token-gated in production via isBullBoardEnabled.
-	await mountBullBoard(app, queueService, {
+	const outboxAdmin = app.get(OutboxAdminService);
+	const adminQueueOpts = {
 		isDevelopment: (process.env.NODE_ENV ?? 'development') === 'development',
 		adminQueueToken: process.env.ADMIN_QUEUE_TOKEN
-	});
+	};
+	// AUDIT-03: Bull Board is token-gated in production via isAdminQueueSurfaceEnabled.
+	await mountBullBoard(app, queueService, adminQueueOpts);
+	// AUDIT-F09-05: outbox DLQ list/requeue — same token gate, Fastify (not Nest).
+	await mountAdminOutboxRoutes(app, { ...adminQueueOpts, outboxAdmin });
 
 	// AUDIT-03: SIGTERM (Coolify) drains BullMQ worker + Fastify before exit.
 	app.enableShutdownHooks();

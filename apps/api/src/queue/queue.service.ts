@@ -1,17 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { and, eq } from 'drizzle-orm';
 import { Job, Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { AdMetricsSyncService } from '../ad-metrics/ad-metrics.sync.service';
 import { DbService } from '../db/db.service';
-import { tenants } from '../db/schema';
+import { jobs, tenants } from '../db/schema';
 import { GhlReconcileService } from '../integrations/ghl/ghl.reconcile.service';
 import {
 	FILES_SWEEP_EVERY_MS,
 	FILES_SWEEP_PENDING_JOB_TYPE,
 	FilesSweepService
 } from '../storage/files-sweep.service';
+import { TenantContextService } from '../tenant/tenant-context.service';
 import { InboundMessageProcessor } from '../whatsapp/inbound-message.processor';
 import { IntegrationEventProcessor } from './integration-event.processor';
 import { OutboxProcessor } from './outbox.processor';
@@ -43,6 +45,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 	constructor(
 		private readonly config: ConfigService,
 		private readonly db: DbService,
+		private readonly tenantContext: TenantContextService,
 		private readonly integrationEventProcessor: IntegrationEventProcessor,
 		private readonly outboxProcessor: OutboxProcessor,
 		private readonly ghlReconcileService: GhlReconcileService,
@@ -269,7 +272,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
 	private async handleExhaustedJob(job: Job<DefaultQueueJobData>, err: Error): Promise<void> {
 		if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {
-			// OutboxProcessor already persists status='failed' on every attempt.
+			// Intermediate attempts leave status='failed'; exhaustion → 'dead'.
+			await this.outboxProcessor.markDead(job.data.jobId, job.data.tenantId, err.message);
 			this.logger.error(`Outbox delivery ${job.data.jobId} exhausted retries: ${err.message}`);
 			return;
 		}
@@ -278,6 +282,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 			job.data.jobType === AD_METRICS_SYNC_JOB_TYPE ||
 			job.data.jobType === FILES_SWEEP_PENDING_JOB_TYPE
 		) {
+			await this.markScheduledJobDead(job, err);
 			this.logger.error(
 				`Scheduled job ${job.data.jobType} for tenant ${job.data.tenantId} exhausted retries: ${err.message}`
 			);
@@ -289,6 +294,58 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 			err.message,
 			job.attemptsMade
 		);
+	}
+
+	/**
+	 * AUDIT-F09-05: schedulers historically only logged on exhaustion (silent loss).
+	 * Write / update the durable `jobs` ledger with status='dead'. Prefer update by
+	 * bullmq_job_id when a row already exists so we never double-insert.
+	 */
+	async markScheduledJobDead(job: Job<DefaultQueueJobData>, err: Error): Promise<void> {
+		const now = new Date();
+		const bullmqJobId = job.id != null ? String(job.id) : null;
+
+		await this.tenantContext.withTenant(job.data.tenantId, async ({ db }) => {
+			if (bullmqJobId) {
+				const [existing] = await db
+					.select()
+					.from(jobs)
+					.where(
+						and(eq(jobs.tenantId, job.data.tenantId), eq(jobs.bullmqJobId, bullmqJobId))
+					)
+					.limit(1);
+
+				if (existing) {
+					await db
+						.update(jobs)
+						.set({
+							status: 'dead',
+							lastError: err.message,
+							attempts: job.attemptsMade,
+							updatedAt: now,
+							completedAt: existing.completedAt ?? now
+						})
+						.where(eq(jobs.id, existing.id));
+					return;
+				}
+			}
+
+			await db.insert(jobs).values({
+				tenantId: job.data.tenantId,
+				queue: DEFAULT_QUEUE_NAME,
+				jobType: job.data.jobType,
+				payload: {
+					source: 'scheduler_exhausted',
+					bull_job_id: job.data.jobId
+				},
+				status: 'dead',
+				bullmqJobId,
+				attempts: job.attemptsMade,
+				lastError: err.message,
+				startedAt: job.processedOn ? new Date(job.processedOn) : null,
+				completedAt: now
+			});
+		});
 	}
 
 	async onModuleDestroy() {

@@ -17,6 +17,10 @@ type OutboxPayload = {
  * Delivers `outbox_events` rows to their destination URL with an HMAC
  * signature. `outbox_events` remains the auditable source of truth; BullMQ
  * only drives retries (queue-first outbound webhook pattern, Faz 6).
+ *
+ * AUDIT-F09-05: intermediate delivery failures leave `status='failed'`;
+ * exhaustion is marked `status='dead'` via {@link markDead} from the worker
+ * failed-handler (not here) so "still retrying" vs "given up" stay distinct.
  */
 @Injectable()
 export class OutboxProcessor {
@@ -85,6 +89,32 @@ export class OutboxProcessor {
 		if (deliveryError) {
 			throw new Error(`Outbox delivery ${outboxEventId} failed: ${deliveryError}`);
 		}
+	}
+
+	/** Terminal DLQ mark after BullMQ attempts are exhausted. */
+	async markDead(outboxEventId: string, tenantId: string, lastError?: string): Promise<void> {
+		const now = new Date();
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select()
+				.from(outboxEvents)
+				.where(eq(outboxEvents.id, outboxEventId))
+				.limit(1);
+			if (!row) {
+				this.logger.warn(`Outbox event ${outboxEventId} not found; cannot mark dead`);
+				return;
+			}
+
+			await db
+				.update(outboxEvents)
+				.set({
+					status: 'dead',
+					deadLetteredAt: now,
+					lastError: lastError ?? row.lastError,
+					updatedAt: now
+				})
+				.where(eq(outboxEvents.id, outboxEventId));
+		});
 	}
 
 	private async resolveSecret(tenantId: string, subscriptionId: string | undefined): Promise<string> {

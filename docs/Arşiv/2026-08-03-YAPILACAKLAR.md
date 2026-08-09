@@ -768,7 +768,14 @@ AUDIT-REPORT.md'de Medium/Low/Info olarak işaretlenmiş ve pilot blokajı olmay
     aynı kaynağa geçti). Yeni controller eklenip guard unutulursa KIRMIZI — mutasyon testiyle
     doğrulandı (guard silindi → kırmızı; guard'sız yeni controller → kırmızı; triad'lı ama
     permission'sız yeni controller → F09-11 kırmızı).
-- **AUDIT-F09-05** Outbox + scheduler DLQ; `attempts` artır veya `requeue-from-failed` job. **(M)**
+- **AUDIT-F09-05** Outbox + scheduler DLQ; `attempts` artır veya `requeue-from-failed` job. **(M)** ✅
+  - **Görüş (2026-08-09):** `outbox_events.status='dead'` + `dead_lettered_at` (migration `0033`) —
+    ara deneme `'failed'` kalır, BullMQ attempts tükenince `'dead'`. Zamanlanmış işler
+    (`ghl.reconcile` / `ad_metrics.sync` / `files.sweep_pending`) tükenince `jobs` ledger'a
+    `status='dead'` (bullmq_job_id ile update-or-insert, çift kayıt yok). Requeue
+    `attempts`'i sıfırlamaz — kaç kez patladığı denetim izidir. Admin yüzey Fastify route
+    (`/v1/admin/queue/outbox/{dead,requeue}`), Bull Board ile aynı `x-admin-queue-token`
+    (Nest controller değil → guard-coverage triad dışı, allowlist gerekmedi).
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); Türk mali mevzuatı 10y tutma + KVKK silme-yetkisi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject rights endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. **(L)**
 - **AUDIT-F09-08** Magic-byte MIME sniff (`file-type`/`mmmagic`) + multipart `allowedMimeTypes` allowlist (S3 sürücüsü dahil). **(M)**

@@ -5,6 +5,7 @@ import { GhlModule } from '../integrations/ghl/ghl.module';
 import { StorageModule } from '../storage/storage.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { IntegrationEventProcessor } from './integration-event.processor';
+import { OutboxAdminService } from './outbox-admin.service';
 import { OutboxProcessor } from './outbox.processor';
 import { QueueService } from './queue.service';
 
@@ -17,7 +18,7 @@ import { QueueService } from './queue.service';
 		StorageModule,
 		forwardRef(() => WhatsappModule)
 	],
-	providers: [IntegrationEventProcessor, OutboxProcessor, QueueService],
-	exports: [QueueService]
+	providers: [IntegrationEventProcessor, OutboxProcessor, OutboxAdminService, QueueService],
+	exports: [QueueService, OutboxAdminService]
 })
 export class QueueModule {}

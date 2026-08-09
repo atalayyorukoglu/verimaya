@@ -151,7 +151,7 @@ API CORS / auth:
 | `SENTRY_DSN` | Production Sentry project |
 | `STORAGE_DRIVER` | Prod’da tercihen `s3` (R2) |
 | `S3_*` | R2 private bucket — aşağıdaki bölüm |
-| `ADMIN_QUEUE_TOKEN` | Bull Board; boş bırakma |
+| `ADMIN_QUEUE_TOKEN` | Bull Board + outbox DLQ admin; boş bırakma |
 | `ENABLE_INTEGRATION_SCHEDULERS` | Pilot sonrası `true` (6h sync + günlük files sweep) |
 | `FILES_SWEEP_DRY_RUN` | İlk hafta `true`, sonra kapat |
 | `KARNE_LEADS_ENABLED` | Lead POST; prod `true` (LEG-02). Web `PUBLIC_KARNE_LEADS_ENABLED` ile birlikte |
@@ -165,6 +165,27 @@ API CORS / auth:
 
 Opsiyonel: `LLM_*`, Ads OAuth (`META_*`, `GOOGLE_ADS_*`).
 Meta Ads canlı: `docs/ADS-META-GOLIVE.md` (redirect URI = `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`).
+
+### Outbox DLQ (AUDIT-F09-05)
+
+Bull Board’un yanındaki operatör uçları: aynı `X-Admin-Queue-Token` header
+(`ADMIN_QUEUE_TOKEN`). `status='dead'` satırları listeler / yeniden kuyruğa alır
+(`attempts` korunur).
+
+```bash
+# Ölü satırları gör
+curl -sS -H "X-Admin-Queue-Token: $ADMIN_QUEUE_TOKEN" \
+  "https://api.example/v1/admin/queue/outbox/dead?limit=50"
+
+# Tenant bazlı requeue
+curl -sS -X POST -H "X-Admin-Queue-Token: $ADMIN_QUEUE_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{"tenant_id":"<uuid>","limit":20}' \
+  "https://api.example/v1/admin/queue/outbox/requeue"
+```
+
+Zamanlanmış işler tükenince `jobs` tablosunda `status='dead'` satırı da yazılır
+(sessiz log kaybı yok).
 
 ### WEBHOOK-01 — tenant kimliği + pilot shim
 

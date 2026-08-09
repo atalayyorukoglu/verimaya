@@ -70,6 +70,8 @@ export const outboxEvents = pgTable(
 			.notNull()
 			.defaultNow(),
 		sentAt: timestamp('sent_at', { withTimezone: true, mode: 'date' }),
+		/** Set when BullMQ retries are exhausted (`status='dead'`). Null while still retrying. */
+		deadLetteredAt: timestamp('dead_lettered_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
 			.defaultNow(),

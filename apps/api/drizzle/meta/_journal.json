@@ -232,6 +232,13 @@
       "when": 1754050000000,
       "tag": "0032_ad_metrics_fx_coherence",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1754100000000,
+      "tag": "0033_outbox_dead_letter",
+      "breakpoints": true
     }
   ]
 }
