@@ -161,6 +161,14 @@
 		)
 	);
 
+	const statusCountEntries = $derived.by(() => {
+		const counts = appointmentsQuery.data?.status_counts;
+		if (!counts) return [] as { status: AppointmentStatus; count: number }[];
+		return appointmentStatusSchema.options
+			.filter((s) => (counts[s] ?? 0) > 0)
+			.map((s) => ({ status: s, count: counts[s]! }));
+	});
+
 	function applyFilters(e: Event) {
 		e.preventDefault();
 		appliedQ = qInput.trim();
@@ -349,6 +357,20 @@
 			{/if}
 		</div>
 	</form>
+
+	{#if !appointmentsQuery.isPending && !appointmentsQuery.isError && statusCountEntries.length > 0}
+		<p class="mb-4 text-sm text-text-muted" aria-label={t('appointments.stats.label')}>
+			{#each statusCountEntries as entry, i (entry.status)}
+				{#if i > 0}<span class="text-text-faint" aria-hidden="true"> · </span>{/if}
+				<span>
+					{t('appointments.stats.entry', {
+						label: appointmentStatusLabels[entry.status],
+						count: entry.count
+					})}
+				</span>
+			{/each}
+		</p>
+	{/if}
 
 	{#if appointmentsQuery.isPending}
 		<p class="text-sm text-text-muted">{t('appointments.loading')}</p>

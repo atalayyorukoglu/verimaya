@@ -270,4 +270,87 @@ describe('appointments tenant isolation', () => {
 		expect(byRange.items.map((a) => a.id)).not.toContain(outOfRangeId);
 		expect(byRange.items.map((a) => a.id)).not.toContain(appointmentA);
 	});
+
+	it('GAP-F09-21: type_counts/status_counts over filtered set; cursor and soft-delete ignored', async () => {
+		const marker = `GapF0921-${randomUUID().slice(0, 8)}`;
+		const seedPatientId = await withTenantSession(tenantA, async () => {
+			const p = await patientsService.createWithDb(db, tenantA, {
+				full_name: `${marker} Patient`
+			});
+			return p.id;
+		});
+
+		const created = await withTenantSession(tenantA, async () => {
+			const specs = [
+				{ appointment_type: 'Saç ekimi', status: 'scheduled' as const },
+				{ appointment_type: 'Saç ekimi', status: 'completed' as const },
+				{ appointment_type: 'Diş', status: 'confirmed' as const },
+				{ appointment_type: null, status: 'no_show' as const }
+			];
+			const ids: string[] = [];
+			for (const spec of specs) {
+				const a = await appointmentsService.createWithDb(db, tenantA, {
+					patient_id: seedPatientId,
+					starts_at: new Date().toISOString(),
+					ends_at: null,
+					title: `${marker} visit`,
+					appointment_type: spec.appointment_type,
+					status: spec.status,
+					clinic_name: null,
+					hotel_name: null,
+					transfer_note: null,
+					clinic_contact_id: null,
+					hotel_contact_id: null,
+					transfer_contact_id: null,
+					notes: `${marker} notes`
+				});
+				ids.push(a.id);
+			}
+			return ids;
+		});
+
+		const softDeletedId = created[3]!;
+		await withTenantSession(tenantA, async () => {
+			await appointmentsService.softDeleteWithDb(db, tenantA, softDeletedId, {
+				actorId: null,
+				actorDisplayName: 'gap-f09-21'
+			});
+		});
+
+		const byQ = await appointmentsService.list(tenantA, { limit: 25, q: marker });
+		expect(byQ.items).toHaveLength(3);
+		expect(byQ.type_counts).toEqual({ 'Saç ekimi': 2, Diş: 1 });
+		expect(byQ.status_counts).toEqual({
+			scheduled: 1,
+			completed: 1,
+			confirmed: 1
+		});
+
+		const page1 = await appointmentsService.list(tenantA, { limit: 1, q: marker });
+		expect(page1.items).toHaveLength(1);
+		expect(page1.next_cursor).toBeTruthy();
+		expect(page1.type_counts).toEqual(byQ.type_counts);
+		expect(page1.status_counts).toEqual(byQ.status_counts);
+
+		const page2 = await appointmentsService.list(tenantA, {
+			limit: 1,
+			q: marker,
+			cursor: page1.next_cursor!
+		});
+		expect(page2.type_counts).toEqual(byQ.type_counts);
+		expect(page2.status_counts).toEqual(byQ.status_counts);
+	});
+
+	it("GAP-F09-21: Tenant B aggregates exclude Tenant A's appointments", async () => {
+		const listB = await appointmentsService.list(tenantB, { limit: 25 });
+		expect(listB.items.map((a) => a.id)).toEqual([appointmentB]);
+		expect(listB.status_counts).toEqual({ scheduled: 1 });
+		expect(listB.type_counts).toEqual({ '': 1 });
+
+		const listA = await appointmentsService.list(tenantA, { limit: 100 });
+		const tenantATotal = Object.values(listA.status_counts).reduce((s, n) => s + n, 0);
+		expect(tenantATotal).toBeGreaterThan(1);
+		expect(listB.status_counts.scheduled).toBe(1);
+		expect(listA.items.some((a) => a.id === appointmentB)).toBe(false);
+	});
 });

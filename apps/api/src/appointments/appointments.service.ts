@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, gte, isNull, lt, type SQL } from 'drizzle-orm';
-import type { AppointmentCreate, AppointmentListQuery, AppointmentUpdate } from '@verimaya/shared';
-import { tenantDayRange } from '@verimaya/shared';
+import { and, count, desc, eq, gte, isNull, lt, type SQL } from 'drizzle-orm';
+import type {
+	AppointmentCreate,
+	AppointmentListQuery,
+	AppointmentStatus,
+	AppointmentUpdate
+} from '@verimaya/shared';
+import { appointmentStatusSchema, tenantDayRange } from '@verimaya/shared';
 import { appointments, patients, tenants } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
@@ -16,42 +21,77 @@ export class AppointmentsService {
 	async list(tenantId: string, params: AppointmentListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const timezone = await this.getTenantTimezone(db, tenantId);
-			const filters: SQL[] = [isNull(appointments.deletedAt)];
 			const cursorCond = createdAtCursorCondition(
 				appointments.createdAt,
 				appointments.id,
 				params.cursor
 			);
-			if (cursorCond) filters.push(cursorCond);
-			if (params.patient_id) filters.push(eq(appointments.patientId, params.patient_id));
+			// Aggregates share these filters but never the cursor (GAP-F09-21 / GAP-03b).
+			const baseFilters: SQL[] = [isNull(appointments.deletedAt)];
+			if (params.patient_id) baseFilters.push(eq(appointments.patientId, params.patient_id));
 			if (params.from) {
 				const { start } = tenantDayRange(params.from, timezone);
-				filters.push(gte(appointments.startsAt, start));
+				baseFilters.push(gte(appointments.startsAt, start));
 			}
 			if (params.to) {
 				const { endExclusive } = tenantDayRange(params.to, timezone);
-				filters.push(lt(appointments.startsAt, endExclusive));
+				baseFilters.push(lt(appointments.startsAt, endExclusive));
 			}
-			if (params.status) filters.push(eq(appointments.status, params.status));
+			if (params.status) baseFilters.push(eq(appointments.status, params.status));
 			const searchCond = textSearchCondition(params.q, [
 				appointments.patientDisplayName,
 				appointments.notes,
 				appointments.clinicName,
 				appointments.hotelName
 			]);
-			if (searchCond) filters.push(searchCond);
+			if (searchCond) baseFilters.push(searchCond);
+
+			const typeRows = await db
+				.select({
+					appointmentType: appointments.appointmentType,
+					n: count()
+				})
+				.from(appointments)
+				.where(and(...baseFilters))
+				.groupBy(appointments.appointmentType);
+
+			const statusRows = await db
+				.select({
+					status: appointments.status,
+					n: count()
+				})
+				.from(appointments)
+				.where(and(...baseFilters))
+				.groupBy(appointments.status);
+
+			const type_counts: Record<string, number> = {};
+			for (const row of typeRows) {
+				type_counts[row.appointmentType ?? ''] = Number(row.n);
+			}
+
+			const status_counts: Partial<Record<AppointmentStatus, number>> = {};
+			for (const row of statusRows) {
+				const parsed = appointmentStatusSchema.safeParse(row.status);
+				if (!parsed.success) continue;
+				status_counts[parsed.data] = Number(row.n);
+			}
+
+			const pageFilters = [...baseFilters];
+			if (cursorCond) pageFilters.push(cursorCond);
 
 			const rows = await db
 				.select()
 				.from(appointments)
-				.where(and(...filters))
+				.where(and(...pageFilters))
 				.orderBy(desc(appointments.createdAt), desc(appointments.id))
 				.limit(params.limit + 1);
 
 			const page = buildCursorPage(rows, params.limit);
 			return {
 				items: page.items.map(toAppointment),
-				next_cursor: page.next_cursor
+				next_cursor: page.next_cursor,
+				type_counts,
+				status_counts
 			};
 		});
 	}

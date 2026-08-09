@@ -496,6 +496,8 @@ const tr = {
 	'appointments.filter.to': 'Bitiş',
 	'appointments.filter.apply': 'Filtrele',
 	'appointments.filter.clear': 'Temizle',
+	'appointments.stats.label': 'Durum özeti',
+	'appointments.stats.entry': '{label}: {count}',
 	'appointments.ops.heading': 'Operasyon listesi',
 	'appointments.ops.description':
 		'Seçili aralıktaki randevular — hasta notları kart üzerinde (takvim değişmeden).',
@@ -1352,6 +1354,8 @@ const en: Record<MessageKey, string> = {
 	'appointments.filter.to': 'To',
 	'appointments.filter.apply': 'Filter',
 	'appointments.filter.clear': 'Clear',
+	'appointments.stats.label': 'Status summary',
+	'appointments.stats.entry': '{label}: {count}',
 	'appointments.ops.heading': 'Operations list',
 	'appointments.ops.description':
 		'Appointments in the selected range — patient notes on cards (calendar unchanged).',

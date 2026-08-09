@@ -25,7 +25,12 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-type Page<T> = { items: T[]; next_cursor: string | null };
+type Page<T> = {
+	items: T[];
+	next_cursor: string | null;
+	type_counts?: Record<string, number>;
+	status_counts?: Record<string, number>;
+};
 
 async function fetchPage<T>(path: string): Promise<Page<T>> {
 	const res = await fetch(`${BASE}${path}`);
@@ -72,6 +77,30 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 		const expected = [...store.appointments].sort(compareByCreatedAtDesc).map((a) => a.id);
 		const all = await fetchAllPages<{ id: string }>('/v1/appointments', 5);
 		expect(all.map((a) => a.id)).toEqual(expected);
+	});
+
+	it('appointments: type_counts/status_counts match the filtered set (GAP-F09-21)', async () => {
+		const filtered = store.appointments
+			.filter((a) => a.patient_id === ATALAY_PATIENT_ID)
+			.sort(compareByCreatedAtDesc);
+		expect(filtered.length).toBeGreaterThan(0);
+
+		const expectedType: Record<string, number> = {};
+		const expectedStatus: Record<string, number> = {};
+		for (const a of filtered) {
+			const typeKey = a.appointment_type ?? '';
+			expectedType[typeKey] = (expectedType[typeKey] ?? 0) + 1;
+			expectedStatus[a.status] = (expectedStatus[a.status] ?? 0) + 1;
+		}
+
+		const page = await fetchPage<{ id: string } & {
+			type_counts: Record<string, number>;
+			status_counts: Record<string, number>;
+		}>(`/v1/appointments?patient_id=${ATALAY_PATIENT_ID}&limit=1`);
+		expect(page.items).toHaveLength(1);
+		expect(page.next_cursor).toBeTruthy();
+		expect(page.type_counts).toEqual(expectedType);
+		expect(page.status_counts).toEqual(expectedStatus);
 	});
 
 	it('transactions: contact_id filter matches the store exactly', async () => {

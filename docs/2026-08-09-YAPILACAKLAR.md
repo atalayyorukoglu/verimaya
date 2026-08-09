@@ -148,7 +148,6 @@
 - **GAP-F09-17** Kişi toplu tür atama + kişi türü rename (`PATCH /contact-types/:id`). **(S)**
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
-- **GAP-F09-21** Randevu listesi agregat istatistikleri (`type_counts`, `status_counts`). **(S)**
 - **GAP-F09-22** Case ↔ işlem otomatik bağlama (basitleştirilmiş: yalnız `contact_id`). **(S)**
 - **GAP-F09-23** Dosya silme endpoint'i (soft-delete + audit; KVKK). **(M)**
 - **GAP-F09-24** Satır içi güvenli dosya önizleme (MIME allowlist + attachment zorlaması kararı
@@ -215,9 +214,11 @@
 
 ## Son kapananlar (bu dosya dönemi)
 
-> Kural 3: kapanan kalem buraya tek satırla taşınır; Görüş özeti + commit hash.
+> Kural 3: kapanan kalem buraya tek satırla taşınır; Görüş özeti (commit hash yazılmaz —
+> kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-F09-21** — randevu listesi yanıtına filtreli tam küme `type_counts`/`status_counts` (GAP-03b deseni; cursor sayımda yok, soft-delete hariç); UI'da durum özeti şeridi (2026-08-09). API 390/390 + web check yeşil.
 - ✅ **GAP-F09-25** — `appointment_types`/`contact_types` UNIQUE (tenant_id, name) + `tenant_settings` seed bayrakları (finance_categories dahil); 409 `duplicate_type_name` + web i18n anahtarı; migration `0034` (2026-08-09). Görüş: boş liste ≠ "hiç seed edilmedi"; finance aynı geri-yazma bug'ına sahipti → aynı mekanizma. Tam paket 388/388 yeşil.
 - ✅ **AUDIT-F09-05** — outbox + zamanlanmış iş DLQ + admin requeue (`dead` status, migration `0033`) (2026-08-09). Spec 11/11 yeşil; `0033` prod'a kalem 1 ile gider.
 - ✅ **AUDIT-F09-03** — no-op (2026-08-09): outbound webhook secret zaten per-subscription (`webhook_subscriptions.secretCiphertext`); değişiklik gerekmiyor.

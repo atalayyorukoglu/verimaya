@@ -123,7 +123,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	return `${url.pathname}${url.search}`;
 }
 import { patientSchema, patientFinanceSummarySchema } from './patient.js';
-import { appointmentSchema } from './appointment.js';
+import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
 import {
 	approveDraftsRequestSchema,
@@ -191,7 +191,7 @@ export const apiContract = {
 		response: patientFinanceSummarySchema
 	},
 	'GET /v1/appointments': {
-		response: cursorPageSchema(appointmentSchema)
+		response: appointmentListPageSchema
 	},
 	'GET /v1/appointments/:id': {
 		response: appointmentSchema

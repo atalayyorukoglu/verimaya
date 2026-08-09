@@ -1060,7 +1060,20 @@ export const handlers = [
 		// CONTRACT-02: match the real API's order (created_at desc) — the calendar UI
 		// re-sorts by starts_at client-side regardless, so this doesn't change behavior.
 		items.sort(compareByCreatedAtDesc);
-		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
+
+		const type_counts: Record<string, number> = {};
+		const status_counts: Record<string, number> = {};
+		for (const a of items) {
+			const typeKey = a.appointment_type ?? '';
+			type_counts[typeKey] = (type_counts[typeKey] ?? 0) + 1;
+			status_counts[a.status] = (status_counts[a.status] ?? 0) + 1;
+		}
+
+		return HttpResponse.json({
+			...paginate(items, parsed.data.cursor ?? null, parsed.data.limit),
+			type_counts,
+			status_counts
+		});
 	}),
 
 	http.get('/v1/appointments/:id', ({ params, request }) => {

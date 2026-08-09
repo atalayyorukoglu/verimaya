@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDateTime, uuid } from './common.js';
+import { cursorPageSchema, isoDateTime, uuid } from './common.js';
 
 export const appointmentStatusSchema = z.enum([
 	'scheduled',
@@ -50,3 +50,16 @@ export type AppointmentCreate = z.infer<typeof appointmentCreateSchema>;
 export const appointmentUpdateSchema = appointmentCreateSchema.partial();
 
 export type AppointmentUpdate = z.infer<typeof appointmentUpdateSchema>;
+
+/**
+ * GAP-F09-21: list page embeds filter-scoped GROUP BY aggregates (same shape as
+ * tracker AppointmentStats.type_counts / status_counts; top-level like total_count).
+ * `type_counts` keys are free-text `appointment_type` ("" for null/blank).
+ * `status_counts` keys are appointmentStatusSchema values present in the filtered set.
+ */
+export const appointmentListPageSchema = cursorPageSchema(appointmentSchema).extend({
+	type_counts: z.record(z.string(), z.number().int().nonnegative()),
+	status_counts: z.record(appointmentStatusSchema, z.number().int().nonnegative())
+});
+
+export type AppointmentListPage = z.infer<typeof appointmentListPageSchema>;
