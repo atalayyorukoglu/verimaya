@@ -138,7 +138,6 @@
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
 
-- **GAP-F09-16** WhatsApp içe aktarımda satır içi kayıt oluşturma (kişi/hasta/kategori). **(M)**
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
 - **GAP-F09-23** Dosya silme endpoint'i (soft-delete + audit; KVKK). **(M)**
@@ -208,6 +207,7 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-F09-16** — taslak onayında satır içi kayıt: `POST /v1/whatsapp/create-contact|create-patient|create-category` (mevcut service yollarının ince sarmalayıcısı + `@Idempotent`); taslak kartında "yeni …" formları, oluşan kayıt otomatik seçili (2026-08-09). Görüş: subcategory bilinçli yok (düz kategori modeli); create-category izni `finance:create` (permission lock); kategori duplicate'ı artık 409 `duplicate_type_name` (uidx 0004'ten beri vardı, pre-check eklendi). API 445/445 + shared 88 + web check yeşil.
 - ✅ **AUDIT-F09-08 + GAP-F09-24** — magic-byte sniff (`file-type`, tek choke point: `putFileContent` + `uploadLocalFileWithDb` → local+S3 ikisi de kapsamda) + allowlist pdf/png/jpeg/webp (`image/jpg` normalize; `image/gif` binaryTypes'tan çıktı); 415 `unsupported_media_type`/`mime_mismatch`. `GET .../files/:fileId/preview` — allowlist inline, legacy attachment, RFC 5987 filename*, nosniff; dosya panelinde önizle (2026-08-09). Görüş: `@fastify/multipart@10`'da `allowedMimeTypes` yok → declared MIME controller'da; appointment files kapsam dışı (bulgu patients'a işaret ediyor); S3 presigned-direct PUT yok, byte'lar API üzerinden geçiyor. API 432/432 + shared 88 + web check yeşil.
 - ✅ **GAP-F09-14** — `GET /v1/reports/transaction-duplicates`: tam dönemde SQL `GROUP BY/HAVING` (amount+currency+occurred_on+kind), `total_groups` + 20 grup üst sınırı; `/settings/data-quality`'nin ilk-100-satır istemci taraması kalktı (2026-08-09). Görüş: from/to düz ISO `occurred_on` (summary/consistency deseni; `tenantDayRange` timestamp'ler içindir); Tracker'ın WA-import günlük özeti bilinçli taşınmadı (inbox/taslak modeli farklı). API 423/423 + shared 88 + web check yeşil.
 - ✅ **AUDIT-F09-01** — elle `openapi.yaml` bitti: `apiContract`'tan üretim (`scripts/generate-openapi-core.js` + `pnpm --filter @verimaya/api openapi:generate`), vitest drift guard byte-for-byte karşılaştırıyor (route-bazlı teşhis mesajlı); 67 operation, OpenAPI 3.1 (2026-08-09). Görüş: `@nestjs/swagger` bilinçli kullanılmadı (controller'lar DTO metadata'sı taşımıyor, zod parse ediyor); ayrı CI adımı yerine drift spec mevcut test job'unda. API 418/418 yeşil.

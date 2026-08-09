@@ -34,6 +34,9 @@ import {
 	aggregateAiCorrectionsReport,
 	approveDraftsRequestSchema,
 	trustScoreSettings,
+	whatsappCreateCategorySchema,
+	whatsappCreateContactSchema,
+	whatsappCreatePatientSchema,
 	compareByCreatedAtDesc,
 	compareByCreatedAtAsc,
 	compareByOccurredOnDesc,
@@ -1649,6 +1652,86 @@ export const handlers = [
 			map.set(idemKey, response);
 		}
 		return HttpResponse.json(response, { status: 201 });
+	}),
+
+	http.post('/v1/whatsapp/create-contact', async ({ request }) => {
+		const body = await request.json();
+		const parsed = whatsappCreateContactSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz kişi', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const type = store.contactTypes.find((ct) => ct.id === parsed.data.contact_type_id);
+		if (!type) return notFound('Kişi türü bulunamadı');
+		const now = nowIso();
+		const contact: Contact = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			contact_type_id: type.id,
+			contact_type_name: type.name,
+			display_name: parsed.data.display_name,
+			phone: parsed.data.phone ?? null,
+			email: parsed.data.email ?? null,
+			notes: null,
+			is_internal: false,
+			usage_count: 0,
+			created_at: now,
+			updated_at: now
+		};
+		store.contacts.unshift(contact);
+		return HttpResponse.json(contact, { status: 201 });
+	}),
+
+	http.post('/v1/whatsapp/create-patient', async ({ request }) => {
+		const body = await request.json();
+		const parsed = whatsappCreatePatientSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz hasta', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const now = nowIso();
+		const patient: Patient = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			full_name: parsed.data.full_name,
+			phone: null,
+			email: null,
+			status: 'scheduled',
+			source: null,
+			notes: null,
+			assigned_user_id: null,
+			contact_id: parsed.data.contact_id ?? null,
+			created_at: now,
+			updated_at: now
+		};
+		store.patients.unshift(patient);
+		return HttpResponse.json(patient, { status: 201 });
+	}),
+
+	http.post('/v1/whatsapp/create-category', async ({ request }) => {
+		const body = await request.json();
+		const parsed = whatsappCreateCategorySchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz kategori', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const dup = store.financeCategories.find(
+			(c) => c.kind === parsed.data.kind && c.name === parsed.data.name
+		);
+		if (dup) {
+			return HttpResponse.json(
+				{ error: { code: 'duplicate_type_name', message: 'A finance category with this name already exists' } },
+				{ status: 409 }
+			);
+		}
+		const now = nowIso();
+		const maxOrder = store.financeCategories.reduce((m, c) => Math.max(m, c.sort_order), -1);
+		const item: FinanceCategory = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			kind: parsed.data.kind,
+			name: parsed.data.name,
+			sort_order: maxOrder + 1,
+			subcategories: [],
+			created_at: now,
+			updated_at: now
+		};
+		store.financeCategories.push(item);
+		return HttpResponse.json(item, { status: 201 });
 	}),
 
 	http.post('/v1/whatsapp/inbox/:id/parse', async ({ params, request }) => {

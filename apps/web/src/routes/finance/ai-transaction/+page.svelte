@@ -4,6 +4,9 @@
 	import type {
 		ApproveDraftItem,
 		ApproveDraftsResponse,
+		Contact,
+		ContactType,
+		FinanceCategory,
 		InboundMessage,
 		Patient,
 		Tenant,
@@ -24,7 +27,8 @@
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 
 	type PatientsPage = { items: Patient[]; next_cursor: string | null };
-	type DraftState = DraftApprovalState & { contact_id: string | null };
+	type ContactsPage = { items: Contact[]; next_cursor: string | null };
+	type DraftState = DraftApprovalState;
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
@@ -33,6 +37,7 @@
 	let parseError = $state<string | null>(null);
 	let processing = $state(false);
 	let approving = $state(false);
+	let creatingInline = $state(false);
 	let drafts = $state<DraftState[]>([]);
 	let activeInboxId = $state<string | null>(null);
 	let showLongWarning = $state(false);
@@ -51,6 +56,25 @@
 		enabled: qs.ready
 	}));
 
+	const contactsQuery = createQuery(() => ({
+		queryKey: qs.keys.contacts.list({ limit: 100, for: 'whatsapp' }),
+		queryFn: () => apiGet<ContactsPage>(listUrl('contacts', { limit: 100 })),
+		enabled: qs.ready
+	}));
+
+	const categoriesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.financeCategories(),
+		queryFn: () =>
+			apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
+		enabled: qs.ready
+	}));
+
+	const contactTypesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.contactTypes(),
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
+		enabled: qs.ready
+	}));
+
 	const tenantQuery = createQuery(() => ({
 		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
@@ -58,6 +82,9 @@
 	}));
 
 	const patients = $derived(patientsQuery.data?.items ?? []);
+	const contacts = $derived(contactsQuery.data?.items ?? []);
+	const categories = $derived(categoriesQuery.data?.items ?? []);
+	const contactTypes = $derived(contactTypesQuery.data?.items ?? []);
 	const baseCurrency = $derived(tenantQuery.data?.base_currency ?? 'TRY');
 	const pendingMessages = $derived(
 		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new' || m.status === 'parsed')
@@ -227,6 +254,62 @@
 			contact_id: d.contact_id
 		});
 		return parsed;
+	}
+
+	async function createContactInline(
+		index: number,
+		input: {
+			display_name: string;
+			contact_type_id: string;
+			phone?: string | null;
+			email?: string | null;
+		}
+	) {
+		creatingInline = true;
+		try {
+			const created = await apiSend<Contact>(apiPaths.whatsappCreateContact, 'POST', input);
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+			updateDraft(index, {
+				contact_id: created.id,
+				contact_label: created.display_name
+			});
+		} finally {
+			creatingInline = false;
+		}
+	}
+
+	async function createPatientInline(index: number, input: { full_name: string }) {
+		creatingInline = true;
+		try {
+			const created = await apiSend<Patient>(apiPaths.whatsappCreatePatient, 'POST', input);
+			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
+			updateDraft(index, {
+				patient_id: created.id,
+				patient_display_name: created.full_name
+			});
+		} finally {
+			creatingInline = false;
+		}
+	}
+
+	async function createCategoryInline(
+		index: number,
+		input: { name: string; kind: TransactionDraft['kind'] }
+	) {
+		creatingInline = true;
+		try {
+			const created = await apiSend<FinanceCategory>(
+				apiPaths.whatsappCreateCategory,
+				'POST',
+				input
+			);
+			await queryClient.invalidateQueries({
+				queryKey: qs.keys.settings.financeCategories()
+			});
+			updateDraft(index, { category: created.name });
+		} finally {
+			creatingInline = false;
+		}
 	}
 
 	async function approveAll() {
@@ -426,8 +509,15 @@
 				<TransactionDraftCard
 					{draft}
 					{patients}
+					{contacts}
+					{categories}
+					{contactTypes}
 					{baseCurrency}
+					creating={creatingInline}
 					onchange={(patch) => updateDraft(i, patch)}
+					onCreateContact={(input) => createContactInline(i, input)}
+					onCreatePatient={(input) => createPatientInline(i, input)}
+					onCreateCategory={(input) => createCategoryInline(i, input)}
 				/>
 			{/each}
 

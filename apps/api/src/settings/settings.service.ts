@@ -50,6 +50,7 @@ const FINANCE_CATEGORIES_SEEDED_KEY = 'finance_categories_defaults_seeded';
 
 const APPOINTMENT_TYPES_NAME_UIDX = 'appointment_types_tenant_id_name_uidx';
 const CONTACT_TYPES_NAME_UIDX = 'contact_types_tenant_id_name_uidx';
+const FINANCE_CATEGORIES_KIND_NAME_UIDX = 'finance_categories_tenant_kind_name_uidx';
 
 @Injectable()
 export class SettingsService {
@@ -138,24 +139,38 @@ export class SettingsService {
 		tenantId: string,
 		input: FinanceCategoryCreate
 	) {
+		const siblings = await db
+			.select({ kind: financeCategories.kind, name: financeCategories.name })
+			.from(financeCategories);
+		if (siblings.some((r) => r.kind === input.kind && r.name === input.name)) {
+			throw this.duplicateTypeNameConflict('A finance category with this name already exists');
+		}
+
 		const [maxRow] = await db
 			.select({ sortOrder: financeCategories.sortOrder })
 			.from(financeCategories)
 			.orderBy(desc(financeCategories.sortOrder))
 			.limit(1);
 
-		const [row] = await db
-			.insert(financeCategories)
-			.values({
-				tenantId,
-				kind: input.kind,
-				name: input.name,
-				sortOrder: (maxRow?.sortOrder ?? -1) + 1,
-				subcategories: input.subcategories ?? []
-			})
-			.returning();
+		try {
+			const [row] = await db
+				.insert(financeCategories)
+				.values({
+					tenantId,
+					kind: input.kind,
+					name: input.name,
+					sortOrder: (maxRow?.sortOrder ?? -1) + 1,
+					subcategories: input.subcategories ?? []
+				})
+				.returning();
 
-		return toFinanceCategory(row!);
+			return toFinanceCategory(row!);
+		} catch (err) {
+			if (isUniqueViolation(err, FINANCE_CATEGORIES_KIND_NAME_UIDX)) {
+				throw this.duplicateTypeNameConflict('A finance category with this name already exists');
+			}
+			throw err;
+		}
 	}
 
 	async updateFinanceCategory(tenantId: string, id: string, input: FinanceCategoryUpdate) {

@@ -88,6 +88,10 @@ export const apiPaths = {
 		if (params?.to) url.searchParams.set('to', params.to);
 		return `${url.pathname}${url.search}`;
 	},
+	/** GAP-F09-16: inline create from draft approval (no create-subcategory — flat categories). */
+	whatsappCreateContact: `${API_V1_PREFIX}/whatsapp/create-contact`,
+	whatsappCreatePatient: `${API_V1_PREFIX}/whatsapp/create-patient`,
+	whatsappCreateCategory: `${API_V1_PREFIX}/whatsapp/create-category`,
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
 	adMetricsSync: `${API_V1_PREFIX}/ad-metrics/sync`,
 	apiKeys: `${API_V1_PREFIX}/api-keys`,
@@ -157,6 +161,9 @@ import {
 	approveDraftsRequestSchema,
 	approveDraftsResponseSchema,
 	inboundMessageActionResponseSchema,
+	whatsappCreateCategorySchema,
+	whatsappCreateContactSchema,
+	whatsappCreatePatientSchema,
 	inboundMessageProcessResponseSchema,
 	inboundMessageSchema,
 	transactionDraftSchema
@@ -175,7 +182,10 @@ import {
 	mergeRecordsSchema,
 	patientDuplicateGroupsResponseSchema
 } from './duplicate.js';
-import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-category.js';
+import {
+	financeCategorySchema,
+	appointmentTypeSettingSchema
+} from './finance-category.js';
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema, memberRoleUpdateSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
@@ -349,6 +359,18 @@ export const apiContract = {
 	},
 	'GET /v1/whatsapp/corrections-report': {
 		response: aiCorrectionsReportSchema
+	},
+	'POST /v1/whatsapp/create-contact': {
+		body: whatsappCreateContactSchema,
+		response: contactSchema
+	},
+	'POST /v1/whatsapp/create-patient': {
+		body: whatsappCreatePatientSchema,
+		response: patientSchema
+	},
+	'POST /v1/whatsapp/create-category': {
+		body: whatsappCreateCategorySchema,
+		response: financeCategorySchema
 	},
 	'GET /v1/members': {
 		response: cursorPageSchema(membershipUserSchema)

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
+import { ContactsModule } from '../contacts/contacts.module';
 import { LlmModule } from '../integrations/llm';
 import { PatientsModule } from '../patients/patients.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -20,6 +21,7 @@ import { WhatsappService } from './whatsapp.service';
 	imports: [
 		AuthModule,
 		CommonModule,
+		ContactsModule,
 		LlmModule,
 		PatientsModule,
 		SettingsModule,

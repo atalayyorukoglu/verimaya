@@ -14,6 +14,9 @@ import {
 	aiCorrectionsReportParamsSchema,
 	approveDraftsRequestSchema,
 	cursorPageParams,
+	whatsappCreateCategorySchema,
+	whatsappCreateContactSchema,
+	whatsappCreatePatientSchema,
 	whatsappParseRequestSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -29,6 +32,9 @@ import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
+import { ContactsService } from '../contacts/contacts.service';
+import { PatientsService } from '../patients/patients.service';
+import { SettingsService } from '../settings/settings.service';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappService } from './whatsapp.service';
 
@@ -38,6 +44,9 @@ export class WhatsappController {
 	constructor(
 		private readonly whatsappService: WhatsappService,
 		private readonly aiCorrectionsService: AiCorrectionsService,
+		private readonly contactsService: ContactsService,
+		private readonly patientsService: PatientsService,
+		private readonly settingsService: SettingsService,
 		private readonly idempotency: IdempotencyService
 	) {}
 
@@ -139,6 +148,100 @@ export class WhatsappController {
 	)
 	ignoreInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.ignoreInboxItem(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * GAP-F09-16: inline contact create from draft approval (thin wrap of ContactsService.create).
+	 */
+	@Post('create-contact')
+	@RequireOrgPermission('patient', 'create')
+	@Idempotent()
+	async createContact(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(whatsappCreateContactSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/whatsapp/create-contact',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.contactsService.createWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	/**
+	 * GAP-F09-16: inline patient (case) create from draft approval.
+	 * Tracker name was create-case; Verimaya domain is Patient.
+	 */
+	@Post('create-patient')
+	@RequireOrgPermission('patient', 'create')
+	@Idempotent()
+	async createPatient(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(whatsappCreatePatientSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/whatsapp/create-patient',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.patientsService.createWithDb(db, tenantId, {
+					full_name: input.full_name,
+					phone: null,
+					email: null,
+					source: null,
+					notes: null,
+					assigned_user_id: null,
+					contact_id: input.contact_id ?? null,
+					status: 'scheduled'
+				})
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	/**
+	 * GAP-F09-16: inline finance category create from draft approval.
+	 * Permission is finance:create (not settings:update) — same rationale as approve-drafts:
+	 * this is a finance ops assist on the AI import path, not a settings-admin action.
+	 * No create-subcategory: category model is flat.
+	 */
+	@Post('create-category')
+	@RequireOrgPermission('finance', 'create')
+	@Idempotent()
+	async createCategory(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(whatsappCreateCategorySchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/whatsapp/create-category',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.settingsService.createFinanceCategoryWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
 	}
 
 	@Post('corrections')

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
+import { contactCreateSchema } from './contact.js';
+import { financeCategoryCreateSchema } from './finance-category.js';
 import {
 	transactionKindSchema,
 	transactionSchema,
@@ -140,3 +142,38 @@ export const inboundMessageActionResponseSchema = z.object({
 });
 
 export type InboundMessageActionResponse = z.infer<typeof inboundMessageActionResponseSchema>;
+
+/**
+ * GAP-F09-16 (G-16): inline create from WhatsApp draft approval.
+ * Subcategory create intentionally omitted — Verimaya category model is flat
+ * (`transactions.category` + `finance_categories` dictionary, no subcategory entity).
+ */
+export const whatsappCreateContactSchema = contactCreateSchema
+	.pick({
+		display_name: true,
+		contact_type_id: true,
+		phone: true,
+		email: true
+	})
+	.strict();
+
+export type WhatsappCreateContact = z.infer<typeof whatsappCreateContactSchema>;
+
+/** Minimal patient create subset for inline draft approval. */
+export const whatsappCreatePatientSchema = z
+	.object({
+		full_name: z.string().min(1).max(255),
+		contact_id: uuid.nullable().optional()
+	})
+	.strict();
+
+export type WhatsappCreatePatient = z.infer<typeof whatsappCreatePatientSchema>;
+
+export const whatsappCreateCategorySchema = financeCategoryCreateSchema
+	.pick({
+		name: true,
+		kind: true
+	})
+	.strict();
+
+export type WhatsappCreateCategory = z.infer<typeof whatsappCreateCategorySchema>;

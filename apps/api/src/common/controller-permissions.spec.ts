@@ -130,6 +130,12 @@ const INTENTIONAL_PERMISSION_LOCKS: Array<{
 		reason: 'Money path — writes transactions, not patient inbox state'
 	},
 	{
+		key: 'WhatsappController.createCategory',
+		permission: { resource: 'finance', action: 'create' },
+		reason:
+			'GAP-F09-16 inline category on AI import path — finance ops, not settings-admin (settings dictionary uses settings:update; same rationale as approveDrafts)'
+	},
+	{
 		key: 'AdMetricsController.sync',
 		permission: { resource: 'finance', action: 'update' },
 		reason: 'POST sync mutates ad_metrics_daily under finance'
