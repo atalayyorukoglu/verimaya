@@ -1,4 +1,4 @@
-import type { Patient } from '@verimaya/shared';
+import type { Contact } from '@verimaya/shared';
 import type { LlmParseContext } from './llm.types';
 
 /** Placeholders sent to external LLMs instead of raw PII. */
@@ -61,10 +61,10 @@ export function maskMessagePii(message: string): string {
 }
 
 /** Replace known patient display names in the message with [HASTA]. */
-export function maskPatientNamesInMessage(message: string, patients: Patient[]): string {
+export function maskPatientNamesInMessage(message: string, patients: Contact[]): string {
 	let out = message;
 	const names = patients
-		.map((p) => p.full_name?.trim())
+		.map((p) => p.display_name?.trim())
 		.filter((n): n is string => Boolean(n) && n.length >= 2)
 		.sort((a, b) => b.length - a.length);
 
@@ -74,7 +74,7 @@ export function maskPatientNamesInMessage(message: string, patients: Patient[]):
 	return out;
 }
 
-export function toOpaquePatientHints(patients: Patient[]): MaskedLlmPatientHint[] {
+export function toOpaquePatientHints(patients: Contact[]): MaskedLlmPatientHint[] {
 	return patients.slice(0, 40).map((p) => ({ patient_ref: p.id }));
 }
 

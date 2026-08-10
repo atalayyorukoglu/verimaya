@@ -1,23 +1,71 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, count, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
+import {
+	BadRequestException,
+	ConflictException,
+	Inject,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import type {
+	MergeRecords,
+	ContactCaseNoteCreate,
 	ContactCreate,
+	ContactFileCreate,
+	ContactFilePresign,
 	ContactListQuery,
-	ContactsBulkType,
 	ContactUpdate,
-	MergeRecords
+	ContactsBulkType
 } from '@verimaya/shared';
-import { DUPLICATE_SCAN_ROW_CAP, findContactDuplicateGroups } from '@verimaya/shared';
-import { appointments, contactTypes, contacts, patients, transactions } from '../db/schema';
+import {
+	DEFAULT_TENANT_TIMEZONE,
+	DUPLICATE_SCAN_ROW_CAP,
+	findContactDuplicateGroups,
+	isInlineSafeContactFileMimeType,
+	toTenantDayKey
+} from '@verimaya/shared';
+import { assertUploadMimeMatchesBytes } from './file-mime';
+import {
+	appointments,
+	caseNotes,
+	contactTypes,
+	contacts,
+	files,
+	tenants,
+	transactions
+} from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
+import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
-import { toContact } from '../common/mappers';
+import { toContact, toContactCaseNote, toContactFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
+import {
+	FILE_STORAGE,
+	DEFAULT_PRESIGN_TTL_SECONDS,
+	MAX_UPLOAD_BYTES,
+	PENDING_STORAGE_KEY,
+	type FileStoragePort
+} from '../storage/storage.types';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+
+function deriveDisplayName(firstName: string, lastName: string | null | undefined): string {
+	return `${firstName}${lastName?.trim() ? ` ${lastName.trim()}` : ''}`.trim();
+}
+
+function publicApiOrigin(): string {
+	const raw =
+		process.env.BETTER_AUTH_URL?.trim() ||
+		process.env.ADS_OAUTH_REDIRECT_BASE?.trim() ||
+		'http://localhost:3000';
+	return raw.replace(/\/$/, '');
+}
 
 @Injectable()
 export class ContactsService {
-	constructor(private readonly tenantContext: TenantContextService) {}
+	constructor(
+		private readonly tenantContext: TenantContextService,
+		@Inject(FILE_STORAGE) private readonly storage: FileStoragePort
+	) {}
 
 	async list(tenantId: string, params: ContactListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
@@ -28,10 +76,12 @@ export class ContactsService {
 			);
 			const searchCond = textSearchCondition(params.q, [
 				contacts.displayName,
+				contacts.firstName,
+				contacts.lastName,
 				contacts.email,
 				contacts.phone
 			]);
-			const baseFilters: SQL[] = [isNull(contacts.deletedAt)];
+			const baseFilters = [isNull(contacts.deletedAt)];
 			if (searchCond) baseFilters.push(searchCond);
 			if (params.type_id) baseFilters.push(eq(contacts.contactTypeId, params.type_id));
 
@@ -71,18 +121,613 @@ export class ContactsService {
 		});
 	}
 
+	async financeSummary(tenantId: string, contactId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const contact = await this.findActiveRow(db, contactId);
+			if (!contact) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact not found' }
+				});
+			}
+
+			const [tenant] = await db
+				.select({ baseCurrency: tenants.baseCurrency })
+				.from(tenants)
+				.where(eq(tenants.id, tenantId))
+				.limit(1);
+			const tenantBase = tenant?.baseCurrency ?? 'TRY';
+
+			const rows = await db
+				.select({
+					kind: transactions.kind,
+					status: transactions.status,
+					amount: transactions.amount,
+					amountBase: transactions.amountBase,
+					baseCurrency: transactions.baseCurrency,
+					currency: transactions.currency,
+					paidAmount: transactions.paidAmount
+				})
+				.from(transactions)
+				.where(
+					and(eq(transactions.contactId, contactId), isNull(transactions.deletedAt))
+				);
+
+			let incomeBase = 0;
+			let expenseBase = 0;
+			let paidBase = 0;
+			let outstandingBase = 0;
+
+			for (const row of rows) {
+				const base = resolveBaseAmount(row, tenantBase);
+				if (base == null) continue;
+				if (row.kind === 'income') {
+					incomeBase += base;
+					const paid = resolvePaidBaseAmount(row, tenantBase) ?? 0;
+					paidBase += paid;
+					outstandingBase += base - paid;
+				} else {
+					expenseBase += base;
+				}
+			}
+
+			return {
+				income_base: incomeBase,
+				expense_base: expenseBase,
+				net_base: incomeBase - expenseBase,
+				paid_base: paidBase,
+				outstanding_base: outstandingBase,
+				transaction_count: rows.length
+			};
+		});
+	}
+
+	/**
+	 * GAP-F09-22 (G-22): link unassigned transactions that share the patient's contact_id.
+	 * Soft-deleted rows and transactions already linked to any patient are skipped.
+	 * Repeat calls converge (`updated: 0` once nothing remains to link).
+	 */
+	async autoLinkTransactions(tenantId: string, contactId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) =>
+			this.autoLinkTransactionsWithDb(db, contactId)
+		);
+	}
+
+	async autoLinkTransactionsWithDb(db: TenantDb, contactId: string) {
+		const contact = await this.findActiveRow(db, contactId);
+		if (!contact) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+
+		const updatedRows = await db
+			.update(transactions)
+			.set({
+				contactId,
+				contactDisplayName: contact.displayName,
+				contactLabel: contact.displayName,
+				updatedAt: new Date()
+			})
+			.where(
+				and(
+					isNull(transactions.contactId),
+					eq(transactions.contactLabel, contact.displayName),
+					isNull(transactions.deletedAt)
+				)
+			)
+			.returning({ id: transactions.id });
+
+		return { updated: updatedRows.length };
+	}
+
+	async listFiles(tenantId: string, contactId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const contact = await this.findActiveRow(db, contactId);
+			if (!contact) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact not found' }
+				});
+			}
+
+			const rows = await db
+				.select()
+				.from(files)
+				.where(eq(files.contactId, contactId))
+				.orderBy(desc(files.createdAt), desc(files.id));
+
+			return { items: rows.map(toContactFile) };
+		});
+	}
+
+	async listCaseNotes(tenantId: string, contactId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const contact = await this.findActiveRow(db, contactId);
+			if (!contact) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact not found' }
+				});
+			}
+
+			const rows = await db
+				.select()
+				.from(caseNotes)
+				.where(eq(caseNotes.contactId, contactId))
+				.orderBy(asc(caseNotes.createdAt), asc(caseNotes.id));
+
+			return { items: rows.map(toContactCaseNote) };
+		});
+	}
+
+	async createCaseNoteWithDb(
+		db: TenantDb,
+		tenantId: string,
+		contactId: string,
+		input: ContactCaseNoteCreate,
+		author: { displayName: string }
+	) {
+		const contact = await this.findActiveRow(db, contactId);
+		if (!contact) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+
+		const body = input.body.trim();
+		const [row] = await db
+			.insert(caseNotes)
+			.values({
+				tenantId,
+				contactId,
+				body,
+				authorDisplayName: author.displayName.trim() || 'User'
+			})
+			.returning();
+
+		return toContactCaseNote(row!);
+	}
+
+	async deleteCaseNoteWithDb(db: TenantDb, contactId: string, noteId: string) {
+		const contact = await this.findActiveRow(db, contactId);
+		if (!contact) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+
+		const [row] = await db
+			.delete(caseNotes)
+			.where(and(eq(caseNotes.id, noteId), eq(caseNotes.contactId, contactId)))
+			.returning({ id: caseNotes.id });
+
+		if (!row) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Case note not found' }
+			});
+		}
+
+		return { ok: true as const };
+	}
+
+	async createFileWithDb(
+		db: TenantDb,
+		tenantId: string,
+		contactId: string,
+		input: ContactFileCreate,
+		uploader: { userId: string; displayName: string },
+		options?: {
+			fileId?: string;
+			storageKey?: string;
+			sizeBytes?: number;
+			status?: 'pending' | 'ready';
+		}
+	) {
+		const contact = await this.findActiveRow(db, contactId);
+		if (!contact) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+
+		const { appointmentId, appointmentLabel } = await this.resolveAppointmentLink(
+			db,
+			tenantId,
+			contactId,
+			input.appointment_id ?? null
+		);
+
+		const fileId = options?.fileId ?? randomUUID();
+		const storageKey = options?.storageKey ?? PENDING_STORAGE_KEY;
+		const sizeBytes = options?.sizeBytes ?? input.size_bytes ?? 0;
+		const status = options?.status ?? 'ready';
+
+		const [row] = await db
+			.insert(files)
+			.values({
+				id: fileId,
+				tenantId,
+				contactId,
+				appointmentId,
+				appointmentLabel,
+				filename: input.filename,
+				mimeType: input.mime_type ?? 'application/octet-stream',
+				sizeBytes,
+				status,
+				storageKey,
+				uploadedByUserId: uploader.userId,
+				uploadedByDisplayName: uploader.displayName
+			})
+			.returning();
+
+		return toContactFile(row!);
+	}
+
+	/**
+	 * Create pending meta + return an upload URL (S3 presign, or local content PUT).
+	 * Orphan pending rows (>24h) are swept by `files.sweep_pending` (Adım 30a).
+	 */
+	async presignFileWithDb(
+		db: TenantDb,
+		tenantId: string,
+		contactId: string,
+		input: ContactFilePresign,
+		uploader: { userId: string; displayName: string }
+	) {
+		if (input.size_bytes > MAX_UPLOAD_BYTES) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: `File exceeds ${MAX_UPLOAD_BYTES} byte limit`
+				}
+			});
+		}
+
+		const fileId = randomUUID();
+		const storageKey = this.storage.buildKey(tenantId, contactId, fileId);
+		const expiresIn = DEFAULT_PRESIGN_TTL_SECONDS;
+
+		await this.createFileWithDb(
+			db,
+			tenantId,
+			contactId,
+			{
+				filename: input.filename,
+				mime_type: input.mime_type,
+				size_bytes: input.size_bytes,
+				appointment_id: input.appointment_id ?? null
+			},
+			uploader,
+			{ fileId, storageKey, sizeBytes: input.size_bytes, status: 'pending' }
+		);
+
+		const signed = await this.storage.signedPutUrl(storageKey, expiresIn);
+		const uploadUrl =
+			signed ?? `${publicApiOrigin()}/v1/contacts/${contactId}/files/${fileId}/content`;
+
+		return {
+			file_id: fileId,
+			upload_url: uploadUrl,
+			storage_key: storageKey,
+			expires_in: expiresIn
+		};
+	}
+
+	/** Local-driver content upload (when signedPutUrl is unavailable). */
+	async putFileContent(
+		tenantId: string,
+		contactId: string,
+		fileId: string,
+		data: Buffer,
+		contentType?: string
+	) {
+		if (data.byteLength > MAX_UPLOAD_BYTES) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: `File exceeds ${MAX_UPLOAD_BYTES} byte limit`
+				}
+			});
+		}
+
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const row = await this.findFileRow(db, contactId, fileId);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File not found' }
+				});
+			}
+			if (row.status !== 'pending') {
+				throw new BadRequestException({
+					error: { code: 'validation_error', message: 'File is not awaiting upload' }
+				});
+			}
+			if (data.byteLength !== row.sizeBytes) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: `Uploaded size ${data.byteLength} does not match declared ${row.sizeBytes}`
+					}
+				});
+			}
+
+			// AUDIT-F09-08: sniff before storage.put — covers local + S3 via RoutingFileStorage.
+			const declaredMime = contentType ?? row.mimeType;
+			const verifiedMime = await assertUploadMimeMatchesBytes(data, declaredMime);
+
+			await this.storage.put(row.storageKey, data, {
+				contentType: verifiedMime,
+				filename: row.filename
+			});
+
+			return { accepted: true };
+		});
+	}
+
+	async confirmFile(tenantId: string, contactId: string, fileId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const row = await this.findFileRow(db, contactId, fileId);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File not found' }
+				});
+			}
+			if (row.status === 'ready') {
+				return toContactFile(row);
+			}
+
+			const objectStat = await this.storage.stat(row.storageKey);
+			if (!objectStat) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: 'Upload not found in storage — complete PUT before confirm'
+					}
+				});
+			}
+			if (objectStat.sizeBytes !== row.sizeBytes) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: `Stored size ${objectStat.sizeBytes} does not match declared ${row.sizeBytes}`
+					}
+				});
+			}
+
+			const [updated] = await db
+				.update(files)
+				.set({
+					status: 'ready',
+					mimeType: objectStat.contentType ?? row.mimeType
+				})
+				.where(and(eq(files.id, fileId), eq(files.contactId, contactId)))
+				.returning();
+
+			return toContactFile(updated!);
+		});
+	}
+
+	private async findFileRow(db: TenantDb, contactId: string, fileId: string) {
+		const contact = await this.findActiveRow(db, contactId);
+		if (!contact) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+		const [row] = await db
+			.select()
+			.from(files)
+			.where(and(eq(files.id, fileId), eq(files.contactId, contactId)))
+			.limit(1);
+		return row ?? null;
+	}
+
+	/**
+	 * Multipart upload stub: writes bytes under storage port, status ready.
+	 * JSON metadata-only POST still uses `local://pending` (no bytes).
+	 */
+	async uploadLocalFileWithDb(
+		db: TenantDb,
+		tenantId: string,
+		contactId: string,
+		input: {
+			filename: string;
+			mimeType: string;
+			appointmentId?: string | null;
+			data: Buffer;
+		},
+		uploader: { userId: string; displayName: string }
+	) {
+		if (input.data.byteLength > MAX_UPLOAD_BYTES) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: `File exceeds ${MAX_UPLOAD_BYTES} byte limit`
+				}
+			});
+		}
+
+		// AUDIT-F09-08: sniff before storage.put — covers local + S3 via RoutingFileStorage.
+		const verifiedMime = await assertUploadMimeMatchesBytes(input.data, input.mimeType);
+
+		const fileId = randomUUID();
+		const storageKey = this.storage.buildKey(tenantId, contactId, fileId);
+		await this.storage.put(storageKey, input.data, {
+			contentType: verifiedMime,
+			filename: input.filename
+		});
+
+		return this.createFileWithDb(
+			db,
+			tenantId,
+			contactId,
+			{
+				filename: input.filename,
+				mime_type: verifiedMime,
+				size_bytes: input.data.byteLength,
+				appointment_id: input.appointmentId ?? null
+			},
+			uploader,
+			{ fileId, storageKey, sizeBytes: input.data.byteLength }
+		);
+	}
+
+	async openFileDownload(tenantId: string, contactId: string, fileId: string) {
+		return this.openFileStream(tenantId, contactId, fileId);
+	}
+
+	/**
+	 * GAP-F09-24: allowlisted MIME → inline; legacy/non-allowlist rows → attachment
+	 * (same as download). Streamed — never buffered in memory.
+	 */
+	async openFilePreview(tenantId: string, contactId: string, fileId: string): Promise<{
+		filename: string;
+		mimeType: string;
+		sizeBytes: number;
+		stream: NonNullable<Awaited<ReturnType<FileStoragePort['getStream']>>>;
+		disposition: 'inline' | 'attachment';
+	}> {
+		const download = await this.openFileStream(tenantId, contactId, fileId);
+		const disposition: 'inline' | 'attachment' = isInlineSafeContactFileMimeType(
+			download.mimeType
+		)
+			? 'inline'
+			: 'attachment';
+		return { ...download, disposition };
+	}
+
+	private async openFileStream(tenantId: string, contactId: string, fileId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const contact = await this.findActiveRow(db, contactId);
+			if (!contact) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact not found' }
+				});
+			}
+
+			const [row] = await db
+				.select()
+				.from(files)
+				.where(and(eq(files.id, fileId), eq(files.contactId, contactId)))
+				.limit(1);
+
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File not found' }
+				});
+			}
+
+			if (!(await this.storage.exists(row.storageKey))) {
+				throw new NotFoundException({
+					error: {
+						code: 'not_found',
+						message: 'File bytes not available (metadata-only or missing on disk)'
+					}
+				});
+			}
+
+			if (row.status === 'pending') {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File upload not confirmed yet' }
+				});
+			}
+
+			const stream = await this.storage.getStream(row.storageKey);
+			if (!stream) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'File bytes not available' }
+				});
+			}
+
+			return {
+				filename: row.filename,
+				mimeType: row.mimeType,
+				sizeBytes: row.sizeBytes,
+				stream
+			};
+		});
+	}
+
+	private async resolveAppointmentLink(
+		db: TenantDb,
+		tenantId: string,
+		contactId: string,
+		appointmentId: string | null
+	) {
+		if (!appointmentId) {
+			return { appointmentId: null as string | null, appointmentLabel: null as string | null };
+		}
+
+		const [appt] = await db
+			.select()
+			.from(appointments)
+			.where(
+				and(
+					eq(appointments.id, appointmentId),
+					eq(appointments.contactId, contactId),
+					isNull(appointments.deletedAt)
+				)
+			)
+			.limit(1);
+		if (!appt) {
+			throw new BadRequestException({
+				error: {
+					code: 'validation_error',
+					message: 'Appointment does not belong to this contact'
+				}
+			});
+		}
+		// Faz 7 denetim bulgusu (F-06): burada `toISOString().slice(0, 10)` kullanılıyordu —
+		// `starts_at` bir timestamptz olduğu için Europe/Istanbul'da gece yarısına yakın
+		// randevular etikette **bir gün geriye** kayıyordu (yerel 4 Ağustos 01:00 = UTC
+		// 3 Ağustos 22:00). TIME-01'in kapatmayı amaçladığı hatanın aynısı; kalan tek
+		// üretim yüzeyiydi, tenant timezone'una çevrildi.
+		const timezone = await this.getTenantTimezone(db, tenantId);
+		const datePart = toTenantDayKey(appt.startsAt, timezone);
+		return {
+			appointmentId,
+			appointmentLabel: `${datePart} · ${appt.title ?? 'Randevu'}`
+		};
+	}
+
+	/**
+	 * AUDIT-01 (Faz 8): explicit tenant filter is required. The `tenants` table has no
+	 * RLS by design (it's the tenant registry itself), so without a `where` clause the
+	 * query returns whichever row Postgres scans first — non-deterministic across tenants.
+	 * Opus denetimi §[CRITICAL]: "Patient file-label timezone leak" — fixing this also
+	 * fixes the analogous bug in `reports.service.ts` (see reports-timezone spec).
+	 */
+	private async getTenantTimezone(db: TenantDb, tenantId: string): Promise<string> {
+		const [row] = await db
+			.select({ timezone: tenants.timezone })
+			.from(tenants)
+			.where(eq(tenants.id, tenantId))
+			.limit(1);
+		return row?.timezone ?? DEFAULT_TENANT_TIMEZONE;
+	}
+
 	async createWithDb(db: TenantDb, tenantId: string, input: ContactCreate) {
 		const typeName = await this.requireContactTypeName(db, input.contact_type_id);
+		const firstName = input.first_name.trim();
+		const lastName = input.last_name?.trim() || null;
+		const displayName = deriveDisplayName(firstName, lastName);
 		const [row] = await db
 			.insert(contacts)
 			.values({
 				tenantId,
 				contactTypeId: input.contact_type_id,
 				contactTypeName: typeName,
-				displayName: input.display_name,
+				firstName,
+				lastName,
+				displayName,
 				phone: input.phone ?? null,
 				email: input.email ?? null,
 				notes: input.notes ?? null,
+				organizationId: input.organization_id ?? null,
+				status: input.status ?? null,
+				assignedUserId: input.assigned_user_id ?? null,
+				source: input.source ?? null,
+				medium: input.medium ?? null,
+				campaign: input.campaign ?? null,
+				referredByContactId: input.referred_by_contact_id ?? null,
 				isInternal: input.is_internal ?? false
 			})
 			.returning();
@@ -103,15 +748,43 @@ export class ContactsService {
 				? await this.requireContactTypeName(db, contactTypeId)
 				: existing.contactTypeName;
 
+		const firstName =
+			input.first_name !== undefined
+				? input.first_name.trim()
+				: (existing.firstName ?? existing.displayName);
+		const lastName =
+			input.last_name !== undefined
+				? input.last_name?.trim() || null
+				: existing.lastName;
+		const displayName = deriveDisplayName(firstName, lastName);
+
 		const [row] = await db
 			.update(contacts)
 			.set({
 				contactTypeId,
 				contactTypeName,
-				displayName: input.display_name ?? existing.displayName,
+				firstName,
+				lastName,
+				displayName,
 				phone: input.phone !== undefined ? input.phone : existing.phone,
 				email: input.email !== undefined ? input.email : existing.email,
 				notes: input.notes !== undefined ? input.notes : existing.notes,
+				organizationId:
+					input.organization_id !== undefined
+						? input.organization_id
+						: existing.organizationId,
+				status: input.status !== undefined ? input.status : existing.status,
+				assignedUserId:
+					input.assigned_user_id !== undefined
+						? input.assigned_user_id
+						: existing.assignedUserId,
+				source: input.source !== undefined ? input.source : existing.source,
+				medium: input.medium !== undefined ? input.medium : existing.medium,
+				campaign: input.campaign !== undefined ? input.campaign : existing.campaign,
+				referredByContactId:
+					input.referred_by_contact_id !== undefined
+						? input.referred_by_contact_id
+						: existing.referredByContactId,
 				isInternal:
 					input.is_internal !== undefined ? input.is_internal : existing.isInternal,
 				updatedAt: new Date()
@@ -120,31 +793,6 @@ export class ContactsService {
 			.returning();
 
 		return toContact(row!);
-	}
-
-	/**
-	 * GAP-F09-17 (G-17): assign one contact type to many contacts.
-	 * Unknown / other-tenant ids are skipped (RLS + isNull deletedAt); `updated` is the real count.
-	 */
-	async bulkSetType(tenantId: string, input: ContactsBulkType) {
-		return this.tenantContext.withTenant(tenantId, ({ db }) =>
-			this.bulkSetTypeWithDb(db, input)
-		);
-	}
-
-	async bulkSetTypeWithDb(db: TenantDb, input: ContactsBulkType) {
-		const typeName = await this.requireContactTypeName(db, input.contact_type_id);
-		const updatedRows = await db
-			.update(contacts)
-			.set({
-				contactTypeId: input.contact_type_id,
-				contactTypeName: typeName,
-				updatedAt: new Date()
-			})
-			.where(and(inArray(contacts.id, input.contact_ids), isNull(contacts.deletedAt)))
-			.returning({ id: contacts.id });
-
-		return { updated: updatedRows.length };
 	}
 
 	async softDeleteWithDb(
@@ -188,6 +836,27 @@ export class ContactsService {
 		});
 	}
 
+	async bulkSetType(tenantId: string, input: ContactsBulkType) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.bulkSetTypeWithDb(db, input)
+		);
+	}
+
+	async bulkSetTypeWithDb(db: TenantDb, input: ContactsBulkType) {
+		const typeName = await this.requireContactTypeName(db, input.contact_type_id);
+		const updatedRows = await db
+			.update(contacts)
+			.set({
+				contactTypeId: input.contact_type_id,
+				contactTypeName: typeName,
+				updatedAt: new Date()
+			})
+			.where(and(inArray(contacts.id, input.contact_ids), isNull(contacts.deletedAt)))
+			.returning({ id: contacts.id });
+
+		return { updated: updatedRows.length };
+	}
+
 	async mergeWithDb(
 		db: TenantDb,
 		tenantId: string,
@@ -222,17 +891,46 @@ export class ContactsService {
 		let phone = keep.phone;
 		let email = keep.email;
 		let notes = keep.notes;
+		let source = keep.source;
+		let medium = keep.medium;
+		let campaign = keep.campaign;
+		let status = keep.status;
+		let assignedUserId = keep.assignedUserId;
+		let organizationId = keep.organizationId;
+		let referredByContactId = keep.referredByContactId;
 		let isInternal = keep.isInternal;
 		for (const src of sources) {
 			if (!phone && src.phone) phone = src.phone;
 			if (!email && src.email) email = src.email;
 			if (!notes && src.notes) notes = src.notes;
+			if (!source && src.source) source = src.source;
+			if (!medium && src.medium) medium = src.medium;
+			if (!campaign && src.campaign) campaign = src.campaign;
+			if (!status && src.status) status = src.status;
+			if (!assignedUserId && src.assignedUserId) assignedUserId = src.assignedUserId;
+			if (!organizationId && src.organizationId) organizationId = src.organizationId;
+			if (!referredByContactId && src.referredByContactId) {
+				referredByContactId = src.referredByContactId;
+			}
 			if (!isInternal && src.isInternal) isInternal = true;
 		}
 
 		const [updatedKeep] = await db
 			.update(contacts)
-			.set({ phone, email, notes, isInternal, updatedAt: new Date() })
+			.set({
+				phone,
+				email,
+				notes,
+				source,
+				medium,
+				campaign,
+				status,
+				assignedUserId,
+				organizationId,
+				referredByContactId,
+				isInternal,
+				updatedAt: new Date()
+			})
 			.where(eq(contacts.id, keep_id))
 			.returning();
 
@@ -241,8 +939,22 @@ export class ContactsService {
 
 		await db
 			.update(transactions)
-			.set({ contactId: keep_id, contactLabel: keepName, updatedAt: new Date() })
+			.set({
+				contactId: keep_id,
+				contactDisplayName: keepName,
+				contactLabel: keepName,
+				updatedAt: new Date()
+			})
 			.where(and(inArray(transactions.contactId, dropIds), isNull(transactions.deletedAt)));
+
+		await db
+			.update(appointments)
+			.set({
+				contactId: keep_id,
+				contactDisplayName: keepName,
+				updatedAt: new Date()
+			})
+			.where(and(inArray(appointments.contactId, dropIds), isNull(appointments.deletedAt)));
 
 		await db
 			.update(appointments)
@@ -268,10 +980,19 @@ export class ContactsService {
 				)
 			);
 
+		await db.update(files).set({ contactId: keep_id }).where(inArray(files.contactId, dropIds));
+
 		await db
-			.update(patients)
-			.set({ contactId: keep_id, updatedAt: new Date() })
-			.where(and(inArray(patients.contactId, dropIds), isNull(patients.deletedAt)));
+			.update(caseNotes)
+			.set({ contactId: keep_id })
+			.where(inArray(caseNotes.contactId, dropIds));
+
+		await db
+			.update(contacts)
+			.set({ referredByContactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(inArray(contacts.referredByContactId, dropIds), isNull(contacts.deletedAt))
+			);
 
 		await db
 			.update(contacts)

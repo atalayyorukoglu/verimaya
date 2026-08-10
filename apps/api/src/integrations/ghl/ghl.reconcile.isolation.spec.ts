@@ -42,7 +42,7 @@ describe('GhlReconcileService (Adım 43)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from patients where tenant_id = ${tenantId}`;
+		await sql`delete from contacts where tenant_id = ${tenantId}`;
 		await sql`delete from external_ids where tenant_id = ${tenantId}`;
 		await sql`delete from jobs where tenant_id = ${tenantId}`;
 		await sql`delete from audit_logs where tenant_id = ${tenantId}`;
@@ -89,15 +89,15 @@ describe('GhlReconcileService (Adım 43)', () => {
 	it('fixes a corrupted local patient then second run finds 0 diffs', async () => {
 		const created = await sync.applyRemoteContact(tenantId, remotes[0]!);
 		expect(created.action).toBe('created');
-		expect(created.patientId).toBeTruthy();
+		expect(created.contactId).toBeTruthy();
 
 		const { sql } = getDb(databaseUrl);
 		await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			await tx`
-				update patients
-				set full_name = 'CORRUPTED', phone = '+900000000000'
-				where id = ${created.patientId!}
+				update contacts
+				set display_name = 'CORRUPTED', phone = '+900000000000'
+				where id = ${created.contactId!}
 			`;
 		});
 
@@ -112,10 +112,10 @@ describe('GhlReconcileService (Adım 43)', () => {
 		const fixed = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			return tx`
-				select full_name, phone from patients where id = ${created.patientId!}
+				select display_name, phone from contacts where id = ${created.contactId!}
 			`;
 		});
-		expect(fixed[0]?.full_name).toBe('Reconcile Correct Name');
+		expect(fixed[0]?.display_name).toBe('Reconcile Correct Name');
 		expect(fixed[0]?.phone).toBe('+905551111111');
 
 		const second = await svc.reconcile(tenantId);

@@ -9,7 +9,7 @@ import { ApiKeyGuard } from '../api-keys/api-key.guard';
 import { SessionGuard } from '../auth/session.guard';
 import type { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
-import { PatientsService } from '../patients/patients.service';
+import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { getActiveOrgId } from './active-org.guard';
@@ -27,7 +27,7 @@ type Fixture = {
 	patientA: string;
 	patientB: string;
 	guard: AuthOrApiKeyGuard;
-	patientsService: PatientsService;
+	contactsService: ContactsService;
 };
 
 function makeContext(req: Partial<FastifyRequest>): ExecutionContext {
@@ -85,16 +85,26 @@ async function seedFixture(): Promise<Fixture> {
 
 	const patientA = await sql.begin(async (tx) => {
 		await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-		const [row] = await tx`
-			insert into patients (tenant_id, full_name) values (${tenantA}, 'Patient A') returning id
-		`;
+		await tx`insert into contact_types (tenant_id, name, sort_order) values (${tenantA}, 'Hasta', 0)
+			on conflict (tenant_id, name) do update set name = excluded.name`;
+		const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+			values (
+				${tenantA},
+				(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+				'Hasta', 'Patient A', 'Patient A'
+			) returning id`;
 		return row!.id as string;
 	});
 	const patientB = await sql.begin(async (tx) => {
 		await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-		const [row] = await tx`
-			insert into patients (tenant_id, full_name) values (${tenantB}, 'Patient B') returning id
-		`;
+		await tx`insert into contact_types (tenant_id, name, sort_order) values (${tenantB}, 'Hasta', 0)
+			on conflict (tenant_id, name) do update set name = excluded.name`;
+		const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+			values (
+				${tenantB},
+				(select id from contact_types where tenant_id = ${tenantB} and name = 'Hasta' limit 1),
+				'Hasta', 'Patient B', 'Patient B'
+			) returning id`;
 		return row!.id as string;
 	});
 
@@ -109,7 +119,7 @@ async function seedFixture(): Promise<Fixture> {
 				return fn({ db: tx as typeof db });
 			})
 	} as TenantContextService;
-	const patientsService = new PatientsService(tenantContext, new LocalFileStorage());
+	const contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 
 	return {
 		tenantA,
@@ -119,7 +129,7 @@ async function seedFixture(): Promise<Fixture> {
 		patientA,
 		patientB,
 		guard,
-		patientsService
+		contactsService
 	};
 }
 
@@ -127,12 +137,12 @@ async function destroyFixture(fx: Fixture): Promise<void> {
 	const { sql } = getDb(databaseUrl);
 	await sql.begin(async (tx) => {
 		await tx`select set_config('app.current_tenant_id', ${fx.tenantA}, true)`;
-		await tx`delete from patients where tenant_id = ${fx.tenantA}`;
+		await tx`delete from contacts where tenant_id = ${fx.tenantA}`;
 		await tx`delete from api_keys where tenant_id = ${fx.tenantA}`;
 	});
 	await sql.begin(async (tx) => {
 		await tx`select set_config('app.current_tenant_id', ${fx.tenantB}, true)`;
-		await tx`delete from patients where tenant_id = ${fx.tenantB}`;
+		await tx`delete from contacts where tenant_id = ${fx.tenantB}`;
 		await tx`delete from api_keys where tenant_id = ${fx.tenantB}`;
 	});
 	await sql`delete from tenants where id in (${fx.tenantA}, ${fx.tenantB})`;
@@ -165,7 +175,7 @@ describe('AuthOrApiKeyGuard dual-auth tenant isolation', () => {
 		const tenantId = getActiveOrgId(req);
 		expect(tenantId).toBe(fx.tenantA);
 
-		const result = await fx.patientsService.list(tenantId, { limit: 10 });
+		const result = await fx.contactsService.list(tenantId, { limit: 10 });
 		expect(result.items.map((p) => p.id)).toEqual([fx.patientA]);
 		expect(result.items.some((p) => p.id === fx.patientB)).toBe(false);
 	});
@@ -184,7 +194,7 @@ describe('AuthOrApiKeyGuard dual-auth tenant isolation', () => {
 		const tenantId = getActiveOrgId(req);
 		expect(tenantId).toBe(fx.tenantB);
 
-		const result = await fx.patientsService.list(tenantId, { limit: 10 });
+		const result = await fx.contactsService.list(tenantId, { limit: 10 });
 		expect(result.items.map((p) => p.id)).toEqual([fx.patientB]);
 		expect(result.items.some((p) => p.id === fx.patientA)).toBe(false);
 	});

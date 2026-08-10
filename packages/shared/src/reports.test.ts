@@ -5,7 +5,7 @@ import {
 	reportBalanceRowSchema,
 	reportBalancesSchema,
 	reportConsistencySchema,
-	reportPatientDistributionSchema,
+	reportContactDistributionSchema,
 	reportSummarySchema,
 	reportTransactionDuplicatesParams,
 	reportTransactionDuplicatesSchema
@@ -30,15 +30,17 @@ describe('reportSummarySchema', () => {
 	});
 });
 
-describe('reportPatientDistributionSchema', () => {
-	it('accepts status and source breakdown', () => {
-		const parsed = reportPatientDistributionSchema.parse({
+describe('reportContactDistributionSchema', () => {
+	it('accepts status, source, and medium breakdown', () => {
+		const parsed = reportContactDistributionSchema.parse({
 			period: { from: null, to: null },
 			by_status: [{ status: 'scheduled', count: 3 }],
-			by_source: [{ source: 'Meta', count: 2 }],
+			by_source: [{ source: 'Dijital Reklam', count: 2 }],
+			by_medium: [{ medium: 'Meta Ads', count: 2 }],
 			total: 3
 		});
 		expect(parsed.total).toBe(3);
+		expect(parsed.by_medium[0]?.medium).toBe('Meta Ads');
 	});
 });
 

@@ -6,10 +6,10 @@
 
 export type FieldOwner = 'ghl' | 'verimaya';
 
-/** Patient columns touched by GHL inbound sync. */
-export type GhlPatientSyncField = 'fullName' | 'phone' | 'email' | 'status' | 'notes';
+/** Contact columns touched by GHL inbound sync. */
+export type GhlContactSyncField = 'fullName' | 'phone' | 'email' | 'status' | 'notes';
 
-export const GHL_PATIENT_FIELD_OWNERSHIP: Record<GhlPatientSyncField, FieldOwner> = {
+export const GHL_CONTACT_FIELD_OWNERSHIP: Record<GhlContactSyncField, FieldOwner> = {
 	fullName: 'ghl',
 	phone: 'ghl',
 	email: 'ghl',
@@ -23,17 +23,17 @@ export const GHL_PATIENT_FIELD_OWNERSHIP: Record<GhlPatientSyncField, FieldOwner
  * Used by sync paths and unit tests (Adım 42 kabul: sahiplik ihlali yakalanır).
  */
 export function assertFieldWriteAllowed(
-	entity: 'patient',
-	field: GhlPatientSyncField,
+	entity: 'contact',
+	field: GhlContactSyncField,
 	side: FieldOwner
 ): void {
-	if (entity !== 'patient') {
+	if (entity !== 'contact') {
 		throw new Error(`Unknown GHL ownership entity: ${entity}`);
 	}
-	const owner = GHL_PATIENT_FIELD_OWNERSHIP[field];
+	const owner = GHL_CONTACT_FIELD_OWNERSHIP[field];
 	if (owner !== side) {
 		throw new Error(
-			`Field ownership violation: patient.${field} is owned by ${owner}, not ${side}`
+			`Field ownership violation: contact.${field} is owned by ${owner}, not ${side}`
 		);
 	}
 }
@@ -41,13 +41,13 @@ export function assertFieldWriteAllowed(
 /**
  * Keeps only fields `side` is allowed to write. Does not throw — for soft apply paths.
  */
-export function pickOwnedFields<T extends Partial<Record<GhlPatientSyncField, unknown>>>(
+export function pickOwnedFields<T extends Partial<Record<GhlContactSyncField, unknown>>>(
 	patch: T,
 	side: FieldOwner
-): Partial<Record<GhlPatientSyncField, unknown>> {
-	const out: Partial<Record<GhlPatientSyncField, unknown>> = {};
-	for (const key of Object.keys(patch) as GhlPatientSyncField[]) {
-		if (GHL_PATIENT_FIELD_OWNERSHIP[key] === side && patch[key] !== undefined) {
+): Partial<Record<GhlContactSyncField, unknown>> {
+	const out: Partial<Record<GhlContactSyncField, unknown>> = {};
+	for (const key of Object.keys(patch) as GhlContactSyncField[]) {
+		if (GHL_CONTACT_FIELD_OWNERSHIP[key] === side && patch[key] !== undefined) {
 			out[key] = patch[key];
 		}
 	}

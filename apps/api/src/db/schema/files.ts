@@ -1,8 +1,8 @@
 import { index, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 import { appointments } from './appointments';
+import { contacts } from './contacts';
 import { createdAt } from './helpers';
-import { patients } from './patients';
 import { tenants } from './tenants';
 
 export const files = pgTable(
@@ -12,9 +12,9 @@ export const files = pgTable(
 		tenantId: uuid('tenant_id')
 			.notNull()
 			.references(() => tenants.id, { onDelete: 'cascade' }),
-		patientId: uuid('patient_id')
+		contactId: uuid('contact_id')
 			.notNull()
-			.references(() => patients.id, { onDelete: 'cascade' }),
+			.references(() => contacts.id, { onDelete: 'cascade' }),
 		appointmentId: uuid('appointment_id').references(() => appointments.id, {
 			onDelete: 'set null'
 		}),
@@ -34,9 +34,9 @@ export const files = pgTable(
 	},
 	(table) => [
 		index('files_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
-		index('files_tenant_id_patient_id_created_at_idx').on(
+		index('files_tenant_id_contact_id_created_at_idx').on(
 			table.tenantId,
-			table.patientId,
+			table.contactId,
 			table.createdAt
 		)
 	]

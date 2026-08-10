@@ -1,5 +1,5 @@
 /**
- * GAP-F09-16: WhatsApp inline create — contact / patient / category.
+ * GAP-F09-16: WhatsApp inline create — contact / category.
  * Tenant mock mirrors production: drizzle `db.transaction` + SET LOCAL (is_local=true).
  * Subcategory create is intentionally out of scope (flat finance_categories model).
  */
@@ -10,14 +10,12 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import {
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
-	whatsappCreatePatientSchema
 } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import type { CryptoService } from '../common/crypto.service';
 import { parseBody } from '../common/mappers';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { ContactsService } from '../contacts/contacts.service';
-import { PatientsService } from '../patients/patients.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import type { FastifyRequest } from 'fastify';
@@ -44,7 +42,6 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 	let contactTypeA: string;
 	let contactTypeB: string;
 	let contactsService: ContactsService;
-	let patientsService: PatientsService;
 	let settingsService: SettingsService;
 	let withTenant: <T>(id: string, fn: (db: TenantDb) => Promise<T>) => Promise<T>;
 
@@ -65,8 +62,7 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 				withTenant(id, (tx) => fn({ db: tx }))
 		} as TenantContextService;
 
-		contactsService = new ContactsService(tenantContext);
-		patientsService = new PatientsService(tenantContext, new LocalFileStorage());
+		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 		settingsService = new SettingsService(tenantContext, {} as CryptoService);
 
 		await sql`
@@ -103,7 +99,7 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 		for (const tenantId of [tenantA, tenantB]) {
 			await sql.begin(async (tx) => {
 				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from finance_categories where tenant_id = ${tenantId}`;
 				await tx`delete from contact_types where tenant_id = ${tenantId}`;
@@ -118,7 +114,7 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 		it('happy path creates contact with denormalized type name on tenant A', async () => {
 			const created = await withTenant(tenantA, (db) =>
 				contactsService.createWithDb(db, tenantA, {
-					display_name: 'Inline Contact',
+					first_name: 'Inline Contact',
 					contact_type_id: contactTypeA,
 					phone: '+905551112233'
 				})
@@ -142,7 +138,7 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 			await expect(
 				withTenant(tenantA, (db) =>
 					contactsService.createWithDb(db, tenantA, {
-						display_name: 'Missing Type',
+					first_name: 'Missing Type',
 						contact_type_id: randomUUID()
 					})
 				)
@@ -153,7 +149,7 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 			await expect(
 				withTenant(tenantA, (db) =>
 					contactsService.createWithDb(db, tenantA, {
-						display_name: 'Cross Tenant Type',
+					first_name: 'Cross Tenant Type',
 						contact_type_id: contactTypeB
 					})
 				)
@@ -163,7 +159,7 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 		it('created contact is not visible to Tenant B', async () => {
 			const created = await withTenant(tenantA, (db) =>
 				contactsService.createWithDb(db, tenantA, {
-					display_name: 'Isolation Contact',
+					first_name: 'Isolation Contact',
 					contact_type_id: contactTypeA
 				})
 			);
@@ -173,49 +169,6 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 		});
 	});
 
-	describe('create-patient', () => {
-		it('happy path creates patient on tenant A', async () => {
-			const created = await withTenant(tenantA, (db) =>
-				patientsService.createWithDb(db, tenantA, {
-					full_name: 'Inline Patient',
-					phone: null,
-					email: null,
-					source: null,
-					notes: null,
-					assigned_user_id: null,
-					contact_id: null,
-					status: 'scheduled'
-				})
-			);
-			expect(created.tenant_id).toBe(tenantA);
-			expect(created.full_name).toBe('Inline Patient');
-			expect(created.status).toBe('scheduled');
-		});
-
-		it('rejects missing full_name', () => {
-			expect(() => parseBody(whatsappCreatePatientSchema, {}, fakeReq())).toThrow(
-				BadRequestException
-			);
-		});
-
-		it('created patient is not visible to Tenant B', async () => {
-			const created = await withTenant(tenantA, (db) =>
-				patientsService.createWithDb(db, tenantA, {
-					full_name: 'Isolation Patient',
-					phone: null,
-					email: null,
-					source: null,
-					notes: null,
-					assigned_user_id: null,
-					contact_id: null,
-					status: 'scheduled'
-				})
-			);
-			await expect(patientsService.get(tenantB, created.id)).rejects.toBeInstanceOf(
-				NotFoundException
-			);
-		});
-	});
 
 	describe('create-category', () => {
 		it('happy path creates finance category on tenant A', async () => {

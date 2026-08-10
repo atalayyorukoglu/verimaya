@@ -1,5 +1,5 @@
 import type {
-	PatientStatus,
+	ContactStatus,
 	AppointmentStatus,
 	TransactionStatus,
 	FeatureStatus
@@ -7,7 +7,7 @@ import type {
 
 type Tone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'info';
 
-export function patientStatusTone(status: PatientStatus): Tone {
+export function contactStatusTone(status: ContactStatus): Tone {
 	switch (status) {
 		case 'treated':
 			return 'success';

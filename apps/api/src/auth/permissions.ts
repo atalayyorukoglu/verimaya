@@ -13,7 +13,7 @@ import type { UserRole } from '@verimaya/shared';
  */
 /** Exported so reflection-based coverage specs can validate declared permissions. */
 export const organizationPermissionStatements = {
-	patient: ['create', 'read', 'update', 'delete'],
+	contact: ['create', 'read', 'update', 'delete'],
 	finance: ['create', 'read', 'update', 'delete'],
 	settings: ['read', 'update']
 } as const;
@@ -27,32 +27,32 @@ export const ac = createAccessControl(statement);
 
 const organizationRolePermissions = {
 	owner: {
-		patient: ['create', 'read', 'update', 'delete'],
+		contact: ['create', 'read', 'update', 'delete'],
 		finance: ['create', 'read', 'update', 'delete'],
 		settings: ['read', 'update']
 	},
 	admin: {
-		patient: ['create', 'read', 'update', 'delete'],
+		contact: ['create', 'read', 'update', 'delete'],
 		finance: ['create', 'read', 'update', 'delete'],
 		settings: ['read', 'update']
 	},
 	manager: {
-		patient: ['create', 'read', 'update', 'delete'],
+		contact: ['create', 'read', 'update', 'delete'],
 		finance: ['create', 'read', 'update'],
 		settings: ['read']
 	},
 	agent: {
-		patient: ['create', 'read', 'update'],
+		contact: ['create', 'read', 'update'],
 		finance: ['read'],
 		settings: ['read']
 	},
 	finance: {
-		patient: ['read'],
+		contact: ['read'],
 		finance: ['create', 'read', 'update', 'delete'],
 		settings: ['read']
 	},
 	readonly: {
-		patient: ['read'],
+		contact: ['read'],
 		finance: ['read'],
 		settings: ['read']
 	}

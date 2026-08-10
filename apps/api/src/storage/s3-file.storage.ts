@@ -30,7 +30,7 @@ export type S3SignedUrlFn = (
 ) => Promise<string>;
 
 /**
- * Parse `s3://{tenantId}/{patientId}/{fileId}` → object key.
+ * Parse `s3://{tenantId}/{contactId}/{fileId}` → object key.
  * Rejects pending, wrong scheme, traversal, or wrong segment count.
  */
 export function resolveS3ObjectKey(storageKey: string): string | null {
@@ -103,8 +103,8 @@ export class S3FileStorage implements FileStoragePort {
 		this.signUrl = deps?.getSignedUrl ?? getSignedUrl;
 	}
 
-	buildKey(tenantId: string, patientId: string, fileId: string): string {
-		return `${S3_SCHEME}${tenantId}/${patientId}/${fileId}`;
+	buildKey(tenantId: string, contactId: string, fileId: string): string {
+		return `${S3_SCHEME}${tenantId}/${contactId}/${fileId}`;
 	}
 
 	async put(key: string, buf: Buffer, meta?: FilePutMeta): Promise<void> {

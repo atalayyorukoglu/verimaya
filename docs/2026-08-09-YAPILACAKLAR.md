@@ -6,7 +6,8 @@
 > buraya taşınmaz.
 >
 > **Durum anı:** branch `main`, HEAD `ba42830` (AUDIT-F09-10). Prod DB `0032`'de
-> doğrulandı (2026-08-08, kanıt: `docs/2026-08-08-PROD-KONTROL-LISTESI.md` § A);
+> doğrulandı (2026-08-08, kanıt: `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md` § A);
+> aktif smoke tıklama rehberi: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`.
 > `0033` + `0034` sıradaki API deploy'uyla gider.
 > Pilot tenant: `Demo Klinik` (`afb4a68b…`) — 757 dosya, 548 işlem, 703 randevu.
 
@@ -45,20 +46,19 @@
 > `scheduled`'a eşlendi, randevu tipleri seed'li, `deleted_at` dört tabloda, FX coherence
 > constraint aktif). Kalan: insan gözüyle ekran kanıtı.
 
-- [ ] **Prod smoke turu** — `docs/2026-08-08-PROD-KONTROL-LISTESI.md` § B1–B4 (soft-delete
-  altı ekranda düştü mü), § D1–D2 (işlem/randevu filtreleri gerçek veriyle), § E1–E2
-  (no-show oranı %0 değil mi; tutarlılık uyarısı 10–100 bandında mı). Takılan maddeye
-  bu dosyada kalem aç; takılan yoksa Sonuç tablosunu işaretle.
+- [ ] **Prod smoke turu** — `docs/2026-08-09-PROD-SMOKE-REHBERI.md` §1–§3
+  (**👤 SEN TIKLA**: soft-delete B, filtre D, sayı E). Takılan maddeye bu dosyada kalem aç;
+  takılan yoksa rehberdeki Sonuç'u işaretle. Migration A kanıtı arşiv checklist'te.
 - [ ] **Migration `0033` + `0034` prod'a** (sıradaki API deploy'uyla): yedek → `pnpm db:migrate`
   → kanıt (`outbox_events`'ta `status='dead'` + `dead_lettered_at`; `appointment_types` /
   `contact_types` tenant+name UNIQUE index'leri, `tenant_settings` seed bayrakları).
-  Runbook: PROD-KONTROL § A. Not (2026-08-09): `0034` kendi içinde mükerrer (tenant, name)
-  çiftlerini önce dedupe edip sonra index kuruyor — elle ön temizlik gerekmiyor, yine de
-  migrate log'unda dedupe adımına göz at.
+  Runbook deseni: arşiv PROD-KONTROL § A. Not (2026-08-09): `0034` kendi içinde mükerrer
+  (tenant, name) çiftlerini önce dedupe edip sonra index kuruyor — elle ön temizlik
+  gerekmiyor, yine de migrate log'unda dedupe adımına göz at.
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org dahil) — devam eden kural.
 - [ ] **Tenant adı:** `Demo Klinik` rename veya olduğu gibi bırak — karar ver, Görüş'e yaz (ucuz).
 - **Bağımlı:** yok.
-- **Kabul:** PROD-KONTROL Sonuç tablosu "takılan yok" ile kapandı; prod `0033`'te.
+- **Kabul:** PROD-SMOKE-REHBERI Sonuç "takılan yok"; prod `0033`'te.
 
 ---
 
@@ -69,7 +69,7 @@
 - [ ] **(a)** Birincil segment: acente mi klinik mi? (ilk 20 görüşme tek segmente odaklanır)
 - [ ] **(b)** OrbisMed çıkar çatışması: veri ayrımı, tüzel ayrım, erişim/audit, referans anlatısı
 - [ ] **(c)** Kapasite: haftalık sabit gün/saat + pilot boyunca feature freeze taahhüdü
-- **Kabul:** Üç karar yazılı; (c)'deki freeze taahhüdü kalem 4'ün giriş şartıdır.
+- **Kabul:** Üç karar yazılı; (c)'deki freeze taahhüdü kalem 5'in (PILOT-02) giriş şartıdır.
 
 ---
 
@@ -96,9 +96,53 @@
 
 ---
 
-### 4. PILOT-02 — 2–4 haftalık feature-freeze dahili pilot
+### 4. DOMAIN-02 — Hastalar + Kişiler tek modülde birleşme
 
-> **Bağımlı:** 1 (prod smoke temiz) + 2(c) (freeze taahhüdü).
+> **Adım ayrıntısı, kabul kriterleri ve riskler: `docs/2026-08-10-KISILER-BIRLESME-PLANI.md`.**
+> Burada tek kalem; oradaki faz kutuları işaretlenir.
+>
+> **Neden freeze öncesi:** `patients` + `contacts` ayrımı `appointments` (4 FK),
+> `transactions` (çift FK) ve raporları etkiliyor; şema kararı pilot başladıktan sonra
+> pahalılaşır. 158 dosya `patient` referansı içeriyor.
+>
+> **§0 kararları kapandı (2026-08-10):** (A) `organizations` sözlük tablosu ·
+> (B) `/v1/patients` tek seferde kesilir, alias yok · (C) rapor `source` birincil,
+> `medium` ikinci seviye kırılım.
+
+- [x] **Faz A — sözleşme (`packages/shared`)**: `contact.ts` yeni alanlar, `patient.ts`
+  devri, kaynak/alt kaynak sözlükleri, `apiPaths` + `apiContract`, bağımlı şemalarda
+  `patient_id` → `contact_id`. Kabul: shared test yeşil + `openapi:generate` drift'siz.
+- [x] **Faz B1 — `0035_contacts_person_fields.sql`** (genişlet, kırıcı değil) + `organizations` + RLS.
+- [x] **Faz C — API** (`contacts.service/controller` devralır, `/v1/patients` kesilir,
+  `reports` + GHL + WhatsApp uyarlanır). **En olası regresyon:** raporlarda
+  `contact_type_name = 'Hasta'` filtresinin unutulması.
+  **Görüş (2026-08-10):** C2–C7 + E2' kapatıldı; `patients/` silindi; api check + 93/93 test +
+  openapi drift yeşil. Detay: `docs/2026-08-10-KISILER-BIRLESME-PLANI.md`.
+- [x] **Faz D — panel** (`routes/patients` → `routes/contacts`, tek form dialog, i18n).
+  **Görüş (2026-08-10):** D1–D7. Thin SPA redirect; liste varsayılan Hasta; form ad/soyad +
+  kademeli kaynak/medium/referans; organizations API yok → Firma preserve-only.
+  web check 0 · test 42 · lint temiz.
+  **§0-A tamamlandı (2026-08-10):** organizations sözlük API + `/settings/organizations` +
+  ContactFormDialog canlı firma seçimi/satır içi oluşturma. Detay: plan §0-A.
+  **Görüş:** api 451 · shared 92 · web check/test/lint yeşil; openapi 69 ops.
+- [x] **Faz B2+B3 — `0036_drop_patients.sql`** (§0-D: taşıma yok, DROP CASCADE; C ile aynı deploy).
+  ~~eski B2 veri taşıma + B3 ayrı 0037~~ düştü.
+- [ ] **Faz E — doğrulama** (E2' ✅; **kalan tek iş: E3 smoke rehberi + E4 GHL testi — insan**).
+- [x] **Faz F — temizlik** (`patient.ts` silindi; create-patient kesildi; distribution/outbox/
+  audit/hata kodu/section_label → contact*; AGENTS+MIMARI+CHANGELOG+Obsidian).
+  **Görüş (2026-08-10):** 0038 `contacts_section_label` + audit CHECK; openapi 68 ops;
+  shared 92 · api 449 · web check/test/lint yeşil. E3/E4 dokunulmadı.
+- **Bağımlı:** kalem 1'in migration adımı (`0035` öncesi `0034` prod'da doğrulanmış olmalı).
+  Faz A + B1 + C + D bu bağımlılıktan önce yürüyebilir; **0036 canlıya `0034` doğrulanmadan gitmez.**
+- **Kabul:** planın Faz A–F kabul kriterleri; E2' Hasta filtresi birim testi yeşil.
+  **Not:** DOMAIN-02 gövdede kalır — Faz E (E3/E4) insan işi bitmeden "Son kapananlar"a taşınmaz.
+
+---
+
+### 5. PILOT-02 — 2–4 haftalık feature-freeze dahili pilot
+
+> **Bağımlı:** 1 (prod smoke temiz) + 2(c) (freeze taahhüdü) + 4 (DOMAIN-02 kapanmış —
+> şema değişikliği freeze içinde yapılmaz).
 > Ölçülecek KPI'lar: aktif kullanıcı/gün, Tracker'a dönüş oranı ve nedeni, AI taslak
 > kabul/düzeltme/red, finans mutabakat farkı, randevu kaçırma, webhook/job başarısızlık,
 > ortalama destek süresi, haftalık yedek + restore kanıtı.
@@ -130,7 +174,7 @@
 
 ---
 
-### 5. MARKET-02 — 30 günlük pazar kapısı
+### 6. MARKET-02 — 30 günlük pazar kapısı
 
 > **Bağımlı:** PILOT-02 verileri.
 > Kabul: 20 müşteri görüşmesi, 4–5 rakip demo/fiyat teklifi, en az 3 ücretli ön-sipariş/yazılı
@@ -243,7 +287,8 @@
 ## Kaynaklar
 
 - `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` — önceki liste (Faz 0–7 + denetim sonrası kapananlar)
-- `docs/2026-08-08-PROD-KONTROL-LISTESI.md` — prod smoke listesi (kalem 1'in kanıt yeri)
+- `docs/2026-08-09-PROD-SMOKE-REHBERI.md` — kalem 1: tıklama sırası + tutarsızlık notları
+- `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md` — migration A kanıtı (eski checklist)
 - `docs/tracker-verimaya-ozellik-gap.md` — Tracker → Verimaya gap analizi (GAP-* kalemlerinin kaynağı)
 - `AUDIT-REPORT.md` — Opus denetimi (AUDIT-F09-* kalemlerinin kaynağı)
 - `docs/MIMARI.md`, `docs/TASARIM.md` — mimari ve tasarım kararları

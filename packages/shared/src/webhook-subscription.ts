@@ -5,7 +5,7 @@ import { isoDateTime } from './common.js';
 export const webhookEventTypeSchema = z.enum([
 	'transaction.created',
 	'transaction.updated',
-	'patient.created',
+	'contact.created',
 	'appointment.created'
 ]);
 export type WebhookEventType = z.infer<typeof webhookEventTypeSchema>;

@@ -3,7 +3,6 @@
 		Contact,
 		ContactType,
 		FinanceCategory,
-		Patient,
 		TransactionDraft,
 		TransactionStatus
 	} from '@verimaya/shared';
@@ -28,7 +27,6 @@
 
 	let {
 		draft,
-		patients = [],
 		contacts = [],
 		categories = [],
 		contactTypes = [],
@@ -36,11 +34,9 @@
 		creating = false,
 		onchange,
 		onCreateContact,
-		onCreatePatient,
 		onCreateCategory
 	}: {
 		draft: DraftApprovalState;
-		patients?: Patient[];
 		contacts?: Contact[];
 		categories?: FinanceCategory[];
 		contactTypes?: ContactType[];
@@ -48,12 +44,12 @@
 		creating?: boolean;
 		onchange: (patch: Partial<DraftApprovalState>) => void;
 		onCreateContact: (input: {
-			display_name: string;
+			first_name: string;
+			last_name?: string | null;
 			contact_type_id: string;
 			phone?: string | null;
 			email?: string | null;
 		}) => Promise<void>;
-		onCreatePatient: (input: { full_name: string }) => Promise<void>;
 		onCreateCategory: (input: { name: string; kind: TransactionDraft['kind'] }) => Promise<void>;
 	} = $props();
 
@@ -78,15 +74,23 @@
 	);
 
 	let showNewContact = $state(false);
-	let showNewPatient = $state(false);
 	let showNewCategory = $state(false);
 	let newContactName = $state('');
 	let newContactTypeId = $state('');
 	let newContactPhone = $state('');
 	let newContactEmail = $state('');
-	let newPatientName = $state('');
 	let newCategoryName = $state('');
 	let createError = $state<string | null>(null);
+
+	function splitDisplayName(name: string): { first_name: string; last_name: string | null } {
+		const trimmed = name.trim();
+		const spaceIdx = trimmed.indexOf(' ');
+		if (spaceIdx === -1) return { first_name: trimmed, last_name: null };
+		return {
+			first_name: trimmed.slice(0, spaceIdx),
+			last_name: trimmed.slice(spaceIdx + 1).trim() || null
+		};
+	}
 
 	function onAmountInput(value: string) {
 		const n = Number.parseFloat(value.replace(',', '.'));
@@ -141,13 +145,11 @@
 
 	function resetCreateForms() {
 		showNewContact = false;
-		showNewPatient = false;
 		showNewCategory = false;
 		newContactName = '';
 		newContactTypeId = '';
 		newContactPhone = '';
 		newContactEmail = '';
-		newPatientName = '';
 		newCategoryName = '';
 		createError = null;
 	}
@@ -156,23 +158,14 @@
 		if (!newContactName.trim() || !newContactTypeId || creating) return;
 		createError = null;
 		try {
+			const { first_name, last_name } = splitDisplayName(newContactName);
 			await onCreateContact({
-				display_name: newContactName.trim(),
+				first_name,
+				last_name,
 				contact_type_id: newContactTypeId,
 				phone: newContactPhone.trim() || null,
 				email: newContactEmail.trim() || null
 			});
-			resetCreateForms();
-		} catch (err) {
-			createError = err instanceof Error ? err.message : t('finance.ai.create.failed');
-		}
-	}
-
-	async function submitNewPatient() {
-		if (!newPatientName.trim() || creating) return;
-		createError = null;
-		try {
-			await onCreatePatient({ full_name: newPatientName.trim() });
 			resetCreateForms();
 		} catch (err) {
 			createError = err instanceof Error ? err.message : t('finance.ai.create.failed');
@@ -415,68 +408,6 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for={fieldId('patient')}>{t('finance.ai.draft.patient')}</label>
-			<select
-				id={fieldId('patient')}
-				class={fieldClass}
-				disabled={saved || creating}
-				value={showNewPatient ? NEW : (draft.patient_id ?? '')}
-				onchange={(e) => {
-					const v = e.currentTarget.value;
-					if (v === NEW) {
-						showNewPatient = true;
-						createError = null;
-						return;
-					}
-					showNewPatient = false;
-					const patient = patients.find((p) => p.id === v);
-					onchange({
-						patient_id: v || null,
-						patient_display_name: patient?.full_name ?? null
-					});
-				}}
-			>
-				<option value="">{t('finance.ai.draft.patientNone')}</option>
-				{#each patients as p (p.id)}
-					<option value={p.id}>{p.full_name}</option>
-				{/each}
-				<option value={NEW}>{t('finance.ai.draft.patientNew')}</option>
-			</select>
-			{#if showNewPatient}
-				<div class="mt-2 space-y-2 rounded-[6px] border border-border bg-surface-2 p-3">
-					<label class={labelClass} for={fieldId('new-patient-name')}
-						>{t('finance.ai.create.fullName')}</label
-					>
-					<input
-						id={fieldId('new-patient-name')}
-						class={fieldClass}
-						disabled={creating}
-						bind:value={newPatientName}
-					/>
-					<div class="flex flex-wrap gap-2">
-						<Button
-							size="sm"
-							type="button"
-							disabled={creating || !newPatientName.trim()}
-							onclick={() => void submitNewPatient()}
-						>
-							{creating ? t('finance.ai.create.saving') : t('finance.ai.create.save')}
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							type="button"
-							disabled={creating}
-							onclick={resetCreateForms}
-						>
-							{t('finance.ai.create.cancel')}
-						</Button>
-					</div>
-				</div>
-			{/if}
-		</div>
-
-		<div>
 			<label class={labelClass} for={fieldId('contact')}>{t('finance.ai.draft.contact')}</label>
 			<select
 				id={fieldId('contact')}
@@ -492,12 +423,13 @@
 					}
 					showNewContact = false;
 					if (!v) {
-						onchange({ contact_id: null });
+						onchange({ contact_id: null, contact_display_name: null });
 						return;
 					}
 					const contact = contacts.find((c) => c.id === v);
 					onchange({
 						contact_id: v,
+						contact_display_name: contact?.display_name ?? draft.contact_display_name,
 						contact_label: contact?.display_name ?? draft.contact_label
 					});
 				}}
@@ -511,7 +443,7 @@
 			{#if showNewContact}
 				<div class="mt-2 space-y-2 rounded-[6px] border border-border bg-surface-2 p-3">
 					<label class={labelClass} for={fieldId('new-contact-name')}
-						>{t('finance.ai.create.displayName')}</label
+						>{t('finance.ai.create.fullName')}</label
 					>
 					<input
 						id={fieldId('new-contact-name')}

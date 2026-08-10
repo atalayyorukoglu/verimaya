@@ -20,6 +20,8 @@ import {
 	credentialUpsertSchema,
 	financeCategoryCreateSchema,
 	financeCategoryUpdateSchema,
+	organizationCreateSchema,
+	organizationUpdateSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureUpdateSchema
 } from '@verimaya/shared';
@@ -151,6 +153,60 @@ export class SettingsController {
 	)
 	async removeContactType(@Req() req: FastifyRequest, @Param('id') id: string) {
 		await this.settingsService.deleteContactType(getActiveOrgId(req), id);
+	}
+
+	@Get('organizations')
+	@RequireOrgPermission('settings', 'read')
+	listOrganizations(@Req() req: FastifyRequest) {
+		return this.settingsService.listOrganizations(getActiveOrgId(req));
+	}
+
+	@Post('organizations')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async createOrganization(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(organizationCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/settings/organizations',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.settingsService.createOrganizationWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Patch('organizations/:id')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'Sets absolute name to the caller-supplied value — repeat calls converge to the same state.'
+	)
+	updateOrganization(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown
+	) {
+		const input = parseBody(organizationUpdateSchema, body, req);
+		return this.settingsService.updateOrganization(getActiveOrgId(req), id, input);
+	}
+
+	@Delete('organizations/:id')
+	@HttpCode(204)
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'Soft-DELETE-by-id (deleted_at); retrying after a successful delete 404s (row already gone) rather than silently duplicating. Low-stakes settings config, not financial/domain data.'
+	)
+	async removeOrganization(@Req() req: FastifyRequest, @Param('id') id: string) {
+		await this.settingsService.deleteOrganization(getActiveOrgId(req), id);
 	}
 
 	@Get('appointment-types')

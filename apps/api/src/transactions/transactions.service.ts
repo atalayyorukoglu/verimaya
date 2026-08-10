@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from '@verimaya/shared';
-import { contacts, patients, tenants, transactions } from '../db/schema';
+import { contacts, tenants, transactions } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
@@ -20,9 +20,7 @@ export class TransactionsService {
 				params.cursor
 			);
 			const baseFilters: SQL[] = [isNull(transactions.deletedAt)];
-			if (params.patient_id) baseFilters.push(eq(transactions.patientId, params.patient_id));
 			if (params.contact_id) baseFilters.push(eq(transactions.contactId, params.contact_id));
-			// CONTRACT-01: inclusive range over the naive occurred_on date (see list-query.ts doc).
 			if (params.from) baseFilters.push(gte(transactions.occurredOn, params.from));
 			if (params.to) baseFilters.push(lte(transactions.occurredOn, params.to));
 			if (params.kind) baseFilters.push(eq(transactions.kind, params.kind));
@@ -32,7 +30,7 @@ export class TransactionsService {
 				transactions.title,
 				transactions.subtitle,
 				transactions.category,
-				transactions.patientDisplayName,
+				transactions.contactDisplayName,
 				transactions.contactLabel,
 				transactions.description
 			]);
@@ -83,9 +81,8 @@ export class TransactionsService {
 				baseCurrency: denorm.baseCurrency,
 				fxRate: input.fx_rate ?? null,
 				fxDated: input.fx_dated ?? null,
-				patientId: input.patient_id ?? null,
-				patientDisplayName: denorm.patientDisplayName,
 				contactId: input.contact_id ?? null,
+				contactDisplayName: denorm.contactDisplayName,
 				contactLabel: denorm.contactLabel,
 				description: input.description ?? null
 			})
@@ -122,7 +119,6 @@ export class TransactionsService {
 				: existing.baseCurrency) as TransactionCreate['base_currency'],
 			fx_rate: input.fx_rate !== undefined ? input.fx_rate : existing.fxRate,
 			fx_dated: input.fx_dated !== undefined ? input.fx_dated : existing.fxDated,
-			patient_id: input.patient_id !== undefined ? input.patient_id : existing.patientId,
 			contact_id: input.contact_id !== undefined ? input.contact_id : existing.contactId,
 			contact_label:
 				input.contact_label !== undefined ? input.contact_label : existing.contactLabel,
@@ -149,9 +145,8 @@ export class TransactionsService {
 				baseCurrency: denorm.baseCurrency,
 				fxRate: merged.fx_rate,
 				fxDated: merged.fx_dated,
-				patientId: merged.patient_id,
-				patientDisplayName: denorm.patientDisplayName,
 				contactId: merged.contact_id,
+				contactDisplayName: denorm.contactDisplayName,
 				contactLabel: denorm.contactLabel,
 				description: merged.description,
 				updatedAt: new Date()
@@ -199,7 +194,6 @@ export class TransactionsService {
 		tenantId: string,
 		input: Pick<
 			TransactionCreate,
-			| 'patient_id'
 			| 'contact_id'
 			| 'contact_label'
 			| 'currency'
@@ -208,21 +202,7 @@ export class TransactionsService {
 			| 'base_currency'
 		>
 	) {
-		let patientDisplayName: string | null = null;
-		if (input.patient_id) {
-			const [patient] = await db
-				.select({ fullName: patients.fullName })
-				.from(patients)
-				.where(and(eq(patients.id, input.patient_id), isNull(patients.deletedAt)))
-				.limit(1);
-			if (!patient) {
-				throw new NotFoundException({
-					error: { code: 'not_found', message: 'Patient not found' }
-				});
-			}
-			patientDisplayName = patient.fullName;
-		}
-
+		let contactDisplayName: string | null = null;
 		let contactLabel = input.contact_label ?? null;
 		if (input.contact_id) {
 			const [contact] = await db
@@ -235,6 +215,7 @@ export class TransactionsService {
 					error: { code: 'not_found', message: 'Contact not found' }
 				});
 			}
+			contactDisplayName = contact.displayName;
 			contactLabel = contact.displayName;
 		}
 
@@ -256,6 +237,6 @@ export class TransactionsService {
 			baseCurrency = tenantBase;
 		}
 
-		return { patientDisplayName, contactLabel, amountBase, baseCurrency };
+		return { contactDisplayName, contactLabel, amountBase, baseCurrency };
 	}
 }

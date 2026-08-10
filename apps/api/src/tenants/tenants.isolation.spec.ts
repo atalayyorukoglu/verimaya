@@ -41,7 +41,7 @@ type TenantRowSnapshot = {
 	name: string;
 	slug: string;
 	base_currency: string;
-	patients_section_label: string;
+	contacts_section_label: string;
 	timezone: string;
 	created_at: Date | string;
 };
@@ -49,7 +49,7 @@ type TenantRowSnapshot = {
 async function snapshotTenantRow(tenantId: string): Promise<TenantRowSnapshot> {
 	const { sql } = getDb(databaseUrl);
 	const [row] = await sql`
-		select id, name, slug, base_currency, patients_section_label, timezone, created_at
+		select id, name, slug, base_currency, contacts_section_label, timezone, created_at
 		from tenants
 		where id = ${tenantId}
 	`;
@@ -78,7 +78,7 @@ describe('tenants current isolation (AUDIT-F09-12)', () => {
 				(${tenantB}, 'Agency Beta', ${slugB}, now())
 		`;
 		await sql`
-			insert into tenants (id, name, slug, base_currency, patients_section_label, timezone)
+			insert into tenants (id, name, slug, base_currency, contacts_section_label, timezone)
 			values
 				(${tenantA}, 'Clinic Alpha', ${slugA}, 'USD', 'Misafirler', 'Asia/Riyadh'),
 				(${tenantB}, 'Agency Beta', ${slugB}, 'EUR', 'Cases', 'Europe/London')
@@ -112,14 +112,14 @@ describe('tenants current isolation (AUDIT-F09-12)', () => {
 		expect(a.name).toBe('Clinic Alpha');
 		expect(a.slug).toBe(slugA);
 		expect(a.base_currency).toBe('USD');
-		expect(a.patients_section_label).toBe('Misafirler');
+		expect(a.contacts_section_label).toBe('Misafirler');
 		expect(a.timezone).toBe('Asia/Riyadh');
 
 		expect(a.id).not.toBe(tenantB);
 		expect(a.name).not.toBe('Agency Beta');
 		expect(a.slug).not.toBe(slugB);
 		expect(a.base_currency).not.toBe('EUR');
-		expect(a.patients_section_label).not.toBe('Cases');
+		expect(a.contacts_section_label).not.toBe('Cases');
 		expect(a.timezone).not.toBe('Europe/London');
 	});
 
@@ -130,7 +130,7 @@ describe('tenants current isolation (AUDIT-F09-12)', () => {
 		expect(b.name).toBe('Agency Beta');
 		expect(b.slug).toBe(slugB);
 		expect(b.base_currency).toBe('EUR');
-		expect(b.patients_section_label).toBe('Cases');
+		expect(b.contacts_section_label).toBe('Cases');
 		expect(b.timezone).toBe('Europe/London');
 
 		expect(b.id).not.toBe(tenantA);
@@ -144,7 +144,7 @@ describe('tenants current isolation (AUDIT-F09-12)', () => {
 			tenantA,
 			{
 				name: 'Clinic Alpha Updated',
-				patients_section_label: 'Guests',
+				contacts_section_label: 'Guests',
 				timezone: 'UTC'
 			},
 			actor
@@ -152,7 +152,7 @@ describe('tenants current isolation (AUDIT-F09-12)', () => {
 
 		expect(updated.id).toBe(tenantA);
 		expect(updated.name).toBe('Clinic Alpha Updated');
-		expect(updated.patients_section_label).toBe('Guests');
+		expect(updated.contacts_section_label).toBe('Guests');
 		expect(updated.timezone).toBe('UTC');
 		// currency untouched — avoids base_currency_locked
 		expect(updated.base_currency).toBe('USD');
@@ -167,7 +167,7 @@ describe('tenants current isolation (AUDIT-F09-12)', () => {
 		const apiB = await tenantsService.get(tenantB);
 		expect(apiB.name).toBe('Agency Beta');
 		expect(apiB.base_currency).toBe('EUR');
-		expect(apiB.patients_section_label).toBe('Cases');
+		expect(apiB.contacts_section_label).toBe('Cases');
 		expect(apiB.timezone).toBe('Europe/London');
 	});
 

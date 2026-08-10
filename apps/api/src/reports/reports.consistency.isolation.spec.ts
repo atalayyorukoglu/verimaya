@@ -13,14 +13,15 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tx: ReturnType<typeof getDb>['sql']) => Promise<T>
+): Promise<T> {
 	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+	return sql.begin(async (tx) => {
+		await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+		return fn(tx);
+	});
 }
 
 describe('GAP-05: reports consistency', () => {
@@ -74,16 +75,25 @@ describe('GAP-05: reports consistency', () => {
 			`;
 		}
 
-		await withTenantSession(tenantA, async () => {
-			await sql`
-				insert into patients (id, tenant_id, full_name, status, created_at, updated_at)
-				values (${patientA}, ${tenantA}, 'Gap05 Patient', 'scheduled', now(), now())
+		await withTenantSession(tenantA, async (tx) => {
+			await tx`
+				insert into contact_types (id, tenant_id, name, created_at)
+				values (${randomUUID()}, ${tenantA}, 'Hasta', now())
 			`;
-			await sql`
+			await tx`
+				insert into contacts (
+					id, tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at
+				) values (
+					${patientA}, ${tenantA},
+					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+					'Hasta', 'Gap05 Patient', 'Gap05 Patient', 'scheduled', now(), now()
+				)
+			`;
+			await tx`
 				insert into contact_types (id, tenant_id, name, created_at)
 				values (${contactTypeA}, ${tenantA}, 'Klinik', now())
 			`;
-			await sql`
+			await tx`
 				insert into contacts (
 					id, tenant_id, contact_type_id, contact_type_name, display_name, created_at, updated_at
 				) values (
@@ -91,78 +101,73 @@ describe('GAP-05: reports consistency', () => {
 				)
 			`;
 
-			// Negatives (clean) — no issues
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency,
-					patient_id, contact_id, contact_label
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.cleanIncome}, ${tenantA}, 'income', 'Clean income', 'Operasyon', '2026-05-01', 'paid',
-					10000, 10000, 'TRY', 10000, 'TRY',
-					${patientA}, null, null
+					10000, 10000, 'TRY', 10000, 'TRY', ${patientA}
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
 					amount, paid_amount, currency, amount_base, base_currency,
-					patient_id, contact_id, contact_label
+					contact_id, contact_label
 				) values (
 					${ids.cleanExpense}, ${tenantA}, 'expense', 'Clean expense', 'Konaklama', '2026-05-01', 'paid',
 					5000, 5000, 'TRY', 5000, 'TRY',
-					null, ${contactA}, 'Klinik Alfa'
+					${contactA}, 'Klinik Alfa'
 				)
 			`;
-			// Tracker model: paid + paid_amount NULL = fully paid (OK)
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.paidNullOk}, ${tenantA}, 'income', 'Paid null OK', 'Operasyon', '2026-05-01', 'paid',
 					1100, null, 'TRY', 1100, 'TRY', ${patientA}
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.unpaidZeroOk}, ${tenantA}, 'income', 'Unpaid zero OK', 'Operasyon', '2026-05-01', 'unpaid',
 					1200, 0, 'TRY', 1200, 'TRY', ${patientA}
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.partialOk}, ${tenantA}, 'income', 'Partial OK', 'Operasyon', '2026-05-01', 'partial',
 					1300, 500, 'TRY', 1300, 'TRY', ${patientA}
 				)
 			`;
 
-			// Rule positives
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.categoryMissing}, ${tenantA}, 'income', 'No category', null, '2026-05-02', 'paid',
 					1000, 1000, 'TRY', 1000, 'TRY', ${patientA}
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.incomeNoPatient}, ${tenantA}, 'income', 'Income orphan', 'Operasyon', '2026-05-03', 'paid',
 					2000, 2000, 'TRY', 2000, 'TRY', null
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
 					amount, paid_amount, currency, amount_base, base_currency,
@@ -173,69 +178,67 @@ describe('GAP-05: reports consistency', () => {
 					null, null
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.fxMissing}, ${tenantA}, 'income', 'FX missing', 'Operasyon', '2026-05-05', 'paid',
 					4000, 4000, 'EUR', null, null, ${patientA}
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.paidMismatch}, ${tenantA}, 'income', 'Paid mismatch', 'Operasyon', '2026-05-06', 'paid',
 					5000, 1000, 'TRY', 5000, 'TRY', ${patientA}
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.unpaidWithPay}, ${tenantA}, 'income', 'Unpaid with pay', 'Operasyon', '2026-05-07', 'unpaid',
 					6000, 100, 'TRY', 6000, 'TRY', ${patientA}
 				)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.partialInvalid}, ${tenantA}, 'income', 'Partial bad', 'Operasyon', '2026-05-08', 'partial',
 					7000, 0, 'TRY', 7000, 'TRY', ${patientA}
 				)
 			`;
-			// Soft-deleted violation must be excluded
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id, deleted_at
+					amount, paid_amount, currency, amount_base, base_currency, contact_id, deleted_at
 				) values (
 					${ids.softDeletedBad}, ${tenantA}, 'income', 'Deleted bad', null, '2026-05-09', 'paid',
 					8000, 8000, 'TRY', 8000, 'TRY', ${patientA}, now()
 				)
 			`;
 
-			// 120 clean rows so a client limit=100 page would miss a later needle
 			for (let i = 0; i < 120; i++) {
-				await sql`
+				await tx`
 					insert into transactions (
 						tenant_id, kind, title, category, occurred_on, status,
-						amount, paid_amount, currency, amount_base, base_currency, patient_id
+						amount, paid_amount, currency, amount_base, base_currency, contact_id
 					) values (
 						${tenantA}, 'income', ${`Bulk ${i}`}, 'Operasyon', '2026-05-10', 'paid',
 						100, 100, 'TRY', 100, 'TRY', ${patientA}
 					)
 				`;
 			}
-			await sql`
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.needleAfterPage}, ${tenantA}, 'income', 'Needle after page', '', '2026-05-11', 'paid',
 					9000, 9000, 'TRY', 9000, 'TRY', ${patientA}
@@ -243,8 +246,8 @@ describe('GAP-05: reports consistency', () => {
 			`;
 		});
 
-		await withTenantSession(tenantB, async () => {
-			await sql`
+		await withTenantSession(tenantB, async (tx) => {
+			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
 					amount, paid_amount, currency, amount_base, base_currency
@@ -264,7 +267,6 @@ describe('GAP-05: reports consistency', () => {
 				await tx`delete from transactions where tenant_id = ${tenantId}`;
 				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contact_types where tenant_id = ${tenantId}`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
 			});
 			await sql`delete from tenants where id = ${tenantId}`;
 			await sql`delete from organization where id = ${tenantId}`;
@@ -284,7 +286,7 @@ describe('GAP-05: reports consistency', () => {
 		);
 		expect(byCode('category_missing')).not.toContain(ids.softDeletedBad);
 
-		expect(byCode('income_patient_missing')).toEqual([ids.incomeNoPatient]);
+		expect(byCode('income_contact_missing')).toEqual([ids.incomeNoPatient]);
 		expect(byCode('expense_contact_missing')).toEqual([ids.expenseNoContact]);
 		expect(byCode('fx_missing')).toEqual([ids.fxMissing]);
 		expect(byCode('paid_amount_mismatch')).toEqual([ids.paidMismatch]);
@@ -316,7 +318,7 @@ describe('GAP-05: reports consistency', () => {
 	it('Tenant B sees only its own orphan income', async () => {
 		const report = await service.consistency(tenantB, period);
 		expect(report.items.map((i) => i.transaction_id)).toEqual([ids.tenantBBad]);
-		expect(report.items[0]?.code).toBe('income_patient_missing');
+		expect(report.items[0]?.code).toBe('income_contact_missing');
 	});
 
 	it('finds category issue beyond a 100-row client page window', async () => {

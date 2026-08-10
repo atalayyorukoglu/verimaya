@@ -16,7 +16,6 @@ import {
 	cursorPageParams,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
-	whatsappCreatePatientSchema,
 	whatsappParseRequestSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -33,7 +32,6 @@ import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { ContactsService } from '../contacts/contacts.service';
-import { PatientsService } from '../patients/patients.service';
 import { SettingsService } from '../settings/settings.service';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappService } from './whatsapp.service';
@@ -45,13 +43,12 @@ export class WhatsappController {
 		private readonly whatsappService: WhatsappService,
 		private readonly aiCorrectionsService: AiCorrectionsService,
 		private readonly contactsService: ContactsService,
-		private readonly patientsService: PatientsService,
 		private readonly settingsService: SettingsService,
 		private readonly idempotency: IdempotencyService
 	) {}
 
 	@Post('parse')
-	@RequireOrgPermission('patient', 'create')
+	@RequireOrgPermission('contact', 'create')
 	@IdempotencyExempt(
 		'Stateless LLM preview parse — returns draft suggestions without persisting a domain record (only a best-effort usage ledger write); nothing for a retry to duplicate.'
 	)
@@ -62,7 +59,7 @@ export class WhatsappController {
 	}
 
 	@Get('inbox')
-	@RequireOrgPermission('patient', 'read')
+	@RequireOrgPermission('contact', 'read')
 	listInbox(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
@@ -73,13 +70,13 @@ export class WhatsappController {
 	}
 
 	@Get('inbox/:id')
-	@RequireOrgPermission('patient', 'read')
+	@RequireOrgPermission('contact', 'read')
 	getInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.getInboxItem(getActiveOrgId(req), id);
 	}
 
 	@Post('inbox/process')
-	@RequireOrgPermission('patient', 'update')
+	@RequireOrgPermission('contact', 'update')
 	@IdempotencyExempt(
 		"Naturally idempotent by query, not by key: only status='new' rows are parsed (see WhatsappService.processInbox), so re-running after a partial/retried call just skips rows already moved past 'new'."
 	)
@@ -88,7 +85,7 @@ export class WhatsappController {
 	}
 
 	@Post('inbox/:id/parse')
-	@RequireOrgPermission('patient', 'update')
+	@RequireOrgPermission('contact', 'update')
 	@IdempotencyExempt(
 		'Re-parse overwrites the same inbox row\'s payload.parsed_records in place — no new resource is created, so a retry cannot duplicate anything (it can only re-run the LLM call).'
 	)
@@ -97,7 +94,7 @@ export class WhatsappController {
 	}
 
 	@Post('inbox/:id/approve')
-	@RequireOrgPermission('patient', 'update')
+	@RequireOrgPermission('contact', 'update')
 	@IdempotencyExempt(
 		"Sets inbox status to a fixed value ('approved'); PUT-like semantics — repeat calls converge to the same state. (Not the money path: that's approve-drafts below.)"
 	)
@@ -142,7 +139,7 @@ export class WhatsappController {
 	}
 
 	@Post('inbox/:id/ignore')
-	@RequireOrgPermission('patient', 'update')
+	@RequireOrgPermission('contact', 'update')
 	@IdempotencyExempt(
 		"Sets inbox status to a fixed value ('ignored'); PUT-like semantics — repeat calls converge to the same state."
 	)
@@ -154,7 +151,7 @@ export class WhatsappController {
 	 * GAP-F09-16: inline contact create from draft approval (thin wrap of ContactsService.create).
 	 */
 	@Post('create-contact')
-	@RequireOrgPermission('patient', 'create')
+	@RequireOrgPermission('contact', 'create')
 	@Idempotent()
 	async createContact(
 		@Req() req: FastifyRequest,
@@ -171,43 +168,6 @@ export class WhatsappController {
 			async (db) => ({
 				statusCode: 201,
 				body: await this.contactsService.createWithDb(db, tenantId, input)
-			})
-		);
-		reply.status(result.statusCode);
-		return result.body;
-	}
-
-	/**
-	 * GAP-F09-16: inline patient (case) create from draft approval.
-	 * Tracker name was create-case; Verimaya domain is Patient.
-	 */
-	@Post('create-patient')
-	@RequireOrgPermission('patient', 'create')
-	@Idempotent()
-	async createPatient(
-		@Req() req: FastifyRequest,
-		@Body() body: unknown,
-		@Res({ passthrough: true }) reply: FastifyReply
-	) {
-		const input = parseBody(whatsappCreatePatientSchema, body, req);
-		const tenantId = getActiveOrgId(req);
-		const result = await this.idempotency.run(
-			tenantId,
-			getIdempotencyKey(req),
-			'POST',
-			'/v1/whatsapp/create-patient',
-			async (db) => ({
-				statusCode: 201,
-				body: await this.patientsService.createWithDb(db, tenantId, {
-					full_name: input.full_name,
-					phone: null,
-					email: null,
-					source: null,
-					notes: null,
-					assigned_user_id: null,
-					contact_id: input.contact_id ?? null,
-					status: 'scheduled'
-				})
 			})
 		);
 		reply.status(result.statusCode);
@@ -245,7 +205,7 @@ export class WhatsappController {
 	}
 
 	@Post('corrections')
-	@RequireOrgPermission('patient', 'create')
+	@RequireOrgPermission('contact', 'create')
 	@IdempotencyExempt(
 		'Standalone correction-log write, not called by the web client today (corrections are created atomically inside approve-drafts — MONEY-01); reachable only via direct API/API-key access. ai_corrections is a diff/analytics log, not a financial or domain record, so a duplicate row on retry is a data-quality nit, not a customer-facing risk. Wire this like createFinanceCategory (below) if/when a real caller appears.'
 	)
@@ -256,7 +216,7 @@ export class WhatsappController {
 	}
 
 	@Get('corrections')
-	@RequireOrgPermission('patient', 'read')
+	@RequireOrgPermission('contact', 'read')
 	listCorrections(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
@@ -268,7 +228,7 @@ export class WhatsappController {
 
 	/** GAP-F09-15: field-level AI correction frequency (full period, no pagination). */
 	@Get('corrections-report')
-	@RequireOrgPermission('patient', 'read')
+	@RequireOrgPermission('contact', 'read')
 	correctionsReport(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
 		const params = parseQuery(aiCorrectionsReportParamsSchema, query, req);
 		return this.aiCorrectionsService.report(getActiveOrgId(req), params);

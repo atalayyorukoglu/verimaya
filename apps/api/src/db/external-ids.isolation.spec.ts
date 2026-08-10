@@ -36,7 +36,7 @@ describe('external_ids RLS isolation (Adım 27)', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
 				insert into external_ids (tenant_id, source, entity_type, external_id, internal_id)
-				values (${tenantA}, 'legacy_tracker', 'patient', 'case-ext-a', ${internalA})
+				values (${tenantA}, 'legacy_tracker', 'contact', 'case-ext-a', ${internalA})
 				returning id
 			`;
 			return row!.id as string;
@@ -46,7 +46,7 @@ describe('external_ids RLS isolation (Adım 27)', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			const [row] = await tx`
 				insert into external_ids (tenant_id, source, entity_type, external_id, internal_id)
-				values (${tenantB}, 'legacy_tracker', 'patient', 'case-ext-b', ${internalB})
+				values (${tenantB}, 'legacy_tracker', 'contact', 'case-ext-b', ${internalB})
 				returning id
 			`;
 			return row!.id as string;

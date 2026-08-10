@@ -3,8 +3,8 @@ import { type UserRole, userRoleLabels } from '@verimaya/shared';
 /** Nav href → roles that can see it. */
 const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
-	'/patients': ['owner', 'admin', 'manager', 'agent', 'readonly'],
 	'/contacts': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/patients': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/appointments': ['owner', 'admin', 'manager', 'agent', 'readonly'],
 	'/scorecard': ['owner', 'admin', 'manager', 'readonly'],
 	'/finance': ['owner', 'admin', 'manager', 'finance'],

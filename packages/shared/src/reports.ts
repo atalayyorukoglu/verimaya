@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isoDate, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
-import { patientStatusSchema } from './patient.js';
+import { contactStatusSchema } from './contact.js';
 import { transactionKindSchema } from './transaction.js';
 
 export const reportPeriodParams = z.object({
@@ -41,25 +41,33 @@ export const reportSummarySchema = z.object({
 });
 export type ReportSummary = z.infer<typeof reportSummarySchema>;
 
-export const reportPatientStatusCountSchema = z.object({
-	status: patientStatusSchema,
+export const reportContactStatusCountSchema = z.object({
+	status: contactStatusSchema,
 	count: z.number().int().nonnegative()
 });
-export type ReportPatientStatusCount = z.infer<typeof reportPatientStatusCountSchema>;
+export type ReportContactStatusCount = z.infer<typeof reportContactStatusCountSchema>;
 
-export const reportPatientSourceCountSchema = z.object({
+export const reportContactSourceCountSchema = z.object({
 	source: z.string(),
 	count: z.number().int().nonnegative()
 });
-export type ReportPatientSourceCount = z.infer<typeof reportPatientSourceCountSchema>;
+export type ReportContactSourceCount = z.infer<typeof reportContactSourceCountSchema>;
 
-export const reportPatientDistributionSchema = z.object({
+/** §0-C: medium is a second-level breakout under source grouping. */
+export const reportContactMediumCountSchema = z.object({
+	medium: z.string(),
+	count: z.number().int().nonnegative()
+});
+export type ReportContactMediumCount = z.infer<typeof reportContactMediumCountSchema>;
+
+export const reportContactDistributionSchema = z.object({
 	period: reportPeriodSchema,
-	by_status: z.array(reportPatientStatusCountSchema),
-	by_source: z.array(reportPatientSourceCountSchema),
+	by_status: z.array(reportContactStatusCountSchema),
+	by_source: z.array(reportContactSourceCountSchema),
+	by_medium: z.array(reportContactMediumCountSchema),
 	total: z.number().int().nonnegative()
 });
-export type ReportPatientDistribution = z.infer<typeof reportPatientDistributionSchema>;
+export type ReportContactDistribution = z.infer<typeof reportContactDistributionSchema>;
 
 export const reportBalanceRowSchema = z.object({
 	contact_id: uuid,
@@ -179,7 +187,7 @@ export type ReportConsistencySeverity = z.infer<typeof reportConsistencySeverity
 
 export const reportConsistencyCodeSchema = z.enum([
 	'category_missing',
-	'income_patient_missing',
+	'income_contact_missing',
 	'expense_contact_missing',
 	'fx_missing',
 	'paid_amount_mismatch',
@@ -211,9 +219,9 @@ export const reportConsistencyCodeMeta: Record<
 		severity: 'warning',
 		message_key: 'reports.consistency.category_missing'
 	},
-	income_patient_missing: {
+	income_contact_missing: {
 		severity: 'warning',
-		message_key: 'reports.consistency.income_patient_missing'
+		message_key: 'reports.consistency.income_contact_missing'
 	},
 	expense_contact_missing: {
 		severity: 'warning',
@@ -295,7 +303,7 @@ export type ReportUrlPath =
 	| 'by-category'
 	| 'monthly'
 	| 'by-category-detail'
-	| 'patient-distribution'
+	| 'contact-distribution'
 	| 'balances'
 	| 'appointment-metrics'
 	| 'consistency'

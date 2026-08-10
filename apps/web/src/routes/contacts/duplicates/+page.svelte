@@ -13,5 +13,5 @@
 		title={t('contacts.duplicates.title')}
 		description={t('contacts.duplicates.description')}
 	/>
-	<DuplicateScanPanel kind="contacts" listHref="/contacts" listLabel={t('contacts.list.title')} />
+	<DuplicateScanPanel listHref="/contacts" listLabel={t('contacts.list.title')} />
 </div>

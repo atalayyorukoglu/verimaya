@@ -14,7 +14,7 @@ export const tenants = pgTable(
 		name: text('name').notNull(),
 		slug: text('slug').notNull(),
 		baseCurrency: text('base_currency').notNull().default('TRY'),
-		patientsSectionLabel: text('patients_section_label').notNull().default('Hastalar'),
+		contactsSectionLabel: text('contacts_section_label').notNull().default('Hastalar'),
 		timezone: text('timezone').notNull().default('Europe/Istanbul'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
@@ -28,7 +28,6 @@ export type NewTenantRow = typeof tenants.$inferInsert;
 
 /**
  * Minimal tenant-scoped table for RLS isolation tests (Faz 0b).
- * Real patients land in Faz 1.
  */
 export const demoNotes = pgTable(
 	'demo_notes',

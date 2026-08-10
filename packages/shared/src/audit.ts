@@ -5,7 +5,6 @@ export const auditActionSchema = z.enum(['create', 'update', 'delete', 'login'])
 export type AuditAction = z.infer<typeof auditActionSchema>;
 
 export const auditEntitySchema = z.enum([
-	'patient',
 	'contact',
 	'appointment',
 	'transaction',
@@ -23,7 +22,7 @@ export const auditLogSchema = z.object({
 	actor_display_name: z.string().max(255),
 	action: auditActionSchema,
 	entity_type: auditEntitySchema,
-	/** Human-readable target, e.g. patient name or transaction title */
+	/** Human-readable target, e.g. contact name or transaction title */
 	entity_label: z.string().max(255).nullable(),
 	created_at: isoDateTime
 });

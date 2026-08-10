@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { sql as drizzleSql } from 'drizzle-orm';
 import { closeDb, getDb } from '../db/client';
-import { TenantContextService } from '../tenant/tenant-context.service';
+import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
 
 const databaseUrl =
@@ -9,14 +10,30 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tx: ReturnType<typeof getDb>['sql']) => Promise<T>
+): Promise<T> {
 	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+	return sql.begin(async (tx) => {
+		await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+		return fn(tx);
+	});
+}
+
+async function withTenantDb<T>(tenantId: string, fn: (db: TenantDb) => Promise<T>): Promise<T> {
+	const { db } = getDb(databaseUrl);
+	return db.transaction(async (tx) => {
+		await tx.execute(drizzleSql`select set_config('app.current_tenant_id', ${tenantId}, true)`);
+		return fn(tx as TenantDb);
+	});
+}
+
+function tenantContextMock(): TenantContextService {
+	return {
+		withTenant: async <T>(tenantId: string, fn: (ctx: { db: TenantDb }) => Promise<T>) =>
+			withTenantDb(tenantId, (db) => fn({ db }))
+	} as TenantContextService;
 }
 
 describe('reports marketing tenant isolation', () => {
@@ -45,25 +62,42 @@ describe('reports marketing tenant isolation', () => {
 		`;
 
 		patientA = await withTenantSession(tenantA, async () => {
-			const [row] = await sql`
-				insert into patients (tenant_id, full_name, source, status, created_at)
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantA}, 'Hasta') on conflict do nothing`;
+			});
+			const [row] = await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+				return tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, source, status, created_at)
 				values (
 					${tenantA},
+					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+					'Hasta',
+					'Patient A Meta',
 					'Patient A Meta',
 					'Meta Ads',
 					'treated',
 					timestamptz '2026-01-15 12:00:00+00'
 				)
-				returning id
-			`;
+				returning id`;
+			});
 			return row!.id as string;
 		});
 
 		patientB = await withTenantSession(tenantB, async () => {
-			const [row] = await sql`
-				insert into patients (tenant_id, full_name, source, status, created_at)
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantB}, 'Hasta') on conflict do nothing`;
+			});
+			const [row] = await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+				return tx`
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, source, status, created_at)
 				values (
 					${tenantB},
+					(select id from contact_types where tenant_id = ${tenantB} and name = 'Hasta' limit 1),
+					'Hasta',
+					'Patient B Google',
 					'Patient B Google',
 					'Google Ads',
 					'treated',
@@ -71,20 +105,21 @@ describe('reports marketing tenant isolation', () => {
 				)
 				returning id
 			`;
+			});
 			return row!.id as string;
 		});
 
-		await withTenantSession(tenantA, async () => {
-			await sql`
+		await withTenantSession(tenantA, async (tx) => {
+			await tx`
 				insert into ad_metrics_daily (
 					tenant_id, provider, date, campaign_id, spend_minor, currency, impressions, clicks
 				)
 				values
 					(${tenantA}, 'meta', ${period.from}, 'camp-a', 100000, 'TRY', 1000, 50)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, patient_id
+					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, contact_id
 				)
 				values
 					-- Tracker model: paid + paid_amount NULL = fully paid (must count as tahsilat)
@@ -92,44 +127,37 @@ describe('reports marketing tenant isolation', () => {
 			`;
 		});
 
-		await withTenantSession(tenantB, async () => {
-			await sql`
+		await withTenantSession(tenantB, async (tx) => {
+			await tx`
 				insert into ad_metrics_daily (
 					tenant_id, provider, date, campaign_id, spend_minor, currency, impressions, clicks
 				)
 				values
 					(${tenantB}, 'google', ${period.from}, 'camp-b', 999999, 'TRY', 9000, 900)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, patient_id
+					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, contact_id
 				)
 				values
 					(${tenantB}, 'income', 'B tahsilat', ${period.from}, 'paid', 888888, 888888, 888888, 'TRY', ${patientB})
 			`;
 		});
 
-		const tenantContext = {
-			withTenant: async <T>(
-				tenantId: string,
-				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
-			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
-		} as TenantContextService;
-
-		reportsService = new ReportsService(tenantContext);
+		reportsService = new ReportsService(tenantContextMock());
 	});
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from transactions where tenant_id = ${tenantA}`;
-			await sql`delete from ad_metrics_daily where tenant_id = ${tenantA}`;
-			await sql`delete from patients where tenant_id = ${tenantA}`;
+		await withTenantSession(tenantA, async (tx) => {
+			await tx`delete from transactions where tenant_id = ${tenantA}`;
+			await tx`delete from ad_metrics_daily where tenant_id = ${tenantA}`;
+			await tx`delete from contacts where tenant_id = ${tenantA}`;
 		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from transactions where tenant_id = ${tenantB}`;
-			await sql`delete from ad_metrics_daily where tenant_id = ${tenantB}`;
-			await sql`delete from patients where tenant_id = ${tenantB}`;
+		await withTenantSession(tenantB, async (tx) => {
+			await tx`delete from transactions where tenant_id = ${tenantB}`;
+			await tx`delete from ad_metrics_daily where tenant_id = ${tenantB}`;
+			await tx`delete from contacts where tenant_id = ${tenantB}`;
 		});
 		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
 		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
@@ -181,10 +209,19 @@ describe('reports marketing ad spend FX (OPS-02c)', () => {
 		`;
 
 		patientId = await withTenantSession(tenantGbp, async () => {
-			const [row] = await sql`
-				insert into patients (tenant_id, full_name, source, status, created_at)
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantGbp}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantGbp}, 'Hasta') on conflict do nothing`;
+			});
+			const [row] = await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantGbp}, true)`;
+				return tx`
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, source, status, created_at)
 				values (
 					${tenantGbp},
+					(select id from contact_types where tenant_id = ${tenantGbp} and name = 'Hasta' limit 1),
+					'Hasta',
+					'Patient GBP',
 					'Patient GBP',
 					'Google Ads',
 					'treated',
@@ -192,12 +229,13 @@ describe('reports marketing ad spend FX (OPS-02c)', () => {
 				)
 				returning id
 			`;
+			});
 			return row!.id as string;
 		});
 
-		await withTenantSession(tenantGbp, async () => {
+		await withTenantSession(tenantGbp, async (tx) => {
 			// TRY spend with FX snapshot → GBP (prod-shaped: Ads TRY, tenant GBP)
-			await sql`
+			await tx`
 				insert into ad_metrics_daily (
 					tenant_id, provider, date, campaign_id,
 					spend_minor, currency, spend_base, base_currency, fx_rate, fx_dated,
@@ -210,31 +248,24 @@ describe('reports marketing ad spend FX (OPS-02c)', () => {
 						1000, 50
 					)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, patient_id
+					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, contact_id
 				)
 				values
 					(${tenantGbp}, 'income', 'GBP tahsilat', '2026-05-15', 'paid', 3136320, 3136320, null, 'GBP', ${patientId})
 			`;
 		});
 
-		const tenantContext = {
-			withTenant: async <T>(
-				tenantId: string,
-				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
-			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
-		} as TenantContextService;
-
-		reportsService = new ReportsService(tenantContext);
+		reportsService = new ReportsService(tenantContextMock());
 	});
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantGbp, async () => {
-			await sql`delete from transactions where tenant_id = ${tenantGbp}`;
-			await sql`delete from ad_metrics_daily where tenant_id = ${tenantGbp}`;
-			await sql`delete from patients where tenant_id = ${tenantGbp}`;
+		await withTenantSession(tenantGbp, async (tx) => {
+			await tx`delete from transactions where tenant_id = ${tenantGbp}`;
+			await tx`delete from ad_metrics_daily where tenant_id = ${tenantGbp}`;
+			await tx`delete from contacts where tenant_id = ${tenantGbp}`;
 		});
 		await sql`delete from tenants where id = ${tenantGbp}`;
 		await sql`delete from organization where id = ${tenantGbp}`;
@@ -252,8 +283,8 @@ describe('reports marketing ad spend FX (OPS-02c)', () => {
 
 	it('currency null spend is excluded and surfaces spend_fx_missing', async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantGbp, async () => {
-			await sql`
+		await withTenantSession(tenantGbp, async (tx) => {
+			await tx`
 				insert into ad_metrics_daily (
 					tenant_id, provider, date, campaign_id,
 					spend_minor, currency, impressions, clicks
@@ -274,8 +305,8 @@ describe('reports marketing ad spend FX (OPS-02c)', () => {
 			// Revenue still available — only spend-driven metrics are withheld
 			expect(report.revenue_base).toBe(3136320);
 		} finally {
-			await withTenantSession(tenantGbp, async () => {
-				await sql`delete from ad_metrics_daily where campaign_id = 'camp-null-fx'`;
+			await withTenantSession(tenantGbp, async (tx) => {
+				await tx`delete from ad_metrics_daily where campaign_id = 'camp-null-fx'`;
 			});
 		}
 	});
@@ -301,10 +332,19 @@ describe('reports marketing effective window + attribution', () => {
 		`;
 
 		patientKnown = await withTenantSession(tenantW, async () => {
-			const [row] = await sql`
-				insert into patients (tenant_id, full_name, source, status, created_at)
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantW}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantW}, 'Hasta') on conflict do nothing`;
+			});
+			const [row] = await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantW}, true)`;
+				return tx`
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, source, status, created_at)
 				values (
 					${tenantW},
+					(select id from contact_types where tenant_id = ${tenantW} and name = 'Hasta' limit 1),
+					'Hasta',
+					'Patient Known Source',
 					'Patient Known Source',
 					'Meta Ads',
 					'treated',
@@ -312,14 +352,20 @@ describe('reports marketing effective window + attribution', () => {
 				)
 				returning id
 			`;
+			});
 			return row!.id as string;
 		});
 
 		patientUnknown = await withTenantSession(tenantW, async () => {
-			const [row] = await sql`
-				insert into patients (tenant_id, full_name, source, status, created_at)
+			const [row] = await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantW}, true)`;
+				return tx`
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, source, status, created_at)
 				values (
 					${tenantW},
+					(select id from contact_types where tenant_id = ${tenantW} and name = 'Hasta' limit 1),
+					'Hasta',
+					'Patient Unknown Source',
 					'Patient Unknown Source',
 					null,
 					'treated',
@@ -327,12 +373,13 @@ describe('reports marketing effective window + attribution', () => {
 				)
 				returning id
 			`;
+			});
 			return row!.id as string;
 		});
 
-		await withTenantSession(tenantW, async () => {
+		await withTenantSession(tenantW, async (tx) => {
 			// Meta: narrow window Jan; Google: wide window spanning into June
-			await sql`
+			await tx`
 				insert into ad_metrics_daily (
 					tenant_id, provider, date, campaign_id, spend_minor, currency, impressions, clicks
 				)
@@ -342,9 +389,9 @@ describe('reports marketing effective window + attribution', () => {
 					(${tenantW}, 'google', '2026-02-01', 'camp-google-a', 80000, 'TRY', 800, 40),
 					(${tenantW}, 'google', '2026-06-15', 'camp-google-b', 20000, 'TRY', 200, 10)
 			`;
-			await sql`
+			await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, patient_id
+					tenant_id, kind, title, occurred_on, status, amount, amount_base, paid_amount, currency, contact_id
 				)
 				values
 					-- Inside Meta window
@@ -356,22 +403,15 @@ describe('reports marketing effective window + attribution', () => {
 			`;
 		});
 
-		const tenantContext = {
-			withTenant: async <T>(
-				tenantId: string,
-				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
-			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
-		} as TenantContextService;
-
-		reportsService = new ReportsService(tenantContext);
+		reportsService = new ReportsService(tenantContextMock());
 	});
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantW, async () => {
-			await sql`delete from transactions where tenant_id = ${tenantW}`;
-			await sql`delete from ad_metrics_daily where tenant_id = ${tenantW}`;
-			await sql`delete from patients where tenant_id = ${tenantW}`;
+		await withTenantSession(tenantW, async (tx) => {
+			await tx`delete from transactions where tenant_id = ${tenantW}`;
+			await tx`delete from ad_metrics_daily where tenant_id = ${tenantW}`;
+			await tx`delete from contacts where tenant_id = ${tenantW}`;
 		});
 		await sql`delete from tenants where id = ${tenantW}`;
 		await sql`delete from organization where id = ${tenantW}`;
@@ -406,11 +446,14 @@ describe('reports marketing effective window + attribution', () => {
 	it('(a3) all-time: cohort excludes patients created before ad_metrics window; CPL uses window leads', async () => {
 		const { sql } = getDb(databaseUrl);
 		// Patient created before any ad_metrics date (2025) must not enter leads_count
-		await withTenantSession(tenantW, async () => {
-			await sql`
-				insert into patients (tenant_id, full_name, source, status, created_at)
+		await withTenantSession(tenantW, async (tx) => {
+			await tx`
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, source, status, created_at)
 				values (
 					${tenantW},
+					(select id from contact_types where tenant_id = ${tenantW} and name = 'Hasta' limit 1),
+					'Hasta',
+					'Pre-window Patient',
 					'Pre-window Patient',
 					'Meta Ads',
 					'treated',
@@ -419,8 +462,8 @@ describe('reports marketing effective window + attribution', () => {
 			`;
 			// Window has patientKnown + patientUnknown; attribution must clear the threshold
 			// so CPL assertions stay about the window, not OPS-02d withholding.
-			await sql`
-				update patients set source = 'Meta Ads' where id = ${patientUnknown}
+			await tx`
+				update contacts set source = 'Meta Ads' where id = ${patientUnknown}
 			`;
 		});
 
@@ -435,9 +478,9 @@ describe('reports marketing effective window + attribution', () => {
 			// CPL = spend / window leads, not all-time headcount (would be 3 with pre-window)
 			expect(report.cost_per_lead).toBe(100000);
 		} finally {
-			await withTenantSession(tenantW, async () => {
-				await sql`delete from patients where tenant_id = ${tenantW} and full_name = 'Pre-window Patient'`;
-				await sql`update patients set source = null where id = ${patientUnknown}`;
+			await withTenantSession(tenantW, async (tx) => {
+				await tx`update contacts set source = null where id = ${patientUnknown}`;
+				await tx`delete from contacts where tenant_id = ${tenantW} and display_name = 'Pre-window Patient'`;
 			});
 		}
 	});
@@ -445,8 +488,8 @@ describe('reports marketing effective window + attribution', () => {
 	it('(b) attribution_missing true → real_roas / CPL / CPT null', async () => {
 		// Period covering only the unknown-source patient + invent spend in that month
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantW, async () => {
-			await sql`
+		await withTenantSession(tenantW, async (tx) => {
+			await tx`
 				insert into ad_metrics_daily (
 					tenant_id, provider, date, campaign_id, spend_minor, currency, impressions, clicks
 				)
@@ -471,8 +514,8 @@ describe('reports marketing effective window + attribution', () => {
 			expect(report.cost_per_lead).toBeNull();
 			expect(report.cost_per_treated).toBeNull();
 		} finally {
-			await withTenantSession(tenantW, async () => {
-				await sql`delete from ad_metrics_daily where campaign_id = 'camp-meta-attr'`;
+			await withTenantSession(tenantW, async (tx) => {
+				await tx`delete from ad_metrics_daily where campaign_id = 'camp-meta-attr'`;
 			});
 		}
 	});
@@ -494,8 +537,8 @@ describe('reports marketing effective window + attribution', () => {
 
 	it('(b3) coverage at or above threshold → ROAS/CPL/CPT published', async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantW, async () => {
-			await sql`update patients set source = 'Google Ads' where id = ${patientUnknown}`;
+		await withTenantSession(tenantW, async (tx) => {
+			await tx`update contacts set source = 'Google Ads' where id = ${patientUnknown}`;
 		});
 
 		try {
@@ -510,8 +553,8 @@ describe('reports marketing effective window + attribution', () => {
 			expect(report.cost_per_lead).toBe(100000);
 			expect(report.cost_per_treated).toBe(100000);
 		} finally {
-			await withTenantSession(tenantW, async () => {
-				await sql`update patients set source = null where id = ${patientUnknown}`;
+			await withTenantSession(tenantW, async (tx) => {
+				await tx`update contacts set source = null where id = ${patientUnknown}`;
 			});
 		}
 	});

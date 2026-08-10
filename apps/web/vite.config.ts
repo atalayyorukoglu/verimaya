@@ -34,5 +34,18 @@ export default defineConfig({
 				changeOrigin: true
 			}
 		}
+	},
+	// Same host + /v1 proxy for `vite preview` (TestSprite / smoke against production build).
+	preview: {
+		port: 4173,
+		strictPort: true,
+		host: true,
+		allowedHosts: ['localhost', 'app.localhost'],
+		proxy: {
+			'/v1': {
+				target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000',
+				changeOrigin: true
+			}
+		}
 	}
 });

@@ -7,13 +7,13 @@ import type {
 	AppointmentTypeSetting,
 	AuditLog,
 	Contact,
+	ContactStatus,
 	ContactType,
 	FinanceCategory,
 	InboundMessage,
-	Patient,
-	PatientCaseNote,
-	PatientFile,
-	PatientStatus,
+	Organization,
+	ContactCaseNote,
+	ContactFile,
 	Tenant,
 	Transaction,
 	MembershipUser,
@@ -26,8 +26,7 @@ export type MockScenario = 'default' | 'empty' | 'large' | 'attribution_missing'
 
 export const DEMO_TENANT_ID = '11111111-1111-4111-8111-111111111111';
 export const DEMO_USER_ID = '22222222-2222-4222-8222-222222222222';
-/** Fixed demo patient — searchable as "Atalay" */
-export const ATALAY_PATIENT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+/** Fixed demo Hasta contact — searchable as "Atalay" */
 export const ATALAY_CONTACT_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1';
 export const CONTACT_DEMO_HOTEL_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd2';
 export const CONTACT_MUJDAT_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd3';
@@ -40,16 +39,13 @@ export const CONTACT_INTERNAL_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd8';
 export const CONTACT_DUP_HOTEL_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddd10';
 export const CONTACT_DUP_ATALAY_EMAIL_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddd11';
 export const CONTACT_DUP_ATALAY_NAME_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddd12';
-/** Same phone as Atalay — /patients/duplicates demo */
-export const ATALAY_DUP_PATIENT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
-
 export const demoTenant: Tenant = {
 	id: DEMO_TENANT_ID,
 	name: 'Demo Klinik',
 	slug: 'demo-klinik',
 	base_currency: 'TRY',
 	base_currency_locked: true,
-	patients_section_label: 'Hastalar',
+	contacts_section_label: 'Hastalar',
 	timezone: 'Europe/Istanbul',
 	created_at: '2026-01-15T10:00:00.000Z'
 };
@@ -63,9 +59,10 @@ export const demoUser: MembershipUser = {
 	role: 'owner'
 };
 
-const STATUSES: PatientStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];
+const STATUSES: ContactStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];
 
-const SOURCES = ['Meta Ads', 'Google Ads', 'WhatsApp', 'Referans', 'GHL', 'Website'];
+const SOURCES = ['Dijital Reklam', 'Referans', 'Organik', 'WhatsApp', 'Diğer'] as const;
+const MEDIUMS = ['Meta Ads', 'Google Ads', 'Instagram', 'TikTok', 'Web Formu', 'Telefon'] as const;
 
 const LONG_NAME = 'Aleksandra-Maria Katarzyna von Habsburg-Lorraine-Wojciechowski-Papadopoulos';
 
@@ -77,41 +74,78 @@ function iso(d: Date): string {
 	return d.toISOString();
 }
 
-function makePatient(overrides: Partial<Patient> = {}): Patient {
+function deriveDisplayName(firstName: string, lastName: string | null | undefined): string {
+	return `${firstName}${lastName?.trim() ? ` ${lastName.trim()}` : ''}`.trim();
+}
+
+function makeHastaContact(types: ContactType[], overrides: Partial<Contact> = {}): Contact {
 	const created = faker.date.recent({ days: 90 });
-	const first = faker.person.firstName();
-	const last = faker.person.lastName();
+	const hastaType = typeByName(types, 'Hasta');
+	const first = overrides.first_name ?? faker.person.firstName();
+	const last = overrides.last_name !== undefined ? overrides.last_name : faker.person.lastName();
+	const source = overrides.source ?? faker.helpers.arrayElement([...SOURCES]);
+	const medium =
+		overrides.medium !== undefined
+			? overrides.medium
+			: source === 'Dijital Reklam'
+				? faker.helpers.arrayElement([...MEDIUMS])
+				: null;
 	return {
-		id: faker.string.uuid(),
+		...overrides,
+		id: overrides.id ?? faker.string.uuid(),
 		tenant_id: DEMO_TENANT_ID,
-		full_name: `${first} ${last}`,
+		contact_type_id: hastaType.id,
+		contact_type_name: hastaType.name,
+		first_name: first,
+		last_name: last,
+		display_name: deriveDisplayName(first, last),
 		phone:
-			faker.helpers.maybe(() => `+90${faker.string.numeric(10)}`, {
-				probability: 0.85
-			}) ?? null,
+			overrides.phone !== undefined
+				? overrides.phone
+				: (faker.helpers.maybe(() => `+90${faker.string.numeric(10)}`, {
+						probability: 0.85
+					}) ?? null),
 		email:
-			faker.helpers.maybe(() => faker.internet.email({ firstName: first, lastName: last }), {
-				probability: 0.7
-			}) ?? null,
-		status: faker.helpers.arrayElement(STATUSES),
-		source: faker.helpers.arrayElement(SOURCES),
-		notes: faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.4 }) ?? null,
-		assigned_user_id: faker.helpers.maybe(() => DEMO_USER_ID, { probability: 0.6 }) ?? null,
-		contact_id: null,
-		created_at: iso(created),
-		updated_at: iso(faker.date.between({ from: created, to: new Date() })),
-		...overrides
+			overrides.email !== undefined
+				? overrides.email
+				: (faker.helpers.maybe(
+						() => faker.internet.email({ firstName: first, lastName: last ?? '' }),
+						{
+							probability: 0.7
+						}
+					) ?? null),
+		notes:
+			overrides.notes !== undefined
+				? overrides.notes
+				: (faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.4 }) ?? null),
+		organization_id: overrides.organization_id ?? null,
+		status: overrides.status ?? faker.helpers.arrayElement(STATUSES),
+		assigned_user_id:
+			overrides.assigned_user_id !== undefined
+				? overrides.assigned_user_id
+				: (faker.helpers.maybe(() => DEMO_USER_ID, { probability: 0.6 }) ?? null),
+		source,
+		medium,
+		campaign:
+			overrides.campaign !== undefined
+				? overrides.campaign
+				: (faker.helpers.maybe(() => 'meta-leadgen-tr', { probability: 0.25 }) ?? null),
+		referred_by_contact_id: overrides.referred_by_contact_id ?? null,
+		is_internal: overrides.is_internal ?? false,
+		usage_count: overrides.usage_count ?? 0,
+		created_at: overrides.created_at ?? iso(created),
+		updated_at: overrides.updated_at ?? iso(faker.date.between({ from: created, to: new Date() }))
 	};
 }
 
-function makeAppointment(patient: Patient, overrides: Partial<Appointment> = {}): Appointment {
+function makeAppointment(contact: Contact, overrides: Partial<Appointment> = {}): Appointment {
 	const starts = faker.date.soon({ days: 14 });
 	const ends = new Date(starts.getTime() + 90 * 60_000);
 	return {
 		id: faker.string.uuid(),
 		tenant_id: DEMO_TENANT_ID,
-		patient_id: patient.id,
-		patient_display_name: patient.full_name,
+		contact_id: contact.id,
+		contact_display_name: contact.display_name,
 		title: faker.helpers.arrayElement([
 			'Saç ekimi konsultasyonu',
 			'Diş implant muayenesi',
@@ -150,7 +184,7 @@ function pickSubtitle(category: string | null): string | null {
 }
 
 function makeTransaction(
-	patient: Patient | null,
+	contact: Contact | null,
 	overrides: Partial<Transaction> = {}
 ): Transaction {
 	const kind = faker.helpers.arrayElement(['income', 'expense'] as const);
@@ -182,9 +216,8 @@ function makeTransaction(
 		base_currency: 'TRY',
 		fx_rate: 1,
 		fx_dated: null,
-		patient_id: patient?.id ?? null,
-		patient_display_name: patient?.full_name ?? null,
-		contact_id: null,
+		contact_id: contact?.id ?? null,
+		contact_display_name: contact?.display_name ?? null,
 		contact_label:
 			kind === 'expense'
 				? (faker.helpers.maybe(
@@ -297,7 +330,7 @@ function makeMembers(): MembershipUser[] {
 
 function makeAuditLogs(
 	members: MembershipUser[],
-	patients: Patient[],
+	hastaContacts: Contact[],
 	transactions: Transaction[]
 ): AuditLog[] {
 	const logs: AuditLog[] = [];
@@ -309,9 +342,9 @@ function makeAuditLogs(
 		let entity_label: string | null;
 		let action: AuditLog['action'];
 
-		if (roll < 4 && patients.length > 0) {
-			entity_type = 'patient';
-			entity_label = faker.helpers.arrayElement(patients).full_name;
+		if (roll < 4 && hastaContacts.length > 0) {
+			entity_type = 'contact';
+			entity_label = faker.helpers.arrayElement(hastaContacts).display_name;
 			action = faker.helpers.arrayElement(['create', 'update'] as const);
 		} else if (roll < 7 && transactions.length > 0) {
 			entity_type = 'transaction';
@@ -319,7 +352,8 @@ function makeAuditLogs(
 			action = faker.helpers.arrayElement(['create', 'update', 'delete'] as const);
 		} else if (roll < 9) {
 			entity_type = 'appointment';
-			entity_label = patients.length > 0 ? faker.helpers.arrayElement(patients).full_name : null;
+			entity_label =
+				hastaContacts.length > 0 ? faker.helpers.arrayElement(hastaContacts).display_name : null;
 			action = faker.helpers.arrayElement(['create', 'update'] as const);
 		} else {
 			entity_type = 'user';
@@ -345,15 +379,15 @@ export type DemoStore = {
 	tenant: Tenant;
 	/** All orgs for developer panel (includes current). */
 	tenants: Tenant[];
-	patients: Patient[];
 	appointments: Appointment[];
 	transactions: Transaction[];
 	/** Daily ad spend rows (demo fixture for Gerçek ROAS). */
 	adMetricsDaily: AdMetric[];
 	inboundMessages: InboundMessage[];
-	files: PatientFile[];
-	caseNotes: PatientCaseNote[];
+	files: ContactFile[];
+	caseNotes: ContactCaseNote[];
 	contactTypes: ContactType[];
+	organizations: Organization[];
 	contacts: Contact[];
 	financeCategories: FinanceCategory[];
 	appointmentTypes: AppointmentTypeSetting[];
@@ -377,7 +411,7 @@ function makeExtraTenants(): Tenant[] {
 		slug: s.slug,
 		base_currency: 'TRY' as const,
 		base_currency_locked: false,
-		patients_section_label: 'Hastalar',
+		contacts_section_label: 'Hastalar',
 		timezone: 'Europe/Istanbul' as const,
 		created_at: iso(faker.date.past({ years: 1 }))
 	}));
@@ -430,6 +464,18 @@ function makeContactTypes(): ContactType[] {
 	}));
 }
 
+function makeOrganizations(): Organization[] {
+	const now = iso(new Date());
+	const names = ['Acme Klinik', 'Park Otel', 'Hızlı Transfer', 'Vega Med'];
+	return names.map((name, i) => ({
+		id: `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa${i + 1}`,
+		tenant_id: DEMO_TENANT_ID,
+		name,
+		created_at: now,
+		updated_at: now
+	}));
+}
+
 function typeByName(types: ContactType[], name: string): ContactType {
 	const t = types.find((x) => x.name === name);
 	if (!t) throw new Error(`Missing contact type ${name}`);
@@ -441,7 +487,8 @@ function makeDemoContacts(types: ContactType[]): Contact[] {
 	const row = (
 		id: string,
 		typeName: string,
-		display_name: string,
+		first_name: string,
+		last_name: string | null,
 		extra: Partial<Contact> = {}
 	): Contact => {
 		const t = typeByName(types, typeName);
@@ -450,10 +497,19 @@ function makeDemoContacts(types: ContactType[]): Contact[] {
 			tenant_id: DEMO_TENANT_ID,
 			contact_type_id: t.id,
 			contact_type_name: t.name,
-			display_name,
+			first_name,
+			last_name,
+			display_name: deriveDisplayName(first_name, last_name),
 			phone: null,
 			email: null,
 			notes: null,
+			organization_id: null,
+			status: typeName === 'Hasta' ? 'scheduled' : null,
+			assigned_user_id: null,
+			source: null,
+			medium: null,
+			campaign: null,
+			referred_by_contact_id: null,
 			is_internal: false,
 			usage_count: 0,
 			created_at: now,
@@ -463,47 +519,52 @@ function makeDemoContacts(types: ContactType[]): Contact[] {
 	};
 
 	return [
-		row(ATALAY_CONTACT_ID, 'Hasta', 'Atalay Demir', {
+		row(ATALAY_CONTACT_ID, 'Hasta', 'Atalay', 'Demir', {
 			phone: '+905551112233',
 			email: 'atalay.demir@example.com',
-			notes: 'Hasta dizini kaydı — Case ile bağlı.'
+			status: 'follow_up',
+			source: 'WhatsApp',
+			medium: 'Telefon',
+			notes: 'Demo hasta — 5 ziyaret + dosya/finance özeti için sabit kayıt.',
+			assigned_user_id: DEMO_USER_ID
 		}),
-		row(CONTACT_DEMO_HOTEL_ID, 'Otel', 'Demo Hotel', {
+		row(CONTACT_DEMO_HOTEL_ID, 'Otel', 'Demo Hotel', null, {
 			phone: '+902121112233',
 			notes: 'Anlaşma: kahvaltı dahil, geç check-out +200€.'
 		}),
-		row(CONTACT_MUJDAT_ID, 'Diğer', 'Müjdat Bey', {
+		row(CONTACT_MUJDAT_ID, 'Diğer', 'Müjdat', 'Bey', {
 			phone: '+905321112233',
 			notes: 'P2P / ara ödemeler.'
 		}),
-		row(CONTACT_SEHMUZ_ID, 'Diğer', 'Sehmuz Bey'),
-		row(CONTACT_VEGA_ID, 'Laboratuvar', 'Vega Lab', {
+		row(CONTACT_SEHMUZ_ID, 'Diğer', 'Sehmuz', 'Bey'),
+		row(CONTACT_VEGA_ID, 'Laboratuvar', 'Vega', 'Lab', {
 			email: 'ops@vega.demo'
 		}),
-		row(CONTACT_KLINIK_ID, 'Klinik', 'Klinik Ortak', {
+		row(CONTACT_KLINIK_ID, 'Klinik', 'Klinik', 'Ortak', {
 			phone: '+902129998877',
 			notes: 'Partner klinik — komisyon %15.'
 		}),
-		row(CONTACT_TRANSFER_ID, 'Transfer', 'Havaalanı Transfer', {
+		row(CONTACT_TRANSFER_ID, 'Transfer', 'Havaalanı', 'Transfer', {
 			phone: '+905559990011'
 		}),
-		row(CONTACT_INTERNAL_ID, 'İç personel', 'Demo Kullanıcı', {
+		row(CONTACT_INTERNAL_ID, 'İç personel', 'Demo', 'Kullanıcı', {
 			email: 'demo@verimaya.app',
 			is_internal: true
 		}),
-		// Duplicate seeds — phone / email / name matches for scan demo
-		row(CONTACT_DUP_HOTEL_ID, 'Otel', 'Demo Hotel (eski kayıt)', {
+		row(CONTACT_DUP_HOTEL_ID, 'Otel', 'Demo Hotel (eski kayıt)', null, {
 			phone: '0212 111 22 33',
 			notes: 'Çift kayıt demosu — aynı telefon (normalize).'
 		}),
-		row(CONTACT_DUP_ATALAY_EMAIL_ID, 'Hasta', 'A. Demir', {
+		row(CONTACT_DUP_ATALAY_EMAIL_ID, 'Hasta', 'A.', 'Demir', {
 			email: 'atalay.demir@example.com',
 			phone: null,
 			notes: 'Çift kayıt demosu — aynı e-posta.'
 		}),
-		row(CONTACT_DUP_ATALAY_NAME_ID, 'Hasta', 'Atalay Demir', {
+		row(CONTACT_DUP_ATALAY_NAME_ID, 'Hasta', 'Atalay', 'Demir', {
 			phone: '0555 111 22 33',
 			email: null,
+			status: 'scheduled',
+			source: 'Referans',
 			notes: 'Çift kayıt demosu — aynı ad (normalize).'
 		})
 	];
@@ -517,6 +578,7 @@ function refreshContactUsage(
 	for (const c of contacts) {
 		let n = 0;
 		for (const a of appointments) {
+			if (a.contact_id === c.id) n += 1;
 			if (
 				a.clinic_contact_id === c.id ||
 				a.hotel_contact_id === c.id ||
@@ -535,8 +597,7 @@ function refreshContactUsage(
 function linkDirectoryRefs(
 	contacts: Contact[],
 	appointments: Appointment[],
-	transactions: Transaction[],
-	patients: Patient[]
+	transactions: Transaction[]
 ) {
 	const byName = new Map(contacts.map((c) => [c.display_name, c]));
 
@@ -565,14 +626,6 @@ function linkDirectoryRefs(
 				a.hotel_contact_id = c.id;
 				a.hotel_name = c.display_name;
 			}
-		}
-	}
-
-	for (const p of patients) {
-		if (p.contact_id) continue;
-		const c = byName.get(p.full_name);
-		if (c && c.contact_type_name === 'Hasta') {
-			p.contact_id = c.id;
 		}
 	}
 
@@ -635,7 +688,7 @@ function makeWebhookSubscriptions(): WebhookSubscription[] {
 			id: faker.string.uuid(),
 			tenant_id: DEMO_TENANT_ID,
 			url: 'https://n8n.example.com/webhook/verimaya-demo',
-			event_types: ['transaction.created', 'patient.created'],
+			event_types: ['transaction.created', 'contact.created'],
 			active: true,
 			created_at: iso(faker.date.recent({ days: 20 }))
 		}
@@ -658,8 +711,8 @@ function makeAiCorrections(): AiCorrection[] {
 		title: '2. vizit ödemesi',
 		category: null as string | null,
 		subcategory: null as string | null,
-		patient_id: null as string | null,
-		patient_display_name: null as string | null,
+		contact_id: null as string | null,
+		contact_display_name: null as string | null,
 		contact_label: null as string | null,
 		occurred_on: '2026-01-15',
 		payment_method: null as string | null,
@@ -751,26 +804,19 @@ function makeAdMetricsDaily(): AdMetric[] {
 	return rows;
 }
 
-function makeAtalaySeed(): {
-	patient: Patient;
+function makeAtalaySeed(contact: Contact): {
 	appointments: Appointment[];
 	transactions: Transaction[];
-	files: PatientFile[];
-	caseNotes: PatientCaseNote[];
+	files: ContactFile[];
+	caseNotes: ContactCaseNote[];
 } {
-	const patient = makePatient({
-		id: ATALAY_PATIENT_ID,
-		full_name: 'Atalay Demir',
-		phone: '+905551112233',
-		email: 'atalay.demir@example.com',
-		status: 'follow_up',
-		source: 'WhatsApp',
-		notes: 'Demo hasta — 5 ziyaret + dosya/finance özeti için sabit kayıt.',
-		assigned_user_id: DEMO_USER_ID,
-		contact_id: ATALAY_CONTACT_ID,
-		created_at: iso(daysAgo(120, 9)),
-		updated_at: iso(daysAgo(3, 14))
-	});
+	contact.status = 'follow_up';
+	contact.source = 'WhatsApp';
+	contact.medium = 'Telefon';
+	contact.notes = 'Demo hasta — 5 ziyaret + dosya/finance özeti için sabit kayıt.';
+	contact.assigned_user_id = DEMO_USER_ID;
+	contact.created_at = iso(daysAgo(120, 9));
+	contact.updated_at = iso(daysAgo(3, 14));
 
 	const visitSpecs: {
 		id: string;
@@ -833,7 +879,7 @@ function makeAtalaySeed(): {
 						return d;
 					})();
 		const end = new Date(start.getTime() + 90 * 60_000);
-		return makeAppointment(patient, {
+		return makeAppointment(contact, {
 			id: v.id,
 			title: v.title,
 			appointment_type: v.type,
@@ -855,7 +901,7 @@ function makeAtalaySeed(): {
 	const apptLabel = (a: Appointment) => `${a.starts_at.slice(0, 10)} · ${a.title ?? 'Randevu'}`;
 
 	const transactions: Transaction[] = [
-		makeTransaction(patient, {
+		makeTransaction(contact, {
 			kind: 'income',
 			title: 'Depozito',
 			category: 'Operasyon',
@@ -867,7 +913,7 @@ function makeAtalaySeed(): {
 			occurred_on: daysAgo(94).toISOString().slice(0, 10),
 			payment_method: 'Havale'
 		}),
-		makeTransaction(patient, {
+		makeTransaction(contact, {
 			kind: 'income',
 			title: 'Paket ödemesi',
 			category: 'Operasyon',
@@ -879,7 +925,7 @@ function makeAtalaySeed(): {
 			occurred_on: daysAgo(70).toISOString().slice(0, 10),
 			payment_method: 'Kart'
 		}),
-		makeTransaction(patient, {
+		makeTransaction(contact, {
 			kind: 'expense',
 			title: 'Klinik komisyonu',
 			category: 'Operasyon',
@@ -891,7 +937,7 @@ function makeAtalaySeed(): {
 			contact_label: 'Klinik Ortak',
 			occurred_on: daysAgo(69).toISOString().slice(0, 10)
 		}),
-		makeTransaction(patient, {
+		makeTransaction(contact, {
 			kind: 'expense',
 			title: 'Otel ödemesi',
 			category: 'Konaklama',
@@ -903,7 +949,7 @@ function makeAtalaySeed(): {
 			contact_label: 'Demo Hotel',
 			occurred_on: daysAgo(70).toISOString().slice(0, 10)
 		}),
-		makeTransaction(patient, {
+		makeTransaction(contact, {
 			kind: 'expense',
 			title: 'Transfer',
 			category: 'Transfer',
@@ -915,7 +961,7 @@ function makeAtalaySeed(): {
 			contact_label: 'Müjdat Bey',
 			occurred_on: daysAgo(70).toISOString().slice(0, 10)
 		}),
-		makeTransaction(patient, {
+		makeTransaction(contact, {
 			kind: 'income',
 			title: 'Kontrol ücreti',
 			category: 'Operasyon',
@@ -987,12 +1033,12 @@ function makeAtalaySeed(): {
 		}
 	];
 
-	const files: PatientFile[] = fileSeeds.map((f) => {
+	const files: ContactFile[] = fileSeeds.map((f) => {
 		const appointment = appointments[f.appointmentIndex]!;
 		return {
 			id: faker.string.uuid(),
 			tenant_id: DEMO_TENANT_ID,
-			patient_id: patient.id,
+			contact_id: contact.id,
 			appointment_id: appointment.id,
 			appointment_label: apptLabel(appointment),
 			filename: f.filename,
@@ -1004,11 +1050,11 @@ function makeAtalaySeed(): {
 		};
 	});
 
-	const caseNotes: PatientCaseNote[] = [
+	const caseNotes: ContactCaseNote[] = [
 		{
 			id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
 			tenant_id: DEMO_TENANT_ID,
-			patient_id: patient.id,
+			contact_id: contact.id,
 			body: 'İlk görüşme: saç ekimi + donör bölge değerlendirmesi. İngilizce konuşuyor.',
 			author_display_name: 'Demo Kullanıcı',
 			created_at: iso(daysAgo(95, 12))
@@ -1016,7 +1062,7 @@ function makeAtalaySeed(): {
 		{
 			id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc2',
 			tenant_id: DEMO_TENANT_ID,
-			patient_id: patient.id,
+			contact_id: contact.id,
 			body: 'Tedavi günü: otel transfer 08:30. Klinik’te 2 saat kaldı, sorun yok.',
 			author_display_name: 'Operasyon',
 			created_at: iso(daysAgo(70, 18))
@@ -1024,14 +1070,14 @@ function makeAtalaySeed(): {
 		{
 			id: 'cccccccc-cccc-4ccc-8ccc-ccccccccccc3',
 			tenant_id: DEMO_TENANT_ID,
-			patient_id: patient.id,
+			contact_id: contact.id,
 			body: '1. kontrol iyi. Şampuan prosedürü anlatıldı. Takip randevusu planlandı.',
 			author_display_name: 'Demo Kullanıcı',
 			created_at: iso(daysAgo(40, 15))
 		}
 	];
 
-	return { patient, appointments, transactions, files, caseNotes };
+	return { appointments, transactions, files, caseNotes };
 }
 
 function buildStore(scenario: MockScenario): DemoStore {
@@ -1041,7 +1087,6 @@ function buildStore(scenario: MockScenario): DemoStore {
 		return {
 			tenant: { ...demoTenant },
 			tenants: [{ ...demoTenant }],
-			patients: [],
 			appointments: [],
 			transactions: [],
 			adMetricsDaily: [],
@@ -1049,6 +1094,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			files: [],
 			caseNotes: [],
 			contactTypes: [],
+			organizations: [],
 			contacts: [],
 			financeCategories: [],
 			appointmentTypes: [],
@@ -1061,49 +1107,42 @@ function buildStore(scenario: MockScenario): DemoStore {
 		};
 	}
 
-	const count = scenario === 'large' ? 500 : 48;
-	const patients = Array.from({ length: count }, () => makePatient());
+	const contactTypes = makeContactTypes();
+	const organizations = makeOrganizations();
+	const contacts = makeDemoContacts(contactTypes);
+	const atalayContact = contacts.find((c) => c.id === ATALAY_CONTACT_ID)!;
+	const atalay = makeAtalaySeed(atalayContact);
 
-	// Edge case: very long display name near the top of the list
-	patients[1] = makePatient({
-		full_name: LONG_NAME,
+	const count = scenario === 'large' ? 500 : 48;
+	const generatedHasta = Array.from({ length: count }, () => makeHastaContact(contactTypes));
+
+	const longParts = LONG_NAME.split(/\s+/);
+	generatedHasta[1] = makeHastaContact(contactTypes, {
+		first_name: longParts[0] ?? LONG_NAME,
+		last_name: longParts.slice(1).join(' ') || null,
 		status: 'arrived',
 		source: 'WhatsApp',
 		notes: 'Uzun isim uç durumu — tablo/kart kırılımını test eder.'
 	});
 
-	const atalay = makeAtalaySeed();
-	patients[0] = atalay.patient;
-	patients.push(
-		makePatient({
-			id: ATALAY_DUP_PATIENT_ID,
-			full_name: 'Atalay Demir',
-			phone: '0555 111 22 33',
-			email: null,
-			status: 'scheduled',
-			source: 'GHL',
-			notes: 'Çift kayıt demosu — aynı telefon / aynı ad.',
-			assigned_user_id: null,
-			contact_id: null,
-			created_at: iso(daysAgo(30, 11)),
-			updated_at: iso(daysAgo(5, 9))
-		})
-	);
+	contacts.push(...generatedHasta);
 
-	// Prod-shaped gap: spend + tahsilat exist but patient.source is unset → attribution_missing.
 	if (scenario === 'attribution_missing') {
-		for (const p of patients) {
-			p.source = null;
+		for (const c of contacts) {
+			if (c.contact_type_name === 'Hasta') {
+				c.source = null;
+				c.medium = null;
+			}
 		}
 	}
 
-	const appointmentPatients = patients.slice(1, Math.min(40, patients.length));
+	const hastaContacts = contacts.filter((c) => c.contact_type_name === 'Hasta');
+	const appointmentHasta = hastaContacts.slice(1, Math.min(40, hastaContacts.length));
 	const appointments = [
 		...atalay.appointments,
-		...appointmentPatients.flatMap((p, i) => {
+		...appointmentHasta.flatMap((c, i) => {
 			if (i % 3 === 0) return [];
-			const appt = makeAppointment(p);
-			// Ensure a few are "today" for dashboard
+			const appt = makeAppointment(c);
 			if (i < 5) {
 				const start = new Date();
 				start.setHours(9 + i, 0, 0, 0);
@@ -1118,13 +1157,12 @@ function buildStore(scenario: MockScenario): DemoStore {
 
 	const transactions = [
 		...atalay.transactions,
-		...patients
-			.slice(1, Math.min(60, patients.length))
-			.map((p, i) => makeTransaction(i % 5 === 0 ? null : p))
+		...hastaContacts
+			.slice(1, Math.min(60, hastaContacts.length))
+			.map((c, i) => makeTransaction(i % 5 === 0 ? null : c))
 	];
-	// Consistency demo seeds (intentionally incomplete / inconsistent)
 	transactions.unshift(
-		makeTransaction(patients[0] ?? null, {
+		makeTransaction(atalayContact, {
 			kind: 'income',
 			title: 'Hasta tahsilatı',
 			category: null,
@@ -1137,13 +1175,13 @@ function buildStore(scenario: MockScenario): DemoStore {
 			kind: 'income',
 			title: 'Depozito — hasta seçilmemiş',
 			category: 'Operasyon',
-			patient_id: null,
-			patient_display_name: null,
+			contact_id: null,
+			contact_display_name: null,
 			amount: 8_000_00,
 			status: 'paid',
 			paid_amount: 8_000_00
 		}),
-		makeTransaction(patients[2] ?? patients[0] ?? null, {
+		makeTransaction(hastaContacts[2] ?? atalayContact, {
 			kind: 'expense',
 			title: 'Klinik komisyonu',
 			category: 'Operasyon',
@@ -1208,7 +1246,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			status: 'paid',
 			paid_amount: 150_000
 		}),
-		makeTransaction(patients[0] ?? null, {
+		makeTransaction(atalayContact, {
 			kind: 'income',
 			title: 'Hasta tahsilatı (GBP)',
 			category: 'Operasyon',
@@ -1222,7 +1260,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			status: 'paid',
 			paid_amount: 2_900_00
 		}),
-		makeTransaction(patients[0] ?? null, {
+		makeTransaction(atalayContact, {
 			kind: 'income',
 			title: 'Hasta tahsilatı (EUR) — kur eksik demo',
 			category: 'Operasyon',
@@ -1297,7 +1335,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 	const members = makeDevMembers(tenants);
 	const auditLogs = makeAuditLogs(
 		members.filter((m) => m.tenant_id === DEMO_TENANT_ID),
-		patients,
+		hastaContacts,
 		transactions
 	);
 
@@ -1322,14 +1360,11 @@ function buildStore(scenario: MockScenario): DemoStore {
 		}
 	});
 
-	const contactTypes = makeContactTypes();
-	const contacts = makeDemoContacts(contactTypes);
-	linkDirectoryRefs(contacts, appointments, transactions, patients);
+	linkDirectoryRefs(contacts, appointments, transactions);
 
 	return {
 		tenant: { ...demoTenant },
 		tenants,
-		patients,
 		appointments,
 		transactions,
 		adMetricsDaily: makeAdMetricsDaily(),
@@ -1337,21 +1372,22 @@ function buildStore(scenario: MockScenario): DemoStore {
 		files: atalay.files,
 		caseNotes: [
 			...atalay.caseNotes,
-			...patients.slice(1, 8).flatMap((p) => {
+			...hastaContacts.slice(1, 8).flatMap((c) => {
 				if (faker.number.float() > 0.55) return [];
 				return [
 					{
 						id: faker.string.uuid(),
 						tenant_id: DEMO_TENANT_ID,
-						patient_id: p.id,
+						contact_id: c.id,
 						body: faker.lorem.sentence(),
 						author_display_name: demoUser.display_name,
 						created_at: iso(faker.date.recent({ days: 30 }))
-					} satisfies PatientCaseNote
+					} satisfies ContactCaseNote
 				];
 			})
 		],
 		contactTypes,
+		organizations,
 		contacts,
 		financeCategories: makeFinanceCategories(),
 		appointmentTypes: makeAppointmentTypes(),

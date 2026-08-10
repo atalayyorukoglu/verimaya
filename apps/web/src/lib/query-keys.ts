@@ -37,15 +37,6 @@ export function queryKeys(scope: QueryScope) {
 		tenants: {
 			current: () => k('tenants', 'current')
 		},
-		patients: {
-			all: () => k('patients'),
-			list: (params: Params = {}) => k('patients', params),
-			detail: (id: string) => k('patients', id),
-			financeSummary: (id: string) => k('patients', id, 'finance-summary'),
-			files: (id: string) => k('patients', id, 'files'),
-			caseNotes: (id: string) => k('patients', id, 'case-notes'),
-			duplicateGroups: () => k('patients', 'duplicate-groups')
-		},
 		appointments: {
 			all: () => k('appointments'),
 			list: (params: Params = {}) => k('appointments', params)
@@ -58,11 +49,15 @@ export function queryKeys(scope: QueryScope) {
 			all: () => k('contacts'),
 			list: (params: Params = {}) => k('contacts', params),
 			detail: (id: string) => k('contacts', id),
+			financeSummary: (id: string) => k('contacts', id, 'finance-summary'),
+			files: (id: string) => k('contacts', id, 'files'),
+			caseNotes: (id: string) => k('contacts', id, 'case-notes'),
 			duplicateGroups: () => k('contacts', 'duplicate-groups')
 		},
 		settings: {
 			appointmentTypes: () => k('settings', 'appointment-types'),
 			contactTypes: () => k('settings', 'contact-types'),
+			organizations: () => k('settings', 'organizations'),
 			financeCategories: () => k('settings', 'finance-categories'),
 			aiDisclosure: () => k('settings', 'ai-disclosure'),
 			apiKeys: () => k('settings', 'api-keys'),
@@ -93,7 +88,7 @@ export function queryKeys(scope: QueryScope) {
 			byCategoryDetail: (params: Params) => k('reports', 'by-category-detail', params),
 			monthly: (params: Params) => k('reports', 'monthly', params),
 			marketing: (params: Params) => k('reports', 'marketing', params),
-			patientDistribution: (params: Params) => k('reports', 'patient-distribution', params),
+			contactDistribution: (params: Params) => k('reports', 'contact-distribution', params),
 			appointmentMetrics: (params: Params) => k('reports', 'appointment-metrics', params),
 			consistency: (params: Params) => k('reports', 'consistency', params),
 			transactionDuplicates: (params: Params) => k('reports', 'transaction-duplicates', params),

@@ -8,8 +8,8 @@
 
 	const permissions = $derived([
 		{
-			key: 'patients',
-			label: t('nav.patients'),
+			key: 'contacts',
+			label: t('nav.contacts'),
 			allow: ['owner', 'admin', 'manager', 'agent', 'readonly'] as UserRole[]
 		},
 		{

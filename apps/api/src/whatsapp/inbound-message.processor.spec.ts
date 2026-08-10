@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
-import { PatientsService } from '../patients/patients.service';
+import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { IntegrationEventProcessor } from '../queue/integration-event.processor';
@@ -40,9 +40,9 @@ describe('InboundMessageProcessor (Adım 24a)', () => {
 
 		const dbService = { client: db, sql } as unknown as DbService;
 		tenantContext = new TenantContextService(dbService);
-		const patientsService = new PatientsService(tenantContext, new LocalFileStorage());
+		const contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 		whatsappService = new WhatsappService(
-			patientsService,
+			contactsService,
 			tenantContext,
 			new TransactionsService(tenantContext),
 			new HeuristicLlmClient()

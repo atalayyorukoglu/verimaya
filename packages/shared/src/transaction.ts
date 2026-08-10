@@ -64,10 +64,14 @@ export const transactionSchema = z.object({
 	/** 1 unit of `currency` (major) = fx_rate units of base (major). Optional audit. */
 	fx_rate: z.number().positive().nullable().default(null),
 	fx_dated: isoDate.nullable().default(null),
-	patient_id: uuid.nullable(),
-	patient_display_name: z.string().max(255).nullable(),
-	/** Directory counterparty; contact_label kept as denormalized display */
+	/**
+	 * Linked person or counterparty (DOMAIN-02: former patient_id absorbed;
+	 * single contact_id remains).
+	 */
 	contact_id: uuid.nullable().default(null),
+	/** Denormalized display for contact_id (was patient_display_name) */
+	contact_display_name: z.string().max(255).nullable(),
+	/** Free-text counterparty when contact_id is unset (WhatsApp drafts etc.) */
 	contact_label: z.string().max(255).nullable(),
 	description: z.string().max(8000).nullable(),
 	created_at: isoDateTime,
@@ -79,7 +83,7 @@ export type Transaction = z.infer<typeof transactionSchema>;
 export const transactionCreateSchema = transactionSchema.omit({
 	id: true,
 	tenant_id: true,
-	patient_display_name: true,
+	contact_display_name: true,
 	created_at: true,
 	updated_at: true
 });

@@ -1,7 +1,6 @@
 import type { Component } from 'svelte';
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import Users from '@lucide/svelte/icons/users';
-import Contact from '@lucide/svelte/icons/contact';
 import Calendar from '@lucide/svelte/icons/calendar';
 import Wallet from '@lucide/svelte/icons/wallet';
 import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
@@ -42,8 +41,7 @@ export const navGroups: NavGroup[] = [
 		labelKey: 'nav.group.main',
 		items: [
 			{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
-			{ labelKey: 'nav.patients', href: '/patients', icon: Users },
-			{ labelKey: 'nav.contacts', href: '/contacts', icon: Contact },
+			{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
 			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar }
 		]
 	},
@@ -82,7 +80,7 @@ export const navGroups: NavGroup[] = [
 /** Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar */
 export const mobileTabItems: NavItem[] = [
 	{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
-	{ labelKey: 'nav.patients', href: '/patients', icon: Users },
+	{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
 	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
 	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet }
 ];

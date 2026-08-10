@@ -7,18 +7,18 @@ describe('auditLogListQuerySchema (GAP-F09-13)', () => {
 			limit: 10,
 			actor_id: '00000000-0000-4000-8000-000000000001',
 			action: 'update',
-			entity_type: 'patient',
+			entity_type: 'contact',
 			created_from: '2026-08-01',
 			created_to: '2026-08-31',
-			q: 'Patient A'
+			q: 'Contact A'
 		});
 		expect(parsed).toMatchObject({
 			limit: 10,
 			action: 'update',
-			entity_type: 'patient',
+			entity_type: 'contact',
 			created_from: '2026-08-01',
 			created_to: '2026-08-31',
-			q: 'Patient A'
+			q: 'Contact A'
 		});
 	});
 

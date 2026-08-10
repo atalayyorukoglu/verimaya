@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { sql as drizzleSql } from 'drizzle-orm';
 import { NotFoundException } from '@nestjs/common';
 import { closeDb, getDb } from '../db/client';
-import { PatientsService } from '../patients/patients.service';
+import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { AppointmentsService } from './appointments.service';
@@ -20,7 +21,7 @@ import { AppointmentsService } from './appointments.service';
  * `AppointmentsService` has no `get()`/`remove()` — there is nothing to test for
  * get-by-id- or delete-isolation on this resource today (the plan doc's "list/get/update/
  * delete" is aspirational here). What's covered is what actually exists: list, cross-tenant
- * `patient_id` filter leakage, and update.
+ * `contact_id` filter leakage, and update.
  */
 
 const databaseUrl =
@@ -28,25 +29,30 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tdb: TenantDb) => Promise<T>
+): Promise<T> {
+	const { db } = getDb(databaseUrl);
+	return db.transaction(async (tx) => {
+		await tx.execute(
+			drizzleSql`select set_config('app.current_tenant_id', ${tenantId}, true)`
+		);
+		return fn(tx as TenantDb);
+	});
 }
 
 describe('appointments tenant isolation', () => {
 	const tenantA = randomUUID();
 	const tenantB = randomUUID();
+	let contactTypeA: string;
+	let contactTypeB: string;
 	let patientA: string;
 	let patientB: string;
 	let appointmentA: string;
 	let appointmentB: string;
 	let appointmentsService: AppointmentsService;
-	let patientsService: PatientsService;
+	let contactsService: ContactsService;
 	let db: TenantDb;
 
 	beforeAll(async () => {
@@ -57,11 +63,11 @@ describe('appointments tenant isolation', () => {
 
 		const tenantContext = {
 			withTenant: async <T>(id: string, fn: (ctx: { db: TenantDb }) => Promise<T>) =>
-				withTenantSession(id, () => fn({ db }))
+				withTenantSession(id, (tdb) => fn({ db: tdb }))
 		} as TenantContextService;
 
 		appointmentsService = new AppointmentsService(tenantContext);
-		patientsService = new PatientsService(tenantContext, new LocalFileStorage());
+		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -76,18 +82,43 @@ describe('appointments tenant isolation', () => {
 				(${tenantB}, 'Tenant B', ${`tenant-b-${tenantB.slice(0, 8)}`})
 		`;
 
-		patientA = await withTenantSession(tenantA, async () => {
-			const p = await patientsService.createWithDb(db, tenantA, { full_name: 'Patient A' });
+		contactTypeA = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${tenantA}, 'Hasta', 0)
+				returning id
+			`;
+			return row!.id as string;
+		});
+		contactTypeB = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${tenantB}, 'Hasta', 0)
+				returning id
+			`;
+			return row!.id as string;
+		});
+
+		patientA = await withTenantSession(tenantA, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Patient A'
+			});
 			return p.id;
 		});
-		patientB = await withTenantSession(tenantB, async () => {
-			const p = await patientsService.createWithDb(db, tenantB, { full_name: 'Patient B' });
+		patientB = await withTenantSession(tenantB, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, tenantB, {
+				contact_type_id: contactTypeB,
+				first_name: 'Patient B'
+			});
 			return p.id;
 		});
 
-		appointmentA = await withTenantSession(tenantA, async () => {
-			const a = await appointmentsService.createWithDb(db, tenantA, {
-				patient_id: patientA,
+		appointmentA = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
 				starts_at: new Date().toISOString(),
 				ends_at: null,
 				title: 'Appointment A',
@@ -101,11 +132,10 @@ describe('appointments tenant isolation', () => {
 				transfer_contact_id: null,
 				notes: null
 			});
-			return a.id;
-		});
-		appointmentB = await withTenantSession(tenantB, async () => {
-			const a = await appointmentsService.createWithDb(db, tenantB, {
-				patient_id: patientB,
+			return a.id;});
+		appointmentB = await withTenantSession(tenantB, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantB, {
+				contact_id: patientB,
 				starts_at: new Date().toISOString(),
 				ends_at: null,
 				title: 'Appointment B',
@@ -119,19 +149,22 @@ describe('appointments tenant isolation', () => {
 				transfer_contact_id: null,
 				notes: null
 			});
-			return a.id;
-		});
+			return a.id;});
 	});
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from appointments where tenant_id = ${tenantA}`;
-			await sql`delete from patients where tenant_id = ${tenantA}`;
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`delete from appointments where tenant_id = ${tenantA}`;
+			await tx`delete from contacts where tenant_id = ${tenantA}`;
+			await tx`delete from contact_types where tenant_id = ${tenantA}`;
 		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from appointments where tenant_id = ${tenantB}`;
-			await sql`delete from patients where tenant_id = ${tenantB}`;
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			await tx`delete from appointments where tenant_id = ${tenantB}`;
+			await tx`delete from contacts where tenant_id = ${tenantB}`;
+			await tx`delete from contact_types where tenant_id = ${tenantB}`;
 		});
 		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
 		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
@@ -150,26 +183,25 @@ describe('appointments tenant isolation', () => {
 		expect(result.items.some((a) => a.id === appointmentA)).toBe(false);
 	});
 
-	it("Tenant A's patient_id filter using Tenant B's patient does not leak Tenant B's appointment", async () => {
-		const result = await appointmentsService.list(tenantA, { limit: 25, patient_id: patientB });
+	it("Tenant A's contact_id filter using Tenant B's patient does not leak Tenant B's appointment", async () => {
+		const result = await appointmentsService.list(tenantA, { limit: 25, contact_id: patientB });
 		expect(result.items).toHaveLength(0);
 	});
 
 	it('Tenant A cannot update Tenant B appointment', async () => {
-		await withTenantSession(tenantA, async () => {
+		await withTenantSession(tenantA, async (tdb) => {
 			await expect(
-				appointmentsService.updateWithDb(db, appointmentB, { title: 'Hacked by A' })
-			).rejects.toBeInstanceOf(NotFoundException);
-		});
+				appointmentsService.updateWithDb(tdb, appointmentB, { title: 'Hacked by A' })
+			).rejects.toBeInstanceOf(NotFoundException);});
 
 		const stillB = await appointmentsService.list(tenantB, { limit: 25 });
 		expect(stillB.items.find((a) => a.id === appointmentB)?.title).toBe('Appointment B');
 	});
 
 	it("GAP-04: status='no_show' returns only matching appointments", async () => {
-		const noShowId = await withTenantSession(tenantA, async () => {
-			const a = await appointmentsService.createWithDb(db, tenantA, {
-				patient_id: patientA,
+		const noShowId = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
 				starts_at: new Date().toISOString(),
 				ends_at: null,
 				title: 'No-show slot',
@@ -183,8 +215,7 @@ describe('appointments tenant isolation', () => {
 				transfer_contact_id: null,
 				notes: null
 			});
-			return a.id;
-		});
+			return a.id;});
 
 		const byStatus = await appointmentsService.list(tenantA, { limit: 25, status: 'no_show' });
 		expect(byStatus.items.every((a) => a.status === 'no_show')).toBe(true);
@@ -193,15 +224,15 @@ describe('appointments tenant isolation', () => {
 	});
 
 	it('GAP-04: q matches patient display name substring only', async () => {
-		const searchablePatientId = await withTenantSession(tenantA, async () => {
-			const p = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Zeynep UniqueGap04'
+		const searchablePatientId = await withTenantSession(tenantA, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Zeynep UniqueGap04'
 			});
-			return p.id;
-		});
-		const matchId = await withTenantSession(tenantA, async () => {
-			const a = await appointmentsService.createWithDb(db, tenantA, {
-				patient_id: searchablePatientId,
+			return p.id;});
+		const matchId = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: searchablePatientId,
 				starts_at: new Date().toISOString(),
 				ends_at: null,
 				title: 'Searchable visit',
@@ -215,8 +246,7 @@ describe('appointments tenant isolation', () => {
 				transfer_contact_id: null,
 				notes: null
 			});
-			return a.id;
-		});
+			return a.id;});
 
 		const byQ = await appointmentsService.list(tenantA, { limit: 25, q: 'UniqueGap04' });
 		expect(byQ.items.map((a) => a.id)).toEqual([matchId]);
@@ -224,9 +254,9 @@ describe('appointments tenant isolation', () => {
 	});
 
 	it('from/to narrow the result set to tenant-local calendar days', async () => {
-		const inRangeId = await withTenantSession(tenantA, async () => {
-			const a = await appointmentsService.createWithDb(db, tenantA, {
-				patient_id: patientA,
+		const inRangeId = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
 				starts_at: '2026-04-15T10:00:00.000Z',
 				ends_at: null,
 				title: 'Mid-April visit',
@@ -240,11 +270,10 @@ describe('appointments tenant isolation', () => {
 				transfer_contact_id: null,
 				notes: null
 			});
-			return a.id;
-		});
-		const outOfRangeId = await withTenantSession(tenantA, async () => {
-			const a = await appointmentsService.createWithDb(db, tenantA, {
-				patient_id: patientA,
+			return a.id;});
+		const outOfRangeId = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
 				starts_at: '2026-05-20T10:00:00.000Z',
 				ends_at: null,
 				title: 'May visit',
@@ -258,8 +287,7 @@ describe('appointments tenant isolation', () => {
 				transfer_contact_id: null,
 				notes: null
 			});
-			return a.id;
-		});
+			return a.id;});
 
 		const byRange = await appointmentsService.list(tenantA, {
 			limit: 25,
@@ -273,14 +301,14 @@ describe('appointments tenant isolation', () => {
 
 	it('GAP-F09-21: type_counts/status_counts over filtered set; cursor and soft-delete ignored', async () => {
 		const marker = `GapF0921-${randomUUID().slice(0, 8)}`;
-		const seedPatientId = await withTenantSession(tenantA, async () => {
-			const p = await patientsService.createWithDb(db, tenantA, {
-				full_name: `${marker} Patient`
+		const seedPatientId = await withTenantSession(tenantA, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: `${marker} Patient`
 			});
-			return p.id;
-		});
+			return p.id;});
 
-		const created = await withTenantSession(tenantA, async () => {
+		const created = await withTenantSession(tenantA, async (tdb) => {
 			const specs = [
 				{ appointment_type: 'Saç ekimi', status: 'scheduled' as const },
 				{ appointment_type: 'Saç ekimi', status: 'completed' as const },
@@ -289,8 +317,8 @@ describe('appointments tenant isolation', () => {
 			];
 			const ids: string[] = [];
 			for (const spec of specs) {
-				const a = await appointmentsService.createWithDb(db, tenantA, {
-					patient_id: seedPatientId,
+				const a = await appointmentsService.createWithDb(tdb, tenantA, {
+					contact_id: seedPatientId,
 					starts_at: new Date().toISOString(),
 					ends_at: null,
 					title: `${marker} visit`,
@@ -306,16 +334,14 @@ describe('appointments tenant isolation', () => {
 				});
 				ids.push(a.id);
 			}
-			return ids;
-		});
+			return ids;});
 
 		const softDeletedId = created[3]!;
-		await withTenantSession(tenantA, async () => {
-			await appointmentsService.softDeleteWithDb(db, tenantA, softDeletedId, {
+		await withTenantSession(tenantA, async (tdb) => {
+			await appointmentsService.softDeleteWithDb(tdb, tenantA, softDeletedId, {
 				actorId: null,
 				actorDisplayName: 'gap-f09-21'
-			});
-		});
+			});});
 
 		const byQ = await appointmentsService.list(tenantA, { limit: 25, q: marker });
 		expect(byQ.items).toHaveLength(3);

@@ -81,18 +81,46 @@ describe('AUDIT-01: reports date boundaries honor tenant timezone (Opus §[MEDIU
 			const svc = new ReportsService(tenantContext);
 
 			const [p1] = await withTenantSession(tenantId, async () => {
-				return sql<Array<{ id: string }>>`
-					insert into patients (tenant_id, full_name, status, created_at, updated_at)
-					values (${tenantId}, ${`Late ${tenantId.slice(0, 6)}`}, 'scheduled', ${rowAtUtcAug1Late.toISOString()}, ${rowAtUtcAug1Late.toISOString()})
+				await sql.begin(async (tx) => {
+					await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+					await tx`insert into contact_types (tenant_id, name) values (${tenantId}, 'Hasta') on conflict do nothing`;
+				});
+				return sql.begin(async (tx) => {
+					await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+					return tx`
+					insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+					values (
+						${tenantId},
+						(select id from contact_types where tenant_id = ${tenantId} and name = 'Hasta' limit 1),
+						'Hasta',
+						${`Late ${tenantId.slice(0, 6)}`},
+						${`Late ${tenantId.slice(0, 6)}`},
+						'scheduled',
+						${rowAtUtcAug1Late.toISOString()},
+						${rowAtUtcAug1Late.toISOString()}
+					)
 					returning id
 				`;
+				});
 			});
 			const [p2] = await withTenantSession(tenantId, async () => {
-				return sql<Array<{ id: string }>>`
-					insert into patients (tenant_id, full_name, status, created_at, updated_at)
-					values (${tenantId}, ${`Evening ${tenantId.slice(0, 6)}`}, 'scheduled', ${rowAtUtcAug1Evening.toISOString()}, ${rowAtUtcAug1Evening.toISOString()})
+				return sql.begin(async (tx) => {
+					await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+					return tx`
+					insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+					values (
+						${tenantId},
+						(select id from contact_types where tenant_id = ${tenantId} and name = 'Hasta' limit 1),
+						'Hasta',
+						${`Evening ${tenantId.slice(0, 6)}`},
+						${`Evening ${tenantId.slice(0, 6)}`},
+						'scheduled',
+						${rowAtUtcAug1Evening.toISOString()},
+						${rowAtUtcAug1Evening.toISOString()}
+					)
 					returning id
 				`;
+				});
 			});
 
 			if (timezone === 'Europe/London') {
@@ -112,7 +140,7 @@ describe('AUDIT-01: reports date boundaries honor tenant timezone (Opus §[MEDIU
 		for (const tenantId of [tenantLondon, tenantIstanbul]) {
 			await sql.begin(async (tx) => {
 				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 			});
 			await sql`delete from tenants where id = ${tenantId}`;
 			await sql`delete from organization where id = ${tenantId}`;
@@ -123,7 +151,7 @@ describe('AUDIT-01: reports date boundaries honor tenant timezone (Opus §[MEDIU
 
 	it('London tenant includes row at UTC 2026-08-01 22:00 in 2026-08-01 bucket', async () => {
 		// UTC 22:00 → London 23:00 — same day. Should appear.
-		const dist = await londonService.patientDistribution(tenantLondon, {
+		const dist = await londonService.contactDistribution(tenantLondon, {
 			from: '2026-08-01',
 			to: '2026-08-01'
 		});
@@ -132,7 +160,7 @@ describe('AUDIT-01: reports date boundaries honor tenant timezone (Opus §[MEDIU
 
 	it('Istanbul tenant does NOT include row at UTC 2026-08-01 22:00 in 2026-08-01 bucket', async () => {
 		// UTC 22:00 → Istanbul 01:00 next day. Should NOT appear in Aug 1.
-		const dist = await istanbulService.patientDistribution(tenantIstanbul, {
+		const dist = await istanbulService.contactDistribution(tenantIstanbul, {
 			from: '2026-08-01',
 			to: '2026-08-01'
 		});
@@ -143,11 +171,11 @@ describe('AUDIT-01: reports date boundaries honor tenant timezone (Opus §[MEDIU
 	});
 
 	it('two tenants querying 2026-08-01 produce DIFFERENT patient counts (different TZ = different day)', async () => {
-		const london = await londonService.patientDistribution(tenantLondon, {
+		const london = await londonService.contactDistribution(tenantLondon, {
 			from: '2026-08-01',
 			to: '2026-08-01'
 		});
-		const istanbul = await istanbulService.patientDistribution(tenantIstanbul, {
+		const istanbul = await istanbulService.contactDistribution(tenantIstanbul, {
 			from: '2026-08-01',
 			to: '2026-08-01'
 		});

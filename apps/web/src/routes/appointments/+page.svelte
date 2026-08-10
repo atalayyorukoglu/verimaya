@@ -32,13 +32,13 @@
 	import X from '@lucide/svelte/icons/x';
 
 	type AppointmentsPage = ContractResponse<'GET /v1/appointments'>;
-	type PatientsPage = ContractResponse<'GET /v1/patients'>;
+	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
 	type ViewMode = 'day' | 'week';
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
 
-	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
+	const contactFilterId = $derived(page.url.searchParams.get('contact'));
 
 	let view = $state<ViewMode>('week');
 	let anchor = $state(startOfDay(new Date()));
@@ -92,7 +92,7 @@
 	const listFilters = $derived({
 		from: from || rangeFromDay,
 		to: to || rangeToDay,
-		patient_id: patientFilterId,
+		contact_id: contactFilterId,
 		q: appliedQ || undefined,
 		status: (status || undefined) as AppointmentStatus | undefined
 	});
@@ -105,7 +105,7 @@
 		queryKey: qs.keys.appointments.list({
 			from: listFilters.from,
 			to: listFilters.to,
-			patient_id: listFilters.patient_id,
+			contact_id: listFilters.contact_id,
 			q: listFilters.q,
 			status: listFilters.status
 		}),
@@ -115,7 +115,7 @@
 					limit: 100,
 					from: listFilters.from,
 					to: listFilters.to,
-					patient_id: listFilters.patient_id,
+					contact_id: listFilters.contact_id,
 					q: listFilters.q,
 					status: listFilters.status
 				})
@@ -123,14 +123,14 @@
 		enabled: qs.ready && !!tenantQuery.data
 	}));
 
-	const patientsQuery = createQuery(() => ({
-		queryKey: qs.keys.patients.list({ limit: 100, for: 'picker' }),
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
+	const contactsQuery = createQuery(() => ({
+		queryKey: qs.keys.contacts.list({ limit: 100, for: 'picker' }),
+		queryFn: () => apiGet<ContactsPage>(listUrl('contacts', { limit: 100 })),
 		enabled: qs.ready
 	}));
 
-	const filterPatient = $derived(
-		patientFilterId ? (patientsQuery.data?.items ?? []).find((p) => p.id === patientFilterId) : null
+	const filterContact = $derived(
+		contactFilterId ? (contactsQuery.data?.items ?? []).find((c) => c.id === contactFilterId) : null
 	);
 
 	const byDay = $derived.by(() => {
@@ -231,7 +231,7 @@
 		anchor = addDays(anchor, view === 'day' ? dir : dir * 7);
 	}
 
-	function clearPatientFilter() {
+	function clearContactFilter() {
 		void goto('/appointments');
 	}
 </script>
@@ -299,21 +299,21 @@
 		{/snippet}
 	</PageHeader>
 
-	{#if patientFilterId}
+	{#if contactFilterId}
 		<div
 			class="mb-4 flex flex-wrap items-center gap-2 rounded-[6px] border border-border bg-surface-2/50 px-3 py-2 text-sm"
 		>
-			<span class="text-text-muted">{t('appointments.filter.patient')}</span>
+			<span class="text-text-muted">{t('appointments.filter.contact')}</span>
 			<span class="font-medium text-text">
-				{filterPatient?.full_name ?? t('appointments.loading')}
+				{filterContact?.display_name ?? t('appointments.loading')}
 			</span>
 			<button
 				type="button"
 				class="inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-xs text-text-muted hover:bg-surface hover:text-text"
-				onclick={clearPatientFilter}
+				onclick={clearContactFilter}
 			>
 				<X class="size-3.5" />
-				{t('appointments.filter.clearPatient')}
+				{t('appointments.filter.clearContact')}
 			</button>
 		</div>
 	{/if}
@@ -410,7 +410,7 @@
 											{formatTime(appt.starts_at)}
 										</p>
 										<p class="truncate text-xs font-medium text-text">
-											{appt.patient_display_name}
+											{appt.contact_display_name}
 										</p>
 										<p class="truncate text-[11px] text-text-faint">
 											{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
@@ -445,8 +445,8 @@
 <AppointmentFormDialog
 	bind:open={formOpen}
 	appointment={editing}
-	patients={patientsQuery.data?.items ?? []}
-	defaultPatientId={patientFilterId}
+	contacts={contactsQuery.data?.items ?? []}
+	defaultContactId={contactFilterId}
 	{saving}
 	error={formError}
 	onsubmit={saveAppointment}

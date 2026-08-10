@@ -72,7 +72,7 @@ describe('webhook_subscriptions tenant isolation', () => {
 			const created = await service.createWithDb(db, tenantB, {
 				url: 'https://tenant-b.example.com/hooks/verimaya',
 				secret: 'tenant-b-super-secret-value',
-				event_types: ['transaction.created', 'patient.created']
+				event_types: ['transaction.created', 'contact.created']
 			});
 			return created.id;
 		});

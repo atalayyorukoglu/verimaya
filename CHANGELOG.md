@@ -2,6 +2,14 @@
 
 Kaynak: `packages/shared/src/changelog.ts` (docs/CHANGELOG-KURALLARI.md).
 
+## 0.8.0 — 2026-08-10
+
+### Kişiler tek modül
+
+- **Değişti (Kişiler):** Hastalar ile Kişiler tek listede birleşti; menüde artık yalnız Kişiler var, eski /patients linkleri Kişiler’e yönlenir.
+- **Değişti (Kişiler):** Kişi kartında ad ve soyad ayrı tutulur; kaynak, alt kaynak, kampanya ve referans eden kişi alanları formda toplanır.
+- **Kaldırıldı (Platform):** Eski hastalar API yüzeyi kalktı; dış webhook olayı artık contact.created olarak gönderilir.
+
 ## 0.7.0 — 2026-08-07
 
 ### Hub yenileme ve Veri Maya markası

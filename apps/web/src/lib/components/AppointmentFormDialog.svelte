@@ -6,8 +6,7 @@
 		AppointmentStatus,
 		AppointmentTypeSetting,
 		AppointmentUpdate,
-		Contact,
-		Patient
+		Contact
 	} from '@verimaya/shared';
 	import { apiPaths, appointmentStatusLabels } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
@@ -21,8 +20,8 @@
 	let {
 		open = $bindable(false),
 		appointment = null,
-		patients = [],
-		defaultPatientId = null,
+		contacts = [],
+		defaultContactId = null,
 		saving = false,
 		error = null,
 		onsubmit,
@@ -30,8 +29,8 @@
 	}: {
 		open?: boolean;
 		appointment?: Appointment | null;
-		patients?: Patient[];
-		defaultPatientId?: string | null;
+		contacts?: Contact[];
+		defaultContactId?: string | null;
 		saving?: boolean;
 		error?: string | null;
 		onsubmit: (data: AppointmentCreate | AppointmentUpdate) => void | Promise<void>;
@@ -47,7 +46,7 @@
 		enabled: open && qs.ready
 	}));
 
-	const contactsQuery = createQuery(() => ({
+	const directoryQuery = createQuery(() => ({
 		queryKey: qs.keys.contacts.list({ limit: 100, for: 'appt-form' }),
 		queryFn: () =>
 			apiGet<{ items: Contact[]; next_cursor: string | null }>(listUrl('contacts', { limit: 100 })),
@@ -60,12 +59,16 @@
 			.map((t) => t.name)
 	);
 
-	const contacts = $derived(contactsQuery.data?.items ?? []);
-	const clinicContacts = $derived(contacts.filter((c) => c.contact_type_name === 'Klinik'));
-	const hotelContacts = $derived(contacts.filter((c) => c.contact_type_name === 'Otel'));
-	const transferContacts = $derived(contacts.filter((c) => c.contact_type_name === 'Transfer'));
+	const directoryContacts = $derived(directoryQuery.data?.items ?? []);
+	const clinicContacts = $derived(
+		directoryContacts.filter((c) => c.contact_type_name === 'Klinik')
+	);
+	const hotelContacts = $derived(directoryContacts.filter((c) => c.contact_type_name === 'Otel'));
+	const transferContacts = $derived(
+		directoryContacts.filter((c) => c.contact_type_name === 'Transfer')
+	);
 
-	let patient_id = $state('');
+	let contact_id = $state('');
 	let title = $state('');
 	let appointment_type = $state('Konsültasyon');
 	let status = $state<AppointmentStatus>('scheduled');
@@ -94,7 +97,7 @@
 			deletePhase = 'form';
 			return;
 		}
-		patient_id = appointment?.patient_id ?? defaultPatientId ?? patients[0]?.id ?? '';
+		contact_id = appointment?.contact_id ?? defaultContactId ?? contacts[0]?.id ?? '';
 		title = appointment?.title ?? '';
 		appointment_type = appointment?.appointment_type ?? typeNames[0] ?? 'Konsültasyon';
 		status = appointment?.status ?? 'scheduled';
@@ -117,8 +120,8 @@
 
 	const deleteDetail = $derived.by(() => {
 		if (!appointment) return '';
-		const patientName = appointment.patient_display_name ?? '—';
-		return `${patientName} · ${formatDateTime(appointment.starts_at)}`;
+		const contactName = appointment.contact_display_name ?? '—';
+		return `${contactName} · ${formatDateTime(appointment.starts_at)}`;
 	});
 
 	const dialogTitle = $derived(
@@ -132,11 +135,11 @@
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		if (confirmingDelete) return;
-		if (!patient_id || !startsLocal) return;
-		const clinic = contacts.find((c) => c.id === clinic_contact_id);
-		const hotel = contacts.find((c) => c.id === hotel_contact_id);
+		if (!contact_id || !startsLocal) return;
+		const clinic = directoryContacts.find((c) => c.id === clinic_contact_id);
+		const hotel = directoryContacts.find((c) => c.id === hotel_contact_id);
 		const payload = {
-			patient_id,
+			contact_id,
 			title: title.trim() || null,
 			appointment_type: appointment_type.trim() || null,
 			status,
@@ -187,13 +190,13 @@
 	{:else}
 		<form id="appointment-form" class="space-y-3" onsubmit={handleSubmit}>
 			<div>
-				<label class={labelClass} for="appt-patient">Hasta</label>
-				<select id="appt-patient" class={fieldClass} bind:value={patient_id} required>
-					{#if patients.length === 0}
-						<option value="">{t('appointments.form.noPatients')}</option>
+				<label class={labelClass} for="appt-contact">{t('appointments.form.contact')}</label>
+				<select id="appt-contact" class={fieldClass} bind:value={contact_id} required>
+					{#if contacts.length === 0}
+						<option value="">{t('appointments.form.noContacts')}</option>
 					{:else}
-						{#each patients as p (p.id)}
-							<option value={p.id}>{p.full_name}</option>
+						{#each contacts as c (c.id)}
+							<option value={c.id}>{c.display_name}</option>
 						{/each}
 					{/if}
 				</select>
@@ -250,7 +253,7 @@
 					<label class={labelClass} for="appt-clinic">Klinik</label>
 					<select id="appt-clinic" class={fieldClass} bind:value={clinic_contact_id}>
 						<option value="">—</option>
-						{#each clinicContacts.length ? clinicContacts : contacts as c (c.id)}
+						{#each clinicContacts.length ? clinicContacts : directoryContacts as c (c.id)}
 							<option value={c.id}>{c.display_name}</option>
 						{/each}
 					</select>
@@ -259,7 +262,7 @@
 					<label class={labelClass} for="appt-hotel">Otel</label>
 					<select id="appt-hotel" class={fieldClass} bind:value={hotel_contact_id}>
 						<option value="">—</option>
-						{#each hotelContacts.length ? hotelContacts : contacts as c (c.id)}
+						{#each hotelContacts.length ? hotelContacts : directoryContacts as c (c.id)}
 							<option value={c.id}>{c.display_name}</option>
 						{/each}
 					</select>
@@ -271,7 +274,7 @@
 				>
 				<select id="appt-transfer-c" class={fieldClass} bind:value={transfer_contact_id}>
 					<option value="">—</option>
-					{#each transferContacts.length ? transferContacts : contacts as c (c.id)}
+					{#each transferContacts.length ? transferContacts : directoryContacts as c (c.id)}
 						<option value={c.id}>{c.display_name}</option>
 					{/each}
 				</select>
@@ -321,7 +324,7 @@
 			<Button
 				type="submit"
 				form="appointment-form"
-				disabled={saving || !patient_id || !startsLocal}
+				disabled={saving || !contact_id || !startsLocal}
 			>
 				{saving ? t('common.saving') : isEdit ? t('common.save') : t('common.create')}
 			</Button>

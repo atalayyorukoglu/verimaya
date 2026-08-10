@@ -71,15 +71,17 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 
 		await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			await tx`
-				insert into patients (id, tenant_id, full_name, status, created_at, updated_at)
-				values (${patientA}, ${tenantA}, 'G14 Patient', 'scheduled', now(), now())
-			`;
+			await tx`insert into contact_types (tenant_id, name) values (${tenantA}, 'Hasta') on conflict do nothing`;
+			await tx`insert into contacts (id, tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+				values (
+					${patientA}, ${tenantA},
+					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+					'Hasta', 'G14 Patient', 'G14 Patient', 'scheduled', now(), now())`;
 
 			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.dupA1}, ${tenantA}, 'income', 'Dup A alpha', 'Operasyon', '2026-04-01', 'paid',
 					99900, 99900, 'TRY', 99900, 'TRY', ${patientA}
@@ -88,7 +90,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.dupA2}, ${tenantA}, 'income', 'Dup A beta', 'Operasyon', '2026-04-01', 'paid',
 					99900, 99900, 'TRY', 99900, 'TRY', ${patientA}
@@ -98,7 +100,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id, deleted_at
+					amount, paid_amount, currency, amount_base, base_currency, contact_id, deleted_at
 				) values (
 					${ids.dupSoft}, ${tenantA}, 'income', 'Dup A soft', 'Operasyon', '2026-04-01', 'paid',
 					99900, 99900, 'TRY', 99900, 'TRY', ${patientA}, now()
@@ -109,7 +111,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.outOfRange1}, ${tenantA}, 'expense', 'Out range 1', 'Konaklama', '2026-03-15', 'paid',
 					5500, 5500, 'TRY', 5500, 'TRY', null
@@ -118,7 +120,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.outOfRange2}, ${tenantA}, 'expense', 'Out range 2', 'Konaklama', '2026-03-15', 'paid',
 					5500, 5500, 'TRY', 5500, 'TRY', null
@@ -128,7 +130,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 			await tx`
 				insert into transactions (
 					id, tenant_id, kind, title, category, occurred_on, status,
-					amount, paid_amount, currency, amount_base, base_currency, patient_id
+					amount, paid_amount, currency, amount_base, base_currency, contact_id
 				) values (
 					${ids.uniqueNew}, ${tenantA}, 'income', 'Unique newer', 'Operasyon', '2026-05-20', 'paid',
 					1000, 1000, 'TRY', 1000, 'TRY', ${patientA}
@@ -141,7 +143,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 				await tx`
 					insert into transactions (
 						id, tenant_id, kind, title, category, occurred_on, status,
-						amount, paid_amount, currency, amount_base, base_currency, patient_id
+						amount, paid_amount, currency, amount_base, base_currency, contact_id
 					) values (
 						${id}, ${tenantA}, 'income', ${`Filler ${i}`}, 'Operasyon', ${`2026-05-${day}`}, 'paid',
 						${10000 + i}, ${10000 + i}, 'TRY', ${10000 + i}, 'TRY', ${patientA}
@@ -179,7 +181,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 			await sql.begin(async (tx) => {
 				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 				await tx`delete from transactions where tenant_id = ${tenantId}`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 			});
 			await sql`delete from tenants where id = ${tenantId}`;
 			await sql`delete from organization where id = ${tenantId}`;

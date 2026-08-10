@@ -12,6 +12,8 @@ import type {
 	CredentialUpsert,
 	FinanceCategoryCreate,
 	FinanceCategoryUpdate,
+	OrganizationCreate,
+	OrganizationUpdate,
 	TrustScoreSettings,
 	WhatsappAiDisclosure,
 	WhatsappAiDisclosureUpdate
@@ -29,10 +31,11 @@ import {
 	contactTypes,
 	contacts,
 	financeCategories,
+	organizations,
 	tenantCredentials,
 	tenantSettings
 } from '../db/schema';
-import { toAppointmentType, toContactType, toFinanceCategory } from '../common/mappers';
+import { toAppointmentType, toContactType, toFinanceCategory, toOrganization } from '../common/mappers';
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
 import { isUniqueViolation } from '../common/postgres-errors';
@@ -51,6 +54,7 @@ const FINANCE_CATEGORIES_SEEDED_KEY = 'finance_categories_defaults_seeded';
 const APPOINTMENT_TYPES_NAME_UIDX = 'appointment_types_tenant_id_name_uidx';
 const CONTACT_TYPES_NAME_UIDX = 'contact_types_tenant_id_name_uidx';
 const FINANCE_CATEGORIES_KIND_NAME_UIDX = 'finance_categories_tenant_kind_name_uidx';
+const ORGANIZATIONS_NAME_UIDX = 'organizations_tenant_id_name_uidx';
 
 @Injectable()
 export class SettingsService {
@@ -310,6 +314,127 @@ export class SettingsService {
 			}
 
 			await db.delete(contactTypes).where(eq(contactTypes.id, id));
+		});
+	}
+
+	async listOrganizations(tenantId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await db
+				.select()
+				.from(organizations)
+				.where(isNull(organizations.deletedAt))
+				.orderBy(asc(organizations.name));
+			return { items: rows.map(toOrganization) };
+		});
+	}
+
+	async createOrganization(tenantId: string, input: OrganizationCreate) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.createOrganizationWithDb(db, tenantId, input)
+		);
+	}
+
+	/** IDEM-01 (Faz 4.1): see createFinanceCategoryWithDb — same split, same reason. */
+	async createOrganizationWithDb(db: TenantDb, tenantId: string, input: OrganizationCreate) {
+		const name = input.name.trim();
+
+		// Soft-deleted rows must not block name reuse (partial unique WHERE deleted_at IS NULL).
+		const existingRows = await db
+			.select({ name: organizations.name })
+			.from(organizations)
+			.where(isNull(organizations.deletedAt));
+		if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+			throw this.duplicateTypeNameConflict('An organization with this name already exists');
+		}
+
+		try {
+			const [row] = await db
+				.insert(organizations)
+				.values({ tenantId, name })
+				.returning();
+
+			return toOrganization(row!);
+		} catch (err) {
+			if (isUniqueViolation(err, ORGANIZATIONS_NAME_UIDX)) {
+				throw this.duplicateTypeNameConflict('An organization with this name already exists');
+			}
+			throw err;
+		}
+	}
+
+	async updateOrganization(tenantId: string, id: string, input: OrganizationUpdate) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [existing] = await db
+				.select()
+				.from(organizations)
+				.where(and(eq(organizations.id, id), isNull(organizations.deletedAt)))
+				.limit(1);
+			if (!existing) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Organization not found' }
+				});
+			}
+
+			const name = input.name.trim();
+			// Soft-deleted siblings must not block rename onto a recycled name.
+			const siblings = await db
+				.select({ id: organizations.id, name: organizations.name })
+				.from(organizations)
+				.where(isNull(organizations.deletedAt));
+			if (
+				siblings.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())
+			) {
+				throw this.duplicateTypeNameConflict('An organization with this name already exists');
+			}
+
+			try {
+				const [row] = await db
+					.update(organizations)
+					.set({ name, updatedAt: new Date() })
+					.where(eq(organizations.id, id))
+					.returning();
+
+				return toOrganization(row!);
+			} catch (err) {
+				if (isUniqueViolation(err, ORGANIZATIONS_NAME_UIDX)) {
+					throw this.duplicateTypeNameConflict('An organization with this name already exists');
+				}
+				throw err;
+			}
+		});
+	}
+
+	async deleteOrganization(tenantId: string, id: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select()
+				.from(organizations)
+				.where(and(eq(organizations.id, id), isNull(organizations.deletedAt)))
+				.limit(1);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Organization not found' }
+				});
+			}
+
+			const [inUse] = await db
+				.select({ id: contacts.id })
+				.from(contacts)
+				.where(and(eq(contacts.organizationId, id), isNull(contacts.deletedAt)))
+				.limit(1);
+			if (inUse) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: 'Firma kullanımda — önce kişileri taşıyın'
+					}
+				});
+			}
+
+			await db
+				.update(organizations)
+				.set({ deletedAt: new Date(), updatedAt: new Date() })
+				.where(eq(organizations.id, id));
 		});
 	}
 

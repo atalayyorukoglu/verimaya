@@ -20,11 +20,11 @@ export class RoutingFileStorage implements FileStoragePort {
 		}
 	}
 
-	buildKey(tenantId: string, patientId: string, fileId: string): string {
+	buildKey(tenantId: string, contactId: string, fileId: string): string {
 		if (this.defaultDriver === 's3') {
-			return this.requireS3().buildKey(tenantId, patientId, fileId);
+			return this.requireS3().buildKey(tenantId, contactId, fileId);
 		}
-		return this.local.buildKey(tenantId, patientId, fileId);
+		return this.local.buildKey(tenantId, contactId, fileId);
 	}
 
 	async put(key: string, buf: Buffer, meta?: FilePutMeta): Promise<void> {

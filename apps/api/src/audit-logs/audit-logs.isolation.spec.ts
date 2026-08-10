@@ -75,7 +75,7 @@ describe('audit_logs RLS isolation + filters (GAP-F09-13)', () => {
 					tenant_id, actor_id, actor_display_name, action, entity_type, entity_label, created_at
 				)
 				values (
-					${tenantA}, ${actorA}, 'User A', 'update', 'patient', 'Patient Alpha',
+					${tenantA}, ${actorA}, 'User A', 'update', 'contact', 'Patient Alpha',
 					timestamptz '2026-08-05 12:00:00+03'
 				)
 				returning id
@@ -120,7 +120,7 @@ describe('audit_logs RLS isolation + filters (GAP-F09-13)', () => {
 					tenant_id, actor_id, actor_display_name, action, entity_type, entity_label, created_at
 				)
 				values (
-					${tenantB}, ${actorB}, 'User B', 'update', 'patient', 'Patient Alpha',
+					${tenantB}, ${actorB}, 'User B', 'update', 'contact', 'Patient Alpha',
 					timestamptz '2026-08-10 09:00:00+03'
 				)
 				returning id
@@ -179,7 +179,9 @@ describe('audit_logs RLS isolation + filters (GAP-F09-13)', () => {
 
 	it('filters by entity_type alone', async () => {
 		const result = await auditLogsService.list(tenantA, { limit: 25, entity_type: 'contact' });
-		expect(result.items.map((r) => r.id)).toEqual([logContactCreate]);
+		expect(result.items.map((r) => r.id).sort()).toEqual(
+			[logPatientUpdate, logContactCreate].sort()
+		);
 	});
 
 	it('filters by actor_id alone', async () => {
@@ -221,7 +223,7 @@ describe('audit_logs RLS isolation + filters (GAP-F09-13)', () => {
 		const result = await auditLogsService.list(tenantA, {
 			limit: 25,
 			action: 'update',
-			entity_type: 'patient',
+			entity_type: 'contact',
 			q: 'Alpha'
 		});
 		expect(result.items.map((r) => r.id)).toEqual([logPatientUpdate]);

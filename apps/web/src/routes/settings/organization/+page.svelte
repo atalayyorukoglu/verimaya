@@ -39,7 +39,7 @@
 	function hydrateFrom(tenant: Tenant) {
 		name = tenant.name;
 		baseCurrency = tenant.base_currency;
-		patientsLabel = tenant.patients_section_label;
+		patientsLabel = tenant.contacts_section_label;
 		timezone = (TENANT_TIMEZONES as readonly string[]).includes(tenant.timezone)
 			? (tenant.timezone as TenantTimezone)
 			: 'Europe/Istanbul';
@@ -66,7 +66,7 @@
 		savedAt = null;
 		const payload: TenantUpdate = {
 			name: name.trim(),
-			patients_section_label: patientsLabel.trim() || 'Hastalar',
+			contacts_section_label: patientsLabel.trim() || 'Hastalar',
 			timezone
 		};
 		if (!currencyLocked) {

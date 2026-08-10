@@ -25,7 +25,7 @@ export type FileObjectStat = {
  */
 export interface FileStoragePort {
 	/** Opaque `storage_key` for a new object (`local://…` or later `s3://…`). */
-	buildKey(tenantId: string, patientId: string, fileId: string): string;
+	buildKey(tenantId: string, contactId: string, fileId: string): string;
 
 	put(key: string, buf: Buffer, meta?: FilePutMeta): Promise<void>;
 

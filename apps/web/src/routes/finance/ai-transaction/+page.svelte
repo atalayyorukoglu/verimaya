@@ -8,7 +8,6 @@
 		ContactType,
 		FinanceCategory,
 		InboundMessage,
-		Patient,
 		Tenant,
 		TransactionDraft
 	} from '@verimaya/shared';
@@ -26,7 +25,6 @@
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 
-	type PatientsPage = { items: Patient[]; next_cursor: string | null };
 	type ContactsPage = { items: Contact[]; next_cursor: string | null };
 	type DraftState = DraftApprovalState;
 
@@ -47,12 +45,6 @@
 	const inboxQuery = createQuery(() => ({
 		queryKey: qs.keys.whatsapp.inbox(),
 		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox),
-		enabled: qs.ready
-	}));
-
-	const patientsQuery = createQuery(() => ({
-		queryKey: qs.keys.patients.list({ limit: 100, for: 'whatsapp' }),
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
 		enabled: qs.ready
 	}));
 
@@ -80,7 +72,6 @@
 		enabled: qs.ready
 	}));
 
-	const patients = $derived(patientsQuery.data?.items ?? []);
 	const contacts = $derived(contactsQuery.data?.items ?? []);
 	const categories = $derived(categoriesQuery.data?.items ?? []);
 	const contactTypes = $derived(contactTypesQuery.data?.items ?? []);
@@ -120,8 +111,8 @@
 			title: d.title,
 			category: d.category,
 			subcategory: d.subcategory,
-			patient_id: d.patient_id,
-			patient_display_name: d.patient_display_name,
+			contact_id: d.contact_id,
+			contact_display_name: d.contact_display_name,
 			contact_label: d.contact_label,
 			occurred_on: d.occurred_on,
 			payment_method: d.payment_method,
@@ -129,8 +120,7 @@
 			status: d.status,
 			paid_amount: d.paid_amount,
 			fx_rate: d.fx_rate,
-			amount_base: d.amount_base,
-			contact_id: d.contact_id
+			amount_base: d.amount_base
 		};
 		return approveDraftItemSchema.safeParse(item).success;
 	}
@@ -240,8 +230,8 @@
 			title: d.title,
 			category: d.category,
 			subcategory: d.subcategory,
-			patient_id: d.patient_id,
-			patient_display_name: d.patient_display_name,
+			contact_id: d.contact_id,
+			contact_display_name: d.contact_display_name,
 			contact_label: d.contact_label,
 			occurred_on: d.occurred_on,
 			payment_method: d.payment_method,
@@ -249,8 +239,7 @@
 			status: d.status,
 			paid_amount: d.paid_amount,
 			fx_rate: d.fx_rate,
-			amount_base: d.amount_base,
-			contact_id: d.contact_id
+			amount_base: d.amount_base
 		});
 		return parsed;
 	}
@@ -258,7 +247,8 @@
 	async function createContactInline(
 		index: number,
 		input: {
-			display_name: string;
+			first_name: string;
+			last_name?: string | null;
 			contact_type_id: string;
 			phone?: string | null;
 			email?: string | null;
@@ -270,21 +260,8 @@
 			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
 			updateDraft(index, {
 				contact_id: created.id,
+				contact_display_name: created.display_name,
 				contact_label: created.display_name
-			});
-		} finally {
-			creatingInline = false;
-		}
-	}
-
-	async function createPatientInline(index: number, input: { full_name: string }) {
-		creatingInline = true;
-		try {
-			const created = await apiSend<Patient>(apiPaths.whatsappCreatePatient, 'POST', input);
-			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
-			updateDraft(index, {
-				patient_id: created.id,
-				patient_display_name: created.full_name
 			});
 		} finally {
 			creatingInline = false;
@@ -507,7 +484,6 @@
 			{#each drafts as draft, i (i)}
 				<TransactionDraftCard
 					{draft}
-					{patients}
 					{contacts}
 					{categories}
 					{contactTypes}
@@ -515,7 +491,6 @@
 					creating={creatingInline}
 					onchange={(patch) => updateDraft(i, patch)}
 					onCreateContact={(input) => createContactInline(i, input)}
-					onCreatePatient={(input) => createPatientInline(i, input)}
 					onCreateCategory={(input) => createCategoryInline(i, input)}
 				/>
 			{/each}

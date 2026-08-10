@@ -22,7 +22,7 @@ export type GhlReconcileDiff = {
 	externalId: string;
 	kind: 'created' | 'updated';
 	fields: string[];
-	patientId: string | null;
+	contactId: string | null;
 };
 
 export type GhlReconcileResult = {
@@ -97,7 +97,7 @@ export class GhlReconcileService {
 						externalId: remote.id,
 						kind: 'created',
 						fields: applied.changedFields,
-						patientId: applied.patientId
+						contactId: applied.contactId
 					});
 				}
 				continue;
@@ -108,7 +108,7 @@ export class GhlReconcileService {
 					externalId: remote.id,
 					kind: 'updated',
 					fields: applied.changedFields,
-					patientId: applied.patientId
+					contactId: applied.contactId
 				});
 			}
 		}

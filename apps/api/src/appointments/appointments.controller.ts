@@ -42,14 +42,14 @@ export class AppointmentsController {
 	) {}
 
 	@Get()
-	@RequireOrgPermission('patient', 'read')
+	@RequireOrgPermission('contact', 'read')
 	list(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
 		const params = parseQuery(appointmentListQuerySchema, query, req);
 		return this.appointmentsService.list(getActiveOrgId(req), params);
 	}
 
 	@Post()
-	@RequireOrgPermission('patient', 'create')
+	@RequireOrgPermission('contact', 'create')
 	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
@@ -81,7 +81,7 @@ export class AppointmentsController {
 	}
 
 	@Patch(':id')
-	@RequireOrgPermission('patient', 'update')
+	@RequireOrgPermission('contact', 'update')
 	@Idempotent()
 	async update(
 		@Req() req: FastifyRequest,
@@ -106,7 +106,7 @@ export class AppointmentsController {
 	}
 
 	@Delete(':id')
-	@RequireOrgPermission('patient', 'delete')
+	@RequireOrgPermission('contact', 'delete')
 	@Idempotent()
 	async remove(
 		@Req() req: FastifyRequest,

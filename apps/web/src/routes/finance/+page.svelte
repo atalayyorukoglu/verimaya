@@ -34,12 +34,12 @@
 	import X from '@lucide/svelte/icons/x';
 
 	type TransactionsPage = ContractResponse<'GET /v1/transactions'>;
-	type PatientsPage = ContractResponse<'GET /v1/patients'>;
+	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
 
-	const patientFilterId = $derived(page.url.searchParams.get('hasta'));
+	const contactFilterId = $derived(page.url.searchParams.get('contact'));
 
 	let qInput = $state('');
 	let categoryInput = $state('');
@@ -57,7 +57,7 @@
 	const statusOptions = $derived(transactionStatusSchema.options);
 
 	const listFilters = $derived({
-		patient_id: patientFilterId,
+		contact_id: contactFilterId,
 		q: appliedQ || undefined,
 		kind: (kind || undefined) as TransactionKind | undefined,
 		status: (status || undefined) as TransactionStatus | undefined,
@@ -65,7 +65,7 @@
 	});
 
 	const filtersActive = $derived(
-		Boolean(appliedQ || appliedCategory || kind || status || patientFilterId)
+		Boolean(appliedQ || appliedCategory || kind || status || contactFilterId)
 	);
 
 	const tenantQuery = createQuery(() => ({
@@ -92,7 +92,7 @@
 				listUrl('transactions', {
 					limit: 25,
 					cursor: pageParam,
-					patient_id: listFilters.patient_id,
+					contact_id: listFilters.contact_id,
 					q: listFilters.q,
 					kind: listFilters.kind,
 					status: listFilters.status,
@@ -104,14 +104,14 @@
 		enabled: qs.ready
 	}));
 
-	const patientsQuery = createQuery(() => ({
-		queryKey: qs.keys.patients.list({ limit: 100, for: 'picker' }),
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
+	const contactsQuery = createQuery(() => ({
+		queryKey: qs.keys.contacts.list({ limit: 100, for: 'picker' }),
+		queryFn: () => apiGet<ContactsPage>(listUrl('contacts', { limit: 100 })),
 		enabled: qs.ready
 	}));
 
-	const filterPatient = $derived(
-		patientFilterId ? (patientsQuery.data?.items ?? []).find((p) => p.id === patientFilterId) : null
+	const filterContact = $derived(
+		contactFilterId ? (contactsQuery.data?.items ?? []).find((c) => c.id === contactFilterId) : null
 	);
 
 	const inboxQuery = createQuery(() => ({
@@ -230,20 +230,21 @@
 		{/snippet}
 	</PageHeader>
 
-	{#if patientFilterId}
+	{#if contactFilterId}
 		<div
 			class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand/30 bg-brand-subtle px-3 py-2"
 		>
 			<p class="text-sm text-text">
-				{t('finance.filter.patient')}
-				<span class="font-medium">{filterPatient?.full_name ?? patientFilterId.slice(0, 8)}</span>
+				{t('finance.filter.contact')}
+				<span class="font-medium">{filterContact?.display_name ?? contactFilterId.slice(0, 8)}</span
+				>
 			</p>
 			<a
 				href="/finance"
 				class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text"
 			>
 				<X class="size-3.5" />
-				{t('finance.filter.clearPatient')}
+				{t('finance.filter.clearContact')}
 			</a>
 		</div>
 	{/if}
@@ -328,7 +329,7 @@
 							<td class="min-w-0 px-4 py-3">
 								<p class="truncate font-medium text-text">{tx.title}</p>
 								<p class="truncate text-xs text-text-faint">
-									{tx.patient_display_name ?? tx.subtitle ?? '—'}
+									{tx.contact_display_name ?? tx.subtitle ?? '—'}
 								</p>
 							</td>
 							<td class="px-4 py-3 text-text-muted">{transactionKindLabels[tx.kind]}</td>
@@ -412,8 +413,7 @@
 <TransactionFormDialog
 	bind:open={formOpen}
 	transaction={editing}
-	patients={patientsQuery.data?.items ?? []}
-	defaultPatientId={patientFilterId}
+	defaultContactId={contactFilterId}
 	{saving}
 	error={formError}
 	onsubmit={saveTransaction}

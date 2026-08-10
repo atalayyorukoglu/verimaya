@@ -1,4 +1,4 @@
-import type { PatientStatus } from './patient.js';
+import type { ContactStatus } from './contact.js';
 import type { AppointmentStatus } from './appointment.js';
 import type { InvoiceStatus, TransactionKind, TransactionStatus } from './transaction.js';
 import type { InboundMessageStatus } from './inbound-message.js';
@@ -6,7 +6,7 @@ import type { FeatureStatus } from './features.js';
 import type { AuditAction, AuditEntity } from './audit.js';
 import type { UserRole } from './user.js';
 
-export const patientStatusLabels: Record<PatientStatus, string> = {
+export const contactStatusLabels: Record<ContactStatus, string> = {
 	scheduled: 'Randevu alındı',
 	arrived: 'Geldi',
 	treated: 'Tedavi edildi',
@@ -62,7 +62,6 @@ export const auditActionLabels: Record<AuditAction, string> = {
 };
 
 export const auditEntityLabels: Record<AuditEntity, string> = {
-	patient: 'Hasta',
 	contact: 'Kişi',
 	appointment: 'Randevu',
 	transaction: 'İşlem',

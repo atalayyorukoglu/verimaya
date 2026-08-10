@@ -84,10 +84,15 @@ describe('GAP-07: appointment-metrics report', () => {
 		}
 
 		await withTenantSession(tenantA, async () => {
-			await sql`
-				insert into patients (id, tenant_id, full_name, status, created_at, updated_at)
-				values (${patientA}, ${tenantA}, 'Gap07 Patient A', 'scheduled', now(), now())
-			`;
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantA}, 'Hasta') on conflict do nothing`;
+			});
+			await sql`insert into contacts (id, tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+				values (
+					${patientA}, ${tenantA},
+					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+					'Hasta', 'Gap07 Patient A', 'Gap07 Patient A', 'scheduled', now(), now())`;
 			// 4 appointments: 2 completed, 1 no_show, 1 cancelled → rates 0.5 / 0.25 / 0.25
 			const seeds: Array<{
 				status: string;
@@ -123,7 +128,7 @@ describe('GAP-07: appointment-metrics report', () => {
 			for (const s of seeds) {
 				await sql`
 					insert into appointments (
-						tenant_id, patient_id, patient_display_name, title, appointment_type,
+						tenant_id, contact_id, contact_display_name, title, appointment_type,
 						status, starts_at, clinic_name, created_at, updated_at
 					) values (
 						${tenantA}, ${patientA}, 'Gap07 Patient A', 'visit', ${s.type},
@@ -134,7 +139,7 @@ describe('GAP-07: appointment-metrics report', () => {
 			// Soft-deleted — must not affect totals/rates
 			await sql`
 				insert into appointments (
-					tenant_id, patient_id, patient_display_name, title, appointment_type,
+					tenant_id, contact_id, contact_display_name, title, appointment_type,
 					status, starts_at, clinic_name, deleted_at, created_at, updated_at
 				) values (
 					${tenantA}, ${patientA}, 'Gap07 Patient A', 'deleted', 'Saç ekimi',
@@ -144,13 +149,21 @@ describe('GAP-07: appointment-metrics report', () => {
 		});
 
 		await withTenantSession(tenantB, async () => {
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantB}, 'Hasta') on conflict do nothing`;
+			});
 			await sql`
-				insert into patients (id, tenant_id, full_name, status, created_at, updated_at)
-				values (${patientB}, ${tenantB}, 'Gap07 Patient B', 'scheduled', now(), now())
+				insert into contacts (id, tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+				values (
+					${patientB}, ${tenantB},
+					(select id from contact_types where tenant_id = ${tenantB} and name = 'Hasta' limit 1),
+					'Hasta', 'Gap07 Patient B', 'Gap07 Patient B', 'scheduled', now(), now()
+				)
 			`;
 			await sql`
 				insert into appointments (
-					tenant_id, patient_id, patient_display_name, title, appointment_type,
+					tenant_id, contact_id, contact_display_name, title, appointment_type,
 					status, starts_at, clinic_name, created_at, updated_at
 				) values (
 					${tenantB}, ${patientB}, 'Gap07 Patient B', 'other-tenant', null,
@@ -162,26 +175,42 @@ describe('GAP-07: appointment-metrics report', () => {
 		// UTC 2026-08-01 22:00 → London 23:00 (Aug 1) / Istanbul 01:00 next day (Aug 2)
 		const rowAtUtcAug1Late = '2026-08-01T22:00:00Z';
 		await withTenantSession(tenantLondon, async () => {
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantLondon}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantLondon}, 'Hasta') on conflict do nothing`;
+			});
 			await sql`
-				insert into patients (id, tenant_id, full_name, status, created_at, updated_at)
-				values (${patientLondon}, ${tenantLondon}, 'London P', 'scheduled', now(), now())
+				insert into contacts (id, tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+				values (
+					${patientLondon}, ${tenantLondon},
+					(select id from contact_types where tenant_id = ${tenantLondon} and name = 'Hasta' limit 1),
+					'Hasta', 'London P', 'London P', 'scheduled', now(), now()
+				)
 			`;
 			await sql`
 				insert into appointments (
-					tenant_id, patient_id, patient_display_name, status, starts_at, created_at, updated_at
+					tenant_id, contact_id, contact_display_name, status, starts_at, created_at, updated_at
 				) values (
 					${tenantLondon}, ${patientLondon}, 'London P', 'scheduled', ${rowAtUtcAug1Late}, now(), now()
 				)
 			`;
 		});
 		await withTenantSession(tenantIstanbul, async () => {
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantIstanbul}, true)`;
+				await tx`insert into contact_types (tenant_id, name) values (${tenantIstanbul}, 'Hasta') on conflict do nothing`;
+			});
 			await sql`
-				insert into patients (id, tenant_id, full_name, status, created_at, updated_at)
-				values (${patientIstanbul}, ${tenantIstanbul}, 'Istanbul P', 'scheduled', now(), now())
+				insert into contacts (id, tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+				values (
+					${patientIstanbul}, ${tenantIstanbul},
+					(select id from contact_types where tenant_id = ${tenantIstanbul} and name = 'Hasta' limit 1),
+					'Hasta', 'Istanbul P', 'Istanbul P', 'scheduled', now(), now()
+				)
 			`;
 			await sql`
 				insert into appointments (
-					tenant_id, patient_id, patient_display_name, status, starts_at, created_at, updated_at
+					tenant_id, contact_id, contact_display_name, status, starts_at, created_at, updated_at
 				) values (
 					${tenantIstanbul}, ${patientIstanbul}, 'Istanbul P', 'scheduled', ${rowAtUtcAug1Late}, now(), now()
 				)
@@ -195,7 +224,7 @@ describe('GAP-07: appointment-metrics report', () => {
 			await sql.begin(async (tx) => {
 				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 				await tx`delete from appointments where tenant_id = ${tenantId}`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 			});
 			await sql`delete from tenants where id = ${tenantId}`;
 			await sql`delete from organization where id = ${tenantId}`;

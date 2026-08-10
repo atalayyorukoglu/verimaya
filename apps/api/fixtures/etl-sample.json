@@ -35,15 +35,6 @@
 	],
 	"contacts": [
 		{
-			"id": 101,
-			"type": "Hasta",
-			"name": "Atalay Demir",
-			"phone": "+90 532 000 0001",
-			"email": "atalay@example.com",
-			"notes": "Pilot hasta",
-			"is_internal": false
-		},
-		{
 			"id": 102,
 			"type": "Klinik",
 			"name": "Demo Klinik",

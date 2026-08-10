@@ -56,7 +56,7 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 - Günlük otomatik Postgres yedeği + sunucu dışı kopya + aylık restore provası.
 - KVKK: veri işleme envanteri, export/silme endpoint'i, LLM'e giden veride PII minimizasyonu
   (**uygulandı 2026-07-30:** WhatsApp → OpenAI-uyumlu istemci yolu `buildMaskedLlmUserPayload`
-  tek geçiş noktasından geçer — telefon/e-posta/TCKN/IBAN/kart + hasta adı; modele yalnız
+  tek geçiş noktasından geçer — telefon/e-posta/TCKN/IBAN/kart + kişi adı; modele yalnız
   opak `patient_ref`. Heuristic parse maskelenmez).
   Her parse çağrısı `jobs` tablosuna `llm.parse` ledger satırı yazar (sağlayıcı, yanıt
   gövdesindeki gerçek `model`, token sayıları, tahmini maliyet micro-USD, path /
@@ -85,7 +85,7 @@ Fixrav Tracker (FastAPI + React, `~/Projects/fixrav-web/_projects/fixrav-tracker
   (`ghl.reconcile`) scanned/created/updated/unchanged/diffCount. OAuth veya
   `GHL_CLIENT_ID` yoksa skip modu. Scheduler: `ENABLE_INTEGRATION_SCHEDULERS=true`.
 - Eşleme: `external_ids` (`source=ghl`). Marker geçiş: `ghl:migrate-markers`.
-- Sahiplik: `ghl.field-ownership.ts` (patient fullName/phone/email/status → GHL; notes → Verimaya).
+- Sahiplik: `ghl.field-ownership.ts` (contact fullName/phone/email/status → GHL; notes → Verimaya).
 
 ## Reklam metrikleri / Ads adaptör katmanı (RM-4, 2026-07-22)
 
@@ -104,9 +104,17 @@ OAuth: `AdsOAuthStateService` state’i `CryptoService` ile şifreler (tenantId+
 - **Platform ROAS** = raporlanan dönüşüm değeri ÷ spend (Meta/Google veya manuel girdi).
 - **Gerçek ROAS (Verimaya)** = dönem tahsilatı ÷ Ads spend (`transactions` + `ad_metrics_daily`) — RM-3'te canlanır.
 
-Attribution V1: `patient.source`. Kampanya kırılımı V2.
+Attribution V1: `contacts.source` (Hasta tipindeki kayıtlar). Kampanya kırılımı V2.
 
 Kritik formüller UI'da yeniden yazılmaz; shared'dan import.
+
+## Domain modeli — Kişiler (DOMAIN-02, 2026-08-10)
+
+Tek tablo `contacts` (panel: **Kişiler**). Kişi kaydı daima bir insandır; klinik/otel/acente
+bir *nitelik*tir (`contact_types` + isteğe bağlı `organizations` FK), ayrı kayıt türü değil.
+Eski `patients` tablosu düşürüldü (`0036`); randevu/işlem/dosya/vaka notları yalnız
+`contact_id` taşır. Raporlardaki "hasta sayısı" `contact_type_name = 'Hasta'` filtresiyle
+üretilir.
 
 ## Finans ve bakiye semantiği
 
@@ -125,4 +133,4 @@ Satır gösterim eşiği: `open_amount !== 0` veya `collected_amount !== 0`.
 
 - `pending_base`: yalnız gelir satırları; tenant baz para biriminde `max(0, amount_base − paid_base)` toplamı (satır başına clamp).
 
-**Hasta dağılımı (`/v1/reports/patient-distribution`):** Dönem filtresi hasta `created_at` üzerinden; durum ve kaynak sayıları sunucuda aggregate.
+**Hasta dağılımı (`/v1/reports/contact-distribution`):** Dönem filtresi hasta `created_at` üzerinden; durum ve kaynak sayıları sunucuda aggregate.

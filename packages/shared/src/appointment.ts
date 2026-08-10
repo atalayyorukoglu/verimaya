@@ -15,9 +15,9 @@ export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
 export const appointmentSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
-	patient_id: uuid,
+	contact_id: uuid,
 	/** Display name denormalized for list/calendar views */
-	patient_display_name: z.string().min(1).max(255),
+	contact_display_name: z.string().min(1).max(255),
 	title: z.string().min(1).max(255).nullable(),
 	appointment_type: z.string().max(128).nullable(),
 	status: appointmentStatusSchema.default('scheduled'),
@@ -40,7 +40,7 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 export const appointmentCreateSchema = appointmentSchema.omit({
 	id: true,
 	tenant_id: true,
-	patient_display_name: true,
+	contact_display_name: true,
 	created_at: true,
 	updated_at: true
 });
