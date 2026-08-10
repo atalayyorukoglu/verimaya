@@ -1,18 +1,18 @@
 # Build web Docker image off the VPS (path B).
 # Coolify only pulls — never runs pnpm/Vite on the 2 GB box.
+#
+# CI gate (OPS-03): auto-deploy runs only after CI succeeds on main (workflow_run).
+# workflow_dispatch remains an escape hatch for solo hotfixes (skips CI wait).
+# Native `paths:` does not apply to workflow_run — gate job recreates the filter
+# against the last successful Deploy web image run (fail-open).
+# `main` image tag is only applied when deploy_sha is on main's history
+# (preserves former enable={{is_default_branch}} — Coolify pulls `:main`).
 name: Deploy web image
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/shared/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
-      - '.npmrc'
-      - '.github/workflows/deploy-web.yml'
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
 
 env:
@@ -20,13 +20,138 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/verimaya-web
 
 jobs:
+  gate:
+    # Block red CI entirely; PR CI must not deploy; dispatch always passes this if.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      should_deploy: ${{ steps.decide.outputs.should_deploy }}
+      deploy_sha: ${{ steps.sha.outputs.deploy_sha }}
+      tag_main: ${{ steps.tag.outputs.tag_main }}
+    steps:
+      - name: Resolve deploy SHA
+        id: sha
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          GITHUB_SHA_FALLBACK: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            echo "deploy_sha=$WORKFLOW_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_sha=$GITHUB_SHA_FALLBACK" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.sha.outputs.deploy_sha }}
+          # Full history: paths gate vs previous deploy SHA + merge-base for tag_main.
+          fetch-depth: 0
+
+      - name: Decide whether to deploy
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOY_SHA: ${{ steps.sha.outputs.deploy_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Runner default is bash -euo pipefail — disable so fail-open cannot abort the job.
+          set +e
+          set +o pipefail
+          PATH_RE='^(apps/web/|packages/shared/|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|package\.json$|\.npmrc$|\.github/workflows/deploy-web\.yml$)'
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "workflow_dispatch — deploy regardless of paths (hotfix escape)"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Baseline = head_sha of this workflow's most recent successful run
+          # ("from last deploy evaluation to now", not HEAD^).
+          PREV_SHA=""
+          API_JSON=""
+          if ! API_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-web.yml/runs?status=success&per_page=1" 2>/dev/null); then
+            echo "FAIL-OPEN: gh api failed — deploy"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          PREV_SHA=$(printf '%s' "$API_JSON" | jq -r '.workflow_runs[0].head_sha // empty')
+          echo "Comparing deploy_sha=${DEPLOY_SHA} against previous_successful_run_sha=${PREV_SHA:-<none>}"
+
+          if [ -z "$PREV_SHA" ]; then
+            echo "FAIL-OPEN: no previous successful run — deploy"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! git cat-file -e "${PREV_SHA}^{commit}" 2>/dev/null; then
+            echo "FAIL-OPEN: previous SHA ${PREV_SHA} not in git history (force-push/rebase?) — deploy"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! CHANGED=$(git diff --name-only "$PREV_SHA" "$DEPLOY_SHA" 2>/dev/null); then
+            echo "FAIL-OPEN: git diff ${PREV_SHA}..${DEPLOY_SHA} failed — deploy"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Changed files since previous successful run:"
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -Eq "$PATH_RE"; then
+            echo "Web-relevant paths changed — proceed (should_deploy=true)"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No web-relevant paths — skip deploy (should_deploy=false)"
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve main image tag eligibility
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOY_SHA: ${{ steps.sha.outputs.deploy_sha }}
+        run: |
+          set +e
+          set +o pipefail
+          # Former enable={{is_default_branch}}: Coolify pulls :main — never stamp it
+          # for a feature-branch workflow_dispatch hotfix.
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            # Gate already requires head_branch == main; SHA is the CI push tip.
+            echo "workflow_run on main — tag_main=true"
+            echo "tag_main=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --no-tags origin main 2>/dev/null || true
+          if git merge-base --is-ancestor "$DEPLOY_SHA" origin/main 2>/dev/null; then
+            echo "deploy_sha ${DEPLOY_SHA} is on origin/main history — tag_main=true"
+            echo "tag_main=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_sha ${DEPLOY_SHA} is NOT on origin/main history — tag_main=false (SHA tag only)"
+            echo "tag_main=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push:
+    needs: gate
+    if: needs.gate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    env:
+      DEPLOY_SHA: ${{ needs.gate.outputs.deploy_sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # workflow_run default github.sha is default-branch tip — pin to CI's commit.
+          ref: ${{ env.DEPLOY_SHA }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -43,8 +168,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,prefix=,format=long
-            type=raw,value=main,enable={{is_default_branch}}
+            type=raw,value=${{ env.DEPLOY_SHA }}
+            type=raw,value=main,enable=${{ needs.gate.outputs.tag_main == 'true' }}
 
       - name: Build and push
         uses: docker/build-push-action@v6

@@ -183,16 +183,6 @@
 
 ## Faz 9 — kalan denetim işleri (öncelik sırası yok; kapasiteye göre)
 
-- **OPS-03 — deploy CI'ı beklemiyor.** `.github/workflows/deploy-web.yml` ile `ci.yml`
-  birbirinden bağımsız: `main`'e push'ta ikisi paralel koşar ve deploy, CI'ın sonucunu
-  beklemez. **Kanıt (2026-08-10):** `eded20a` commit'inde CI **failure** (prettier),
-  "Deploy web image" **success** — kırık lint prod'a çıktı. Bu sefer zararsızdı (salt
-  biçim, `811e5ed` ile düzeltildi) ama aynı boşluk kırık testi de canlıya taşır.
-  **Yapılacak:** `deploy-web.yml`'e CI kapısı — `workflow_run` ile `ci.yml` başarısına
-  bağla, ya da build job'una `needs`/guard ekle. Karar noktası: CI kırmızıyken deploy
-  **tamamen bloklansın mı** yoksa yalnız uyarı mı versin (solo geliştiricide acil
-  hotfix yolunu kapatmamak gerekebilir — `workflow_dispatch` kaçış kapısı korunmalı).
-  **Dosyalar:** `.github/workflows/deploy-web.yml`, `.github/workflows/ci.yml`. **(S)**
 - **TEST-02 — TestSprite senaryoları DOMAIN-02'ye göre güncellensin.** `testsprite_tests/`
   altındaki 15 senaryo birleşme öncesi panele göre yazıldı; **TC002** ("Create a patient
   and see it in the list") ve **TC003** ("Edit a patient…") artık var olmayan `/patients`
@@ -279,6 +269,12 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **OPS-03** — deploy CI kapısı: `deploy-web.yml` artık `push` ile değil, CI
+  `workflow_run` (completed + success + head_branch=main + event=push) ile tetiklenir;
+  `workflow_dispatch` kaçış kapısı kaldı; paths kapısı son başarılı Deploy koşusunun
+  `head_sha`..şu an (fail-open); `:main` etiketi yalnız SHA main tarihçesindeyse
+  (2026-08-10). **Görüş:** CI kırmızıyken tamamen blok; multi-commit push + feature
+  dispatch'te `:main` basmama düzeltildi — Coolify `:main` çeker.
 - ✅ **AUDIT-F09-10** — i18n katalog süpürmesi: uygulama sayfaları + `lib/components`'teki hardcoded TR metinler `t()` + `messages.ts`'e taşındı (336 tr + 336 en anahtar; 33 dosya i18n + 7 dosya prettier-only); Türkçe-karakter grep'i 775→41 (2026-08-09). Görüş: kalan 41 eşleşme bilinçli — `Konsültasyon` kaydedilen randevu tipi varsayılanı (locale'e bağlamak davranış değiştirir) + kod/HTML yorumları (süpürme kapsamı dışı); marketing/** (DOC-03e), (public)/** (hukuki metinler TR-only), dev/** (GAP-28) ve mocks (fixture verisi) kapsam dışı bırakıldı. Web check 0 hata + lint temiz + web 43/43 + API 445/445 yeşil.
 - ✅ **GAP-F09-16** — taslak onayında satır içi kayıt: `POST /v1/whatsapp/create-contact|create-patient|create-category` (mevcut service yollarının ince sarmalayıcısı + `@Idempotent`); taslak kartında "yeni …" formları, oluşan kayıt otomatik seçili (2026-08-09). Görüş: subcategory bilinçli yok (düz kategori modeli); create-category izni `finance:create` (permission lock); kategori duplicate'ı artık 409 `duplicate_type_name` (uidx 0004'ten beri vardı, pre-check eklendi). API 445/445 + shared 88 + web check yeşil.
 - ✅ **AUDIT-F09-08 + GAP-F09-24** — magic-byte sniff (`file-type`, tek choke point: `putFileContent` + `uploadLocalFileWithDb` → local+S3 ikisi de kapsamda) + allowlist pdf/png/jpeg/webp (`image/jpg` normalize; `image/gif` binaryTypes'tan çıktı); 415 `unsupported_media_type`/`mime_mismatch`. `GET .../files/:fileId/preview` — allowlist inline, legacy attachment, RFC 5987 filename*, nosniff; dosya panelinde önizle (2026-08-09). Görüş: `@fastify/multipart@10`'da `allowedMimeTypes` yok → declared MIME controller'da; appointment files kapsam dışı (bulgu patients'a işaret ediyor); S3 presigned-direct PUT yok, byte'lar API üzerinden geçiyor. API 432/432 + shared 88 + web check yeşil.
