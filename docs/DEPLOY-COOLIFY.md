@@ -133,6 +133,10 @@ API CORS / auth:
 
 - `TRUSTED_ORIGINS`: `https://verimaya.com,https://app.verimaya.com` (gerekirse `www`)
 - `WEB_PUBLIC_URL`: tercihen `https://verimaya.com` (OAuth return + karne); panel cookie origin `app` ise better-auth `trustedOrigins` her iki hostu kapsamalı
+- **Origin değişimi = API restart** (AUDIT-F09-20, bilinçli): `corsOrigins` (`main.ts`) ve
+  better-auth `trustedOrigins` env’i boot’ta okur. Allowlist kurulum geneli (panel tek
+  host); tenant’a özel değil. Coolify’da env güncelle → API redeploy/restart. Runtime /
+  DB hot-reload yok — güvenlik sınırı env + deploy (AUDIT-REPORT: «Fix: None required»).
 
 ## Ortam değişkenleri (API — zorunlu prod)
 

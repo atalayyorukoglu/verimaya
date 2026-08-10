@@ -192,7 +192,6 @@
   `docs/2026-08-09-TESTSPRITE-15-SENARYO.md`. **(M)**
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. Anonimleştirme yaklaşımı (silme değil) arşivdeki Açık sorular §1 kararına göre. **(L)**
-- **AUDIT-F09-20** `corsOrigins` allowlist hot-reload. **(M, düşük öncelik)**
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
 
@@ -264,6 +263,12 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **AUDIT-F09-20** — no-op (2026-08-10): `corsOrigins` / better-auth `trustedOrigins`
+  boot-time env (`TRUSTED_ORIGINS` + `WEB_PUBLIC_URL`) bilinçli; AUDIT-REPORT «Fix: None
+  required. Document.» — DEPLOY-COOLIFY’a restart notu eklendi. Hot-reload / DB allowlist
+  uygulanmadı (güvenlik yüzeyi + kurulum geneli, tenant scope yanlış).
+  **Görüş:** Panel tek host (`app.verimaya.com`); origin eklemek zaten DNS/Coolify/env
+  deploy’u — restart doğru sınır. Önceki no-op: AUDIT-F09-13.
 - ✅ **GAP-F09-23** — `DELETE /v1/contacts/:id/files/:fileId` soft-delete (`files.deleted_at` +
   migration `0039`); audit `action=delete`/`entity_type=file` (CHECK zaten vardı); liste/
   preview/download `deleted_at IS NULL`; blob silinmez; sweep soft-deleted'i hariç tutar;

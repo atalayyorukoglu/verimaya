@@ -81,7 +81,7 @@ Bağımlı: PILOT-02 verileri.
 - [x] **OPS-03** Deploy CI kapısı: `workflow_run` → CI success + main + push; paths gate job'da; `workflow_dispatch` kaçış kaldı (2026-08-10).
 - — **AUDIT-F09-06** `tenants` FK → `restrict` + soft-delete (`deleted_at`); 10y mali saklama ↔ KVKK. **(L)**
 - — **AUDIT-F09-07** KVKK m.11: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until` (anonimleştirme; hard-delete yok). **(L)**
-- — **AUDIT-F09-20** `corsOrigins` allowlist hot-reload. **(M, düşük)**
+- [x] **AUDIT-F09-20** `corsOrigins` allowlist hot-reload — no-op (AUDIT «Fix: None required»; boot-time env bilinçli; 2026-08-10).
 
 ### B2. Test / kalite
 

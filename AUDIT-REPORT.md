@@ -197,6 +197,7 @@ Conversely, some spec'd endpoints (`/v1/health/ready`) appear in OpenAPI but the
 **Why it matters:** Operationally annoying, not security-relevant. Adding a customer staging origin requires a redeploy.
 **Fix:** None required. Document.
 **Effort:** n/a.
+**Resolution (AUDIT-F09-20, 2026-08-10):** Closed as **no-op**. Documented in `docs/DEPLOY-COOLIFY.md` (origin change = API restart by design). Hot-reload / DB allowlist rejected: install-wide single panel host, not tenant-scoped; mutable CORS would widen the security boundary for an operational convenience the audit itself marked optional.
 
 ### [MEDIUM] `bullmqJobId` foreign-key relationship is not enforced
 **Where:** `apps/api/src/db/schema/queue.ts` defines `bullmqJobId: text` on the `jobs` table; `apps/api/src/webhooks/webhooks.controller.ts:228` writes `bullmqJobId = bullJob.id` after enqueue. No FK to Redis.
