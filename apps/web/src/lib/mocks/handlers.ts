@@ -1818,8 +1818,8 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const idx = store.files.findIndex((f) => f.id === params.fileId && f.contact_id === params.id);
 		if (idx < 0) return notFound('Dosya bulunamadı');
-		store.files.splice(idx, 1);
-		return new HttpResponse(null, { status: 204 });
+		const [removed] = store.files.splice(idx, 1);
+		return HttpResponse.json({ id: removed!.id, deleted: true as const });
 	}),
 
 	http.get('/v1/appointments/:id/files', ({ params, request }) => {

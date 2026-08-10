@@ -232,7 +232,7 @@ export class ContactsService {
 			const rows = await db
 				.select()
 				.from(files)
-				.where(eq(files.contactId, contactId))
+				.where(and(eq(files.contactId, contactId), isNull(files.deletedAt)))
 				.orderBy(desc(files.createdAt), desc(files.id));
 
 			return { items: rows.map(toContactFile) };
@@ -498,13 +498,16 @@ export class ContactsService {
 					status: 'ready',
 					mimeType: objectStat.contentType ?? row.mimeType
 				})
-				.where(and(eq(files.id, fileId), eq(files.contactId, contactId)))
+				.where(
+					and(eq(files.id, fileId), eq(files.contactId, contactId), isNull(files.deletedAt))
+				)
 				.returning();
 
 			return toContactFile(updated!);
 		});
 	}
 
+	/** Active (non-soft-deleted) file under an active contact. */
 	private async findFileRow(db: TenantDb, contactId: string, fileId: string) {
 		const contact = await this.findActiveRow(db, contactId);
 		if (!contact) {
@@ -515,9 +518,40 @@ export class ContactsService {
 		const [row] = await db
 			.select()
 			.from(files)
-			.where(and(eq(files.id, fileId), eq(files.contactId, contactId)))
+			.where(
+				and(eq(files.id, fileId), eq(files.contactId, contactId), isNull(files.deletedAt))
+			)
 			.limit(1);
 		return row ?? null;
+	}
+
+	/**
+	 * GAP-F09-23: soft-delete file meta + audit. Does not remove storage blob
+	 * (RoutingFileStorage / FilesSweepService ownership).
+	 * Second delete on same id → not_found (same as contacts/txns/appts).
+	 */
+	async softDeleteFileWithDb(
+		db: TenantDb,
+		tenantId: string,
+		contactId: string,
+		fileId: string,
+		actor: AuditActor
+	) {
+		const existing = await this.findFileRow(db, contactId, fileId);
+		if (!existing) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'File not found' }
+			});
+		}
+
+		await db
+			.update(files)
+			.set({ deletedAt: new Date() })
+			.where(and(eq(files.id, fileId), eq(files.contactId, contactId), isNull(files.deletedAt)));
+
+		await writeAuditLog(db, tenantId, actor, 'delete', 'file', existing.filename);
+
+		return { id: fileId, deleted: true as const };
 	}
 
 	/**
@@ -606,7 +640,9 @@ export class ContactsService {
 			const [row] = await db
 				.select()
 				.from(files)
-				.where(and(eq(files.id, fileId), eq(files.contactId, contactId)))
+				.where(
+					and(eq(files.id, fileId), eq(files.contactId, contactId), isNull(files.deletedAt))
+				)
 				.limit(1);
 
 			if (!row) {

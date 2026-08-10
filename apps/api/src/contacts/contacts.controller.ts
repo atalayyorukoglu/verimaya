@@ -337,6 +337,38 @@ export class ContactsController {
 		return result.body;
 	}
 
+	/** GAP-F09-23: soft-delete — same permission floor as upload (`contact:update`). */
+	@Delete(':id/files/:fileId')
+	@RequireOrgPermission('contact', 'update')
+	@Idempotent()
+	async deleteFile(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('fileId') fileId: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'DELETE',
+			'/v1/contacts/:id/files/:fileId',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.contactsService.softDeleteFileWithDb(
+					db,
+					tenantId,
+					id,
+					fileId,
+					actor
+				)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
 	@Post(':id/files')
 	@RequireOrgPermission('contact', 'update')
 	@Idempotent()

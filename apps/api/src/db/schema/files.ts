@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 import { appointments } from './appointments';
 import { contacts } from './contacts';
@@ -30,6 +30,8 @@ export const files = pgTable(
 			onDelete: 'set null'
 		}),
 		uploadedByDisplayName: text('uploaded_by_display_name'),
+		/** GAP-F09-23: soft-delete; list/preview hide; blob kept for sweep/retention */
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: createdAt()
 	},
 	(table) => [
@@ -38,7 +40,8 @@ export const files = pgTable(
 			table.tenantId,
 			table.contactId,
 			table.createdAt
-		)
+		),
+		index('files_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt)
 	]
 );
 

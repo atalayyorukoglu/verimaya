@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, eq, lte } from 'drizzle-orm';
+import { and, eq, isNull, lte } from 'drizzle-orm';
 import { files } from '../db/schema/files';
 import { jobs } from '../db/schema/queue';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -30,13 +30,15 @@ export type FilesSweepResult = {
 };
 
 /**
- * Pure eligibility: only `pending`, older than maxAge. Never `ready`.
+ * Pure eligibility: only non-deleted `pending`, older than maxAge. Never `ready`.
+ * Soft-deleted rows are excluded (GAP-F09-23 — hard-delete yok).
  */
 export function isEligiblePendingFile(
-	row: { status: string; createdAt: Date },
+	row: { status: string; createdAt: Date; deletedAt?: Date | null },
 	now: Date,
 	maxAgeMs: number = FILES_SWEEP_MAX_AGE_MS
 ): boolean {
+	if (row.deletedAt != null) return false;
 	if (row.status !== 'pending') return false;
 	const ageMs = now.getTime() - row.createdAt.getTime();
 	return ageMs >= maxAgeMs;
@@ -73,7 +75,13 @@ export class FilesSweepService {
 			const candidates = await db
 				.select()
 				.from(files)
-				.where(and(eq(files.status, 'pending'), lte(files.createdAt, cutoff)));
+				.where(
+					and(
+						eq(files.status, 'pending'),
+						isNull(files.deletedAt),
+						lte(files.createdAt, cutoff)
+					)
+				);
 
 			const candidateIds = candidates.map((r) => r.id);
 			const deletedIds: string[] = [];
@@ -81,8 +89,8 @@ export class FilesSweepService {
 
 			if (!dryRun) {
 				for (const row of candidates) {
-					// Double-check: never touch ready (defense in depth).
-					if (row.status !== 'pending') continue;
+					// Double-check: never touch ready or soft-deleted (defense in depth).
+					if (row.status !== 'pending' || row.deletedAt != null) continue;
 
 					if (row.storageKey && row.storageKey !== PENDING_STORAGE_KEY) {
 						try {

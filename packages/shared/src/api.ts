@@ -19,6 +19,8 @@ export const apiPaths = {
 		`${API_V1_PREFIX}/contacts/${id}/auto-link-transactions`,
 	contactFiles: (id: string) => `${API_V1_PREFIX}/contacts/${id}/files`,
 	contactFilesPresign: (id: string) => `${API_V1_PREFIX}/contacts/${id}/files/presign`,
+	contactFile: (contactId: string, fileId: string) =>
+		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}`,
 	contactFileConfirm: (contactId: string, fileId: string) =>
 		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}/confirm`,
 	contactFileContent: (contactId: string, fileId: string) =>
@@ -250,6 +252,9 @@ export const apiContract = {
 	'POST /v1/contacts/:id/files': {
 		body: contactFileCreateSchema,
 		response: contactFileSchema
+	},
+	'DELETE /v1/contacts/:id/files/:fileId': {
+		response: softDeleteResultSchema
 	},
 	'GET /v1/contacts/:id/files/:fileId/download': {
 		/** Binary stream — not a JSON zod body */

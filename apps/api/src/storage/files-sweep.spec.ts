@@ -36,6 +36,16 @@ describe('isEligiblePendingFile (Adım 30a)', () => {
 		const createdAt = new Date(now.getTime() - 72 * 60 * 60 * 1000);
 		expect(isEligiblePendingFile({ status: 'ready', createdAt }, now)).toBe(false);
 	});
+
+	it('rejects soft-deleted pending even when old (GAP-F09-23)', () => {
+		const createdAt = new Date(now.getTime() - 25 * 60 * 60 * 1000);
+		expect(
+			isEligiblePendingFile(
+				{ status: 'pending', createdAt, deletedAt: new Date(now.getTime() - 1000) },
+				now
+			)
+		).toBe(false);
+	});
 });
 
 describe('FilesSweepService (Adım 30a)', () => {

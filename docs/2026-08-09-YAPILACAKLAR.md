@@ -198,11 +198,6 @@
 
 - **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
-- **GAP-F09-23** Dosya silme endpoint'i (soft-delete + audit; KVKK). **(M)**
-  Not (2026-08-09): dosya yükleme/okuma tek choke point'ten geçiyor (`file-mime.ts` sniff +
-  `putFileContent`/`uploadLocalFileWithDb`, preview'da RFC 5987 + nosniff) — silme de aynı
-  servis katmanına eklensin; storage tarafı RoutingFileStorage sayesinde local+S3 tek noktadan
-  kapsanır.
 
 ---
 
@@ -269,6 +264,14 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-F09-23** — `DELETE /v1/contacts/:id/files/:fileId` soft-delete (`files.deleted_at` +
+  migration `0039`); audit `action=delete`/`entity_type=file` (CHECK zaten vardı); liste/
+  preview/download `deleted_at IS NULL`; blob silinmez; sweep soft-deleted'i hariç tutar;
+  izin `contact:update`; ikinci silme 404; panel onay + i18n (2026-08-10).
+  **Görüş:** Hard-delete yok (Açık sorular §1); ikinci DELETE 404 — contacts/txn/appt
+  yumuşak silme deseni (aynı Idempotency-Key replay ≠ ikinci doğal silme). Sweep yalnız
+  pending orphan; ready soft-delete blob kalır. shared 92 · api 453 · web check+42 · lint
+  temiz; openapi 69 op.
 - ✅ **SEC-03 — runtime high advisory kapatma** (2026-08-10). `drizzle-orm` 0.44.7→0.45.2
   (doğrudan); `pnpm-workspace.yaml` overrides: find-my-way 9.7.0, fast-uri 3.1.5/4.1.2,
   nanoid 3.3.18, brace-expansion 1.1.18/5.0.9, js-yaml 4.3.1. Audit 17→7 (high 11→1).

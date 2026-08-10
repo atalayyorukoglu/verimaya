@@ -109,8 +109,9 @@
 	}
 
 	async function removeFile(file: ContactFile) {
+		if (!confirm(t('contacts.files.deleteConfirm', { filename: file.filename }))) return;
 		try {
-			await apiSend(apiPaths.contactFiles(contactId) + `/${file.id}`, 'DELETE');
+			await apiSend(apiPaths.contactFile(contactId, file.id), 'DELETE');
 			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.files(contactId) });
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : t('contacts.files.deleteFailed');
