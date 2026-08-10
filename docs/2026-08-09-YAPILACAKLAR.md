@@ -183,6 +183,23 @@
 
 ## Faz 9 — kalan denetim işleri (öncelik sırası yok; kapasiteye göre)
 
+- **OPS-03 — deploy CI'ı beklemiyor.** `.github/workflows/deploy-web.yml` ile `ci.yml`
+  birbirinden bağımsız: `main`'e push'ta ikisi paralel koşar ve deploy, CI'ın sonucunu
+  beklemez. **Kanıt (2026-08-10):** `eded20a` commit'inde CI **failure** (prettier),
+  "Deploy web image" **success** — kırık lint prod'a çıktı. Bu sefer zararsızdı (salt
+  biçim, `811e5ed` ile düzeltildi) ama aynı boşluk kırık testi de canlıya taşır.
+  **Yapılacak:** `deploy-web.yml`'e CI kapısı — `workflow_run` ile `ci.yml` başarısına
+  bağla, ya da build job'una `needs`/guard ekle. Karar noktası: CI kırmızıyken deploy
+  **tamamen bloklansın mı** yoksa yalnız uyarı mı versin (solo geliştiricide acil
+  hotfix yolunu kapatmamak gerekebilir — `workflow_dispatch` kaçış kapısı korunmalı).
+  **Dosyalar:** `.github/workflows/deploy-web.yml`, `.github/workflows/ci.yml`. **(S)**
+- **TEST-02 — TestSprite senaryoları DOMAIN-02'ye göre güncellensin.** `testsprite_tests/`
+  altındaki 15 senaryo birleşme öncesi panele göre yazıldı; **TC002** ("Create a patient
+  and see it in the list") ve **TC003** ("Edit a patient…") artık var olmayan `/patients`
+  akışını test ediyor. Kişiler modeline çekilmeli: tür = Hasta filtresi, ad/soyad ayrı
+  alan, kaynak → alt kaynak kademesi. Firma seçimi + `/settings/organizations` için yeni
+  senaryo eklenebilir. **Dosyalar:** `testsprite_tests/TC00*.py`,
+  `docs/2026-08-09-TESTSPRITE-15-SENARYO.md`. **(M)**
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
 - **AUDIT-F09-07** KVKK m.11 data-subject endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. Anonimleştirme yaklaşımı (silme değil) arşivdeki Açık sorular §1 kararına göre. **(L)**
 - **AUDIT-F09-20** `corsOrigins` allowlist hot-reload. **(M, düşük öncelik)**
