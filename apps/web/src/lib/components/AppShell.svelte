@@ -256,7 +256,7 @@
 		>
 			{#each visibleGroups as group, gi (group.labelKey)}
 				<div class={gi === 0 ? '' : 'mt-4'}>
-					<p class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase">
+					<p class="px-3 pb-1.5 text-[11px] font-semibold text-text-muted">
 						{t(group.labelKey)}
 					</p>
 					<ul class="space-y-0.5">
@@ -333,9 +333,7 @@
 			>
 				{#each visibleGroups as group, gi (group.labelKey)}
 					<div class={gi === 0 ? '' : 'mt-4'}>
-						<p
-							class="px-3 pb-1.5 text-[10px] font-semibold tracking-wider text-text-muted uppercase"
-						>
+						<p class="px-3 pb-1.5 text-[11px] font-semibold text-text-muted">
 							{t(group.labelKey)}
 						</p>
 						<ul class="space-y-0.5">

@@ -3,7 +3,6 @@ import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import Users from '@lucide/svelte/icons/users';
 import Calendar from '@lucide/svelte/icons/calendar';
 import Wallet from '@lucide/svelte/icons/wallet';
-import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 import ChartColumn from '@lucide/svelte/icons/chart-column';
 import Megaphone from '@lucide/svelte/icons/megaphone';
 import Calculator from '@lucide/svelte/icons/calculator';
@@ -12,6 +11,7 @@ import ShieldCheck from '@lucide/svelte/icons/shield-check';
 import LayoutTemplate from '@lucide/svelte/icons/layout-template';
 import Gauge from '@lucide/svelte/icons/gauge';
 import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
+import Bot from '@lucide/svelte/icons/bot';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -38,23 +38,17 @@ export type NavGroup = {
 /** Panel nav — CF dashboard grupları, TickPort renkleri; docs/TASARIM.md */
 export const navGroups: NavGroup[] = [
 	{
-		labelKey: 'nav.group.main',
+		labelKey: 'nav.group.records',
 		items: [
 			{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
 			{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
-			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar }
-		]
-	},
-	{
-		labelKey: 'nav.group.finance',
-		items: [
+			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
 			{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
-			{ labelKey: 'nav.balances', href: '/finance/balances', icon: ArrowLeftRight },
 			{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
 		]
 	},
 	{
-		labelKey: 'nav.group.marketing',
+		labelKey: 'nav.group.tools',
 		items: [
 			{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck },
 			{ labelKey: 'nav.marketingOverview', href: '/marketing', icon: Megaphone },
@@ -65,6 +59,10 @@ export const navGroups: NavGroup[] = [
 			{ labelKey: 'nav.measurement', href: '/marketing/measurement', icon: Gauge },
 			{ labelKey: 'nav.preLaunch', href: '/marketing/pre-launch', icon: ClipboardCheck }
 		]
+	},
+	{
+		labelKey: 'nav.group.resources',
+		items: [{ labelKey: 'nav.aiPrep', href: '/resources/ai-prep', icon: Bot }]
 	},
 	{
 		labelKey: 'nav.group.system',

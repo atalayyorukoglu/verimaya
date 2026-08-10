@@ -30,10 +30,13 @@ const tr = {
 	'locale.tr': 'Türkçe',
 
 	// Panel navigasyonu — grup başlıkları
-	'nav.group.main': 'Ana',
+	'nav.group.records': 'Kayıtlar',
+	'nav.group.tools': 'Araçlar',
+	'nav.group.resources': 'Kaynaklar',
+	'nav.group.system': 'Sistem',
+	'nav.group.main': 'Kayıtlar',
 	'nav.group.finance': 'Finans',
 	'nav.group.marketing': 'Araçlar',
-	'nav.group.system': 'Sistem',
 
 	// Panel navigasyonu — bağlantılar
 	'nav.dashboard': 'Panel',
@@ -43,6 +46,10 @@ const tr = {
 	'nav.balances': 'Bakiyeler',
 	'nav.reports': 'Raporlar',
 	'nav.scorecard': 'AI Karne',
+	'nav.aiPrep': 'Ai Hazırlık',
+	'nav.aiPrep.documentTitle': 'Ai Hazırlık · Veri Maya',
+	'nav.aiPrep.title': 'Ai Hazırlık',
+	'nav.aiPrep.description': 'AI operasyon hazırlığı — içerik yakında.',
 	'nav.marketingOverview': 'Genel Bakış',
 	'nav.calculator': 'Hesap',
 	'nav.simulator': 'Simülatör',
@@ -1549,10 +1556,13 @@ const en: Record<MessageKey, string> = {
 	'locale.en': 'English',
 	'locale.tr': 'Türkçe',
 
-	'nav.group.main': 'Main',
+	'nav.group.records': 'Records',
+	'nav.group.tools': 'Tools',
+	'nav.group.resources': 'Resources',
+	'nav.group.system': 'System',
+	'nav.group.main': 'Records',
 	'nav.group.finance': 'Finance',
 	'nav.group.marketing': 'Tools',
-	'nav.group.system': 'System',
 
 	'nav.dashboard': 'Dashboard',
 	'nav.contacts': 'Contacts',
@@ -1561,6 +1571,10 @@ const en: Record<MessageKey, string> = {
 	'nav.balances': 'Balances',
 	'nav.reports': 'Reports',
 	'nav.scorecard': 'AI Scorecard',
+	'nav.aiPrep': 'AI Prep',
+	'nav.aiPrep.documentTitle': 'AI Prep · Veri Maya',
+	'nav.aiPrep.title': 'AI Prep',
+	'nav.aiPrep.description': 'AI operations prep — content coming soon.',
 	'nav.marketingOverview': 'Overview',
 	'nav.calculator': 'Calculator',
 	'nav.simulator': 'Simulator',
