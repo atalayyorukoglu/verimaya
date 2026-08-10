@@ -4,10 +4,8 @@ import Users from '@lucide/svelte/icons/users';
 import Calendar from '@lucide/svelte/icons/calendar';
 import Wallet from '@lucide/svelte/icons/wallet';
 import ChartColumn from '@lucide/svelte/icons/chart-column';
-import Megaphone from '@lucide/svelte/icons/megaphone';
-import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
-import Bot from '@lucide/svelte/icons/bot';
-import BookOpen from '@lucide/svelte/icons/book-open';
+import Wrench from '@lucide/svelte/icons/wrench';
+import Library from '@lucide/svelte/icons/library';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -18,6 +16,12 @@ import type { MessageKey } from '$lib/i18n/messages';
  * Rota İngilizce, etiket katalogdan gelir.
  * `labelKey` bilinçli olarak string değil — yanlış anahtar derleme hatası verir.
  * Kural: docs/TASARIM.md § Dil ve slug.
+ *
+ * Sidebar IA (düz):
+ *   Panel (grup dışı)
+ *   Kayıtlar → Kişiler, Randevular, Finans, Raporlar
+ *   Büyüme → Araçlar, Kaynaklar  (hub sayfaları; alt ürünler kartlardan)
+ *   Sistem → Ayarlar, Özellikler, Geliştirici
  */
 export type NavItem = {
 	labelKey: MessageKey;
@@ -25,26 +29,10 @@ export type NavItem = {
 	icon: Component;
 };
 
-export type NavSubgroup = {
+export type NavGroup = {
 	labelKey: MessageKey;
 	items: NavItem[];
 };
-
-export type NavGroup = {
-	labelKey: MessageKey;
-	/** Flat links under the group (Kayıtlar, Sistem). */
-	items?: NavItem[];
-	/** Nested labelled buckets (Büyüme → Araçlar / Kaynaklar). */
-	subgroups?: NavSubgroup[];
-};
-
-/** Flatten all actionable links in a group (items or nested subgroup items). */
-export function navGroupItems(group: NavGroup): NavItem[] {
-	if (group.subgroups?.length) {
-		return group.subgroups.flatMap((s) => s.items);
-	}
-	return group.items ?? [];
-}
 
 /** Standalone entry — rendered above groups in the sidebar. */
 export const panelNavItem: NavItem = {
@@ -66,21 +54,9 @@ export const navGroups: NavGroup[] = [
 	},
 	{
 		labelKey: 'nav.group.growth',
-		subgroups: [
-			{
-				labelKey: 'nav.group.tools',
-				items: [
-					{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck },
-					{ labelKey: 'nav.marketingOverview', href: '/marketing', icon: Megaphone }
-				]
-			},
-			{
-				labelKey: 'nav.group.resources',
-				items: [
-					{ labelKey: 'nav.aiPrep', href: '/resources/ai-prep', icon: Bot },
-					{ labelKey: 'nav.docs', href: '/resources/docs', icon: BookOpen }
-				]
-			}
+		items: [
+			{ labelKey: 'nav.tools', href: '/tools', icon: Wrench },
+			{ labelKey: 'nav.resources', href: '/knowledge', icon: Library }
 		]
 	},
 	{
@@ -92,6 +68,11 @@ export const navGroups: NavGroup[] = [
 		]
 	}
 ];
+
+/** Flatten links in a group (kept for AppShell helpers). */
+export function navGroupItems(group: NavGroup): NavItem[] {
+	return group.items;
+}
 
 /** Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar */
 export const mobileTabItems: NavItem[] = [

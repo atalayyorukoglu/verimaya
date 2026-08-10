@@ -65,23 +65,11 @@
 
 	const visibleGroups = $derived(
 		navGroups
-			.map((group) => {
-				if (group.subgroups?.length) {
-					const subgroups = group.subgroups
-						.map((sg) => ({
-							...sg,
-							items: sg.items.filter((item) => canSeeNav(item.href, role))
-						}))
-						.filter((sg) => sg.items.length > 0);
-					return { ...group, items: undefined, subgroups };
-				}
-				return {
-					...group,
-					items: (group.items ?? []).filter((item) => canSeeNav(item.href, role)),
-					subgroups: undefined
-				};
-			})
-			.filter((group) => navGroupItems(group).length > 0)
+			.map((group) => ({
+				...group,
+				items: group.items.filter((item) => canAccessPath(item.href, role))
+			}))
+			.filter((group) => group.items.length > 0)
 	);
 
 	const showPanelNav = $derived(canSeeNav(panelNavItem.href, role));
@@ -300,61 +288,27 @@
 					<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
 						{t(group.labelKey)}
 					</p>
-					{#if group.subgroups}
-						{#each group.subgroups as sg, si (sg.labelKey)}
-							<p
-								class={cn(
-									'px-3 pb-1 text-[10px] font-medium tracking-wide text-text-faint',
-									si === 0 ? 'pt-0.5' : 'pt-1.5'
-								)}
-							>
-								{t(sg.labelKey)}
-							</p>
-							<ul class="space-y-0">
-								{#each sg.items as item (item.href)}
-									{@const active = isActive(item.href)}
-									{@const Icon = item.icon}
-									<li>
-										<a
-											href={item.href}
-											class={cn(
-												'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-												active
-													? 'bg-brand-subtle text-brand-text'
-													: 'text-text-muted hover:bg-surface-2 hover:text-text'
-											)}
-											aria-current={active ? 'page' : undefined}
-										>
-											<Icon class="size-4 shrink-0" aria-hidden="true" />
-											<span class="truncate">{t(item.labelKey)}</span>
-										</a>
-									</li>
-								{/each}
-							</ul>
+					<ul class="space-y-0">
+						{#each group.items as item (item.href)}
+							{@const active = isActive(item.href)}
+							{@const Icon = item.icon}
+							<li>
+								<a
+									href={item.href}
+									class={cn(
+										'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+										active
+											? 'bg-brand-subtle text-brand-text'
+											: 'text-text-muted hover:bg-surface-2 hover:text-text'
+									)}
+									aria-current={active ? 'page' : undefined}
+								>
+									<Icon class="size-4 shrink-0" aria-hidden="true" />
+									<span class="truncate">{t(item.labelKey)}</span>
+								</a>
+							</li>
 						{/each}
-					{:else}
-						<ul class="space-y-0">
-							{#each group.items ?? [] as item (item.href)}
-								{@const active = isActive(item.href)}
-								{@const Icon = item.icon}
-								<li>
-									<a
-										href={item.href}
-										class={cn(
-											'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-											active
-												? 'bg-brand-subtle text-brand-text'
-												: 'text-text-muted hover:bg-surface-2 hover:text-text'
-										)}
-										aria-current={active ? 'page' : undefined}
-									>
-										<Icon class="size-4 shrink-0" aria-hidden="true" />
-										<span class="truncate">{t(item.labelKey)}</span>
-									</a>
-								</li>
-							{/each}
-						</ul>
-					{/if}
+					</ul>
 				</div>
 			{/each}
 		</nav>
@@ -433,63 +387,28 @@
 						<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
 							{t(group.labelKey)}
 						</p>
-						{#if group.subgroups}
-							{#each group.subgroups as sg, si (sg.labelKey)}
-								<p
-									class={cn(
-										'px-3 pb-1 text-[10px] font-medium tracking-wide text-text-faint',
-										si === 0 ? 'pt-0.5' : 'pt-1.5'
-									)}
-								>
-									{t(sg.labelKey)}
-								</p>
-								<ul class="space-y-0">
-									{#each sg.items as item (item.href)}
-										{@const active = isActive(item.href)}
-										{@const Icon = item.icon}
-										<li>
-											<a
-												href={item.href}
-												onclick={closeMobile}
-												class={cn(
-													'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-													active
-														? 'bg-brand-subtle text-brand-text'
-														: 'text-text-muted hover:bg-surface-2 hover:text-text'
-												)}
-												aria-current={active ? 'page' : undefined}
-											>
-												<Icon class="size-4 shrink-0" aria-hidden="true" />
-												<span class="truncate">{t(item.labelKey)}</span>
-											</a>
-										</li>
-									{/each}
-								</ul>
+						<ul class="space-y-0">
+							{#each group.items as item (item.href)}
+								{@const active = isActive(item.href)}
+								{@const Icon = item.icon}
+								<li>
+									<a
+										href={item.href}
+										onclick={closeMobile}
+										class={cn(
+											'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+											active
+												? 'bg-brand-subtle text-brand-text'
+												: 'text-text-muted hover:bg-surface-2 hover:text-text'
+										)}
+										aria-current={active ? 'page' : undefined}
+									>
+										<Icon class="size-4 shrink-0" aria-hidden="true" />
+										<span class="truncate">{t(item.labelKey)}</span>
+									</a>
+								</li>
 							{/each}
-						{:else}
-							<ul class="space-y-0">
-								{#each group.items ?? [] as item (item.href)}
-									{@const active = isActive(item.href)}
-									{@const Icon = item.icon}
-									<li>
-										<a
-											href={item.href}
-											onclick={closeMobile}
-											class={cn(
-												'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-												active
-													? 'bg-brand-subtle text-brand-text'
-													: 'text-text-muted hover:bg-surface-2 hover:text-text'
-											)}
-											aria-current={active ? 'page' : undefined}
-										>
-											<Icon class="size-4 shrink-0" aria-hidden="true" />
-											<span class="truncate">{t(item.labelKey)}</span>
-										</a>
-									</li>
-								{/each}
-							</ul>
-						{/if}
+						</ul>
 					</div>
 				{/each}
 			</nav>
