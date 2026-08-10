@@ -78,6 +78,7 @@ const tr = {
 	'nav.features': 'Özellikler',
 	'nav.changelog': 'Yenilikler',
 	'nav.developer': 'Geliştirici',
+	'dev.redirecting': 'Yönlendiriliyor…',
 
 	'patients.list.title': 'Hastalar',
 	'patients.list.description':
@@ -1625,6 +1626,7 @@ const en: Record<MessageKey, string> = {
 	'nav.features': 'Features',
 	'nav.changelog': "What's new",
 	'nav.developer': 'Developer',
+	'dev.redirecting': 'Redirecting…',
 
 	'patients.list.title': 'Patients',
 	'patients.list.description':

@@ -21,7 +21,8 @@ import type { MessageKey } from '$lib/i18n/messages';
  *   Panel (grup dışı)
  *   Kayıtlar → Kişiler, Randevular, Finans, Raporlar
  *   Büyüme → Araçlar, Kaynaklar  (hub sayfaları; alt ürünler kartlardan)
- *   Sistem → Özellikler, Ayarlar, Geliştirici
+ *   Sistem → Özellikler, Ayarlar, Geliştirici (`/dev` — MSW-only; gated by
+ *   `isDevPanelEnabled` in `$lib/dev-panel`, filtered in AppShell)
  */
 export type NavItem = {
 	labelKey: MessageKey;

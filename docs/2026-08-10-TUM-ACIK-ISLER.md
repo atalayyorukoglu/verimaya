@@ -108,7 +108,7 @@ Bağımlı: PILOT-02 verileri.
 - — **GAP-25** Kapsamlı veri silme (`/data/delete-scope`) + wipe — “tehlikeli” onay korunur
 - — **GAP-26** AI prompt özelleştirme — Açık sorular §6
 - — **GAP-27** Toplu `reorder` endpoint (kısmen PATCH ile var)
-- — **GAP-28** Dev panel gerçek arka uç veya ekranı gizle (bugün yalnız MSW)
+- ✅ **GAP-28** Dev panel üretimde gizlendi (Nest yazılmadı; MSW+DEV kapısı) — YAPILACAKLAR
 - — **GAP-29** Randevu öncesi eksik iletişim bilgisi uyarısı
 - — **PRODUCT-01** Komisyon takibi discovery (acente seçilirse)
 - — **IOS-01** iOS donmuş + birikmiş drift (DOMAIN-01 enum / marketing adları) — çözülürse ilk kalem
@@ -174,7 +174,7 @@ Bunlar backlog değil; **yapılmama kararı** (liste tam metin: YAPILACAKLAR):
 | TestSprite TC002/TC003 | Hâlâ `/patients` senaryosu (TEST-02) |
 | Dosya silme | Endpoint yok (GAP-F09-23) |
 | Kişi not thread | Yok (GAP-F09-19) |
-| Dev panel Nest modülü | Yok; MSW-only (GAP-28) |
+| Dev panel Nest modülü | Yok (bilinçli); UI `isDevPanelEnabled` ile gizlendi (GAP-28 ✅) |
 
 ---
 

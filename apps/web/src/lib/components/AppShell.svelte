@@ -6,6 +6,8 @@
 	import { cn } from '$lib/utils';
 	import { apiGet } from '$lib/api';
 	import { mobileTabItems, navGroupItems, navGroups, panelNavItem } from '$lib/navigation';
+	import { filterDevPanelNavItems } from '$lib/dev-panel';
+	import { DEV_PANEL_ENABLED } from '$lib/dev-panel-enabled';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { canAccessPath, canSeeNav, DEFAULT_ROLE, roleLabels } from '$lib/rbac';
 	import { useQueryScope, resetQueryScope } from '$lib/query-scope.svelte';
@@ -62,7 +64,9 @@
 		navGroups
 			.map((group) => ({
 				...group,
-				items: group.items.filter((item) => canAccessPath(item.href, role))
+				items: filterDevPanelNavItems(group.items, DEV_PANEL_ENABLED).filter((item) =>
+					canAccessPath(item.href, role)
+				)
 			}))
 			.filter((group) => group.items.length > 0)
 	);
@@ -117,7 +121,9 @@
 
 	const allNavHrefs = $derived([
 		panelNavItem.href,
-		...navGroups.flatMap((g) => navGroupItems(g).map((i) => i.href)),
+		...navGroups.flatMap((g) =>
+			filterDevPanelNavItems(navGroupItems(g), DEV_PANEL_ENABLED).map((i) => i.href)
+		),
 		...mobileTabItems.map((i) => i.href)
 	]);
 

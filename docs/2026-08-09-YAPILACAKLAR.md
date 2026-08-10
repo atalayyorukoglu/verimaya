@@ -208,7 +208,6 @@
 - **GAP-25:** Kapsamlı veri silme (`/data/delete-scope`) + wipe — "tehlikeli" onayı korunur.
 - **GAP-26:** AI prompt özelleştirme — Açık sorular §6.
 - **GAP-27:** Toplu `reorder` endpoint'i (kısmen PATCH ile karşılanıyor).
-- **GAP-28:** Dev panel gerçek arka uç veya ekranı gizle (bugün yalnız MSW; yanlış izlenim).
 - **GAP-29:** Randevu öncesi eksik iletişim bilgisi uyarısı.
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (teknik ad `verimaya`;
   görünen marka **"Veri Maya"**).
@@ -263,6 +262,11 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-28** — Dev panel üretimde gizlendi (backend yazılmadı). `/dev` MSW-only; kapı
+  `isDevPanelEnabled` + wiring `dev-panel-enabled.ts` (`USE_MSW` ∧ `import.meta.env.DEV`);
+  nav filtre + rota `→ /`.
+  **Görüş (2026-08-10):** Nest `/v1/dev` ürün ihtiyacı yok → bakım borcu yazmak yerine
+  gizle (tersine çevrilebilir). Rota silinmedi. web check/test/lint yeşil.
 - ✅ **AUDIT-F09-20** — no-op (2026-08-10): `corsOrigins` / better-auth `trustedOrigins`
   boot-time env (`TRUSTED_ORIGINS` + `WEB_PUBLIC_URL`) bilinçli; AUDIT-REPORT «Fix: None
   required. Document.» — DEPLOY-COOLIFY’a restart notu eklendi. Hot-reload / DB allowlist
