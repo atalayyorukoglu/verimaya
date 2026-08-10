@@ -9,6 +9,7 @@ import Library from '@lucide/svelte/icons/library';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
+import Bot from '@lucide/svelte/icons/bot';
 
 import type { MessageKey } from '$lib/i18n/messages';
 
@@ -21,7 +22,7 @@ import type { MessageKey } from '$lib/i18n/messages';
  *   Panel (grup dışı)
  *   Kayıtlar → Kişiler, Randevular, Finans, Raporlar
  *   Büyüme → Araçlar, Kaynaklar  (hub sayfaları; alt ürünler kartlardan)
- *   Sistem → Özellikler, Ayarlar, Geliştirici (`/dev` — MSW-only; gated by
+ *   Sistem → Maya AI (mock), Özellikler, Ayarlar, Geliştirici (`/dev` — MSW-only; gated by
  *   `isDevPanelEnabled` in `$lib/dev-panel`, filtered in AppShell)
  */
 export type NavItem = {
@@ -63,6 +64,7 @@ export const navGroups: NavGroup[] = [
 	{
 		labelKey: 'nav.group.system',
 		items: [
+			{ labelKey: 'nav.maya', href: '/maya', icon: Bot },
 			{ labelKey: 'nav.features', href: '/features', icon: Sparkles },
 			{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
 			{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }

@@ -21,6 +21,7 @@
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import SiteLogo from '$lib/components/SiteLogo.svelte';
 	import SidebarVersionFooter from '$lib/components/SidebarVersionFooter.svelte';
+	import MayaAiFab from '$lib/components/MayaAiFab.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
@@ -317,13 +318,6 @@
 		<div
 			class="shrink-0 border-t border-border bg-bg px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
 		>
-			<a
-				href="/settings"
-				class="mb-2 block truncate rounded-md px-1 py-1 text-center text-xs text-text-muted hover:text-text"
-				title="demo@verimaya.app"
-			>
-				demo@verimaya.app
-			</a>
 			<SidebarVersionFooter />
 		</div>
 	</aside>
@@ -416,14 +410,6 @@
 			<div
 				class="shrink-0 border-t border-border bg-bg px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
 			>
-				<a
-					href="/settings"
-					onclick={closeMobile}
-					class="mb-2 block truncate rounded-md px-1 py-1 text-center text-xs text-text-muted hover:text-text"
-					title="demo@verimaya.app"
-				>
-					demo@verimaya.app
-				</a>
 				<SidebarVersionFooter />
 			</div>
 		</aside>
@@ -583,6 +569,8 @@
 		</ul>
 	</nav>
 </div>
+
+<MayaAiFab />
 
 <Dialog
 	bind:open={supportOpen}

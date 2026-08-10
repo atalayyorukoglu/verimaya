@@ -18,6 +18,7 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/reports': ['owner', 'admin', 'manager', 'finance', 'readonly'],
 	'/settings': ['owner', 'admin'],
 	'/features': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/maya': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/changelog': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/dev': ['owner', 'admin']
 };

@@ -78,7 +78,46 @@ const tr = {
 	'nav.features': 'Özellikler',
 	'nav.changelog': 'Yenilikler',
 	'nav.developer': 'Geliştirici',
+	'nav.maya': 'Maya AI',
 	'dev.redirecting': 'Yönlendiriliyor…',
+
+	// Maya AI (mock UI — henüz API yok)
+	'maya.title': 'Maya AI',
+	'maya.subtitle': 'Operasyon asistanı — taslak önerir, sen onaylarsın.',
+	'maya.documentTitle': 'Maya AI · Veri Maya',
+	'maya.pageDescription':
+		'Mock sohbet: randevu, kişi özeti ve veri kalitesi sorularını dene. Gerçek LLM bağlantısı yok.',
+	'maya.mockBadge': 'Mock',
+	'maya.welcome':
+		'Merhaba — ben Maya. Yarınki randevular, kişi özeti veya eksik kaynak gibi sorular sorabilirsin. Cevaplar örnek veridir; kesin kayıt için onay gerekir.',
+	'maya.placeholder': 'Maya’ya sor…',
+	'maya.send': 'Gönder',
+	'maya.thinking': 'Düşünüyor…',
+	'maya.close': 'Kapat',
+	'maya.openFull': 'Tam sayfa',
+	'maya.fabLabel': 'Maya AI’yi aç',
+	'maya.nav': 'Maya AI',
+	'maya.draftHint': 'Bu bir taslak öneri — onaylamadan kayıt yazılmaz.',
+	'maya.approveDraft': 'Taslağı onayla',
+	'maya.draftApproved': 'Onaylandı (mock)',
+	'maya.suggestion.tomorrow': 'Yarınki randevular kimler?',
+	'maya.suggestion.summary': 'Ayşe Kaya dosyasını özetle',
+	'maya.suggestion.missingSource': 'Kaynağı boş kişiler',
+	'maya.suggestion.stale': 'Sessiz kalan takipler',
+	'maya.response.tomorrow':
+		'Yarın 3 randevu görünüyor:\n• 10:00 — Ayşe Kaya (konsültasyon)\n• 14:30 — John Smith (operasyon)\n• 16:00 — Mehmet Demir (kontrol)\n\nDetay için Randevular’a gidebilirsin.',
+	'maya.response.summary':
+		'Ayşe Kaya — kısa özet:\n• Son randevu: konsültasyon (geçen salı)\n• Açık bakiye: 12.500 TRY\n• Kaynak: Meta Ads\n• Son not: “Transfer pazartesi.”\n\nBu mock veri; gerçek kart için Kişiler’e bak.',
+	'maya.response.missingSource':
+		'Kaynağı boş 8 kişi buldum (örnek). En yeniler:\n• Zeynep Ak\n• Ali Can\n• Nora Ellis\n\n“Meta / kampanya X” diye önerebilirim — onaylarsan taslak kuyruğuna düşer.',
+	'maya.response.stale':
+		'7 gündür sessiz 4 kişi (örnek):\n• Carlos Ruiz — randevu sonrası takip yok\n• Elif Yılmaz — açık bakiye + mesaj yok\n\nHer biri için kısa WhatsApp taslağı önerebilirim.',
+	'maya.response.default':
+		'Mock moddayım. Şunu dene: yarınki randevular, bir kişiyi özetle, boş kaynaklar veya sessiz takipler.',
+	'maya.cite.appointments': 'Randevular',
+	'maya.cite.contact': 'Kişiler',
+	'maya.cite.dataQuality': 'Veri kalitesi',
+	'maya.cite.finance': 'Finans',
 
 	'patients.list.title': 'Hastalar',
 	'patients.list.description':
@@ -1632,7 +1671,45 @@ const en: Record<MessageKey, string> = {
 	'nav.features': 'Features',
 	'nav.changelog': "What's new",
 	'nav.developer': 'Developer',
+	'nav.maya': 'Maya AI',
 	'dev.redirecting': 'Redirecting…',
+
+	'maya.title': 'Maya AI',
+	'maya.subtitle': 'Operations assistant — suggests drafts, you approve.',
+	'maya.documentTitle': 'Maya AI · Veri Maya',
+	'maya.pageDescription':
+		'Mock chat: try appointments, contact summaries, and data-quality questions. No real LLM yet.',
+	'maya.mockBadge': 'Mock',
+	'maya.welcome':
+		'Hi — I’m Maya. Ask about tomorrow’s appointments, a contact summary, or missing sources. Answers are sample data; nothing is saved without approval.',
+	'maya.placeholder': 'Ask Maya…',
+	'maya.send': 'Send',
+	'maya.thinking': 'Thinking…',
+	'maya.close': 'Close',
+	'maya.openFull': 'Full page',
+	'maya.fabLabel': 'Open Maya AI',
+	'maya.nav': 'Maya AI',
+	'maya.draftHint': 'This is a draft suggestion — nothing is written until you approve.',
+	'maya.approveDraft': 'Approve draft',
+	'maya.draftApproved': 'Approved (mock)',
+	'maya.suggestion.tomorrow': 'Who has appointments tomorrow?',
+	'maya.suggestion.summary': 'Summarize Ayşe Kaya’s file',
+	'maya.suggestion.missingSource': 'Contacts missing source',
+	'maya.suggestion.stale': 'Quiet follow-ups',
+	'maya.response.tomorrow':
+		'3 appointments tomorrow:\n• 10:00 — Ayşe Kaya (consultation)\n• 14:30 — John Smith (procedure)\n• 16:00 — Mehmet Demir (check-up)\n\nOpen Appointments for details.',
+	'maya.response.summary':
+		'Ayşe Kaya — quick summary:\n• Last appointment: consultation (last Tuesday)\n• Open balance: 12,500 TRY\n• Source: Meta Ads\n• Last note: “Transfer Monday.”\n\nMock data — open Contacts for the real card.',
+	'maya.response.missingSource':
+		'Found 8 contacts with empty source (sample). Newest:\n• Zeynep Ak\n• Ali Can\n• Nora Ellis\n\nI can suggest “Meta / campaign X” — on approve it goes to the draft queue.',
+	'maya.response.stale':
+		'4 quiet contacts for 7+ days (sample):\n• Carlos Ruiz — no follow-up after appointment\n• Elif Yılmaz — open balance + no message\n\nI can draft a short WhatsApp for each.',
+	'maya.response.default':
+		'I’m in mock mode. Try: tomorrow’s appointments, summarize a contact, missing sources, or quiet follow-ups.',
+	'maya.cite.appointments': 'Appointments',
+	'maya.cite.contact': 'Contacts',
+	'maya.cite.dataQuality': 'Data quality',
+	'maya.cite.finance': 'Finance',
 
 	'patients.list.title': 'Patients',
 	'patients.list.description':
