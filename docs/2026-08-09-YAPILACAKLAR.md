@@ -195,7 +195,6 @@
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
 
-- **GAP-F09-19** Kişiye bağlı not thread'i — Açık sorular §5 kararını bekler. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker'da 0 satır; §4). **(L)**
 
 ---
@@ -208,7 +207,6 @@
 - **GAP-25:** Kapsamlı veri silme (`/data/delete-scope`) + wipe — "tehlikeli" onayı korunur.
 - **GAP-26:** AI prompt özelleştirme — Açık sorular §6.
 - **GAP-27:** Toplu `reorder` endpoint'i (kısmen PATCH ile karşılanıyor).
-- **GAP-29:** Randevu öncesi eksik iletişim bilgisi uyarısı.
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (teknik ad `verimaya`;
   görünen marka **"Veri Maya"**).
 - **IOS-01:** iOS donmuş; birikmiş drift (DOMAIN-01 enum + marketing adları iOS'a uygulanmadı) —
@@ -248,7 +246,9 @@
 
 3. **Randevu durumu enum kalacak mı?** Tenant kendi durumunu isterse enum → FK migrasyonu. PILOT-02 cevaplar.
 4. **Checklist ölü özellik mi?** Tracker canlı DB'de 0 satır → GAP-F09-20 tamamen skip olabilir.
-5. **Kişi notları hasta notlarından ayrı mı?** (GAP-F09-19) Tek "notlar" modeli mi, ayrı mı?
+5. ~~**Kişi notları hasta notlarından ayrı mı?** (GAP-F09-19)~~ — **kapandı (DOMAIN-02):**
+   tek model `case_notes.contact_id`; tür filtresi yok (Hasta/Klinik/Otel/…).
+   `contacts.notes` serbest alan ayrı kalır (profil özeti ≠ thread).
 6. **AI prompt tenant'a açılmalı mı?** (GAP-26) Çıkarım kalitesi tenant'a göre değişir → destek yükü.
 7. **Tenant düzeyinde izin matrisi isteniyor mu?** Tracker'da 9 özellik × 5 rol; bizde sabit 3 kaynak × 6 rol. Pilotta ölç; talep yoksa skip. AUDIT-F09-02 ile kısmen örtüşür.
 8. **P2P payer/payee geri gelecek mi?** Erteledi, iptal değil — `transactions` şemasını değiştirir; **freeze öncesi karar ucuz, sonra pahalı.**
@@ -262,6 +262,16 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-29** — Randevu öncesi eksik iletişim uyarısı (2026-08-10). `AppointmentFormDialog`
+  kişi seçilince phone/email boşsa uyarı (bloklamaz); i18n tr+en; saf yardımcı + vitest.
+  **Görüş:** Yalnız uyarı — kaydetme serbest (bilgi sonradan girilebilir). Metin eksik
+  kanalı (telefon / e-posta / ikisi) söyler. shared 92 · api 453 · web check 0 · test 56 ·
+  lint temiz; sözleşme değişmedi.
+- ✅ **GAP-F09-19** — Kişiye bağlı not thread'i (no-op / zaten var, 2026-08-10). DOMAIN-02
+  sonrası `case_notes.contact_id` + `GET/POST/DELETE /v1/contacts/:id/case-notes`; servis
+  tür bakmaz; panel `ContactCaseNotesThread` her kişi detayında. §5 → tek model.
+  **Görüş:** Eski «hasta notu vs kişi notu» ayrımı patients birleşince düştü; Klinik/Otel'e
+  de thread yazılır. `contacts.notes` serbest metin; thread ile çakışmaz. Kod yazılmadı.
 - ✅ **GAP-28** — Dev panel üretimde gizlendi (backend yazılmadı). `/dev` MSW-only; kapı
   `isDevPanelEnabled` + wiring `dev-panel-enabled.ts` (`USE_MSW` ∧ `import.meta.env.DEV`);
   nav filtre + rota `→ /`.

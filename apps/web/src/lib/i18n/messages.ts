@@ -1462,6 +1462,12 @@ const tr = {
 	'appointments.form.start': 'Başlangıç',
 	'appointments.form.end': 'Bitiş',
 	'appointments.form.transferCompany': 'Transfer firması',
+	'appointments.form.contactInfoMissingPhone':
+		'Seçilen kişide telefon yok. Randevu öncesi arayabilmek için kişi kaydına telefon ekleyin — yine de kaydedebilirsiniz.',
+	'appointments.form.contactInfoMissingEmail':
+		'Seçilen kişide e-posta yok. Randevu öncesi yazışabilmek için kişi kaydına e-posta ekleyin — yine de kaydedebilirsiniz.',
+	'appointments.form.contactInfoMissingBoth':
+		'Seçilen kişide telefon ve e-posta yok. Randevu öncesi iletişim için kişi kaydına ekleyin — yine de kaydedebilirsiniz.',
 	'appointments.ops.emptyRange': 'Bu aralıkta randevu yok.',
 	'appointments.ops.contactNotes': 'Hasta notları',
 	'appointments.ops.patientNotes': 'Hasta notları',
@@ -2966,6 +2972,12 @@ const en: Record<MessageKey, string> = {
 	'appointments.form.start': 'Start',
 	'appointments.form.end': 'End',
 	'appointments.form.transferCompany': 'Transfer company',
+	'appointments.form.contactInfoMissingPhone':
+		'This contact has no phone. Add a phone number on the contact record so you can call before the appointment — you can still save.',
+	'appointments.form.contactInfoMissingEmail':
+		'This contact has no email. Add an email on the contact record so you can write before the appointment — you can still save.',
+	'appointments.form.contactInfoMissingBoth':
+		'This contact has no phone or email. Add them on the contact record so you can reach them before the appointment — you can still save.',
 	'appointments.ops.emptyRange': 'No appointments in this range.',
 	'appointments.ops.contactNotes': 'Patient notes',
 	'appointments.ops.patientNotes': 'Patient notes',

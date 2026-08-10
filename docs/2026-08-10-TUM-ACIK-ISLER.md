@@ -89,7 +89,8 @@ Bağımlı: PILOT-02 verileri.
 
 ### B3. Tracker gap P2 (PILOT-02 seçer)
 
-- — **GAP-F09-19** Kişiye bağlı not thread’i — Açık sorular §5. **(M)**
+- ✅ **GAP-F09-19** Kişiye bağlı not thread’i — DOMAIN-02 ile zaten var (`case_notes` →
+  `contact_id`; tür filtresi yok). Açık sorular §5 kapandı. Kod yok. **(M)**
 - — **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker’da 0 satır). **(L)**
 - — **GAP-F09-23** Dosya silme endpoint’i (soft-delete + audit; KVKK). Aynı choke point (`file-mime` / storage). **(M)**
 
@@ -109,7 +110,7 @@ Bağımlı: PILOT-02 verileri.
 - — **GAP-26** AI prompt özelleştirme — Açık sorular §6
 - — **GAP-27** Toplu `reorder` endpoint (kısmen PATCH ile var)
 - ✅ **GAP-28** Dev panel üretimde gizlendi (Nest yazılmadı; MSW+DEV kapısı) — YAPILACAKLAR
-- — **GAP-29** Randevu öncesi eksik iletişim bilgisi uyarısı
+- ✅ **GAP-29** Randevu öncesi eksik iletişim uyarısı (bloklamaz; phone/email) — YAPILACAKLAR
 - — **PRODUCT-01** Komisyon takibi discovery (acente seçilirse)
 - — **IOS-01** iOS donmuş + birikmiş drift (DOMAIN-01 enum / marketing adları) — çözülürse ilk kalem
 
@@ -136,7 +137,7 @@ Karar verilmiş (uygulandı): §1 soft-delete; §2 patient/contact merge semanti
 
 3. Randevu durumu enum kalacak mı? (tenant CRUD → enum→FK) — PILOT-02
 4. Checklist ölü mü? → GAP-F09-20 skip olabilir
-5. Kişi notları ayrı mı / tek model mi? → GAP-F09-19
+5. ~~Kişi notları ayrı mı / tek model mi?~~ → tek model `case_notes.contact_id` (GAP-F09-19 ✅)
 6. AI prompt tenant’a açılsın mı? → GAP-26
 7. Tenant izin matrisi isteniyor mu? — pilotta ölç; AUDIT-F09-02 ile kısmen örtüşür
 8. P2P payer/payee geri gelecek mi? — freeze öncesi ucuz, sonra pahalı
@@ -173,7 +174,7 @@ Bunlar backlog değil; **yapılmama kararı** (liste tam metin: YAPILACAKLAR):
 | Tedarik zinciri | ✅ Dependabot + `pnpm audit` CI (rapor; bloklamaz) |
 | TestSprite TC002/TC003 | Hâlâ `/patients` senaryosu (TEST-02) |
 | Dosya silme | Endpoint yok (GAP-F09-23) |
-| Kişi not thread | Yok (GAP-F09-19) |
+| Kişi not thread | ✅ `/v1/contacts/:id/case-notes` + `ContactCaseNotesThread` (GAP-F09-19) |
 | Dev panel Nest modülü | Yok (bilinçli); UI `isDevPanelEnabled` ile gizlendi (GAP-28 ✅) |
 
 ---
