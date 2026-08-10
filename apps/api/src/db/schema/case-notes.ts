@@ -1,6 +1,6 @@
 import { index, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { contacts } from './contacts';
 import { createdAt } from './helpers';
-import { patients } from './patients';
 import { tenants } from './tenants';
 
 export const caseNotes = pgTable(
@@ -10,18 +10,18 @@ export const caseNotes = pgTable(
 		tenantId: uuid('tenant_id')
 			.notNull()
 			.references(() => tenants.id, { onDelete: 'cascade' }),
-		patientId: uuid('patient_id')
+		contactId: uuid('contact_id')
 			.notNull()
-			.references(() => patients.id, { onDelete: 'cascade' }),
+			.references(() => contacts.id, { onDelete: 'cascade' }),
 		body: text('body').notNull(),
 		authorDisplayName: text('author_display_name').notNull(),
 		createdAt: createdAt()
 	},
 	(table) => [
 		index('case_notes_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
-		index('case_notes_tenant_id_patient_id_created_at_idx').on(
+		index('case_notes_tenant_id_contact_id_created_at_idx').on(
 			table.tenantId,
-			table.patientId,
+			table.contactId,
 			table.createdAt
 		)
 	]

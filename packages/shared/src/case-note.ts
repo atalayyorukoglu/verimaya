@@ -2,22 +2,22 @@ import { z } from 'zod';
 import { isoDateTime, uuid } from './common.js';
 
 /**
- * Patient-scoped case notes (Tracker: contact case notes thread).
- * Shared across that patient's appointments — not appointment.notes.
+ * Contact-scoped case notes (Tracker: contact case notes thread).
+ * Shared across that contact's appointments — not appointment.notes.
  */
-export const patientCaseNoteSchema = z.object({
+export const contactCaseNoteSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
-	patient_id: uuid,
+	contact_id: uuid,
 	body: z.string().min(1).max(8000),
 	author_display_name: z.string().min(1).max(255),
 	created_at: isoDateTime
 });
 
-export type PatientCaseNote = z.infer<typeof patientCaseNoteSchema>;
+export type ContactCaseNote = z.infer<typeof contactCaseNoteSchema>;
 
-export const patientCaseNoteCreateSchema = z.object({
+export const contactCaseNoteCreateSchema = z.object({
 	body: z.string().min(1).max(8000)
 });
 
-export type PatientCaseNoteCreate = z.infer<typeof patientCaseNoteCreateSchema>;
+export type ContactCaseNoteCreate = z.infer<typeof contactCaseNoteCreateSchema>;

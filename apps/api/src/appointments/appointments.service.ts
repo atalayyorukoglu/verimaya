@@ -7,7 +7,7 @@ import type {
 	AppointmentUpdate
 } from '@verimaya/shared';
 import { appointmentStatusSchema, tenantDayRange } from '@verimaya/shared';
-import { appointments, patients, tenants } from '../db/schema';
+import { appointments, contacts, tenants } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toAppointment } from '../common/mappers';
@@ -26,9 +26,8 @@ export class AppointmentsService {
 				appointments.id,
 				params.cursor
 			);
-			// Aggregates share these filters but never the cursor (GAP-F09-21 / GAP-03b).
 			const baseFilters: SQL[] = [isNull(appointments.deletedAt)];
-			if (params.patient_id) baseFilters.push(eq(appointments.patientId, params.patient_id));
+			if (params.contact_id) baseFilters.push(eq(appointments.contactId, params.contact_id));
 			if (params.from) {
 				const { start } = tenantDayRange(params.from, timezone);
 				baseFilters.push(gte(appointments.startsAt, start));
@@ -39,7 +38,7 @@ export class AppointmentsService {
 			}
 			if (params.status) baseFilters.push(eq(appointments.status, params.status));
 			const searchCond = textSearchCondition(params.q, [
-				appointments.patientDisplayName,
+				appointments.contactDisplayName,
 				appointments.notes,
 				appointments.clinicName,
 				appointments.hotelName
@@ -97,13 +96,13 @@ export class AppointmentsService {
 	}
 
 	async createWithDb(db: TenantDb, tenantId: string, input: AppointmentCreate) {
-		const patientDisplayName = await this.requirePatientName(db, input.patient_id);
+		const contactDisplayName = await this.requireContactName(db, input.contact_id);
 		const [row] = await db
 			.insert(appointments)
 			.values({
 				tenantId,
-				patientId: input.patient_id,
-				patientDisplayName,
+				contactId: input.contact_id,
+				contactDisplayName,
 				title: input.title ?? null,
 				appointmentType: input.appointment_type ?? null,
 				status: input.status ?? 'scheduled',
@@ -129,17 +128,17 @@ export class AppointmentsService {
 			});
 		}
 
-		const patientId = input.patient_id ?? existing.patientId;
-		const patientDisplayName =
-			input.patient_id !== undefined
-				? await this.requirePatientName(db, patientId)
-				: existing.patientDisplayName;
+		const contactId = input.contact_id ?? existing.contactId;
+		const contactDisplayName =
+			input.contact_id !== undefined
+				? await this.requireContactName(db, contactId)
+				: existing.contactDisplayName;
 
 		const [row] = await db
 			.update(appointments)
 			.set({
-				patientId,
-				patientDisplayName,
+				contactId,
+				contactDisplayName,
 				title: input.title !== undefined ? input.title : existing.title,
 				appointmentType:
 					input.appointment_type !== undefined
@@ -198,7 +197,7 @@ export class AppointmentsService {
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
 			.where(eq(appointments.id, id));
 
-		const label = existing.title ?? existing.patientDisplayName;
+		const label = existing.title ?? existing.contactDisplayName;
 		await writeAuditLog(db, tenantId, actor, 'delete', 'appointment', label);
 
 		return { id, deleted: true as const };
@@ -227,17 +226,17 @@ export class AppointmentsService {
 		return row;
 	}
 
-	private async requirePatientName(db: TenantDb, patientId: string) {
-		const [patient] = await db
-			.select({ fullName: patients.fullName })
-			.from(patients)
-			.where(and(eq(patients.id, patientId), isNull(patients.deletedAt)))
+	private async requireContactName(db: TenantDb, contactId: string) {
+		const [contact] = await db
+			.select({ displayName: contacts.displayName })
+			.from(contacts)
+			.where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
 			.limit(1);
-		if (!patient) {
+		if (!contact) {
 			throw new NotFoundException({
-				error: { code: 'not_found', message: 'Patient not found' }
+				error: { code: 'not_found', message: 'Contact not found' }
 			});
 		}
-		return patient.fullName;
+		return contact.displayName;
 	}
 }

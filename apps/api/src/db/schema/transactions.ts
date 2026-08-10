@@ -1,6 +1,5 @@
 import { date, index, integer, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { contacts } from './contacts';
-import { patients } from './patients';
 import { tenants } from './tenants';
 
 export const transactions = pgTable(
@@ -25,9 +24,8 @@ export const transactions = pgTable(
 		baseCurrency: text('base_currency'),
 		fxRate: numeric('fx_rate', { precision: 18, scale: 8, mode: 'number' }),
 		fxDated: date('fx_dated', { mode: 'string' }),
-		patientId: uuid('patient_id').references(() => patients.id, { onDelete: 'set null' }),
-		patientDisplayName: text('patient_display_name'),
 		contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
+		contactDisplayName: text('contact_display_name'),
 		contactLabel: text('contact_label'),
 		description: text('description'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
@@ -43,24 +41,11 @@ export const transactions = pgTable(
 		index('transactions_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
 		index('transactions_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt),
 		index('transactions_tenant_id_occurred_on_idx').on(table.tenantId, table.occurredOn),
-		// List + cursor: occurred_on DESC, id DESC (PILOT-01 / ETL-friendly).
 		index('transactions_tenant_occurred_on_id_idx').on(
 			table.tenantId,
 			table.occurredOn,
 			table.id
 		),
-		index('transactions_tenant_id_patient_id_created_at_idx').on(
-			table.tenantId,
-			table.patientId,
-			table.createdAt
-		),
-		index('transactions_tenant_patient_occurred_on_id_idx').on(
-			table.tenantId,
-			table.patientId,
-			table.occurredOn,
-			table.id
-		),
-		// CONTRACT-01 (Faz 2.1): contact_id is now a real list filter (contacts/[id] page).
 		index('transactions_tenant_id_contact_id_created_at_idx').on(
 			table.tenantId,
 			table.contactId,

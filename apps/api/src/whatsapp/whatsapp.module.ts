@@ -3,7 +3,6 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { LlmModule } from '../integrations/llm';
-import { PatientsModule } from '../patients/patients.module';
 import { SettingsModule } from '../settings/settings.module';
 import { SettingsService } from '../settings/settings.service';
 import { TenantModule } from '../tenant/tenant.module';
@@ -23,7 +22,6 @@ import { WhatsappService } from './whatsapp.service';
 		CommonModule,
 		ContactsModule,
 		LlmModule,
-		PatientsModule,
 		SettingsModule,
 		TenantModule,
 		TransactionsModule

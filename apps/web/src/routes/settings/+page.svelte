@@ -79,6 +79,12 @@
 					icon: Contact
 				},
 				{
+					href: '/settings/organizations',
+					title: t('settings.nav.organizations.title'),
+					description: t('settings.nav.organizations.description'),
+					icon: Building2
+				},
+				{
 					href: '/settings/import-export',
 					title: t('settings.nav.importExport.title'),
 					description: 'Toplu import-export (ETL).',

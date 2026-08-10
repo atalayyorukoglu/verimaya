@@ -2,10 +2,10 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import {
 		apiPaths,
-		isInlineSafePatientFileMimeType,
+		isInlineSafeContactFileMimeType,
 		type Appointment,
-		type PatientFile,
-		type PatientFilePresignResponse
+		type ContactFile,
+		type ContactFilePresignResponse
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, resolveApiUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
@@ -19,10 +19,10 @@
 	import Upload from '@lucide/svelte/icons/upload';
 
 	let {
-		patientId,
+		contactId,
 		appointments = []
 	}: {
-		patientId: string;
+		contactId: string;
 		appointments?: Appointment[];
 	} = $props();
 
@@ -35,8 +35,8 @@
 	let fileInput: HTMLInputElement | undefined = $state();
 
 	const filesQuery = createQuery(() => ({
-		queryKey: qs.keys.patients.files(patientId),
-		queryFn: () => apiGet<{ items: PatientFile[] }>(apiPaths.patientFiles(patientId)),
+		queryKey: qs.keys.contacts.files(contactId),
+		queryFn: () => apiGet<{ items: ContactFile[] }>(apiPaths.contactFiles(contactId)),
 		enabled: qs.ready
 	}));
 
@@ -51,7 +51,7 @@
 			const xhr = new XMLHttpRequest();
 			xhr.open('PUT', url);
 			// Cookie auth only for our API content endpoint — not for S3/R2 presigned URLs.
-			xhr.withCredentials = url.includes('/v1/patients/');
+			xhr.withCredentials = url.includes('/v1/contacts/');
 			if (file.type) xhr.setRequestHeader('Content-Type', file.type);
 			xhr.upload.onprogress = (ev) => {
 				if (ev.lengthComputable) {
@@ -61,16 +61,16 @@
 			xhr.onload = () => {
 				if (xhr.status >= 200 && xhr.status < 300) resolve();
 				else
-					reject(new Error(t('patients.files.uploadFailedStatus', { status: String(xhr.status) })));
+					reject(new Error(t('contacts.files.uploadFailedStatus', { status: String(xhr.status) })));
 			};
-			xhr.onerror = () => reject(new Error(t('patients.files.uploadNetworkError')));
+			xhr.onerror = () => reject(new Error(t('contacts.files.uploadNetworkError')));
 			xhr.send(file);
 		});
 	}
 
 	async function uploadViaPresign(file: File): Promise<void> {
-		const presign = await apiSend<PatientFilePresignResponse>(
-			apiPaths.patientFilesPresign(patientId),
+		const presign = await apiSend<ContactFilePresignResponse>(
+			apiPaths.contactFilesPresign(contactId),
 			'POST',
 			{
 				filename: file.name,
@@ -85,7 +85,7 @@
 		await putWithProgress(targetUrl, file, (pct) => {
 			uploadProgress = pct;
 		});
-		await apiSend(apiPaths.patientFileConfirm(patientId, presign.file_id), 'POST');
+		await apiSend(apiPaths.contactFileConfirm(contactId, presign.file_id), 'POST');
 	}
 
 	async function onFilePicked(e: Event) {
@@ -99,33 +99,33 @@
 		uploadError = null;
 		try {
 			await uploadViaPresign(file);
-			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.files(patientId) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.files(contactId) });
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : t('patients.files.uploadFailed');
+			uploadError = err instanceof Error ? err.message : t('contacts.files.uploadFailed');
 		} finally {
 			uploading = false;
 			uploadProgress = null;
 		}
 	}
 
-	async function removeFile(file: PatientFile) {
+	async function removeFile(file: ContactFile) {
 		try {
-			await apiSend(`/v1/patients/${patientId}/files/${file.id}`, 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.files(patientId) });
+			await apiSend(apiPaths.contactFiles(contactId) + `/${file.id}`, 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.files(contactId) });
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : t('patients.files.deleteFailed');
+			uploadError = err instanceof Error ? err.message : t('contacts.files.deleteFailed');
 		}
 	}
 
-	async function downloadFile(file: PatientFile) {
+	async function downloadFile(file: ContactFile) {
 		uploadError = null;
 		try {
-			const res = await fetch(resolveApiUrl(apiPaths.patientFileDownload(patientId, file.id)), {
+			const res = await fetch(resolveApiUrl(apiPaths.contactFileDownload(contactId, file.id)), {
 				credentials: 'include',
 				headers: { Accept: '*/*' }
 			});
 			if (!res.ok) {
-				throw new Error(t('patients.files.downloadFailedStatus', { status: String(res.status) }));
+				throw new Error(t('contacts.files.downloadFailedStatus', { status: String(res.status) }));
 			}
 			const blob = await res.blob();
 			const url = URL.createObjectURL(blob);
@@ -135,25 +135,24 @@
 			a.click();
 			URL.revokeObjectURL(url);
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : t('patients.files.downloadFailed');
+			uploadError = err instanceof Error ? err.message : t('contacts.files.downloadFailed');
 		}
 	}
 
-	async function previewFile(file: PatientFile) {
+	async function previewFile(file: ContactFile) {
 		uploadError = null;
 		try {
-			const res = await fetch(resolveApiUrl(apiPaths.patientFilePreview(patientId, file.id)), {
+			const res = await fetch(resolveApiUrl(apiPaths.contactFilePreview(contactId, file.id)), {
 				credentials: 'include',
 				headers: { Accept: '*/*' }
 			});
 			if (!res.ok) {
-				throw new Error(t('patients.files.previewFailedStatus', { status: String(res.status) }));
+				throw new Error(t('contacts.files.previewFailedStatus', { status: String(res.status) }));
 			}
 			const blob = await res.blob();
 			const url = URL.createObjectURL(blob);
-			if (isInlineSafePatientFileMimeType(file.mime_type)) {
+			if (isInlineSafeContactFileMimeType(file.mime_type)) {
 				window.open(url, '_blank', 'noopener,noreferrer');
-				// Revoke after the tab has a chance to load the blob URL.
 				window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 			} else {
 				const a = document.createElement('a');
@@ -163,25 +162,25 @@
 				URL.revokeObjectURL(url);
 			}
 		} catch (err) {
-			uploadError = err instanceof Error ? err.message : t('patients.files.previewFailed');
+			uploadError = err instanceof Error ? err.message : t('contacts.files.previewFailed');
 		}
 	}
 </script>
 
 <section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
 	<div class="flex flex-wrap items-center justify-between gap-2">
-		<h2 class="text-sm font-semibold text-text">{t('patients.files.title')}</h2>
+		<h2 class="text-sm font-semibold text-text">{t('contacts.files.title')}</h2>
 		<div class="flex flex-wrap items-center gap-2">
 			{#if appointments.length > 0}
 				<select
 					class="h-8 max-w-[14rem] rounded-[6px] border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40"
 					bind:value={linkAppointmentId}
-					aria-label={t('patients.files.linkAppointment')}
+					aria-label={t('contacts.files.linkAppointment')}
 				>
-					<option value="">{t('patients.files.noAppointment')}</option>
+					<option value="">{t('contacts.files.noAppointment')}</option>
 					{#each appointments as a (a.id)}
 						<option value={a.id}>
-							{a.starts_at.slice(0, 10)} · {a.title ?? t('patients.files.appointmentFallback')}
+							{a.starts_at.slice(0, 10)} · {a.title ?? t('contacts.files.appointmentFallback')}
 						</option>
 					{/each}
 				</select>
@@ -203,9 +202,9 @@
 				<Upload class="size-3.5" />
 				{uploading
 					? uploadProgress != null
-						? t('patients.files.uploadingProgress', { progress: String(uploadProgress) })
-						: t('patients.files.uploading')
-					: t('patients.files.upload')}
+						? t('contacts.files.uploadingProgress', { progress: String(uploadProgress) })
+						: t('contacts.files.uploading')
+					: t('contacts.files.upload')}
 			</Button>
 		</div>
 	</div>
@@ -227,7 +226,7 @@
 	{/if}
 
 	{#if filesQuery.isPending}
-		<p class="mt-3 text-sm text-text-muted">{t('patients.files.loading')}</p>
+		<p class="mt-3 text-sm text-text-muted">{t('contacts.files.loading')}</p>
 	{:else if files.length === 0}
 		<div class="mt-3 flex flex-col items-center gap-2 py-4 text-center">
 			<span
@@ -235,9 +234,9 @@
 			>
 				<Paperclip class="size-5" />
 			</span>
-			<p class="text-sm font-medium text-text">{t('patients.files.emptyTitle')}</p>
+			<p class="text-sm font-medium text-text">{t('contacts.files.emptyTitle')}</p>
 			<p class="max-w-sm text-xs leading-relaxed text-text-muted">
-				{t('patients.files.emptyBody')}
+				{t('contacts.files.emptyBody')}
 			</p>
 		</div>
 	{:else}
@@ -255,7 +254,7 @@
 							<p class="text-xs text-text-faint">
 								{formatBytes(file.size_bytes)} · {formatDateTime(file.created_at)}
 								{#if file.status === 'pending'}
-									· {t('patients.files.pending')}
+									· {t('contacts.files.pending')}
 								{/if}
 								{#if file.uploaded_by_display_name}
 									· {file.uploaded_by_display_name}
@@ -275,7 +274,7 @@
 							<button
 								type="button"
 								class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
-								aria-label={t('patients.files.previewAria')}
+								aria-label={t('contacts.files.previewAria')}
 								onclick={() => previewFile(file)}
 							>
 								<Eye class="size-3.5" />
@@ -283,7 +282,7 @@
 							<button
 								type="button"
 								class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
-								aria-label={t('patients.files.downloadAria')}
+								aria-label={t('contacts.files.downloadAria')}
 								onclick={() => downloadFile(file)}
 							>
 								<Download class="size-3.5" />
@@ -292,7 +291,7 @@
 						<button
 							type="button"
 							class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"
-							aria-label={t('patients.files.deleteAria')}
+							aria-label={t('contacts.files.deleteAria')}
 							onclick={() => removeFile(file)}
 						>
 							<Trash2 class="size-3.5" />

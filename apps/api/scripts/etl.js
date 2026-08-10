@@ -741,13 +741,20 @@ async function loadExternalMaps(sql, tenantId) {
 		for (const row of rows) {
 			const ext = String(row.external_id);
 			const internal = String(row.internal_id);
-			if (row.entity_type === 'contact') contactMap.set(ext, internal);
-			else if (row.entity_type === 'patient') patientMap.set(ext, internal);
+			if (row.entity_type === 'contact') {
+				contactMap.set(ext, internal);
+				// Case legacy ids may also resolve as contacts (DOMAIN-02).
+				patientMap.set(ext, internal);
+			} else if (row.entity_type === 'patient') patientMap.set(ext, internal);
 			else if (row.entity_type === 'appointment') appointmentMap.set(ext, internal);
 		}
-		const patients = await tx`select id, full_name from patients where tenant_id = ${tenantId}`;
-		for (const p of patients) {
-			patientNames.set(String(p.id), String(p.full_name));
+		// Cases are stored as Hasta contacts; also accept legacy external_ids.entity_type=patient.
+		const caseContacts = await tx`
+			select id, display_name from contacts
+			where tenant_id = ${tenantId} and contact_type_name = 'Hasta' and deleted_at is null
+		`;
+		for (const p of caseContacts) {
+			patientNames.set(String(p.id), String(p.display_name));
 		}
 	});
 
@@ -827,6 +834,16 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
 				returning id
 			`;
 			typeByName.set(FALLBACK_CONTACT_TYPE.toLowerCase(), String(row.id));
+			stats.contact_types.inserted++;
+		}
+
+		if (mapped.patients.length > 0 && !typeByName.has('hasta')) {
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${tenantId}, 'Hasta', ${sortOrder + typeByName.size})
+				returning id
+			`;
+			typeByName.set('hasta', String(row.id));
 			stats.contact_types.inserted++;
 		}
 
@@ -914,12 +931,20 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
 		);
 	}
 
+	// Cases → Hasta contacts (patients table dropped in DOMAIN-02 / 0036).
+	const hastaTypeId = typeByName.get('hasta');
+	if (!hastaTypeId && mapped.patients.length > 0) {
+		stats.errors.push('patients: Hasta contact type missing — cannot insert cases');
+	}
+
 	for (let i = 0; i < mapped.patients.length; i += batchSize) {
 		const batch = mapped.patients.slice(i, i + batchSize);
 		await withTenant(sql, tenantId, async (tx) => {
 			for (const item of batch) {
 				const legacy = item.legacy_id;
-				const existing = await findMappedInternal(tx, tenantId, 'patient', legacy);
+				const existing =
+					(await findMappedInternal(tx, tenantId, 'contact', legacy)) ??
+					(await findMappedInternal(tx, tenantId, 'patient', legacy));
 				if (existing) {
 					stats.patients.skipped++;
 					continue;
@@ -930,32 +955,31 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
 					stats.errors.push(`patient ${legacy}: empty full_name — skipped`);
 					continue;
 				}
+				if (!hastaTypeId) continue;
 
-				const contactLegacy = item._contact_legacy ?? null;
-				const contactId =
-					contactLegacy != null ? (contactMap.get(contactLegacy) ?? null) : null;
-				if (contactLegacy != null && contactId == null) {
-					stats.errors.push(
-						`patient ${legacy}: contact ${contactLegacy} not mapped — contact_id null`
-					);
-				}
+				const parts = fullName.split(/\s+/);
+				const firstName = parts[0] ?? fullName;
+				const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null;
 
 				const internalId = randomUUID();
 				await tx`
-					insert into patients (
-						id, tenant_id, full_name, phone, email, status, source, notes, contact_id
+					insert into contacts (
+						id, tenant_id, contact_type_id, contact_type_name,
+						first_name, last_name, display_name, phone, email, status, source, notes,
+						is_internal, usage_count
 					) values (
-						${internalId}, ${tenantId}, ${fullName}, ${item.verimaya.phone},
+						${internalId}, ${tenantId}, ${hastaTypeId}, 'Hasta',
+						${firstName}, ${lastName}, ${fullName}, ${item.verimaya.phone},
 						${item.verimaya.email}, ${item.verimaya.status}, ${item.verimaya.source},
-						${item.verimaya.notes}, ${contactId}
+						${item.verimaya.notes}, false, 0
 					)
 				`;
-				await insertExternal(tx, tenantId, 'patient', legacy, internalId);
+				await insertExternal(tx, tenantId, 'contact', legacy, internalId);
 				stats.patients.inserted++;
 			}
 		});
 		console.log(
-			`[etl] patients batch ${Math.min(i + batch.length, mapped.patients.length)}/${mapped.patients.length} (+${stats.patients.inserted} / ~${stats.patients.skipped})`
+			`[etl] patients(as Hasta contacts) batch ${Math.min(i + batch.length, mapped.patients.length)}/${mapped.patients.length} (+${stats.patients.inserted} / ~${stats.patients.skipped})`
 		);
 	}
 
@@ -1035,7 +1059,7 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 				const internalId = randomUUID();
 				await tx`
 					insert into appointments (
-						id, tenant_id, patient_id, patient_display_name, title, appointment_type,
+						id, tenant_id, contact_id, contact_display_name, title, appointment_type,
 						status, starts_at, ends_at, clinic_name, hotel_name, transfer_note,
 						clinic_contact_id, hotel_contact_id, transfer_contact_id, notes
 					) values (
@@ -1088,18 +1112,19 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 					);
 				}
 
-				const patientId = item._case_legacy
+				const caseContactId = item._case_legacy
 					? (patientMap.get(item._case_legacy) ?? null)
 					: null;
-				const contactId = item._contact_legacy
+				const partyContactId = item._contact_legacy
 					? (contactMap.get(item._contact_legacy) ?? null)
 					: null;
-				if (item._case_legacy && !patientId) {
+				const contactId = caseContactId ?? partyContactId;
+				if (item._case_legacy && !caseContactId) {
 					stats.errors.push(
-						`transaction ${legacy}: patient for case ${item._case_legacy} not found — patient_id null`
+						`transaction ${legacy}: Hasta contact for case ${item._case_legacy} not found — contact_id null`
 					);
 				}
-				if (item._contact_legacy && !contactId) {
+				if (item._contact_legacy && !partyContactId && !caseContactId) {
 					stats.errors.push(
 						`transaction ${legacy}: contact ${item._contact_legacy} not found — contact_id null`
 					);
@@ -1125,7 +1150,7 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 						id, tenant_id, kind, title, subtitle, category, occurred_on, status,
 						invoice_status, payment_method, amount, paid_amount, currency,
 						amount_base, base_currency, fx_rate, fx_dated,
-						patient_id, patient_display_name, contact_id, contact_label, description
+						contact_id, contact_display_name, contact_label, description
 					) values (
 						${internalId},
 						${tenantId},
@@ -1144,9 +1169,8 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 						${fx.base_currency},
 						${fx.fx_rate},
 						${fx.fx_dated},
-						${patientId},
-						${patientId ? (patientNames.get(patientId) ?? null) : null},
 						${contactId},
+						${contactId ? (patientNames.get(contactId) ?? null) : null},
 						${item.verimaya.contact_label},
 						${item.verimaya.description}
 					)
@@ -1200,7 +1224,7 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 				const internalId = randomUUID();
 				await tx`
 					insert into files (
-						id, tenant_id, patient_id, appointment_id, filename, mime_type,
+						id, tenant_id, contact_id, appointment_id, filename, mime_type,
 						size_bytes, status, storage_key
 					) values (
 						${internalId},
@@ -1249,7 +1273,7 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 
 				const internalId = randomUUID();
 				await tx`
-					insert into case_notes (id, tenant_id, patient_id, body, author_display_name)
+					insert into case_notes (id, tenant_id, contact_id, body, author_display_name)
 					values (
 						${internalId},
 						${tenantId},

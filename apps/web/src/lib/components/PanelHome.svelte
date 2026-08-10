@@ -2,17 +2,17 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import type {
 		Appointment,
+		Contact,
 		InboundMessage,
-		Patient,
-		ReportPatientDistribution,
+		ReportContactDistribution,
 		ReportSummary,
 		Tenant
 	} from '@verimaya/shared';
-	import { patientStatusLabels, reportUrl } from '@verimaya/shared';
+	import { contactStatusLabels, reportUrl } from '@verimaya/shared';
 	import { apiGet, listUrl } from '$lib/api';
 	import { USE_MSW } from '$lib/env';
 	import { formatDateTime, formatMoney, formatTime, isSameLocalDay } from '$lib/format';
-	import { patientStatusTone } from '$lib/status-tone';
+	import { contactStatusTone } from '$lib/status-tone';
 	import { canAccessPath, DEFAULT_ROLE } from '$lib/rbac';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -47,9 +47,9 @@
 		enabled: qs.ready
 	}));
 
-	const patientsQuery = createQuery(() => ({
-		queryKey: qs.keys.patients.list({ limit: 5 }),
-		queryFn: () => apiGet<Page<Patient>>(listUrl('patients', { limit: 5 })),
+	const contactsQuery = createQuery(() => ({
+		queryKey: qs.keys.contacts.list({ limit: 20, for: 'panel-home' }),
+		queryFn: () => apiGet<Page<Contact>>(listUrl('contacts', { limit: 20 })),
 		enabled: qs.ready
 	}));
 
@@ -72,9 +72,9 @@
 	}));
 
 	/** All-time patient/file total — no from/to (period would become a funnel metric). */
-	const patientDistributionQuery = createQuery(() => ({
-		queryKey: qs.keys.reports.patientDistribution({ scope: 'all-time' }),
-		queryFn: () => apiGet<ReportPatientDistribution>(reportUrl('patient-distribution')),
+	const contactDistributionQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.contactDistribution({ scope: 'all-time' }),
+		queryFn: () => apiGet<ReportContactDistribution>(reportUrl('contact-distribution')),
 		enabled: canReports && qs.ready
 	}));
 
@@ -82,10 +82,15 @@
 		(appointmentsQuery.data?.items ?? []).filter((a) => isSameLocalDay(a.starts_at)).slice(0, 5)
 	);
 
-	const recentPatients = $derived(patientsQuery.data?.items ?? []);
+	const recentContacts = $derived.by(() => {
+		const items = contactsQuery.data?.items ?? [];
+		const hasta = items.filter((c) => c.contact_type_name === 'Hasta');
+		return (hasta.length > 0 ? hasta : items).slice(0, 5);
+	});
+
 	const openFilesValue = $derived(
-		canReports && patientDistributionQuery.data != null
-			? String(patientDistributionQuery.data.total)
+		canReports && contactDistributionQuery.data != null
+			? String(contactDistributionQuery.data.total)
 			: '—'
 	);
 	const pendingMessages = $derived(
@@ -96,7 +101,7 @@
 	);
 
 	const anyError = $derived(
-		patientsQuery.isError ||
+		contactsQuery.isError ||
 			appointmentsQuery.isError ||
 			(canFinance && inboxQuery.isError) ||
 			(!USE_MSW && canFinance && summaryQuery.isError)
@@ -154,34 +159,36 @@
 		<section class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-sm font-semibold text-text">{t('panel.home.recentFiles')}</h2>
-				<a href="/patients" class="text-xs text-info hover:underline"
+				<a href="/contacts" class="text-xs text-info hover:underline"
 					>{t('panel.home.recentFilesAll')}</a
 				>
 			</div>
-			{#if patientsQuery.isPending}
+			{#if contactsQuery.isPending}
 				<p class="text-sm text-text-faint">{t('panel.home.recentFilesLoading')}</p>
-			{:else if patientsQuery.isError}
+			{:else if contactsQuery.isError}
 				<p class="text-sm text-danger">{t('panel.home.recentFilesError')}</p>
-			{:else if recentPatients.length === 0}
+			{:else if recentContacts.length === 0}
 				<p class="text-sm text-text-faint">{t('panel.home.recentFilesEmpty')}</p>
 			{:else}
 				<ul class="min-w-0 divide-y divide-border">
-					{#each recentPatients as patient (patient.id)}
+					{#each recentContacts as contact (contact.id)}
 						<li class="min-w-0">
 							<a
-								href={`/patients/${patient.id}`}
+								href={`/contacts/${contact.id}`}
 								class="flex min-w-0 items-center gap-2 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:gap-3 sm:px-2"
 							>
 								<div class="min-w-0 flex-1 overflow-hidden">
-									<p class="truncate text-sm font-medium text-text">{patient.full_name}</p>
+									<p class="truncate text-sm font-medium text-text">{contact.display_name}</p>
 									<p class="truncate text-xs text-text-faint">
-										{formatDateTime(patient.updated_at)}
+										{formatDateTime(contact.updated_at)}
 									</p>
 								</div>
-								<StatusBadge
-									label={patientStatusLabels[patient.status]}
-									tone={patientStatusTone(patient.status)}
-								/>
+								{#if contact.status}
+									<StatusBadge
+										label={contactStatusLabels[contact.status]}
+										tone={contactStatusTone(contact.status)}
+									/>
+								{/if}
 							</a>
 						</li>
 					{/each}
@@ -205,7 +212,7 @@
 					{#each todayAppointments as appt (appt.id)}
 						<li class="min-w-0">
 							<a
-								href={appt.patient_id ? `/patients/${appt.patient_id}` : '/appointments'}
+								href={appt.contact_id ? `/contacts/${appt.contact_id}` : '/appointments'}
 								class="flex min-w-0 items-start gap-2 rounded-[6px] px-1 py-2.5 transition-colors hover:bg-surface-2 sm:gap-3 sm:px-2"
 							>
 								<span
@@ -214,7 +221,7 @@
 									{formatTime(appt.starts_at)}
 								</span>
 								<div class="min-w-0 flex-1 overflow-hidden">
-									<p class="truncate text-sm font-medium text-text">{appt.patient_display_name}</p>
+									<p class="truncate text-sm font-medium text-text">{appt.contact_display_name}</p>
 									<p class="truncate text-xs text-text-faint">
 										{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
 									</p>

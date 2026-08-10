@@ -1,6 +1,5 @@
 export {
 	findContactDuplicateGroups,
-	findPatientDuplicateGroups,
 	normEmailKey,
 	normNameKey,
 	normPhoneKey

@@ -65,11 +65,15 @@ describe('FilesSweepService (Adım 30a)', () => {
 
 		patientId = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			const [row] = await tx`
-				insert into patients (tenant_id, full_name)
-				values (${tenantId}, 'Sweep Patient')
-				returning id
-			`;
+			await tx`insert into contact_types (tenant_id, name, sort_order) values (${tenantId}, 'Hasta', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name`;
+			const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (
+					${tenantId},
+					(select id from contact_types where tenant_id = ${tenantId} and name = 'Hasta' limit 1),
+					'Hasta', 'Sweep Patient', 'Sweep Patient'
+				)
+				returning id`;
 			return row!.id as string;
 		});
 
@@ -86,7 +90,7 @@ describe('FilesSweepService (Adım 30a)', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			await tx`
 				insert into files (
-					id, tenant_id, patient_id, filename, mime_type, size_bytes, storage_key, status, created_at
+					id, tenant_id, contact_id, filename, mime_type, size_bytes, storage_key, status, created_at
 				) values
 					(
 						${pendingOldId}, ${tenantId}, ${patientId}, 'old-pending.bin',
@@ -120,7 +124,7 @@ describe('FilesSweepService (Adım 30a)', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			await tx`delete from files where tenant_id = ${tenantId}`;
 			await tx`delete from jobs where tenant_id = ${tenantId}`;
-			await tx`delete from patients where tenant_id = ${tenantId}`;
+			await tx`delete from contacts where tenant_id = ${tenantId}`;
 		});
 		await sql`delete from tenants where id = ${tenantId}`;
 		await sql`delete from organization where id = ${tenantId}`;

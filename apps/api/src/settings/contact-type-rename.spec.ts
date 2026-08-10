@@ -72,11 +72,9 @@ describe('GAP-F09-17 contact type rename', () => {
 
 		const contactId = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			const [row] = await tx`
-				insert into contacts (tenant_id, contact_type_id, contact_type_name, display_name)
+			const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, display_name)
 				values (${tenantA}, ${created.id}, ${created.name}, 'Linked Klinik')
-				returning id
-			`;
+				returning id`;
 			return row!.id as string;
 		});
 

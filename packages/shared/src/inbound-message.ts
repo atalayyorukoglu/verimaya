@@ -25,8 +25,8 @@ export const transactionDraftSchema = z.object({
 	title: z.string().min(1).max(255),
 	category: z.string().max(128).nullable().optional(),
 	subcategory: z.string().max(128).nullable().optional(),
-	patient_id: uuid.nullable().optional(),
-	patient_display_name: z.string().max(255).nullable().optional(),
+	contact_id: uuid.nullable().optional(),
+	contact_display_name: z.string().max(255).nullable().optional(),
 	contact_label: z.string().max(255).nullable().optional(),
 	occurred_on: isoDate,
 	payment_method: z.string().max(64).nullable().optional(),
@@ -150,7 +150,8 @@ export type InboundMessageActionResponse = z.infer<typeof inboundMessageActionRe
  */
 export const whatsappCreateContactSchema = contactCreateSchema
 	.pick({
-		display_name: true,
+		first_name: true,
+		last_name: true,
 		contact_type_id: true,
 		phone: true,
 		email: true
@@ -158,16 +159,6 @@ export const whatsappCreateContactSchema = contactCreateSchema
 	.strict();
 
 export type WhatsappCreateContact = z.infer<typeof whatsappCreateContactSchema>;
-
-/** Minimal patient create subset for inline draft approval. */
-export const whatsappCreatePatientSchema = z
-	.object({
-		full_name: z.string().min(1).max(255),
-		contact_id: uuid.nullable().optional()
-	})
-	.strict();
-
-export type WhatsappCreatePatient = z.infer<typeof whatsappCreatePatientSchema>;
 
 export const whatsappCreateCategorySchema = financeCategoryCreateSchema
 	.pick({

@@ -80,7 +80,7 @@ describe('OutboxAdminService requeue (AUDIT-F09-05)', () => {
 			await db.insert(outboxEvents).values({
 				id,
 				tenantId,
-				eventType: 'patient.created',
+				eventType: 'contact.created',
 				destinationUrl: 'https://example.test/hook',
 				payload: {},
 				status,

@@ -4,7 +4,7 @@
 	import { formatDate, formatTime } from '$lib/format';
 	import { appointmentStatusTone } from '$lib/status-tone';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
-	import PatientCaseNotesThread from '$lib/components/PatientCaseNotesThread.svelte';
+	import ContactCaseNotesThread from '$lib/components/ContactCaseNotesThread.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n/locale.svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -46,10 +46,10 @@
 								{/if}
 							</p>
 							<a
-								href={`/patients/${appt.patient_id}`}
+								href={`/contacts/${appt.contact_id}`}
 								class="mt-0.5 block truncate text-sm font-semibold text-text hover:text-brand hover:underline"
 							>
-								{appt.patient_display_name}
+								{appt.contact_display_name}
 							</a>
 							<p class="truncate text-xs text-text-faint">
 								{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
@@ -64,9 +64,9 @@
 
 				<div class="space-y-3 px-3 py-3 sm:px-4">
 					<p class="text-[11px] font-semibold tracking-wider text-text-faint uppercase">
-						{t('appointments.ops.patientNotes')}
+						{t('appointments.ops.contactNotes')}
 					</p>
-					<PatientCaseNotesThread patientId={appt.patient_id} variant="card" />
+					<ContactCaseNotesThread contactId={appt.contact_id} variant="card" />
 
 					{#if open}
 						<dl

@@ -5,7 +5,7 @@ describe('appointmentListQuerySchema (GAP-04)', () => {
 	it('accepts status and q alongside existing filters', () => {
 		const parsed = appointmentListQuerySchema.parse({
 			limit: 10,
-			patient_id: '00000000-0000-4000-8000-000000000001',
+			contact_id: '00000000-0000-4000-8000-000000000001',
 			from: '2026-08-01',
 			to: '2026-08-31',
 			status: 'confirmed',

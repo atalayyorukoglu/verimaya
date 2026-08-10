@@ -79,7 +79,8 @@ function expectedFromMapped(mapped) {
 
 	return {
 		counts: {
-			contacts: mapped.contacts.length,
+			// Cases land as Hasta contacts; total contacts = parties + patients.
+			contacts: mapped.contacts.length + mapped.patients.length,
 			patients: mapped.patients.length,
 			appointments: mapped.appointments.filter((a) => a._case_legacy).length,
 			transactions: mapped.transactions.filter((t) => t.verimaya.amount != null).length,
@@ -143,8 +144,11 @@ async function actualFromTenant(sql, tenantId) {
 	return sql.begin(async (tx) => {
 		await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 
-		const [contacts] = await tx`select count(*)::int as n from contacts`;
-		const [patients] = await tx`select count(*)::int as n from patients where deleted_at is null`;
+		const [contacts] = await tx`select count(*)::int as n from contacts where deleted_at is null`;
+		const [patients] = await tx`
+			select count(*)::int as n from contacts
+			where deleted_at is null and contact_type_name = 'Hasta'
+		`;
 		const [appointments] = await tx`select count(*)::int as n from appointments`;
 		const [transactions] = await tx`select count(*)::int as n from transactions`;
 		const [files] = await tx`select count(*)::int as n from files`;
@@ -170,22 +174,25 @@ async function actualFromTenant(sql, tenantId) {
 
 		const patientEmailDupes = await tx`
 			select lower(email) as key, count(*)::int as n
-			from patients
-			where deleted_at is null and email is not null and email <> ''
+			from contacts
+			where deleted_at is null and contact_type_name = 'Hasta'
+				and email is not null and email <> ''
 			group by lower(email)
 			having count(*) > 1
 		`;
 		const patientPhoneDupes = await tx`
 			select regexp_replace(phone, '\\D', '', 'g') as key, count(*)::int as n
-			from patients
-			where deleted_at is null and phone is not null and phone <> ''
+			from contacts
+			where deleted_at is null and contact_type_name = 'Hasta'
+				and phone is not null and phone <> ''
 			group by regexp_replace(phone, '\\D', '', 'g')
 			having count(*) > 1 and length(regexp_replace(phone, '\\D', '', 'g')) >= 7
 		`;
 		const contactEmailDupes = await tx`
 			select lower(email) as key, count(*)::int as n
 			from contacts
-			where email is not null and email <> ''
+			where deleted_at is null and contact_type_name <> 'Hasta'
+				and email is not null and email <> ''
 			group by lower(email)
 			having count(*) > 1
 		`;
@@ -244,7 +251,6 @@ function buildDiffs(input) {
 
 	const expectedExternal =
 		expected.counts.contacts +
-		expected.counts.patients +
 		expected.counts.appointments +
 		expected.counts.transactions +
 		expected.counts.files +

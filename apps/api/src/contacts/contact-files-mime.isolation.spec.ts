@@ -13,7 +13,7 @@ import type { S3FileStorage } from '../storage/s3-file.storage';
 import type { FileStoragePort } from '../storage/storage.types';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { assertUploadMimeMatchesBytes } from './file-mime';
-import { PatientsService } from './patients.service';
+import { ContactsService } from './contacts.service';
 
 /**
  * AUDIT-F09-08 + GAP-F09-24: magic-byte MIME sniff + safe inline preview.
@@ -95,7 +95,7 @@ describe('AUDIT-F09-08 + GAP-F09-24 patient file MIME + preview', () => {
 	const uploaderUserId = randomUUID();
 	let patientA: string;
 	let patientB: string;
-	let service: PatientsService;
+	let service: ContactsService;
 	let localPutSpy: ReturnType<typeof vi.fn>;
 	let s3PutSpy: ReturnType<typeof vi.fn>;
 	let storage: FileStoragePort;
@@ -136,7 +136,7 @@ describe('AUDIT-F09-08 + GAP-F09-24 patient file MIME + preview', () => {
 		} as unknown as S3FileStorage;
 
 		storage = new RoutingFileStorage(local, s3, 'local');
-		service = new PatientsService(tenantContext, storage);
+		service = new ContactsService(tenantContext, storage);
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -153,20 +153,28 @@ describe('AUDIT-F09-08 + GAP-F09-24 patient file MIME + preview', () => {
 
 		patientA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			const [row] = await tx`
-				insert into patients (tenant_id, full_name)
-				values (${tenantA}, 'Patient Mime A')
-				returning id
-			`;
+			await tx`insert into contact_types (tenant_id, name, sort_order) values (${tenantA}, 'Hasta', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name`;
+			const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (
+					${tenantA},
+					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+					'Hasta', 'Patient Mime A', 'Patient Mime A'
+				)
+				returning id`;
 			return row!.id as string;
 		});
 		patientB = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			const [row] = await tx`
-				insert into patients (tenant_id, full_name)
-				values (${tenantB}, 'Patient Mime B')
-				returning id
-			`;
+			await tx`insert into contact_types (tenant_id, name, sort_order) values (${tenantB}, 'Hasta', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name`;
+			const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (
+					${tenantB},
+					(select id from contact_types where tenant_id = ${tenantB} and name = 'Hasta' limit 1),
+					'Hasta', 'Patient Mime B', 'Patient Mime B'
+				)
+				returning id`;
 			return row!.id as string;
 		});
 	});
@@ -176,12 +184,12 @@ describe('AUDIT-F09-08 + GAP-F09-24 patient file MIME + preview', () => {
 		await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			await tx`delete from files where tenant_id = ${tenantA}`;
-			await tx`delete from patients where tenant_id = ${tenantA}`;
+			await tx`delete from contacts where tenant_id = ${tenantA}`;
 		});
 		await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			await tx`delete from files where tenant_id = ${tenantB}`;
-			await tx`delete from patients where tenant_id = ${tenantB}`;
+			await tx`delete from contacts where tenant_id = ${tenantB}`;
 		});
 		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
 		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
@@ -330,7 +338,7 @@ describe('AUDIT-F09-08 + GAP-F09-24 patient file MIME + preview', () => {
 			signedPutUrl: vi.fn(async () => null)
 		} as unknown as S3FileStorage;
 		const routing = new RoutingFileStorage(local, s3, 's3');
-		const s3Service = new PatientsService(tenantContext, routing);
+		const s3Service = new ContactsService(tenantContext, routing);
 
 		await expect(
 			s3Service['tenantContext'].withTenant(tenantA, async ({ db: tx }) =>
@@ -373,7 +381,7 @@ describe('AUDIT-F09-08 + GAP-F09-24 patient file MIME + preview', () => {
 			});
 			const [row] = await tx`
 				insert into files (
-					tenant_id, patient_id, filename, mime_type, size_bytes, storage_key, status
+					tenant_id, contact_id, filename, mime_type, size_bytes, storage_key, status
 				)
 				values (
 					${tenantA}, ${patientA}, 'legacy.bin', 'application/octet-stream',

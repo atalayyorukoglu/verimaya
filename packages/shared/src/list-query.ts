@@ -19,10 +19,10 @@ import { transactionKindSchema, transactionStatusSchema } from './transaction.js
  *   each to UTC `[start, endExclusive)` bounds on `starts_at` (TIME-01).
  */
 
-/** GAP-04 (G-05): status (exact) + q (patient name / notes / clinic / hotel). */
+/** GAP-04 (G-05): status (exact) + q (contact name / notes / clinic / hotel). */
 export const appointmentListQuerySchema = cursorPageParams
 	.extend({
-		patient_id: uuid.optional(),
+		contact_id: uuid.optional(),
 		from: isoDate.optional(),
 		to: isoDate.optional(),
 		status: appointmentStatusSchema.optional(),
@@ -35,7 +35,6 @@ export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
 /** GAP-03 (G-01): pilot filter set — kind / status / category (exact) / q (substring). */
 export const transactionListQuerySchema = cursorPageParams
 	.extend({
-		patient_id: uuid.optional(),
 		contact_id: uuid.optional(),
 		from: isoDate.optional(),
 		to: isoDate.optional(),
@@ -55,10 +54,6 @@ export const contactListQuerySchema = searchableListParams
 	.strict();
 
 export type ContactListQuery = z.infer<typeof contactListQuerySchema>;
-
-export const patientListQuerySchema = searchableListParams.strict();
-
-export type PatientListQuery = z.infer<typeof patientListQuerySchema>;
 
 /**
  * CONTRACT-02 (Faz 2.2): the ordering every list endpoint uses unless documented

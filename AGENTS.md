@@ -2,7 +2,7 @@
 
 ## Proje nedir?
 
-Türkiye'deki sağlık turizmi firmaları (saç ekimi, diş, estetik klinikleri/acenteleri) için multi-tenant B2B SaaS operasyon platformu. Modüller: hasta/lead takibi, randevu, finans (WhatsApp AI işlem aktarımı dahil), raporlama, GHL + Meta/Google Ads + n8n entegrasyonları. Solo geliştirici + Cursor AI ile ilerler.
+Türkiye'deki sağlık turizmi firmaları (saç ekimi, diş, estetik klinikleri/acenteleri) için multi-tenant B2B SaaS operasyon platformu. Modüller: kişiler (hasta/lead + tedarikçi), randevu, finans (WhatsApp AI işlem aktarımı dahil), raporlama, GHL + Meta/Google Ads + n8n entegrasyonları. Solo geliştirici + Cursor AI ile ilerler.
 
 Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dahili kullanımda) ürününün sıfırdan, yeni stack ile yeniden inşasıdır. Eski sistemin şeması ve iş kuralları `docs/legacy-reference/` altında referanstır — kod taşınmaz, bilgi taşınır.
 
@@ -31,7 +31,7 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 - Tarihler ISO-8601 UTC; para birimleri minor unit (kuruş/cent) integer.
 - API: `/v1` prefix, cursor sayfalama (`?cursor=&limit=`), standart hata gövdesi (`error.code`, `error.message`, `request_id`).
 - Dokümantasyon ve commit mesajları Türkçe; kod, tanımlayıcılar ve log mesajları İngilizce.
-- **Rota ve slug'lar İngilizce** (`/patients`, `/settings/connections/ads`). Kullanıcıya görünen metin `apps/web/src/lib/i18n/messages.ts` kataloğundan gelir. Detay ve gerekçe: aşağıdaki "Dil ve slug" bölümü.
+- **Rota ve slug'lar İngilizce** (`/contacts`, `/settings/connections/ads`). Kullanıcıya görünen metin `apps/web/src/lib/i18n/messages.ts` kataloğundan gelir. Detay ve gerekçe: aşağıdaki "Dil ve slug" bölümü.
 - Panel UI varsayılan dil **Türkçe**; hub’da TR/EN dil değiştirici var (URL locale yok). **i18n altyapısı kuruldu** — yeni metin doğrudan dil gömülmez, `messages.ts` anahtarı. Tema: **açık (varsayılan) + koyu**. Renk: **TickPort warm neutrals** (terracotta `#D97757`); layout CF dashboard — `docs/TASARIM.md`. Changelog: `docs/CHANGELOG-KURALLARI.md`.
 - Test: her tenant'lı endpoint için negatif izolasyon testi ("Tenant A, Tenant B verisini göremez") zorunludur.
 
@@ -42,10 +42,10 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 | Yüzey | Dil | Locale prefix | Gerekçe |
 | --- | --- | --- | --- |
 | **API yolu** (`/v1/...`) | **İngilizce** — değiştirilemez | yok | Dış `/v1` API + n8n + OpenAPI tüketicileri var; Türkçe yol yayınlanırsa geri dönüş kırıcı değişiklik olur. Tek kaynak: `packages/shared/src/api.ts` → `apiPaths`. |
-| **Panel rotası** (`app.verimaya.com`, login arkası) | **İngilizce** | **yok** | SPA + `noindex`, SEO değeri sıfır → slug bir ürün kararı değil, kod tutarlılığı kararı. Şema/tablo/dizin adları (`Patient`, `patients`) İngilizce olduğu için Türkçe rota kalıcı bir çeviri katmanı yaratır ve AI üretiminde hata kaynağıdır. |
+| **Panel rotası** (`app.verimaya.com`, login arkası) | **İngilizce** | **yok** | SPA + `noindex`, SEO değeri sıfır → slug bir ürün kararı değil, kod tutarlılığı kararı. Şema/tablo/dizin adları (`Contact`, `contacts`) İngilizce olduğu için Türkçe rota kalıcı bir çeviri katmanı yaratır ve AI üretiminde hata kaynağıdır. |
 | **Marketing hub** (apex `verimaya.com`, login öncesi) | her dil kendi dilinde | **ileride** `/tr/` + `/en/` | SEO'nun çalıştığı yer. Bugün hub kök `/` (nginx → `hub.html`); UI TR/EN katalog+switcher var; SEO locale ağacı henüz yok — aşağıdaki sıra. |
 
-**Panel rotaları dile göre çoğaltılmaz.** `/patients` vardır; `/tr/hastalar` + `/en/patients` yoktur. Dil kullanıcı tercihidir, URL'in parçası değildir — aksi halde rota yüzeyi ikiye katlanır ve kullanıcı dil değiştirdiğinde derin linkler kırılır.
+**Panel rotaları dile göre çoğaltılmaz.** `/contacts` vardır; `/tr/kisiler` + `/en/contacts` yoktur. Dil kullanıcı tercihidir, URL'in parçası değildir — aksi halde rota yüzeyi ikiye katlanır ve kullanıcı dil değiştirdiğinde derin linkler kırılır.
 
 **Metin nasıl yazılır:** `apps/web/src/lib/i18n/messages.ts`'e anahtar eklenir, bileşende `t('key')` ile okunur (`import { t } from '$lib/i18n/locale.svelte'`). `tr` kataloğu tip kaynağıdır — `en`'e eklenmeyen anahtar **derleme hatası** verir. Bileşene doğrudan Türkçe string gömülmez.
 
@@ -60,6 +60,6 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 - **Aktif yapılacaklar listesi: `docs/2026-08-09-YAPILACAKLAR.md` — tek kaynak.** Öncelik sıralı; her kalemin kabul kriteri ve dokunulacak dosyaları orada. Adım bitince o dosyadaki kutuyu işaretle, **Görüş** satırını doldur ve kalemi "Son kapananlar"a taşı. Listenin dışına çıkan işe başlama.
 - Obsidian yol haritası (`SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`) durum belgesidir (öncelik sırası YAPILACAKLAR'dadır); eski faz metni `Arşiv/2026-07-30-yol-haritasi.md`.
 - Ürünün kanıta dayalı gerçek durumu (arşiv, tarihli kanıt): `docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md`.
-- Eski plan/rapor/durum belgeleri (`CURSOR-PLAN.md`, `KONTROL-RAPORU.md`, `ROASMATE-GECIS.md`, `SAHA-TESTI-KAYDI.md`, 2026-08-03 listesi) `docs/Arşiv/`'de; aktif iş tek dosyada — `docs/2026-08-09-YAPILACAKLAR.md`.
+- Eski plan/rapor/durum belgeleri (`CURSOR-PLAN.md`, `KONTROL-RAPORU.md`, `ROASMATE-GECIS.md`, `SAHA-TESTI-KAYDI.md`, 2026-08-03 listesi, 2026-08-08 prod checklist) `docs/Arşiv/`'de; aktif iş tek dosyada — `docs/2026-08-09-YAPILACAKLAR.md`. Prod smoke tıklama: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`.
 - Önemli mimari kararlar `docs/MIMARI.md`'ye işlenir; proje takibi Obsidian'dadır (`SecondBrain-Remote/03-Areas/Verimaya`), oturum sonunda kullanıcıya log'a düşülecek 1-2 satır özet ver.
 - Faz 0a (MSW demo) ve Faz 0b (gerçek API) tamamlandı; panelde `PUBLIC_USE_MSW` ile MSW hâlâ açılabilir — canlıda kapalı.

@@ -7,14 +7,14 @@ import type {
 	InboundMessageActionResponse,
 	InboundMessageProcessResponse,
 	InboundMessageStatus,
-	Patient,
+	Contact,
 	TransactionDraft
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
-import { PatientsService } from '../patients/patients.service';
+import { ContactsService } from '../contacts/contacts.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import {
@@ -38,8 +38,8 @@ function toDraftSnapshot(item: ApproveDraftItem): TransactionDraft {
 		title: item.title,
 		category: item.category,
 		subcategory: item.subcategory,
-		patient_id: item.patient_id,
-		patient_display_name: item.patient_display_name,
+		contact_id: item.contact_id,
+		contact_display_name: item.contact_display_name,
 		contact_label: item.contact_label,
 		occurred_on: item.occurred_on,
 		payment_method: item.payment_method,
@@ -50,14 +50,14 @@ function toDraftSnapshot(item: ApproveDraftItem): TransactionDraft {
 @Injectable()
 export class WhatsappService {
 	constructor(
-		private readonly patientsService: PatientsService,
+		private readonly contactsService: ContactsService,
 		private readonly tenantContext: TenantContextService,
 		private readonly transactionsService: TransactionsService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
 	async parseMessage(tenantId: string, message: string) {
-		const { items: patients } = await this.patientsService.list(tenantId, {
+		const { items: patients } = await this.contactsService.list(tenantId, {
 			limit: 100
 		});
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
@@ -98,7 +98,7 @@ export class WhatsappService {
 
 	/** LLM/heuristic parse of a single inbox item; stashes drafts (or an error) into `payload`. */
 	async parseInboxItem(tenantId: string, id: string): Promise<{ records: TransactionDraft[] }> {
-		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
+		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, id);
@@ -135,7 +135,7 @@ export class WhatsappService {
 		tenantId: string,
 		inboundMessageId: string
 	): Promise<ProcessInboundOutcome> {
-		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
+		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, inboundMessageId);
@@ -148,7 +148,7 @@ export class WhatsappService {
 
 	/** Parse every `new` message with text; skips media-only messages. Does not create transactions. */
 	async processInbox(tenantId: string): Promise<InboundMessageProcessResponse> {
-		const { items: patients } = await this.patientsService.list(tenantId, { limit: 100 });
+		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const rows = await db
@@ -208,7 +208,7 @@ export class WhatsappService {
 				amount: draft.amount,
 				paid_amount: draft.paid_amount,
 				currency: draft.currency,
-				patient_id: draft.patient_id ?? null,
+				
 				contact_id: draft.contact_id ?? null,
 				contact_label: draft.contact_label ?? null,
 				amount_base: draft.amount_base,
@@ -262,7 +262,7 @@ export class WhatsappService {
 	private async processNewInboundRow(
 		db: TenantDb,
 		row: InboundMessageRow,
-		patients: Patient[]
+		patients: Contact[]
 	): Promise<'parsed' | 'error'> {
 		const payload = asRecord(row.payload) ?? {};
 		const display = extractInboundDisplayFields(payload);

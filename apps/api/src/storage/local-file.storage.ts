@@ -43,8 +43,8 @@ export function resolveLocalFilePath(storageKey: string): string | null {
  * signedGetUrl / signedPutUrl always return null (no CDN/presign on disk).
  */
 export class LocalFileStorage implements FileStoragePort {
-	buildKey(tenantId: string, patientId: string, fileId: string): string {
-		return `${LOCAL_SCHEME}${tenantId}/${patientId}/${fileId}`;
+	buildKey(tenantId: string, contactId: string, fileId: string): string {
+		return `${LOCAL_SCHEME}${tenantId}/${contactId}/${fileId}`;
 	}
 
 	async put(key: string, buf: Buffer, _meta?: FilePutMeta): Promise<void> {

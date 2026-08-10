@@ -21,7 +21,7 @@ describe('karne public tables (no tenant)', () => {
 	it('inserting a session/event does not create tenant-scoped rows', async () => {
 		const { sql } = getDb(databaseUrl);
 
-		const patientsBefore = await sql`select count(*)::int as n from patients`;
+		const patientsBefore = await sql`select count(*)::int as n from contacts`;
 		const tenantsBefore = await sql`select count(*)::int as n from tenants`;
 
 		const [session] = await sql`
@@ -46,7 +46,7 @@ describe('karne public tables (no tenant)', () => {
 		`;
 		expect(events[0]!.n).toBe(1);
 
-		const patientsAfter = await sql`select count(*)::int as n from patients`;
+		const patientsAfter = await sql`select count(*)::int as n from contacts`;
 		const tenantsAfter = await sql`select count(*)::int as n from tenants`;
 		expect(patientsAfter[0]!.n).toBe(patientsBefore[0]!.n);
 		expect(tenantsAfter[0]!.n).toBe(tenantsBefore[0]!.n);

@@ -3,7 +3,6 @@ export * from './calendar-day.js';
 export * from './list-query.js';
 export * from './tenant.js';
 export * from './user.js';
-export * from './patient.js';
 export * from './appointment.js';
 export * from './transaction.js';
 export * from './inbound-message.js';

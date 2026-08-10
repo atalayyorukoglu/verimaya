@@ -11,7 +11,7 @@ import { closeDb, getDb } from '../db/client';
 import { IdempotencyService } from '../common/idempotency.service';
 import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
-import { PatientsService } from '../patients/patients.service';
+import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { TransactionsService } from '../transactions/transactions.service';
@@ -34,11 +34,11 @@ function draftPayload(overrides: Partial<ApproveDraftsRequest['drafts'][number]>
 		fx_rate: 1,
 		amount_base: 10_000,
 		contact_label: 'Test Contact',
-		patient_id: null,
+		contact_id: null,
 		contact_id: null,
 		category: null,
 		subcategory: null,
-		patient_display_name: null,
+		contact_display_name: null,
 		payment_method: null,
 		description: null,
 		counterparty_amount: null,
@@ -86,7 +86,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 		tenantContext = new TenantContextService(dbService);
 		idempotency = new IdempotencyService(tenantContext);
 		whatsappService = new WhatsappService(
-			new PatientsService(tenantContext, new LocalFileStorage()),
+			new ContactsService(tenantContext, new LocalFileStorage()),
 			tenantContext,
 			new TransactionsService(tenantContext),
 			new HeuristicLlmClient()
@@ -203,7 +203,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 						freshInbox,
 						{
 							drafts: [
-								draftPayload({ patient_id: badPatientId }),
+								draftPayload({ contact_id: badPatientId }),
 								draftPayload({ title: 'second should not exist' })
 							]
 						},

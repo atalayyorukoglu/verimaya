@@ -55,7 +55,7 @@ describe('scorecard auto-fill integration (Adım 35)', () => {
 			`;
 			await tx`
 				insert into webhook_subscriptions (tenant_id, url, secret_ciphertext, event_types, active)
-				values (${richTenant}, 'https://example.test/hook', 'sec', array['patient.created']::text[], true)
+				values (${richTenant}, 'https://example.test/hook', 'sec', array['contact.created']::text[], true)
 			`;
 			await tx`
 				insert into jobs (tenant_id, queue, job_type, payload, status, attempts, started_at, completed_at)
@@ -86,7 +86,7 @@ describe('scorecard auto-fill integration (Adım 35)', () => {
 			for (let i = 0; i < 12; i++) {
 				await tx`
 					insert into audit_logs (tenant_id, actor_display_name, action, entity_type, entity_label)
-					values (${richTenant}, ${i < 10 ? 'Founder' : 'Other'}, 'update', 'patient', 'seed')
+					values (${richTenant}, ${i < 10 ? 'Founder' : 'Other'}, 'update', 'contact', 'seed')
 				`;
 			}
 			await tx`

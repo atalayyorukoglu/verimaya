@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { sql as drizzleSql } from 'drizzle-orm';
 import { closeDb, getDb } from '../db/client';
-import { PatientsService } from '../patients/patients.service';
+import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 /**
  * AUDIT-01 (Faz 8) — patient file-label timezone leak isolation spec.
  *
- * Opus denetimi §[CRITICAL]: `PatientsService.getTenantTimezone(db)` was reading
+ * Opus denetimi §[CRITICAL]: `ContactsService.getTenantTimezone(db)` was reading
  * `tenants` (no RLS) without `where(eq(tenants.id, tenantId))`, so within a `withTenant(T2, ...)`
  * scope the helper could return T1's timezone if T1 was scanned first. We provision
  * two tenants with different timezones, drive a file creation in each, and assert
@@ -21,16 +22,19 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
 	process.env.DATABASE_URL ??
-	'postgresql://verimaya_app:***@localhost:5433/verimaya';
+	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tdb: TenantDb) => Promise<T>
+): Promise<T> {
+	const { db } = getDb(databaseUrl);
+	return db.transaction(async (tx) => {
+		await tx.execute(
+			drizzleSql`select set_config('app.current_tenant_id', ${tenantId}, true)`
+		);
+		return fn(tx as TenantDb);
+	});
 }
 
 describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §[CRITICAL])', () => {
@@ -70,28 +74,33 @@ describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §
 			// paths run as production.
 			const storage = new LocalFileStorage();
 			const tenantContext = new TenantContextService({ client: db, sql } as unknown as never);
-			const svc = new PatientsService(
+			const svc = new ContactsService(
 				tenantContext,
-				storage as unknown as Parameters<typeof PatientsService>[1]
+				storage as unknown as Parameters<typeof ContactsService>[1]
 			);
 
-			await withTenantSession(tenantId, async () => {
-				const patient = await svc.createWithDb(db as TenantDb, tenantId, {
-					full_name: `Patient ${tenantId.slice(0, 6)}`,
-					phone: null,
-					email: null,
-					notes: null,
-					source: null,
-					status: 'scheduled',
-					assigned_user_id: null,
-					contact_id: null
+			await withTenantSession(tenantId, async (tdb) => {
+				const hastaRows = await sql.begin(async (tx) => {
+					await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+					return tx`
+						insert into contact_types (tenant_id, name, sort_order)
+						values (${tenantId}, 'Hasta', 0)
+						on conflict (tenant_id, name) do update set name = excluded.name
+						returning id
+					`;
 				});
-				const appt = await db
+				const hastaTypeId = hastaRows[0]!.id as string;
+				const patient = await svc.createWithDb(tdb, tenantId, {
+					contact_type_id: hastaTypeId,
+					first_name: `Patient ${tenantId.slice(0, 6)}`,
+					status: 'scheduled'
+				});
+				const appt = await tdb
 					.insert((await import('../db/schema/appointments')).appointments)
 					.values({
 						tenantId,
-						patientId: patient.id,
-						patientDisplayName: patient.full_name,
+						contactId: patient.id,
+						contactDisplayName: patient.display_name,
 						title: 'audit-01 appointment',
 						startsAt,
 						createdAt: startsAt,
@@ -99,7 +108,7 @@ describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §
 					})
 					.returning();
 				await svc.createFileWithDb(
-					db as TenantDb,
+					tdb,
 					tenantId,
 					patient.id,
 					{
@@ -114,18 +123,23 @@ describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §
 
 			// Read the resulting file row's appointment_label back from the DB so we don't
 			// depend on whatever the service mapper returns.
-			await withTenantSession(tenantId, async () => {
-				const rows = await sql<Array<{ appointment_label: string | null }>>`
-					select appointment_label
-					from files
-					where tenant_id = ${tenantId}
-					order by created_at desc
-					limit 1
-				`;
+			await withTenantSession(tenantId, async (tdb) => {
+				const { sql } = getDb(databaseUrl);
+				const rows = await sql.begin(async (tx) => {
+					await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+					return tx`
+						select appointment_label
+						from files
+						where tenant_id = ${tenantId}
+						order by created_at desc
+						limit 1
+					`;
+				});
+				const label = rows[0]?.appointment_label ?? null;
 				if (tenantId === tenantIstanbul) {
-					labelIstanbul = rows[0]?.appointment_label ?? null;
+					labelIstanbul = label;
 				} else {
-					labelLondon = rows[0]?.appointment_label ?? null;
+					labelLondon = label;
 				}
 			});
 		}
@@ -138,7 +152,7 @@ describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §
 				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 				await tx`delete from files where tenant_id = ${tenantId}`;
 				await tx`delete from appointments where tenant_id = ${tenantId}`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 			});
 			await sql`delete from tenants where id = ${tenantId}`;
 			await sql`delete from organization where id = ${tenantId}`;

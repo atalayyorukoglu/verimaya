@@ -1,4 +1,4 @@
-import type { Patient, SupportedCurrency, TransactionDraft } from '@verimaya/shared';
+import type { Contact, SupportedCurrency, TransactionDraft } from '@verimaya/shared';
 import { toTenantDayKey } from '@verimaya/shared';
 
 const CURRENCY_PATTERN = /\b(\d[\d.,]*)\s*(TRY|GBP|EUR|USD|₺|£|€|\$)\b/gi;
@@ -36,14 +36,16 @@ function guessTitle(text: string, amount: number, currency: string): string {
 	return `${amount.toLocaleString('tr-TR')} ${currency} işlem`;
 }
 
-function matchPatient(text: string, patients: Patient[]): Patient | null {
+function matchContact(text: string, contacts: Contact[]): Contact | null {
 	const lower = text.toLowerCase();
-	for (const p of patients) {
-		const parts = p.full_name
+	for (const c of contacts) {
+		if (c.contact_type_name !== 'Hasta') continue;
+		const parts = [c.first_name, c.last_name ?? '', c.display_name]
+			.join(' ')
 			.toLowerCase()
 			.split(/\s+/)
 			.filter((x) => x.length > 2);
-		if (parts.some((part) => lower.includes(part))) return p;
+		if (parts.some((part) => lower.includes(part))) return c;
 	}
 	return null;
 }
@@ -51,7 +53,7 @@ function matchPatient(text: string, patients: Patient[]): Patient | null {
 /** Demo parser — gerçek AI Faz 3'te backend'de çalışır. */
 export function parseWhatsappMessage(
 	message: string,
-	patients: Patient[] = []
+	contacts: Contact[] = []
 ): TransactionDraft[] {
 	const text = message.trim();
 	if (!text) return [];
@@ -62,7 +64,7 @@ export function parseWhatsappMessage(
 		if (!fallback) return [];
 		const amount = Math.round(parseAmount(fallback[1]) * 100);
 		const kind = guessKind(text);
-		const patient = matchPatient(text, patients);
+		const contact = matchContact(text, contacts);
 		return [
 			{
 				kind,
@@ -70,8 +72,8 @@ export function parseWhatsappMessage(
 				currency: 'TRY',
 				title: guessTitle(text, amount / 100, 'TRY'),
 				category: kind === 'income' ? 'Operasyon' : 'Konaklama',
-				patient_id: patient?.id ?? null,
-				patient_display_name: patient?.full_name ?? null,
+				contact_id: contact?.id ?? null,
+				contact_display_name: contact?.display_name ?? null,
 				contact_label: null,
 				occurred_on: today(),
 				payment_method: null,
@@ -82,7 +84,7 @@ export function parseWhatsappMessage(
 
 	const records: TransactionDraft[] = [];
 	const kind = guessKind(text);
-	const patient = matchPatient(text, patients);
+	const contact = matchContact(text, contacts);
 
 	for (const m of matches) {
 		const major = parseAmount(m[1]);
@@ -95,8 +97,8 @@ export function parseWhatsappMessage(
 			title: guessTitle(text, major, currency),
 			category: kind === 'income' ? 'Operasyon' : 'Pazarlama',
 			subcategory: null,
-			patient_id: patient?.id ?? null,
-			patient_display_name: patient?.full_name ?? null,
+			contact_id: contact?.id ?? null,
+			contact_display_name: contact?.display_name ?? null,
 			contact_label: extractContactLabel(text),
 			occurred_on: today(),
 			payment_method: /kart|card/i.test(text)

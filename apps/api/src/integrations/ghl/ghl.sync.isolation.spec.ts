@@ -39,7 +39,7 @@ describe('GhlSyncService tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from patients where tenant_id in (${tenantA}, ${tenantB})`;
+		await sql`delete from contacts where tenant_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from external_ids where tenant_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from jobs where tenant_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from audit_logs where tenant_id in (${tenantA}, ${tenantB})`;
@@ -63,8 +63,8 @@ describe('GhlSyncService tenant isolation', () => {
 				}
 			}
 		});
-		expect(resultA.action).toBe('patient_created');
-		expect(resultA.patientId).toBeTruthy();
+		expect(resultA.action).toBe('contact_created');
+		expect(resultA.contactId).toBeTruthy();
 
 		const again = await syncService.processInboundEvent({
 			integrationEventId: randomUUID(),
@@ -79,15 +79,15 @@ describe('GhlSyncService tenant isolation', () => {
 				}
 			}
 		});
-		expect(again.action).toBe('patient_updated');
-		expect(again.patientId).toBe(resultA.patientId);
+		expect(again.action).toBe('contact_updated');
+		expect(again.contactId).toBe(resultA.contactId);
 
 		const { sql } = getDb(databaseUrl);
 		const visibleToB = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			return tx`
-				select id from patients
-				where id = ${resultA.patientId!} and deleted_at is null
+				select id from contacts
+				where id = ${resultA.contactId!} and deleted_at is null
 			`;
 		});
 		expect(visibleToB).toHaveLength(0);
@@ -95,27 +95,27 @@ describe('GhlSyncService tenant isolation', () => {
 		const visibleToA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			return tx`
-				select full_name, source from patients
-				where id = ${resultA.patientId!} and deleted_at is null
+				select display_name, source from contacts
+				where id = ${resultA.contactId!} and deleted_at is null
 			`;
 		});
 		expect(visibleToA).toHaveLength(1);
-		expect(visibleToA[0]?.full_name).toBe('Isolation Patient A Updated');
+		expect(visibleToA[0]?.display_name).toBe('Isolation Patient A Updated');
 		expect(visibleToA[0]?.source).toBe('ghl');
 
 		const mapping = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			return tx`
 				select external_id, internal_id from external_ids
-				where source = 'ghl' and entity_type = 'patient' and external_id = ${externalId}
+				where source = 'ghl' and entity_type = 'contact' and external_id = ${externalId}
 			`;
 		});
 		expect(mapping).toHaveLength(1);
-		expect(mapping[0]?.internal_id).toBe(resultA.patientId);
+		expect(mapping[0]?.internal_id).toBe(resultA.contactId);
 
 		const notesRow = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			return tx`select notes from patients where id = ${resultA.patientId!}`;
+			return tx`select notes from contacts where id = ${resultA.contactId!}`;
 		});
 		expect(notesRow[0]?.notes).toBeNull();
 	});

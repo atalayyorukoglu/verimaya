@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Patient } from '@verimaya/shared';
+import type { Contact } from '@verimaya/shared';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import {
 	buildMaskedLlmUserPayload,
@@ -8,17 +8,27 @@ import {
 	PII_PLACEHOLDERS
 } from './pii-mask';
 
-function patient(id: string, full_name: string): Patient {
+function patient(id: string, display_name: string): Contact {
 	return {
 		id,
 		tenant_id: '00000000-0000-4000-8000-000000000001',
-		full_name,
+		contact_type_id: '00000000-0000-4000-8000-000000000010',
+		contact_type_name: 'Hasta',
+		first_name: display_name.split(' ')[0] || display_name,
+		last_name: display_name.split(' ').slice(1).join(' ') || null,
+		display_name,
 		phone: null,
 		email: null,
-		status: 'scheduled',
-		source: null,
 		notes: null,
-		contact_id: null,
+		organization_id: null,
+		status: 'scheduled',
+		assigned_user_id: null,
+		source: null,
+		medium: null,
+		campaign: null,
+		referred_by_contact_id: null,
+		is_internal: false,
+		usage_count: 0,
 		created_at: '2026-01-01T00:00:00.000Z',
 		updated_at: '2026-01-01T00:00:00.000Z'
 	};
@@ -54,13 +64,13 @@ describe('maskMessagePii', () => {
 describe('buildMaskedLlmUserPayload', () => {
 	const sandra = patient('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', 'Sandra Yılmaz');
 
-	it('strips full_name from patient hints (opaque patient_ref only)', () => {
+	it('strips display_name from patient hints (opaque patient_ref only)', () => {
 		const payload = buildMaskedLlmUserPayload({
 			message: 'Sandra Yılmaz 2900 GBP ödeme alındı',
 			patients: [sandra]
 		});
 		expect(payload.patients).toEqual([{ patient_ref: sandra.id }]);
-		expect(JSON.stringify(payload)).not.toMatch(/Sandra|Yılmaz|full_name/i);
+		expect(JSON.stringify(payload)).not.toMatch(/Sandra|Yılmaz|display_name/i);
 		expect(payload.message).toContain(PII_PLACEHOLDERS.patient);
 		expect(payload.message).toContain('2900');
 		expect(payload.message).toContain('GBP');

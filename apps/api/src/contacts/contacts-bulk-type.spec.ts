@@ -6,6 +6,7 @@ import { contactsBulkTypeSchema } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { ContactsService } from './contacts.service';
+import { LocalFileStorage } from '../storage/local-file.storage';
 
 /**
  * GAP-F09-17 (G-17): bulk contact type assignment.
@@ -42,7 +43,7 @@ describe('GAP-F09-17 contacts bulk-type', () => {
 				})
 		} as TenantContextService;
 
-		service = new ContactsService(tenantContext);
+		service = new ContactsService(tenantContext, new LocalFileStorage());
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -86,7 +87,7 @@ describe('GAP-F09-17 contacts bulk-type', () => {
 				);
 				return service.createWithDb(tx as TenantDb, tenantA, {
 					contact_type_id: contactTypeA,
-					display_name: 'Contact A1'
+					first_name: 'Contact A1'
 				});
 			})
 		).id;
@@ -98,7 +99,7 @@ describe('GAP-F09-17 contacts bulk-type', () => {
 				);
 				return service.createWithDb(tx as TenantDb, tenantA, {
 					contact_type_id: contactTypeA,
-					display_name: 'Contact A2'
+					first_name: 'Contact A2'
 				});
 			})
 		).id;
@@ -110,7 +111,7 @@ describe('GAP-F09-17 contacts bulk-type', () => {
 				);
 				return service.createWithDb(tx as TenantDb, tenantB, {
 					contact_type_id: contactTypeB,
-					display_name: 'Contact B'
+					first_name: 'Contact B'
 				});
 			})
 		).id;

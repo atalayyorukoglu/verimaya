@@ -2,9 +2,6 @@ import { http, HttpResponse } from 'msw';
 import {
 	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
-	patientCreateSchema,
-	patientUpdateSchema,
-	patientListQuerySchema,
 	appointmentCreateSchema,
 	appointmentUpdateSchema,
 	appointmentListQuerySchema,
@@ -14,11 +11,13 @@ import {
 	transactionListQuerySchema,
 	tenantUpdateSchema,
 	whatsappParseRequestSchema,
-	patientFileCreateSchema,
-	patientFilePresignSchema,
-	patientCaseNoteCreateSchema,
+	contactFileCreateSchema,
+	contactFilePresignSchema,
+	contactCaseNoteCreateSchema,
 	contactTypeCreateSchema,
 	contactTypeUpdateSchema,
+	organizationCreateSchema,
+	organizationUpdateSchema,
 	contactsBulkTypeSchema,
 	contactCreateSchema,
 	contactUpdateSchema,
@@ -36,7 +35,6 @@ import {
 	trustScoreSettings,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
-	whatsappCreatePatientSchema,
 	compareByCreatedAtDesc,
 	compareByCreatedAtAsc,
 	compareByOccurredOnDesc,
@@ -53,13 +51,14 @@ import {
 	type AppointmentTypeSetting,
 	type ApproveDraftsResponse,
 	type Contact,
+	type ContactStatus,
 	type ContactType,
 	type FinanceCategory,
 	type MarketingReport,
 	type MembershipUser,
-	type Patient,
-	type PatientCaseNote,
-	type PatientFile,
+	type Organization,
+	type ContactCaseNote,
+	type ContactFile,
 	type SupportedCurrency,
 	type Tenant,
 	type Transaction,
@@ -68,7 +67,7 @@ import {
 } from '@verimaya/shared';
 import { amountInBase, paidAmountInBase } from '$lib/money-base';
 import { parseWhatsappMessage } from './whatsapp-parse';
-import { findContactDuplicateGroups, findPatientDuplicateGroups } from './duplicates';
+import { findContactDuplicateGroups } from './duplicates';
 import {
 	DEMO_TENANT_ID,
 	DEMO_USER_ID,
@@ -84,6 +83,14 @@ function nowIso() {
 	return new Date().toISOString();
 }
 
+function deriveDisplayName(firstName: string, lastName: string | null | undefined): string {
+	return `${firstName}${lastName?.trim() ? ` ${lastName.trim()}` : ''}`.trim();
+}
+
+function hastaContacts(store: ReturnType<typeof getStore>): Contact[] {
+	return store.contacts.filter((c) => c.contact_type_name === 'Hasta');
+}
+
 function appointmentLabel(a: Appointment): string {
 	return `${a.starts_at.slice(0, 10)} · ${a.title ?? 'Randevu'}`;
 }
@@ -92,6 +99,7 @@ function refreshUsage(store: ReturnType<typeof getStore>) {
 	for (const c of store.contacts) {
 		let n = 0;
 		for (const a of store.appointments) {
+			if (a.contact_id === c.id) n += 1;
 			if (
 				a.clinic_contact_id === c.id ||
 				a.hotel_contact_id === c.id ||
@@ -130,7 +138,10 @@ function resolveTxContact<T extends Partial<Transaction>>(
 	const next = { ...data };
 	if (next.contact_id) {
 		const c = store.contacts.find((x) => x.id === next.contact_id);
-		if (c) next.contact_label = c.display_name;
+		if (c) {
+			next.contact_label = c.display_name;
+			next.contact_display_name = c.display_name;
+		}
 	}
 	return next;
 }
@@ -173,7 +184,7 @@ function sourceLabel(source: string | null | undefined): string {
 	return trimmed || 'Bilinmeyen';
 }
 
-function patientCreatedDay(iso: string): string {
+function contactCreatedDay(iso: string): string {
 	return iso.slice(0, 10);
 }
 
@@ -238,20 +249,19 @@ export function buildMarketingReport(
 	const incomeRows = filterTransactionsByPeriod(store.transactions, spendFrom, spendTo).filter(
 		(t) => t.kind === 'income'
 	);
-	const patientById = new Map(store.patients.map((p) => [p.id, p]));
+	const contactById = new Map(store.contacts.map((c) => [c.id, c]));
 	const revenueBySource = new Map<string, number>();
 	let revenue_base = 0;
 	for (const t of incomeRows) {
 		const paid = paidInBaseMock(t, tenantBase);
 		revenue_base += paid;
-		const patient = t.patient_id ? patientById.get(t.patient_id) : undefined;
-		const label = sourceLabel(patient?.source);
+		const contact = t.contact_id ? contactById.get(t.contact_id) : undefined;
+		const label = sourceLabel(contact?.source);
 		revenueBySource.set(label, (revenueBySource.get(label) ?? 0) + paid);
 	}
 
-	// Cohort uses the same spend/tahsilat window (created_at via dayRange).
-	const cohortPatients = store.patients.filter((p) => {
-		const day = patientCreatedDay(p.created_at);
+	const cohortContacts = hastaContacts(store).filter((c) => {
+		const day = contactCreatedDay(c.created_at);
 		if (spendFrom && day < spendFrom) return false;
 		if (spendTo && day > spendTo) return false;
 		return true;
@@ -259,11 +269,11 @@ export function buildMarketingReport(
 	const cohortBySource = new Map<string, { leads: number; treated: number }>();
 	let leads_count = 0;
 	let treated_count = 0;
-	for (const p of cohortPatients) {
+	for (const c of cohortContacts) {
 		leads_count += 1;
-		const isTreated = p.status === 'treated';
+		const isTreated = c.status === 'treated';
 		if (isTreated) treated_count += 1;
-		const label = sourceLabel(p.source);
+		const label = sourceLabel(c.source);
 		const cur = cohortBySource.get(label) ?? { leads: 0, treated: 0 };
 		cur.leads += 1;
 		if (isTreated) cur.treated += 1;
@@ -408,39 +418,51 @@ function buildReportSummary(
 	};
 }
 
-function buildReportPatientDistribution(
+function buildReportContactDistribution(
 	store: ReturnType<typeof getStore>,
 	from: string | null,
 	to: string | null
 ) {
-	let patients = store.patients;
+	let contacts = hastaContacts(store);
 	if (from) {
-		patients = patients.filter((p) => patientCreatedDay(p.created_at) >= from);
+		contacts = contacts.filter((c) => contactCreatedDay(c.created_at) >= from);
 	}
 	if (to) {
-		patients = patients.filter((p) => patientCreatedDay(p.created_at) <= to);
+		contacts = contacts.filter((c) => contactCreatedDay(c.created_at) <= to);
 	}
 
 	const statusCounts = new Map<string, number>();
 	const sourceCounts = new Map<string, number>();
-	for (const p of patients) {
-		statusCounts.set(p.status, (statusCounts.get(p.status) ?? 0) + 1);
-		const label = sourceLabel(p.source);
-		sourceCounts.set(label, (sourceCounts.get(label) ?? 0) + 1);
+	const mediumCounts = new Map<string, number>();
+	for (const c of contacts) {
+		if (c.status) {
+			statusCounts.set(c.status, (statusCounts.get(c.status) ?? 0) + 1);
+		}
+		const source = sourceLabel(c.source);
+		sourceCounts.set(source, (sourceCounts.get(source) ?? 0) + 1);
+		const medium = sourceLabel(c.medium);
+		mediumCounts.set(medium, (mediumCounts.get(medium) ?? 0) + 1);
 	}
 
 	const by_status = [...statusCounts.entries()]
-		.map(([status, count]) => ({ status, count }))
+		.map(([status, count]) => ({
+			status: status as ContactStatus,
+			count
+		}))
 		.sort((a, b) => b.count - a.count);
 	const by_source = [...sourceCounts.entries()]
 		.map(([source, count]) => ({ source, count }))
+		.sort((a, b) => b.count - a.count);
+	const by_medium = [...mediumCounts.entries()]
+		.map(([medium, count]) => ({ medium, count }))
 		.sort((a, b) => b.count - a.count);
 
 	return {
 		period: { from, to },
 		by_status,
 		by_source,
-		total: patients.length
+		by_medium,
+		total: contacts.length
 	};
 }
 
@@ -560,8 +582,8 @@ function buildReportConsistency(
 		if (!(t.category ?? '').trim()) {
 			push(t, 'warning', 'category_missing', 'reports.consistency.category_missing');
 		}
-		if (t.kind === 'income' && !t.patient_id) {
-			push(t, 'warning', 'income_patient_missing', 'reports.consistency.income_patient_missing');
+		if (t.kind === 'income' && !t.contact_id) {
+			push(t, 'warning', 'income_contact_missing', 'reports.consistency.income_contact_missing');
 		}
 		if (t.kind === 'expense' && !t.contact_id && !(t.contact_label ?? '').trim()) {
 			push(t, 'warning', 'expense_contact_missing', 'reports.consistency.expense_contact_missing');
@@ -931,21 +953,23 @@ export const handlers = [
 		const url = new URL(request.url);
 		const q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
 		if (q.length < 2) {
-			return HttpResponse.json({ patients: [], appointments: [], transactions: [] });
+			return HttpResponse.json({ contacts: [], appointments: [], transactions: [] });
 		}
 		const store = getStore(scenarioFrom(request));
-		const patients = store.patients
+		const contacts = hastaContacts(store)
 			.filter(
-				(p) =>
-					p.full_name.toLowerCase().includes(q) ||
-					(p.email?.toLowerCase().includes(q) ?? false) ||
-					(p.phone?.includes(q) ?? false)
+				(c) =>
+					c.display_name.toLowerCase().includes(q) ||
+					c.first_name.toLowerCase().includes(q) ||
+					(c.last_name?.toLowerCase().includes(q) ?? false) ||
+					(c.email?.toLowerCase().includes(q) ?? false) ||
+					(c.phone?.includes(q) ?? false)
 			)
 			.slice(0, 8);
 		const appointments = store.appointments
 			.filter(
 				(a) =>
-					a.patient_display_name.toLowerCase().includes(q) ||
+					a.contact_display_name.toLowerCase().includes(q) ||
 					(a.title?.toLowerCase().includes(q) ?? false) ||
 					(a.appointment_type?.toLowerCase().includes(q) ?? false)
 			)
@@ -954,187 +978,11 @@ export const handlers = [
 			.filter(
 				(t) =>
 					t.title.toLowerCase().includes(q) ||
-					(t.patient_display_name?.toLowerCase().includes(q) ?? false) ||
+					(t.contact_display_name?.toLowerCase().includes(q) ?? false) ||
 					(t.category?.toLowerCase().includes(q) ?? false)
 			)
 			.slice(0, 6);
-		return HttpResponse.json({ patients, appointments, transactions });
-	}),
-
-	http.get('/v1/patients', ({ request }) => {
-		const url = new URL(request.url);
-		const parsed = parseListQuery(patientListQuerySchema, url);
-		if (!parsed.success) return parsed.response;
-		const store = getStore(scenarioFrom(request));
-		const q = (parsed.data.q ?? '').trim().toLowerCase();
-		let items = store.patients;
-		if (q) {
-			items = items.filter(
-				(p) =>
-					p.full_name.toLowerCase().includes(q) ||
-					(p.email?.toLowerCase().includes(q) ?? false) ||
-					(p.phone?.includes(q) ?? false)
-			);
-		}
-		// CONTRACT-02: newly created patients are unshifted, so insertion order already
-		// matches created_at desc — sort explicitly anyway so this doesn't silently rot.
-		items = [...items].sort(compareByCreatedAtDesc);
-		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
-	}),
-
-	http.get('/v1/patients/duplicate-groups', ({ request }) => {
-		const store = getStore(scenarioFrom(request));
-		const busy = new Set<string>();
-		for (const a of store.appointments) {
-			if (a.patient_id) busy.add(a.patient_id);
-		}
-		for (const t of store.transactions) {
-			if (t.patient_id) busy.add(t.patient_id);
-		}
-		const sorted = [...store.patients].sort(compareByCreatedAtAsc);
-		const truncated = sorted.length > DUPLICATE_SCAN_ROW_CAP;
-		const scanned = truncated ? sorted.slice(0, DUPLICATE_SCAN_ROW_CAP) : sorted;
-		const empty = scanned.filter((p) => !busy.has(p.id));
-		return HttpResponse.json({
-			items: findPatientDuplicateGroups(empty),
-			truncated,
-			scanned_count: scanned.length
-		});
-	}),
-
-	http.post('/v1/patients/merge', async ({ request }) => {
-		const body = await request.json();
-		const parsed = mergeRecordsSchema.safeParse(body);
-		if (!parsed.success) return badRequest('Geçersiz birleştirme', parsed.error.flatten());
-		const { keep_id, merge_ids } = parsed.data;
-		if (merge_ids.includes(keep_id)) return badRequest('keep_id birleştirilecek listede olamaz');
-		const store = getStore(scenarioFrom(request));
-		const keep = store.patients.find((p) => p.id === keep_id);
-		if (!keep) return notFound('Hedef hasta bulunamadı');
-		const sources = merge_ids.map((id) => store.patients.find((p) => p.id === id));
-		if (sources.some((p) => !p)) return notFound('Birleştirilecek hasta bulunamadı');
-
-		const involved = [keep_id, ...merge_ids];
-		const hasRecords = involved.some(
-			(id) =>
-				store.appointments.some((a) => a.patient_id === id) ||
-				store.transactions.some((t) => t.patient_id === id)
-		);
-		if (hasRecords) {
-			return HttpResponse.json(
-				{
-					error: {
-						code: 'patient_has_records',
-						message: 'Cannot complete empty-file merge: a file has appointments or transactions'
-					}
-				},
-				{ status: 409 }
-			);
-		}
-
-		const contactIds = [keep, ...sources]
-			.map((p) => p?.contact_id ?? null)
-			.filter((id): id is string => id != null);
-		if (new Set(contactIds).size > 1) {
-			return HttpResponse.json(
-				{
-					error: {
-						code: 'patient_contact_mismatch',
-						message: 'Cannot complete empty-file merge: files link to different contacts'
-					}
-				},
-				{ status: 409 }
-			);
-		}
-
-		for (const src of sources) {
-			if (!src) continue;
-			if (!keep.phone && src.phone) keep.phone = src.phone;
-			if (!keep.email && src.email) keep.email = src.email;
-			if (!keep.notes && src.notes) keep.notes = src.notes;
-			if (!keep.source && src.source) keep.source = src.source;
-			if (!keep.contact_id && src.contact_id) keep.contact_id = src.contact_id;
-		}
-		keep.updated_at = nowIso();
-
-		const drop = new Set(merge_ids);
-		store.patients = store.patients.filter((p) => !drop.has(p.id));
-		return HttpResponse.json(keep);
-	}),
-
-	http.get('/v1/patients/:id', ({ params, request }) => {
-		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === params.id);
-		if (!patient) return notFound('Hasta bulunamadı');
-		return HttpResponse.json(patient);
-	}),
-
-	http.post('/v1/patients', async ({ request }) => {
-		const body = await request.json();
-		const parsed = patientCreateSchema.safeParse(body);
-		if (!parsed.success) return badRequest('Geçersiz hasta verisi', parsed.error.flatten());
-		const store = getStore(scenarioFrom(request));
-		const now = nowIso();
-		const patient: Patient = {
-			id: crypto.randomUUID(),
-			tenant_id: DEMO_TENANT_ID,
-			...parsed.data,
-			created_at: now,
-			updated_at: now
-		};
-		store.patients.unshift(patient);
-		return HttpResponse.json(patient, { status: 201 });
-	}),
-
-	http.patch('/v1/patients/:id', async ({ params, request }) => {
-		const body = await request.json();
-		const parsed = patientUpdateSchema.safeParse(body);
-		if (!parsed.success) return badRequest('Geçersiz hasta verisi', parsed.error.flatten());
-		const store = getStore(scenarioFrom(request));
-		const idx = store.patients.findIndex((p) => p.id === params.id);
-		if (idx < 0) return notFound('Hasta bulunamadı');
-		const updated: Patient = {
-			...store.patients[idx],
-			...parsed.data,
-			updated_at: nowIso()
-		};
-		store.patients[idx] = updated;
-		for (const a of store.appointments) {
-			if (a.patient_id === updated.id) a.patient_display_name = updated.full_name;
-		}
-		for (const t of store.transactions) {
-			if (t.patient_id === updated.id) t.patient_display_name = updated.full_name;
-		}
-		return HttpResponse.json(updated);
-	}),
-
-	http.delete('/v1/patients/:id', ({ params, request }) => {
-		const store = getStore(scenarioFrom(request));
-		const idx = store.patients.findIndex((p) => p.id === params.id);
-		if (idx < 0) return notFound('Hasta bulunamadı');
-		const id = store.patients[idx].id;
-		store.patients.splice(idx, 1);
-		return HttpResponse.json({ id, deleted: true as const });
-	}),
-
-	http.post('/v1/patients/:id/auto-link-transactions', ({ params, request }) => {
-		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === params.id);
-		if (!patient) return notFound('Hasta bulunamadı');
-		if (!patient.contact_id) {
-			return HttpResponse.json({ updated: 0 });
-		}
-		let updated = 0;
-		const now = nowIso();
-		for (const t of store.transactions) {
-			if (t.contact_id !== patient.contact_id) continue;
-			if (t.patient_id != null) continue;
-			t.patient_id = patient.id;
-			t.patient_display_name = patient.full_name;
-			t.updated_at = now;
-			updated += 1;
-		}
-		return HttpResponse.json({ updated });
+		return HttpResponse.json({ contacts, appointments, transactions });
 	}),
 
 	http.get('/v1/appointments', ({ request }) => {
@@ -1143,8 +991,8 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.appointments];
-		const { patient_id: patientId, from, to, status, q } = parsed.data;
-		if (patientId) items = items.filter((a) => a.patient_id === patientId);
+		const { contact_id: contactId, from, to, status, q } = parsed.data;
+		if (contactId) items = items.filter((a) => a.contact_id === contactId);
 		if (status) items = items.filter((a) => a.status === status);
 		const tz = store.tenant.timezone;
 		if (from) {
@@ -1159,7 +1007,7 @@ export const handlers = [
 			const needle = q.toLowerCase();
 			items = items.filter(
 				(a) =>
-					a.patient_display_name.toLowerCase().includes(needle) ||
+					a.contact_display_name.toLowerCase().includes(needle) ||
 					(a.notes?.toLowerCase().includes(needle) ?? false) ||
 					(a.clinic_name?.toLowerCase().includes(needle) ?? false) ||
 					(a.hotel_name?.toLowerCase().includes(needle) ?? false)
@@ -1196,14 +1044,14 @@ export const handlers = [
 		const parsed = appointmentCreateSchema.safeParse(body);
 		if (!parsed.success) return badRequest('Geçersiz randevu verisi', parsed.error.flatten());
 		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === parsed.data.patient_id);
-		if (!patient) return badRequest('Hasta bulunamadı');
+		const contact = store.contacts.find((c) => c.id === parsed.data.contact_id);
+		if (!contact) return badRequest('Kişi bulunamadı');
 		const now = nowIso();
 		const resolved = resolvePartyNames(store, parsed.data);
 		const appointment: Appointment = {
 			id: crypto.randomUUID(),
 			tenant_id: DEMO_TENANT_ID,
-			patient_display_name: patient.full_name,
+			contact_display_name: contact.display_name,
 			...resolved,
 			created_at: now,
 			updated_at: now
@@ -1220,13 +1068,13 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const idx = store.appointments.findIndex((a) => a.id === params.id);
 		if (idx < 0) return notFound('Randevu bulunamadı');
-		const nextPatientId = parsed.data.patient_id ?? store.appointments[idx].patient_id;
-		const patient = store.patients.find((p) => p.id === nextPatientId);
+		const nextContactId = parsed.data.contact_id ?? store.appointments[idx].contact_id;
+		const contact = store.contacts.find((c) => c.id === nextContactId);
 		const resolved = resolvePartyNames(store, parsed.data);
 		const updated: Appointment = {
 			...store.appointments[idx],
 			...resolved,
-			patient_display_name: patient?.full_name ?? store.appointments[idx].patient_display_name,
+			contact_display_name: contact?.display_name ?? store.appointments[idx].contact_display_name,
 			updated_at: nowIso()
 		};
 		store.appointments[idx] = updated;
@@ -1250,17 +1098,7 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.transactions];
-		const {
-			patient_id: patientId,
-			contact_id: contactId,
-			from,
-			to,
-			kind,
-			status,
-			category,
-			q
-		} = parsed.data;
-		if (patientId) items = items.filter((t) => t.patient_id === patientId);
+		const { contact_id: contactId, from, to, kind, status, category, q } = parsed.data;
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
@@ -1274,7 +1112,7 @@ export const handlers = [
 					t.title.toLowerCase().includes(needle) ||
 					(t.subtitle?.toLowerCase().includes(needle) ?? false) ||
 					(t.category?.toLowerCase().includes(needle) ?? false) ||
-					(t.patient_display_name?.toLowerCase().includes(needle) ?? false) ||
+					(t.contact_display_name?.toLowerCase().includes(needle) ?? false) ||
 					(t.contact_label?.toLowerCase().includes(needle) ?? false) ||
 					(t.description?.toLowerCase().includes(needle) ?? false)
 			);
@@ -1299,12 +1137,12 @@ export const handlers = [
 		return HttpResponse.json(buildReportSummary(store, from, to));
 	}),
 
-	http.get('/v1/reports/patient-distribution', ({ request }) => {
+	http.get('/v1/reports/contact-distribution', ({ request }) => {
 		const url = new URL(request.url);
 		const store = getStore(scenarioFrom(request));
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
-		return HttpResponse.json(buildReportPatientDistribution(store, from, to));
+		return HttpResponse.json(buildReportContactDistribution(store, from, to));
 	}),
 
 	http.get('/v1/reports/appointment-metrics', ({ request }) => {
@@ -1411,8 +1249,8 @@ export const handlers = [
 		const parsed = transactionCreateSchema.safeParse(body);
 		if (!parsed.success) return badRequest('Geçersiz işlem verisi', parsed.error.flatten());
 		const store = getStore(scenarioFrom(request));
-		const patient = parsed.data.patient_id
-			? store.patients.find((p) => p.id === parsed.data.patient_id)
+		const contact = parsed.data.contact_id
+			? store.contacts.find((c) => c.id === parsed.data.contact_id)
 			: null;
 		const base = store.tenant.base_currency;
 		const currency = parsed.data.currency ?? 'TRY';
@@ -1426,7 +1264,7 @@ export const handlers = [
 		const transaction: Transaction = {
 			id: crypto.randomUUID(),
 			tenant_id: DEMO_TENANT_ID,
-			patient_display_name: patient?.full_name ?? null,
+			contact_display_name: contact?.display_name ?? null,
 			...resolved,
 			created_at: now,
 			updated_at: now
@@ -1443,11 +1281,11 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const idx = store.transactions.findIndex((t) => t.id === params.id);
 		if (idx < 0) return notFound('İşlem bulunamadı');
-		const nextPatientId =
-			parsed.data.patient_id !== undefined
-				? parsed.data.patient_id
-				: store.transactions[idx].patient_id;
-		const patient = nextPatientId ? store.patients.find((p) => p.id === nextPatientId) : null;
+		const nextContactId =
+			parsed.data.contact_id !== undefined
+				? parsed.data.contact_id
+				: store.transactions[idx].contact_id;
+		const contact = nextContactId ? store.contacts.find((c) => c.id === nextContactId) : null;
 		const merged = { ...store.transactions[idx], ...parsed.data };
 		const base = store.tenant.base_currency;
 		const currency = merged.currency ?? 'TRY';
@@ -1460,10 +1298,10 @@ export const handlers = [
 		const updated: Transaction = {
 			...store.transactions[idx],
 			...resolved,
-			patient_display_name:
-				nextPatientId === null
+			contact_display_name:
+				nextContactId === null
 					? null
-					: (patient?.full_name ?? store.transactions[idx].patient_display_name),
+					: (contact?.display_name ?? store.transactions[idx].contact_display_name),
 			updated_at: nowIso()
 		};
 		store.transactions[idx] = updated;
@@ -1486,7 +1324,7 @@ export const handlers = [
 		const parsed = whatsappParseRequestSchema.safeParse(body);
 		if (!parsed.success) return badRequest('Geçersiz mesaj', parsed.error.flatten());
 		const store = getStore(scenarioFrom(request));
-		const records = parseWhatsappMessage(parsed.data.message, store.patients);
+		const records = parseWhatsappMessage(parsed.data.message, store.contacts);
 		return HttpResponse.json({ records });
 	}),
 
@@ -1513,7 +1351,7 @@ export const handlers = [
 		for (const msg of store.inboundMessages) {
 			if (msg.status !== 'new' || !msg.body?.trim()) continue;
 			processed++;
-			const records = parseWhatsappMessage(msg.body, store.patients);
+			const records = parseWhatsappMessage(msg.body, store.contacts);
 			if (records.length === 0) {
 				msg.parse_error = 'Ayrıştırılamadı';
 				msg.status = 'parsed';
@@ -1566,8 +1404,8 @@ export const handlers = [
 		const base = store.tenant.base_currency;
 		const created: Transaction[] = [];
 		for (const draft of parsed.data.drafts) {
-			const patient = draft.patient_id
-				? store.patients.find((p) => p.id === draft.patient_id)
+			const contact = draft.contact_id
+				? store.contacts.find((c) => c.id === draft.contact_id)
 				: null;
 			const now = nowIso();
 			const resolved = normalizeTxFx(
@@ -1584,7 +1422,6 @@ export const handlers = [
 					amount: draft.amount,
 					paid_amount: draft.paid_amount,
 					currency: draft.currency,
-					patient_id: draft.patient_id ?? null,
 					contact_id: draft.contact_id ?? null,
 					contact_label: draft.contact_label ?? null,
 					amount_base: draft.amount_base,
@@ -1597,7 +1434,7 @@ export const handlers = [
 			const transaction = {
 				id: crypto.randomUUID(),
 				tenant_id: DEMO_TENANT_ID,
-				patient_display_name: patient?.full_name ?? null,
+				contact_display_name: contact?.display_name ?? draft.contact_display_name ?? null,
 				...resolved,
 				created_at: now,
 				updated_at: now
@@ -1616,8 +1453,8 @@ export const handlers = [
 				title: d.title,
 				category: d.category,
 				subcategory: d.subcategory,
-				patient_id: d.patient_id,
-				patient_display_name: d.patient_display_name,
+				contact_id: d.contact_id,
+				contact_display_name: d.contact_display_name,
 				contact_label: d.contact_label,
 				occurred_on: d.occurred_on,
 				payment_method: d.payment_method,
@@ -1667,10 +1504,19 @@ export const handlers = [
 			tenant_id: DEMO_TENANT_ID,
 			contact_type_id: type.id,
 			contact_type_name: type.name,
-			display_name: parsed.data.display_name,
+			first_name: parsed.data.first_name.trim(),
+			last_name: parsed.data.last_name?.trim() || null,
+			display_name: deriveDisplayName(parsed.data.first_name, parsed.data.last_name ?? null),
 			phone: parsed.data.phone ?? null,
 			email: parsed.data.email ?? null,
 			notes: null,
+			organization_id: null,
+			status: null,
+			assigned_user_id: null,
+			source: null,
+			medium: null,
+			campaign: null,
+			referred_by_contact_id: null,
 			is_internal: false,
 			usage_count: 0,
 			created_at: now,
@@ -1678,30 +1524,6 @@ export const handlers = [
 		};
 		store.contacts.unshift(contact);
 		return HttpResponse.json(contact, { status: 201 });
-	}),
-
-	http.post('/v1/whatsapp/create-patient', async ({ request }) => {
-		const body = await request.json();
-		const parsed = whatsappCreatePatientSchema.safeParse(body);
-		if (!parsed.success) return badRequest('Geçersiz hasta', parsed.error.flatten());
-		const store = getStore(scenarioFrom(request));
-		const now = nowIso();
-		const patient: Patient = {
-			id: crypto.randomUUID(),
-			tenant_id: DEMO_TENANT_ID,
-			full_name: parsed.data.full_name,
-			phone: null,
-			email: null,
-			status: 'scheduled',
-			source: null,
-			notes: null,
-			assigned_user_id: null,
-			contact_id: parsed.data.contact_id ?? null,
-			created_at: now,
-			updated_at: now
-		};
-		store.patients.unshift(patient);
-		return HttpResponse.json(patient, { status: 201 });
 	}),
 
 	http.post('/v1/whatsapp/create-category', async ({ request }) => {
@@ -1748,7 +1570,7 @@ export const handlers = [
 			item.status = 'parsed';
 			return HttpResponse.json({ records: [] as TransactionDraft[] });
 		}
-		const records = parseWhatsappMessage(item.body, store.patients);
+		const records = parseWhatsappMessage(item.body, store.contacts);
 		item.parsed_records = records;
 		item.parse_error = records.length === 0 ? 'Ayrıştırılamadı' : null;
 		item.status = 'parsed';
@@ -1800,37 +1622,37 @@ export const handlers = [
 		});
 	}),
 
-	http.get('/v1/patients/:id/files', ({ params, request }) => {
+	http.get('/v1/contacts/:id/files', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === params.id);
-		if (!patient) return notFound('Hasta bulunamadı');
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
 		const items = store.files
-			.filter((f) => f.patient_id === params.id)
+			.filter((f) => f.contact_id === params.id)
 			.sort((a, b) => b.created_at.localeCompare(a.created_at));
 		return HttpResponse.json({ items });
 	}),
 
-	http.get('/v1/patients/:id/case-notes', ({ params, request }) => {
+	http.get('/v1/contacts/:id/case-notes', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === params.id);
-		if (!patient) return notFound('Hasta bulunamadı');
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
 		const items = store.caseNotes
-			.filter((n) => n.patient_id === params.id)
+			.filter((n) => n.contact_id === params.id)
 			.sort((a, b) => a.created_at.localeCompare(b.created_at));
 		return HttpResponse.json({ items });
 	}),
 
-	http.post('/v1/patients/:id/case-notes', async ({ params, request }) => {
+	http.post('/v1/contacts/:id/case-notes', async ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === params.id);
-		if (!patient) return notFound('Hasta bulunamadı');
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
 		const body = await request.json();
-		const parsed = patientCaseNoteCreateSchema.safeParse(body);
+		const parsed = contactCaseNoteCreateSchema.safeParse(body);
 		if (!parsed.success) return badRequest('Geçersiz not', parsed.error.flatten());
-		const note: PatientCaseNote = {
+		const note: ContactCaseNote = {
 			id: crypto.randomUUID(),
 			tenant_id: DEMO_TENANT_ID,
-			patient_id: patient.id,
+			contact_id: contact.id,
 			body: parsed.data.body.trim(),
 			author_display_name: demoUser.display_name,
 			created_at: nowIso()
@@ -1839,36 +1661,36 @@ export const handlers = [
 		return HttpResponse.json(note, { status: 201 });
 	}),
 
-	http.delete('/v1/patients/:id/case-notes/:noteId', ({ params, request }) => {
+	http.delete('/v1/contacts/:id/case-notes/:noteId', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		const idx = store.caseNotes.findIndex(
-			(n) => n.id === params.noteId && n.patient_id === params.id
+			(n) => n.id === params.noteId && n.contact_id === params.id
 		);
 		if (idx < 0) return notFound('Not bulunamadı');
 		store.caseNotes.splice(idx, 1);
 		return new HttpResponse(null, { status: 204 });
 	}),
 
-	http.post('/v1/patients/:id/files/presign', async ({ params, request }) => {
+	http.post('/v1/contacts/:id/files/presign', async ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === params.id);
-		if (!patient) return notFound('Hasta bulunamadı');
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
 		const body = await request.json();
-		const parsed = patientFilePresignSchema.safeParse(body);
+		const parsed = contactFilePresignSchema.safeParse(body);
 		if (!parsed.success) return badRequest('Geçersiz dosya verisi', parsed.error.flatten());
 
 		const fileId = crypto.randomUUID();
-		const storage_key = `local://demo/${patient.id}/${fileId}`;
+		const storage_key = `local://demo/${contact.id}/${fileId}`;
 		let appointment_label: string | null = null;
 		const appointmentId = parsed.data.appointment_id ?? null;
 		if (appointmentId) {
 			const appt = store.appointments.find((a) => a.id === appointmentId);
 			appointment_label = appt ? appointmentLabel(appt) : null;
 		}
-		const file: PatientFile = {
+		const file: ContactFile = {
 			id: fileId,
-			tenant_id: patient.tenant_id,
-			patient_id: patient.id,
+			tenant_id: contact.tenant_id,
+			contact_id: contact.id,
 			appointment_id: appointmentId,
 			appointment_label,
 			filename: parsed.data.filename,
@@ -1883,7 +1705,7 @@ export const handlers = [
 		return HttpResponse.json(
 			{
 				file_id: fileId,
-				upload_url: `${origin}/v1/patients/${patient.id}/files/${fileId}/content`,
+				upload_url: `${origin}/v1/contacts/${contact.id}/files/${fileId}/content`,
 				storage_key,
 				expires_in: 300
 			},
@@ -1891,9 +1713,9 @@ export const handlers = [
 		);
 	}),
 
-	http.put('/v1/patients/:id/files/:fileId/content', async ({ params, request }) => {
+	http.put('/v1/contacts/:id/files/:fileId/content', async ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const file = store.files.find((f) => f.id === params.fileId && f.patient_id === params.id);
+		const file = store.files.find((f) => f.id === params.fileId && f.contact_id === params.id);
 		if (!file) return notFound('Dosya bulunamadı');
 		const buf = Buffer.from(await request.arrayBuffer());
 		if (buf.byteLength !== file.size_bytes) {
@@ -1902,18 +1724,18 @@ export const handlers = [
 		return HttpResponse.json({ accepted: true });
 	}),
 
-	http.post('/v1/patients/:id/files/:fileId/confirm', ({ params, request }) => {
+	http.post('/v1/contacts/:id/files/:fileId/confirm', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const file = store.files.find((f) => f.id === params.fileId && f.patient_id === params.id);
+		const file = store.files.find((f) => f.id === params.fileId && f.contact_id === params.id);
 		if (!file) return notFound('Dosya bulunamadı');
 		file.status = 'ready';
 		return HttpResponse.json(file);
 	}),
 
-	http.post('/v1/patients/:id/files', async ({ params, request }) => {
+	http.post('/v1/contacts/:id/files', async ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const patient = store.patients.find((p) => p.id === params.id);
-		if (!patient) return notFound('Hasta bulunamadı');
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
 
 		const contentType = request.headers.get('content-type') ?? '';
 		let filename = 'upload.bin';
@@ -1932,7 +1754,7 @@ export const handlers = [
 			appointmentId = typeof apptRaw === 'string' && apptRaw.length > 0 ? apptRaw : null;
 		} else {
 			const body = await request.json();
-			const parsed = patientFileCreateSchema.safeParse(body);
+			const parsed = contactFileCreateSchema.safeParse(body);
 			if (!parsed.success) return badRequest('Geçersiz dosya verisi', parsed.error.flatten());
 			filename = parsed.data.filename;
 			mime_type = parsed.data.mime_type ?? mime_type;
@@ -1943,16 +1765,16 @@ export const handlers = [
 		let appointment_label: string | null = null;
 		if (appointmentId) {
 			const appt = store.appointments.find(
-				(a) => a.id === appointmentId && a.patient_id === patient.id
+				(a) => a.id === appointmentId && a.contact_id === contact.id
 			);
-			if (!appt) return badRequest('Randevu bu hastaya ait değil');
+			if (!appt) return badRequest('Randevu bu kişiye ait değil');
 			appointment_label = appointmentLabel(appt);
 		}
 
-		const file: PatientFile = {
+		const file: ContactFile = {
 			id: crypto.randomUUID(),
 			tenant_id: DEMO_TENANT_ID,
-			patient_id: patient.id,
+			contact_id: contact.id,
 			appointment_id: appointmentId,
 			appointment_label,
 			filename,
@@ -1966,9 +1788,9 @@ export const handlers = [
 		return HttpResponse.json(file, { status: 201 });
 	}),
 
-	http.get('/v1/patients/:id/files/:fileId/download', ({ params, request }) => {
+	http.get('/v1/contacts/:id/files/:fileId/download', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const file = store.files.find((f) => f.id === params.fileId && f.patient_id === params.id);
+		const file = store.files.find((f) => f.id === params.fileId && f.contact_id === params.id);
 		if (!file) return notFound('Dosya bulunamadı');
 		return new HttpResponse(`MSW stub: ${file.filename}`, {
 			status: 200,
@@ -1979,9 +1801,22 @@ export const handlers = [
 		});
 	}),
 
-	http.delete('/v1/patients/:id/files/:fileId', ({ params, request }) => {
+	http.get('/v1/contacts/:id/files/:fileId/preview', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const idx = store.files.findIndex((f) => f.id === params.fileId && f.patient_id === params.id);
+		const file = store.files.find((f) => f.id === params.fileId && f.contact_id === params.id);
+		if (!file) return notFound('Dosya bulunamadı');
+		return new HttpResponse(`MSW stub: ${file.filename}`, {
+			status: 200,
+			headers: {
+				'Content-Type': file.mime_type || 'application/octet-stream',
+				'Content-Disposition': `inline; filename="${file.filename}"`
+			}
+		});
+	}),
+
+	http.delete('/v1/contacts/:id/files/:fileId', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.files.findIndex((f) => f.id === params.fileId && f.contact_id === params.id);
 		if (idx < 0) return notFound('Dosya bulunamadı');
 		store.files.splice(idx, 1);
 		return new HttpResponse(null, { status: 204 });
@@ -2002,13 +1837,13 @@ export const handlers = [
 		const appt = store.appointments.find((a) => a.id === params.id);
 		if (!appt) return notFound('Randevu bulunamadı');
 		const body = await request.json();
-		const parsed = patientFileCreateSchema.safeParse(body);
+		const parsed = contactFileCreateSchema.safeParse(body);
 		if (!parsed.success) return badRequest('Geçersiz dosya verisi', parsed.error.flatten());
 
-		const file: PatientFile = {
+		const file: ContactFile = {
 			id: crypto.randomUUID(),
 			tenant_id: DEMO_TENANT_ID,
-			patient_id: appt.patient_id,
+			contact_id: appt.contact_id,
 			appointment_id: appt.id,
 			appointment_label: appointmentLabel(appt),
 			filename: parsed.data.filename,
@@ -2111,6 +1946,66 @@ export const handlers = [
 		return new HttpResponse(null, { status: 204 });
 	}),
 
+	http.get('/v1/settings/organizations', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const items = [...store.organizations].sort((a, b) => a.name.localeCompare(b.name));
+		return HttpResponse.json({ items });
+	}),
+
+	http.post('/v1/settings/organizations', async ({ request }) => {
+		const body = await request.json();
+		const parsed = organizationCreateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz firma', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const name = parsed.data.name.trim();
+		if (store.organizations.some((o) => o.name.toLowerCase() === name.toLowerCase())) {
+			return conflict('duplicate_type_name', 'An organization with this name already exists');
+		}
+		const now = nowIso();
+		const item: Organization = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			name,
+			created_at: now,
+			updated_at: now
+		};
+		store.organizations.push(item);
+		return HttpResponse.json(item, { status: 201 });
+	}),
+
+	http.patch('/v1/settings/organizations/:id', async ({ params, request }) => {
+		const body = await request.json();
+		const parsed = organizationUpdateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz firma', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const idx = store.organizations.findIndex((o) => o.id === params.id);
+		if (idx < 0) return notFound('Firma bulunamadı');
+		const name = parsed.data.name.trim();
+		if (
+			store.organizations.some(
+				(o) => o.id !== params.id && o.name.toLowerCase() === name.toLowerCase()
+			)
+		) {
+			return conflict('duplicate_type_name', 'An organization with this name already exists');
+		}
+		store.organizations[idx] = {
+			...store.organizations[idx],
+			name,
+			updated_at: nowIso()
+		};
+		return HttpResponse.json(store.organizations[idx]);
+	}),
+
+	http.delete('/v1/settings/organizations/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const inUse = store.contacts.some((c) => c.organization_id === params.id);
+		if (inUse) return badRequest('Firma kullanımda — önce kişileri taşıyın');
+		const idx = store.organizations.findIndex((o) => o.id === params.id);
+		if (idx < 0) return notFound('Firma bulunamadı');
+		store.organizations.splice(idx, 1);
+		return new HttpResponse(null, { status: 204 });
+	}),
+
 	http.get('/v1/contacts', ({ request }) => {
 		const url = new URL(request.url);
 		const parsed = parseListQuery(contactListQuerySchema, url);
@@ -2122,6 +2017,8 @@ export const handlers = [
 			items = items.filter(
 				(c) =>
 					c.display_name.toLowerCase().includes(q) ||
+					c.first_name.toLowerCase().includes(q) ||
+					(c.last_name?.toLowerCase().includes(q) ?? false) ||
 					(c.email?.toLowerCase().includes(q) ?? false) ||
 					(c.phone?.includes(q) ?? false)
 			);
@@ -2164,6 +2061,8 @@ export const handlers = [
 			if (!keep.phone && src.phone) keep.phone = src.phone;
 			if (!keep.email && src.email) keep.email = src.email;
 			if (!keep.notes && src.notes) keep.notes = src.notes;
+			if (!keep.source && src.source) keep.source = src.source;
+			if (!keep.medium && src.medium) keep.medium = src.medium;
 			if (!keep.is_internal && src.is_internal) keep.is_internal = true;
 		}
 		keep.updated_at = nowIso();
@@ -2173,9 +2072,14 @@ export const handlers = [
 			if (t.contact_id && drop.has(t.contact_id)) {
 				t.contact_id = keep_id;
 				t.contact_label = keep.display_name;
+				t.contact_display_name = keep.display_name;
 			}
 		}
 		for (const a of store.appointments) {
+			if (a.contact_id && drop.has(a.contact_id)) {
+				a.contact_id = keep_id;
+				a.contact_display_name = keep.display_name;
+			}
 			if (a.clinic_contact_id && drop.has(a.clinic_contact_id)) {
 				a.clinic_contact_id = keep_id;
 				a.clinic_name = keep.display_name;
@@ -2188,8 +2092,11 @@ export const handlers = [
 				a.transfer_contact_id = keep_id;
 			}
 		}
-		for (const p of store.patients) {
-			if (p.contact_id && drop.has(p.contact_id)) p.contact_id = keep_id;
+		for (const f of store.files) {
+			if (drop.has(f.contact_id)) f.contact_id = keep_id;
+		}
+		for (const n of store.caseNotes) {
+			if (drop.has(n.contact_id)) n.contact_id = keep_id;
 		}
 		store.contacts = store.contacts.filter((c) => !drop.has(c.id));
 		refreshUsage(store);
@@ -2231,40 +2138,32 @@ export const handlers = [
 		const type = store.contactTypes.find((t) => t.id === parsed.data.contact_type_id);
 		if (!type) return badRequest('Tür bulunamadı');
 		const now = nowIso();
+		const firstName = parsed.data.first_name.trim();
+		const lastName = parsed.data.last_name?.trim() || null;
 		const contact: Contact = {
 			id: crypto.randomUUID(),
 			tenant_id: DEMO_TENANT_ID,
 			contact_type_id: type.id,
 			contact_type_name: type.name,
-			display_name: parsed.data.display_name.trim(),
+			first_name: firstName,
+			last_name: lastName,
+			display_name: deriveDisplayName(firstName, lastName),
 			phone: parsed.data.phone?.trim() || null,
 			email: parsed.data.email?.trim() || null,
 			notes: parsed.data.notes?.trim() || null,
+			organization_id: parsed.data.organization_id ?? null,
+			status: parsed.data.status ?? null,
+			assigned_user_id: parsed.data.assigned_user_id ?? null,
+			source: parsed.data.source ?? null,
+			medium: parsed.data.medium ?? null,
+			campaign: parsed.data.campaign ?? null,
+			referred_by_contact_id: parsed.data.referred_by_contact_id ?? null,
 			is_internal: parsed.data.is_internal ?? false,
 			usage_count: 0,
 			created_at: now,
 			updated_at: now
 		};
 		store.contacts.unshift(contact);
-
-		if (type.name.toLowerCase() === 'hasta') {
-			const patient: Patient = {
-				id: crypto.randomUUID(),
-				tenant_id: DEMO_TENANT_ID,
-				full_name: contact.display_name,
-				phone: contact.phone,
-				email: contact.email,
-				status: 'scheduled',
-				source: 'Kişiler',
-				notes: null,
-				assigned_user_id: null,
-				contact_id: contact.id,
-				created_at: now,
-				updated_at: now
-			};
-			store.patients.unshift(patient);
-		}
-
 		return HttpResponse.json(contact, { status: 201 });
 	}),
 
@@ -2275,49 +2174,61 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const idx = store.contacts.findIndex((c) => c.id === params.id);
 		if (idx < 0) return notFound('Kişi bulunamadı');
-		let typeName = store.contacts[idx].contact_type_name;
-		let typeId = store.contacts[idx].contact_type_id;
+		const existing = store.contacts[idx];
+		let typeName = existing.contact_type_name;
+		let typeId = existing.contact_type_id;
 		if (parsed.data.contact_type_id) {
 			const type = store.contactTypes.find((t) => t.id === parsed.data.contact_type_id);
 			if (!type) return badRequest('Tür bulunamadı');
 			typeId = type.id;
 			typeName = type.name;
 		}
+		const firstName =
+			parsed.data.first_name !== undefined ? parsed.data.first_name.trim() : existing.first_name;
+		const lastName =
+			parsed.data.last_name !== undefined
+				? parsed.data.last_name?.trim() || null
+				: existing.last_name;
 		const updated: Contact = {
-			...store.contacts[idx],
+			...existing,
 			contact_type_id: typeId,
 			contact_type_name: typeName,
-			display_name: parsed.data.display_name?.trim() ?? store.contacts[idx].display_name,
-			phone:
-				parsed.data.phone !== undefined
-					? parsed.data.phone?.trim() || null
-					: store.contacts[idx].phone,
-			email:
-				parsed.data.email !== undefined
-					? parsed.data.email?.trim() || null
-					: store.contacts[idx].email,
-			notes:
-				parsed.data.notes !== undefined
-					? parsed.data.notes?.trim() || null
-					: store.contacts[idx].notes,
-			is_internal: parsed.data.is_internal ?? store.contacts[idx].is_internal,
+			first_name: firstName,
+			last_name: lastName,
+			display_name: deriveDisplayName(firstName, lastName),
+			phone: parsed.data.phone !== undefined ? parsed.data.phone?.trim() || null : existing.phone,
+			email: parsed.data.email !== undefined ? parsed.data.email?.trim() || null : existing.email,
+			notes: parsed.data.notes !== undefined ? parsed.data.notes?.trim() || null : existing.notes,
+			organization_id:
+				parsed.data.organization_id !== undefined
+					? parsed.data.organization_id
+					: existing.organization_id,
+			status: parsed.data.status !== undefined ? parsed.data.status : existing.status,
+			assigned_user_id:
+				parsed.data.assigned_user_id !== undefined
+					? parsed.data.assigned_user_id
+					: existing.assigned_user_id,
+			source: parsed.data.source !== undefined ? parsed.data.source : existing.source,
+			medium: parsed.data.medium !== undefined ? parsed.data.medium : existing.medium,
+			campaign: parsed.data.campaign !== undefined ? parsed.data.campaign : existing.campaign,
+			referred_by_contact_id:
+				parsed.data.referred_by_contact_id !== undefined
+					? parsed.data.referred_by_contact_id
+					: existing.referred_by_contact_id,
+			is_internal: parsed.data.is_internal ?? existing.is_internal,
 			updated_at: nowIso()
 		};
 		store.contacts[idx] = updated;
 		for (const t of store.transactions) {
-			if (t.contact_id === updated.id) t.contact_label = updated.display_name;
+			if (t.contact_id === updated.id) {
+				t.contact_label = updated.display_name;
+				t.contact_display_name = updated.display_name;
+			}
 		}
 		for (const a of store.appointments) {
+			if (a.contact_id === updated.id) a.contact_display_name = updated.display_name;
 			if (a.clinic_contact_id === updated.id) a.clinic_name = updated.display_name;
 			if (a.hotel_contact_id === updated.id) a.hotel_name = updated.display_name;
-		}
-		for (const p of store.patients) {
-			if (p.contact_id === updated.id) {
-				p.full_name = updated.display_name;
-				p.phone = updated.phone;
-				p.email = updated.email;
-				p.updated_at = nowIso();
-			}
 		}
 		refreshUsage(store);
 		return HttpResponse.json(updated);
@@ -2330,10 +2241,58 @@ export const handlers = [
 		if (idx < 0) return notFound('Kişi bulunamadı');
 		const id = store.contacts[idx].id;
 		store.contacts.splice(idx, 1);
-		for (const p of store.patients) {
-			if (p.contact_id === id) p.contact_id = null;
-		}
 		return HttpResponse.json({ id, deleted: true as const });
+	}),
+
+	http.get('/v1/contacts/:id/finance-summary', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
+		const tenantBase = store.tenant.base_currency;
+		const rows = store.transactions.filter((t) => t.contact_id === contact.id);
+		let incomeBase = 0;
+		let expenseBase = 0;
+		let paidBase = 0;
+		let outstandingBase = 0;
+		for (const row of rows) {
+			const base = amountInBaseMock(row, tenantBase);
+			if (base == null) continue;
+			if (row.kind === 'income') {
+				incomeBase += base;
+				const paid = paidInBaseMock(row, tenantBase);
+				paidBase += paid;
+				outstandingBase += Math.max(0, base - paid);
+			} else {
+				expenseBase += base;
+			}
+		}
+		return HttpResponse.json({
+			income_base: incomeBase,
+			expense_base: expenseBase,
+			net_base: incomeBase - expenseBase,
+			paid_base: paidBase,
+			outstanding_base: outstandingBase,
+			transaction_count: rows.length
+		});
+	}),
+
+	http.post('/v1/contacts/:id/auto-link-transactions', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
+		let updated = 0;
+		const now = nowIso();
+		for (const t of store.transactions) {
+			if (t.contact_id != null) continue;
+			if ((t.contact_label ?? '').trim() !== contact.display_name) continue;
+			t.contact_id = contact.id;
+			t.contact_label = contact.display_name;
+			t.contact_display_name = contact.display_name;
+			t.updated_at = now;
+			updated += 1;
+		}
+		refreshUsage(store);
+		return HttpResponse.json({ updated });
 	}),
 
 	http.post('/v1/settings/finance-categories', async ({ request }) => {
@@ -2507,7 +2466,7 @@ export const handlers = [
 			slug,
 			base_currency: 'TRY',
 			base_currency_locked: false,
-			patients_section_label: 'Hastalar',
+			contacts_section_label: 'Hastalar',
 			timezone: 'Europe/Istanbul',
 			created_at: now
 		};

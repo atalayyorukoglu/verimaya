@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import { uuid } from './common.js';
 import { contactSchema, type Contact } from './contact.js';
-import { patientSchema, type Patient } from './patient.js';
 
 /**
- * Hard row cap for in-memory duplicate scans (contacts + patients).
+ * Hard row cap for in-memory duplicate scans.
  * Normalization stays in this module (not SQL) — shared client/server logic;
  * we bound memory with LIMIT instead of reimplementing TR phone/email/name folds.
  */
@@ -23,14 +22,6 @@ export const contactDuplicateGroupSchema = z.object({
 
 export type ContactDuplicateGroup = z.infer<typeof contactDuplicateGroupSchema>;
 
-export const patientDuplicateGroupSchema = z.object({
-	match_type: duplicateMatchTypeSchema,
-	label: z.string().min(1),
-	patients: z.array(patientSchema).min(2)
-});
-
-export type PatientDuplicateGroup = z.infer<typeof patientDuplicateGroupSchema>;
-
 /** GET …/duplicate-groups envelope (GAP-05 truncated naming). */
 export const contactDuplicateGroupsResponseSchema = z.object({
 	items: z.array(contactDuplicateGroupSchema),
@@ -42,16 +33,6 @@ export const contactDuplicateGroupsResponseSchema = z.object({
 
 export type ContactDuplicateGroupsResponse = z.infer<
 	typeof contactDuplicateGroupsResponseSchema
->;
-
-export const patientDuplicateGroupsResponseSchema = z.object({
-	items: z.array(patientDuplicateGroupSchema),
-	truncated: z.boolean(),
-	scanned_count: z.number().int().nonnegative()
-});
-
-export type PatientDuplicateGroupsResponse = z.infer<
-	typeof patientDuplicateGroupsResponseSchema
 >;
 
 /** Keep one record; merge_ids are absorbed then removed. */
@@ -130,64 +111,6 @@ export function findContactDuplicateGroups(contacts: Contact[]): ContactDuplicat
 	out.sort(
 		(a, b) =>
 			b.contacts.length - a.contacts.length || a.match_type.localeCompare(b.match_type)
-	);
-	return out;
-}
-
-/**
- * Split a match bucket so patients with conflicting non-null contact_id never share a group.
- * Null contact_id may sit with any single contact_id cluster (field fill on empty-file merge).
- */
-export function partitionPatientsByCompatibleContactId(
-	items: Patient[]
-): Patient[][] {
-	const byContact = new Map<string | null, Patient[]>();
-	for (const p of items) {
-		const key = p.contact_id;
-		const list = byContact.get(key) ?? [];
-		list.push(p);
-		byContact.set(key, list);
-	}
-	const nulls = byContact.get(null) ?? [];
-	byContact.delete(null);
-
-	if (byContact.size === 0) {
-		return nulls.length >= 2 ? [nulls] : [];
-	}
-
-	const out: Patient[][] = [];
-	for (const group of byContact.values()) {
-		const combined = [...group, ...nulls];
-		if (combined.length >= 2) out.push(combined);
-	}
-	return out;
-}
-
-export function findPatientDuplicateGroups(patients: Patient[]): PatientDuplicateGroup[] {
-	const out: PatientDuplicateGroup[] = [];
-	const build = (
-		match_type: DuplicateMatchType,
-		label: string,
-		items: Patient[]
-	): PatientDuplicateGroup => ({ match_type, label, patients: items });
-
-	for (const match_type of ['email', 'phone', 'name'] as const) {
-		const keyOf =
-			match_type === 'email'
-				? (p: Patient) => normEmailKey(p.email)
-				: match_type === 'phone'
-					? (p: Patient) => normPhoneKey(p.phone)
-					: (p: Patient) => normNameKey(p.full_name);
-		for (const [label, items] of buckets(patients, keyOf)) {
-			for (const compatible of partitionPatientsByCompatibleContactId(items)) {
-				out.push(build(match_type, label, compatible));
-			}
-		}
-	}
-
-	out.sort(
-		(a, b) =>
-			b.patients.length - a.patients.length || a.match_type.localeCompare(b.match_type)
 	);
 	return out;
 }

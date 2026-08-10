@@ -4,13 +4,12 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		MarketingReport,
-		Patient,
 		ReportAppointmentMetrics,
 		ReportByCategory,
 		ReportByCategoryDetail,
 		ReportConsistency,
 		ReportMonthly,
-		ReportPatientDistribution,
+		ReportContactDistribution,
 		ReportSummary,
 		SupportedCurrency,
 		Tenant,
@@ -20,7 +19,7 @@
 	} from '@verimaya/shared';
 	import {
 		marketingReportUrl,
-		patientStatusLabels,
+		contactStatusLabels,
 		reportUrl,
 		toTenantDayKey,
 		transactionKindLabels,
@@ -48,7 +47,6 @@
 	import Tag from '@lucide/svelte/icons/tag';
 
 	type TxPage = { items: Transaction[]; next_cursor: string | null };
-	type PatientsPage = { items: Patient[]; next_cursor: string | null };
 	type TabKey = 'ozet' | 'kategori' | 'pazarlama';
 	type PeriodKey = 'bu-ay' | 'gecen-ay' | 'tum' | 'ozel';
 	type Drill =
@@ -167,11 +165,11 @@
 		enabled: qs.ready
 	}));
 
-	const patientDistributionQuery = createQuery(() => ({
-		queryKey: qs.keys.reports.patientDistribution({ from: dateRange.from, to: dateRange.to }),
+	const contactDistributionQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.contactDistribution({ from: dateRange.from, to: dateRange.to }),
 		queryFn: () =>
-			apiGet<ReportPatientDistribution>(
-				reportUrl('patient-distribution', { from: dateRange.from, to: dateRange.to })
+			apiGet<ReportContactDistribution>(
+				reportUrl('contact-distribution', { from: dateRange.from, to: dateRange.to })
 			),
 		enabled: qs.ready
 	}));
@@ -247,12 +245,6 @@
 		queryFn: () =>
 			apiGet<MarketingReport>(marketingReportUrl({ from: dateRange.from, to: dateRange.to })),
 		enabled: qs.ready
-	}));
-
-	const patientsQuery = createQuery(() => ({
-		queryKey: qs.keys.patients.list({ limit: 100, for: 'reports-form' }),
-		queryFn: () => apiGet<PatientsPage>(listUrl('patients', { limit: 100 })),
-		enabled: qs.ready && txFormOpen
 	}));
 
 	const transactions = $derived(txQuery.data?.items ?? []);
@@ -366,7 +358,7 @@
 	});
 
 	const statusDist = $derived.by(() => {
-		const distribution = patientDistributionQuery.data;
+		const distribution = contactDistributionQuery.data;
 		if (!distribution || distribution.total === 0) return [];
 		return distribution.by_status.map(({ status, count }) => ({
 			status,
@@ -488,7 +480,7 @@
 	const loading = $derived(
 		txQuery.isPending ||
 			summaryQuery.isPending ||
-			patientDistributionQuery.isPending ||
+			contactDistributionQuery.isPending ||
 			appointmentMetricsQuery.isPending ||
 			consistencyQuery.isPending ||
 			marketingQuery.isPending ||
@@ -497,7 +489,7 @@
 	const failed = $derived(
 		txQuery.isError ||
 			summaryQuery.isError ||
-			patientDistributionQuery.isError ||
+			contactDistributionQuery.isError ||
 			appointmentMetricsQuery.isError ||
 			consistencyQuery.isError ||
 			marketingQuery.isError ||
@@ -858,7 +850,7 @@
 					{#each statusDist as row (row.status)}
 						<li>
 							<div class="flex items-center justify-between gap-2 text-xs">
-								<span class="truncate text-text">{patientStatusLabels[row.status]}</span>
+								<span class="truncate text-text">{contactStatusLabels[row.status]}</span>
 								<span class="shrink-0 text-text-muted tabular-nums">
 									{row.count} · %{row.pct}
 								</span>
@@ -1233,8 +1225,8 @@
 							<p class="truncate text-sm font-medium text-text">{tx.title}</p>
 							<p class="mt-0.5 text-xs text-text-faint">
 								{formatDate(tx.occurred_on)} · {transactionKindLabels[tx.kind]}
-								{#if tx.patient_display_name}
-									· {tx.patient_display_name}
+								{#if tx.contact_display_name}
+									· {tx.contact_display_name}
 								{/if}
 							</p>
 							<div class="mt-1.5">
@@ -1277,7 +1269,6 @@
 <TransactionFormDialog
 	bind:open={txFormOpen}
 	transaction={editingTx}
-	patients={patientsQuery.data?.items ?? []}
 	saving={txSaving}
 	error={txFormError}
 	onsubmit={saveTransaction}

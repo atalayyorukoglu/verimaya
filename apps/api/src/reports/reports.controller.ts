@@ -75,15 +75,15 @@ export class ReportsController {
 		return this.reportsService.marketing(getActiveOrgId(req), params);
 	}
 
-	@Get('patient-distribution')
+	@Get('contact-distribution')
 	@RequireOrgPermission('finance', 'read')
-	patientDistribution(
+	contactDistribution(
 		@Req() req: FastifyRequest,
 		@Query('from') from?: string,
 		@Query('to') to?: string
 	) {
 		const params = reportPeriodParams.parse({ from, to });
-		return this.reportsService.patientDistribution(getActiveOrgId(req), params);
+		return this.reportsService.contactDistribution(getActiveOrgId(req), params);
 	}
 
 	@Get('appointment-metrics')

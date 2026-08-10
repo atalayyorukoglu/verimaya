@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { PatientCaseNote } from '@verimaya/shared';
+	import type { ContactCaseNote } from '@verimaya/shared';
+	import { apiPaths } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
@@ -9,11 +10,11 @@
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 
 	let {
-		patientId,
+		contactId,
 		variant = 'card',
 		canWrite = true
 	}: {
-		patientId: string;
+		contactId: string;
 		variant?: 'card' | 'default';
 		canWrite?: boolean;
 	} = $props();
@@ -22,8 +23,8 @@
 	const qs = useQueryScope();
 
 	const notesQuery = createQuery(() => ({
-		queryKey: qs.keys.patients.caseNotes(patientId),
-		queryFn: () => apiGet<{ items: PatientCaseNote[] }>(`/v1/patients/${patientId}/case-notes`),
+		queryKey: qs.keys.contacts.caseNotes(contactId),
+		queryFn: () => apiGet<{ items: ContactCaseNote[] }>(apiPaths.contactCaseNotes(contactId)),
 		enabled: qs.ready
 	}));
 
@@ -47,12 +48,12 @@
 		sending = true;
 		error = null;
 		try {
-			await apiSend<PatientCaseNote>(`/v1/patients/${patientId}/case-notes`, 'POST', { body });
+			await apiSend<ContactCaseNote>(apiPaths.contactCaseNotes(contactId), 'POST', { body });
 			draft = '';
-			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.caseNotes(patientId) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.caseNotes(contactId) });
 			requestAnimationFrame(() => requestAnimationFrame(scrollListToBottom));
 		} catch (err) {
-			error = err instanceof Error ? err.message : t('patients.notes.sendFailed');
+			error = err instanceof Error ? err.message : t('contacts.notes.sendFailed');
 		} finally {
 			sending = false;
 		}
@@ -60,14 +61,14 @@
 
 	async function removeNote(id: string) {
 		if (!canWrite || deletingId) return;
-		if (!confirm(t('patients.notes.deleteConfirm'))) return;
+		if (!confirm(t('contacts.notes.deleteConfirm'))) return;
 		deletingId = id;
 		error = null;
 		try {
-			await apiSend(`/v1/patients/${patientId}/case-notes/${id}`, 'DELETE');
-			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.caseNotes(patientId) });
+			await apiSend(`${apiPaths.contactCaseNotes(contactId)}/${id}`, 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.caseNotes(contactId) });
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Not silinemedi';
+			error = err instanceof Error ? err.message : t('contacts.notes.deleteFailed');
 		} finally {
 			deletingId = null;
 		}
@@ -86,14 +87,14 @@
 		bind:this={listEl}
 		class="{listMaxH} min-h-10 space-y-2 overflow-y-auto rounded-[6px] border border-border bg-surface-2/40 p-2.5"
 		role="log"
-		aria-label={t('patients.notes.aria')}
+		aria-label={t('contacts.notes.aria')}
 	>
 		{#if notesQuery.isPending}
-			<p class="text-sm text-text-faint">{t('patients.notes.loading')}</p>
+			<p class="text-sm text-text-faint">{t('contacts.notes.loading')}</p>
 		{:else if notesQuery.isError}
-			<p class="text-sm text-danger">{t('patients.notes.loadError')}</p>
+			<p class="text-sm text-danger">{t('contacts.notes.loadError')}</p>
 		{:else if items.length === 0}
-			<p class="text-sm text-text-faint">{t('patients.notes.empty')}</p>
+			<p class="text-sm text-text-faint">{t('contacts.notes.empty')}</p>
 		{:else}
 			{#each items as note (note.id)}
 				<div class="rounded-[6px] border border-border bg-surface px-3 py-2 text-sm shadow-sm">
@@ -109,8 +110,8 @@
 								<button
 									type="button"
 									class="rounded p-0.5 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"
-									title="Notu sil"
-									aria-label="Notu sil"
+									title={t('contacts.notes.deleteAria')}
+									aria-label={t('contacts.notes.deleteAria')}
 									disabled={deletingId === note.id || sending}
 									onclick={() => void removeNote(note.id)}
 								>
@@ -129,7 +130,7 @@
 		<div class="flex items-end gap-2">
 			<input
 				class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:text-sm"
-				placeholder="Hasta notu yaz…"
+				placeholder={t('contacts.notes.placeholder')}
 				bind:value={draft}
 				disabled={sending}
 				onkeydown={onKeydown}
@@ -137,7 +138,7 @@
 			<button
 				type="button"
 				class="inline-flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-brand text-primary-foreground disabled:opacity-40"
-				aria-label={t('patients.notes.sendAria')}
+				aria-label={t('contacts.notes.sendAria')}
 				disabled={sending || !draft.trim()}
 				onclick={() => void send()}
 			>

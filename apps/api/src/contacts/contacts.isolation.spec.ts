@@ -4,6 +4,7 @@ import { NotFoundException } from '@nestjs/common';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { ContactsService } from './contacts.service';
+import { LocalFileStorage } from '../storage/local-file.storage';
 
 /**
  * TEST-01 (Faz 2.4): contacts tenant isolation. Same template as
@@ -56,7 +57,7 @@ describe('contacts tenant isolation', () => {
 				withTenantSession(id, () => fn({ db }))
 		} as TenantContextService;
 
-		service = new ContactsService(tenantContext);
+		service = new ContactsService(tenantContext, new LocalFileStorage());
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -87,14 +88,14 @@ describe('contacts tenant isolation', () => {
 		contactA = await withTenantSession(tenantA, async () => {
 			const created = await service.createWithDb(db, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Contact A'
+				first_name: 'Contact A'
 			});
 			return created.id;
 		});
 		contactB = await withTenantSession(tenantB, async () => {
 			const created = await service.createWithDb(db, tenantB, {
 				contact_type_id: contactTypeB,
-				display_name: 'Contact B'
+				first_name: 'Contact B'
 			});
 			return created.id;
 		});

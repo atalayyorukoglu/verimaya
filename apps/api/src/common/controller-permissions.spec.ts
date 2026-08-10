@@ -26,7 +26,6 @@ import { ContactsController } from '../contacts/contacts.controller';
 import { AdsController } from '../integrations/ads/ads.controller';
 import { GhlController } from '../integrations/ghl/ghl.controller';
 import { MembersController } from '../members/members.controller';
-import { PatientsController } from '../patients/patients.controller';
 import { ReportsController } from '../reports/reports.controller';
 import { ScorecardController } from '../scorecard/scorecard.controller';
 import { SettingsController } from '../settings/settings.controller';
@@ -85,7 +84,7 @@ type RoutePermission = {
  * Why these cannot be derived from HTTP alone:
  * - authorize is GET but starts OAuth (settings:update)
  * - merge is POST but destroys a record (patient:delete)
- * - financeSummary is on PatientsController but reads finance
+ * - financeSummary is on ContactsController but reads finance
  * - approveDrafts is the money path (finance:create), not patient:update
  * - settings resource has no create/delete actions — create/remove endpoints use update
  */
@@ -105,24 +104,24 @@ const INTENTIONAL_PERMISSION_LOCKS: Array<{
 		reason: 'GET starts OAuth connect flow — write-class despite verb'
 	},
 	{
-		key: 'PatientsController.merge',
-		permission: { resource: 'patient', action: 'delete' },
+		key: 'ContactsController.merge',
+		permission: { resource: 'contact', action: 'delete' },
 		reason: 'POST merge destroys the loser patient record'
 	},
 	{
 		key: 'ContactsController.merge',
-		permission: { resource: 'patient', action: 'delete' },
+		permission: { resource: 'contact', action: 'delete' },
 		reason: 'POST merge destroys the loser contact record'
 	},
 	{
-		key: 'PatientsController.financeSummary',
+		key: 'ContactsController.financeSummary',
 		permission: { resource: 'finance', action: 'read' },
 		reason: 'Cross-resource: patient route exposes finance aggregates'
 	},
 	{
-		key: 'PatientsController.autoLinkTransactions',
+		key: 'ContactsController.autoLinkTransactions',
 		permission: { resource: 'finance', action: 'update' },
-		reason: 'Cross-resource: patient route mutates transactions (patient_id link)'
+		reason: 'Cross-resource: patient route mutates transactions (contact_id link)'
 	},
 	{
 		key: 'WhatsappController.approveDrafts',
@@ -255,7 +254,7 @@ describe('AUDIT-F09-11: org permission metadata via reflection', () => {
 	it('type-level OrgPermissionResource keys match the runtime statements export', () => {
 		const resources = Object.keys(organizationPermissionStatements).sort();
 		expect(resources).toEqual(
-			(['finance', 'patient', 'settings'] as OrgPermissionResource[]).slice().sort()
+			(['finance', 'contact', 'settings'] as OrgPermissionResource[]).slice().sort()
 		);
 	});
 });
@@ -419,22 +418,22 @@ describe('patient-domain organization permissions', () => {
 	it('allows readonly patient reads and rejects mutations', async () => {
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('readonly'), PatientsController.prototype.list, PatientsController)
+				makeContext(sessionRequest('readonly'), ContactsController.prototype.list, ContactsController)
 			)
 		).resolves.toBe(true);
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('readonly'), PatientsController.prototype.create, PatientsController)
+				makeContext(sessionRequest('readonly'), ContactsController.prototype.create, ContactsController)
 			)
 		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('readonly'), PatientsController.prototype.update, PatientsController)
+				makeContext(sessionRequest('readonly'), ContactsController.prototype.update, ContactsController)
 			)
 		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('readonly'), PatientsController.prototype.remove, PatientsController)
+				makeContext(sessionRequest('readonly'), ContactsController.prototype.remove, ContactsController)
 			)
 		).rejects.toBeInstanceOf(ForbiddenException);
 	});
@@ -442,12 +441,12 @@ describe('patient-domain organization permissions', () => {
 	it('rejects agent delete and merge', async () => {
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('agent'), PatientsController.prototype.remove, PatientsController)
+				makeContext(sessionRequest('agent'), ContactsController.prototype.remove, ContactsController)
 			)
 		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('agent'), PatientsController.prototype.merge, PatientsController)
+				makeContext(sessionRequest('agent'), ContactsController.prototype.merge, ContactsController)
 			)
 		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
@@ -460,12 +459,12 @@ describe('patient-domain organization permissions', () => {
 	it('rejects finance patient mutations', async () => {
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('finance'), PatientsController.prototype.create, PatientsController)
+				makeContext(sessionRequest('finance'), ContactsController.prototype.create, ContactsController)
 			)
 		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('finance'), PatientsController.prototype.update, PatientsController)
+				makeContext(sessionRequest('finance'), ContactsController.prototype.update, ContactsController)
 			)
 		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
@@ -478,12 +477,12 @@ describe('patient-domain organization permissions', () => {
 	it('allows agent patient create and update', async () => {
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('agent'), PatientsController.prototype.create, PatientsController)
+				makeContext(sessionRequest('agent'), ContactsController.prototype.create, ContactsController)
 			)
 		).resolves.toBe(true);
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('agent'), PatientsController.prototype.update, PatientsController)
+				makeContext(sessionRequest('agent'), ContactsController.prototype.update, ContactsController)
 			)
 		).resolves.toBe(true);
 		await expect(
@@ -496,12 +495,12 @@ describe('patient-domain organization permissions', () => {
 	it('allows manager delete and merge', async () => {
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('manager'), PatientsController.prototype.remove, PatientsController)
+				makeContext(sessionRequest('manager'), ContactsController.prototype.remove, ContactsController)
 			)
 		).resolves.toBe(true);
 		await expect(
 			guard.canActivate(
-				makeContext(sessionRequest('manager'), PatientsController.prototype.merge, PatientsController)
+				makeContext(sessionRequest('manager'), ContactsController.prototype.merge, ContactsController)
 			)
 		).resolves.toBe(true);
 		await expect(
@@ -523,7 +522,7 @@ describe('patient-domain organization permissions', () => {
 
 		await expect(
 			guard.canActivate(
-				makeContext(req, PatientsController.prototype.update, PatientsController)
+				makeContext(req, ContactsController.prototype.update, ContactsController)
 			)
 		).resolves.toBe(true);
 	});

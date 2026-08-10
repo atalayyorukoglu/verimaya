@@ -11,7 +11,7 @@ const patients: Patient[] = [
 	{
 		id: '11111111-1111-4111-8111-111111111111',
 		tenant_id: '00000000-0000-4000-8000-000000000001',
-		full_name: 'Ayşe Yılmaz',
+		display_name: 'Ayşe Yılmaz',
 		phone: null,
 		email: null,
 		status: 'scheduled',
@@ -55,7 +55,7 @@ describe('OpenAiCompatibleLlmClient (Adım 25)', () => {
 											amount: 290000,
 											currency: 'GBP',
 											title: 'Ödeme',
-											patient_id: patients[0]!.id,
+											contact_id: patients[0]!.id,
 											occurred_on: '2026-07-01',
 											description: 'ödeme'
 										}

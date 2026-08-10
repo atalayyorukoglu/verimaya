@@ -146,7 +146,7 @@ async function bootstrap() {
 	});
 
 	// AUDIT-03 (Faz 8) + AUDIT-F09-08: multipart size cap. Magic-byte MIME sniff
-	// (`file-type`) runs in PatientsService putFileContent / uploadLocalFileWithDb.
+	// (`file-type`) runs in ContactsService putFileContent / uploadLocalFileWithDb.
 	// @fastify/multipart@10 has no `allowedMimeTypes` option — declared MIME is checked
 	// in the multipart handler; sniff rejects allowlist-off / mismatch / undetectable.
 	await app.register(multipart, {

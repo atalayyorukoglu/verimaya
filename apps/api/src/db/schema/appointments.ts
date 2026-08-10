@@ -1,6 +1,5 @@
 import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { contacts } from './contacts';
-import { patients } from './patients';
 import { tenants } from './tenants';
 
 export const appointments = pgTable(
@@ -10,10 +9,10 @@ export const appointments = pgTable(
 		tenantId: uuid('tenant_id')
 			.notNull()
 			.references(() => tenants.id, { onDelete: 'cascade' }),
-		patientId: uuid('patient_id')
+		contactId: uuid('contact_id')
 			.notNull()
-			.references(() => patients.id, { onDelete: 'cascade' }),
-		patientDisplayName: text('patient_display_name').notNull(),
+			.references(() => contacts.id, { onDelete: 'cascade' }),
+		contactDisplayName: text('contact_display_name').notNull(),
 		title: text('title'),
 		appointmentType: text('appointment_type'),
 		status: text('status').notNull().default('scheduled'),
@@ -45,9 +44,9 @@ export const appointments = pgTable(
 		index('appointments_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
 		index('appointments_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt),
 		index('appointments_tenant_id_starts_at_idx').on(table.tenantId, table.startsAt),
-		index('appointments_tenant_id_patient_id_created_at_idx').on(
+		index('appointments_tenant_id_contact_id_created_at_idx').on(
 			table.tenantId,
-			table.patientId,
+			table.contactId,
 			table.createdAt
 		)
 	]

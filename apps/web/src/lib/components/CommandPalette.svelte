@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { createQuery } from '@tanstack/svelte-query';
-	import type { Appointment, Patient, Transaction } from '@verimaya/shared';
+	import type { Appointment, Contact, Transaction } from '@verimaya/shared';
 	import { apiGet } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime, formatMoney } from '$lib/format';
@@ -14,7 +14,7 @@
 	import Wallet from '@lucide/svelte/icons/wallet';
 
 	type SearchResult = {
-		patients: Patient[];
+		contacts: Contact[];
 		appointments: Appointment[];
 		transactions: Transaction[];
 	};
@@ -62,7 +62,7 @@
 	const empty = $derived(
 		hasQuery &&
 			!searchQuery.isPending &&
-			(searchQuery.data?.patients.length ?? 0) === 0 &&
+			(searchQuery.data?.contacts.length ?? 0) === 0 &&
 			(searchQuery.data?.appointments.length ?? 0) === 0 &&
 			(searchQuery.data?.transactions.length ?? 0) === 0
 	);
@@ -129,22 +129,22 @@
 						{t('command.empty')}
 					</p>
 				{:else if searchQuery.data}
-					{#if searchQuery.data.patients.length > 0}
+					{#if searchQuery.data.contacts.length > 0}
 						<p
 							class="px-2 py-1.5 text-[11px] font-semibold tracking-wider text-text-faint uppercase"
 						>
-							{t('nav.patients')}
+							{t('nav.contacts')}
 						</p>
 						<ul class="mb-2">
-							{#each searchQuery.data.patients as p (p.id)}
+							{#each searchQuery.data.contacts as c (c.id)}
 								<li>
 									<button
 										type="button"
 										class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm hover:bg-surface-2"
-										onclick={() => navigate(`/patients/${p.id}`)}
+										onclick={() => navigate(`/contacts/${c.id}`)}
 									>
 										<User class="size-4 shrink-0 text-text-muted" />
-										<span class="min-w-0 flex-1 truncate text-text">{p.full_name}</span>
+										<span class="min-w-0 flex-1 truncate text-text">{c.display_name}</span>
 									</button>
 								</li>
 							{/each}
@@ -163,11 +163,11 @@
 										type="button"
 										class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm hover:bg-surface-2"
 										onclick={() =>
-											navigate(a.patient_id ? `/patients/${a.patient_id}` : '/appointments')}
+											navigate(a.contact_id ? `/contacts/${a.contact_id}` : '/appointments')}
 									>
 										<Calendar class="size-4 shrink-0 text-text-muted" />
 										<span class="min-w-0 flex-1 truncate text-text">
-											{a.patient_display_name}
+											{a.contact_display_name}
 											<span class="text-text-faint"> · {formatDateTime(a.starts_at)}</span>
 										</span>
 									</button>
@@ -188,7 +188,7 @@
 										type="button"
 										class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm hover:bg-surface-2"
 										onclick={() =>
-											navigate(tx.patient_id ? `/finance?hasta=${tx.patient_id}` : '/finance')}
+											navigate(tx.contact_id ? `/finance?contact=${tx.contact_id}` : '/finance')}
 									>
 										<Wallet class="size-4 shrink-0 text-text-muted" />
 										<span class="min-w-0 flex-1 truncate text-text">{tx.title}</span>

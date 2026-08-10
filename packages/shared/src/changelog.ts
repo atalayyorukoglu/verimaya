@@ -20,6 +20,29 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.8.0',
+		date: '2026-08-10',
+		title: 'Kişiler tek modül',
+		changes: [
+			{
+				type: 'degisti',
+				module: 'Kişiler',
+				text: 'Hastalar ile Kişiler tek listede birleşti; menüde artık yalnız Kişiler var, eski /patients linkleri Kişiler’e yönlenir.',
+				featureId: 'patients-list'
+			},
+			{
+				type: 'degisti',
+				module: 'Kişiler',
+				text: 'Kişi kartında ad ve soyad ayrı tutulur; kaynak, alt kaynak, kampanya ve referans eden kişi alanları formda toplanır.'
+			},
+			{
+				type: 'kaldirildi',
+				module: 'Platform',
+				text: 'Eski hastalar API yüzeyi kalktı; dış webhook olayı artık contact.created olarak gönderilir.'
+			}
+		]
+	},
+	{
 		version: '0.7.0',
 		date: '2026-08-07',
 		title: 'Hub yenileme ve Veri Maya markası',

@@ -55,7 +55,7 @@ describe('OutboxProcessor DLQ (AUDIT-F09-05)', () => {
 			await db.insert(outboxEvents).values({
 				id,
 				tenantId,
-				eventType: 'patient.created',
+				eventType: 'contact.created',
 				destinationUrl: 'http://127.0.0.1:9/webhook',
 				payload: { data: { ok: true } },
 				status,

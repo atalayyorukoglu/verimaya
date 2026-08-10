@@ -51,8 +51,8 @@ export const tenantSchema = z.object({
 	 * Computed on read; not stored on tenants row.
 	 */
 	base_currency_locked: z.boolean().default(false),
-	/** UI label for the patient/case section (legacy: cases_section_label) */
-	patients_section_label: z.string().min(1).max(80).default('Hastalar'),
+	/** UI label for the contacts/karne section (tenant-writable display text) */
+	contacts_section_label: z.string().min(1).max(80).default('Hastalar'),
 	timezone: tenantTimezoneSchema.default(DEFAULT_TENANT_TIMEZONE),
 	created_at: isoDateTime
 });

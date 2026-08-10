@@ -7,18 +7,21 @@
 		ContactsBulkTypeResult,
 		ContactType,
 		ContactUpdate,
-		ContractResponse
+		ContractResponse,
+		MembershipUser
 	} from '@verimaya/shared';
-	import { apiPaths, listUrl } from '@verimaya/shared';
+	import { apiPaths, contactStatusLabels, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
+	import { contactStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
-	import { Button } from '$lib/components/ui/button';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
+	type MembersPage = { items: MembershipUser[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
@@ -26,6 +29,7 @@
 	let q = $state('');
 	let search = $state('');
 	let typeId = $state('');
+	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
 	let saving = $state(false);
@@ -41,7 +45,21 @@
 		enabled: qs.ready
 	}));
 
+	const membersQuery = createQuery(() => ({
+		queryKey: qs.keys.members.list({ for: 'contacts-list' }),
+		queryFn: () => apiGet<MembersPage>(listUrl('members', { limit: 100 })),
+		enabled: qs.ready
+	}));
+
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
+	const members = $derived(membersQuery.data?.items ?? []);
+
+	$effect(() => {
+		if (defaultTypeApplied || contactTypes.length === 0) return;
+		const hasta = contactTypes.find((ct) => ct.name === 'Hasta');
+		if (hasta) typeId = hasta.id;
+		defaultTypeApplied = true;
+	});
 
 	const contactsQuery = createInfiniteQuery(() => ({
 		queryKey: qs.keys.contacts.list({ q: search, type_id: typeId || null }),
@@ -72,6 +90,16 @@
 	const allPageSelected = $derived(
 		items.length > 0 && items.every((c) => selectedIds.includes(c.id))
 	);
+
+	function assigneeName(userId: string | null): string | null {
+		if (!userId) return null;
+		return members.find((m) => m.id === userId)?.display_name ?? null;
+	}
+
+	function selectTypeFilter(nextTypeId: string) {
+		typeId = nextTypeId;
+		selectedIds = [];
+	}
 
 	function submitSearch(e: Event) {
 		e.preventDefault();
@@ -142,13 +170,16 @@
 		try {
 			if (editing) {
 				await apiSend(apiPaths.contact(editing.id), 'PATCH', data);
+				await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+				formOpen = false;
+				editing = null;
 			} else {
-				await apiSend(apiPaths.contacts, 'POST', data);
+				const created = await apiSend<Contact>(apiPaths.contacts, 'POST', data);
+				await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+				formOpen = false;
+				editing = null;
+				await goto(`/contacts/${created.id}`);
 			}
-			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
-			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
-			formOpen = false;
-			editing = null;
 		} catch (err) {
 			formError = err instanceof Error ? err.message : t('common.saveFailed');
 		} finally {
@@ -163,7 +194,6 @@
 		try {
 			await apiSend(apiPaths.contact(editing.id), 'DELETE');
 			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
-			await queryClient.invalidateQueries({ queryKey: qs.keys.patients.all() });
 			formOpen = false;
 			editing = null;
 		} catch (err) {
@@ -178,7 +208,7 @@
 	<title>{t('contacts.list.documentTitle')}</title>
 </svelte:head>
 
-<div class="mx-auto max-w-5xl min-w-0">
+<div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader title={t('contacts.list.title')} description={listDescription}>
 		{#snippet actions()}
 			<Button type="button" variant="outline" onclick={() => goto('/contacts/duplicates')}
@@ -188,22 +218,34 @@
 		{/snippet}
 	</PageHeader>
 
+	<div class="mb-4 flex flex-wrap gap-2">
+		<Button
+			type="button"
+			size="sm"
+			variant={typeId === '' ? 'secondary' : 'outline'}
+			onclick={() => selectTypeFilter('')}
+		>
+			{t('contacts.list.filterAll')}
+		</Button>
+		{#each contactTypes as ct (ct.id)}
+			<Button
+				type="button"
+				size="sm"
+				variant={typeId === ct.id ? 'secondary' : 'outline'}
+				onclick={() => selectTypeFilter(ct.id)}
+			>
+				{ct.name}
+			</Button>
+		{/each}
+	</div>
+
 	<form class="mb-4 flex flex-col gap-2 sm:flex-row" onsubmit={submitSearch}>
 		<input
 			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40"
-			placeholder="Ad, telefon veya e-posta…"
+			placeholder={t('contacts.list.searchPlaceholder')}
 			bind:value={q}
 		/>
-		<select
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:w-44"
-			bind:value={typeId}
-		>
-			<option value="">{t('common.allTypes')}</option>
-			{#each contactTypes as ct (ct.id)}
-				<option value={ct.id}>{ct.name}</option>
-			{/each}
-		</select>
-		<Button type="submit" variant="secondary">Ara</Button>
+		<Button type="submit" variant="secondary">{t('contacts.list.search')}</Button>
 	</form>
 
 	{#if selectedIds.length > 0}
@@ -251,13 +293,81 @@
 	{:else if contactsQuery.isError}
 		<p class="text-sm text-danger">{t('contacts.list.loadError')}</p>
 	{:else if items.length === 0}
-		<div class="rounded-lg border border-border bg-surface p-6 text-center">
-			<p class="text-sm text-text-muted">{t('contacts.list.empty')}</p>
-			<Button class="mt-4" type="button" onclick={openCreate}>{t('contacts.list.new')}</Button>
+		<div class="rounded-lg border border-border bg-surface p-8 text-center">
+			<p class="text-sm font-medium text-text">{t('contacts.list.emptyTitle')}</p>
+			<Button class="mt-4" type="button" onclick={openCreate}>{t('contacts.list.emptyCta')}</Button>
 		</div>
 	{:else}
-		<ul class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
-			<li class="flex items-center gap-3 px-3 py-2 sm:px-4">
+		<div class="hidden min-w-0 overflow-hidden rounded-lg border border-border bg-surface md:block">
+			<table class="w-full table-fixed text-left text-sm">
+				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
+					<tr>
+						<th class="w-8 px-3 py-3">
+							<input
+								type="checkbox"
+								class="size-4 rounded border-border"
+								checked={allPageSelected}
+								aria-label={t('contacts.bulk.selectAll')}
+								onchange={(e) => toggleAllPage(e.currentTarget.checked)}
+							/>
+						</th>
+						<th class="w-[22%] px-4 py-3 font-medium">{t('contacts.list.col.name')}</th>
+						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.source')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.status')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.assignee')}</th>
+						<th class="w-[10%] px-4 py-3 font-medium"></th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-border">
+					{#each items as c (c.id)}
+						<tr class="transition-colors hover:bg-surface-2/60">
+							<td class="px-3 py-3">
+								<input
+									type="checkbox"
+									class="size-4 rounded border-border"
+									checked={selectedIds.includes(c.id)}
+									aria-label={t('contacts.bulk.selectRow')}
+									onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
+								/>
+							</td>
+							<td class="px-4 py-3">
+								<a href={`/contacts/${c.id}`} class="font-medium text-text hover:underline">
+									<span class="line-clamp-2 break-all">{c.display_name}</span>
+								</a>
+							</td>
+							<td class="px-4 py-3">
+								<StatusBadge label={c.contact_type_name} tone="neutral" />
+							</td>
+							<td class="truncate px-4 py-3 text-text-muted tabular-nums">{c.phone ?? '—'}</td>
+							<td class="truncate px-4 py-3 text-text-faint">{c.source ?? '—'}</td>
+							<td class="px-4 py-3">
+								{#if c.status}
+									<StatusBadge
+										label={contactStatusLabels[c.status]}
+										tone={contactStatusTone(c.status)}
+									/>
+								{:else}
+									<span class="text-text-faint">—</span>
+								{/if}
+							</td>
+							<td class="truncate px-4 py-3 text-text-faint">
+								{assigneeName(c.assigned_user_id) ?? '—'}
+							</td>
+							<td class="px-4 py-3 text-right">
+								<Button type="button" size="sm" variant="outline" onclick={() => openEdit(c)}
+									>{t('common.edit')}</Button
+								>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+
+		<ul class="space-y-2 md:hidden">
+			<li class="flex items-center gap-3 px-1 py-1">
 				<input
 					type="checkbox"
 					class="size-4 rounded border-border"
@@ -268,30 +378,48 @@
 				<span class="text-xs text-text-faint">{t('contacts.bulk.selectAll')}</span>
 			</li>
 			{#each items as c (c.id)}
-				<li class="flex min-w-0 items-center gap-3 px-3 py-3 sm:px-4">
-					<input
-						type="checkbox"
-						class="size-4 shrink-0 rounded border-border"
-						checked={selectedIds.includes(c.id)}
-						aria-label={t('contacts.bulk.selectRow')}
-						onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
-					/>
-					<a href={`/contacts/${c.id}`} class="min-w-0 flex-1 hover:opacity-90">
-						<div class="flex flex-wrap items-center gap-2">
-							<p class="truncate text-sm font-medium text-text">{c.display_name}</p>
-							<StatusBadge label={c.contact_type_name} tone="neutral" />
-							{#if c.is_internal}
-								<StatusBadge label={t('common.internal')} tone="info" />
-							{/if}
-						</div>
-						<p class="mt-0.5 truncate text-xs text-text-faint">
-							{[c.phone, c.email].filter(Boolean).join(' · ') || t('common.noContact')}
-							· {t('common.usageCount', { count: c.usage_count })}
-						</p>
-					</a>
-					<Button type="button" size="sm" variant="outline" onclick={() => openEdit(c)}
-						>{t('common.edit')}</Button
+				<li class="min-w-0">
+					<div
+						class="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-surface p-4"
 					>
+						<input
+							type="checkbox"
+							class="mt-1 size-4 shrink-0 rounded border-border"
+							checked={selectedIds.includes(c.id)}
+							aria-label={t('contacts.bulk.selectRow')}
+							onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
+						/>
+						<a href={`/contacts/${c.id}`} class="min-w-0 flex-1 hover:opacity-90">
+							<div class="flex flex-wrap items-center gap-2">
+								<p class="min-w-0 flex-1 text-sm font-medium break-all text-text">
+									{c.display_name}
+								</p>
+								<StatusBadge label={c.contact_type_name} tone="neutral" />
+							</div>
+							<p class="mt-1 truncate text-xs text-text-muted tabular-nums">{c.phone ?? '—'}</p>
+							<div class="mt-2 flex flex-wrap items-center gap-2">
+								{#if c.status}
+									<StatusBadge
+										label={contactStatusLabels[c.status]}
+										tone={contactStatusTone(c.status)}
+									/>
+								{/if}
+								{#if c.source}
+									<span class="text-xs text-text-faint">
+										{t('contacts.list.col.source')}: {c.source}
+									</span>
+								{/if}
+								{#if assigneeName(c.assigned_user_id)}
+									<span class="text-xs text-text-faint">
+										{t('contacts.list.col.assignee')}: {assigneeName(c.assigned_user_id)}
+									</span>
+								{/if}
+							</div>
+						</a>
+						<Button type="button" size="sm" variant="outline" onclick={() => openEdit(c)}
+							>{t('common.edit')}</Button
+						>
+					</div>
 				</li>
 			{/each}
 		</ul>

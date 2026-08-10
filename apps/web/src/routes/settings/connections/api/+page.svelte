@@ -27,7 +27,7 @@
 	const webhookEventLabels = $derived<Record<WebhookEventType, string>>({
 		'transaction.created': t('settings.api.event.transactionCreated'),
 		'transaction.updated': t('settings.api.event.transactionUpdated'),
-		'patient.created': t('settings.api.event.patientCreated'),
+		'contact.created': t('settings.api.event.contactCreated'),
 		'appointment.created': t('settings.api.event.appointmentCreated')
 	});
 	const webhookEventTypes = webhookEventTypeSchema.options;

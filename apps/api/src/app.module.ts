@@ -8,7 +8,6 @@ import { TenantModule } from './tenant/tenant.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { MembersModule } from './members/members.module';
-import { PatientsModule } from './patients/patients.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
@@ -39,7 +38,6 @@ import { StorageModule } from './storage/storage.module';
 		HealthModule,
 		TenantsModule,
 		MembersModule,
-		PatientsModule,
 		ContactsModule,
 		AppointmentsModule,
 		TransactionsModule,

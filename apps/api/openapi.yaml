@@ -103,7 +103,7 @@ paths:
                   base_currency_locked:
                     type: boolean
                     default: false
-                  patients_section_label:
+                  contacts_section_label:
                     type: string
                     minLength: 1
                     maxLength: 80
@@ -122,258 +122,6 @@ paths:
                   - slug
                   - created_at
                 additionalProperties: false
-  /patients:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                        tenant_id:
-                          type: string
-                          format: uuid
-                        full_name:
-                          type: string
-                          minLength: 1
-                          maxLength: 255
-                        phone:
-                          type: string
-                          maxLength: 64
-                          nullable: true
-                        email:
-                          type: string
-                          format: email
-                          maxLength: 255
-                          nullable: true
-                        status:
-                          type: string
-                          enum:
-                            - scheduled
-                            - arrived
-                            - treated
-                            - follow_up
-                            - cancelled
-                          default: scheduled
-                        source:
-                          type: string
-                          maxLength: 128
-                          nullable: true
-                        notes:
-                          type: string
-                          maxLength: 8000
-                          nullable: true
-                        assigned_user_id:
-                          type: string
-                          format: uuid
-                          nullable: true
-                        contact_id:
-                          type: string
-                          format: uuid
-                          nullable: true
-                          default: null
-                        created_at:
-                          type: string
-                          format: date-time
-                        updated_at:
-                          type: string
-                          format: date-time
-                      required:
-                        - id
-                        - tenant_id
-                        - full_name
-                        - phone
-                        - email
-                        - source
-                        - notes
-                        - assigned_user_id
-                        - created_at
-                        - updated_at
-                      additionalProperties: false
-                  next_cursor:
-                    type: string
-                    nullable: true
-                  total_count:
-                    type: integer
-                    minimum: 0
-                required:
-                  - items
-                  - next_cursor
-                additionalProperties: false
-  /patients/{id}:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  tenant_id:
-                    type: string
-                    format: uuid
-                  full_name:
-                    type: string
-                    minLength: 1
-                    maxLength: 255
-                  phone:
-                    type: string
-                    maxLength: 64
-                    nullable: true
-                  email:
-                    type: string
-                    format: email
-                    maxLength: 255
-                    nullable: true
-                  status:
-                    type: string
-                    enum:
-                      - scheduled
-                      - arrived
-                      - treated
-                      - follow_up
-                      - cancelled
-                    default: scheduled
-                  source:
-                    type: string
-                    maxLength: 128
-                    nullable: true
-                  notes:
-                    type: string
-                    maxLength: 8000
-                    nullable: true
-                  assigned_user_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                  contact_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                    default: null
-                  created_at:
-                    type: string
-                    format: date-time
-                  updated_at:
-                    type: string
-                    format: date-time
-                required:
-                  - id
-                  - tenant_id
-                  - full_name
-                  - phone
-                  - email
-                  - source
-                  - notes
-                  - assigned_user_id
-                  - created_at
-                  - updated_at
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-    delete:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  deleted:
-                    type: boolean
-                    enum:
-                      - true
-                required:
-                  - id
-                  - deleted
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-  /patients/{id}/finance-summary:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  income_base:
-                    type: integer
-                  expense_base:
-                    type: integer
-                  net_base:
-                    type: integer
-                  paid_base:
-                    type: integer
-                  outstanding_base:
-                    type: integer
-                  transaction_count:
-                    type: integer
-                    minimum: 0
-                required:
-                  - income_base
-                  - expense_base
-                  - net_base
-                  - paid_base
-                  - outstanding_base
-                  - transaction_count
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-  /patients/{id}/auto-link-transactions:
-    post:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  updated:
-                    type: integer
-                    minimum: 0
-                required:
-                  - updated
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
   /appointments:
     get:
       responses:
@@ -395,10 +143,10 @@ paths:
                         tenant_id:
                           type: string
                           format: uuid
-                        patient_id:
+                        contact_id:
                           type: string
                           format: uuid
-                        patient_display_name:
+                        contact_display_name:
                           type: string
                           minLength: 1
                           maxLength: 255
@@ -468,8 +216,8 @@ paths:
                       required:
                         - id
                         - tenant_id
-                        - patient_id
-                        - patient_display_name
+                        - contact_id
+                        - contact_display_name
                         - title
                         - appointment_type
                         - starts_at
@@ -543,10 +291,10 @@ paths:
                   tenant_id:
                     type: string
                     format: uuid
-                  patient_id:
+                  contact_id:
                     type: string
                     format: uuid
-                  patient_display_name:
+                  contact_display_name:
                     type: string
                     minLength: 1
                     maxLength: 255
@@ -616,8 +364,8 @@ paths:
                 required:
                   - id
                   - tenant_id
-                  - patient_id
-                  - patient_display_name
+                  - contact_id
+                  - contact_display_name
                   - title
                   - appointment_type
                   - starts_at
@@ -661,336 +409,6 @@ paths:
           required: true
           schema:
             type: string
-  /patients/{id}/files:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                        tenant_id:
-                          type: string
-                          format: uuid
-                        patient_id:
-                          type: string
-                          format: uuid
-                        appointment_id:
-                          type: string
-                          format: uuid
-                          nullable: true
-                        appointment_label:
-                          type: string
-                          maxLength: 255
-                          nullable: true
-                        filename:
-                          type: string
-                          minLength: 1
-                          maxLength: 512
-                        mime_type:
-                          type: string
-                          maxLength: 256
-                          default: application/octet-stream
-                        size_bytes:
-                          type: integer
-                          minimum: 0
-                        status:
-                          type: string
-                          enum:
-                            - pending
-                            - ready
-                          default: ready
-                        uploaded_by_display_name:
-                          type: string
-                          maxLength: 255
-                          nullable: true
-                        created_at:
-                          type: string
-                          format: date-time
-                      required:
-                        - id
-                        - tenant_id
-                        - patient_id
-                        - appointment_id
-                        - filename
-                        - size_bytes
-                        - created_at
-                      additionalProperties: false
-                required:
-                  - items
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-    post:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  tenant_id:
-                    type: string
-                    format: uuid
-                  patient_id:
-                    type: string
-                    format: uuid
-                  appointment_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                  appointment_label:
-                    type: string
-                    maxLength: 255
-                    nullable: true
-                  filename:
-                    type: string
-                    minLength: 1
-                    maxLength: 512
-                  mime_type:
-                    type: string
-                    maxLength: 256
-                    default: application/octet-stream
-                  size_bytes:
-                    type: integer
-                    minimum: 0
-                  status:
-                    type: string
-                    enum:
-                      - pending
-                      - ready
-                    default: ready
-                  uploaded_by_display_name:
-                    type: string
-                    maxLength: 255
-                    nullable: true
-                  created_at:
-                    type: string
-                    format: date-time
-                required:
-                  - id
-                  - tenant_id
-                  - patient_id
-                  - appointment_id
-                  - filename
-                  - size_bytes
-                  - created_at
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                filename:
-                  type: string
-                  minLength: 1
-                  maxLength: 512
-                mime_type:
-                  type: string
-                  maxLength: 256
-                size_bytes:
-                  type: integer
-                  minimum: 0
-                appointment_id:
-                  type: string
-                  format: uuid
-                  nullable: true
-              required:
-                - filename
-              additionalProperties: false
-  /patients/{id}/files/{fileId}/download:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: fileId
-          in: path
-          required: true
-          schema:
-            type: string
-  /patients/{id}/files/{fileId}/preview:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: fileId
-          in: path
-          required: true
-          schema:
-            type: string
-  /patients/{id}/case-notes:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                        tenant_id:
-                          type: string
-                          format: uuid
-                        patient_id:
-                          type: string
-                          format: uuid
-                        body:
-                          type: string
-                          minLength: 1
-                          maxLength: 8000
-                        author_display_name:
-                          type: string
-                          minLength: 1
-                          maxLength: 255
-                        created_at:
-                          type: string
-                          format: date-time
-                      required:
-                        - id
-                        - tenant_id
-                        - patient_id
-                        - body
-                        - author_display_name
-                        - created_at
-                      additionalProperties: false
-                required:
-                  - items
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-    post:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  tenant_id:
-                    type: string
-                    format: uuid
-                  patient_id:
-                    type: string
-                    format: uuid
-                  body:
-                    type: string
-                    minLength: 1
-                    maxLength: 8000
-                  author_display_name:
-                    type: string
-                    minLength: 1
-                    maxLength: 255
-                  created_at:
-                    type: string
-                    format: date-time
-                required:
-                  - id
-                  - tenant_id
-                  - patient_id
-                  - body
-                  - author_display_name
-                  - created_at
-                additionalProperties: false
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                body:
-                  type: string
-                  minLength: 1
-                  maxLength: 8000
-              required:
-                - body
-              additionalProperties: false
-  /patients/{id}/case-notes/{noteId}:
-    delete:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: "null"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: noteId
-          in: path
-          required: true
-          schema:
-            type: string
   /contacts:
     get:
       responses:
@@ -1019,6 +437,14 @@ paths:
                           type: string
                           minLength: 1
                           maxLength: 128
+                        first_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        last_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
                         display_name:
                           type: string
                           minLength: 1
@@ -1036,6 +462,46 @@ paths:
                           type: string
                           maxLength: 8000
                           nullable: true
+                        organization_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        status:
+                          type: string
+                          enum:
+                            - scheduled
+                            - arrived
+                            - treated
+                            - follow_up
+                            - cancelled
+                          nullable: true
+                          default: null
+                        assigned_user_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        source:
+                          type: string
+                          maxLength: 128
+                          nullable: true
+                          default: null
+                        medium:
+                          type: string
+                          maxLength: 128
+                          nullable: true
+                          default: null
+                        campaign:
+                          type: string
+                          maxLength: 128
+                          nullable: true
+                          default: null
+                        referred_by_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         is_internal:
                           type: boolean
                           default: false
@@ -1054,6 +520,8 @@ paths:
                         - tenant_id
                         - contact_type_id
                         - contact_type_name
+                        - first_name
+                        - last_name
                         - display_name
                         - phone
                         - email
@@ -1094,6 +562,14 @@ paths:
                     type: string
                     minLength: 1
                     maxLength: 128
+                  first_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  last_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
                   display_name:
                     type: string
                     minLength: 1
@@ -1111,6 +587,46 @@ paths:
                     type: string
                     maxLength: 8000
                     nullable: true
+                  organization_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  status:
+                    type: string
+                    enum:
+                      - scheduled
+                      - arrived
+                      - treated
+                      - follow_up
+                      - cancelled
+                    nullable: true
+                    default: null
+                  assigned_user_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  source:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  medium:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  campaign:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  referred_by_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
                   is_internal:
                     type: boolean
                     default: false
@@ -1129,6 +645,8 @@ paths:
                   - tenant_id
                   - contact_type_id
                   - contact_type_name
+                  - first_name
+                  - last_name
                   - display_name
                   - phone
                   - email
@@ -1164,6 +682,395 @@ paths:
                 additionalProperties: false
       parameters:
         - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/finance-summary:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  income_base:
+                    type: integer
+                  expense_base:
+                    type: integer
+                  net_base:
+                    type: integer
+                  paid_base:
+                    type: integer
+                  outstanding_base:
+                    type: integer
+                  transaction_count:
+                    type: integer
+                    minimum: 0
+                required:
+                  - income_base
+                  - expense_base
+                  - net_base
+                  - paid_base
+                  - outstanding_base
+                  - transaction_count
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/auto-link-transactions:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                required:
+                  - updated
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/files:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        appointment_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        appointment_label:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        filename:
+                          type: string
+                          minLength: 1
+                          maxLength: 512
+                        mime_type:
+                          type: string
+                          maxLength: 256
+                          default: application/octet-stream
+                        size_bytes:
+                          type: integer
+                          minimum: 0
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - ready
+                          default: ready
+                        uploaded_by_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - appointment_id
+                        - filename
+                        - size_bytes
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  appointment_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  appointment_label:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  filename:
+                    type: string
+                    minLength: 1
+                    maxLength: 512
+                  mime_type:
+                    type: string
+                    maxLength: 256
+                    default: application/octet-stream
+                  size_bytes:
+                    type: integer
+                    minimum: 0
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - ready
+                    default: ready
+                  uploaded_by_display_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - appointment_id
+                  - filename
+                  - size_bytes
+                  - created_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                  minLength: 1
+                  maxLength: 512
+                mime_type:
+                  type: string
+                  maxLength: 256
+                size_bytes:
+                  type: integer
+                  minimum: 0
+                appointment_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+              required:
+                - filename
+              additionalProperties: false
+  /contacts/{id}/files/{fileId}/download:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/files/{fileId}/preview:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/case-notes:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        body:
+                          type: string
+                          minLength: 1
+                          maxLength: 8000
+                        author_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - body
+                        - author_display_name
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  body:
+                    type: string
+                    minLength: 1
+                    maxLength: 8000
+                  author_display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - body
+                  - author_display_name
+                  - created_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 8000
+              required:
+                - body
+              additionalProperties: false
+  /contacts/{id}/case-notes/{noteId}:
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: "null"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: noteId
           in: path
           required: true
           schema:
@@ -1247,6 +1154,14 @@ paths:
                                 type: string
                                 minLength: 1
                                 maxLength: 128
+                              first_name:
+                                type: string
+                                minLength: 1
+                                maxLength: 255
+                              last_name:
+                                type: string
+                                maxLength: 255
+                                nullable: true
                               display_name:
                                 type: string
                                 minLength: 1
@@ -1264,6 +1179,46 @@ paths:
                                 type: string
                                 maxLength: 8000
                                 nullable: true
+                              organization_id:
+                                type: string
+                                format: uuid
+                                nullable: true
+                                default: null
+                              status:
+                                type: string
+                                enum:
+                                  - scheduled
+                                  - arrived
+                                  - treated
+                                  - follow_up
+                                  - cancelled
+                                nullable: true
+                                default: null
+                              assigned_user_id:
+                                type: string
+                                format: uuid
+                                nullable: true
+                                default: null
+                              source:
+                                type: string
+                                maxLength: 128
+                                nullable: true
+                                default: null
+                              medium:
+                                type: string
+                                maxLength: 128
+                                nullable: true
+                                default: null
+                              campaign:
+                                type: string
+                                maxLength: 128
+                                nullable: true
+                                default: null
+                              referred_by_contact_id:
+                                type: string
+                                format: uuid
+                                nullable: true
+                                default: null
                               is_internal:
                                 type: boolean
                                 default: false
@@ -1282,6 +1237,8 @@ paths:
                               - tenant_id
                               - contact_type_id
                               - contact_type_name
+                              - first_name
+                              - last_name
                               - display_name
                               - phone
                               - email
@@ -1328,6 +1285,14 @@ paths:
                     type: string
                     minLength: 1
                     maxLength: 128
+                  first_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  last_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
                   display_name:
                     type: string
                     minLength: 1
@@ -1345,6 +1310,46 @@ paths:
                     type: string
                     maxLength: 8000
                     nullable: true
+                  organization_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  status:
+                    type: string
+                    enum:
+                      - scheduled
+                      - arrived
+                      - treated
+                      - follow_up
+                      - cancelled
+                    nullable: true
+                    default: null
+                  assigned_user_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  source:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  medium:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  campaign:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  referred_by_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
                   is_internal:
                     type: boolean
                     default: false
@@ -1363,211 +1368,12 @@ paths:
                   - tenant_id
                   - contact_type_id
                   - contact_type_name
+                  - first_name
+                  - last_name
                   - display_name
                   - phone
                   - email
                   - notes
-                  - created_at
-                  - updated_at
-                additionalProperties: false
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                keep_id:
-                  type: string
-                  format: uuid
-                merge_ids:
-                  type: array
-                  items:
-                    type: string
-                    format: uuid
-                  minItems: 1
-              required:
-                - keep_id
-                - merge_ids
-              additionalProperties: false
-  /patients/duplicate-groups:
-    get:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        match_type:
-                          type: string
-                          enum:
-                            - email
-                            - phone
-                            - name
-                        label:
-                          type: string
-                          minLength: 1
-                        patients:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              id:
-                                type: string
-                                format: uuid
-                              tenant_id:
-                                type: string
-                                format: uuid
-                              full_name:
-                                type: string
-                                minLength: 1
-                                maxLength: 255
-                              phone:
-                                type: string
-                                maxLength: 64
-                                nullable: true
-                              email:
-                                type: string
-                                format: email
-                                maxLength: 255
-                                nullable: true
-                              status:
-                                type: string
-                                enum:
-                                  - scheduled
-                                  - arrived
-                                  - treated
-                                  - follow_up
-                                  - cancelled
-                                default: scheduled
-                              source:
-                                type: string
-                                maxLength: 128
-                                nullable: true
-                              notes:
-                                type: string
-                                maxLength: 8000
-                                nullable: true
-                              assigned_user_id:
-                                type: string
-                                format: uuid
-                                nullable: true
-                              contact_id:
-                                type: string
-                                format: uuid
-                                nullable: true
-                                default: null
-                              created_at:
-                                type: string
-                                format: date-time
-                              updated_at:
-                                type: string
-                                format: date-time
-                            required:
-                              - id
-                              - tenant_id
-                              - full_name
-                              - phone
-                              - email
-                              - source
-                              - notes
-                              - assigned_user_id
-                              - created_at
-                              - updated_at
-                            additionalProperties: false
-                          minItems: 2
-                      required:
-                        - match_type
-                        - label
-                        - patients
-                      additionalProperties: false
-                  truncated:
-                    type: boolean
-                  scanned_count:
-                    type: integer
-                    minimum: 0
-                required:
-                  - items
-                  - truncated
-                  - scanned_count
-                additionalProperties: false
-  /patients/merge:
-    post:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  tenant_id:
-                    type: string
-                    format: uuid
-                  full_name:
-                    type: string
-                    minLength: 1
-                    maxLength: 255
-                  phone:
-                    type: string
-                    maxLength: 64
-                    nullable: true
-                  email:
-                    type: string
-                    format: email
-                    maxLength: 255
-                    nullable: true
-                  status:
-                    type: string
-                    enum:
-                      - scheduled
-                      - arrived
-                      - treated
-                      - follow_up
-                      - cancelled
-                    default: scheduled
-                  source:
-                    type: string
-                    maxLength: 128
-                    nullable: true
-                  notes:
-                    type: string
-                    maxLength: 8000
-                    nullable: true
-                  assigned_user_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                  contact_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                    default: null
-                  created_at:
-                    type: string
-                    format: date-time
-                  updated_at:
-                    type: string
-                    format: date-time
-                required:
-                  - id
-                  - tenant_id
-                  - full_name
-                  - phone
-                  - email
-                  - source
-                  - notes
-                  - assigned_user_id
                   - created_at
                   - updated_at
                 additionalProperties: false
@@ -1685,6 +1491,100 @@ paths:
               required:
                 - name
               additionalProperties: false
+  /settings/organizations:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - name
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+  /settings/organizations/{id}:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - name
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+                - name
+              additionalProperties: false
   /appointments/{id}/files:
     get:
       responses:
@@ -1706,7 +1606,7 @@ paths:
                         tenant_id:
                           type: string
                           format: uuid
-                        patient_id:
+                        contact_id:
                           type: string
                           format: uuid
                         appointment_id:
@@ -1744,7 +1644,7 @@ paths:
                       required:
                         - id
                         - tenant_id
-                        - patient_id
+                        - contact_id
                         - appointment_id
                         - filename
                         - size_bytes
@@ -1858,19 +1758,15 @@ paths:
                           pattern: ^\d{4}-\d{2}-\d{2}$
                           nullable: true
                           default: null
-                        patient_id:
-                          type: string
-                          format: uuid
-                          nullable: true
-                        patient_display_name:
-                          type: string
-                          maxLength: 255
-                          nullable: true
                         contact_id:
                           type: string
                           format: uuid
                           nullable: true
                           default: null
+                        contact_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
                         contact_label:
                           type: string
                           maxLength: 255
@@ -1897,8 +1793,7 @@ paths:
                         - payment_method
                         - amount
                         - paid_amount
-                        - patient_id
-                        - patient_display_name
+                        - contact_display_name
                         - contact_label
                         - description
                         - created_at
@@ -2008,19 +1903,15 @@ paths:
                     pattern: ^\d{4}-\d{2}-\d{2}$
                     nullable: true
                     default: null
-                  patient_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                  patient_display_name:
-                    type: string
-                    maxLength: 255
-                    nullable: true
                   contact_id:
                     type: string
                     format: uuid
                     nullable: true
                     default: null
+                  contact_display_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
                   contact_label:
                     type: string
                     maxLength: 255
@@ -2047,8 +1938,7 @@ paths:
                   - payment_method
                   - amount
                   - paid_amount
-                  - patient_id
-                  - patient_display_name
+                  - contact_display_name
                   - contact_label
                   - description
                   - created_at
@@ -2134,11 +2024,11 @@ paths:
                           type: string
                           maxLength: 128
                           nullable: true
-                        patient_id:
+                        contact_id:
                           type: string
                           format: uuid
                           nullable: true
-                        patient_display_name:
+                        contact_display_name:
                           type: string
                           maxLength: 255
                           nullable: true
@@ -2252,11 +2142,11 @@ paths:
                                 type: string
                                 maxLength: 128
                                 nullable: true
-                              patient_id:
+                              contact_id:
                                 type: string
                                 format: uuid
                                 nullable: true
-                              patient_display_name:
+                              contact_display_name:
                                 type: string
                                 maxLength: 255
                                 nullable: true
@@ -2388,11 +2278,11 @@ paths:
                           type: string
                           maxLength: 128
                           nullable: true
-                        patient_id:
+                        contact_id:
                           type: string
                           format: uuid
                           nullable: true
-                        patient_display_name:
+                        contact_display_name:
                           type: string
                           maxLength: 255
                           nullable: true
@@ -2514,11 +2404,11 @@ paths:
                           type: string
                           maxLength: 128
                           nullable: true
-                        patient_id:
+                        contact_id:
                           type: string
                           format: uuid
                           nullable: true
-                        patient_display_name:
+                        contact_display_name:
                           type: string
                           maxLength: 255
                           nullable: true
@@ -2693,19 +2583,15 @@ paths:
                           pattern: ^\d{4}-\d{2}-\d{2}$
                           nullable: true
                           default: null
-                        patient_id:
-                          type: string
-                          format: uuid
-                          nullable: true
-                        patient_display_name:
-                          type: string
-                          maxLength: 255
-                          nullable: true
                         contact_id:
                           type: string
                           format: uuid
                           nullable: true
                           default: null
+                        contact_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
                         contact_label:
                           type: string
                           maxLength: 255
@@ -2732,8 +2618,7 @@ paths:
                         - payment_method
                         - amount
                         - paid_amount
-                        - patient_id
-                        - patient_display_name
+                        - contact_display_name
                         - contact_label
                         - description
                         - created_at
@@ -2800,11 +2685,12 @@ paths:
                         type: string
                         maxLength: 128
                         nullable: true
-                      patient_id:
+                      contact_id:
                         type: string
                         format: uuid
                         nullable: true
-                      patient_display_name:
+                        default: null
+                      contact_display_name:
                         type: string
                         maxLength: 255
                         nullable: true
@@ -2839,11 +2725,6 @@ paths:
                       amount_base:
                         type: integer
                         minimum: 0
-                      contact_id:
-                        type: string
-                        format: uuid
-                        nullable: true
-                        default: null
                     required:
                       - kind
                       - amount
@@ -2893,11 +2774,11 @@ paths:
                         type: string
                         maxLength: 128
                         nullable: true
-                      patient_id:
+                      contact_id:
                         type: string
                         format: uuid
                         nullable: true
-                      patient_display_name:
+                      contact_display_name:
                         type: string
                         maxLength: 255
                         nullable: true
@@ -3018,11 +2899,11 @@ paths:
                           type: string
                           maxLength: 128
                           nullable: true
-                        patient_id:
+                        contact_id:
                           type: string
                           format: uuid
                           nullable: true
-                        patient_display_name:
+                        contact_display_name:
                           type: string
                           maxLength: 255
                           nullable: true
@@ -3085,11 +2966,11 @@ paths:
                           type: string
                           maxLength: 128
                           nullable: true
-                        patient_id:
+                        contact_id:
                           type: string
                           format: uuid
                           nullable: true
-                        patient_display_name:
+                        contact_display_name:
                           type: string
                           maxLength: 255
                           nullable: true
@@ -3178,11 +3059,11 @@ paths:
                         type: string
                         maxLength: 128
                         nullable: true
-                      patient_id:
+                      contact_id:
                         type: string
                         format: uuid
                         nullable: true
-                      patient_display_name:
+                      contact_display_name:
                         type: string
                         maxLength: 255
                         nullable: true
@@ -3246,11 +3127,11 @@ paths:
                         type: string
                         maxLength: 128
                         nullable: true
-                      patient_id:
+                      contact_id:
                         type: string
                         format: uuid
                         nullable: true
-                      patient_display_name:
+                      contact_display_name:
                         type: string
                         maxLength: 255
                         nullable: true
@@ -3342,11 +3223,11 @@ paths:
                                 type: string
                                 maxLength: 128
                                 nullable: true
-                              patient_id:
+                              contact_id:
                                 type: string
                                 format: uuid
                                 nullable: true
-                              patient_display_name:
+                              contact_display_name:
                                 type: string
                                 maxLength: 255
                                 nullable: true
@@ -3409,11 +3290,11 @@ paths:
                                 type: string
                                 maxLength: 128
                                 nullable: true
-                              patient_id:
+                              contact_id:
                                 type: string
                                 format: uuid
                                 nullable: true
-                              patient_display_name:
+                              contact_display_name:
                                 type: string
                                 maxLength: 255
                                 nullable: true
@@ -3534,6 +3415,14 @@ paths:
                     type: string
                     minLength: 1
                     maxLength: 128
+                  first_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  last_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
                   display_name:
                     type: string
                     minLength: 1
@@ -3551,6 +3440,46 @@ paths:
                     type: string
                     maxLength: 8000
                     nullable: true
+                  organization_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  status:
+                    type: string
+                    enum:
+                      - scheduled
+                      - arrived
+                      - treated
+                      - follow_up
+                      - cancelled
+                    nullable: true
+                    default: null
+                  assigned_user_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  source:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  medium:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  campaign:
+                    type: string
+                    maxLength: 128
+                    nullable: true
+                    default: null
+                  referred_by_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
                   is_internal:
                     type: boolean
                     default: false
@@ -3569,6 +3498,8 @@ paths:
                   - tenant_id
                   - contact_type_id
                   - contact_type_name
+                  - first_name
+                  - last_name
                   - display_name
                   - phone
                   - email
@@ -3583,10 +3514,14 @@ paths:
             schema:
               type: object
               properties:
-                display_name:
+                first_name:
                   type: string
                   minLength: 1
                   maxLength: 255
+                last_name:
+                  type: string
+                  maxLength: 255
+                  nullable: true
                 contact_type_id:
                   type: string
                   format: uuid
@@ -3600,99 +3535,8 @@ paths:
                   maxLength: 255
                   nullable: true
               required:
-                - display_name
+                - first_name
                 - contact_type_id
-              additionalProperties: false
-  /whatsapp/create-patient:
-    post:
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  tenant_id:
-                    type: string
-                    format: uuid
-                  full_name:
-                    type: string
-                    minLength: 1
-                    maxLength: 255
-                  phone:
-                    type: string
-                    maxLength: 64
-                    nullable: true
-                  email:
-                    type: string
-                    format: email
-                    maxLength: 255
-                    nullable: true
-                  status:
-                    type: string
-                    enum:
-                      - scheduled
-                      - arrived
-                      - treated
-                      - follow_up
-                      - cancelled
-                    default: scheduled
-                  source:
-                    type: string
-                    maxLength: 128
-                    nullable: true
-                  notes:
-                    type: string
-                    maxLength: 8000
-                    nullable: true
-                  assigned_user_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                  contact_id:
-                    type: string
-                    format: uuid
-                    nullable: true
-                    default: null
-                  created_at:
-                    type: string
-                    format: date-time
-                  updated_at:
-                    type: string
-                    format: date-time
-                required:
-                  - id
-                  - tenant_id
-                  - full_name
-                  - phone
-                  - email
-                  - source
-                  - notes
-                  - assigned_user_id
-                  - created_at
-                  - updated_at
-                additionalProperties: false
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                full_name:
-                  type: string
-                  minLength: 1
-                  maxLength: 255
-                contact_id:
-                  type: string
-                  format: uuid
-                  nullable: true
-              required:
-                - full_name
               additionalProperties: false
   /whatsapp/create-category:
     post:
@@ -3930,7 +3774,6 @@ paths:
                         entity_type:
                           type: string
                           enum:
-                            - patient
                             - contact
                             - appointment
                             - transaction
@@ -4652,7 +4495,7 @@ paths:
                     enum:
                       - transaction.created
                       - transaction.updated
-                      - patient.created
+                      - contact.created
                       - appointment.created
                   minItems: 1
               required:
@@ -4914,7 +4757,7 @@ paths:
                   - period
                   - items
                 additionalProperties: false
-  /reports/patient-distribution:
+  /reports/contact-distribution:
     get:
       responses:
         "200":
@@ -4973,6 +4816,20 @@ paths:
                         - source
                         - count
                       additionalProperties: false
+                  by_medium:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        medium:
+                          type: string
+                        count:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - medium
+                        - count
+                      additionalProperties: false
                   total:
                     type: integer
                     minimum: 0
@@ -4980,6 +4837,7 @@ paths:
                   - period
                   - by_status
                   - by_source
+                  - by_medium
                   - total
                 additionalProperties: false
   /reports/balances:
@@ -5186,7 +5044,7 @@ paths:
                           type: string
                           enum:
                             - category_missing
-                            - income_patient_missing
+                            - income_contact_missing
                             - expense_contact_missing
                             - fx_missing
                             - paid_amount_mismatch
@@ -5222,7 +5080,7 @@ paths:
                     type: object
                     required:
                       - category_missing
-                      - income_patient_missing
+                      - income_contact_missing
                       - expense_contact_missing
                       - fx_missing
                       - paid_amount_mismatch
@@ -5232,7 +5090,7 @@ paths:
                       category_missing:
                         type: integer
                         minimum: 0
-                      income_patient_missing:
+                      income_contact_missing:
                         type: integer
                         minimum: 0
                       expense_contact_missing:

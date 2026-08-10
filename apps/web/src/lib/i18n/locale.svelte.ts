@@ -6,7 +6,7 @@
  *
  * Kullanım (uzantı `.svelte` olarak yazılır, `.ts` yazılmaz):
  *   import { t } from '$lib/i18n/locale.svelte';
- *   <span>{t('nav.patients')}</span>
+ *   <span>{t('nav.contacts')}</span>
  *
  * Panel rotaları dile göre çoğaltılmaz — `/patients` vardır, `/tr/hastalar` yoktur.
  * Dil kullanıcı tercihidir, URL'in parçası değildir. Gerekçe: docs/TASARIM.md § Dil ve slug.

@@ -10,8 +10,8 @@ export type GhlEventKind = 'contact' | 'opportunity' | 'unknown';
 /** Outcome of fixture-backed inbound processing (no OAuth). */
 export type GhlSyncAction =
 	| 'logged'
-	| 'patient_created'
-	| 'patient_updated'
+	| 'contact_created'
+	| 'contact_updated'
 	| 'skipped_incomplete'
 	| 'skipped_unknown';
 
@@ -29,7 +29,7 @@ export type GhlProcessResult = {
 	externalId: string | null;
 	summary: string;
 	action: GhlSyncAction;
-	patientId: string | null;
+	contactId: string | null;
 	contact: GhlContactFields | null;
 };
 

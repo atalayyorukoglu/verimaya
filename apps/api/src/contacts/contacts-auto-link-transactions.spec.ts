@@ -5,7 +5,7 @@ import { NotFoundException } from '@nestjs/common';
 import { closeDb, getDb } from '../db/client';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
-import { PatientsService } from './patients.service';
+import { ContactsService } from './contacts.service';
 
 /**
  * GAP-F09-22 (G-22): auto-link unassigned transactions by patient.contact_id.
@@ -20,11 +20,8 @@ const databaseUrl =
 describe('GAP-F09-22 patients auto-link-transactions', () => {
 	const tenantA = randomUUID();
 	const tenantB = randomUUID();
-	let contactTypeA: string;
-	let contactTypeB: string;
-	let contactA: string;
-	let contactAOther: string;
-	let contactB: string;
+	let hastaTypeA: string;
+	let hastaTypeB: string;
 	let patientA: string;
 	let patientA2: string;
 	let patientANoContact: string;
@@ -35,7 +32,7 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 	let txnSoftDeleted: string;
 	let txnOtherContact: string;
 	let txnBUnlinked: string;
-	let service: PatientsService;
+	let service: ContactsService;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
@@ -51,7 +48,7 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 				})
 		} as TenantContextService;
 
-		service = new PatientsService(tenantContext, new LocalFileStorage());
+		service = new ContactsService(tenantContext, new LocalFileStorage());
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -66,45 +63,17 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 				(${tenantB}, 'AutoLink B', ${`alink-b-${tenantB.slice(0, 8)}`})
 		`;
 
-		contactTypeA = await sql.begin(async (tx) => {
+		hastaTypeA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
-				insert into contact_types (tenant_id, name) values (${tenantA}, 'Hasta A') returning id
+				insert into contact_types (tenant_id, name) values (${tenantA}, 'Hasta') returning id
 			`;
 			return row!.id as string;
 		});
-		contactTypeB = await sql.begin(async (tx) => {
+		hastaTypeB = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			const [row] = await tx`
-				insert into contact_types (tenant_id, name) values (${tenantB}, 'Hasta B') returning id
-			`;
-			return row!.id as string;
-		});
-
-		contactA = await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			const [row] = await tx`
-				insert into contacts (tenant_id, contact_type_id, contact_type_name, display_name)
-				values (${tenantA}, ${contactTypeA}, 'Hasta A', 'Contact A')
-				returning id
-			`;
-			return row!.id as string;
-		});
-		contactAOther = await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			const [row] = await tx`
-				insert into contacts (tenant_id, contact_type_id, contact_type_name, display_name)
-				values (${tenantA}, ${contactTypeA}, 'Hasta A', 'Contact A Other')
-				returning id
-			`;
-			return row!.id as string;
-		});
-		contactB = await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			const [row] = await tx`
-				insert into contacts (tenant_id, contact_type_id, contact_type_name, display_name)
-				values (${tenantB}, ${contactTypeB}, 'Hasta B', 'Contact B')
-				returning id
+				insert into contact_types (tenant_id, name) values (${tenantB}, 'Hasta') returning id
 			`;
 			return row!.id as string;
 		});
@@ -112,8 +81,8 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		patientA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
-				insert into patients (tenant_id, full_name, contact_id)
-				values (${tenantA}, 'Patient A', ${contactA})
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (${tenantA}, ${hastaTypeA}, 'Hasta', 'Patient A', 'Patient A')
 				returning id
 			`;
 			return row!.id as string;
@@ -121,8 +90,8 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		patientA2 = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
-				insert into patients (tenant_id, full_name, contact_id)
-				values (${tenantA}, 'Patient A2', ${contactA})
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (${tenantA}, ${hastaTypeA}, 'Hasta', 'Patient A2', 'Patient A2')
 				returning id
 			`;
 			return row!.id as string;
@@ -130,8 +99,8 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		patientANoContact = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
-				insert into patients (tenant_id, full_name)
-				values (${tenantA}, 'Patient A No Contact')
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (${tenantA}, ${hastaTypeA}, 'Hasta', 'Patient A No Contact', 'Patient A No Contact')
 				returning id
 			`;
 			return row!.id as string;
@@ -139,8 +108,8 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		patientB = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			const [row] = await tx`
-				insert into patients (tenant_id, full_name, contact_id)
-				values (${tenantB}, 'Patient B', ${contactB})
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (${tenantB}, ${hastaTypeB}, 'Hasta', 'Patient B', 'Patient B')
 				returning id
 			`;
 			return row!.id as string;
@@ -150,9 +119,9 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, currency, contact_id
+					tenant_id, kind, title, occurred_on, status, amount, currency, contact_label
 				) values (
-					${tenantA}, 'income', 'Linkable 1', '2026-08-01', 'paid', 10000, 'TRY', ${contactA}
+					${tenantA}, 'income', 'Linkable 1', '2026-08-01', 'paid', 10000, 'TRY', 'Patient A'
 				)
 				returning id
 			`;
@@ -162,9 +131,9 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, currency, contact_id
+					tenant_id, kind, title, occurred_on, status, amount, currency, contact_label
 				) values (
-					${tenantA}, 'income', 'Linkable 2', '2026-08-02', 'paid', 20000, 'TRY', ${contactA}
+					${tenantA}, 'income', 'Linkable 2', '2026-08-02', 'paid', 20000, 'TRY', 'Patient A'
 				)
 				returning id
 			`;
@@ -175,10 +144,10 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 			const [row] = await tx`
 				insert into transactions (
 					tenant_id, kind, title, occurred_on, status, amount, currency,
-					contact_id, patient_id, patient_display_name
+					contact_id, contact_display_name, contact_label
 				) values (
 					${tenantA}, 'income', 'Already linked', '2026-08-03', 'paid', 30000, 'TRY',
-					${contactA}, ${patientA2}, 'Patient A2'
+					${patientA2}, 'Patient A2', 'Patient A2'
 				)
 				returning id
 			`;
@@ -189,10 +158,10 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 			const [row] = await tx`
 				insert into transactions (
 					tenant_id, kind, title, occurred_on, status, amount, currency,
-					contact_id, deleted_at
+					contact_label, deleted_at
 				) values (
 					${tenantA}, 'income', 'Soft deleted', '2026-08-04', 'paid', 40000, 'TRY',
-					${contactA}, now()
+					'Patient A', now()
 				)
 				returning id
 			`;
@@ -202,10 +171,9 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, currency, contact_id
+					tenant_id, kind, title, occurred_on, status, amount, currency, contact_label
 				) values (
-					${tenantA}, 'income', 'Other contact', '2026-08-05', 'paid', 50000, 'TRY',
-					${contactAOther}
+					${tenantA}, 'income', 'Other contact', '2026-08-05', 'paid', 50000, 'TRY', 'Other Label'
 				)
 				returning id
 			`;
@@ -215,10 +183,9 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			const [row] = await tx`
 				insert into transactions (
-					tenant_id, kind, title, occurred_on, status, amount, currency, contact_id
+					tenant_id, kind, title, occurred_on, status, amount, currency, contact_label
 				) values (
-					${tenantB}, 'income', 'Tenant B unlinked', '2026-08-06', 'paid', 60000, 'TRY',
-					${contactB}
+					${tenantB}, 'income', 'Tenant B unlinked', '2026-08-06', 'paid', 60000, 'TRY', 'Patient B'
 				)
 				returning id
 			`;
@@ -232,7 +199,7 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 			await sql.begin(async (tx) => {
 				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 				await tx`delete from transactions where tenant_id = ${tenantId}`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contact_types where tenant_id = ${tenantId}`;
 			});
@@ -250,7 +217,7 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		const rows = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			return tx`
-				select id, patient_id, patient_display_name
+				select id, contact_id, contact_display_name
 				from transactions
 				where id in (${txnLinkable1}, ${txnLinkable2})
 				order by title
@@ -258,8 +225,8 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		});
 		expect(rows).toHaveLength(2);
 		for (const row of rows) {
-			expect(row.patient_id).toBe(patientA);
-			expect(row.patient_display_name).toBe('Patient A');
+			expect(row.contact_id).toBe(patientA);
+			expect(row.contact_display_name).toBe('Patient A');
 		}
 
 		const second = await service.autoLinkTransactions(tenantA, patientA);
@@ -271,12 +238,12 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		const [row] = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			return tx`
-				select patient_id, patient_display_name
+				select contact_id, contact_display_name
 				from transactions where id = ${txnAlreadyLinked}
 			`;
 		});
-		expect(row!.patient_id).toBe(patientA2);
-		expect(row!.patient_display_name).toBe('Patient A2');
+		expect(row!.contact_id).toBe(patientA2);
+		expect(row!.contact_display_name).toBe('Patient A2');
 	});
 
 	it('skips soft-deleted transactions', async () => {
@@ -284,11 +251,11 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		const [row] = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			return tx`
-				select patient_id, deleted_at
+				select contact_id, deleted_at
 				from transactions where id = ${txnSoftDeleted}
 			`;
 		});
-		expect(row!.patient_id).toBeNull();
+		expect(row!.contact_id).toBeNull();
 		expect(row!.deleted_at).not.toBeNull();
 	});
 
@@ -296,12 +263,12 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		const { sql } = getDb(databaseUrl);
 		const [row] = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			return tx`select patient_id from transactions where id = ${txnOtherContact}`;
+			return tx`select contact_id from transactions where id = ${txnOtherContact}`;
 		});
-		expect(row!.patient_id).toBeNull();
+		expect(row!.contact_id).toBeNull();
 	});
 
-	it('returns updated: 0 when the patient has no contact_id', async () => {
+	it('returns updated: 0 when no transactions match the contact label', async () => {
 		const result = await service.autoLinkTransactions(tenantA, patientANoContact);
 		expect(result.updated).toBe(0);
 	});
@@ -312,9 +279,9 @@ describe('GAP-F09-22 patients auto-link-transactions', () => {
 		const { sql } = getDb(databaseUrl);
 		const [row] = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			return tx`select patient_id from transactions where id = ${txnBUnlinked}`;
+			return tx`select contact_id from transactions where id = ${txnBUnlinked}`;
 		});
-		expect(row!.patient_id).toBeNull();
+		expect(row!.contact_id).toBeNull();
 	});
 
 	it('Tenant A calling with Tenant B patient id returns 404', async () => {

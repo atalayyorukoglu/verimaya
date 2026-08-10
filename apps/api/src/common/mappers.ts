@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, Contact, ContactType, FinanceCategory, Patient, PatientCaseNote, PatientFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, Contact, ContactType, FinanceCategory, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
 import type { AiCorrectionRow } from '../db/schema/ai-corrections';
 import type { ApiKeyRow } from '../db/schema/api-keys';
@@ -12,7 +12,7 @@ import type { ContactTypeRow } from '../db/schema/contact-types';
 import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
 import type { FinanceCategoryRow } from '../db/schema/finance-categories';
-import type { PatientRow } from '../db/schema/patients';
+import type { OrganizationRow } from '../db/schema/organizations';
 import type { TenantRow } from '../db/schema/tenants';
 import type { TransactionRow } from '../db/schema/transactions';
 import type { WebhookSubscriptionRow } from '../db/schema/webhook-subscriptions';
@@ -65,33 +65,25 @@ export function parseQuery<T>(schema: ParseSchema<T>, query: unknown, req: Fasti
 	return parseBody(schema, query, req);
 }
 
-export function toPatient(row: PatientRow): Patient {
-	return {
-		id: row.id,
-		tenant_id: row.tenantId,
-		full_name: row.fullName,
-		phone: row.phone,
-		email: row.email,
-		status: row.status as Patient['status'],
-		source: row.source,
-		notes: row.notes,
-		assigned_user_id: row.assignedUserId,
-		contact_id: row.contactId,
-		created_at: toIsoDateTime(row.createdAt),
-		updated_at: toIsoDateTime(row.updatedAt)
-	};
-}
-
 export function toContact(row: ContactRow): Contact {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
 		contact_type_id: row.contactTypeId,
 		contact_type_name: row.contactTypeName,
+		first_name: row.firstName ?? row.displayName,
+		last_name: row.lastName,
 		display_name: row.displayName,
 		phone: row.phone,
 		email: row.email,
 		notes: row.notes,
+		organization_id: row.organizationId ?? null,
+		status: (row.status as Contact['status']) ?? null,
+		assigned_user_id: row.assignedUserId ?? null,
+		source: row.source ?? null,
+		medium: row.medium ?? null,
+		campaign: row.campaign ?? null,
+		referred_by_contact_id: row.referredByContactId ?? null,
 		is_internal: row.isInternal,
 		usage_count: row.usageCount,
 		created_at: toIsoDateTime(row.createdAt),
@@ -103,8 +95,8 @@ export function toAppointment(row: AppointmentRow): Appointment {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
-		patient_id: row.patientId,
-		patient_display_name: row.patientDisplayName,
+		contact_id: row.contactId,
+		contact_display_name: row.contactDisplayName,
 		title: row.title,
 		appointment_type: row.appointmentType,
 		status: row.status as Appointment['status'],
@@ -141,9 +133,8 @@ export function toTransaction(row: TransactionRow): Transaction {
 		base_currency: row.baseCurrency as Transaction['base_currency'],
 		fx_rate: row.fxRate,
 		fx_dated: row.fxDated,
-		patient_id: row.patientId,
-		patient_display_name: row.patientDisplayName,
 		contact_id: row.contactId,
+		contact_display_name: row.contactDisplayName,
 		contact_label: row.contactLabel,
 		description: row.description,
 		created_at: toIsoDateTime(row.createdAt),
@@ -171,6 +162,16 @@ export function toContactType(row: ContactTypeRow): ContactType {
 		name: row.name,
 		sort_order: row.sortOrder,
 		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toOrganization(row: OrganizationRow): Organization {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		name: row.name,
+		created_at: toIsoDateTime(row.createdAt),
+		updated_at: toIsoDateTime(row.updatedAt)
 	};
 }
 
@@ -237,7 +238,7 @@ export function toTenant(row: TenantRow, baseCurrencyLocked = false): Tenant {
 		slug: row.slug,
 		base_currency: row.baseCurrency as Tenant['base_currency'],
 		base_currency_locked: baseCurrencyLocked,
-		patients_section_label: row.patientsSectionLabel,
+		contacts_section_label: row.contactsSectionLabel,
 		timezone: row.timezone as Tenant['timezone'],
 		created_at: toIsoDateTime(row.createdAt)
 	};
@@ -266,11 +267,11 @@ export function toAiCorrection(row: AiCorrectionRow): AiCorrection {
 	};
 }
 
-export function toPatientFile(row: FileRow): PatientFile {
+export function toContactFile(row: FileRow): ContactFile {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
-		patient_id: row.patientId,
+		contact_id: row.contactId,
 		appointment_id: row.appointmentId,
 		appointment_label: row.appointmentLabel,
 		filename: row.filename,
@@ -282,11 +283,11 @@ export function toPatientFile(row: FileRow): PatientFile {
 	};
 }
 
-export function toPatientCaseNote(row: CaseNoteRow): PatientCaseNote {
+export function toContactCaseNote(row: CaseNoteRow): ContactCaseNote {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
-		patient_id: row.patientId,
+		contact_id: row.contactId,
 		body: row.body,
 		author_display_name: row.authorDisplayName,
 		created_at: toIsoDateTime(row.createdAt)

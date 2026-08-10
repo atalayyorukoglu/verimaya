@@ -1,8 +1,9 @@
-import type { Patient, TransactionDraft } from '@verimaya/shared';
+import type { Contact, TransactionDraft } from '@verimaya/shared';
 
 export type LlmParseContext = {
 	message: string;
-	patients: Patient[];
+	/** Hasta-type contacts used as opaque match hints (AGENTS ilke 6 — drafts only). */
+	patients: Contact[];
 };
 
 /** Path taken for a single parse call — written to `jobs` ledger (Adım 25). */

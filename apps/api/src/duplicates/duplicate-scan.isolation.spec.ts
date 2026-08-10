@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import postgres from 'postgres';
-import { findContactDuplicateGroups, findPatientDuplicateGroups } from '@verimaya/shared';
+import { findContactDuplicateGroups } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { ContactsService } from '../contacts/contacts.service';
-import { PatientsService } from '../patients/patients.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
-import { toContact, toPatient } from '../common/mappers';
+import { toContact } from '../common/mappers';
 import { contacts } from '../db/schema/contacts';
-import { patients } from '../db/schema/patients';
-import { and, asc, isNull } from 'drizzle-orm';
+import { and, asc, isNull , sql as drizzleSql} from 'drizzle-orm';
 
 /**
  * AUDIT-F09-17: duplicate-groups scan row cap + truncated envelope
@@ -25,14 +23,17 @@ const databaseUrl =
 const adminDatabaseUrl =
 	process.env.DATABASE_URL ?? 'postgresql://verimaya:verimaya@localhost:5433/verimaya';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tdb: TenantDb) => Promise<T>
+): Promise<T> {
+	const { db } = getDb(databaseUrl);
+	return db.transaction(async (tx) => {
+		await tx.execute(
+			drizzleSql`select set_config('app.current_tenant_id', ${tenantId}, true)`
+		);
+		return fn(tx as TenantDb);
+	});
 }
 
 describe('AUDIT-F09-17 duplicate-scan cap', () => {
@@ -40,9 +41,8 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 	const tenantB = randomUUID();
 	let contactTypeA: string;
 	let contactTypeB: string;
+	let hastaTypeA: string;
 	let contactsService: ContactsService;
-	let patientsService: PatientsService;
-	let db: TenantDb;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
@@ -53,22 +53,21 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 		`;
 		await admin`
 			alter table audit_logs add constraint audit_logs_entity_type_chk check ("entity_type" in (
-				'patient', 'contact', 'appointment', 'transaction', 'inbound_message', 'file', 'tenant', 'user'
+				'contact', 'appointment', 'transaction', 'inbound_message', 'file', 'tenant', 'user'
 			))
 		`;
 		await admin.end();
 
 		const dbHandle = getDb(databaseUrl);
-		db = dbHandle.db;
 		const { sql } = dbHandle;
 
 		const tenantContext = {
 			withTenant: async <T>(id: string, fn: (ctx: { db: TenantDb }) => Promise<T>) =>
-				withTenantSession(id, () => fn({ db }))
+				withTenantSession(id, (tdb) => fn({ db: tdb }))
 		} as TenantContextService;
 
-		contactsService = new ContactsService(tenantContext);
-		patientsService = new PatientsService(tenantContext, new LocalFileStorage());
+		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
+		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -101,6 +100,15 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 			`;
 			return row!.id as string;
 		});
+		hastaTypeA = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${tenantA}, 'Hasta', 0)
+				returning id
+			`;
+			return row!.id as string;
+		});
 	});
 
 	afterAll(async () => {
@@ -108,7 +116,7 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 		for (const tenantId of [tenantA, tenantB]) {
 			await sql.begin(async (tx) => {
 				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contact_types where tenant_id = ${tenantId}`;
 			});
@@ -120,25 +128,24 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 
 	it('contacts under cap: truncated false and groups match full scan', async () => {
 		const email = `under-${randomUUID()}@example.com`;
-		await withTenantSession(tenantA, async () => {
-			await contactsService.createWithDb(db, tenantA, {
+		await withTenantSession(tenantA, async (tdb) => {
+			await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Under Cap One',
+				first_name: 'Under Cap One',
 				email
 			});
-			await contactsService.createWithDb(db, tenantA, {
+			await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Under Cap Two',
+				first_name: 'Under Cap Two',
 				email
-			});
-		});
+			});});
 
 		const result = await contactsService.duplicateGroups(tenantA);
 		expect(result.truncated).toBe(false);
 		expect(result.scanned_count).toBeGreaterThanOrEqual(2);
 
-		const rows = await withTenantSession(tenantA, async () =>
-			db
+		const rows = await withTenantSession(tenantA, async (tdb) =>
+			tdb
 				.select()
 				.from(contacts)
 				.where(and(isNull(contacts.deletedAt)))
@@ -183,29 +190,30 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 
 	it('patients under cap: truncated false and groups match empty-cover full scan', async () => {
 		const email = `pat-under-${randomUUID()}@example.com`;
-		await withTenantSession(tenantA, async () => {
-			await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Pat Under One',
+		await withTenantSession(tenantA, async (tdb) => {
+			await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: contactTypeA,
+					first_name: 'Pat Under One',
 				email
 			});
-			await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Pat Under Two',
+			await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: contactTypeA,
+					first_name: 'Pat Under Two',
 				email
-			});
-		});
+			});});
 
-		const result = await patientsService.duplicateGroups(tenantA);
+		const result = await contactsService.duplicateGroups(tenantA);
 		expect(result.truncated).toBe(false);
 		expect(result.scanned_count).toBeGreaterThanOrEqual(2);
 
-		const rows = await withTenantSession(tenantA, async () =>
-			db
+		const rows = await withTenantSession(tenantA, async (tdb) =>
+			tdb
 				.select()
-				.from(patients)
-				.where(isNull(patients.deletedAt))
-				.orderBy(asc(patients.createdAt), asc(patients.id))
+				.from(contacts)
+				.where(isNull(contacts.deletedAt))
+				.orderBy(asc(contacts.createdAt), asc(contacts.id))
 		);
-		expect(result.items).toEqual(findPatientDuplicateGroups(rows.map(toPatient)));
+		expect(result.items).toEqual(findContactDuplicateGroups(rows.map(toContact)));
 		expect(result.items.some((g) => g.match_type === 'email' && g.label === email)).toBe(true);
 	});
 
@@ -216,9 +224,12 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			for (let i = 0; i < 5; i++) {
 				await tx`
-					insert into patients (tenant_id, full_name, email)
+					insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name, email)
 					values (
 						${tenantA},
+						${hastaTypeA},
+						'Hasta',
+						${`${prefix} ${i}`},
 						${`${prefix} ${i}`},
 						${`${prefix}-${i}@example.com`}
 					)
@@ -227,14 +238,14 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 		});
 
 		const cap = 3;
-		const result = await patientsService.duplicateGroups(tenantA, cap);
+		const result = await contactsService.duplicateGroups(tenantA, cap);
 		expect(result.truncated).toBe(true);
 		expect(result.scanned_count).toBe(cap);
 	});
 
 	it('patients deterministic order: two calls return same items', async () => {
-		const a = await patientsService.duplicateGroups(tenantA, 4);
-		const b = await patientsService.duplicateGroups(tenantA, 4);
+		const a = await contactsService.duplicateGroups(tenantA, 4);
+		const b = await contactsService.duplicateGroups(tenantA, 4);
 		expect(a.items).toEqual(b.items);
 		expect(a.scanned_count).toBe(b.scanned_count);
 		expect(a.truncated).toBe(b.truncated);
@@ -242,30 +253,28 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 
 	it('tenant isolation: Tenant A scan does not include Tenant B contact ids', async () => {
 		const email = `iso-${randomUUID()}@example.com`;
-		await withTenantSession(tenantA, async () => {
-			await contactsService.createWithDb(db, tenantA, {
+		await withTenantSession(tenantA, async (tdb) => {
+			await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Iso A1',
+				first_name: 'Iso A1',
 				email
 			});
-			await contactsService.createWithDb(db, tenantA, {
+			await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Iso A2',
+				first_name: 'Iso A2',
 				email
-			});
-		});
-		await withTenantSession(tenantB, async () => {
-			await contactsService.createWithDb(db, tenantB, {
+			});});
+		await withTenantSession(tenantB, async (tdb) => {
+			await contactsService.createWithDb(tdb, tenantB, {
 				contact_type_id: contactTypeB,
-				display_name: 'Iso B1',
+				first_name: 'Iso B1',
 				email
 			});
-			await contactsService.createWithDb(db, tenantB, {
+			await contactsService.createWithDb(tdb, tenantB, {
 				contact_type_id: contactTypeB,
-				display_name: 'Iso B2',
+				first_name: 'Iso B2',
 				email
-			});
-		});
+			});});
 
 		const groupsA = await contactsService.duplicateGroups(tenantA);
 		const groupsB = await contactsService.duplicateGroups(tenantB);

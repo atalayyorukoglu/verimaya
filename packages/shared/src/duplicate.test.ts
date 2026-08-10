@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	DUPLICATE_SCAN_ROW_CAP,
-	contactDuplicateGroupsResponseSchema,
-	patientDuplicateGroupsResponseSchema
+	contactDuplicateGroupsResponseSchema
 } from './duplicate.js';
 
 describe('duplicate scan response schemas', () => {
@@ -20,8 +19,8 @@ describe('duplicate scan response schemas', () => {
 		expect(parsed.scanned_count).toBe(12);
 	});
 
-	it('accepts truncated true with scanned_count at cap (patients)', () => {
-		const parsed = patientDuplicateGroupsResponseSchema.parse({
+	it('accepts truncated true with scanned_count at cap', () => {
+		const parsed = contactDuplicateGroupsResponseSchema.parse({
 			items: [],
 			truncated: true,
 			scanned_count: DUPLICATE_SCAN_ROW_CAP

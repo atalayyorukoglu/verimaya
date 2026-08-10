@@ -1,10 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { and, eq, ilike, isNull } from 'drizzle-orm';
 import { writeAuditLog } from '../../common/audit-helper';
-import { externalIds, jobs, patients } from '../../db/schema';
-import {
-	GHL_INBOUND_SYNC_LOG_JOB_TYPE
-} from '../../queue/queue.constants';
+import { contactTypes, contacts, externalIds, jobs } from '../../db/schema';
+import { GHL_INBOUND_SYNC_LOG_JOB_TYPE } from '../../queue/queue.constants';
 import { TenantContextService } from '../../tenant/tenant-context.service';
 import { pickOwnedFields } from './ghl.field-ownership';
 import {
@@ -26,11 +24,12 @@ const SYSTEM_ACTOR = {
 } as const;
 
 const GHL_SOURCE = 'ghl';
-const PATIENT_ENTITY = 'patient';
+/** DOMAIN-02: external_ids.entity_type for people is `contact` (§0 / C6). */
+const CONTACT_ENTITY = 'contact';
 
 export type ApplyRemoteContactResult = {
 	action: 'created' | 'updated' | 'unchanged' | 'skipped';
-	patientId: string | null;
+	contactId: string | null;
 	changedFields: string[];
 };
 
@@ -50,12 +49,20 @@ function normEmail(value: string | null | undefined): string | null {
 	return t ? t.toLowerCase() : null;
 }
 
+/** Split GHL full name → first / last (rest). Single token → lastName null. */
+function splitPersonName(fullName: string): { firstName: string; lastName: string | null } {
+	const parts = fullName.trim().split(/\s+/).filter(Boolean);
+	if (parts.length === 0) return { firstName: fullName, lastName: null };
+	if (parts.length === 1) return { firstName: parts[0]!, lastName: null };
+	return { firstName: parts[0]!, lastName: parts.slice(1).join(' ') };
+}
+
 type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
 
 /**
- * GHL sync: inbound webhook → jobs ledger + patient upsert via `external_ids`
- * (source=ghl). Legacy `ghl_contact_id=` notes markers are still readable until
- * `migrate-ghl-markers` runs; new writes do not add markers (Adım 42).
+ * GHL sync: inbound webhook → jobs ledger + contact upsert via `external_ids`
+ * (source=ghl, entity_type=contact). Legacy notes markers readable until
+ * `migrate-ghl-markers` runs.
  */
 @Injectable()
 export class GhlSyncService {
@@ -63,7 +70,7 @@ export class GhlSyncService {
 
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	parseInboundEvent(event: GhlInboundEvent): Omit<GhlProcessResult, 'action' | 'patientId'> {
+	parseInboundEvent(event: GhlInboundEvent): Omit<GhlProcessResult, 'action' | 'contactId'> {
 		const kind = detectGhlEventKind(event.payload);
 		const contact = extractGhlContactFields(event.payload);
 		const externalId = extractGhlExternalId(event.payload, kind) ?? contact.externalId;
@@ -77,7 +84,7 @@ export class GhlSyncService {
 
 	/**
 	 * Ownership-aware upsert from a normalized remote contact (inbound + reconcile).
-	 * Does not write the inbound sync ledger row — callers that need it do so themselves.
+	 * Writes `contacts` (Hasta type). Does not write the inbound sync ledger row.
 	 */
 	async applyRemoteContact(
 		tenantId: string,
@@ -86,7 +93,7 @@ export class GhlSyncService {
 		const externalId = remote.id.trim();
 		const fullName = normStr(remote.fullName);
 		if (!fullName || !isSafeExternalId(externalId)) {
-			return { action: 'skipped', patientId: null, changedFields: [] };
+			return { action: 'skipped', contactId: null, changedFields: [] };
 		}
 
 		const ownedPatch = pickOwnedFields(
@@ -101,28 +108,31 @@ export class GhlSyncService {
 		);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const existingId = await this.resolvePatientId(db, externalId);
+			const existingId = await this.resolveContactId(db, externalId);
 
 			if (existingId) {
 				const [row] = await db
 					.select({
-						id: patients.id,
-						fullName: patients.fullName,
-						phone: patients.phone,
-						email: patients.email,
-						status: patients.status
+						id: contacts.id,
+						firstName: contacts.firstName,
+						lastName: contacts.lastName,
+						displayName: contacts.displayName,
+						phone: contacts.phone,
+						email: contacts.email,
+						status: contacts.status
 					})
-					.from(patients)
-					.where(and(eq(patients.id, existingId), isNull(patients.deletedAt)))
+					.from(contacts)
+					.where(and(eq(contacts.id, existingId), isNull(contacts.deletedAt)))
 					.limit(1);
 
 				if (!row) {
-					return { action: 'skipped', patientId: null, changedFields: [] };
+					return { action: 'skipped', contactId: null, changedFields: [] };
 				}
 
 				const changedFields: string[] = [];
 				const nextFullName = String(ownedPatch.fullName);
-				if (row.fullName !== nextFullName) changedFields.push('fullName');
+				const { firstName: nextFirst, lastName: nextLast } = splitPersonName(nextFullName);
+				if (row.displayName !== nextFullName) changedFields.push('fullName');
 
 				const nextPhone =
 					ownedPatch.phone != null ? String(ownedPatch.phone) : row.phone;
@@ -138,13 +148,15 @@ export class GhlSyncService {
 
 				if (changedFields.length === 0) {
 					await this.ensureExternalId(db, tenantId, externalId, existingId);
-					return { action: 'unchanged', patientId: existingId, changedFields: [] };
+					return { action: 'unchanged', contactId: existingId, changedFields: [] };
 				}
 
 				const [updated] = await db
-					.update(patients)
+					.update(contacts)
 					.set({
-						fullName: nextFullName,
+						firstName: nextFirst,
+						lastName: nextLast,
+						displayName: nextFullName,
 						phone: nextPhone,
 						email: nextEmail,
 						...(ownedPatch.status != null
@@ -152,20 +164,28 @@ export class GhlSyncService {
 							: {}),
 						updatedAt: new Date()
 					})
-					.where(eq(patients.id, existingId))
+					.where(eq(contacts.id, existingId))
 					.returning();
 
-				const patientId = updated?.id ?? existingId;
-				await this.ensureExternalId(db, tenantId, externalId, patientId);
-				await writeAuditLog(db, tenantId, SYSTEM_ACTOR, 'update', 'patient', nextFullName);
-				return { action: 'updated', patientId, changedFields };
+				const contactId = updated?.id ?? existingId;
+				await this.ensureExternalId(db, tenantId, externalId, contactId);
+				await writeAuditLog(db, tenantId, SYSTEM_ACTOR, 'update', 'contact', nextFullName);
+				return { action: 'updated', contactId: contactId, changedFields };
 			}
 
+			const hastaType = await this.requireHastaType(db, tenantId);
+			const { firstName, lastName } = splitPersonName(String(ownedPatch.fullName));
+			const displayName = String(ownedPatch.fullName);
+
 			const [created] = await db
-				.insert(patients)
+				.insert(contacts)
 				.values({
 					tenantId,
-					fullName: String(ownedPatch.fullName),
+					contactTypeId: hastaType.id,
+					contactTypeName: hastaType.name,
+					firstName,
+					lastName,
+					displayName,
 					phone: ownedPatch.phone != null ? String(ownedPatch.phone) : null,
 					email: ownedPatch.email != null ? String(ownedPatch.email) : null,
 					status: String(ownedPatch.status ?? 'scheduled'),
@@ -175,7 +195,7 @@ export class GhlSyncService {
 				.returning();
 
 			if (!created) {
-				return { action: 'skipped', patientId: null, changedFields: [] };
+				return { action: 'skipped', contactId: null, changedFields: [] };
 			}
 
 			await this.ensureExternalId(db, tenantId, externalId, created.id);
@@ -184,12 +204,12 @@ export class GhlSyncService {
 				tenantId,
 				SYSTEM_ACTOR,
 				'create',
-				'patient',
-				created.fullName
+				'contact',
+				created.displayName
 			);
 			return {
 				action: 'created',
-				patientId: created.id,
+				contactId: created.id,
 				changedFields: ['fullName', 'phone', 'email', 'status']
 			};
 		});
@@ -199,7 +219,7 @@ export class GhlSyncService {
 		const parsed = this.parseInboundEvent(event);
 
 		let action: GhlSyncAction = 'logged';
-		let patientId: string | null = null;
+		let contactId: string | null = null;
 
 		if (parsed.kind === 'unknown') {
 			action = 'skipped_unknown';
@@ -221,15 +241,15 @@ export class GhlSyncService {
 					email: contact.email,
 					dateUpdated: null
 				});
-				patientId = applied.patientId;
-				if (applied.action === 'created') action = 'patient_created';
-				else if (applied.action === 'updated') action = 'patient_updated';
+				contactId = applied.contactId;
+				if (applied.action === 'created') action = 'contact_created';
+				else if (applied.action === 'updated') action = 'contact_updated';
 				else if (applied.action === 'unchanged') action = 'logged';
 				else action = 'skipped_incomplete';
 			}
 		}
 
-		const summary = `${parsed.summary}; action=${action}${patientId ? ` patient=${patientId}` : ''}`;
+		const summary = `${parsed.summary}; action=${action}${contactId ? ` contact=${contactId}` : ''}`;
 
 		await this.tenantContext.withTenant(event.tenantId, async ({ db }) => {
 			await db.insert(jobs).values({
@@ -241,7 +261,7 @@ export class GhlSyncService {
 					kind: parsed.kind,
 					externalId: parsed.externalId,
 					action,
-					patientId,
+					contactId,
 					contact: parsed.contact
 				},
 				status: 'completed',
@@ -259,20 +279,20 @@ export class GhlSyncService {
 			externalId: parsed.externalId,
 			summary,
 			action,
-			patientId,
+			contactId,
 			contact: parsed.contact
 		};
 	}
 
 	/** Prefer external_ids; fall back to legacy notes marker (read-only). */
-	private async resolvePatientId(db: TenantDb, externalId: string): Promise<string | null> {
+	private async resolveContactId(db: TenantDb, externalId: string): Promise<string | null> {
 		const [mapped] = await db
 			.select({ internalId: externalIds.internalId })
 			.from(externalIds)
 			.where(
 				and(
 					eq(externalIds.source, GHL_SOURCE),
-					eq(externalIds.entityType, PATIENT_ENTITY),
+					eq(externalIds.entityType, CONTACT_ENTITY),
 					eq(externalIds.externalId, externalId)
 				)
 			)
@@ -281,13 +301,13 @@ export class GhlSyncService {
 
 		const marker = ghlContactNotesMarker(externalId);
 		const [legacy] = await db
-			.select({ id: patients.id })
-			.from(patients)
+			.select({ id: contacts.id })
+			.from(contacts)
 			.where(
 				and(
-					eq(patients.source, GHL_SOURCE),
-					ilike(patients.notes, `%${marker}%`),
-					isNull(patients.deletedAt)
+					eq(contacts.source, GHL_SOURCE),
+					ilike(contacts.notes, `%${marker}%`),
+					isNull(contacts.deletedAt)
 				)
 			)
 			.limit(1);
@@ -306,7 +326,7 @@ export class GhlSyncService {
 			.where(
 				and(
 					eq(externalIds.source, GHL_SOURCE),
-					eq(externalIds.entityType, PATIENT_ENTITY),
+					eq(externalIds.entityType, CONTACT_ENTITY),
 					eq(externalIds.externalId, externalId)
 				)
 			)
@@ -316,9 +336,27 @@ export class GhlSyncService {
 		await db.insert(externalIds).values({
 			tenantId,
 			source: GHL_SOURCE,
-			entityType: PATIENT_ENTITY,
+			entityType: CONTACT_ENTITY,
 			externalId,
 			internalId
 		});
+	}
+
+	private async requireHastaType(db: TenantDb, tenantId: string) {
+		const [existing] = await db
+			.select({ id: contactTypes.id, name: contactTypes.name })
+			.from(contactTypes)
+			.where(eq(contactTypes.name, 'Hasta'))
+			.limit(1);
+		if (existing) return existing;
+
+		const [created] = await db
+			.insert(contactTypes)
+			.values({ tenantId, name: 'Hasta', sortOrder: 0 })
+			.returning({ id: contactTypes.id, name: contactTypes.name });
+		if (!created) {
+			throw new Error('Failed to create contact type "Hasta"');
+		}
+		return created;
 	}
 }

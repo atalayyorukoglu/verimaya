@@ -72,7 +72,7 @@ describe('IDEM-01: every mutating endpoint declares an idempotency policy', () =
 	});
 
 	it('the reflection walk actually finds handlers (guards the other assertions against passing vacuously)', () => {
-		expect(handlers.length).toBe(67);
+		expect(handlers.length).toBe(65);
 	});
 
 	it('every mutating handler has a policy — enforced, or exempt with a non-empty reason', () => {
@@ -95,16 +95,12 @@ describe('IDEM-01: every mutating endpoint declares an idempotency policy', () =
 
 		expect(enforced).toEqual(
 			[
-				'PatientsController.merge',
-				'PatientsController.presignFile',
-				'PatientsController.confirmFile',
-				'PatientsController.createFile',
-				'PatientsController.createCaseNote',
-				'PatientsController.deleteCaseNote',
-				'PatientsController.create',
-				'PatientsController.update',
-				'PatientsController.remove',
 				'ContactsController.merge',
+				'ContactsController.presignFile',
+				'ContactsController.confirmFile',
+				'ContactsController.createFile',
+				'ContactsController.createCaseNote',
+				'ContactsController.deleteCaseNote',
 				'ContactsController.create',
 				'ContactsController.update',
 				'ContactsController.remove',
@@ -120,10 +116,10 @@ describe('IDEM-01: every mutating endpoint declares an idempotency policy', () =
 				'ApiKeysController.revoke',
 				'WhatsappController.approveDrafts',
 				'WhatsappController.createContact',
-				'WhatsappController.createPatient',
 				'WhatsappController.createCategory',
 				'SettingsController.createFinanceCategory',
 				'SettingsController.createContactType',
+				'SettingsController.createOrganization',
 				'SettingsController.createAppointmentType'
 			].sort()
 		);

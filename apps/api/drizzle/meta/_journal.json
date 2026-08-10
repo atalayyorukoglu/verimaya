@@ -246,6 +246,34 @@
       "when": 1754200000000,
       "tag": "0034_dictionary_unique_and_seed_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1754300000000,
+      "tag": "0035_contacts_person_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1754400000000,
+      "tag": "0036_drop_patients",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1754500000000,
+      "tag": "0037_organizations_partial_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1754600000000,
+      "tag": "0038_contacts_naming_cleanup",
+      "breakpoints": true
     }
   ]
 }

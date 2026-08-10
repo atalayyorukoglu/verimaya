@@ -4,7 +4,6 @@
 		Contact,
 		FinanceCategory,
 		InvoiceStatus,
-		Patient,
 		SupportedCurrency,
 		Tenant,
 		Transaction,
@@ -32,8 +31,7 @@
 	let {
 		open = $bindable(false),
 		transaction = null,
-		patients = [],
-		defaultPatientId = null,
+		defaultContactId = null,
 		saving = false,
 		error = null,
 		onsubmit,
@@ -41,8 +39,7 @@
 	}: {
 		open?: boolean;
 		transaction?: Transaction | null;
-		patients?: Patient[];
-		defaultPatientId?: string | null;
+		defaultContactId?: string | null;
 		saving?: boolean;
 		error?: string | null;
 		onsubmit: (data: TransactionCreate | TransactionUpdate) => void | Promise<void>;
@@ -88,7 +85,6 @@
 	let amountBaseMajor = $state('');
 	let fxRate = $state('');
 	let paidMajor = $state('');
-	let patient_id = $state('');
 	let contact_id = $state('');
 	let contact_label = $state('');
 	let payment_method = $state('');
@@ -122,8 +118,7 @@
 		amountBaseMajor = transaction?.amount_base != null ? String(transaction.amount_base / 100) : '';
 		fxRate = transaction?.fx_rate != null ? String(transaction.fx_rate) : '';
 		paidMajor = transaction?.paid_amount != null ? String(transaction.paid_amount / 100) : '';
-		patient_id = transaction?.patient_id ?? defaultPatientId ?? '';
-		contact_id = transaction?.contact_id ?? '';
+		contact_id = transaction?.contact_id ?? defaultContactId ?? '';
 		contact_label = transaction?.contact_label ?? '';
 		payment_method = transaction?.payment_method ?? '';
 		description = transaction?.description ?? '';
@@ -192,7 +187,6 @@
 			base_currency: tenantBase,
 			fx_rate,
 			fx_dated: needsFx ? occurred_on : occurred_on,
-			patient_id: patient_id || null,
 			contact_id: contact_id || null,
 			contact_label: (() => {
 				if (contact_id) {
@@ -399,15 +393,6 @@
 			<div>
 				<label class={labelClass} for="tx-method">{t('finance.form.paymentMethod')}</label>
 				<input id="tx-method" class={fieldClass} bind:value={payment_method} maxlength={64} />
-			</div>
-			<div>
-				<label class={labelClass} for="tx-patient">Hasta (opsiyonel)</label>
-				<select id="tx-patient" class={fieldClass} bind:value={patient_id}>
-					<option value="">—</option>
-					{#each patients as p (p.id)}
-						<option value={p.id}>{p.full_name}</option>
-					{/each}
-				</select>
 			</div>
 			<div>
 				<label class={labelClass} for="tx-desc">{t('finance.form.descriptionLabel')}</label>

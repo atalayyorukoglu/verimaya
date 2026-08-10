@@ -29,7 +29,7 @@ class UnprotectedTarget {
 
 Reflect.defineMetadata(
 	ORG_PERMISSION_METADATA_KEY,
-	{ resource: 'patient', action: 'update' },
+	{ resource: 'contact', action: 'update' },
 	PermissionTarget.prototype.updatePatient
 );
 Reflect.defineMetadata(

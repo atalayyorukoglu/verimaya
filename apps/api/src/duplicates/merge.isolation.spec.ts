@@ -1,19 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull , sql as drizzleSql} from 'drizzle-orm';
 import postgres from 'postgres';
-import { findContactDuplicateGroups, findPatientDuplicateGroups } from '@verimaya/shared';
+import { findContactDuplicateGroups } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { appointments } from '../db/schema/appointments';
 import { transactions } from '../db/schema/transactions';
 import { contacts } from '../db/schema/contacts';
-import { patients } from '../db/schema/patients';
-import { toContact, toPatient } from '../common/mappers';
+import { toContact } from '../common/mappers';
 import { ContactsService } from '../contacts/contacts.service';
-import { PatientsService } from '../patients/patients.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
-import { TenantContextService } from '../tenant/tenant-context.service';
+import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -26,14 +24,17 @@ const adminDatabaseUrl =
 const actor = { actorId: null, actorDisplayName: 'Test Actor' };
 
 /** Session-scoped tenant for service calls in tests (RLS reads app.current_tenant_id). */
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tdb: TenantDb) => Promise<T>
+): Promise<T> {
+	const { db } = getDb(databaseUrl);
+	return db.transaction(async (tx) => {
+		await tx.execute(
+			drizzleSql`select set_config('app.current_tenant_id', ${tenantId}, true)`
+		);
+		return fn(tx as TenantDb);
+	});
 }
 
 describe('duplicate merge isolation (patients empty-file + contacts FK)', () => {
@@ -41,9 +42,11 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 	const tenantB = randomUUID();
 	let contactTypeA: string;
 	let contactTypeB: string;
+	let hastaTypeA: string;
+	let hastaTypeB: string;
 
-	let patientsService: PatientsService;
 	let contactsService: ContactsService;
+	let db: TenantDb;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
@@ -54,15 +57,22 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		`;
 		await admin`
 			alter table audit_logs add constraint audit_logs_entity_type_chk check ("entity_type" in (
-				'patient', 'contact', 'appointment', 'transaction', 'inbound_message', 'file', 'tenant', 'user'
+				'contact', 'appointment', 'transaction', 'inbound_message', 'file', 'tenant', 'user'
 			))
 		`;
 		await admin.end();
 
-		patientsService = new PatientsService({} as TenantContextService, new LocalFileStorage());
-		contactsService = new ContactsService({} as TenantContextService);
+		const dbHandle = getDb(databaseUrl);
+		db = dbHandle.db;
 
-		const { sql } = getDb(databaseUrl);
+		const tenantContext = {
+			withTenant: async <T>(id: string, fn: (ctx: { db: TenantDb }) => Promise<T>) =>
+				withTenantSession(id, (tdb) => fn({ db: tdb }))
+		} as TenantContextService;
+
+		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
+
+		const { sql } = dbHandle;
 		await sql`
 			insert into organization (id, name, slug, created_at)
 			values
@@ -76,6 +86,24 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 				(${tenantB}, 'Tenant B', ${`tenant-b-${tenantB.slice(0, 8)}`})
 		`;
 
+		hastaTypeA = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name)
+				values (${tenantA}, 'Hasta')
+				returning id
+			`;
+			return row!.id as string;
+		});
+		hastaTypeB = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name)
+				values (${tenantB}, 'Hasta')
+				returning id
+			`;
+			return row!.id as string;
+		});
 		contactTypeA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
@@ -107,7 +135,7 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 				await tx`delete from case_notes where tenant_id = ${tenantId}`;
 				await tx`delete from transactions where tenant_id = ${tenantId}`;
 				await tx`delete from appointments where tenant_id = ${tenantId}`;
-				await tx`delete from patients where tenant_id = ${tenantId}`;
+				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contacts where tenant_id = ${tenantId}`;
 				await tx`delete from contact_types where tenant_id = ${tenantId}`;
 			});
@@ -121,36 +149,37 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		const email = `dup-${randomUUID()}@example.com`;
 		const { db } = getDb(databaseUrl);
 
-		await withTenantSession(tenantA, async () => {
-			await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Ali Yilmaz',
+		await withTenantSession(tenantA, async (tdb) => {
+			await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Ali Yilmaz',
 				email
 			});
-			await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Ali Y.',
+			await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Ali Y.',
 				email
-			});
-		});
+			});});
 
-		await withTenantSession(tenantB, async () => {
-			await patientsService.createWithDb(db, tenantB, {
-				full_name: 'Tenant B Ali',
+		await withTenantSession(tenantB, async (tdb) => {
+			await contactsService.createWithDb(tdb, tenantB, {
+					contact_type_id: hastaTypeB,
+					first_name: 'Tenant B Ali',
 				email
-			});
-		});
+			});});
 
-		const rowsA = await withTenantSession(tenantA, async () =>
-			db.select().from(patients).where(isNull(patients.deletedAt))
+		const rowsA = await withTenantSession(tenantA, async (tdb) =>
+			tdb.select().from(contacts).where(isNull(contacts.deletedAt))
 		);
-		const rowsB = await withTenantSession(tenantB, async () =>
-			db.select().from(patients).where(isNull(patients.deletedAt))
+		const rowsB = await withTenantSession(tenantB, async (tdb) =>
+			tdb.select().from(contacts).where(isNull(contacts.deletedAt))
 		);
 
-		const groupsA = findPatientDuplicateGroups(rowsA.map(toPatient));
-		const groupsB = findPatientDuplicateGroups(rowsB.map(toPatient));
+		const groupsA = findContactDuplicateGroups(rowsA.map(toContact));
+		const groupsB = findContactDuplicateGroups(rowsB.map(toContact));
 
 		expect(groupsA.some((g) => g.match_type === 'email' && g.label === email)).toBe(true);
-		expect(groupsA.every((g) => g.patients.every((p) => p.tenant_id === tenantA))).toBe(true);
+		expect(groupsA.every((g) => g.contacts.every((p) => p.tenant_id === tenantA))).toBe(true);
 		expect(groupsB.some((g) => g.match_type === 'email')).toBe(false);
 	});
 
@@ -160,26 +189,26 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		let keepA = '';
 		let keepB = '';
 
-		await withTenantSession(tenantA, async () => {
-			const a = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Keep A',
+		await withTenantSession(tenantA, async (tdb) => {
+			const a = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Keep A',
 				email
 			});
-			keepA = a.id;
-		});
+			keepA = a.id;});
 
-		await withTenantSession(tenantB, async () => {
-			const b = await patientsService.createWithDb(db, tenantB, {
-				full_name: 'Keep B',
+		await withTenantSession(tenantB, async (tdb) => {
+			const b = await contactsService.createWithDb(tdb, tenantB, {
+					contact_type_id: hastaTypeB,
+					first_name: 'Keep B',
 				email
 			});
-			keepB = b.id;
-		});
+			keepB = b.id;});
 
 		await expect(
-			withTenantSession(tenantA, async () =>
-				patientsService.mergeWithDb(
-					db,
+			withTenantSession(tenantA, async (tdb) =>
+				contactsService.mergeWithDb(
+					tdb,
 					tenantA,
 					{ keep_id: keepA, merge_ids: [keepB] },
 					actor
@@ -187,105 +216,105 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 			)
 		).rejects.toBeInstanceOf(NotFoundException);
 
-		const stillThere = await withTenantSession(tenantB, async () =>
-			db
-				.select({ id: patients.id })
-				.from(patients)
-				.where(and(eq(patients.id, keepB), isNull(patients.deletedAt)))
+		const stillThere = await withTenantSession(tenantB, async (tdb) =>
+			tdb
+				.select({ id: contacts.id })
+				.from(contacts)
+				.where(and(eq(contacts.id, keepB), isNull(contacts.deletedAt)))
 		);
 		expect(stillThere).toHaveLength(1);
 	});
 
-	it('patient merge with appointment returns 409 patient_has_records', async () => {
+	it('patient merge with appointment reassigns appointment to keep', async () => {
 		const email = `merge-appt-${randomUUID()}@example.com`;
-		const { db } = getDb(databaseUrl);
 		let keepId = '';
 		let loserId = '';
 
-		await withTenantSession(tenantA, async () => {
-			const keep = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Empty Keep',
+		await withTenantSession(tenantA, async (tdb) => {
+			const keep = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Empty Keep',
 				email
 			});
-			const loser = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Busy Loser',
+			const loser = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Busy Loser',
 				email
 			});
 			keepId = keep.id;
 			loserId = loser.id;
 
-			await db.insert(appointments).values({
+			await tdb.insert(appointments).values({
 				tenantId: tenantA,
-				patientId: loserId,
-				patientDisplayName: loser.full_name,
+				contactId: loserId,
+				contactDisplayName: loser.display_name,
 				startsAt: new Date('2026-08-01T10:00:00Z')
-			});
-		});
+			});});
 
-		await expect(
-			withTenantSession(tenantA, async () =>
-				patientsService.mergeWithDb(
-					db,
-					tenantA,
-					{ keep_id: keepId, merge_ids: [loserId] },
-					actor
-				)
-			)
-		).rejects.toMatchObject({
-			response: { error: { code: 'patient_has_records' } }
-		});
+		await withTenantSession(tenantA, async (tdb) => {
+			await contactsService.mergeWithDb(
+				tdb,
+				tenantA,
+				{ keep_id: keepId, merge_ids: [loserId] },
+				actor
+			);});
 
-		const active = await withTenantSession(tenantA, async () =>
-			db
-				.select({ id: patients.id })
-				.from(patients)
-				.where(and(eq(patients.id, loserId), isNull(patients.deletedAt)))
+		const appt = await withTenantSession(tenantA, async (tdb) =>
+			tdb.select({ contactId: appointments.contactId }).from(appointments).limit(1)
 		);
-		expect(active).toHaveLength(1);
+		expect(appt[0]?.contactId).toBe(keepId);
+
+		const active = await withTenantSession(tenantA, async (tdb) =>
+			tdb
+				.select({ id: contacts.id })
+				.from(contacts)
+				.where(and(eq(contacts.id, loserId), isNull(contacts.deletedAt)))
+		);
+		expect(active).toHaveLength(0);
 	});
 
-	it('patient merge with transaction returns 409 patient_has_records', async () => {
+	it('patient merge with transaction reassigns transaction to keep', async () => {
 		const email = `merge-txn-${randomUUID()}@example.com`;
-		const { db } = getDb(databaseUrl);
 		let keepId = '';
 		let loserId = '';
 
-		await withTenantSession(tenantA, async () => {
-			const keep = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Empty Keep Txn',
+		await withTenantSession(tenantA, async (tdb) => {
+			const keep = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Empty Keep Txn',
 				email
 			});
-			const loser = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Busy Loser Txn',
+			const loser = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Busy Loser Txn',
 				email
 			});
 			keepId = keep.id;
 			loserId = loser.id;
 
-			await db.insert(transactions).values({
+			await tdb.insert(transactions).values({
 				tenantId: tenantA,
 				kind: 'income',
 				title: 'Patient payment',
 				occurredOn: '2026-07-01',
 				status: 'paid',
 				amount: 5000,
-				patientId: loserId,
-				patientDisplayName: loser.full_name
-			});
-		});
+				contactId: loserId,
+				contactDisplayName: loser.display_name
+			});});
 
-		await expect(
-			withTenantSession(tenantA, async () =>
-				patientsService.mergeWithDb(
-					db,
-					tenantA,
-					{ keep_id: keepId, merge_ids: [loserId] },
-					actor
-				)
-			)
-		).rejects.toMatchObject({
-			response: { error: { code: 'patient_has_records' } }
-		});
+		await withTenantSession(tenantA, async (tdb) => {
+			await contactsService.mergeWithDb(
+				tdb,
+				tenantA,
+				{ keep_id: keepId, merge_ids: [loserId] },
+				actor
+			);});
+
+		const txn = await withTenantSession(tenantA, async (tdb) =>
+			tdb.select({ contactId: transactions.contactId }).from(transactions).limit(1)
+		);
+		expect(txn[0]?.contactId).toBe(keepId);
 	});
 
 	it('empty patient merge fills phone+email and soft-deletes source', async () => {
@@ -293,22 +322,23 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		let keepId = '';
 		let sourceId = '';
 
-		await withTenantSession(tenantA, async () => {
-			const keep = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Empty Cover',
+		await withTenantSession(tenantA, async (tdb) => {
+			const keep = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Empty Cover',
 				phone: '+905551112233'
 			});
-			const source = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'Empty Cover',
+			const source = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: hastaTypeA,
+					first_name: 'Empty Cover',
 				email: `empty-merge-${randomUUID()}@example.com`
 			});
 			keepId = keep.id;
-			sourceId = source.id;
-		});
+			sourceId = source.id;});
 
-		const merged = await withTenantSession(tenantA, async () =>
-			patientsService.mergeWithDb(
-				db,
+		const merged = await withTenantSession(tenantA, async (tdb) =>
+			contactsService.mergeWithDb(
+				tdb,
 				tenantA,
 				{ keep_id: keepId, merge_ids: [sourceId] },
 				actor
@@ -319,55 +349,55 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		expect(merged.phone).toBe('+905551112233');
 		expect(merged.email).toContain('@example.com');
 
-		const deleted = await withTenantSession(tenantA, async () =>
-			db.select({ deletedAt: patients.deletedAt }).from(patients).where(eq(patients.id, sourceId))
+		const deleted = await withTenantSession(tenantA, async (tdb) =>
+			tdb.select({ deletedAt: contacts.deletedAt }).from(contacts).where(eq(contacts.id, sourceId))
 		);
 		expect(deleted[0]?.deletedAt).not.toBeNull();
 	});
 
-	it('patient merge with different contact_ids returns 409 patient_contact_mismatch', async () => {
+	it('patient merge keeps keep referred_by when sources differ', async () => {
 		const email = `merge-contact-mismatch-${randomUUID()}@example.com`;
-		const { db } = getDb(databaseUrl);
 		let keepId = '';
 		let sourceId = '';
+		let c1Id = '';
 
-		await withTenantSession(tenantA, async () => {
-			const c1 = await contactsService.createWithDb(db, tenantA, {
+		await withTenantSession(tenantA, async (tdb) => {
+			const c1 = await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Person One',
+				first_name: 'Person One',
 				email: `c1-${randomUUID()}@example.com`
 			});
-			const c2 = await contactsService.createWithDb(db, tenantA, {
+			c1Id = c1.id;
+			const c2 = await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Person Two',
+				first_name: 'Person Two',
 				email: `c2-${randomUUID()}@example.com`
 			});
-			const keep = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'File One',
+			const keep = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: hastaTypeA,
+				first_name: 'File One',
 				email,
-				contact_id: c1.id
+				referred_by_contact_id: c1.id
 			});
-			const source = await patientsService.createWithDb(db, tenantA, {
-				full_name: 'File Two',
+			const source = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: hastaTypeA,
+				first_name: 'File Two',
 				email,
-				contact_id: c2.id
+				referred_by_contact_id: c2.id
 			});
 			keepId = keep.id;
-			sourceId = source.id;
-		});
+			sourceId = source.id;});
 
-		await expect(
-			withTenantSession(tenantA, async () =>
-				patientsService.mergeWithDb(
-					db,
-					tenantA,
-					{ keep_id: keepId, merge_ids: [sourceId] },
-					actor
-				)
+		const merged = await withTenantSession(tenantA, async (tdb) =>
+			contactsService.mergeWithDb(
+				tdb,
+				tenantA,
+				{ keep_id: keepId, merge_ids: [sourceId] },
+				actor
 			)
-		).rejects.toMatchObject({
-			response: { error: { code: 'patient_contact_mismatch' } }
-		});
+		);
+
+		expect(merged.referred_by_contact_id).toBe(c1Id);
 	});
 
 	it('contact merge reassigns transactions and soft-deletes losers', async () => {
@@ -377,21 +407,21 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		let loserId = '';
 		let transactionId = '';
 
-		await withTenantSession(tenantA, async () => {
-			const keep = await contactsService.createWithDb(db, tenantA, {
+		await withTenantSession(tenantA, async (tdb) => {
+			const keep = await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Winner Contact',
+				first_name: 'Winner Contact',
 				email
 			});
-			const loser = await contactsService.createWithDb(db, tenantA, {
+			const loser = await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Loser Contact',
+				first_name: 'Loser Contact',
 				email
 			});
 			keepId = keep.id;
 			loserId = loser.id;
 
-			const [txn] = await db
+			const [txn] = await tdb
 				.insert(transactions)
 				.values({
 					tenantId: tenantA,
@@ -404,20 +434,18 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 					contactLabel: loser.display_name
 				})
 				.returning({ id: transactions.id });
-			transactionId = txn!.id;
-		});
+			transactionId = txn!.id;});
 
-		await withTenantSession(tenantA, async () => {
+		await withTenantSession(tenantA, async (tdb) => {
 			await contactsService.mergeWithDb(
-				db,
+				tdb,
 				tenantA,
 				{ keep_id: keepId, merge_ids: [loserId] },
 				actor
-			);
-		});
+			);});
 
-		const txn = await withTenantSession(tenantA, async () =>
-			db
+		const txn = await withTenantSession(tenantA, async (tdb) =>
+			tdb
 				.select({
 					contactId: transactions.contactId,
 					contactLabel: transactions.contactLabel
@@ -428,8 +456,8 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		expect(txn[0]?.contactId).toBe(keepId);
 		expect(txn[0]?.contactLabel).toBe('Winner Contact');
 
-		const deleted = await withTenantSession(tenantA, async () =>
-			db.select({ deletedAt: contacts.deletedAt }).from(contacts).where(eq(contacts.id, loserId))
+		const deleted = await withTenantSession(tenantA, async (tdb) =>
+			tdb.select({ deletedAt: contacts.deletedAt }).from(contacts).where(eq(contacts.id, loserId))
 		);
 		expect(deleted[0]?.deletedAt).not.toBeNull();
 	});
@@ -440,28 +468,26 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		let keepA = '';
 		let keepB = '';
 
-		await withTenantSession(tenantA, async () => {
-			const a = await contactsService.createWithDb(db, tenantA, {
+		await withTenantSession(tenantA, async (tdb) => {
+			const a = await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Contact A',
+				first_name: 'Contact A',
 				email
 			});
-			keepA = a.id;
-		});
+			keepA = a.id;});
 
-		await withTenantSession(tenantB, async () => {
-			const b = await contactsService.createWithDb(db, tenantB, {
+		await withTenantSession(tenantB, async (tdb) => {
+			const b = await contactsService.createWithDb(tdb, tenantB, {
 				contact_type_id: contactTypeB,
-				display_name: 'Contact B',
+				first_name: 'Contact B',
 				email
 			});
-			keepB = b.id;
-		});
+			keepB = b.id;});
 
 		await expect(
-			withTenantSession(tenantA, async () =>
+			withTenantSession(tenantA, async (tdb) =>
 				contactsService.mergeWithDb(
-					db,
+					tdb,
 					tenantA,
 					{ keep_id: keepA, merge_ids: [keepB] },
 					actor
@@ -469,8 +495,8 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 			)
 		).rejects.toBeInstanceOf(NotFoundException);
 
-		const stillThere = await withTenantSession(tenantB, async () =>
-			db.select({ id: contacts.id }).from(contacts).where(eq(contacts.id, keepB))
+		const stillThere = await withTenantSession(tenantB, async (tdb) =>
+			tdb.select({ id: contacts.id }).from(contacts).where(eq(contacts.id, keepB))
 		);
 		expect(stillThere).toHaveLength(1);
 	});
@@ -479,20 +505,19 @@ describe('duplicate merge isolation (patients empty-file + contacts FK)', () => 
 		const email = `contact-dup-${randomUUID()}@example.com`;
 		const { db } = getDb(databaseUrl);
 
-		await withTenantSession(tenantA, async () => {
-			await contactsService.createWithDb(db, tenantA, {
+		await withTenantSession(tenantA, async (tdb) => {
+			await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Dr. A',
+				first_name: 'Dr. A',
 				email
 			});
-			await contactsService.createWithDb(db, tenantA, {
+			await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
-				display_name: 'Dr A',
+				first_name: 'Dr A',
 				email
-			});
-		});
+			});});
 
-		const rowsA = await withTenantSession(tenantA, async () => db.select().from(contacts));
+		const rowsA = await withTenantSession(tenantA, async (tdb) => tdb.select().from(contacts));
 		const groups = findContactDuplicateGroups(rowsA.map(toContact));
 
 		expect(groups.some((g) => g.match_type === 'email' && g.label === email)).toBe(true);

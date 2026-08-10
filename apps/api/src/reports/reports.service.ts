@@ -32,14 +32,14 @@ import {
 	type ReportConsistencyItem,
 	type ReportConsistencySeverity,
 	type ReportMonthly,
-	type ReportPatientDistribution,
+	type ReportContactDistribution,
 	type ReportPeriodParams,
 	type ReportSummary,
 	type ReportTransactionDuplicates,
 	type ReportTransactionDuplicatesParams
 } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
-import { adMetricsDaily, appointments, contacts, patients, tenants, transactions } from '../db/schema';
+import { adMetricsDaily, appointments, contacts, tenants, transactions } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
@@ -74,12 +74,13 @@ function signedMinor(kind: string, amount: number): number {
 
 type PatientCohortRow = {
 	source: string | null;
-	status: string;
+	status: string | null;
 };
 
 type PatientDistributionRow = {
-	status: string;
+	status: string | null;
 	source: string | null;
+	medium: string | null;
 };
 
 function categoryLabel(category: string | null): string {
@@ -181,25 +182,30 @@ export class ReportsService {
 		});
 	}
 
-	async patientDistribution(
+	async contactDistribution(
 		tenantId: string,
 		params: ReportPeriodParams
-	): Promise<ReportPatientDistribution> {
+	): Promise<ReportContactDistribution> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const rows = await this.fetchPatientsForPeriod(db, tenantId, params);
 
 			const statusCounts = new Map<string, number>();
 			const sourceCounts = new Map<string, number>();
+			const mediumCounts = new Map<string, number>();
 
 			for (const row of rows) {
-				statusCounts.set(row.status, (statusCounts.get(row.status) ?? 0) + 1);
+				if (row.status) {
+					statusCounts.set(row.status, (statusCounts.get(row.status) ?? 0) + 1);
+				}
 				const label = sourceLabel(row.source);
 				sourceCounts.set(label, (sourceCounts.get(label) ?? 0) + 1);
+				const medium = sourceLabel(row.medium);
+				mediumCounts.set(medium, (mediumCounts.get(medium) ?? 0) + 1);
 			}
 
 			const by_status = [...statusCounts.entries()]
 				.map(([status, count]) => ({
-					status: status as ReportPatientDistribution['by_status'][number]['status'],
+					status: status as ReportContactDistribution['by_status'][number]['status'],
 					count
 				}))
 				.sort((a, b) => b.count - a.count);
@@ -208,10 +214,15 @@ export class ReportsService {
 				.map(([source, count]) => ({ source, count }))
 				.sort((a, b) => b.count - a.count);
 
+			const by_medium = [...mediumCounts.entries()]
+				.map(([medium, count]) => ({ medium, count }))
+				.sort((a, b) => b.count - a.count);
+
 			return {
 				period: { from: params.from ?? null, to: params.to ?? null },
 				by_status,
 				by_source,
+				by_medium,
 				total: rows.length
 			};
 		});
@@ -340,7 +351,7 @@ export class ReportsService {
 			const periodWhere = and(...period)!;
 
 			const emptyCategory = sql`btrim(coalesce(${transactions.category}, '')) = ''`;
-			const incomeNoPatient = sql`${transactions.kind} = 'income' AND ${transactions.patientId} IS NULL`;
+			const incomeNoPatient = sql`${transactions.kind} = 'income' AND ${transactions.contactId} IS NULL`;
 			const expenseNoContact = sql`${transactions.kind} = 'expense' AND ${transactions.contactId} IS NULL AND btrim(coalesce(${transactions.contactLabel}, '')) = ''`;
 			// FX: foreign currency without base snapshot. Same-currency rows may have
 			// amount_base NULL on purpose (ETL-ESLEME.md §3.4 — resolver uses amount).
@@ -352,7 +363,7 @@ export class ReportsService {
 			const [agg] = await db
 				.select({
 					category_missing: sql<number>`(count(*) filter (where ${emptyCategory}))::int`,
-					income_patient_missing: sql<number>`(count(*) filter (where ${incomeNoPatient}))::int`,
+					income_contact_missing: sql<number>`(count(*) filter (where ${incomeNoPatient}))::int`,
 					expense_contact_missing: sql<number>`(count(*) filter (where ${expenseNoContact}))::int`,
 					fx_missing: sql<number>`(count(*) filter (where ${fxMissing}))::int`,
 					paid_amount_mismatch: sql<number>`(count(*) filter (where ${paidMismatch}))::int`,
@@ -368,7 +379,7 @@ export class ReportsService {
 				if (n > 0) counts_by_code[code] = n;
 			};
 			addCount('category_missing', agg?.category_missing);
-			addCount('income_patient_missing', agg?.income_patient_missing);
+			addCount('income_contact_missing', agg?.income_contact_missing);
 			addCount('expense_contact_missing', agg?.expense_contact_missing);
 			addCount('fx_missing', agg?.fx_missing);
 			addCount('paid_amount_mismatch', agg?.paid_amount_mismatch);
@@ -377,7 +388,7 @@ export class ReportsService {
 
 			const warning =
 				(counts_by_code.category_missing ?? 0) +
-				(counts_by_code.income_patient_missing ?? 0) +
+				(counts_by_code.income_contact_missing ?? 0) +
 				(counts_by_code.expense_contact_missing ?? 0) +
 				(counts_by_code.fx_missing ?? 0);
 			const error =
@@ -407,7 +418,7 @@ export class ReportsService {
 				FROM (
 					${branch('warning', 'category_missing', 'reports.consistency.category_missing', emptyCategory)}
 					UNION ALL
-					${branch('warning', 'income_patient_missing', 'reports.consistency.income_patient_missing', incomeNoPatient)}
+					${branch('warning', 'income_contact_missing', 'reports.consistency.income_contact_missing', incomeNoPatient)}
 					UNION ALL
 					${branch('warning', 'expense_contact_missing', 'reports.consistency.expense_contact_missing', expenseNoContact)}
 					UNION ALL
@@ -490,12 +501,12 @@ export class ReportsService {
 
 			const total_groups = groups.length;
 			const items = groups.slice(0, REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT).map((row) => {
+				// Drizzle types `occurredOn` as string; runtime may still be Date from the driver.
+				const rawOccurred: unknown = row.occurredOn;
 				const occurred =
-					typeof row.occurredOn === 'string'
-						? row.occurredOn.slice(0, 10)
-						: row.occurredOn instanceof Date
-							? row.occurredOn.toISOString().slice(0, 10)
-							: String(row.occurredOn).slice(0, 10);
+					rawOccurred instanceof Date
+						? rawOccurred.toISOString().slice(0, 10)
+						: String(rawOccurred).slice(0, 10);
 				return {
 					count: Number(row.count),
 					amount: row.amount,
@@ -892,22 +903,26 @@ export class ReportsService {
 		tenantId: string,
 		params: ReportPeriodParams
 	): Promise<PatientDistributionRow[]> {
-		const conditions = [isNull(patients.deletedAt)];
+		const conditions = [
+			isNull(contacts.deletedAt),
+			eq(contacts.contactTypeName, 'Hasta')
+		];
 		if (params.from) {
 			const { start } = await dayRange(db, tenantId, params.from);
-			conditions.push(gte(patients.createdAt, start));
+			conditions.push(gte(contacts.createdAt, start));
 		}
 		if (params.to) {
 			const { endExclusive } = await dayRange(db, tenantId, params.to);
-			conditions.push(lt(patients.createdAt, endExclusive));
+			conditions.push(lt(contacts.createdAt, endExclusive));
 		}
 
 		return db
 			.select({
-				status: patients.status,
-				source: patients.source
+				status: contacts.status,
+				source: contacts.source,
+				medium: contacts.medium
 			})
-			.from(patients)
+			.from(contacts)
 			.where(and(...conditions));
 	}
 
@@ -1042,12 +1057,16 @@ export class ReportsService {
 				baseCurrency: transactions.baseCurrency,
 				paidAmount: transactions.paidAmount,
 				currency: transactions.currency,
-				source: patients.source
+				source: contacts.source
 			})
 			.from(transactions)
 			.leftJoin(
-				patients,
-				and(eq(transactions.patientId, patients.id), isNull(patients.deletedAt))
+				contacts,
+				and(
+					eq(transactions.contactId, contacts.id),
+					isNull(contacts.deletedAt),
+					eq(contacts.contactTypeName, 'Hasta')
+				)
 			)
 			.where(and(...conditions));
 
@@ -1073,22 +1092,25 @@ export class ReportsService {
 		treated_count: number;
 		cohortBySource: Map<string, { leads: number; treated: number }>;
 	}> {
-		const conditions = [isNull(patients.deletedAt)];
+		const conditions = [
+			isNull(contacts.deletedAt),
+			eq(contacts.contactTypeName, 'Hasta')
+		];
 		if (params.from) {
 			const { start } = await dayRange(db, tenantId, params.from);
-			conditions.push(gte(patients.createdAt, start));
+			conditions.push(gte(contacts.createdAt, start));
 		}
 		if (params.to) {
 			const { endExclusive } = await dayRange(db, tenantId, params.to);
-			conditions.push(lt(patients.createdAt, endExclusive));
+			conditions.push(lt(contacts.createdAt, endExclusive));
 		}
 
 		const rows: PatientCohortRow[] = await db
 			.select({
-				source: patients.source,
-				status: patients.status
+				source: contacts.source,
+				status: contacts.status
 			})
-			.from(patients)
+			.from(contacts)
 			.where(and(...conditions));
 
 		const cohortBySource = new Map<string, { leads: number; treated: number }>();
@@ -1109,4 +1131,5 @@ export class ReportsService {
 
 		return { leads_count, treated_count, cohortBySource };
 	}
+
 }

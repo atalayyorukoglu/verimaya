@@ -1,7 +1,7 @@
 import { UnsupportedMediaTypeException } from '@nestjs/common';
 import {
-	isAllowedPatientFileMimeType,
-	normalizePatientFileMimeType
+	isAllowedContactFileMimeType,
+	normalizeContactFileMimeType
 } from '@verimaya/shared';
 import { fromBuffer } from 'file-type';
 
@@ -19,8 +19,8 @@ export async function assertUploadMimeMatchesBytes(
 	data: Buffer,
 	declaredMime: string
 ): Promise<string> {
-	const declared = normalizePatientFileMimeType(declaredMime);
-	if (!isAllowedPatientFileMimeType(declared)) {
+	const declared = normalizeContactFileMimeType(declaredMime);
+	if (!isAllowedContactFileMimeType(declared)) {
 		throw new UnsupportedMediaTypeException({
 			error: {
 				code: 'unsupported_media_type',
@@ -45,7 +45,7 @@ export async function assertUploadMimeMatchesBytes(
 		});
 	}
 
-	const sniffed = normalizePatientFileMimeType(detected.mime);
+	const sniffed = normalizeContactFileMimeType(detected.mime);
 	if (sniffed !== declared) {
 		throw new UnsupportedMediaTypeException({
 			error: {

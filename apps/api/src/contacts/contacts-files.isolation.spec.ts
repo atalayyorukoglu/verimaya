@@ -1,24 +1,28 @@
 import { randomUUID } from 'node:crypto';
 import { NotFoundException } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { sql as drizzleSql } from 'drizzle-orm';
 import { closeDb, getDb } from '../db/client';
 import { LocalFileStorage } from '../storage/local-file.storage';
-import { TenantContextService } from '../tenant/tenant-context.service';
-import { PatientsService } from './patients.service';
+import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+import { ContactsService } from './contacts.service';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+async function withTenantSession<T>(
+	tenantId: string,
+	fn: (tdb: TenantDb) => Promise<T>
+): Promise<T> {
+	const { db } = getDb(databaseUrl);
+	return db.transaction(async (tx) => {
+		await tx.execute(
+			drizzleSql`select set_config('app.current_tenant_id', ${tenantId}, true)`
+		);
+		return fn(tx as TenantDb);
+	});
 }
 
 describe('files RLS isolation', () => {
@@ -28,7 +32,7 @@ describe('files RLS isolation', () => {
 	let patientB: string;
 	let fileA: string;
 	let fileB: string;
-	let patientsService: PatientsService;
+	let contactsService: ContactsService;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
@@ -49,28 +53,36 @@ describe('files RLS isolation', () => {
 
 		patientA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			const [row] = await tx`
-				insert into patients (tenant_id, full_name)
-				values (${tenantA}, 'Patient A')
-				returning id
-			`;
+			await tx`insert into contact_types (tenant_id, name, sort_order) values (${tenantA}, 'Hasta', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name`;
+			const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (
+					${tenantA},
+					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+					'Hasta', 'Patient A', 'Patient A'
+				)
+				returning id`;
 			return row!.id as string;
 		});
 
 		patientB = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			const [row] = await tx`
-				insert into patients (tenant_id, full_name)
-				values (${tenantB}, 'Patient B')
-				returning id
-			`;
+			await tx`insert into contact_types (tenant_id, name, sort_order) values (${tenantB}, 'Hasta', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name`;
+			const [row] = await tx`insert into contacts (tenant_id, contact_type_id, contact_type_name, first_name, display_name)
+				values (
+					${tenantB},
+					(select id from contact_types where tenant_id = ${tenantB} and name = 'Hasta' limit 1),
+					'Hasta', 'Patient B', 'Patient B'
+				)
+				returning id`;
 			return row!.id as string;
 		});
 
 		fileA = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			const [row] = await tx`
-				insert into files (tenant_id, patient_id, filename, mime_type, size_bytes, storage_key, status)
+				insert into files (tenant_id, contact_id, filename, mime_type, size_bytes, storage_key, status)
 				values (${tenantA}, ${patientA}, 'a.pdf', 'application/pdf', 0, 'local://pending', 'ready')
 				returning id
 			`;
@@ -81,7 +93,7 @@ describe('files RLS isolation', () => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			const storageKey = `local://${tenantB}/${patientB}/${randomUUID()}`;
 			const [row] = await tx`
-				insert into files (tenant_id, patient_id, filename, mime_type, size_bytes, storage_key, status)
+				insert into files (tenant_id, contact_id, filename, mime_type, size_bytes, storage_key, status)
 				values (${tenantB}, ${patientB}, 'b.pdf', 'application/pdf', 4, ${storageKey}, 'pending')
 				returning id
 			`;
@@ -95,7 +107,7 @@ describe('files RLS isolation', () => {
 			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
 		} as TenantContextService;
 
-		patientsService = new PatientsService(tenantContext, new LocalFileStorage());
+		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 	});
 
 	afterAll(async () => {
@@ -103,12 +115,12 @@ describe('files RLS isolation', () => {
 		await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 			await tx`delete from files where tenant_id = ${tenantA}`;
-			await tx`delete from patients where tenant_id = ${tenantA}`;
+			await tx`delete from contacts where tenant_id = ${tenantA}`;
 		});
 		await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 			await tx`delete from files where tenant_id = ${tenantB}`;
-			await tx`delete from patients where tenant_id = ${tenantB}`;
+			await tx`delete from contacts where tenant_id = ${tenantB}`;
 		});
 		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
 		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
@@ -139,11 +151,11 @@ describe('files RLS isolation', () => {
 	});
 
 	it('Tenant A cannot confirm or PUT content for Tenant B pending file', async () => {
-		await expect(patientsService.confirmFile(tenantA, patientB, fileB)).rejects.toBeInstanceOf(
+		await expect(contactsService.confirmFile(tenantA, patientB, fileB)).rejects.toBeInstanceOf(
 			NotFoundException
 		);
 		await expect(
-			patientsService.putFileContent(tenantA, patientB, fileB, Buffer.from('test'))
+			contactsService.putFileContent(tenantA, patientB, fileB, Buffer.from('test'))
 		).rejects.toBeInstanceOf(NotFoundException);
 	});
 });

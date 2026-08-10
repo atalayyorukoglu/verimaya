@@ -4,7 +4,7 @@ import { tenants } from './tenants';
 /**
  * Legacy / integration id ↔ Verimaya UUID map (ETL idempotency, Adım 27).
  * `source`: legacy_tracker | ghl | …
- * `entity_type`: contact | patient | appointment | transaction | file
+ * `entity_type`: contact | appointment | transaction | file
  * `internal_id` is polymorphic (no FK) — points at the Verimaya row UUID.
  */
 export const externalIds = pgTable(

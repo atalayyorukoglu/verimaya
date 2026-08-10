@@ -10,27 +10,24 @@ export const apiPaths = {
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
 	members: `${API_V1_PREFIX}/members`,
 	member: (id: string) => `${API_V1_PREFIX}/members/${id}`,
-	patients: `${API_V1_PREFIX}/patients`,
-	patient: (id: string) => `${API_V1_PREFIX}/patients/${id}`,
-	patientFinanceSummary: (id: string) => `${API_V1_PREFIX}/patients/${id}/finance-summary`,
-	patientAutoLinkTransactions: (id: string) =>
-		`${API_V1_PREFIX}/patients/${id}/auto-link-transactions`,
-	patientFiles: (id: string) => `${API_V1_PREFIX}/patients/${id}/files`,
-	patientFilesPresign: (id: string) => `${API_V1_PREFIX}/patients/${id}/files/presign`,
-	patientFileConfirm: (patientId: string, fileId: string) =>
-		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/confirm`,
-	patientFileContent: (patientId: string, fileId: string) =>
-		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/content`,
-	patientFileDownload: (patientId: string, fileId: string) =>
-		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/download`,
-	patientFilePreview: (patientId: string, fileId: string) =>
-		`${API_V1_PREFIX}/patients/${patientId}/files/${fileId}/preview`,
-	patientsDuplicateGroups: `${API_V1_PREFIX}/patients/duplicate-groups`,
-	patientsMerge: `${API_V1_PREFIX}/patients/merge`,
 	appointments: `${API_V1_PREFIX}/appointments`,
 	appointment: (id: string) => `${API_V1_PREFIX}/appointments/${id}`,
 	contacts: `${API_V1_PREFIX}/contacts`,
 	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
+	contactFinanceSummary: (id: string) => `${API_V1_PREFIX}/contacts/${id}/finance-summary`,
+	contactAutoLinkTransactions: (id: string) =>
+		`${API_V1_PREFIX}/contacts/${id}/auto-link-transactions`,
+	contactFiles: (id: string) => `${API_V1_PREFIX}/contacts/${id}/files`,
+	contactFilesPresign: (id: string) => `${API_V1_PREFIX}/contacts/${id}/files/presign`,
+	contactFileConfirm: (contactId: string, fileId: string) =>
+		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}/confirm`,
+	contactFileContent: (contactId: string, fileId: string) =>
+		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}/content`,
+	contactFileDownload: (contactId: string, fileId: string) =>
+		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}/download`,
+	contactFilePreview: (contactId: string, fileId: string) =>
+		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}/preview`,
+	contactCaseNotes: (id: string) => `${API_V1_PREFIX}/contacts/${id}/case-notes`,
 	contactsBulkType: `${API_V1_PREFIX}/contacts/bulk-type`,
 	contactsDuplicateGroups: `${API_V1_PREFIX}/contacts/duplicate-groups`,
 	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
@@ -41,6 +38,8 @@ export const apiPaths = {
 	settingsFinanceCategory: (id: string) => `${API_V1_PREFIX}/settings/finance-categories/${id}`,
 	settingsContactTypes: `${API_V1_PREFIX}/settings/contact-types`,
 	settingsContactType: (id: string) => `${API_V1_PREFIX}/settings/contact-types/${id}`,
+	settingsOrganizations: `${API_V1_PREFIX}/settings/organizations`,
+	settingsOrganization: (id: string) => `${API_V1_PREFIX}/settings/organizations/${id}`,
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
 	settingsCredential: (provider: string) => `${API_V1_PREFIX}/settings/credentials/${provider}`,
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
@@ -90,7 +89,6 @@ export const apiPaths = {
 	},
 	/** GAP-F09-16: inline create from draft approval (no create-subcategory — flat categories). */
 	whatsappCreateContact: `${API_V1_PREFIX}/whatsapp/create-contact`,
-	whatsappCreatePatient: `${API_V1_PREFIX}/whatsapp/create-patient`,
 	whatsappCreateCategory: `${API_V1_PREFIX}/whatsapp/create-category`,
 	adMetrics: `${API_V1_PREFIX}/ad-metrics`,
 	adMetricsSync: `${API_V1_PREFIX}/ad-metrics/sync`,
@@ -102,7 +100,7 @@ export const apiPaths = {
 	reportsByCategory: `${API_V1_PREFIX}/reports/by-category`,
 	reportsByCategoryDetail: `${API_V1_PREFIX}/reports/by-category-detail`,
 	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`,
-	reportsPatientDistribution: `${API_V1_PREFIX}/reports/patient-distribution`,
+	reportsContactDistribution: `${API_V1_PREFIX}/reports/contact-distribution`,
 	reportsBalances: `${API_V1_PREFIX}/reports/balances`,
 	reportsAppointmentMetrics: `${API_V1_PREFIX}/reports/appointment-metrics`,
 	reportsConsistency: `${API_V1_PREFIX}/reports/consistency`,
@@ -115,7 +113,6 @@ export type ListQueryParams = {
 	q?: string;
 	from?: string;
 	to?: string;
-	patient_id?: string | null;
 	contact_id?: string | null;
 	type_id?: string | null;
 	kind?: string;
@@ -137,7 +134,6 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.q) url.searchParams.set('q', params.q);
 	if (params?.from) url.searchParams.set('from', params.from);
 	if (params?.to) url.searchParams.set('to', params.to);
-	if (params?.patient_id) url.searchParams.set('patient_id', params.patient_id);
 	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
 	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
 	if (params?.kind) url.searchParams.set('kind', params.kind);
@@ -151,10 +147,16 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	return `${url.pathname}${url.search}`;
 }
 import {
-	patientSchema,
-	patientFinanceSummarySchema,
-	patientAutoLinkTransactionsResultSchema
-} from './patient.js';
+	contactSchema,
+	contactFinanceSummarySchema,
+	contactAutoLinkTransactionsResultSchema,
+	contactsBulkTypeResultSchema,
+	contactsBulkTypeSchema,
+	contactTypeSchema,
+	contactTypeUpdateSchema,
+	organizationSchema,
+	organizationUpdateSchema
+} from './contact.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
 import {
@@ -163,24 +165,15 @@ import {
 	inboundMessageActionResponseSchema,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
-	whatsappCreatePatientSchema,
 	inboundMessageProcessResponseSchema,
 	inboundMessageSchema,
 	transactionDraftSchema
 } from './inbound-message.js';
-import { patientFileCreateSchema, patientFileSchema } from './file.js';
-import { patientCaseNoteCreateSchema, patientCaseNoteSchema } from './case-note.js';
-import {
-	contactSchema,
-	contactsBulkTypeResultSchema,
-	contactsBulkTypeSchema,
-	contactTypeSchema,
-	contactTypeUpdateSchema
-} from './contact.js';
+import { contactFileCreateSchema, contactFileSchema } from './file.js';
+import { contactCaseNoteCreateSchema, contactCaseNoteSchema } from './case-note.js';
 import {
 	contactDuplicateGroupsResponseSchema,
-	mergeRecordsSchema,
-	patientDuplicateGroupsResponseSchema
+	mergeRecordsSchema
 } from './duplicate.js';
 import {
 	financeCategorySchema,
@@ -198,7 +191,7 @@ import {
 	reportByCategorySchema,
 	reportConsistencySchema,
 	reportMonthlySchema,
-	reportPatientDistributionSchema,
+	reportContactDistributionSchema,
 	reportSummarySchema,
 	reportTransactionDuplicatesSchema
 } from './reports.js';
@@ -227,21 +220,6 @@ export const apiContract = {
 	'GET /v1/tenants/current': {
 		response: tenantSchema
 	},
-	'GET /v1/patients': {
-		response: cursorPageSchema(patientSchema)
-	},
-	'GET /v1/patients/:id': {
-		response: patientSchema
-	},
-	'DELETE /v1/patients/:id': {
-		response: softDeleteResultSchema
-	},
-	'GET /v1/patients/:id/finance-summary': {
-		response: patientFinanceSummarySchema
-	},
-	'POST /v1/patients/:id/auto-link-transactions': {
-		response: patientAutoLinkTransactionsResultSchema
-	},
 	'GET /v1/appointments': {
 		response: appointmentListPageSchema
 	},
@@ -251,31 +229,6 @@ export const apiContract = {
 	'DELETE /v1/appointments/:id': {
 		response: softDeleteResultSchema
 	},
-	'GET /v1/patients/:id/files': {
-		response: z.object({ items: z.array(patientFileSchema) })
-	},
-	'POST /v1/patients/:id/files': {
-		body: patientFileCreateSchema,
-		response: patientFileSchema
-	},
-	'GET /v1/patients/:id/files/:fileId/download': {
-		/** Binary stream — not a JSON zod body */
-		response: z.unknown()
-	},
-	'GET /v1/patients/:id/files/:fileId/preview': {
-		/** Binary stream — not a JSON zod body (inline for allowlisted MIME) */
-		response: z.unknown()
-	},
-	'GET /v1/patients/:id/case-notes': {
-		response: z.object({ items: z.array(patientCaseNoteSchema) })
-	},
-	'POST /v1/patients/:id/case-notes': {
-		body: patientCaseNoteCreateSchema,
-		response: patientCaseNoteSchema
-	},
-	'DELETE /v1/patients/:id/case-notes/:noteId': {
-		response: z.null()
-	},
 	'GET /v1/contacts': {
 		response: cursorPageSchema(contactSchema)
 	},
@@ -284,6 +237,37 @@ export const apiContract = {
 	},
 	'DELETE /v1/contacts/:id': {
 		response: softDeleteResultSchema
+	},
+	'GET /v1/contacts/:id/finance-summary': {
+		response: contactFinanceSummarySchema
+	},
+	'POST /v1/contacts/:id/auto-link-transactions': {
+		response: contactAutoLinkTransactionsResultSchema
+	},
+	'GET /v1/contacts/:id/files': {
+		response: z.object({ items: z.array(contactFileSchema) })
+	},
+	'POST /v1/contacts/:id/files': {
+		body: contactFileCreateSchema,
+		response: contactFileSchema
+	},
+	'GET /v1/contacts/:id/files/:fileId/download': {
+		/** Binary stream — not a JSON zod body */
+		response: z.unknown()
+	},
+	'GET /v1/contacts/:id/files/:fileId/preview': {
+		/** Binary stream — not a JSON zod body (inline for allowlisted MIME) */
+		response: z.unknown()
+	},
+	'GET /v1/contacts/:id/case-notes': {
+		response: z.object({ items: z.array(contactCaseNoteSchema) })
+	},
+	'POST /v1/contacts/:id/case-notes': {
+		body: contactCaseNoteCreateSchema,
+		response: contactCaseNoteSchema
+	},
+	'DELETE /v1/contacts/:id/case-notes/:noteId': {
+		response: z.null()
 	},
 	'PATCH /v1/contacts/bulk-type': {
 		body: contactsBulkTypeSchema,
@@ -296,13 +280,6 @@ export const apiContract = {
 		body: mergeRecordsSchema,
 		response: contactSchema
 	},
-	'GET /v1/patients/duplicate-groups': {
-		response: patientDuplicateGroupsResponseSchema
-	},
-	'POST /v1/patients/merge': {
-		body: mergeRecordsSchema,
-		response: patientSchema
-	},
 	'GET /v1/settings/contact-types': {
 		response: z.object({ items: z.array(contactTypeSchema) })
 	},
@@ -310,8 +287,15 @@ export const apiContract = {
 		body: contactTypeUpdateSchema,
 		response: contactTypeSchema
 	},
+	'GET /v1/settings/organizations': {
+		response: z.object({ items: z.array(organizationSchema) })
+	},
+	'PATCH /v1/settings/organizations/:id': {
+		body: organizationUpdateSchema,
+		response: organizationSchema
+	},
 	'GET /v1/appointments/:id/files': {
-		response: z.object({ items: z.array(patientFileSchema) })
+		response: z.object({ items: z.array(contactFileSchema) })
 	},
 	'GET /v1/transactions': {
 		response: cursorPageSchema(transactionSchema)
@@ -363,10 +347,6 @@ export const apiContract = {
 	'POST /v1/whatsapp/create-contact': {
 		body: whatsappCreateContactSchema,
 		response: contactSchema
-	},
-	'POST /v1/whatsapp/create-patient': {
-		body: whatsappCreatePatientSchema,
-		response: patientSchema
 	},
 	'POST /v1/whatsapp/create-category': {
 		body: whatsappCreateCategorySchema,
@@ -443,8 +423,8 @@ export const apiContract = {
 	'GET /v1/reports/monthly': {
 		response: reportMonthlySchema
 	},
-	'GET /v1/reports/patient-distribution': {
-		response: reportPatientDistributionSchema
+	'GET /v1/reports/contact-distribution': {
+		response: reportContactDistributionSchema
 	},
 	'GET /v1/reports/balances': {
 		response: reportBalancesSchema
