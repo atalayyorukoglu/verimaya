@@ -10,7 +10,6 @@ import Bot from '@lucide/svelte/icons/bot';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
-import Bell from '@lucide/svelte/icons/bell';
 
 import type { MessageKey } from '$lib/i18n/messages';
 
@@ -25,9 +24,32 @@ export type NavItem = {
 	icon: Component;
 };
 
-export type NavGroup = {
+export type NavSubgroup = {
 	labelKey: MessageKey;
 	items: NavItem[];
+};
+
+export type NavGroup = {
+	labelKey: MessageKey;
+	/** Flat links under the group (Kayıtlar, Sistem). */
+	items?: NavItem[];
+	/** Nested labelled buckets (Büyüme → Araçlar / Kaynaklar). */
+	subgroups?: NavSubgroup[];
+};
+
+/** Flatten all actionable links in a group (items or nested subgroup items). */
+export function navGroupItems(group: NavGroup): NavItem[] {
+	if (group.subgroups?.length) {
+		return group.subgroups.flatMap((s) => s.items);
+	}
+	return group.items ?? [];
+}
+
+/** Standalone entry — rendered above groups in the sidebar. */
+export const panelNavItem: NavItem = {
+	labelKey: 'nav.dashboard',
+	href: '/',
+	icon: LayoutDashboard
 };
 
 /** Panel nav — CF dashboard grupları, TickPort renkleri; docs/TASARIM.md */
@@ -35,7 +57,6 @@ export const navGroups: NavGroup[] = [
 	{
 		labelKey: 'nav.group.records',
 		items: [
-			{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
 			{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
 			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
 			{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
@@ -43,22 +64,26 @@ export const navGroups: NavGroup[] = [
 		]
 	},
 	{
-		labelKey: 'nav.group.tools',
-		items: [
-			{ labelKey: 'nav.marketingOverview', href: '/marketing', icon: Megaphone },
-			{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck },
-			{ labelKey: 'nav.settings', href: '/settings', icon: Settings }
+		labelKey: 'nav.group.growth',
+		subgroups: [
+			{
+				labelKey: 'nav.group.tools',
+				items: [
+					{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck },
+					{ labelKey: 'nav.marketingOverview', href: '/marketing', icon: Megaphone }
+				]
+			},
+			{
+				labelKey: 'nav.group.resources',
+				items: [{ labelKey: 'nav.aiPrep', href: '/resources/ai-prep', icon: Bot }]
+			}
 		]
-	},
-	{
-		labelKey: 'nav.group.resources',
-		items: [{ labelKey: 'nav.aiPrep', href: '/resources/ai-prep', icon: Bot }]
 	},
 	{
 		labelKey: 'nav.group.system',
 		items: [
+			{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
 			{ labelKey: 'nav.features', href: '/features', icon: Sparkles },
-			{ labelKey: 'nav.changelog', href: '/changelog', icon: Bell },
 			{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }
 		]
 	}
@@ -66,7 +91,7 @@ export const navGroups: NavGroup[] = [
 
 /** Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar */
 export const mobileTabItems: NavItem[] = [
-	{ labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
+	panelNavItem,
 	{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
 	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
 	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet }
