@@ -87,8 +87,8 @@
 </script>
 
 <svelte:head>
+	<link rel="icon" href="/favicon.ico" sizes="any" />
 	<link rel="icon" href={favicon} type="image/svg+xml" />
-	<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
 	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 	<title>Veri Maya</title>
 	{#if !isIndexablePublic}

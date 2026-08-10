@@ -3,13 +3,14 @@
 // navigate requests fall back to /offline.html when offline.
 // NEVER registered while MSW is active (see +layout.svelte) — MSW installs its own worker.
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE_NAME = `verimaya-shell-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 const SHELL_ASSETS = [
 	'/',
 	'/manifest.webmanifest',
 	OFFLINE_URL,
+	'/favicon.ico',
 	'/icon.svg',
 	'/icon-192.png',
 	'/icon-512.png',
