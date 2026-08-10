@@ -1,0 +1,1293 @@
+[
+  {
+    "id": "TC001",
+    "title": "Sign in and enter the panel",
+    "description": "This verifies a user can log in with email and password, complete any required organization selection, and reach the authenticated dashboard.",
+    "category": "Email password login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authenticated dashboard is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is signed in"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Create a patient and see it in the list",
+    "description": "This verifies an operations user can create a patient record and confirm it appears in the patients list.",
+    "category": "Patient management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /patients"
+      },
+      {
+        "type": "action",
+        "description": "Create a new patient record"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the patient details with valid information"
+      },
+      {
+        "type": "action",
+        "description": "Save the patient record"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new patient appears in the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Edit a patient and confirm the updated detail view",
+    "description": "This verifies an operations user can open a patient record, update it, and return to the updated detail view.",
+    "category": "Patient management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /patients"
+      },
+      {
+        "type": "action",
+        "description": "Open an existing patient record"
+      },
+      {
+        "type": "action",
+        "description": "Edit the patient record"
+      },
+      {
+        "type": "action",
+        "description": "Save the patient changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated patient detail view is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Schedule a new appointment",
+    "description": "An operations user can create an appointment and see it appear in the appointment list or calendar.",
+    "category": "Appointments",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /appointments"
+      },
+      {
+        "type": "action",
+        "description": "Create a new appointment"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the appointment details with valid values"
+      },
+      {
+        "type": "action",
+        "description": "Save the appointment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new appointment is displayed in the schedule"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Reach the dashboard after organization selection",
+    "description": "This verifies a signed-in user who is prompted to choose or create an organization can complete the gate and enter the dashboard.",
+    "category": "Email password login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Pick or create an organization when prompted"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authenticated dashboard is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Update organization profile settings",
+    "description": "A settings admin can change the organization profile information and see the updated organization details saved.",
+    "category": "Settings and connections",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /settings/organization"
+      },
+      {
+        "type": "action",
+        "description": "Update the organization profile with valid values"
+      },
+      {
+        "type": "action",
+        "description": "Save the changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated organization information is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Create a contact and see it in the list",
+    "description": "This verifies a user can create a contact record and confirm it appears in the contacts list.",
+    "category": "Contact management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /contacts"
+      },
+      {
+        "type": "action",
+        "description": "Create a new contact record"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the contact details with valid information"
+      },
+      {
+        "type": "action",
+        "description": "Save the contact record"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new contact appears in the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Approve an AI finance draft",
+    "description": "A finance reviewer can review an AI-extracted transaction draft, approve it, and return to finance without an auto-created final record being committed.",
+    "category": "Finance and AI draft review",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /finance/ai-transaction"
+      },
+      {
+        "type": "action",
+        "description": "Review the transaction draft details"
+      },
+      {
+        "type": "action",
+        "description": "Approve the draft"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a success confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no auto-created final transaction is shown in the finance workflow"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Edit a contact and confirm the updated detail view",
+    "description": "This verifies a user can open a contact record, update it, and see the saved changes in the detail view.",
+    "category": "Contact management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /contacts"
+      },
+      {
+        "type": "action",
+        "description": "Open an existing contact record"
+      },
+      {
+        "type": "action",
+        "description": "Edit the contact record"
+      },
+      {
+        "type": "action",
+        "description": "Save the contact changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated contact detail view is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Change a team member role",
+    "description": "A settings admin can update a team member's role and see the new role reflected in the team list.",
+    "category": "Settings and connections",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /settings/team"
+      },
+      {
+        "type": "action",
+        "description": "Change a team member role to a valid role"
+      },
+      {
+        "type": "action",
+        "description": "Save the update"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the team member is displayed with the updated role"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Reach the app login from the hub",
+    "description": "This verifies that a public visitor can use the hub login entry to reach the panel sign-in screen.",
+    "category": "Marketing hub public site",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open the hub login menu"
+      },
+      {
+        "type": "action",
+        "description": "Go to the app login path"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the panel login page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify sign-in controls are available"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Update an existing appointment",
+    "description": "An operations user can open an appointment, change its details, save, and see the updated information reflected.",
+    "category": "Appointments",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /appointments"
+      },
+      {
+        "type": "action",
+        "description": "Open an existing appointment"
+      },
+      {
+        "type": "action",
+        "description": "Update the appointment details with valid values"
+      },
+      {
+        "type": "action",
+        "description": "Save the changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated appointment information is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Create and revoke an API key",
+    "description": "A settings admin can create an API key, review webhook subscriptions, revoke the key, and see the connection state update.",
+    "category": "Settings and connections",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /settings/connections/api"
+      },
+      {
+        "type": "action",
+        "description": "Create an API key"
+      },
+      {
+        "type": "action",
+        "description": "Review webhook subscriptions"
+      },
+      {
+        "type": "action",
+        "description": "Revoke the API key"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated API connection state is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Soft-delete a patient and remove it from the list",
+    "description": "This verifies a user can soft-delete a patient and confirm the record no longer appears in the patients list.",
+    "category": "Patient management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /patients"
+      },
+      {
+        "type": "action",
+        "description": "Open an existing patient record"
+      },
+      {
+        "type": "action",
+        "description": "Remove the patient"
+      },
+      {
+        "type": "action",
+        "description": "Return to the patients list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the deleted patient no longer appears in the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Manage contact types",
+    "description": "A settings admin can create or update contact types and see the revised type list saved.",
+    "category": "Settings and connections",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /settings/contact-types"
+      },
+      {
+        "type": "action",
+        "description": "Create or update a contact type with valid values"
+      },
+      {
+        "type": "action",
+        "description": "Save the changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the revised contact type list is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Review access controls",
+    "description": "A settings admin can open access controls, adjust permissions, save, and see the updated configuration reflected.",
+    "category": "Settings and connections",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /settings/access"
+      },
+      {
+        "type": "action",
+        "description": "Adjust access permissions to valid values"
+      },
+      {
+        "type": "action",
+        "description": "Save the changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated access configuration is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Review account balances",
+    "description": "A finance reviewer can open balances from the finance area and see the current account balance summary.",
+    "category": "Finance and AI draft review",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /finance"
+      },
+      {
+        "type": "action",
+        "description": "Open the balances view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify account balances are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "Manage appointment types",
+    "description": "A settings admin can create or update appointment types and see the revised appointment type list saved.",
+    "category": "Settings and connections",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /settings/appointment-types"
+      },
+      {
+        "type": "action",
+        "description": "Create or update an appointment type with valid values"
+      },
+      {
+        "type": "action",
+        "description": "Save the changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the revised appointment type list is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC019",
+    "title": "Scan and resolve duplicate patients",
+    "description": "This verifies a user can run a patient duplicate scan, review matches, and resolve a duplicate set.",
+    "category": "Patient management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /patients/duplicates"
+      },
+      {
+        "type": "action",
+        "description": "Run a duplicate scan"
+      },
+      {
+        "type": "action",
+        "description": "Review the matching patient records"
+      },
+      {
+        "type": "action",
+        "description": "Resolve the duplicate set"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the duplicate set is resolved"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC020",
+    "title": "Reject an AI finance draft",
+    "description": "A finance reviewer can review an AI-extracted transaction draft, reject it, and return to finance without creating a final record.",
+    "category": "Finance and AI draft review",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /finance/ai-transaction"
+      },
+      {
+        "type": "action",
+        "description": "Review the transaction draft details"
+      },
+      {
+        "type": "action",
+        "description": "Reject the draft"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a rejection confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no final transaction was created"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC021",
+    "title": "Assign a contact type to multiple contacts",
+    "description": "This verifies a user can select multiple contacts and apply a bulk contact type assignment.",
+    "category": "Contact management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /contacts"
+      },
+      {
+        "type": "action",
+        "description": "Select multiple contacts"
+      },
+      {
+        "type": "action",
+        "description": "Assign a contact type in bulk"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected contacts are updated with the new contact type"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC022",
+    "title": "Explore the public hub and enter the panel",
+    "description": "An anonymous visitor can browse the public hub, switch language, open a public tool, and use the hub login path to reach the panel login screen.",
+    "category": "Public marketing hub and tools",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Switch the public hub language"
+      },
+      {
+        "type": "action",
+        "description": "Open a public tool page"
+      },
+      {
+        "type": "action",
+        "description": "Open the hub login menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the public tool content is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login entry point is available"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC023",
+    "title": "Scan and resolve duplicate contacts",
+    "description": "This verifies a user can run a contact duplicate scan, review matches, and resolve a duplicate set.",
+    "category": "Contact management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /contacts/duplicates"
+      },
+      {
+        "type": "action",
+        "description": "Run a duplicate scan"
+      },
+      {
+        "type": "action",
+        "description": "Review the matching contact records"
+      },
+      {
+        "type": "action",
+        "description": "Resolve the duplicate set"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the duplicate set is resolved"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "Edit a transaction from reports",
+    "description": "A finance reviewer can open a transaction in reports, update its details, save the change, and see the edited transaction reflected.",
+    "category": "Finance and AI draft review",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /reports"
+      },
+      {
+        "type": "action",
+        "description": "Open a transaction for editing"
+      },
+      {
+        "type": "action",
+        "description": "Update the transaction details with valid values"
+      },
+      {
+        "type": "action",
+        "description": "Save the changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the edited transaction is displayed in reports"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Complete the public AI scorecard",
+    "description": "This verifies that a public visitor can fill out the AI scorecard and view the resulting summary.",
+    "category": "Marketing hub public site",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /yapay-zeka-karnesi"
+      },
+      {
+        "type": "action",
+        "description": "Complete the scorecard inputs"
+      },
+      {
+        "type": "action",
+        "description": "Submit the scorecard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a scorecard result summary is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the result includes an overall assessment"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Filter appointments by type or date",
+    "description": "An operations user can narrow the appointment list using filters and see only matching appointments.",
+    "category": "Appointments",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /appointments"
+      },
+      {
+        "type": "action",
+        "description": "Filter appointments by a valid type or date"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify only matching appointments are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "Open the public AI scorecard",
+    "description": "An anonymous visitor can access the public AI scorecard page and see the scorecard content.",
+    "category": "Public marketing hub and tools",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /yapay-zeka-karnesi"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the public AI scorecard content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Explore the public tools index",
+    "description": "This verifies that a public visitor can open the tools index and reach one of the free marketing tools.",
+    "category": "Marketing hub public site",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tools"
+      },
+      {
+        "type": "action",
+        "description": "Open a public tool from the tools index"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected tool page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tool content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "Reject invalid login credentials",
+    "description": "This verifies incorrect email or password is blocked and the user sees a login validation or access denied state.",
+    "category": "Email password login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with invalid@example.com"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with invalid-password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a login validation or access denied state is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC030",
+    "title": "Switch the marketing home language",
+    "description": "This verifies that a public visitor can switch the marketing home interface between languages and continue browsing the hub.",
+    "category": "Marketing hub public site",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Switch the interface language"
+      },
+      {
+        "type": "action",
+        "description": "Switch the interface language again"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the marketing home page remains displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify language-specific interface content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC031",
+    "title": "Review the appointment list and calendar",
+    "description": "An operations user can open the appointments screen and view the current appointment list or calendar view.",
+    "category": "Appointments",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /appointments"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the appointment list or calendar is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC032",
+    "title": "Open the finance transaction list",
+    "description": "A finance reviewer can access the finance area and view the transaction list.",
+    "category": "Finance and AI draft review",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /finance"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the transaction list is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC033",
+    "title": "Open a public marketing page from the hub",
+    "description": "This verifies that a public visitor can navigate from the marketing home to a product information page and see its content.",
+    "category": "Marketing hub public site",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Open a public product page from the marketing home"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected product page is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify product information content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC034",
+    "title": "Browse the public tools index and tool pages",
+    "description": "An anonymous visitor can open the public tools index and navigate to a tool page from it.",
+    "category": "Public marketing hub and tools",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tools"
+      },
+      {
+        "type": "action",
+        "description": "Open a public tool page from the tools index"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selected public tool content is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC035",
+    "title": "Read the KVKK privacy notice",
+    "description": "An anonymous visitor can open the KVKK privacy notice and view the privacy content.",
+    "category": "Public marketing hub and tools",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /kvkk-aydinlatma"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the privacy notice content is displayed"
+      }
+    ],
+    "priority": "Low"
+  }
+]
