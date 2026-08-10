@@ -67,31 +67,29 @@ async def run_test():
         elem = page.get_by_role('link', name='Organizasyon Firma adı, baz para birimi ve bölüm etiketleri.', exact=True)
         await elem.click(timeout=10000)
         
-        # -> Change the 'Firma adı' field to 'Demo Klinik Updated', set the currency to 'USD', set the time zone to 'UTC', change the '"Hastalar" bölüm etiketi' to 'Patients', then click the 'Kaydet' button to save.
+        # -> Change the 'Firma adı' field… (id=tenant-name). Bölüm etiketi id=tenant-patients-label
+        # hâlâ var; tenant.contacts_section_label'a yazar (DOMAIN-02; UI metni '"Hastalar" bölüm etiketi').
         # text field
         elem = page.locator('[id="tenant-name"]')
         await elem.wait_for(state="visible", timeout=10000)
         await elem.fill("Demo Klinik Updated")
         
-        # -> Change the 'Firma adı' field to 'Demo Klinik Updated', set the currency to 'USD', set the time zone to 'UTC', change the '"Hastalar" bölüm etiketi' to 'Patients', then click the 'Kaydet' button to save.
+        # -> Change currency / timezone / section label, then Kaydet.
         # TRY GBP EUR USD dropdown
         elem = page.locator("xpath=/html/body/div/div/div/main/div/form/div/div[2]/select").nth(0)
         await elem.wait_for(state="visible", timeout=10000)
         await elem.select_option("")
         
-        # -> Change the 'Firma adı' field to 'Demo Klinik Updated', set the currency to 'USD', set the time zone to 'UTC', change the '"Hastalar" bölüm etiketi' to 'Patients', then click the 'Kaydet' button to save.
-        # Europe/Istanbul (Türkiye) Asia/Riyadh (Suudi... dropdown
+        # Europe/Istanbul …
         elem = page.locator("xpath=/html/body/div/div/div/main/div/form/div/div[3]/select").nth(0)
         await elem.wait_for(state="visible", timeout=10000)
         await elem.select_option("")
         
-        # -> Change the 'Firma adı' field to 'Demo Klinik Updated', set the currency to 'USD', set the time zone to 'UTC', change the '"Hastalar" bölüm etiketi' to 'Patients', then click the 'Kaydet' button to save.
-        # Hastalar text field
+        # contacts section label (legacy id tenant-patients-label)
         elem = page.locator('[id="tenant-patients-label"]')
         await elem.wait_for(state="visible", timeout=10000)
         await elem.fill("Patients")
         
-        # -> Change the 'Firma adı' field to 'Demo Klinik Updated', set the currency to 'USD', set the time zone to 'UTC', change the '"Hastalar" bölüm etiketi' to 'Patients', then click the 'Kaydet' button to save.
         # Kaydet button
         elem = page.get_by_role('button', name='Kaydet', exact=True)
         await elem.click(timeout=10000)
@@ -101,8 +99,8 @@ async def run_test():
         # --> Verify the updated organization information is displayed
         # Assert: Organization name field displays 'Demo Klinik Updated'.
         await expect(page.locator("xpath=/html/body/div[1]/div[1]/div/main/div/form/div[1]/div[1]/input").nth(0)).to_have_value("Demo Klinik Updated", timeout=15000), "Organization name field displays 'Demo Klinik Updated'."
-        # Assert: The 'Hastalar' section label field displays 'Patients'.
-        await expect(page.locator("xpath=/html/body/div[1]/div[1]/div/main/div/form/div[1]/div[4]/input").nth(0)).to_have_value("Patients", timeout=15000), "The 'Hastalar' section label field displays 'Patients'."
+        # Assert: The contacts section label field displays 'Patients'.
+        await expect(page.locator('[id="tenant-patients-label"]')).to_have_value("Patients", timeout=15000), "The contacts section label field displays 'Patients'."
         # Assert: The sidebar app label reflects the updated organization name 'Veri Maya — Demo Klinik Updated'.
         await expect(page.locator("xpath=/html/body/div[1]/div[1]/aside/div[1]/a").nth(0)).to_have_attribute("aria-label", "Veri Maya \u2014 Demo Klinik Updated", timeout=15000), "The sidebar app label reflects the updated organization name 'Veri Maya \u2014 Demo Klinik Updated'."
         await asyncio.sleep(5)

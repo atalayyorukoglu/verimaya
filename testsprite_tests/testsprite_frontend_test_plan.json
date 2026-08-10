@@ -34,9 +34,9 @@
   },
   {
     "id": "TC002",
-    "title": "Create a patient and see it in the list",
-    "description": "This verifies an operations user can create a patient record and confirm it appears in the patients list.",
-    "category": "Patient management",
+    "title": "Create a hasta contact and see it in the list",
+    "description": "DOMAIN-02: create a Hasta-type contact on /contacts with separate first/last name and source→medium cascade; confirm it appears under the default Hasta type filter.",
+    "category": "Contact management",
     "steps": [
       {
         "type": "action",
@@ -56,32 +56,44 @@
       },
       {
         "type": "action",
-        "description": "Navigate to /patients"
-      },
-      {
-        "type": "action",
-        "description": "Create a new patient record"
-      },
-      {
-        "type": "action",
-        "description": "Fill in the patient details with valid information"
-      },
-      {
-        "type": "action",
-        "description": "Save the patient record"
+        "description": "Navigate to /contacts (nav label Kişiler)"
       },
       {
         "type": "assertion",
-        "description": "Verify the new patient appears in the list"
+        "description": "Verify the type filter (aria-label Tür filtresi) defaults to Hasta"
+      },
+      {
+        "type": "action",
+        "description": "Click Yeni kişi and fill #c-first-name, #c-last-name, #c-type=Hasta, phone, email"
+      },
+      {
+        "type": "action",
+        "description": "Set #c-source to Dijital Reklam, #c-medium to Meta Ads, optional campaign"
+      },
+      {
+        "type": "action",
+        "description": "Submit with Oluştur"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify detail page shows display_name and four cards (Finans özeti, Randevular, Dosyalar, Hasta notları)"
+      },
+      {
+        "type": "action",
+        "description": "Click ← Kişiler"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new contact appears in the list"
       }
     ],
     "priority": "High"
   },
   {
     "id": "TC003",
-    "title": "Edit a patient and confirm the updated detail view",
-    "description": "This verifies an operations user can open a patient record, update it, and return to the updated detail view.",
-    "category": "Patient management",
+    "title": "Edit a hasta contact and confirm the updated detail view",
+    "description": "DOMAIN-02: open a Hasta contact on /contacts, update phone via #c-phone, and confirm detail shows the new value; finance links use ?contact=.",
+    "category": "Contact management",
     "steps": [
       {
         "type": "action",
@@ -101,23 +113,23 @@
       },
       {
         "type": "action",
-        "description": "Navigate to /patients"
+        "description": "Navigate to /contacts"
       },
       {
         "type": "action",
-        "description": "Open an existing patient record"
+        "description": "Create or open a Hasta contact"
       },
       {
         "type": "action",
-        "description": "Edit the patient record"
+        "description": "Click Düzenle and update #c-phone"
       },
       {
         "type": "action",
-        "description": "Save the patient changes"
+        "description": "Click Kaydet"
       },
       {
         "type": "assertion",
-        "description": "Verify the updated patient detail view is displayed"
+        "description": "Verify updated phone on detail and finance link href contains /finance?contact="
       }
     ],
     "priority": "High"
@@ -125,7 +137,7 @@
   {
     "id": "TC004",
     "title": "Schedule a new appointment",
-    "description": "An operations user can create an appointment and see it appear in the appointment list or calendar.",
+    "description": "Create an appointment for a Hasta contact; when phone/email are missing, assert data-testid=appt-contact-info-warning but save still succeeds (GAP-29).",
     "category": "Appointments",
     "steps": [
       {
@@ -134,35 +146,31 @@
       },
       {
         "type": "action",
-        "description": "Fill in the email field with {{LOGIN_USER}}"
+        "description": "Sign in with {{LOGIN_USER}} / {{LOGIN_PASSWORD}}"
       },
       {
         "type": "action",
-        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+        "description": "Create a Hasta contact without phone/email on /contacts"
       },
       {
         "type": "action",
-        "description": "Submit the login form"
+        "description": "Navigate to /appointments and open Yeni randevu"
       },
       {
         "type": "action",
-        "description": "Navigate to /appointments"
-      },
-      {
-        "type": "action",
-        "description": "Create a new appointment"
-      },
-      {
-        "type": "action",
-        "description": "Fill in the appointment details with valid values"
-      },
-      {
-        "type": "action",
-        "description": "Save the appointment"
+        "description": "Select the contact in #appt-contact"
       },
       {
         "type": "assertion",
-        "description": "Verify the new appointment is displayed in the schedule"
+        "description": "Verify appt-contact-info-warning is visible"
+      },
+      {
+        "type": "action",
+        "description": "Fill title and click Oluştur"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the appointment appears in the schedule with the contact display_name"
       }
     ],
     "priority": "High"
@@ -243,45 +251,33 @@
   },
   {
     "id": "TC007",
-    "title": "Create a contact and see it in the list",
-    "description": "This verifies a user can create a contact record and confirm it appears in the contacts list.",
+    "title": "Create a Klinik contact with firm selection",
+    "description": "Create a Klinik-type contact, use #c-organization with + Yeni firma inline create (#c-new-org-name), then confirm the contact appears after filtering Tüm türler.",
     "category": "Contact management",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /login"
+        "description": "Sign in and navigate to /contacts"
       },
       {
         "type": "action",
-        "description": "Fill in the email field with {{LOGIN_USER}}"
+        "description": "Set Tür filtresi to Tüm türler and apply Filtrele"
       },
       {
         "type": "action",
-        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+        "description": "Open Yeni kişi; fill first/last name; set #c-type to Klinik"
       },
       {
         "type": "action",
-        "description": "Submit the login form"
+        "description": "Choose + Yeni firma on #c-organization, fill #c-new-org-name, create firm"
       },
       {
         "type": "action",
-        "description": "Navigate to /contacts"
-      },
-      {
-        "type": "action",
-        "description": "Create a new contact record"
-      },
-      {
-        "type": "action",
-        "description": "Fill in the contact details with valid information"
-      },
-      {
-        "type": "action",
-        "description": "Save the contact record"
+        "description": "Submit the contact form"
       },
       {
         "type": "assertion",
-        "description": "Verify the new contact appears in the list"
+        "description": "Verify detail and list show the new Klinik contact"
       }
     ],
     "priority": "High"
@@ -334,44 +330,28 @@
   {
     "id": "TC009",
     "title": "Edit a contact and confirm the updated detail view",
-    "description": "This verifies a user can open a contact record, update it, and see the saved changes in the detail view.",
+    "description": "Edit contact via #c-first-name/#c-last-name/#c-phone/#c-email; when Kaynak=Referans, pick referred-by via #c-referred-by-search.",
     "category": "Contact management",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /login"
+        "description": "Sign in and navigate to /contacts"
       },
       {
         "type": "action",
-        "description": "Fill in the email field with {{LOGIN_USER}}"
+        "description": "Create a contact to edit (and optionally a referral source contact)"
       },
       {
         "type": "action",
-        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+        "description": "Open Düzenle; update name/phone/email; set source Referans and pick referred-by"
       },
       {
         "type": "action",
-        "description": "Submit the login form"
-      },
-      {
-        "type": "action",
-        "description": "Navigate to /contacts"
-      },
-      {
-        "type": "action",
-        "description": "Open an existing contact record"
-      },
-      {
-        "type": "action",
-        "description": "Edit the contact record"
-      },
-      {
-        "type": "action",
-        "description": "Save the contact changes"
+        "description": "Click Kaydet"
       },
       {
         "type": "assertion",
-        "description": "Verify the updated contact detail view is displayed"
+        "description": "Verify updated display_name and fields on the detail view"
       }
     ],
     "priority": "High"
@@ -538,45 +518,21 @@
   },
   {
     "id": "TC014",
-    "title": "Soft-delete a patient and remove it from the list",
-    "description": "This verifies a user can soft-delete a patient and confirm the record no longer appears in the patients list.",
-    "category": "Patient management",
+    "title": "Soft-delete a contact and remove it from the list",
+    "description": "Soft-delete via ContactFormDialog Sil → Silmeyi onayla on /contacts detail; confirm the contact disappears from the list.",
+    "category": "Contact management",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /login"
+        "description": "Sign in and create a disposable contact on /contacts"
       },
       {
         "type": "action",
-        "description": "Fill in the email field with {{LOGIN_USER}}"
-      },
-      {
-        "type": "action",
-        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
-      },
-      {
-        "type": "action",
-        "description": "Submit the login form"
-      },
-      {
-        "type": "action",
-        "description": "Navigate to /patients"
-      },
-      {
-        "type": "action",
-        "description": "Open an existing patient record"
-      },
-      {
-        "type": "action",
-        "description": "Remove the patient"
-      },
-      {
-        "type": "action",
-        "description": "Return to the patients list"
+        "description": "Open Düzenle, click Sil, then Silmeyi onayla"
       },
       {
         "type": "assertion",
-        "description": "Verify the deleted patient no longer appears in the list"
+        "description": "Verify redirect to /contacts and the contact name is gone from the list"
       }
     ],
     "priority": "High"
@@ -624,78 +580,50 @@
   },
   {
     "id": "TC016",
-    "title": "Review access controls",
-    "description": "A settings admin can open access controls, adjust permissions, save, and see the updated configuration reflected.",
+    "title": "Manage firms in settings organizations",
+    "description": "DOMAIN-02: open /settings/organizations (Firmalar), add a firm via Yeni firma placeholder and Ekle.",
     "category": "Settings and connections",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /login"
+        "description": "Sign in and open Ayarlar"
       },
       {
         "type": "action",
-        "description": "Fill in the email field with {{LOGIN_USER}}"
+        "description": "Open Firmalar card → /settings/organizations"
       },
       {
         "type": "action",
-        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
-      },
-      {
-        "type": "action",
-        "description": "Submit the login form"
-      },
-      {
-        "type": "action",
-        "description": "Navigate to /settings/access"
-      },
-      {
-        "type": "action",
-        "description": "Adjust access permissions to valid values"
-      },
-      {
-        "type": "action",
-        "description": "Save the changes"
+        "description": "Fill Yeni firma and click Ekle"
       },
       {
         "type": "assertion",
-        "description": "Verify the updated access configuration is displayed"
+        "description": "Verify the new firm name appears in the list"
       }
     ],
     "priority": "High"
   },
   {
     "id": "TC017",
-    "title": "Review account balances",
-    "description": "A finance reviewer can open balances from the finance area and see the current account balance summary.",
-    "category": "Finance and AI draft review",
+    "title": "Delete a contact file",
+    "description": "GAP-F09-23: on contact detail Dosyalar panel, upload a file then delete via aria-label Dosyayı sil (confirm dialog).",
+    "category": "Contact management",
     "steps": [
       {
         "type": "action",
-        "description": "Navigate to /login"
+        "description": "Sign in and create/open a contact detail"
       },
       {
         "type": "action",
-        "description": "Fill in the email field with {{LOGIN_USER}}"
+        "description": "Upload a PNG via the Dosyalar section file input"
       },
       {
         "type": "action",
-        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
-      },
-      {
-        "type": "action",
-        "description": "Submit the login form"
-      },
-      {
-        "type": "action",
-        "description": "Navigate to /finance"
-      },
-      {
-        "type": "action",
-        "description": "Open the balances view"
+        "description": "Click Dosyayı sil and accept confirm"
       },
       {
         "type": "assertion",
-        "description": "Verify account balances are displayed"
+        "description": "Verify Henüz dosya yok / filename removed"
       }
     ],
     "priority": "High"

@@ -86,7 +86,7 @@ Bağımlı: PILOT-02 verileri.
 
 ### B2. Test / kalite
 
-- — **TEST-02** TestSprite 15 senaryo DOMAIN-02’ye: TC002/TC003 `/patients` → Kişiler (Hasta filtresi, ad/soyad, kaynak→medium); isteğe bağlı organizations senaryosu. `testsprite_tests/`, `2026-08-09-TESTSPRITE-15-SENARYO.md`. **(M)**
+- [x] **TEST-02** TestSprite → DOMAIN-02 (17 senaryo; TC002/003/007/009/014 + TC016 Firmalar + TC017 dosya sil). Statik; canlı koşu yok. `2026-08-09-TESTSPRITE-15-SENARYO.md`.
 
 ### B3. Tracker gap P2 (PILOT-02 seçer)
 
@@ -173,7 +173,7 @@ Bunlar backlog değil; **yapılmama kararı** (liste tam metin: YAPILACAKLAR):
 | DOMAIN-02 E4 | GHL çift yön henüz test edilmedi |
 | Deploy vs CI | ✅ OPS-03 — CI yeşil olmadan auto-deploy yok (`workflow_dispatch` kaçış); audit job continue-on-error |
 | Tedarik zinciri | ✅ Dependabot + `pnpm audit` CI (rapor; bloklamaz) |
-| TestSprite TC002/TC003 | Hâlâ `/patients` senaryosu (TEST-02) |
+| TestSprite TC002/TC003 | ✅ TEST-02 (2026-08-10): `/contacts` + TC016/017 |
 | Dosya silme | Endpoint yok (GAP-F09-23) |
 | Kişi not thread | ✅ `/v1/contacts/:id/case-notes` + `ContactCaseNotesThread` (GAP-F09-19) |
 | Dev panel Nest modülü | Yok (bilinçli); UI `isDevPanelEnabled` ile gizlendi (GAP-28 ✅) |

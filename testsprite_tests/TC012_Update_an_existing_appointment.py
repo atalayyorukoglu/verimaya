@@ -62,42 +62,29 @@ async def run_test():
         elem = page.get_by_text('Ana', exact=True).locator("xpath=ancestor-or-self::*[.//a][1]").get_by_role('link', name='Randevular', exact=True)
         await elem.click(timeout=10000)
         
-        # -> Click the 'Düzenle' (Edit) button on the Autotest appointment card to open the appointment edit form.
+        # -> Click the 'Düzenle' on an appointment card (contact_display_name, not patient).
         # Düzenle button
         elem = page.get_by_role('button', name='Düzenle', exact=True)
         await elem.click(timeout=10000)
         
-        # -> Fill the 'Notlar' (Notes) field with a test note and click the 'Kaydet' (Save) button to save the appointment changes.
+        # -> Fill Notlar (#appt-notes) and Kaydet.
         # text area
         elem = page.locator('[id="appt-notes"]')
         await elem.wait_for(state="visible", timeout=10000)
         await elem.fill("Autotest note updated by TC012")
         
-        # -> Fill the 'Notlar' (Notes) field with a test note and click the 'Kaydet' (Save) button to save the appointment changes.
         # Kaydet button
         elem = page.get_by_role('button', name='Kaydet', exact=True)
         await elem.click(timeout=10000)
         
-        # -> Click the 'Düzenle' (Edit) button on the Autotest appointment card to open the appointment edit dialog.
+        # -> Re-open and confirm notes persisted.
         # Düzenle button
         elem = page.get_by_role('button', name='Düzenle', exact=True)
         await elem.click(timeout=10000)
         
-        # -> Fill the 'Notlar' (Notes) field with 'Autotest note updated by TC012' and click the 'Kaydet' (Save) button.
-        # text area
         elem = page.locator('[id="appt-notes"]')
         await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("Autotest note updated by TC012")
-        
-        # -> Fill the 'Notlar' (Notes) field with 'Autotest note updated by TC012' and click the 'Kaydet' (Save) button.
-        # Kaydet button
-        elem = page.get_by_role('button', name='Kaydet', exact=True)
-        await elem.click(timeout=10000)
-        
-        # -> Click the 'Düzenle' (Edit) button on the 'Autotest Hasta 2026-08-09' appointment to open the edit dialog and check the 'Notlar' (Notes) field for the saved text.
-        # Düzenle button
-        elem = page.get_by_role('button', name='Düzenle', exact=True)
-        await elem.click(timeout=10000)
+        await expect(elem).to_have_value("Autotest note updated by TC012", timeout=15000)
         
         # --> Test passed — verified by AI agent
         frame = context.pages[-1]

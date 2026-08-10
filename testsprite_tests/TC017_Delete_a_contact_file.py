@@ -1,15 +1,17 @@
 import asyncio
+import os
+import tempfile
 from playwright import async_api
 from playwright.async_api import expect
 
-# DOMAIN-02: randevu formu #appt-contact ile Hasta tipindeki kişileri listeler.
-# GAP-29: telefon/e-posta eksikse data-testid=appt-contact-info-warning uyarı verir; kayıt engellenmez.
+# GAP-F09-23: kişi detay Dosyalar panelinde aria-label='Dosyayı sil' + window.confirm.
 
 
 async def run_test():
     pw = None
     browser = None
     context = None
+    tmp_path = None
 
     try:
         pw = await async_api.async_playwright().start()
@@ -37,41 +39,50 @@ async def run_test():
         await page.locator('[id="password"]').fill("LocalDemo1!")
         await page.get_by_role("button", name="Giriş yap", exact=True).click(timeout=10000)
 
-        # Ön koşul: telefon/e-postasız Hasta (uyarı senaryosu için)
         await page.get_by_role("link", name="Kişiler", exact=True).click(timeout=10000)
         new_btn = page.get_by_role("button", name="Yeni kişi", exact=True)
         if await new_btn.count() == 0:
             new_btn = page.get_by_role("button", name="Yeni kişi ekle", exact=True)
         await new_btn.click(timeout=10000)
-        await page.locator('[id="c-first-name"]').fill("Autotest")
-        await page.locator('[id="c-last-name"]').fill("Appt TC004")
+        await page.locator('[id="c-first-name"]').fill("Dosya")
+        await page.locator('[id="c-last-name"]').fill("Test TC017")
         await page.locator('[id="c-type"]').select_option(label="Hasta")
-        # phone/email bilinçli boş → contactInfoMissingBoth
         await page.locator('[id="c-source"]').select_option(label="Bilinmiyor")
         await page.get_by_role("button", name="Oluştur", exact=True).click(timeout=10000)
-        await expect(page.get_by_role("heading", name="Autotest Appt TC004")).to_be_visible(
+        await expect(page.get_by_role("heading", name="Dosya Test TC017")).to_be_visible(
             timeout=15000
         )
 
-        await page.get_by_role("link", name="Randevular", exact=True).click(timeout=10000)
-        await page.get_by_role("button", name="Yeni randevu", exact=True).click(timeout=10000)
+        await expect(page.get_by_role("heading", name="Dosyalar", exact=True)).to_be_visible()
 
-        await page.locator('[id="appt-contact"]').wait_for(state="visible", timeout=10000)
-        await page.locator('[id="appt-contact"]').select_option(label="Autotest Appt TC004")
+        # Minimal geçerli 1x1 PNG (mime allowlist: png)
+        png_bytes = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
+            b"\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        fd, tmp_path = tempfile.mkstemp(suffix="-tc017.png")
+        os.write(fd, png_bytes)
+        os.close(fd)
 
-        warning = page.get_by_test_id("appt-contact-info-warning")
-        await expect(warning).to_be_visible(timeout=15000)
-        await expect(warning).to_contain_text("telefon ve e-posta yok")
+        file_input = page.locator('section:has(h2:text-is("Dosyalar")) input[type="file"]')
+        await file_input.set_input_files(tmp_path)
 
-        await page.locator('[id="appt-title"]').fill("TC004 randevu")
-        # Oluştur engellenmemeli (GAP-29)
-        await page.get_by_role("button", name="Oluştur", exact=True).click(timeout=10000)
+        await expect(page.get_by_text(os.path.basename(tmp_path))).to_be_visible(timeout=20000)
 
-        await expect(page.get_by_text("Autotest Appt TC004").first).to_be_visible(timeout=15000)
+        async with page.expect_dialog() as dialog_info:
+            await page.get_by_role("button", name="Dosyayı sil", exact=True).click(timeout=10000)
+        dialog = await dialog_info.value
+        await dialog.accept()
+
+        await expect(page.get_by_text(os.path.basename(tmp_path))).to_have_count(0, timeout=15000)
+        await expect(page.get_by_text("Henüz dosya yok", exact=True)).to_be_visible(timeout=15000)
 
         await asyncio.sleep(5)
 
     finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
         if context:
             await context.close()
         if browser:

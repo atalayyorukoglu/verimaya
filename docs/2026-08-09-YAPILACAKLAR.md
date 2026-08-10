@@ -183,13 +183,23 @@
 
 ## Faz 9 — kalan denetim işleri (öncelik sırası yok; kapasiteye göre)
 
-- **TEST-02 — TestSprite senaryoları DOMAIN-02'ye göre güncellensin.** `testsprite_tests/`
-  altındaki 15 senaryo birleşme öncesi panele göre yazıldı; **TC002** ("Create a patient
-  and see it in the list") ve **TC003** ("Edit a patient…") artık var olmayan `/patients`
-  akışını test ediyor. Kişiler modeline çekilmeli: tür = Hasta filtresi, ad/soyad ayrı
-  alan, kaynak → alt kaynak kademesi. Firma seçimi + `/settings/organizations` için yeni
-  senaryo eklenebilir. **Dosyalar:** `testsprite_tests/TC00*.py`,
-  `docs/2026-08-09-TESTSPRITE-15-SENARYO.md`. **(M)**
+- **DOMAIN-02 artığı — "Hastalar bölüm etiketi" ayarının anlamı.** Faz F'de DB kolonu
+  `patients_section_label` → `contacts_section_label` oldu (`0038`) ama panel tarafı
+  eski dilde kaldı: i18n metni `'"Hastalar" bölüm etiketi'` / `'"Patients" section label'`,
+  değişken `patientsLabel`, DOM id `tenant-patients-label`, placeholder `Hastalar`.
+  **Bu salt yeniden adlandırma DEĞİL — ürün kararı:** birleşmeden sonra panel bölümü
+  "Kişiler"; bu ayar hâlâ "Hastalar"ı mı adlandırıyor, yoksa Kişiler bölümünü mü?
+  Tenant'ın kendi terimini seçmesi (ör. "Danışanlar") isteniyorsa etiket Kişiler'e
+  bağlanmalı. Karar verilmeden id/anahtar değiştirilirse TestSprite TC006 da kırılır.
+  **Dosyalar:** `apps/web/src/routes/settings/organization/+page.svelte`,
+  `apps/web/src/lib/i18n/messages.ts`, `testsprite_tests/TC006_*.py`. **(S)**
+- **AUDIT-F09-07b** KVKK m.11'in hasta/contact tarafı: `/v1/contacts/:id/data-export` +
+  `data-deletion-request`. AUDIT-F09-07 bilinçli olarak yalnız panel kullanıcısını
+  kapsadı (self-service, en dar yüzey); asıl kişisel veri yığını `contacts`'ta.
+  Anonimleştirilecek alan listesi LEG-02 hukukçu onayına bağlı. **(M)**
+- **SEC-03 artığı — `@fastify/static` route guard bypass.** Yama yalnız ≥10.1.1'de;
+  NestJS peer `^8||^9` + bull-board `^9.1.3` major atlama ister. Tek kalan high advisory.
+  Upstream peer aralığı genişleyince veya bull-board yükseltilince kapanır. **(M)**
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
 - **AUDIT-F09-07b** (yeni — F09-07 kapsamında dışı): hasta/contact KVKK m.11 — `/v1/contacts/:id/data-export` + `data-deletion-request`; Açık sorular §1 contact anonimizasyonu (ad/telefon/e-posta maske, mali kayıtlar kalır). Operator/admin aracılı; hasta hesabı yok. **(L)** — LEG-02 hukukçu.
 
@@ -262,6 +272,13 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **TEST-02** — TestSprite DOMAIN-02’ye (2026-08-10). 15→17 senaryo: TC002/003 Hasta
+  tipi `/contacts` (ad/soyad, kaynak→medium); TC007 Klinik+firma; TC009 Referans eden;
+  TC014 Sil artık var; TC004 iletişim uyarısı; **TC016** Firmalar; **TC017** dosya sil.
+  Statik güncelleme (canlı TestSprite koşusu yok). Doküman:
+  `docs/2026-08-09-TESTSPRITE-15-SENARYO.md` (başlık 17).
+  **Görüş:** Selector’lar ContactFormDialog / contacts/+page / AppointmentFormDialog /
+  ContactFilesPanel / settings/organizations kodundan. Filtre “Tümü” UI’da **Tüm türler**.
 - ✅ **AUDIT-F09-07** — KVKK m.11 panel-kullanıcı endpoints (2026-08-10). `GET /v1/me/data-export`,
   `POST /v1/me/data-deletion-request` + `tenants.data_retention_until` (migration `0040`) +
   `data_deletion_requests` RLS. Kapsam = (a) better-auth üye; self-only; hard-delete yok —
