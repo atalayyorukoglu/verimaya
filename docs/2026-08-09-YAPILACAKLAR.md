@@ -269,6 +269,14 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **SEC-03 — runtime high advisory kapatma** (2026-08-10). `drizzle-orm` 0.44.7→0.45.2
+  (doğrudan); `pnpm-workspace.yaml` overrides: find-my-way 9.7.0, fast-uri 3.1.5/4.1.2,
+  nanoid 3.3.18, brace-expansion 1.1.18/5.0.9, js-yaml 4.3.1. Audit 17→7 (high 11→1).
+  **Görüş:** Kalan tek high `@fastify/static@9.3.0` — patched yalnız ≥10.1.1 (major);
+  Nest peer `^8 || ^9`, bull-board `^9` → major atlama bilinçli ertelendi (ayrı kalem).
+  nanoid yalnız postcss/vite (build; API prod değil). shared 92 · api check+449 · web
+  check+42 · eslint temiz; `AppShell.svelte` prettier uyumsuzluğu SEC-03 öncesi drift
+  (SEC-03 dosyasına dokunulmadı). openapi drift yok.
 - ✅ **pnpm audit / Dependabot** — `.github/dependabot.yml` (npm kök `/` tek entry; gha; docker
   `apps/web`+`apps/api`; haftalık; limit 5; minor/patch groups; `ops(deps)` öneki) + CI
   `dependency-audit` job (`continue-on-error`, raporlamalı) (2026-08-10).

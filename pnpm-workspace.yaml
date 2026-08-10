@@ -7,3 +7,22 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
   msw: true
+
+# SEC-03: transitive high advisories. Remove each when its upstream pulls a patched range.
+# Reasons mirror the entries below; do not add overrides without a removal condition.
+overrides:
+  # GHSA-c96f-x56v-gq3h HTTP2 DoS. Nest/fastify pin 9.6.0; 9.6.1 does not exist → 9.7.0.
+  # Remove when @nestjs/platform-fastify and/or fastify depend on find-my-way >=9.7.0.
+  find-my-way: 9.7.0
+  # GHSA-7p8r-x3mc-p8w7 host confusion (ajv 3.x line). Remove when ajv/@fastify/ajv-compiler pull >=3.1.5.
+  'fast-uri@3': 3.1.5
+  # GHSA-7p8r-x3mc-p8w7 (fast-json-stringify 4.x line). Remove when fast-json-stringify pulls >=4.1.2.
+  'fast-uri@4': 4.1.2
+  # GHSA-2v37-7h3g-55p8. Via postcss/vite (build/tooling, not API prod runtime). Remove when postcss ships nanoid >=3.3.17.
+  'nanoid@3': 3.3.18
+  # GHSA-mh99 / GHSA-rgw5 (dev: nest cli). Remove when minimatch pulls >=1.1.18.
+  'brace-expansion@1': 1.1.18
+  # Same family on minimatch 5.x (eslint/@fastify/static glob). Remove when minimatch pulls >=5.0.9.
+  'brace-expansion@5': 5.0.9
+  # GHSA-5p4m-2wfm-xmqj (dev: nest cli cosmiconfig). Remove when cosmiconfig pulls >=4.3.1.
+  'js-yaml@4': 4.3.1
