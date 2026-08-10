@@ -490,12 +490,12 @@ export class ReportsService {
 
 			const total_groups = groups.length;
 			const items = groups.slice(0, REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT).map((row) => {
+				// Drizzle types `occurredOn` as string; runtime may still be Date from the driver.
+				const rawOccurred: unknown = row.occurredOn;
 				const occurred =
-					typeof row.occurredOn === 'string'
-						? row.occurredOn.slice(0, 10)
-						: row.occurredOn instanceof Date
-							? row.occurredOn.toISOString().slice(0, 10)
-							: String(row.occurredOn).slice(0, 10);
+					rawOccurred instanceof Date
+						? rawOccurred.toISOString().slice(0, 10)
+						: String(rawOccurred).slice(0, 10);
 				return {
 					count: Number(row.count),
 					amount: row.amount,
