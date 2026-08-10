@@ -29,6 +29,7 @@
 	let q = $state('');
 	let search = $state('');
 	let typeId = $state('');
+	let typeDraft = $state('');
 	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
@@ -57,7 +58,10 @@
 	$effect(() => {
 		if (defaultTypeApplied || contactTypes.length === 0) return;
 		const hasta = contactTypes.find((ct) => ct.name === 'Hasta');
-		if (hasta) typeId = hasta.id;
+		if (hasta) {
+			typeId = hasta.id;
+			typeDraft = hasta.id;
+		}
 		defaultTypeApplied = true;
 	});
 
@@ -96,15 +100,20 @@
 		return members.find((m) => m.id === userId)?.display_name ?? null;
 	}
 
-	function selectTypeFilter(nextTypeId: string) {
-		typeId = nextTypeId;
-		selectedIds = [];
-	}
-
 	function submitSearch(e: Event) {
 		e.preventDefault();
 		search = q.trim();
+		typeId = typeDraft;
 		selectedIds = [];
+	}
+
+	function clearFilters() {
+		q = '';
+		search = '';
+		typeDraft = '';
+		typeId = '';
+		selectedIds = [];
+		defaultTypeApplied = true;
 	}
 
 	function openCreate() {
@@ -218,34 +227,33 @@
 		{/snippet}
 	</PageHeader>
 
-	<div class="mb-4 flex flex-wrap gap-2">
-		<Button
-			type="button"
-			size="sm"
-			variant={typeId === '' ? 'secondary' : 'outline'}
-			onclick={() => selectTypeFilter('')}
-		>
-			{t('contacts.list.filterAll')}
-		</Button>
-		{#each contactTypes as ct (ct.id)}
-			<Button
-				type="button"
-				size="sm"
-				variant={typeId === ct.id ? 'secondary' : 'outline'}
-				onclick={() => selectTypeFilter(ct.id)}
-			>
-				{ct.name}
-			</Button>
-		{/each}
-	</div>
-
-	<form class="mb-4 flex flex-col gap-2 sm:flex-row" onsubmit={submitSearch}>
+	<form
+		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center"
+		onsubmit={submitSearch}
+	>
 		<input
-			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40"
+			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:min-w-[12rem]"
 			placeholder={t('contacts.list.searchPlaceholder')}
 			bind:value={q}
 		/>
-		<Button type="submit" variant="secondary">{t('contacts.list.search')}</Button>
+		<select
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-44"
+			bind:value={typeDraft}
+			aria-label={t('contacts.list.filterTypeAria')}
+		>
+			<option value="">{t('contacts.list.filterTypeAll')}</option>
+			{#each contactTypes as ct (ct.id)}
+				<option value={ct.id}>{ct.name}</option>
+			{/each}
+		</select>
+		<div class="flex gap-2">
+			<Button type="submit" variant="secondary">{t('contacts.list.filterApply')}</Button>
+			{#if search || typeId}
+				<Button type="button" variant="outline" onclick={clearFilters}
+					>{t('contacts.list.filterClear')}</Button
+				>
+			{/if}
+		</div>
 	</form>
 
 	{#if selectedIds.length > 0}
