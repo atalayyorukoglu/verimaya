@@ -5,11 +5,9 @@
 > `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de durur. Kapanan işin kanıtı oradadır,
 > buraya taşınmaz.
 >
-> **Durum anı:** branch `main`, HEAD `ba42830` (AUDIT-F09-10). Prod DB `0032`'de
-> doğrulandı (2026-08-08, kanıt: `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md` § A);
-> aktif smoke tıklama rehberi: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`.
-> `0033` + `0034` sıradaki API deploy'uyla gider.
-> Pilot tenant: `Demo Klinik` (`afb4a68b…`) — 757 dosya, 548 işlem, 703 randevu.
+> **Durum anı:** branch `main`, DOMAIN-02 merge (`cc86b2c`, 2026-08-10). Prod:
+> migrate `0033`–`0038` + API/web deploy edildi; panel tek **Kişiler**. E4 GHL testi açık.
+> Smoke rehberi: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`. Pilot tenant: `Demo Klinik`.
 
 ---
 
@@ -49,12 +47,8 @@
 - [ ] **Prod smoke turu** — `docs/2026-08-09-PROD-SMOKE-REHBERI.md` §1–§3
   (**👤 SEN TIKLA**: soft-delete B, filtre D, sayı E). Takılan maddeye bu dosyada kalem aç;
   takılan yoksa rehberdeki Sonuç'u işaretle. Migration A kanıtı arşiv checklist'te.
-- [ ] **Migration `0033` + `0034` prod'a** (sıradaki API deploy'uyla): yedek → `pnpm db:migrate`
-  → kanıt (`outbox_events`'ta `status='dead'` + `dead_lettered_at`; `appointment_types` /
-  `contact_types` tenant+name UNIQUE index'leri, `tenant_settings` seed bayrakları).
-  Runbook deseni: arşiv PROD-KONTROL § A. Not (2026-08-09): `0034` kendi içinde mükerrer
-  (tenant, name) çiftlerini önce dedupe edip sonra index kuruyor — elle ön temizlik
-  gerekmiyor, yine de migrate log'unda dedupe adımına göz at.
+- [x] **Migration `0033` + `0034` prod'a** (DOMAIN-02 API deploy ile; `0035`–`0038` aynı turda).
+  **Görüş (2026-08-10):** owner `DATABASE_URL` + `RUN_MIGRATIONS`; ardından contacts API yeşil.
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org dahil) — devam eden kural.
 - [ ] **Tenant adı:** `Demo Klinik` rename veya olduğu gibi bırak — karar ver, Görüş'e yaz (ucuz).
 - **Bağımlı:** yok.
@@ -127,15 +121,16 @@
   **Görüş:** api 451 · shared 92 · web check/test/lint yeşil; openapi 69 ops.
 - [x] **Faz B2+B3 — `0036_drop_patients.sql`** (§0-D: taşıma yok, DROP CASCADE; C ile aynı deploy).
   ~~eski B2 veri taşıma + B3 ayrı 0037~~ düştü.
-- [ ] **Faz E — doğrulama** (E2' ✅; **kalan tek iş: E3 smoke rehberi + E4 GHL testi — insan**).
+- [~] **Faz E — doğrulama** (E2' ✅; E3 ✅ canlı smoke GHL hariç OK; **kalan: E4 GHL**).
+  **Görüş (2026-08-10):** Prod merge+deploy sonrası menü/liste/form/detay/firma/rapor/
+  WhatsApp OK. E4 bilinçli ertelendi.
 - [x] **Faz F — temizlik** (`patient.ts` silindi; create-patient kesildi; distribution/outbox/
   audit/hata kodu/section_label → contact*; AGENTS+MIMARI+CHANGELOG+Obsidian).
   **Görüş (2026-08-10):** 0038 `contacts_section_label` + audit CHECK; openapi 68 ops;
-  shared 92 · api 449 · web check/test/lint yeşil. E3/E4 dokunulmadı.
-- **Bağımlı:** kalem 1'in migration adımı (`0035` öncesi `0034` prod'da doğrulanmış olmalı).
-  Faz A + B1 + C + D bu bağımlılıktan önce yürüyebilir; **0036 canlıya `0034` doğrulanmadan gitmez.**
-- **Kabul:** planın Faz A–F kabul kriterleri; E2' Hasta filtresi birim testi yeşil.
-  **Not:** DOMAIN-02 gövdede kalır — Faz E (E3/E4) insan işi bitmeden "Son kapananlar"a taşınmaz.
+  shared 92 · api 449 · web check/test/lint yeşil.
+- **Bağımlı:** (kapanmış) prod `0034` doğrulandı deploy sırasında `0033`–`0038` ile.
+- **Kabul:** planın Faz A–F; E4 GHL testi yeşil olunca "Son kapananlar"a taşınır.
+  **Not:** DOMAIN-02 gövdede kalır — E4 bitmeden kapanmaz.
 
 ---
 

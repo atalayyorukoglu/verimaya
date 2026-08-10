@@ -293,10 +293,14 @@ referans kaynağı" durumu `referred_by_contact_id` ters FK'siyle zaten çıkıy
       doğrular (§0-C). Bu test kalıcıdır — E1/E2'nin tek seferlik provasından daha iyi.
   **Görüş:** `apps/api/src/reports/reports.hasta-filter.isolation.spec.ts` — total=3,
   source/medium kırılımı; drizzle tx + SET LOCAL.
-- [ ] **E3.** `docs/2026-08-09-PROD-SMOKE-REHBERI.md`'ye Kişiler bölümü eklenir;
+- [x] **E3.** `docs/2026-08-09-PROD-SMOKE-REHBERI.md`'ye Kişiler bölümü eklenir;
       insan tıklama turu.
+  **Görüş (2026-08-10):** Prod deploy (PR #2 → `main` `cc86b2c`) sonrası canlı tur:
+  menü/rota, liste, form, detay, firmalar, rapor hasta sayısı, WhatsApp AI — **OK**.
+  Detay checklist: runbook § canlı kontrol + smoke rehberi § DOMAIN-02.
 - [ ] **E4.** GHL çift yönlü senkron testi: GHL'de kişi güncelle → panelde ad/soyad
       ayrı geldi mi; panelde oluştur → GHL'e gitti mi.
+  **Not (2026-08-10):** E3 turunda bilerek atlandı; DOMAIN-02 kapanışı için son açık madde.
 
 ---
 
