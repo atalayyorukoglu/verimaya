@@ -21,7 +21,7 @@ import type { MessageKey } from '$lib/i18n/messages';
  *   Panel (grup dışı)
  *   Kayıtlar → Kişiler, Randevular, Finans, Raporlar
  *   Büyüme → Araçlar, Kaynaklar  (hub sayfaları; alt ürünler kartlardan)
- *   Sistem → Ayarlar, Özellikler, Geliştirici
+ *   Sistem → Özellikler, Ayarlar, Geliştirici
  */
 export type NavItem = {
 	labelKey: MessageKey;
@@ -62,8 +62,8 @@ export const navGroups: NavGroup[] = [
 	{
 		labelKey: 'nav.group.system',
 		items: [
-			{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
 			{ labelKey: 'nav.features', href: '/features', icon: Sparkles },
+			{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
 			{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }
 		]
 	}
