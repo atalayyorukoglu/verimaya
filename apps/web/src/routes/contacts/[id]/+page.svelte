@@ -342,26 +342,15 @@
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 				<h2 class="text-sm font-semibold text-text">{t('contacts.finance.title')}</h2>
-				<div class="flex flex-wrap items-center gap-2">
-					<Button
-						type="button"
-						size="sm"
-						variant="secondary"
-						disabled={autoLinking}
-						onclick={autoLinkTransactions}
-					>
-						{autoLinking ? t('contacts.finance.autoLinking') : t('contacts.finance.autoLink')}
-					</Button>
-					<a href="/finance/balances" class="text-xs font-medium text-brand hover:underline">
-						{t('contacts.finance.balancesLink')}
-					</a>
-					<a
-						href={`/finance?contact=${contact.id}`}
-						class="text-xs font-medium text-brand hover:underline"
-					>
-						{t('contacts.finance.openInTransactions')}
-					</a>
-				</div>
+				<Button
+					type="button"
+					size="sm"
+					variant="secondary"
+					disabled={autoLinking}
+					onclick={autoLinkTransactions}
+				>
+					{autoLinking ? t('contacts.finance.autoLinking') : t('contacts.finance.autoLink')}
+				</Button>
 			</div>
 
 			{#if autoLinkMessage}

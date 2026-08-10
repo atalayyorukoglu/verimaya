@@ -167,24 +167,22 @@
 	}
 </script>
 
-<section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
+<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<h2 class="text-sm font-semibold text-text">{t('contacts.files.title')}</h2>
 		<div class="flex flex-wrap items-center gap-2">
-			{#if appointments.length > 0}
-				<select
-					class="h-8 max-w-[14rem] rounded-[6px] border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40"
-					bind:value={linkAppointmentId}
-					aria-label={t('contacts.files.linkAppointment')}
-				>
-					<option value="">{t('contacts.files.noAppointment')}</option>
-					{#each appointments as a (a.id)}
-						<option value={a.id}>
-							{a.starts_at.slice(0, 10)} · {a.title ?? t('contacts.files.appointmentFallback')}
-						</option>
-					{/each}
-				</select>
-			{/if}
+			<select
+				class="h-8 max-w-[18rem] rounded-[6px] border border-border bg-surface-2 px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40"
+				bind:value={linkAppointmentId}
+				aria-label={t('contacts.files.linkAppointment')}
+			>
+				<option value="">{t('contacts.files.noAppointment')}</option>
+				{#each appointments as a (a.id)}
+					<option value={a.id}>
+						{a.starts_at.slice(0, 10)} · {a.title ?? t('contacts.files.appointmentFallback')}
+					</option>
+				{/each}
+			</select>
 			<input
 				bind:this={fileInput}
 				type="file"

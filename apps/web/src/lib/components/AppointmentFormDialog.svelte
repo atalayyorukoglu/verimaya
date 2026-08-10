@@ -60,12 +60,26 @@
 	);
 
 	const directoryContacts = $derived(directoryQuery.data?.items ?? []);
-	const clinicContacts = $derived(
-		directoryContacts.filter((c) => c.contact_type_name === 'Klinik')
+
+	function sortByDisplayName(list: Contact[]) {
+		return [...list].sort((a, b) => a.display_name.localeCompare(b.display_name, 'tr'));
+	}
+
+	function findContactById(id: string): Contact | undefined {
+		return directoryContacts.find((c) => c.id === id) ?? contacts.find((c) => c.id === id);
+	}
+
+	const patientContacts = $derived(
+		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Hasta'))
 	);
-	const hotelContacts = $derived(directoryContacts.filter((c) => c.contact_type_name === 'Otel'));
+	const clinicContacts = $derived(
+		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Klinik'))
+	);
+	const hotelContacts = $derived(
+		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Otel'))
+	);
 	const transferContacts = $derived(
-		directoryContacts.filter((c) => c.contact_type_name === 'Transfer')
+		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Transfer'))
 	);
 
 	let contact_id = $state('');
@@ -80,6 +94,33 @@
 	let transfer_note = $state('');
 	let notes = $state('');
 	let deletePhase = $state<DeleteConfirmPhase>('form');
+
+	const orphanPatientContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
+		if (!contact_id || patientContacts.some((c) => c.id === contact_id)) return undefined;
+		return findContactById(contact_id) ?? { id: contact_id, display_name: contact_id };
+	});
+	const orphanClinicContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
+		if (!clinic_contact_id || clinicContacts.some((c) => c.id === clinic_contact_id)) return undefined;
+		return findContactById(clinic_contact_id) ?? {
+			id: clinic_contact_id,
+			display_name: clinic_contact_id
+		};
+	});
+	const orphanHotelContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
+		if (!hotel_contact_id || hotelContacts.some((c) => c.id === hotel_contact_id)) return undefined;
+		return findContactById(hotel_contact_id) ?? {
+			id: hotel_contact_id,
+			display_name: hotel_contact_id
+		};
+	});
+	const orphanTransferContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
+		if (!transfer_contact_id || transferContacts.some((c) => c.id === transfer_contact_id))
+			return undefined;
+		return findContactById(transfer_contact_id) ?? {
+			id: transfer_contact_id,
+			display_name: transfer_contact_id
+		};
+	});
 
 	function toLocalInput(iso: string | null | undefined): string {
 		if (!iso) return '';
@@ -192,10 +233,13 @@
 			<div>
 				<label class={labelClass} for="appt-contact">{t('appointments.form.contact')}</label>
 				<select id="appt-contact" class={fieldClass} bind:value={contact_id} required>
-					{#if contacts.length === 0}
+					{#if patientContacts.length === 0 && !orphanPatientContact}
 						<option value="">{t('appointments.form.noContacts')}</option>
 					{:else}
-						{#each contacts as c (c.id)}
+						{#if orphanPatientContact}
+							<option value={orphanPatientContact.id}>{orphanPatientContact.display_name}</option>
+						{/if}
+						{#each patientContacts as c (c.id)}
 							<option value={c.id}>{c.display_name}</option>
 						{/each}
 					{/if}
@@ -253,7 +297,10 @@
 					<label class={labelClass} for="appt-clinic">Klinik</label>
 					<select id="appt-clinic" class={fieldClass} bind:value={clinic_contact_id}>
 						<option value="">—</option>
-						{#each clinicContacts.length ? clinicContacts : directoryContacts as c (c.id)}
+						{#if orphanClinicContact}
+							<option value={orphanClinicContact.id}>{orphanClinicContact.display_name}</option>
+						{/if}
+						{#each clinicContacts as c (c.id)}
 							<option value={c.id}>{c.display_name}</option>
 						{/each}
 					</select>
@@ -262,7 +309,10 @@
 					<label class={labelClass} for="appt-hotel">Otel</label>
 					<select id="appt-hotel" class={fieldClass} bind:value={hotel_contact_id}>
 						<option value="">—</option>
-						{#each hotelContacts.length ? hotelContacts : directoryContacts as c (c.id)}
+						{#if orphanHotelContact}
+							<option value={orphanHotelContact.id}>{orphanHotelContact.display_name}</option>
+						{/if}
+						{#each hotelContacts as c (c.id)}
 							<option value={c.id}>{c.display_name}</option>
 						{/each}
 					</select>
@@ -274,7 +324,10 @@
 				>
 				<select id="appt-transfer-c" class={fieldClass} bind:value={transfer_contact_id}>
 					<option value="">—</option>
-					{#each transferContacts.length ? transferContacts : directoryContacts as c (c.id)}
+					{#if orphanTransferContact}
+						<option value={orphanTransferContact.id}>{orphanTransferContact.display_name}</option>
+					{/if}
+					{#each transferContacts as c (c.id)}
 						<option value={c.id}>{c.display_name}</option>
 					{/each}
 				</select>
