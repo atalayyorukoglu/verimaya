@@ -277,12 +277,12 @@
 			{#if showPanelNav}
 				{@const panelActive = isActive(panelNavItem.href)}
 				{@const PanelIcon = panelNavItem.icon}
-				<ul class="space-y-0.5">
+				<ul class="space-y-0">
 					<li>
 						<a
 							href={panelNavItem.href}
 							class={cn(
-								'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+								'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
 								panelActive
 									? 'bg-brand-subtle text-brand-text'
 									: 'text-text-muted hover:bg-surface-2 hover:text-text'
@@ -297,7 +297,7 @@
 			{/if}
 			{#each visibleGroups as group, gi (group.labelKey)}
 				<div class={showPanelNav ? (gi === 0 ? 'mt-3' : 'mt-4') : gi === 0 ? '' : 'mt-4'}>
-					<p class="px-3 pb-1.5 text-[11px] font-semibold text-text-muted">
+					<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
 						{t(group.labelKey)}
 					</p>
 					{#if group.subgroups}
@@ -305,12 +305,12 @@
 							<p
 								class={cn(
 									'px-3 pb-1 text-[10px] font-medium tracking-wide text-text-faint',
-									si === 0 ? 'pt-0.5' : 'pt-2'
+									si === 0 ? 'pt-0.5' : 'pt-1.5'
 								)}
 							>
 								{t(sg.labelKey)}
 							</p>
-							<ul class="space-y-0.5">
+							<ul class="space-y-0">
 								{#each sg.items as item (item.href)}
 									{@const active = isActive(item.href)}
 									{@const Icon = item.icon}
@@ -318,7 +318,7 @@
 										<a
 											href={item.href}
 											class={cn(
-												'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+												'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
 												active
 													? 'bg-brand-subtle text-brand-text'
 													: 'text-text-muted hover:bg-surface-2 hover:text-text'
@@ -333,7 +333,7 @@
 							</ul>
 						{/each}
 					{:else}
-						<ul class="space-y-0.5">
+						<ul class="space-y-0">
 							{#each group.items ?? [] as item (item.href)}
 								{@const active = isActive(item.href)}
 								{@const Icon = item.icon}
@@ -341,7 +341,7 @@
 									<a
 										href={item.href}
 										class={cn(
-											'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+											'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
 											active
 												? 'bg-brand-subtle text-brand-text'
 												: 'text-text-muted hover:bg-surface-2 hover:text-text'
@@ -409,13 +409,13 @@
 				{#if showPanelNav}
 					{@const panelActive = isActive(panelNavItem.href)}
 					{@const PanelIcon = panelNavItem.icon}
-					<ul class="space-y-0.5">
+					<ul class="space-y-0">
 						<li>
 							<a
 								href={panelNavItem.href}
 								onclick={closeMobile}
 								class={cn(
-									'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+									'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
 									panelActive
 										? 'bg-brand-subtle text-brand-text'
 										: 'text-text-muted hover:bg-surface-2 hover:text-text'
@@ -430,7 +430,7 @@
 				{/if}
 				{#each visibleGroups as group, gi (group.labelKey)}
 					<div class={showPanelNav ? (gi === 0 ? 'mt-3' : 'mt-4') : gi === 0 ? '' : 'mt-4'}>
-						<p class="px-3 pb-1.5 text-[11px] font-semibold text-text-muted">
+						<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
 							{t(group.labelKey)}
 						</p>
 						{#if group.subgroups}
@@ -438,12 +438,12 @@
 								<p
 									class={cn(
 										'px-3 pb-1 text-[10px] font-medium tracking-wide text-text-faint',
-										si === 0 ? 'pt-0.5' : 'pt-2'
+										si === 0 ? 'pt-0.5' : 'pt-1.5'
 									)}
 								>
 									{t(sg.labelKey)}
 								</p>
-								<ul class="space-y-0.5">
+								<ul class="space-y-0">
 									{#each sg.items as item (item.href)}
 										{@const active = isActive(item.href)}
 										{@const Icon = item.icon}
@@ -452,7 +452,7 @@
 												href={item.href}
 												onclick={closeMobile}
 												class={cn(
-													'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+													'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
 													active
 														? 'bg-brand-subtle text-brand-text'
 														: 'text-text-muted hover:bg-surface-2 hover:text-text'
@@ -467,7 +467,7 @@
 								</ul>
 							{/each}
 						{:else}
-							<ul class="space-y-0.5">
+							<ul class="space-y-0">
 								{#each group.items ?? [] as item (item.href)}
 									{@const active = isActive(item.href)}
 									{@const Icon = item.icon}
@@ -476,7 +476,7 @@
 											href={item.href}
 											onclick={closeMobile}
 											class={cn(
-												'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+												'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
 												active
 													? 'bg-brand-subtle text-brand-text'
 													: 'text-text-muted hover:bg-surface-2 hover:text-text'

@@ -7,6 +7,7 @@ import ChartColumn from '@lucide/svelte/icons/chart-column';
 import Megaphone from '@lucide/svelte/icons/megaphone';
 import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
 import Bot from '@lucide/svelte/icons/bot';
+import BookOpen from '@lucide/svelte/icons/book-open';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -75,7 +76,10 @@ export const navGroups: NavGroup[] = [
 			},
 			{
 				labelKey: 'nav.group.resources',
-				items: [{ labelKey: 'nav.aiPrep', href: '/resources/ai-prep', icon: Bot }]
+				items: [
+					{ labelKey: 'nav.aiPrep', href: '/resources/ai-prep', icon: Bot },
+					{ labelKey: 'nav.docs', href: '/resources/docs', icon: BookOpen }
+				]
 			}
 		]
 	},
