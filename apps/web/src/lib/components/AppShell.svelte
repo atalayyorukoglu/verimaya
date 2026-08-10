@@ -5,12 +5,7 @@
 	import type { Tenant } from '@verimaya/shared';
 	import { cn } from '$lib/utils';
 	import { apiGet } from '$lib/api';
-	import {
-		mobileTabItems,
-		navGroupItems,
-		navGroups,
-		panelNavItem
-	} from '$lib/navigation';
+	import { mobileTabItems, navGroupItems, navGroups, panelNavItem } from '$lib/navigation';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { canAccessPath, canSeeNav, DEFAULT_ROLE, roleLabels } from '$lib/rbac';
 	import { useQueryScope, resetQueryScope } from '$lib/query-scope.svelte';
