@@ -9,6 +9,7 @@ export * from './appointments';
 export * from './transactions';
 export * from './idempotency-keys';
 export * from './audit';
+export * from './data-deletion-requests';
 export * from './files';
 export * from './finance-categories';
 export * from './case-notes';

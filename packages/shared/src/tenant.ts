@@ -54,6 +54,11 @@ export const tenantSchema = z.object({
 	/** UI label for the contacts/karne section (tenant-writable display text) */
 	contacts_section_label: z.string().min(1).max(80).default('Hastalar'),
 	timezone: tenantTimezoneSchema.default(DEFAULT_TENANT_TIMEZONE),
+	/**
+	 * AUDIT-F09-07: optional legal retention horizon (UTC). Downstream sweeps may
+	 * soft-delete after this instant; null = not set. Not auto-enforced yet.
+	 */
+	data_retention_until: isoDateTime.nullable().default(null),
 	created_at: isoDateTime
 });
 
@@ -62,7 +67,9 @@ export type Tenant = z.infer<typeof tenantSchema>;
 export const tenantCreateSchema = tenantSchema.omit({
 	id: true,
 	created_at: true,
-	base_currency_locked: true
+	base_currency_locked: true,
+	// Retention horizon is ops/legal-set; not part of create form yet.
+	data_retention_until: true
 });
 
 export type TenantCreate = z.infer<typeof tenantCreateSchema>;

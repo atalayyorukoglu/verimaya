@@ -48,6 +48,10 @@ const PUBLIC_ROUTE_ALLOWLIST: Record<string, string> = {
 	'WebhooksController.ingest': 'Inbound webhook — signature/API-key verified in-handler, queue-first',
 	'WebhooksController.ingestWaha': 'WAHA inbound webhook — same queue-first public surface',
 	'MeController.me': 'Session-only own profile; not an org-scoped resource (no OrgPermissionGuard)',
+	'MeController.dataExport':
+		'AUDIT-F09-07 KVKK m.11 self-export; Session+ActiveOrg; subject = session user only (no OrgPermission resource)',
+	'MeController.dataDeletionRequest':
+		'AUDIT-F09-07 KVKK m.11 self deletion-request; Session+ActiveOrg; subject = session user only (no OrgPermission resource)',
 	'AdsOAuthCallbackController.callback':
 		'Ads OAuth provider browser redirect; tenant recovered from signed state',
 	'GhlOAuthCallbackController.callback':

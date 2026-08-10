@@ -70,6 +70,196 @@ paths:
                   - tenant_id
                   - role
                 additionalProperties: false
+  /me/data-export:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exported_at:
+                    type: string
+                    format: date-time
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  data_retention_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  subject:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        format: email
+                        maxLength: 255
+                      display_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 255
+                      role:
+                        type: string
+                        enum:
+                          - owner
+                          - admin
+                          - manager
+                          - agent
+                          - finance
+                          - readonly
+                      created_at:
+                        type: string
+                        format: date-time
+                      membership_created_at:
+                        type: string
+                        format: date-time
+                    required:
+                      - id
+                      - email
+                      - display_name
+                      - role
+                      - created_at
+                      - membership_created_at
+                    additionalProperties: false
+                  audit_logs_as_actor:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        actor_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        actor_display_name:
+                          type: string
+                          maxLength: 255
+                        action:
+                          type: string
+                          enum:
+                            - create
+                            - update
+                            - delete
+                            - login
+                        entity_type:
+                          type: string
+                          enum:
+                            - contact
+                            - appointment
+                            - transaction
+                            - inbound_message
+                            - file
+                            - tenant
+                            - user
+                        entity_label:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - actor_id
+                        - actor_display_name
+                        - action
+                        - entity_type
+                        - entity_label
+                        - created_at
+                      additionalProperties: false
+                  deletion_requests:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        subject_user_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                            - received
+                            - applied
+                        anonymized_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - subject_user_id
+                        - status
+                        - anonymized_at
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - exported_at
+                  - tenant_id
+                  - data_retention_until
+                  - subject
+                  - audit_logs_as_actor
+                  - deletion_requests
+                additionalProperties: false
+  /me/data-deletion-request:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  subject_user_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                      - received
+                      - applied
+                  anonymized_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - subject_user_id
+                  - status
+                  - anonymized_at
+                  - created_at
+                additionalProperties: false
   /tenants/current:
     get:
       responses:
@@ -113,6 +303,11 @@ paths:
                     minLength: 1
                     maxLength: 64
                     default: Europe/Istanbul
+                  data_retention_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    default: null
                   created_at:
                     type: string
                     format: date-time

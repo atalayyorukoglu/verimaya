@@ -47,6 +47,7 @@ export const demoTenant: Tenant = {
 	base_currency_locked: true,
 	contacts_section_label: 'Hastalar',
 	timezone: 'Europe/Istanbul',
+	data_retention_until: null,
 	created_at: '2026-01-15T10:00:00.000Z'
 };
 
@@ -413,6 +414,7 @@ function makeExtraTenants(): Tenant[] {
 		base_currency_locked: false,
 		contacts_section_label: 'Hastalar',
 		timezone: 'Europe/Istanbul' as const,
+		data_retention_until: null,
 		created_at: iso(faker.date.past({ years: 1 }))
 	}));
 }

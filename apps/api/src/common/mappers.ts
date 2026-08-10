@@ -240,6 +240,9 @@ export function toTenant(row: TenantRow, baseCurrencyLocked = false): Tenant {
 		base_currency_locked: baseCurrencyLocked,
 		contacts_section_label: row.contactsSectionLabel,
 		timezone: row.timezone as Tenant['timezone'],
+		data_retention_until: row.dataRetentionUntil
+			? toIsoDateTime(row.dataRetentionUntil)
+			: null,
 		created_at: toIsoDateTime(row.createdAt)
 	};
 }

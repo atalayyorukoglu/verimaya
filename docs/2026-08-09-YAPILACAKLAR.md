@@ -191,7 +191,7 @@
   senaryo eklenebilir. **Dosyalar:** `testsprite_tests/TC00*.py`,
   `docs/2026-08-09-TESTSPRITE-15-SENARYO.md`. **(M)**
 - **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
-- **AUDIT-F09-07** KVKK m.11 data-subject endpoints: `/v1/me/data-export`, `/v1/me/data-deletion-request` + `tenants.data_retention_until`. Anonimleştirme yaklaşımı (silme değil) arşivdeki Açık sorular §1 kararına göre. **(L)**
+- **AUDIT-F09-07b** (yeni — F09-07 kapsamında dışı): hasta/contact KVKK m.11 — `/v1/contacts/:id/data-export` + `data-deletion-request`; Açık sorular §1 contact anonimizasyonu (ad/telefon/e-posta maske, mali kayıtlar kalır). Operator/admin aracılı; hasta hesabı yok. **(L)** — LEG-02 hukukçu.
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
 
@@ -262,6 +262,13 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **AUDIT-F09-07** — KVKK m.11 panel-kullanıcı endpoints (2026-08-10). `GET /v1/me/data-export`,
+  `POST /v1/me/data-deletion-request` + `tenants.data_retention_until` (migration `0040`) +
+  `data_deletion_requests` RLS. Kapsam = (a) better-auth üye; self-only; hard-delete yok —
+  tek org’da name/email anonim; çok-org’da `received` (global mask yok).
+  **Görüş:** AUDIT-REPORT Fix yolu `/v1/me` + ActiveOrgGuard → panel user; hasta/contact
+  (b) ayrı kalem **AUDIT-F09-07b** (Açık sorular §1 contact alanları). Mali kayıt / audit
+  satırı silinmez. shared 95 · api 461 · openapi 71 · fresh mig 0000→0040 OK. Hukukçu: LEG-02.
 - ✅ **GAP-29** — Randevu öncesi eksik iletişim uyarısı (2026-08-10). `AppointmentFormDialog`
   kişi seçilince phone/email boşsa uyarı (bloklamaz); i18n tr+en; saf yardımcı + vitest.
   **Görüş:** Yalnız uyarı — kaydetme serbest (bilgi sonradan girilebilir). Metin eksik

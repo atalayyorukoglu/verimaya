@@ -2468,6 +2468,7 @@ export const handlers = [
 			base_currency_locked: false,
 			contacts_section_label: 'Hastalar',
 			timezone: 'Europe/Istanbul',
+			data_retention_until: null,
 			created_at: now
 		};
 		store.tenants.push(tenant);

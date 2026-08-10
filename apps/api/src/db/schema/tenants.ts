@@ -16,6 +16,8 @@ export const tenants = pgTable(
 		baseCurrency: text('base_currency').notNull().default('TRY'),
 		contactsSectionLabel: text('contacts_section_label').notNull().default('Hastalar'),
 		timezone: text('timezone').notNull().default('Europe/Istanbul'),
+		/** AUDIT-F09-07 — optional legal retention horizon; null = unset. */
+		dataRetentionUntil: timestamp('data_retention_until', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
 			.defaultNow()

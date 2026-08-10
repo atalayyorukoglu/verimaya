@@ -7,6 +7,8 @@ export const API_V1_PREFIX = '/v1';
 /** Canonical /v1 path constants — MSW handlers and NestJS should match these. */
 export const apiPaths = {
 	me: `${API_V1_PREFIX}/me`,
+	meDataExport: `${API_V1_PREFIX}/me/data-export`,
+	meDataDeletionRequest: `${API_V1_PREFIX}/me/data-deletion-request`,
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
 	members: `${API_V1_PREFIX}/members`,
 	member: (id: string) => `${API_V1_PREFIX}/members/${id}`,
@@ -184,6 +186,7 @@ import {
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema, memberRoleUpdateSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
+import { dataDeletionRequestSchema, dataExportSchema } from './data-subject.js';
 import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
 import {
@@ -218,6 +221,12 @@ import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './we
 export const apiContract = {
 	'GET /v1/me': {
 		response: membershipUserSchema
+	},
+	'GET /v1/me/data-export': {
+		response: dataExportSchema
+	},
+	'POST /v1/me/data-deletion-request': {
+		response: dataDeletionRequestSchema
 	},
 	'GET /v1/tenants/current': {
 		response: tenantSchema
