@@ -55,7 +55,7 @@ export const navGroups: NavGroup[] = [
 	{
 		labelKey: 'nav.group.growth',
 		items: [
-			{ labelKey: 'nav.tools', href: '/tools', icon: Wrench },
+			{ labelKey: 'nav.tools', href: '/toolkit', icon: Wrench },
 			{ labelKey: 'nav.resources', href: '/knowledge', icon: Library }
 		]
 	},
