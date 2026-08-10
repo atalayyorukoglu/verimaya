@@ -100,27 +100,36 @@
 		return findContactById(contact_id) ?? { id: contact_id, display_name: contact_id };
 	});
 	const orphanClinicContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
-		if (!clinic_contact_id || clinicContacts.some((c) => c.id === clinic_contact_id)) return undefined;
-		return findContactById(clinic_contact_id) ?? {
-			id: clinic_contact_id,
-			display_name: clinic_contact_id
-		};
+		if (!clinic_contact_id || clinicContacts.some((c) => c.id === clinic_contact_id))
+			return undefined;
+		return (
+			findContactById(clinic_contact_id) ?? {
+				id: clinic_contact_id,
+				display_name: clinic_contact_id
+			}
+		);
 	});
 	const orphanHotelContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
 		if (!hotel_contact_id || hotelContacts.some((c) => c.id === hotel_contact_id)) return undefined;
-		return findContactById(hotel_contact_id) ?? {
-			id: hotel_contact_id,
-			display_name: hotel_contact_id
-		};
+		return (
+			findContactById(hotel_contact_id) ?? {
+				id: hotel_contact_id,
+				display_name: hotel_contact_id
+			}
+		);
 	});
-	const orphanTransferContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
-		if (!transfer_contact_id || transferContacts.some((c) => c.id === transfer_contact_id))
-			return undefined;
-		return findContactById(transfer_contact_id) ?? {
-			id: transfer_contact_id,
-			display_name: transfer_contact_id
-		};
-	});
+	const orphanTransferContact = $derived.by(
+		(): Pick<Contact, 'id' | 'display_name'> | undefined => {
+			if (!transfer_contact_id || transferContacts.some((c) => c.id === transfer_contact_id))
+				return undefined;
+			return (
+				findContactById(transfer_contact_id) ?? {
+					id: transfer_contact_id,
+					display_name: transfer_contact_id
+				}
+			);
+		}
+	);
 
 	function toLocalInput(iso: string | null | undefined): string {
 		if (!iso) return '';
