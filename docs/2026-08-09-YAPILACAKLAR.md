@@ -221,7 +221,7 @@
 - **IOS-01:** iOS donmuş; birikmiş drift (DOMAIN-01 enum + marketing adları iOS'a uygulanmadı) —
   iOS çözülürse ilk kapatılacak kalem.
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse).
-- **CSP/HSTS başlık denetimi** canlıda kanıtlı; **pnpm audit / Dependabot** CI'da.
+- **CSP/HSTS başlık denetimi** canlıda kanıtlı.
 - **Veri işleme envanteri (tamamı)** + **AB veri lokasyonu envanteri + DPA şablonları**.
 - **DOC-03b/d artıkları (kullanıcı tarafı):** Obsidian `00-proje-ozeti.md` + `01-kararlar.md`
   marka satırları ve `04-ilerleme-log.md` — sıradaki vault oturumunda.
@@ -269,6 +269,12 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **pnpm audit / Dependabot** — `.github/dependabot.yml` (npm kök `/` tek entry; gha; docker
+  `apps/web`+`apps/api`; haftalık; limit 5; minor/patch groups; `ops(deps)` öneki) + CI
+  `dependency-audit` job (`continue-on-error`, raporlamalı) (2026-08-10).
+  **Görüş:** Ayrı npm dir'leri yok — tek `pnpm-lock.yaml`; audit CI'ı kırmaz (OPS-03
+  `workflow_run` conclusion'ına dokunmaz). Ölçüm: 17 bulgu (0 critical / 11 high / 5
+  moderate / 1 low) — düzeltme ayrı iş. `name: CI` değişmedi.
 - ✅ **OPS-03** — deploy CI kapısı: `deploy-web.yml` artık `push` ile değil, CI
   `workflow_run` (completed + success + head_branch=main + event=push) ile tetiklenir;
   `workflow_dispatch` kaçış kapısı kaldı; paths kapısı son başarılı Deploy koşusunun

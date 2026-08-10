@@ -117,7 +117,8 @@ Bağımlı: PILOT-02 verileri.
 
 - — Marka tescili: `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen **"Veri Maya"**)
 - — CSP/HSTS canlıda kanıtlı denetim
-- — pnpm audit / Dependabot CI’da
+- ✅ pnpm audit / Dependabot CI’da — Dependabot haftalık + CI `dependency-audit`
+  (continue-on-error; OPS-03 deploy’u bloklamaz). Bulgu düzeltmesi ayrı.
 - — Veri işleme envanteri (tamamı)
 - — AB veri lokasyonu envanteri + DPA şablonları
 - — Coolify `verimaya-web-image` → `verimaya-web` rename (isteğe bağlı)
@@ -168,7 +169,8 @@ Bunlar backlog değil; **yapılmama kararı** (liste tam metin: YAPILACAKLAR):
 | `/settings/import-export` | Yer tutucu “Faz 8’de” — uygulama yok |
 | Ads Meta/Google | Kod + runbook var; **canlı go-live** açık (A3) |
 | DOMAIN-02 E4 | GHL çift yön henüz test edilmedi |
-| Deploy vs CI | ✅ OPS-03 — CI yeşil olmadan auto-deploy yok (`workflow_dispatch` kaçış) |
+| Deploy vs CI | ✅ OPS-03 — CI yeşil olmadan auto-deploy yok (`workflow_dispatch` kaçış); audit job continue-on-error |
+| Tedarik zinciri | ✅ Dependabot + `pnpm audit` CI (rapor; bloklamaz) |
 | TestSprite TC002/TC003 | Hâlâ `/patients` senaryosu (TEST-02) |
 | Dosya silme | Endpoint yok (GAP-F09-23) |
 | Kişi not thread | Yok (GAP-F09-19) |
@@ -188,7 +190,7 @@ Faz 0–7 kodu · DOMAIN-01 · GAP P0/P1 (01–08 kapsam kilidi dahil, **uygulam
 |------|----------------|
 | A öncelik (PILOT/MARKET/OPS/DOMAIN E4) | ~20 checkbox + kısmi OPS-02e + E4 |
 | B Faz 9 | 6 madde (OPS-03 kapandı) |
-| C bekleyen | ~16 madde (GAP-08 dahil) |
+| C bekleyen | ~15 madde (GAP-08 dahil; audit/Dependabot kapandı) |
 | D açık sorular | 7 karar |
 | E yapılmayacaklar | N/A (bilinçli) |
 

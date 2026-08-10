@@ -1,0 +1,72 @@
+# Tedarik zinciri hijyeni — haftalık Dependabot.
+# npm: yalnız kök `/` (gerekçe aşağıdaki updates bloğunda).
+version: 2
+updates:
+  # Tek pnpm-lock.yaml kökte; workspace paketleri (apps/api, apps/web, packages/shared)
+  # ayrı directory GEREKMİYOR. Ayrı entries: kilitsiz package.json başına rakip PR,
+  # çift lockfile güncellemesi, solo gürültü. Dependabot pnpm workspace'i kökten okur
+  # ve tüm package.json + tek lockfile'ı koordine günceller.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ops(deps)'
+    groups:
+      npm-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ops(deps)'
+    groups:
+      actions-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # Dockerfile yolu apps/web/Dockerfile → directory /apps/web (base image: node:*-alpine)
+  - package-ecosystem: docker
+    directory: /apps/web
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ops(deps)'
+    groups:
+      docker-web-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: docker
+    directory: /apps/api
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ops(deps)'
+    groups:
+      docker-api-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch

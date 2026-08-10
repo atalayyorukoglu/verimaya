@@ -102,3 +102,27 @@ jobs:
 
       - name: Web production build
         run: pnpm --filter @verimaya/web build
+
+  # Advisory only: must not flip workflow conclusion (OPS-03 deploy-web.yml
+  # gates on workflows: [CI] + conclusion == success). continue-on-error keeps
+  # red audit from blocking unrelated PRs / main auto-deploy.
+  dependency-audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm audit (report-only; non-blocking)
+        run: pnpm audit
