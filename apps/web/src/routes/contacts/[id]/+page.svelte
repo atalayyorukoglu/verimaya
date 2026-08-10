@@ -352,6 +352,9 @@
 					>
 						{autoLinking ? t('contacts.finance.autoLinking') : t('contacts.finance.autoLink')}
 					</Button>
+					<a href="/finance/balances" class="text-xs font-medium text-brand hover:underline">
+						{t('contacts.finance.balancesLink')}
+					</a>
 					<a
 						href={`/finance?contact=${contact.id}`}
 						class="text-xs font-medium text-brand hover:underline"
@@ -372,39 +375,33 @@
 				<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
 			{:else if !USE_MSW && financeSummaryQuery.data}
 				{@const summary = financeSummaryQuery.data}
-				{#if summary.transaction_count === 0}
-					<p class="text-sm text-text-muted">{t('contacts.finance.empty')}</p>
-				{:else}
-					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<p class="text-xs text-text-muted">
-								{t('contacts.finance.income', { currency: baseCurrency })}
-							</p>
-							<p class="mt-1 text-base font-semibold text-success tabular-nums">
-								+{formatMoney(summary.income_base, baseCurrency)}
-							</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted">
-								{t('contacts.finance.expense', { currency: baseCurrency })}
-							</p>
-							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-								−{formatMoney(summary.expense_base, baseCurrency)}
-							</p>
-						</div>
-					</div>
-					<div class="mt-3 rounded-md border-t border-border bg-surface-2/50 px-3 py-3">
-						<p class="text-xs text-text-muted">
-							{t('contacts.finance.net', { currency: baseCurrency })}
+				<div class="grid grid-cols-3 gap-3">
+					<div>
+						<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+						<p class="mt-1 text-base font-semibold text-success tabular-nums">
+							+{formatMoney(summary.income_base, baseCurrency)}
 						</p>
+					</div>
+					<div>
+						<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+						<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+							−{formatMoney(summary.expense_base, baseCurrency)}
+						</p>
+					</div>
+					<div>
+						<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
 						<p
-							class="mt-1 text-xl font-semibold tabular-nums {summary.net_base >= 0
+							class="mt-1 text-base font-semibold tabular-nums {summary.net_base >= 0
 								? 'text-text'
 								: 'text-danger'}"
 						>
 							{formatMoney(summary.net_base, baseCurrency)}
 						</p>
 					</div>
+				</div>
+				{#if summary.transaction_count === 0}
+					<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
+				{:else}
 					<div class="mt-3 grid grid-cols-2 gap-3">
 						<div>
 							<p class="text-xs text-text-muted">
@@ -427,40 +424,54 @@
 			{:else if txQuery.isPending}
 				<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
 			{:else if finance.currencies.length === 0}
-				<p class="text-sm text-text-muted">{t('contacts.finance.empty')}</p>
+				<div class="grid grid-cols-3 gap-3">
+					<div>
+						<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+						<p class="mt-1 text-base font-semibold text-success tabular-nums">
+							+{formatMoney(0, baseCurrency)}
+						</p>
+					</div>
+					<div>
+						<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+						<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+							−{formatMoney(0, baseCurrency)}
+						</p>
+					</div>
+					<div>
+						<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+						<p class="mt-1 text-base font-semibold text-text tabular-nums">
+							{formatMoney(0, baseCurrency)}
+						</p>
+					</div>
+				</div>
+				<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
 			{:else}
 				{#each finance.currencies as [currency, totals] (currency)}
 					{@const net = totals.income - totals.expense}
 					<div class="mb-3 last:mb-0">
-						<div class="grid grid-cols-2 gap-3">
+						<div class="grid grid-cols-3 gap-3">
 							<div>
-								<p class="text-xs text-text-muted">
-									{t('contacts.finance.income', { currency })}
-								</p>
+								<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
 								<p class="mt-1 text-base font-semibold text-success tabular-nums">
 									+{formatMoney(totals.income, currency)}
 								</p>
 							</div>
 							<div>
-								<p class="text-xs text-text-muted">
-									{t('contacts.finance.expense', { currency })}
-								</p>
+								<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
 								<p class="mt-1 text-base font-semibold text-danger tabular-nums">
 									−{formatMoney(totals.expense, currency)}
 								</p>
 							</div>
-						</div>
-						<div class="mt-3 rounded-md border-t border-border bg-surface-2/50 px-3 py-3">
-							<p class="text-xs text-text-muted">
-								{t('contacts.finance.net', { currency })}
-							</p>
-							<p
-								class="mt-1 text-xl font-semibold tabular-nums {net >= 0
-									? 'text-text'
-									: 'text-danger'}"
-							>
-								{formatMoney(net, currency)}
-							</p>
+							<div>
+								<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+								<p
+									class="mt-1 text-base font-semibold tabular-nums {net >= 0
+										? 'text-text'
+										: 'text-danger'}"
+								>
+									{formatMoney(net, currency)}
+								</p>
+							</div>
 						</div>
 					</div>
 				{/each}
