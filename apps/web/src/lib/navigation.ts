@@ -5,11 +5,6 @@ import Calendar from '@lucide/svelte/icons/calendar';
 import Wallet from '@lucide/svelte/icons/wallet';
 import ChartColumn from '@lucide/svelte/icons/chart-column';
 import Megaphone from '@lucide/svelte/icons/megaphone';
-import Calculator from '@lucide/svelte/icons/calculator';
-import FlaskConical from '@lucide/svelte/icons/flask-conical';
-import ShieldCheck from '@lucide/svelte/icons/shield-check';
-import LayoutTemplate from '@lucide/svelte/icons/layout-template';
-import Gauge from '@lucide/svelte/icons/gauge';
 import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
 import Bot from '@lucide/svelte/icons/bot';
 import Settings from '@lucide/svelte/icons/settings';
@@ -50,14 +45,9 @@ export const navGroups: NavGroup[] = [
 	{
 		labelKey: 'nav.group.tools',
 		items: [
-			{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck },
 			{ labelKey: 'nav.marketingOverview', href: '/marketing', icon: Megaphone },
-			{ labelKey: 'nav.calculator', href: '/marketing/calculator', icon: Calculator },
-			{ labelKey: 'nav.simulator', href: '/marketing/simulator', icon: FlaskConical },
-			{ labelKey: 'nav.compliance', href: '/marketing/compliance', icon: ShieldCheck },
-			{ labelKey: 'nav.templates', href: '/marketing/templates', icon: LayoutTemplate },
-			{ labelKey: 'nav.measurement', href: '/marketing/measurement', icon: Gauge },
-			{ labelKey: 'nav.preLaunch', href: '/marketing/pre-launch', icon: ClipboardCheck }
+			{ labelKey: 'nav.scorecard', href: '/scorecard', icon: ClipboardCheck },
+			{ labelKey: 'nav.settings', href: '/settings', icon: Settings }
 		]
 	},
 	{
@@ -67,7 +57,6 @@ export const navGroups: NavGroup[] = [
 	{
 		labelKey: 'nav.group.system',
 		items: [
-			{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
 			{ labelKey: 'nav.features', href: '/features', icon: Sparkles },
 			{ labelKey: 'nav.changelog', href: '/changelog', icon: Bell },
 			{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }
