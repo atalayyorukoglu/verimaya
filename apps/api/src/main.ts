@@ -3,6 +3,7 @@ import { config as loadEnv } from 'dotenv';
 import { Readable } from 'node:stream';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
+import type { errorResponseBuilderContext } from '@fastify/rate-limit';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -186,7 +187,7 @@ async function bootstrap() {
 			const path = req.url.split('?')[0] ?? '';
 			return !path.startsWith('/v1/public/karne');
 		},
-		errorResponseBuilder: (req: FastifyRequest, context) =>
+		errorResponseBuilder: (req: FastifyRequest, context: errorResponseBuilderContext) =>
 			new HttpException(
 				{
 					error: { code: 'rate_limited', message: 'Too many requests' },
@@ -206,7 +207,7 @@ async function bootstrap() {
 			const path = req.url.split('?')[0] ?? '';
 			return !path.startsWith('/v1/auth/');
 		},
-		errorResponseBuilder: (req: FastifyRequest, context) =>
+		errorResponseBuilder: (req: FastifyRequest, context: errorResponseBuilderContext) =>
 			new HttpException(
 				{
 					error: { code: 'rate_limited', message: 'Too many auth attempts' },
