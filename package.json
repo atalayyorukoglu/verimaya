@@ -17,6 +17,6 @@
 		"test": "turbo run test --filter=@verimaya/api --filter=@verimaya/shared --filter=@verimaya/web"
 	},
 	"devDependencies": {
-		"turbo": "^2.5.4"
+		"turbo": "^2.10.9"
 	}
 }
