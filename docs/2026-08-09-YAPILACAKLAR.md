@@ -309,6 +309,9 @@
   nav filtre + rota `→ /`.
   **Görüş (2026-08-10):** Nest `/v1/dev` ürün ihtiyacı yok → bakım borcu yazmak yerine
   gizle (tersine çevrilebilir). Rota silinmedi. web check/test/lint yeşil.
+  **Güncelleme (2026-08-11):** Gerçek platform API `/v1/platform/*` +
+  `PLATFORM_ADMIN_EMAILS` allowlist; `/dev` paneli `me.platform_admin` (veya MSW+DEV) ile
+  açılır; soft-delete org + üye CRUD. Coolify API env şart.
 - ✅ **AUDIT-F09-20** — no-op (2026-08-10): `corsOrigins` / better-auth `trustedOrigins`
   boot-time env (`TRUSTED_ORIGINS` + `WEB_PUBLIC_URL`) bilinçli; AUDIT-REPORT «Fix: None
   required. Document.» — DEPLOY-COOLIFY’a restart notu eklendi. Hot-reload / DB allowlist

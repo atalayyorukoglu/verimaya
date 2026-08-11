@@ -156,6 +156,7 @@ API CORS / auth:
 | `STORAGE_DRIVER` | Prod’da tercihen `s3` (R2) |
 | `S3_*` | R2 private bucket — aşağıdaki bölüm |
 | `ADMIN_QUEUE_TOKEN` | Bull Board + outbox DLQ admin; boş bırakma |
+| `PLATFORM_ADMIN_EMAILS` | Süper admin allowlist (virgülle). Örn. `you@example.com` — `/v1/platform/*` + panel `/dev`. Boşsa kimse platform paneline giremez |
 | `ENABLE_INTEGRATION_SCHEDULERS` | Pilot sonrası `true` (6h sync + günlük files sweep) |
 | `FILES_SWEEP_DRY_RUN` | İlk hafta `true`, sonra kapat |
 | `KARNE_LEADS_ENABLED` | Lead POST; prod `true` (LEG-02). Web `PUBLIC_KARNE_LEADS_ENABLED` ile birlikte |

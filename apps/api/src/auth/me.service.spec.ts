@@ -123,7 +123,27 @@ describe('MeService active organization membership', () => {
 			email: `valid-${validUser.slice(0, 8)}@example.com`,
 			display_name: 'Valid User',
 			tenant_id: organizationA,
-			role: 'manager'
+			role: 'manager',
+			platform_admin: false
 		});
+	});
+
+	it('sets platform_admin when email is in PLATFORM_ADMIN_EMAILS', async () => {
+		const email = `valid-${validUser.slice(0, 8)}@example.com`;
+		const prev = process.env.PLATFORM_ADMIN_EMAILS;
+		process.env.PLATFORM_ADMIN_EMAILS = email;
+		try {
+			await expect(
+				service.resolveMembershipUser({
+					userId: validUser,
+					activeOrganizationId: organizationA,
+					requestId: 'request-platform-admin',
+					email
+				})
+			).resolves.toMatchObject({ platform_admin: true });
+		} finally {
+			if (prev === undefined) delete process.env.PLATFORM_ADMIN_EMAILS;
+			else process.env.PLATFORM_ADMIN_EMAILS = prev;
+		}
 	});
 });

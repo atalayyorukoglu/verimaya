@@ -10,6 +10,11 @@ export const apiPaths = {
 	meDataExport: `${API_V1_PREFIX}/me/data-export`,
 	meDataDeletionRequest: `${API_V1_PREFIX}/me/data-deletion-request`,
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
+	platformTenants: `${API_V1_PREFIX}/platform/tenants`,
+	platformTenant: (id: string) => `${API_V1_PREFIX}/platform/tenants/${id}`,
+	platformTenantMembers: (id: string) => `${API_V1_PREFIX}/platform/tenants/${id}/members`,
+	platformTenantMember: (tenantId: string, userId: string) =>
+		`${API_V1_PREFIX}/platform/tenants/${tenantId}/members/${userId}`,
 	members: `${API_V1_PREFIX}/members`,
 	member: (id: string) => `${API_V1_PREFIX}/members/${id}`,
 	appointments: `${API_V1_PREFIX}/appointments`,
@@ -189,6 +194,16 @@ import {
 import { settingsReorderResultSchema, settingsReorderSchema } from './settings-reorder.js';
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema, memberRoleUpdateSchema } from './user.js';
+import {
+	meSchema,
+	platformMemberListSchema,
+	platformMemberUpsertSchema,
+	platformSoftDeleteResultSchema,
+	platformTenantCreateSchema,
+	platformTenantListSchema,
+	platformTenantSchema,
+	platformTenantUpdateSchema
+} from './platform.js';
 import { auditLogSchema } from './audit.js';
 import { dataDeletionRequestSchema, dataExportSchema } from './data-subject.js';
 import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
@@ -224,7 +239,7 @@ import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './we
  */
 export const apiContract = {
 	'GET /v1/me': {
-		response: membershipUserSchema
+		response: meSchema
 	},
 	'GET /v1/me/data-export': {
 		response: dataExportSchema
@@ -234,6 +249,30 @@ export const apiContract = {
 	},
 	'GET /v1/tenants/current': {
 		response: tenantSchema
+	},
+	'GET /v1/platform/tenants': {
+		response: platformTenantListSchema
+	},
+	'POST /v1/platform/tenants': {
+		body: platformTenantCreateSchema,
+		response: platformTenantSchema
+	},
+	'PATCH /v1/platform/tenants/:id': {
+		body: platformTenantUpdateSchema,
+		response: platformTenantSchema
+	},
+	'DELETE /v1/platform/tenants/:id': {
+		response: platformSoftDeleteResultSchema
+	},
+	'GET /v1/platform/tenants/:id/members': {
+		response: platformMemberListSchema
+	},
+	'POST /v1/platform/tenants/:id/members': {
+		body: platformMemberUpsertSchema,
+		response: membershipUserSchema
+	},
+	'DELETE /v1/platform/tenants/:id/members/:userId': {
+		response: softDeleteResultSchema
 	},
 	'GET /v1/appointments': {
 		response: appointmentListPageSchema

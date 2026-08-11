@@ -20,7 +20,8 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/features': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/maya': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/changelog': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
-	'/dev': ['owner', 'admin']
+	/** Real gate is `platform_admin` / MSW-DEV; org role not used. */
+	'/dev': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly']
 };
 
 export const roleLabels = userRoleLabels;

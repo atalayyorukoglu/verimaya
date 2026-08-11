@@ -23,6 +23,15 @@ describe('GAP-28 dev panel gate', () => {
 		});
 	});
 
+	describe('canAccessPlatformPanel', () => {
+		it('allows platform admin without MSW', async () => {
+			const { canAccessPlatformPanel } = await import('./dev-panel');
+			expect(canAccessPlatformPanel(true, false)).toBe(true);
+			expect(canAccessPlatformPanel(false, true)).toBe(true);
+			expect(canAccessPlatformPanel(false, false)).toBe(false);
+		});
+	});
+
 	describe('filterDevPanelNavItems (sidebar / Sistem → Geliştirici)', () => {
 		const items = [
 			{ href: '/features', labelKey: 'nav.features' },

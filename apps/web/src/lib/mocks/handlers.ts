@@ -2491,6 +2491,13 @@ export const handlers = [
 		return HttpResponse.json({ items: store.tenants });
 	}),
 
+	http.get('/v1/platform/tenants', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({
+			items: store.tenants.map((t) => ({ ...t, deleted_at: null }))
+		});
+	}),
+
 	http.post('/v1/dev/tenants', async ({ request }) => {
 		const body = (await request.json()) as { name?: string; grant_self_admin?: boolean };
 		const name = body.name?.trim();
@@ -2533,6 +2540,48 @@ export const handlers = [
 		return HttpResponse.json(tenant, { status: 201 });
 	}),
 
+	http.post('/v1/platform/tenants', async ({ request }) => {
+		const body = (await request.json()) as { name?: string; grant_self_admin?: boolean };
+		const name = body.name?.trim();
+		if (!name) return badRequest('İsim gerekli');
+		const store = getStore(scenarioFrom(request));
+		const baseSlug =
+			name
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-|-$/g, '')
+				.slice(0, 40) || 'org';
+		let slug = baseSlug;
+		let n = 2;
+		while (store.tenants.some((t) => t.slug === slug)) {
+			slug = `${baseSlug}-${n++}`;
+		}
+		const now = nowIso();
+		const tenant: Tenant = {
+			id: crypto.randomUUID(),
+			name,
+			slug,
+			base_currency: 'TRY',
+			base_currency_locked: false,
+			contacts_section_label: 'Hastalar',
+			timezone: 'Europe/Istanbul',
+			data_retention_until: null,
+			created_at: now
+		};
+		store.tenants.push(tenant);
+		if (body.grant_self_admin !== false) {
+			store.members.push({
+				id: crypto.randomUUID(),
+				email: demoUser.email,
+				display_name: demoUser.display_name,
+				created_at: now,
+				tenant_id: tenant.id,
+				role: 'owner'
+			});
+		}
+		return HttpResponse.json({ ...tenant, deleted_at: null }, { status: 201 });
+	}),
+
 	http.patch('/v1/dev/tenants/:id', async ({ params, request }) => {
 		const body = (await request.json()) as { name?: string };
 		const name = body.name?.trim();
@@ -2545,6 +2594,20 @@ export const handlers = [
 			store.tenant = { ...store.tenant, name };
 		}
 		return HttpResponse.json(store.tenants[idx]);
+	}),
+
+	http.patch('/v1/platform/tenants/:id', async ({ params, request }) => {
+		const body = (await request.json()) as { name?: string };
+		const name = body.name?.trim();
+		if (!name) return badRequest('İsim gerekli');
+		const store = getStore(scenarioFrom(request));
+		const idx = store.tenants.findIndex((t) => t.id === params.id);
+		if (idx < 0) return notFound('Organizasyon bulunamadı');
+		store.tenants[idx] = { ...store.tenants[idx], name };
+		if (store.tenant.id === params.id) {
+			store.tenant = { ...store.tenant, name };
+		}
+		return HttpResponse.json({ ...store.tenants[idx], deleted_at: null });
 	}),
 
 	http.delete('/v1/dev/tenants/:id', ({ params, request }) => {
@@ -2562,6 +2625,22 @@ export const handlers = [
 		return new HttpResponse(null, { status: 204 });
 	}),
 
+	http.delete('/v1/platform/tenants/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		if (params.id === DEMO_TENANT_ID) {
+			return badRequest('Demo ana tenant silinemez');
+		}
+		const idx = store.tenants.findIndex((t) => t.id === params.id);
+		if (idx < 0) return notFound('Organizasyon bulunamadı');
+		// Soft-delete semantics in mock: remove from working list (keeps demo simple).
+		store.tenants.splice(idx, 1);
+		store.members = store.members.filter((m) => m.tenant_id !== params.id);
+		if (store.tenant.id === params.id) {
+			store.tenant = { ...demoTenant };
+		}
+		return HttpResponse.json({ id: params.id, deleted_at: nowIso() });
+	}),
+
 	http.get('/v1/dev/tenants/:id/users', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		if (!store.tenants.some((t) => t.id === params.id)) return notFound('Organizasyon bulunamadı');
@@ -2569,7 +2648,50 @@ export const handlers = [
 		return HttpResponse.json({ items });
 	}),
 
+	http.get('/v1/platform/tenants/:id/members', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		if (!store.tenants.some((t) => t.id === params.id)) return notFound('Organizasyon bulunamadı');
+		const items = store.members.filter((m) => m.tenant_id === params.id);
+		return HttpResponse.json({ items });
+	}),
+
 	http.post('/v1/dev/tenants/:id/users', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		if (!store.tenants.some((t) => t.id === params.id)) return notFound('Organizasyon bulunamadı');
+		const body = (await request.json()) as {
+			email?: string;
+			password?: string;
+			display_name?: string;
+			role?: string;
+		};
+		const email = body.email?.trim().toLowerCase();
+		const display_name = body.display_name?.trim();
+		const password = body.password ?? '';
+		const roleParsed = userRoleSchema.safeParse(body.role ?? 'agent');
+		if (!email || !display_name) return badRequest('E-posta ve ad gerekli');
+		if (password.length < 8) return badRequest('Şifre en az 8 karakter');
+		if (!roleParsed.success) return badRequest('Geçersiz rol');
+
+		const existing = store.members.find((m) => m.tenant_id === params.id && m.email === email);
+		if (existing) {
+			existing.display_name = display_name;
+			existing.role = roleParsed.data;
+			return HttpResponse.json(existing);
+		}
+
+		const user: MembershipUser = {
+			id: crypto.randomUUID(),
+			email,
+			display_name,
+			created_at: nowIso(),
+			tenant_id: params.id as string,
+			role: roleParsed.data
+		};
+		store.members.push(user);
+		return HttpResponse.json(user, { status: 201 });
+	}),
+
+	http.post('/v1/platform/tenants/:id/members', async ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		if (!store.tenants.some((t) => t.id === params.id)) return notFound('Organizasyon bulunamadı');
 		const body = (await request.json()) as {
@@ -2616,5 +2738,18 @@ export const handlers = [
 		if (idx < 0) return notFound('Üye bulunamadı');
 		store.members.splice(idx, 1);
 		return new HttpResponse(null, { status: 204 });
+	}),
+
+	http.delete('/v1/platform/tenants/:tenantId/members/:userId', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		if (params.userId === DEMO_USER_ID) {
+			return badRequest('Kendi üyeliğini bu ekrandan kaldıramazsın');
+		}
+		const idx = store.members.findIndex(
+			(m) => m.id === params.userId && m.tenant_id === params.tenantId
+		);
+		if (idx < 0) return notFound('Üye bulunamadı');
+		store.members.splice(idx, 1);
+		return HttpResponse.json({ id: params.userId, deleted: true });
 	})
 ];

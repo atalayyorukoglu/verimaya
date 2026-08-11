@@ -6,7 +6,7 @@
 	import { cn } from '$lib/utils';
 	import { apiGet } from '$lib/api';
 	import { mobileTabItems, navGroupItems, navGroups, panelNavItem } from '$lib/navigation';
-	import { filterDevPanelNavItems } from '$lib/dev-panel';
+	import { filterDevPanelNavItems, canAccessPlatformPanel } from '$lib/dev-panel';
 	import { DEV_PANEL_ENABLED } from '$lib/dev-panel-enabled';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { canAccessPath, canSeeNav, DEFAULT_ROLE, roleLabels } from '$lib/rbac';
@@ -57,6 +57,9 @@
 	}));
 
 	const role = $derived(qs.meQuery.data?.role ?? DEFAULT_ROLE);
+	const platformPanelEnabled = $derived(
+		canAccessPlatformPanel(qs.meQuery.data?.platform_admin === true, DEV_PANEL_ENABLED)
+	);
 	const queryClient = useQueryClient();
 
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
@@ -65,7 +68,7 @@
 		navGroups
 			.map((group) => ({
 				...group,
-				items: filterDevPanelNavItems(group.items, DEV_PANEL_ENABLED).filter((item) =>
+				items: filterDevPanelNavItems(group.items, platformPanelEnabled).filter((item) =>
 					canAccessPath(item.href, role)
 				)
 			}))
@@ -123,7 +126,7 @@
 	const allNavHrefs = $derived([
 		panelNavItem.href,
 		...navGroups.flatMap((g) =>
-			filterDevPanelNavItems(navGroupItems(g), DEV_PANEL_ENABLED).map((i) => i.href)
+			filterDevPanelNavItems(navGroupItems(g), platformPanelEnabled).map((i) => i.href)
 		),
 		...mobileTabItems.map((i) => i.href)
 	]);
