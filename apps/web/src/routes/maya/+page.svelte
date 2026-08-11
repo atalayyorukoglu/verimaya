@@ -8,7 +8,7 @@
 	<title>{t('maya.documentTitle')}</title>
 </svelte:head>
 
-<div class="mx-auto min-w-0 max-w-4xl">
+<div class="mx-auto max-w-4xl min-w-0">
 	<PageHeader title={t('maya.title')} description={t('maya.pageDescription')}>
 		{#snippet actions()}
 			<span

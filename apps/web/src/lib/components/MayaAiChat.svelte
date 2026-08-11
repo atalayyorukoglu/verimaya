@@ -179,9 +179,7 @@
 
 	<div bind:this={scrollEl} class="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 sm:px-4">
 		{#each messages as message (message.id)}
-			<div
-				class={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}
-			>
+			<div class={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
 				<div
 					class={cn(
 						'max-w-[85%] rounded-lg px-3 py-2',
@@ -190,7 +188,7 @@
 							: 'border border-border bg-surface-2 text-text'
 					)}
 				>
-					<p class="whitespace-pre-wrap break-words">{message.text}</p>
+					<p class="break-words whitespace-pre-wrap">{message.text}</p>
 
 					{#if message.citations?.length}
 						<ul class="mt-2 flex flex-wrap gap-1.5 border-t border-border/60 pt-2">
@@ -260,8 +258,7 @@
 				class="min-h-[2.5rem] flex-1 resize-none rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-faint focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 				placeholder={t('maya.placeholder')}
 				disabled={thinking}
-				onkeydown={handleKeydown}
-			></textarea>
+				onkeydown={handleKeydown}></textarea>
 			<Button
 				size={isDrawer ? 'sm' : 'default'}
 				class="shrink-0"
