@@ -29,25 +29,25 @@ export class ScorecardController {
 	) {}
 
 	@Get('current')
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('scorecard', 'read')
 	getCurrent(@Req() req: FastifyRequest) {
 		return this.scorecardService.getCurrent(getActiveOrgId(req));
 	}
 
 	@Get('assessments')
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('scorecard', 'read')
 	listAssessments(@Req() req: FastifyRequest) {
 		return this.scorecardService.listAssessments(getActiveOrgId(req));
 	}
 
 	@Get('assessments/:id')
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('scorecard', 'read')
 	getAssessment(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.scorecardService.getAssessment(getActiveOrgId(req), id);
 	}
 
 	@Get('compare')
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('scorecard', 'read')
 	compare(
 		@Req() req: FastifyRequest,
 		@Query('previous') previousId: string,
@@ -61,13 +61,13 @@ export class ScorecardController {
 	}
 
 	@Get('profile')
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('scorecard', 'read')
 	getProfile(@Req() req: FastifyRequest) {
 		return this.scorecardService.getActiveProfile(getActiveOrgId(req));
 	}
 
 	@Post('profile')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt(
 		'App-level guard (ConflictException) rejects a second active profile per tenant — a retry cannot create a duplicate, it 409s instead.'
 	)
@@ -77,7 +77,7 @@ export class ScorecardController {
 	}
 
 	@Patch('profile')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt(
 		'Sets absolute fields (only the ones present in the body) on the active profile; the locked-profile guard (409) is retry-stable either way — repeat calls converge to the same outcome.'
 	)
@@ -87,7 +87,7 @@ export class ScorecardController {
 	}
 
 	@Post('assessments')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt(
 		'Naturally idempotent by design: returns the already-open assessment instead of starting a new one when one exists (see ScorecardService.startAssessment).'
 	)
@@ -96,7 +96,7 @@ export class ScorecardController {
 	}
 
 	@Post('assessments/:id/complete')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt(
 		'Naturally idempotent by design: returns the already-completed assessment unchanged on repeat calls (see ScorecardService.completeAssessment).'
 	)
@@ -105,7 +105,7 @@ export class ScorecardController {
 	}
 
 	@Put('assessments/:id/answers')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt(
 		'True upsert by (assessment_id, criterion_id) — repeat PUTs converge to the same stored answer.'
 	)
@@ -119,7 +119,7 @@ export class ScorecardController {
 	}
 
 	@Post('baseline')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt(
 		'Known gap: unconditionally inserts a new profile+assessment, unlike startAssessment there is no "already open" guard, so a retried request could create a duplicate baseline. Deferred — rare, deliberate, owner/admin-only action, not a high-frequency or financial flow; wire like createFinanceCategory (Faz 4.1, settings.controller.ts) if this becomes a real pain point.'
 	)
@@ -130,7 +130,7 @@ export class ScorecardController {
 
 	/** Apply system-known answers onto the open assessment (or `:id`). */
 	@Post('auto-fill')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt(
 		'Upserts per criterion (update existing / insert new) and recomputes deterministically from current evidence, skipping manual answers — repeat calls converge to the same result (see ScorecardAutoFillService.applyAutoFill).'
 	)
@@ -139,7 +139,7 @@ export class ScorecardController {
 	}
 
 	@Post('assessments/:id/auto-fill')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('scorecard', 'update')
 	@IdempotencyExempt('Same as auto-fill above — upserts per criterion, deterministic given the same evidence.')
 	autoFillAssessment(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.autoFillService.applyAutoFill(getActiveOrgId(req), id);

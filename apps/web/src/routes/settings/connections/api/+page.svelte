@@ -7,7 +7,7 @@
 		WebhookEventType,
 		WebhookSubscription
 	} from '@verimaya/shared';
-	import { apiPaths, webhookEventTypeSchema } from '@verimaya/shared';
+	import { API_KEY_MACHINE_SCOPES, apiPaths, webhookEventTypeSchema } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -23,7 +23,45 @@
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
-	const scopeLabels: Record<ApiKeyScope, string> = { read: 'Okuma', write: 'Yazma' };
+
+	const defaultFormScopes: ApiKeyScope[] = ['contact:read', 'finance:read', 'settings:read'];
+
+	const scopeGroups = $derived.by(() => {
+		const order = ['contact', 'finance', 'settings'] as const;
+		return order.map((resource) => {
+			const scopes = API_KEY_MACHINE_SCOPES.filter((s) => s.startsWith(`${resource}:`));
+			return [resource, scopes] as const;
+		});
+	});
+
+	function scopeResourceLabel(resource: string): string {
+		switch (resource) {
+			case 'contact':
+				return t('settings.api.scope.contact');
+			case 'finance':
+				return t('settings.api.scope.finance');
+			case 'settings':
+				return t('settings.api.scope.settings');
+			default:
+				return resource;
+		}
+	}
+
+	function scopeActionLabel(action: string): string {
+		switch (action) {
+			case 'create':
+				return t('settings.api.scopeAction.create');
+			case 'read':
+				return t('settings.api.scopeAction.read');
+			case 'update':
+				return t('settings.api.scopeAction.update');
+			case 'delete':
+				return t('settings.api.scopeAction.delete');
+			default:
+				return action;
+		}
+	}
+
 	const webhookEventLabels = $derived<Record<WebhookEventType, string>>({
 		'transaction.created': t('settings.api.event.transactionCreated'),
 		'transaction.updated': t('settings.api.event.transactionUpdated'),
@@ -50,14 +88,14 @@
 
 	let dialogOpen = $state(false);
 	let formName = $state('');
-	let formScopes = $state<ApiKeyScope[]>(['read']);
+	let formScopes = $state<ApiKeyScope[]>([...defaultFormScopes]);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
 	let createdKey = $state<ApiKeyCreated | null>(null);
 
 	function openCreate() {
 		formName = '';
-		formScopes = ['read'];
+		formScopes = [...defaultFormScopes];
 		formError = null;
 		createdKey = null;
 		dialogOpen = true;
@@ -208,7 +246,7 @@
 										<span
 											class="rounded-[4px] bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-text-muted"
 										>
-											{scopeLabels[scope]}
+											{scope}
 										</span>
 									{/each}
 									<span class="text-xs text-text-faint">· {formatDateTime(key.created_at)}</span>
@@ -231,14 +269,14 @@
 		<section class="rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="flex items-start justify-between gap-3">
 				<div class="min-w-0">
-					<h2 class="text-sm font-semibold text-text">Giden webhook'lar</h2>
+					<h2 class="text-sm font-semibold text-text">{t('settings.api.webhooksHeading')}</h2>
 					<p class="mt-1 text-sm leading-relaxed text-text-muted">
 						{t('settings.api.webhooksLead')}
 					</p>
 				</div>
 				<Button type="button" size="sm" onclick={openWebhookCreate}>
 					<Plus class="size-3.5" />
-					Abonelik ekle
+					{t('settings.api.addSubscription')}
 				</Button>
 			</div>
 
@@ -308,10 +346,13 @@
 			</p>
 			<div class="flex items-center gap-2 rounded-[6px] border border-border bg-surface-2 p-2">
 				<code class="min-w-0 flex-1 truncate text-xs text-text">{createdKey.key}</code>
-				<Button type="button" size="sm" variant="outline" onclick={copyKey}>Kopyala</Button>
+				<Button type="button" size="sm" variant="outline" onclick={copyKey}
+					>{t('settings.api.copy')}</Button
+				>
 			</div>
 			<div class="flex justify-end">
-				<Button type="button" onclick={() => (dialogOpen = false)}>Kapat</Button>
+				<Button type="button" onclick={() => (dialogOpen = false)}>{t('settings.api.close')}</Button
+				>
 			</div>
 		</div>
 	{:else}
@@ -320,7 +361,7 @@
 				<p class="text-sm text-danger">{formError}</p>
 			{/if}
 			<label class="grid gap-1">
-				<span class={labelClass}>Ad</span>
+				<span class={labelClass}>{t('settings.api.nameLabel')}</span>
 				<input
 					class={fieldClass}
 					bind:value={formName}
@@ -329,24 +370,29 @@
 					placeholder={t('settings.api.namePlaceholder')}
 				/>
 			</label>
-			<fieldset class="grid gap-1.5">
-				<span class={labelClass}>Scope</span>
-				<label class="flex items-center gap-2 text-sm text-text">
-					<input
-						type="checkbox"
-						checked={formScopes.includes('read')}
-						onchange={() => toggleScope('read')}
-					/>
-					Okuma
-				</label>
-				<label class="flex items-center gap-2 text-sm text-text">
-					<input
-						type="checkbox"
-						checked={formScopes.includes('write')}
-						onchange={() => toggleScope('write')}
-					/>
-					Yazma
-				</label>
+			<fieldset class="grid gap-3">
+				<div class="grid gap-0.5">
+					<span class={labelClass}>{t('settings.api.scopesLabel')}</span>
+					<p class="text-xs text-text-faint">{t('settings.api.scopesHint')}</p>
+				</div>
+				{#each scopeGroups as [resource, scopes] (resource)}
+					<div class="grid gap-1.5">
+						<span class="text-xs font-medium text-text-muted">{scopeResourceLabel(resource)}</span>
+						<div class="flex flex-wrap gap-x-4 gap-y-1.5">
+							{#each scopes as scope (scope)}
+								{@const action = scope.split(':')[1] ?? ''}
+								<label class="flex items-center gap-2 text-sm text-text">
+									<input
+										type="checkbox"
+										checked={formScopes.includes(scope)}
+										onchange={() => toggleScope(scope)}
+									/>
+									{scopeActionLabel(action)}
+								</label>
+							{/each}
+						</div>
+					</div>
+				{/each}
 			</fieldset>
 			<div class="mt-2 flex justify-end gap-2">
 				<Button type="button" variant="outline" onclick={() => (dialogOpen = false)}
@@ -366,7 +412,7 @@
 			<p class="text-sm text-danger">{webhookFormError}</p>
 		{/if}
 		<label class="grid gap-1">
-			<span class={labelClass}>Hedef URL</span>
+			<span class={labelClass}>{t('settings.api.webhookUrlLabel')}</span>
 			<input
 				class={fieldClass}
 				type="url"
@@ -385,7 +431,7 @@
 				required
 				minlength="16"
 				maxlength="500"
-				placeholder="En az 16 karakter"
+				placeholder={t('settings.api.webhookSecretMin')}
 			/>
 			<span class="text-xs text-text-faint">
 				{t('settings.api.secretHint')}

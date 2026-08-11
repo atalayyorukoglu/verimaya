@@ -1,4 +1,5 @@
-import { ForbiddenException, type ExecutionContext } from '@nestjs/common';
+import { type ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { sql as drizzleSql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -6,6 +7,7 @@ import type { FastifyRequest } from 'fastify';
 import { closeDb, getDb } from '../db/client';
 import { generateApiKey } from '../api-keys/api-key-crypto';
 import { ApiKeyGuard } from '../api-keys/api-key.guard';
+import { MeService } from '../auth/me.service';
 import { SessionGuard } from '../auth/session.guard';
 import type { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -13,6 +15,7 @@ import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { getActiveOrgId } from './active-org.guard';
+import { OrgPermissionGuard } from './org-permission.guard';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -27,6 +30,7 @@ type Fixture = {
 	patientA: string;
 	patientB: string;
 	guard: AuthOrApiKeyGuard;
+	orgGuard: OrgPermissionGuard;
 	contactsService: ContactsService;
 };
 
@@ -67,19 +71,32 @@ async function seedFixture(): Promise<Fixture> {
 
 	const materialA = generateApiKey();
 	const materialB = generateApiKey();
+	const scopesA = JSON.stringify([
+		'contact:create',
+		'contact:read',
+		'contact:update',
+		'contact:delete',
+		'finance:create',
+		'finance:read',
+		'finance:update',
+		'finance:delete',
+		'settings:read',
+		'settings:update'
+	]);
+	const scopesB = JSON.stringify(['contact:read', 'finance:read', 'settings:read']);
 
 	await sql.begin(async (tx) => {
 		await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
 		await tx`
 			insert into api_keys (tenant_id, name, key_prefix, key_hash, scopes)
-			values (${tenantA}, 'Integration A', ${materialA.prefix}, ${materialA.hash}, ${['read', 'write']})
+			values (${tenantA}, 'Integration A', ${materialA.prefix}, ${materialA.hash}, ${scopesA}::jsonb)
 		`;
 	});
 	await sql.begin(async (tx) => {
 		await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
 		await tx`
 			insert into api_keys (tenant_id, name, key_prefix, key_hash, scopes)
-			values (${tenantB}, 'Integration B', ${materialB.prefix}, ${materialB.hash}, ${['read']})
+			values (${tenantB}, 'Integration B', ${materialB.prefix}, ${materialB.hash}, ${scopesB}::jsonb)
 		`;
 	});
 
@@ -110,6 +127,10 @@ async function seedFixture(): Promise<Fixture> {
 
 	const apiKeyGuard = new ApiKeyGuard({ sql } as unknown as DbService);
 	const guard = new AuthOrApiKeyGuard(apiKeyGuard, new SessionGuard());
+	const orgGuard = new OrgPermissionGuard(
+		new Reflector(),
+		new MeService({ client: db } as DbService)
+	);
 
 	// Mirror production TenantContextService: drizzle transaction + SET LOCAL.
 	const tenantContext = {
@@ -129,6 +150,7 @@ async function seedFixture(): Promise<Fixture> {
 		patientA,
 		patientB,
 		guard,
+		orgGuard,
 		contactsService
 	};
 }
@@ -199,14 +221,21 @@ describe('AuthOrApiKeyGuard dual-auth tenant isolation', () => {
 		expect(result.items.some((p) => p.id === fx.patientA)).toBe(false);
 	});
 
-	it('rejects a write request from a read-only API key (missing scope)', async () => {
+	it('rejects a write request from a read-only API key at OrgPermissionGuard (missing scope)', async () => {
 		const req = {
 			headers: { authorization: `Bearer ${fx.keyPlaintextB}` },
 			method: 'POST',
 			id: 'req-b-write'
 		} as unknown as FastifyRequest;
 
-		await expect(fx.guard.canActivate(makeContext(req))).rejects.toBeInstanceOf(ForbiddenException);
+		// Auth succeeds; OrgPermissionGuard (tested elsewhere) enforces resource scopes.
+		// AuthOrApiKeyGuard only authenticates — no crude read/write gate.
+		const ok = await fx.guard.canActivate(makeContext(req));
+		expect(ok).toBe(true);
+		expect(req.apiKeyAuth?.scopes).toEqual(
+			expect.arrayContaining(['contact:read', 'finance:read', 'settings:read'])
+		);
+		expect(req.apiKeyAuth?.scopes).not.toEqual(expect.arrayContaining(['contact:update']));
 	});
 
 	it('allows a write request from a read+write API key', async () => {
@@ -218,5 +247,6 @@ describe('AuthOrApiKeyGuard dual-auth tenant isolation', () => {
 
 		const ok = await fx.guard.canActivate(makeContext(req));
 		expect(ok).toBe(true);
+		expect(req.apiKeyAuth?.scopes).toEqual(expect.arrayContaining(['contact:update']));
 	});
 });

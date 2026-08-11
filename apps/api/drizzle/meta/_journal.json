@@ -288,6 +288,13 @@
       "when": 1754800000000,
       "tag": "0040_data_subject_rights",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1754900000000,
+      "tag": "0041_api_key_scopes",
+      "breakpoints": true
     }
   ]
 }

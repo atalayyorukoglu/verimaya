@@ -254,7 +254,20 @@ describe('AUDIT-F09-11: org permission metadata via reflection', () => {
 	it('type-level OrgPermissionResource keys match the runtime statements export', () => {
 		const resources = Object.keys(organizationPermissionStatements).sort();
 		expect(resources).toEqual(
-			(['finance', 'contact', 'settings'] as OrgPermissionResource[]).slice().sort()
+			(
+				[
+					'api_keys',
+					'audit',
+					'contact',
+					'finance',
+					'members',
+					'scorecard',
+					'settings',
+					'webhook_subscriptions'
+				] as OrgPermissionResource[]
+			)
+				.slice()
+				.sort()
 		);
 	});
 });
@@ -510,13 +523,13 @@ describe('patient-domain organization permissions', () => {
 		).resolves.toBe(true);
 	});
 
-	it('allows API-key-authenticated requests without resolving an organization role', async () => {
+	it('allows API-key-authenticated requests when the key has the required resource scope', async () => {
 		const req = {
 			id: 'request-api-key',
 			apiKeyAuth: {
 				tenantId: 'organization-a',
 				apiKeyId: 'api-key-id',
-				scopes: ['read']
+				scopes: ['contact:update']
 			}
 		} as unknown as FastifyRequest;
 
@@ -525,6 +538,23 @@ describe('patient-domain organization permissions', () => {
 				makeContext(req, ContactsController.prototype.update, ContactsController)
 			)
 		).resolves.toBe(true);
+	});
+
+	it('rejects API keys missing the required resource scope (deny-by-default)', async () => {
+		const req = {
+			id: 'request-api-key-denied',
+			apiKeyAuth: {
+				tenantId: 'organization-a',
+				apiKeyId: 'api-key-id',
+				scopes: ['contact:read']
+			}
+		} as unknown as FastifyRequest;
+
+		await expect(
+			guard.canActivate(
+				makeContext(req, ContactsController.prototype.update, ContactsController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
 	});
 });
 
@@ -538,17 +568,17 @@ describe('remaining authenticated controller organization permissions', () => {
 		admin: 'admin'
 	});
 
-	it('allows readonly reads on settings-mapped controllers and rejects mutations', async () => {
+	it('allows readonly scorecard/tenant reads; rejects audit/members (tightened) and settings mutations', async () => {
 		await expect(
 			guard.canActivate(
 				makeContext(sessionRequest('readonly'), AuditLogsController.prototype.list, AuditLogsController)
 			)
-		).resolves.toBe(true);
+		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
 			guard.canActivate(
 				makeContext(sessionRequest('readonly'), MembersController.prototype.list, MembersController)
 			)
-		).resolves.toBe(true);
+		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
 			guard.canActivate(
 				makeContext(sessionRequest('readonly'), TenantsController.prototype.getCurrent, TenantsController)

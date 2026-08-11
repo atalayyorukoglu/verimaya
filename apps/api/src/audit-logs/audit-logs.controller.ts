@@ -14,7 +14,7 @@ export class AuditLogsController {
 	constructor(private readonly auditLogsService: AuditLogsService) {}
 
 	@Get()
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('audit', 'read')
 	list(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
 		const params = parseQuery(auditLogListQuerySchema, query, req);
 		return this.auditLogsService.list(getActiveOrgId(req), params);

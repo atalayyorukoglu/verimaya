@@ -51,7 +51,7 @@ describe('scorecard auto-fill integration (Adım 35)', () => {
 			`;
 			await tx`
 				insert into api_keys (tenant_id, name, key_prefix, key_hash, scopes)
-				values (${richTenant}, 'ops', 'vm_test', 'hash-af-rich', array['read']::text[])
+				values (${richTenant}, 'ops', 'vm_test', 'hash-af-rich', ${JSON.stringify(['contact:read', 'finance:read', 'settings:read'])}::jsonb)
 			`;
 			await tx`
 				insert into webhook_subscriptions (tenant_id, url, secret_ciphertext, event_types, active)

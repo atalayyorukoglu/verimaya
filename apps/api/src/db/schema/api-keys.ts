@@ -1,4 +1,5 @@
-import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import type { ApiKeyScope } from '@verimaya/shared';
+import { index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { createdAt, updatedAt } from './helpers';
 import { tenants } from './tenants';
 
@@ -12,7 +13,8 @@ export const apiKeys = pgTable(
 		name: text('name').notNull(),
 		keyPrefix: text('key_prefix').notNull(),
 		keyHash: text('key_hash').notNull(),
-		scopes: text('scopes').array().notNull(),
+		/** AUDIT-F09-02: JSONB array of `resource:action` scope tokens. */
+		scopes: jsonb('scopes').$type<ApiKeyScope[]>().notNull(),
 		createdAt: createdAt(),
 		// AUDIT-03 (Faz 8): `last_used_at` updates on every successful `ApiKeyGuard`
 		// lookup so operators can see when a key was last touched (and detect

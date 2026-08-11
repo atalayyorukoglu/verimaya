@@ -214,18 +214,31 @@ describe('OrgPermissionGuard', () => {
 		).rejects.toMatchObject({ response: { error: { code: 'insufficient_permission' } } });
 	});
 
-	it('allows API-key-authenticated requests without resolving an organization role', async () => {
-		const req = {
-			id: 'request-api-key',
+	it('enforces API-key scopes against RequireOrgPermission (deny-by-default)', async () => {
+		const readReq = {
+			id: 'request-api-key-read',
 			apiKeyAuth: {
 				tenantId: organizationA,
 				apiKeyId: randomUUID(),
-				scopes: ['read']
+				scopes: ['contact:read']
 			}
 		} as unknown as FastifyRequest;
 
 		await expect(
-			guard.canActivate(makeContext(req, PermissionTarget.prototype.updatePatient))
+			guard.canActivate(makeContext(readReq, PermissionTarget.prototype.updatePatient))
+		).rejects.toMatchObject({ response: { error: { code: 'insufficient_scope' } } });
+
+		const writeReq = {
+			id: 'request-api-key-write',
+			apiKeyAuth: {
+				tenantId: organizationA,
+				apiKeyId: randomUUID(),
+				scopes: ['contact:update']
+			}
+		} as unknown as FastifyRequest;
+
+		await expect(
+			guard.canActivate(makeContext(writeReq, PermissionTarget.prototype.updatePatient))
 		).resolves.toBe(true);
 	});
 });

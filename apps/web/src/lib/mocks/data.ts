@@ -672,7 +672,18 @@ function makeApiKeys(): ApiKey[] {
 			tenant_id: DEMO_TENANT_ID,
 			name: 'n8n entegrasyonu',
 			key_prefix: 'vk_demo123',
-			scopes: ['read', 'write'],
+			scopes: [
+				'contact:create',
+				'contact:read',
+				'contact:update',
+				'contact:delete',
+				'finance:create',
+				'finance:read',
+				'finance:update',
+				'finance:delete',
+				'settings:read',
+				'settings:update'
+			],
 			created_at: iso(faker.date.recent({ days: 30 })),
 			// AUDIT-03 (Faz 8): ApiKey now has last_used_at + expires_at. The mock
 			// generates a never-used key that expires 90 days from now — same default

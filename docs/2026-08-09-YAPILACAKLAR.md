@@ -153,19 +153,6 @@
 - [ ] **WEBHOOK-01 shim kapatma:** `WEBHOOK_IDENTITY_DEFAULT_SECRET=false`; önce tüm
   tenant'larda `tenant_provider_identities` satırı doğrulanır (yoksa webhook reddedilir).
   Runbook: `docs/DEPLOY-COOLIFY.md` § WEBHOOK-01.
-- [ ] **AUDIT-F09-02 — per-key API scope map** (breaking): `api_keys.scopes` text[] →
-  structured JSONB veya `api_key_scopes` tablosu; `AuthOrApiKeyGuard` + `OrgPermissionGuard`
-  güncellenir; `permissions.ts`'e `audit`, `members`, `api_keys`, `webhook_subscriptions`,
-  `scorecard` resource'ları; issuance UX'te scope seçimi; mevcut key'ler explicit scope'a
-  migrate edilir (n8n key'leri rotate olur); `api-keys.isolation.spec.ts` negatif testlerle
-  genişler ("API key ile `/v1/audit-logs` reddedilir").
-  **Dosyalar:** `apps/api/src/api-keys/**`, `apps/api/src/common/org-permission.guard.ts`,
-  `apps/api/src/auth/**`, `packages/shared/src/api-key.ts`, yeni migration,
-  `apps/web/src/routes/settings/**` (issuance UX).
-  Not (2026-08-09): bugün eklenen endpoint'ler de scope haritasına dahil edilmeli —
-  `reports/transaction-duplicates`, `whatsapp/corrections-report`, `whatsapp/create-*` (3 adet),
-  `patients/:id/auto-link-transactions`, `contacts/bulk-type`, `settings/contact-types PATCH`,
-  `patients/:id/files/:fileId/preview`.
 
 ---
 
@@ -260,7 +247,8 @@
    tek model `case_notes.contact_id`; tür filtresi yok (Hasta/Klinik/Otel/…).
    `contacts.notes` serbest alan ayrı kalır (profil özeti ≠ thread).
 6. **AI prompt tenant'a açılmalı mı?** (GAP-26) Çıkarım kalitesi tenant'a göre değişir → destek yükü.
-7. **Tenant düzeyinde izin matrisi isteniyor mu?** Tracker'da 9 özellik × 5 rol; bizde sabit 3 kaynak × 6 rol. Pilotta ölç; talep yoksa skip. AUDIT-F09-02 ile kısmen örtüşür.
+7. **Tenant düzeyinde izin matrisi isteniyor mu?** Tracker'da 9 özellik × 5 rol; bizde
+   artık 8 kaynak × 6 rol (AUDIT-F09-02). Pilotta ölç; talep yoksa skip.
 8. **P2P payer/payee geri gelecek mi?** Erteledi, iptal değil — `transactions` şemasını değiştirir; **freeze öncesi karar ucuz, sonra pahalı.**
 9. **İçe/dışa aktarım ikinci müşteriden önce mi?** (GAP-08 kapsamı hazır; MARKET-02 kapısı geçilmeden yatırım yapılmalı mı?)
 
@@ -272,6 +260,15 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **AUDIT-F09-02** — per-key API scope map (2026-08-11). `api_keys.scopes` → JSONB
+  `resource:action[]`; OrgPermissionGuard short-circuit kaldırıldı (deny-by-default);
+  `permissions.ts` +5 kaynak (audit/members/api_keys/webhook_subscriptions/scorecard);
+  issuance UX kaynak:eylem; migration `0041`; lokal 0 aktif key (no-op migrate).
+  **Görüş:** AUDIT option (b). Legacy `read`→contact|finance|settings:read; `write`→aynı
+  yüzeyin CRUD'u — audit/api_keys sessiz genişletilmedi. Session-only: audit-logs, me
+  KVKK, members, api-keys, webhooks, scorecard, settings, tenants, ad-metrics.
+  shared 99 · api 471 · web check 0 · test 56 · lint · openapi 71 · fresh 0041 OK.
+  Commit bekliyor (kullanıcı talimatı: commit yok).
 - ✅ **TEST-02** — TestSprite DOMAIN-02’ye (2026-08-10). 15→17 senaryo: TC002/003 Hasta
   tipi `/contacts` (ad/soyad, kaynak→medium); TC007 Klinik+firma; TC009 Referans eden;
   TC014 Sil artık var; TC004 iletişim uyarısı; **TC016** Firmalar; **TC017** dosya sil.

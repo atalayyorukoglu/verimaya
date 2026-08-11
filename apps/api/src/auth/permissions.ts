@@ -10,12 +10,20 @@ import type { UserRole } from '@verimaya/shared';
 /**
  * Verimaya org roles (packages/shared userRoleSchema) mapped onto better-auth AC.
  * Default org resources (organization/member/invitation) kept from better-auth.
+ *
+ * AUDIT-F09-02: expanded beyond contact|finance|settings so controllers declare the
+ * actual resource (audit, members, api_keys, webhook_subscriptions, scorecard).
  */
 /** Exported so reflection-based coverage specs can validate declared permissions. */
 export const organizationPermissionStatements = {
 	contact: ['create', 'read', 'update', 'delete'],
 	finance: ['create', 'read', 'update', 'delete'],
-	settings: ['read', 'update']
+	settings: ['read', 'update'],
+	audit: ['read'],
+	members: ['read', 'update'],
+	api_keys: ['read', 'update'],
+	webhook_subscriptions: ['read', 'update'],
+	scorecard: ['read', 'update']
 } as const;
 
 const statement = {
@@ -29,32 +37,62 @@ const organizationRolePermissions = {
 	owner: {
 		contact: ['create', 'read', 'update', 'delete'],
 		finance: ['create', 'read', 'update', 'delete'],
-		settings: ['read', 'update']
+		settings: ['read', 'update'],
+		audit: ['read'],
+		members: ['read', 'update'],
+		api_keys: ['read', 'update'],
+		webhook_subscriptions: ['read', 'update'],
+		scorecard: ['read', 'update']
 	},
 	admin: {
 		contact: ['create', 'read', 'update', 'delete'],
 		finance: ['create', 'read', 'update', 'delete'],
-		settings: ['read', 'update']
+		settings: ['read', 'update'],
+		audit: ['read'],
+		members: ['read', 'update'],
+		api_keys: ['read', 'update'],
+		webhook_subscriptions: ['read', 'update'],
+		scorecard: ['read', 'update']
 	},
 	manager: {
 		contact: ['create', 'read', 'update', 'delete'],
 		finance: ['create', 'read', 'update'],
-		settings: ['read']
+		settings: ['read'],
+		audit: [],
+		members: ['read'],
+		api_keys: [],
+		webhook_subscriptions: [],
+		scorecard: ['read']
 	},
 	agent: {
 		contact: ['create', 'read', 'update'],
 		finance: ['read'],
-		settings: ['read']
+		settings: ['read'],
+		audit: [],
+		members: [],
+		api_keys: [],
+		webhook_subscriptions: [],
+		scorecard: ['read']
 	},
 	finance: {
 		contact: ['read'],
 		finance: ['create', 'read', 'update', 'delete'],
-		settings: ['read']
+		settings: ['read'],
+		audit: [],
+		members: [],
+		api_keys: [],
+		webhook_subscriptions: [],
+		scorecard: ['read']
 	},
 	readonly: {
 		contact: ['read'],
 		finance: ['read'],
-		settings: ['read']
+		settings: ['read'],
+		audit: [],
+		members: [],
+		api_keys: [],
+		webhook_subscriptions: [],
+		scorecard: ['read']
 	}
 } as const satisfies Record<
 	UserRole,

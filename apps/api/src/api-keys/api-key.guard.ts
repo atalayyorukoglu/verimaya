@@ -11,6 +11,7 @@ import { extractBearerToken, hashApiKey, isApiKeyToken } from './api-key-crypto'
 export type ApiKeyAuth = {
 	tenantId: string;
 	apiKeyId: string;
+	/** AUDIT-F09-02: `resource:action` tokens from JSONB `api_keys.scopes`. */
 	scopes: string[];
 };
 
@@ -41,7 +42,7 @@ export class ApiKeyGuard implements CanActivate {
 
 		const keyHash = hashApiKey(token);
 		const [row] = await this.dbService.sql<
-			Array<{ id: string; tenant_id: string; scopes: string[] }>
+			Array<{ id: string; tenant_id: string; scopes: string[] | string }>
 		>`select id, tenant_id, scopes from app.lookup_api_key(${keyHash})`;
 
 		if (!row) {
@@ -69,8 +70,21 @@ export class ApiKeyGuard implements CanActivate {
 		req.apiKeyAuth = {
 			tenantId: row.tenant_id,
 			apiKeyId: row.id,
-			scopes: row.scopes
+			scopes: normalizeScopes(row.scopes)
 		};
 		return true;
 	}
+}
+
+function normalizeScopes(raw: string[] | string): string[] {
+	if (Array.isArray(raw)) return raw.map(String);
+	if (typeof raw === 'string') {
+		try {
+			const parsed: unknown = JSON.parse(raw);
+			return Array.isArray(parsed) ? parsed.map(String) : [];
+		} catch {
+			return [];
+		}
+	}
+	return [];
 }

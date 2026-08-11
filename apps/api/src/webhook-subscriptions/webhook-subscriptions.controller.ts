@@ -33,13 +33,13 @@ export class WebhookSubscriptionsController {
 	) {}
 
 	@Get()
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('webhook_subscriptions', 'read')
 	list(@Req() req: FastifyRequest) {
 		return this.webhookSubscriptionsService.list(getActiveOrgId(req));
 	}
 
 	@Post()
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('webhook_subscriptions', 'update')
 	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
@@ -63,7 +63,7 @@ export class WebhookSubscriptionsController {
 	}
 
 	@Delete(':id')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('webhook_subscriptions', 'update')
 	@Idempotent()
 	async remove(
 		@Req() req: FastifyRequest,

@@ -4451,8 +4451,25 @@ paths:
                           items:
                             type: string
                             enum:
-                              - read
-                              - write
+                              - contact:create
+                              - contact:read
+                              - contact:update
+                              - contact:delete
+                              - finance:create
+                              - finance:read
+                              - finance:update
+                              - finance:delete
+                              - settings:read
+                              - settings:update
+                              - audit:read
+                              - members:read
+                              - members:update
+                              - api_keys:read
+                              - api_keys:update
+                              - webhook_subscriptions:read
+                              - webhook_subscriptions:update
+                              - scorecard:read
+                              - scorecard:update
                         created_at:
                           type: string
                           format: date-time
@@ -4506,8 +4523,25 @@ paths:
                     items:
                       type: string
                       enum:
-                        - read
-                        - write
+                        - contact:create
+                        - contact:read
+                        - contact:update
+                        - contact:delete
+                        - finance:create
+                        - finance:read
+                        - finance:update
+                        - finance:delete
+                        - settings:read
+                        - settings:update
+                        - audit:read
+                        - members:read
+                        - members:update
+                        - api_keys:read
+                        - api_keys:update
+                        - webhook_subscriptions:read
+                        - webhook_subscriptions:update
+                        - scorecard:read
+                        - scorecard:update
                   created_at:
                     type: string
                     format: date-time
@@ -4553,8 +4587,25 @@ paths:
                   items:
                     type: string
                     enum:
-                      - read
-                      - write
+                      - contact:create
+                      - contact:read
+                      - contact:update
+                      - contact:delete
+                      - finance:create
+                      - finance:read
+                      - finance:update
+                      - finance:delete
+                      - settings:read
+                      - settings:update
+                      - audit:read
+                      - members:read
+                      - members:update
+                      - api_keys:read
+                      - api_keys:update
+                      - webhook_subscriptions:read
+                      - webhook_subscriptions:update
+                      - scorecard:read
+                      - scorecard:update
                   minItems: 1
                 expires_at:
                   type: string
@@ -4589,8 +4640,25 @@ paths:
                     items:
                       type: string
                       enum:
-                        - read
-                        - write
+                        - contact:create
+                        - contact:read
+                        - contact:update
+                        - contact:delete
+                        - finance:create
+                        - finance:read
+                        - finance:update
+                        - finance:delete
+                        - settings:read
+                        - settings:update
+                        - audit:read
+                        - members:read
+                        - members:update
+                        - api_keys:read
+                        - api_keys:update
+                        - webhook_subscriptions:read
+                        - webhook_subscriptions:update
+                        - scorecard:read
+                        - scorecard:update
                   created_at:
                     type: string
                     format: date-time

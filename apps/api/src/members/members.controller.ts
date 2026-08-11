@@ -15,7 +15,7 @@ export class MembersController {
 	constructor(private readonly membersService: MembersService) {}
 
 	@Get()
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('members', 'read')
 	list(
 		@Req() req: FastifyRequest,
 		@Query('cursor') cursor?: string,
@@ -25,12 +25,8 @@ export class MembersController {
 		return this.membersService.list(getActiveOrgId(req), params);
 	}
 
-	// AUDIT-F09-02: `members` resource will be added to permissions.ts; this endpoint
-	// should then RequireOrgPermission('members', 'update'). Today hasOrgPermission
-	// is typed to patient|finance|settings only — settings:update is the temporary stand-in
-	// (same documentation pattern as OrgPermissionGuard's AUDIT-02 API-key bypass note).
 	@Patch(':id')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('members', 'update')
 	@IdempotencyExempt(
 		'Sets absolute role to the caller-supplied value — repeat PATCHes converge to the same membership role. The audit-log row is append-only; a duplicate on a genuine retry is harmless.'
 	)

@@ -33,13 +33,13 @@ export class ApiKeysController {
 	) {}
 
 	@Get()
-	@RequireOrgPermission('settings', 'read')
+	@RequireOrgPermission('api_keys', 'read')
 	list(@Req() req: FastifyRequest) {
 		return this.apiKeysService.list(getActiveOrgId(req));
 	}
 
 	@Post()
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('api_keys', 'update')
 	@Idempotent()
 	async create(
 		@Req() req: FastifyRequest,
@@ -63,7 +63,7 @@ export class ApiKeysController {
 	}
 
 	@Delete(':id')
-	@RequireOrgPermission('settings', 'update')
+	@RequireOrgPermission('api_keys', 'update')
 	@Idempotent()
 	async revoke(
 		@Req() req: FastifyRequest,
