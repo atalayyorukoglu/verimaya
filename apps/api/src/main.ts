@@ -11,6 +11,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { getAuth } from './auth/auth';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
+import { parseTrustProxyEnv, skipStrictAuthRateLimit } from './common/rate-limit.config';
 import { initSentry } from './common/sentry';
 import { mountOpenApiDocs } from './docs/openapi.mount';
 import { MAX_UPLOAD_BYTES } from './storage/storage.types';
@@ -124,6 +125,12 @@ async function bootstrap() {
 			logger: {
 				level: process.env.LOG_LEVEL ?? 'info'
 			},
+			// Behind Cloudflare → Coolify/Traefik the socket peer is the proxy
+			// (e.g. 172.18.0.x). Without trustProxy, rate-limit keys collapse to
+			// one shared bucket for all users. Env-gated — never default to true
+			// (forged X-Forwarded-For would bypass limits). See TRUST_PROXY in
+			// docs/DEPLOY-COOLIFY.md.
+			trustProxy: parseTrustProxyEnv(process.env.TRUST_PROXY),
 			// AUDIT-03 (Faz 8): JSON body cap is 1 MB; multipart `fileSize: 25 MB` below
 			// handles actual uploads. Previously `MAX_UPLOAD_BYTES` (25 MB) was the body
 			// cap, which combined with no rate-limit (main.ts:165) lets an
@@ -175,8 +182,9 @@ async function bootstrap() {
 	// AUDIT-03 (Faz 8): rate-limit. Two layers:
 	//  1. Global: 600/min/IP for `/v1/*` (excludes the public karne surface, which
 	//     keeps the original 30/min cap and stays unauthenticated).
-	//  2. Tighter: 10/min/IP for `/v1/auth/*` to slow credential-stuffing on the
-	//     better-auth login + password-reset endpoints.
+	//  2. Tighter: 10/min/IP for credential-bearing better-auth routes only
+	//     (sign-in / sign-up / password-reset / 2FA verify) — not get-session or
+	//     organization/* navigation (those stay on the global bucket).
 	// Per-tenant token bucket (Redis-backed) is a follow-up for AUDIT-F09 — for the
 	// pilot a per-IP cap is sufficient and uses no extra infra.
 	await app.register(rateLimit, {
@@ -196,17 +204,13 @@ async function bootstrap() {
 				context.statusCode === 403 ? HttpStatus.FORBIDDEN : HttpStatus.TOO_MANY_REQUESTS
 			)
 	});
-	// Tighter cap on auth surface only — non-auth paths must be allowListed
-	// (skipped). A shared "__skip__" keyGenerator still counts every request into
-	// one 10/min bucket and breaks public karne / health.
+	// Tighter cap on credential endpoints only — session/org paths must be
+	// allowListed (skipped). allowList truthy ⇒ this limiter is skipped.
 	await app.register(rateLimit, {
 		global: true,
 		max: 10,
 		timeWindow: '1 minute',
-		allowList: (req: FastifyRequest) => {
-			const path = req.url.split('?')[0] ?? '';
-			return !path.startsWith('/v1/auth/');
-		},
+		allowList: skipStrictAuthRateLimit,
 		errorResponseBuilder: (req: FastifyRequest, context: errorResponseBuilderContext) =>
 			new HttpException(
 				{
