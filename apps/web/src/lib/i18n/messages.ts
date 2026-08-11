@@ -93,8 +93,7 @@ const tr = {
 	'dev.deletedBadge': 'silindi',
 	'dev.targetOrg': 'Hedef organizasyon',
 	'dev.usersSection': 'Üyeler (hedef org)',
-	'dev.usersHint':
-		'Üst bardaki aktif tenant’tan bağımsız: herhangi bir org seçip üyelerini yönet.',
+	'dev.usersHint': 'Üst bardaki aktif tenant’tan bağımsız: herhangi bir org seçip üyelerini yönet.',
 	'dev.addUser': 'Kullanıcı ekle / güncelle',
 	'dev.email': 'E-posta',
 	'dev.password': 'Şifre (≥8)',
@@ -1727,8 +1726,7 @@ const en: Record<MessageKey, string> = {
 	'nav.maya': 'Maya AI',
 	'dev.redirecting': 'Redirecting…',
 	'dev.title': 'Platform panel',
-	'dev.description':
-		'Super admin: create, rename, soft-delete organizations; add/remove members.',
+	'dev.description': 'Super admin: create, rename, soft-delete organizations; add/remove members.',
 	'dev.documentTitle': 'Platform · Veri Maya',
 	'dev.orgs': 'Organizations',
 	'dev.newOrgName': 'New organization name',
@@ -1739,8 +1737,7 @@ const en: Record<MessageKey, string> = {
 	'dev.deletedBadge': 'deleted',
 	'dev.targetOrg': 'Target organization',
 	'dev.usersSection': 'Members (target org)',
-	'dev.usersHint':
-		'Independent of the header active tenant: pick any org and manage its members.',
+	'dev.usersHint': 'Independent of the header active tenant: pick any org and manage its members.',
 	'dev.addUser': 'Add / update user',
 	'dev.email': 'Email',
 	'dev.password': 'Password (≥8)',

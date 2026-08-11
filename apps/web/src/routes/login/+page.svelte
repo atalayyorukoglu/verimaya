@@ -82,7 +82,8 @@
 			});
 
 			if (signInError) {
-				error = signInError.message ?? t('login.error.signInFailed');
+				const detail = [signInError.message, signInError.code].filter(Boolean).join(' · ');
+				error = detail || t('login.error.signInFailed');
 				return;
 			}
 
