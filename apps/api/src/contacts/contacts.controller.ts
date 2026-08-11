@@ -35,6 +35,7 @@ import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { MAX_UPLOAD_BYTES } from '../storage/storage.types';
+import { ContactDataSubjectService } from './contact-data-subject.service';
 import { ContactsService } from './contacts.service';
 
 type MultipartRequest = FastifyRequest & {
@@ -74,6 +75,7 @@ function contentDispositionHeader(
 export class ContactsController {
 	constructor(
 		private readonly contactsService: ContactsService,
+		private readonly contactDataSubject: ContactDataSubjectService,
 		private readonly idempotency: IdempotencyService,
 		private readonly webhookSubscriptions: WebhookSubscriptionsService
 	) {}
@@ -242,6 +244,35 @@ export class ContactsController {
 	@RequireOrgPermission('finance', 'read')
 	financeSummary(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.contactsService.financeSummary(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * AUDIT-F09-07b / KVKK m.11 — machine-readable export of a **contact's**
+	 * tenant-scoped personal data. Operator/admin acts; contact has no session.
+	 * Permission floor is `contact:delete` (same as soft-delete / merge): full PII
+	 * dump is more sensitive than ordinary read.
+	 */
+	@Get(':id/data-export')
+	@RequireOrgPermission('contact', 'delete')
+	dataExport(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.contactDataSubject.exportData(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * AUDIT-F09-07b / KVKK m.11 — deletion **request** + anonymization (no hard-delete).
+	 * Soft-delete (deleted_at) is unchanged; financial rows keep contact_id.
+	 */
+	@Post(':id/data-deletion-request')
+	@RequireOrgPermission('contact', 'delete')
+	@IdempotencyExempt(
+		'Repeat POSTs converge: an already-applied contact anonymization request is returned; contact/finance rows are never hard-deleted.'
+	)
+	dataDeletionRequest(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.contactDataSubject.requestDeletion(
+			getActiveOrgId(req),
+			id,
+			getActorFromRequest(req)
+		);
 	}
 
 	@Post(':id/auto-link-transactions')

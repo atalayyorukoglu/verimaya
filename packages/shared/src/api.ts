@@ -23,6 +23,9 @@ export const apiPaths = {
 	contacts: `${API_V1_PREFIX}/contacts`,
 	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
 	contactFinanceSummary: (id: string) => `${API_V1_PREFIX}/contacts/${id}/finance-summary`,
+	contactDataExport: (id: string) => `${API_V1_PREFIX}/contacts/${id}/data-export`,
+	contactDataDeletionRequest: (id: string) =>
+		`${API_V1_PREFIX}/contacts/${id}/data-deletion-request`,
 	contactAutoLinkTransactions: (id: string) =>
 		`${API_V1_PREFIX}/contacts/${id}/auto-link-transactions`,
 	contactFiles: (id: string) => `${API_V1_PREFIX}/contacts/${id}/files`,
@@ -211,6 +214,10 @@ import {
 } from './product-modules.js';
 import { auditLogSchema } from './audit.js';
 import { dataDeletionRequestSchema, dataExportSchema } from './data-subject.js';
+import {
+	contactDataDeletionRequestSchema,
+	contactDataExportSchema
+} from './contact-data-subject.js';
 import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
 import { apiKeyCreateSchema, apiKeyCreatedSchema, apiKeySchema } from './api-key.js';
 import {
@@ -303,6 +310,12 @@ export const apiContract = {
 	},
 	'GET /v1/contacts/:id/finance-summary': {
 		response: contactFinanceSummarySchema
+	},
+	'GET /v1/contacts/:id/data-export': {
+		response: contactDataExportSchema
+	},
+	'POST /v1/contacts/:id/data-deletion-request': {
+		response: contactDataDeletionRequestSchema
 	},
 	'POST /v1/contacts/:id/auto-link-transactions': {
 		response: contactAutoLinkTransactionsResultSchema

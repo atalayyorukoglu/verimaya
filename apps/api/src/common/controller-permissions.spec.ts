@@ -119,6 +119,12 @@ const INTENTIONAL_PERMISSION_LOCKS: Array<{
 		reason: 'Cross-resource: patient route exposes finance aggregates'
 	},
 	{
+		key: 'ContactsController.dataExport',
+		permission: { resource: 'contact', action: 'delete' },
+		reason:
+			'AUDIT-F09-07b / KVKK m.11: full contact PII dump — elevate above ordinary read (same floor as soft-delete/merge)'
+	},
+	{
 		key: 'ContactsController.autoLinkTransactions',
 		permission: { resource: 'finance', action: 'update' },
 		reason: 'Cross-resource: patient route mutates transactions (contact_id link)'

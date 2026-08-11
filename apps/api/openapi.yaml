@@ -1377,6 +1377,439 @@ paths:
           required: true
           schema:
             type: string
+  /contacts/{id}/data-export:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exported_at:
+                    type: string
+                    format: date-time
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  data_retention_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  contact:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      tenant_id:
+                        type: string
+                        format: uuid
+                      contact_type_id:
+                        type: string
+                        format: uuid
+                      contact_type_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 128
+                      first_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 255
+                      last_name:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      display_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 255
+                      phone:
+                        type: string
+                        maxLength: 64
+                        nullable: true
+                      email:
+                        type: string
+                        format: email
+                        maxLength: 255
+                        nullable: true
+                      notes:
+                        type: string
+                        maxLength: 8000
+                        nullable: true
+                      organization_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      status:
+                        type: string
+                        enum:
+                          - scheduled
+                          - arrived
+                          - treated
+                          - follow_up
+                          - cancelled
+                        nullable: true
+                        default: null
+                      assigned_user_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      source:
+                        type: string
+                        maxLength: 128
+                        nullable: true
+                        default: null
+                      medium:
+                        type: string
+                        maxLength: 128
+                        nullable: true
+                        default: null
+                      campaign:
+                        type: string
+                        maxLength: 128
+                        nullable: true
+                        default: null
+                      referred_by_contact_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      is_internal:
+                        type: boolean
+                        default: false
+                      usage_count:
+                        type: integer
+                        minimum: 0
+                        default: 0
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                    required:
+                      - id
+                      - tenant_id
+                      - contact_type_id
+                      - contact_type_name
+                      - first_name
+                      - last_name
+                      - display_name
+                      - phone
+                      - email
+                      - notes
+                      - created_at
+                      - updated_at
+                    additionalProperties: false
+                  case_notes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        body:
+                          type: string
+                          minLength: 1
+                          maxLength: 8000
+                        author_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - body
+                        - author_display_name
+                        - created_at
+                      additionalProperties: false
+                  appointments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        contact_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        title:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                          nullable: true
+                        appointment_type:
+                          type: string
+                          maxLength: 128
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                            - scheduled
+                            - confirmed
+                            - in_progress
+                            - completed
+                            - cancelled
+                            - no_show
+                          default: scheduled
+                        starts_at:
+                          type: string
+                          format: date-time
+                        ends_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        clinic_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        hotel_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        transfer_note:
+                          type: string
+                          maxLength: 8000
+                          nullable: true
+                        clinic_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        hotel_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        transfer_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        notes:
+                          type: string
+                          maxLength: 8000
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - contact_display_name
+                        - title
+                        - appointment_type
+                        - starts_at
+                        - ends_at
+                        - clinic_name
+                        - hotel_name
+                        - transfer_note
+                        - notes
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        appointment_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        appointment_label:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        filename:
+                          type: string
+                          minLength: 1
+                          maxLength: 512
+                        mime_type:
+                          type: string
+                          maxLength: 256
+                          default: application/octet-stream
+                        size_bytes:
+                          type: integer
+                          minimum: 0
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - ready
+                          default: ready
+                        uploaded_by_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - appointment_id
+                        - filename
+                        - size_bytes
+                        - created_at
+                      additionalProperties: false
+                  finance_summary:
+                    type: object
+                    properties:
+                      income_base:
+                        type: integer
+                      expense_base:
+                        type: integer
+                      net_base:
+                        type: integer
+                      paid_base:
+                        type: integer
+                      outstanding_base:
+                        type: integer
+                      transaction_count:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - income_base
+                      - expense_base
+                      - net_base
+                      - paid_base
+                      - outstanding_base
+                      - transaction_count
+                    additionalProperties: false
+                  deletion_requests:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        subject_contact_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                            - received
+                            - applied
+                        anonymized_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - subject_contact_id
+                        - status
+                        - anonymized_at
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - exported_at
+                  - tenant_id
+                  - data_retention_until
+                  - contact
+                  - case_notes
+                  - appointments
+                  - files
+                  - finance_summary
+                  - deletion_requests
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/data-deletion-request:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  subject_contact_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                      - received
+                      - applied
+                  anonymized_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - subject_contact_id
+                  - status
+                  - anonymized_at
+                  - created_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /contacts/{id}/auto-link-transactions:
     post:
       responses:

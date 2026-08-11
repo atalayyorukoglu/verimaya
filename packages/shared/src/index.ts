@@ -17,6 +17,7 @@ export * from './settings-reorder.js';
 export * from './defaults.js';
 export * from './audit.js';
 export * from './data-subject.js';
+export * from './contact-data-subject.js';
 export * from './api.js';
 export * from './features.js';
 export * from './changelog.js';
