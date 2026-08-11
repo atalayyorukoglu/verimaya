@@ -2,7 +2,7 @@
 
 > **Bu deploy kırıcı bir şema değişikliği taşıyor.** Sıra yanlış olursa panel,
 > API'de olmayan endpoint'leri çağırır ve prod kullanılamaz hale gelir.
-> Değişikliğin kendisi: `docs/2026-08-10-KISILER-BIRLESME-PLANI.md`
+> Değişikliğin kendisi: `docs/Arşiv/2026-08-10-KISILER-BIRLESME-PLANI.md`
 > PR: [#2](https://github.com/atalayyorukoglu/verimaya/pull/2) — branch `feat/domain-02-kisiler-birlesme`
 
 ---
