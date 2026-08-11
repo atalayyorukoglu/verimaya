@@ -1,200 +1,84 @@
-# Verimaya — Tüm açık işler (2026-08-10 envanter)
+# Verimaya — Yönelim notu (açık işler nerede?)
 
-> **Amaç:** Repo + `docs/` + arşivdeki açık yapılacakları tek yerde görmek.
-> **Aktif çalışma sırası hâlâ:** `docs/2026-08-09-YAPILACAKLAR.md` (bu dosya envanter; öncelik orada).
-> **Kaynaklar:** `2026-08-09-YAPILACAKLAR.md`, `2026-08-10-KISILER-BIRLESME-PLANI.md`,
-> `2026-08-09-PROD-SMOKE-REHBERI.md`, `tracker-verimaya-ozellik-gap.md`,
-> `Arşiv/2026-08-03-YAPILACAKLAR.md`, `AUDIT-REPORT.md`, kod yer tutucuları.
+> **Bu dosya kalem listesi DEĞİL.** Açık işlerin tek kaynağı
+> **`docs/2026-08-09-YAPILACAKLAR.md`** — öncelik sırası, kabul kriterleri,
+> Görüş'ler ve "Son kapananlar" orada.
+>
+> **Bu dosya kalem kalem güncellenmez.** 2026-08-10'da tam envanter olarak yazıldı;
+> her kalemi iki yerde işaretlemek sapma ürettiği için (2026-08-11'de üç tutarsızlık
+> çıktı) özet hâline indirildi. Burada yalnız **listeye bakınca cevaplanmayan**
+> sorular durur.
 
 ---
 
-## Faz 8 ne demek? (karışıklığı kes)
+## 1. "Faz 8" ne demek? (en sık karışan şey)
+
+Aynı ad üç farklı şeyi anlatıyor:
 
 | Anlam | Durum |
 |-------|--------|
-| **Kod fazları 0–7** (panel, API, RLS, WhatsApp, Ads iskeleti, raporlar, denetim…) | **Bitmiş.** Arşiv: `2026-08-03-YAPILACAKLAR.md` üst satırı. |
-| **Yol haritası “Faz 8” (eski)** = ETL apply + dahili pilot + go-live ops + ürün karne | Büyük kısmı yapıldı veya **PILOT-*** / **OPS-02** / **MARKET-*** olarak yeniden adlandırıldı. |
-| **UI’daki “Faz 8’de”** (`/settings/import-export`) | **Özellik henüz yok** — bilinçli yer tutucu. Kapsam dokümanda kilitli (**GAP-08**); **uygulama yapılmadı**. İkinci müşteriden önce zorunlu; MARKET-02 sonrası / “Bekleyen”de. |
+| **Kod fazları 0–7** (panel, API, RLS, WhatsApp, Ads iskeleti, raporlar, denetim…) | **Bitmiş.** Kanıt: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` |
+| **Eski yol haritasındaki "Faz 8"** = ETL apply + dahili pilot + go-live ops + ürün karne | Büyük kısmı yapıldı ya da **PILOT-\*** / **OPS-02** / **MARKET-\*** olarak yeniden adlandırıldı |
+| **Panelde görünen "Faz 8'de"** (`/settings/import-export`) | **Özellik yok** — bilinçli yer tutucu. Kapsam kilitli (**GAP-08**), uygulama yapılmadı |
 
-Özet: “Hepsi bitmişti” = ürün çekirdeği + çoğu gap. **İçe/dışa aktarım uygulaması bitmedi**; sadece plan/kapsam kilitlendi.
-
-Durum: `[ ]` yapılmadı · `[~]` kısmi · `—` checkbox yok ama açık.
-
----
-
-## A. Öncelik sırası (pilot → pazar)
-
-### A1. PILOT-01 — prod smoke + artıklar
-
-- [ ] Prod smoke turu — `docs/2026-08-09-PROD-SMOKE-REHBERI.md` §1–§3 (soft-delete, filtre, sayı; insan tıklaması)
-- [ ] Pilot boyunca ikinci organizasyon yaratmama (demo/test org dahil) — devam eden kural
-- [ ] Tenant adı: `Demo Klinik` rename veya bırak — karar + Görüş
-- [x] Migration `0033`–`0038` prod (DOMAIN-02 ile gitti)
-
-### A2. MARKET-01 — üç stratejik karar (17 Ağu review öncesi; kod yok)
-
-- [ ] (a) Birincil segment: acente mi klinik mi?
-- [ ] (b) OrbisMed çıkar çatışması (veri/tüzel/erişim/audit/anlatı)
-- [ ] (c) Kapasite: haftalık sabit gün/saat + feature freeze taahhüdü
-
-### A3. OPS-02 — Meta + Google Ads go-live + attribution
-
-- [~] **OPS-02e** `patients`/`contacts` `source` doluluğu — giriş UI ✅; kapanış: **yeni kayıtlarda ≥ %80** (`ATTRIBUTION_COVERAGE_THRESHOLD`). Geçmiş 757 satır bilinçli kaynaksız.
-- [ ] Meta go-live: 7 gün veri, idempotent sync, log denetimi
-- [ ] Google go-live: aynı (TRY hesabı)
-- [ ] Hata yüzeyleme + sync penceresi doğrulaması  
-  **Not:** ROAS dışarıya attribution guard yeşil olmadan gösterilmez. Kod iskeleti + guard var; **canlı hesap go-live** açık.
-
-### A4. DOMAIN-02 — Hastalar + Kişiler birleşme
-
-- [x] Faz A–D, B2/B3, F (sözleşme, migration, API, panel, temizlik)
-- [~] **Faz E** — E2'/E3 ✅; **kalan: E4 GHL çift yönlü senkron testi** (ad/soyad). Bilinçli ertelendi.  
-  DOMAIN-02 gövdede kalır; E4 olmadan “kapanmış” sayılmaz. Plan: `2026-08-10-KISILER-BIRLESME-PLANI.md`.
-
-### A5. PILOT-02 — 2–4 hafta feature-freeze dahili piloto
-
-Bağımlı: A1 smoke temiz + A2(c) freeze + A4 (E4 dahil) kapanmış.
-
-- [ ] Pilot planı + KPI’lar (ölçüm sorguları/ekranları gömülü)
-- [ ] Feature freeze ilanı (yalnız bugfix + güvenlik + veri düzeltme migration)
-- [ ] 2–4 hafta + haftalık rapor
-
-#### PILOT-02 sonu kapıları (ikinci müşteri öncesi zorunlu)
-
-- [ ] **WEBHOOK-01** shim kapat: `WEBHOOK_IDENTITY_DEFAULT_SECRET=false`; tüm tenant’ta `tenant_provider_identities` satırı doğrula. Runbook: `DEPLOY-COOLIFY.md`.
-- [x] **AUDIT-F09-02** per-key API scope map (2026-08-11): `api_keys.scopes` → JSONB `resource:action` (`0041`); `OrgPermissionGuard` deny-by-default; `permissions.ts`'e audit/members/api_keys/webhook_subscriptions/scorecard; issuance UX'te scope seçimi. Session-only yüzeyler (audit-logs, `/me/data-*`, api-keys, members, settings/**, tenants, ad-metrics) API key'e scope verilse bile kapalı. shared 99 · api 471.
-
-### A6. MARKET-02 — 30 günlük pazar kapısı
-
-Bağımlı: PILOT-02 verileri.
-
-- [ ] 20 müşteri görüşmesi (+ rakip demo/fiyat)
-- [ ] Fiyat kartı + iptal/taahhüt modeli
-- [ ] Kapı kararı (≥ 3 ücretli ön-sipariş / yazılı pilot niyeti hedefi)
+**"Hepsi bitmişti" ≠ "import/export bitti".** Ürün çekirdeği ve gap'lerin çoğu kapandı;
+içe/dışa aktarım bilerek ertelendi ve panelde hâlâ yer tutucu metin duruyor.
 
 ---
 
-## B. Faz 9 — denetim + gap (sıra dışı; kapasite / pilot geri bildirimi)
+## 2. Panelde/kodda göze çarpan eksikler — gerçek mi, bilinçli mi?
 
-### B1. Ops / güvenlik / KVKK
-
-- [x] **OPS-03** Deploy CI kapısı: `workflow_run` → CI success + main + push; paths gate job'da; `workflow_dispatch` kaçış kaldı (2026-08-10).
-- [x] **AUDIT-F09-06** `tenants` FK → `restrict` + soft-delete (`deleted_at`); better-auth
-  `disableOrganizationDeletion`; ActiveOrgGuard `tenant_inactive` (2026-08-11). **LEG-02** saklama.
-- — **AUDIT-F09-07b** hasta/contact KVKK m.11 (`/v1/contacts/:id/…`); Açık sorular §1. **(L)** — LEG-02.
-  ~~AUDIT-F09-07 panel `/v1/me/…`~~ → Son kapananlar (2026-08-10).
-- [x] **AUDIT-F09-20** `corsOrigins` allowlist hot-reload — no-op (AUDIT «Fix: None required»; boot-time env bilinçli; 2026-08-10).
-
-### B2. Test / kalite
-
-- [x] **TEST-02** TestSprite → DOMAIN-02 (17 senaryo; TC002/003/007/009/014 + TC016 Firmalar + TC017 dosya sil). Statik; canlı koşu yok. `2026-08-09-TESTSPRITE-15-SENARYO.md`.
-
-### B3. Tracker gap P2 (PILOT-02 seçer)
-
-- ✅ **GAP-F09-19** Kişiye bağlı not thread’i — DOMAIN-02 ile zaten var (`case_notes` →
-  `contact_id`; tür filtresi yok). Açık sorular §5 kapandı. Kod yok. **(M)**
-- — **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker’da 0 satır). **(L)**
-- ✅ **GAP-F09-23** Dosya silme endpoint'i (2026-08-10): `DELETE /v1/contacts/:id/files/:fileId` soft-delete (`0039`) + audit; blob korunur. Yan bulgu: `FilesSweepService` soft-deleted pending dosyanın blob'unu hard-silebiliyordu → `deleted_at IS NULL` guard'ı. api 453.
-
----
-
-## C. Bekleyen — MARKET-02 sonrası / ikinci müşteri öncesi
-
-### C1. İçe/dışa aktarım (= UI’daki “Faz 8”)
-
-- — **GAP-08 uygulama** — Kapsam kilitli: `ETL-ESLEME.md` §3 eşleme, 26 sütun kişi şablonu, formül enjeksiyonu sanitizasyonu; Tracker’da ~1482 satırlık bundle+contact import/export.  
-  Verimaya: `apps/web/src/routes/settings/import-export/+page.svelte` → metin **"Faz 8’de"** (uygulama yok).  
-  **İkinci müşteriden önce zorunlu** (Açık sorular §9).
-
-### C2. Tracker P3 / ürün
-
-- — **GAP-25** Kapsamlı veri silme (`/data/delete-scope`) + wipe — “tehlikeli” onay korunur
-- — **GAP-26** AI prompt özelleştirme — Açık sorular §6
-- ✅ **GAP-27** Toplu `reorder` endpoint — `PUT .../reorder` ×3 (contact/appointment/finance types); max 500 (2026-08-11)
-- ✅ **GAP-28** Dev panel üretimde gizlendi (Nest yazılmadı; MSW+DEV kapısı) — YAPILACAKLAR
-- ✅ **GAP-29** Randevu öncesi eksik iletişim uyarısı (bloklamaz; phone/email) — YAPILACAKLAR
-- — **PRODUCT-01** Komisyon takibi discovery (acente seçilirse)
-- — **IOS-01** iOS donmuş + birikmiş drift (DOMAIN-01 enum / marketing adları) — çözülürse ilk kalem
-
-### C3. Hukuk / marka / ops hijyen
-
-- — Marka tescili: `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen **"Veri Maya"**)
-- — CSP/HSTS canlıda kanıtlı denetim
-- ✅ pnpm audit / Dependabot CI’da — Dependabot haftalık + CI `dependency-audit`
-  (continue-on-error; OPS-03 deploy’u bloklamaz). Bulgu düzeltmesi ayrı.
-- — Veri işleme envanteri (tamamı)
-- — AB veri lokasyonu envanteri + DPA şablonları
-- — Coolify `verimaya-web-image` → `verimaya-web` rename (isteğe bağlı)
-- — API için GHCR path B (isteğe bağlı)
-
-### C4. Dokümantasyon artıkları (kullanıcı / vault)
-
-- — **DOC-03b/d:** Obsidian `00-proje-ozeti.md` + `01-kararlar.md` marka satırları; `04-ilerleme-log.md` (vault oturumu)
-
----
-
-## D. Açık ürün kararları (kod yazmadan önce)
-
-Karar verilmiş (uygulandı): §1 soft-delete; §2 patient/contact merge semantiği.
-
-3. Randevu durumu enum kalacak mı? (tenant CRUD → enum→FK) — PILOT-02
-4. Checklist ölü mü? → GAP-F09-20 skip olabilir
-5. ~~Kişi notları ayrı mı / tek model mi?~~ → tek model `case_notes.contact_id` (GAP-F09-19 ✅)
-6. AI prompt tenant’a açılsın mı? → GAP-26
-7. Tenant izin matrisi isteniyor mu? — pilotta ölç; AUDIT-F09-02 ile kısmen örtüşür
-8. P2P payer/payee geri gelecek mi? — freeze öncesi ucuz, sonra pahalı
-9. İçe/dışa aktarım ikinci müşteriden önce mi? → C1 / GAP-08
-
----
-
-## E. Bilinçli olarak yapılmayacaklar (MARKET-02 kapısına kadar)
-
-Bunlar backlog değil; **yapılmama kararı** (liste tam metin: YAPILACAKLAR):
-
-- iOS App Store hazırlığı  
-- Hub SEO locale ağacı `/tr/` `/en/` (UI switcher kısmi bilinçli)  
-- TikTok / Instagram entegrasyonları  
-- e-Nabız / e-Fatura  
-- Ürün içi karne genişletmesi  
-- Etiketler (Tags)  
-- Kişilerden toplu case / toplu auto-link (ETL kapsamı)  
-- Lead/pipeline CRM app’te (GHL’de kalır — DOMAIN-01)  
-- Randevu durumu tenant-CRUD  
-- Canlı kur çevirici  
-- `responsible_party` alanı (Contact absorbe etti)
-
----
-
-## F. Kodda görünen eksik yüzeyler (doğrulama)
+"Şurada bir şey eksik görünüyor, unutuldu mu?" sorusunun cevabı:
 
 | Yüzey | Durum |
 |-------|--------|
-| `/settings/import-export` | Yer tutucu “Faz 8’de” — uygulama yok |
-| Ads Meta/Google | Kod + runbook var; **canlı go-live** açık (A3) |
-| DOMAIN-02 E4 | GHL çift yön henüz test edilmedi |
-| Deploy vs CI | ✅ OPS-03 — CI yeşil olmadan auto-deploy yok (`workflow_dispatch` kaçış); audit job continue-on-error |
-| Tedarik zinciri | ✅ Dependabot + `pnpm audit` CI (rapor; bloklamaz) |
-| TestSprite TC002/TC003 | ✅ TEST-02 (2026-08-10): `/contacts` + TC016/017 |
-| Dosya silme | ✅ `DELETE /v1/contacts/:id/files/:fileId` soft-delete + audit (GAP-F09-23) |
-| Kişi not thread | ✅ `/v1/contacts/:id/case-notes` + `ContactCaseNotesThread` (GAP-F09-19) |
-| Dev panel Nest modülü | Yok (bilinçli); UI `isDevPanelEnabled` ile gizlendi (GAP-28 ✅) |
+| `/settings/import-export` → "Faz 8'de" | **Gerçekten yok.** Bilinçli; kapsam kilitli (GAP-08), ikinci müşteriden önce zorunlu |
+| Ads Meta/Google | Kod + runbook hazır; **canlı hesap go-live** açık (OPS-02) |
+| GHL ad/soyad çift yönlü senkron | **Test edilmedi** — DOMAIN-02 E4, insan doğrulaması bekliyor |
+| Dev panel (`/dev`) gerçek arka ucu | **Bilinçli yok.** Nest modülü yazılmadı; ekran üretimde gizli (GAP-28) |
+| Randevu checklist şablonları | **Muhtemelen hiç yapılmayacak** — Tracker'da 0 satır (GAP-F09-20 skip adayı) |
+| Hub'da `/tr/` `/en/` SEO ağacı | Bilinçli yok; UI dil değiştirici kısmi i18n (DOC-03e) |
+
+Kapanmış yüzeylerin kanıtı YAPILACAKLAR "Son kapananlar"da — buraya kopyalanmaz.
 
 ---
 
-## G. Ne kapanmış sayılır? (kısa; şüpheyi azaltmak için)
+## 3. Nereye bakmalı
 
-Faz 0–7 kodu · DOMAIN-01 · GAP P0/P1 (01–08 kapsam kilidi dahil, **uygulama C1 hariç**) · DOMAIN-02 A–D/F · çok sayıda Faz 9 AUDIT/GAP (OpenAPI generator, i18n süpürme, MIME sniff, preview, audit filtreleri, corrections-report, bulk-type, auto-link, type_counts, DLQ, duplicate scan, OAuth state, guard coverage, flaky spec…) — kanıt: YAPILACAKLAR “Son kapananlar” + arşiv `2026-08-03`.
+| Soru | Kaynak |
+|------|--------|
+| Ne yapacağım, hangi sırayla? | `docs/2026-08-09-YAPILACAKLAR.md` — **tek kaynak** |
+| Bu kalem neden böyle kapandı? | Aynı dosya, "Son kapananlar" + Görüş satırları |
+| Hangi ürün kararları bekliyor? | Aynı dosya, "Açık sorular" |
+| Neyi bilerek yapmıyoruz? | Aynı dosya, "Bilinçli olarak yapılmayacaklar" |
+| Kişiler birleşmesi ayrıntısı | `docs/2026-08-10-KISILER-BIRLESME-PLANI.md` |
+| Prod'a nasıl çıkılır | `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md`, `docs/DEPLOY-COOLIFY.md` |
+| Canlı tıklama turu | `docs/2026-08-09-PROD-SMOKE-REHBERI.md` |
+| Denetim bulgularının aslı | `AUDIT-REPORT.md` (her bulgunun altında Resolution notu) |
+| Tracker → Verimaya gap'leri | `docs/tracker-verimaya-ozellik-gap.md` |
+| Mimari kararlar | `docs/MIMARI.md`, `AGENTS.md` |
 
 ---
 
-## H. Sayı özeti (açık kalem, kabaca)
+## 4. Kabaca ne kapanmış sayılır?
 
-| Blok | Açık / kısmi |
-|------|----------------|
-| A öncelik (PILOT/MARKET/OPS/DOMAIN E4) | ~20 checkbox + kısmi OPS-02e + E4 |
-| B Faz 9 | 6 madde (OPS-03 kapandı) |
-| C bekleyen | ~15 madde (GAP-08 dahil; audit/Dependabot kapandı) |
-| D açık sorular | 7 karar |
-| E yapılmayacaklar | N/A (bilinçli) |
+Faz 0–7 kodu · DOMAIN-01 · GAP P0/P1 (GAP-08 kapsam kilidi dahil, **uygulaması hariç**) ·
+DOMAIN-02 (E4 hariç) · Faz 9 denetim/gap kalemlerinin çoğu — OpenAPI generator, i18n
+süpürmesi, MIME sniff, dosya önizleme ve silme, audit filtreleri, corrections-report,
+bulk-type, auto-link, DLQ, duplicate scan, guard coverage, API key scope haritası,
+tenant soft-delete + FK restrict, KVKK `/v1/me` endpoint'leri, deploy CI kapısı,
+bağımlılık denetimi.
 
-**En sık karıştırılan:** “Faz 8 bitti” ≠ “import/export bitti”. Import/export **bilerek ertelenmiş özellik**; panelde hâlâ yer tutucu.
+Kanıt: YAPILACAKLAR "Son kapananlar" + `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+---
+
+## 5. Bu dosya ne zaman güncellenir?
+
+Kalem kapandığında **değil**. Yalnız:
+
+- YAPILACAKLAR yeni tarihli dosyaya taşındığında (kural 8 re-base),
+- §1'deki "Faz 8" karışıklığı gibi yeni bir kavram karışıklığı çıktığında,
+- §2'deki bir yüzey gerçekten değiştiğinde (ör. import/export yazıldığında).
+
+Kalem durumu için tek kaynağa bak; burayı senkron tutmaya çalışma.

@@ -366,6 +366,10 @@
 ## Kaynaklar
 
 - `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` — önceki liste (Faz 0–7 + denetim sonrası kapananlar)
+- `docs/2026-08-10-TUM-ACIK-ISLER.md` — yönelim notu: "Faz 8" karışıklığı, panelde göze
+  çarpan eksiklerin gerçek mi bilinçli mi olduğu, nereye bakmalı tablosu. **Kalem listesi
+  değil** — kalem durumu yalnız bu dosyadadır, oraya kopyalanmaz.
+- `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md` — sıralı prod deploy + canlı kontrol listesi
 - `docs/2026-08-09-PROD-SMOKE-REHBERI.md` — kalem 1: tıklama sırası + tutarsızlık notları
 - `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md` — migration A kanıtı (eski checklist)
 - `docs/tracker-verimaya-ozellik-gap.md` — Tracker → Verimaya gap analizi (GAP-* kalemlerinin kaynağı)
