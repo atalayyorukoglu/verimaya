@@ -30,7 +30,18 @@ export function createAuth() {
 			.map((s) => s.trim())
 			.filter(Boolean),
 		emailAndPassword: {
-			enabled: true
+			enabled: true,
+			revokeSessionsOnPasswordReset: true,
+			sendResetPassword: async ({ user, url }) => {
+				const { createEmailSenderFromEnv } = await import('../integrations/email/resend.client');
+				const mailer = createEmailSenderFromEnv();
+				void mailer.send({
+					to: user.email,
+					subject: 'Veri Maya — şifre sıfırlama',
+					text: `Şifrenizi sıfırlamak için bu bağlantıya tıklayın:\n\n${url}\n\nBağlantı yaklaşık 1 saat geçerlidir. Siz istemediyseniz bu e-postayı yok sayın.`,
+					html: `<p>Şifrenizi sıfırlamak için <a href="${url}">bu bağlantıya</a> tıklayın.</p><p style="color:#6b6b68;font-size:13px">Bağlantı yaklaşık 1 saat geçerlidir. Siz istemediyseniz bu e-postayı yok sayın.</p>`
+				});
+			}
 		},
 		advanced: {
 			database: {

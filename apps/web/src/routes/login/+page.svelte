@@ -247,7 +247,7 @@
 				<form class="mt-6 space-y-4" onsubmit={submitLogin}>
 					{#if step === 'credentials'}
 						<div>
-							<label class={labelClass} for="email">E-posta</label>
+							<label class={labelClass} for="email">{t('login.email')}</label>
 							<input
 								id="email"
 								type="email"
@@ -268,6 +268,11 @@
 								class={fieldClass}
 							/>
 						</div>
+						<p class="text-right text-sm">
+							<a href="/reset-password" class="text-brand hover:underline"
+								>{t('login.forgotPassword')}</a
+							>
+						</p>
 					{:else}
 						<div>
 							<label class={labelClass} for="totp">{t('login.totp')}</label>

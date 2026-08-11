@@ -5,6 +5,7 @@ import { isMarketingHost } from '$lib/host';
 
 const PUBLIC_PREFIXES = [
 	'/login',
+	'/reset-password',
 	'/vitrin',
 	'/yapay-zeka-karnesi',
 	'/kvkk-aydinlatma',
