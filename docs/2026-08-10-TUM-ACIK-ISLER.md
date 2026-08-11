@@ -62,7 +62,7 @@ Bağımlı: A1 smoke temiz + A2(c) freeze + A4 (E4 dahil) kapanmış.
 #### PILOT-02 sonu kapıları (ikinci müşteri öncesi zorunlu)
 
 - [ ] **WEBHOOK-01** shim kapat: `WEBHOOK_IDENTITY_DEFAULT_SECRET=false`; tüm tenant’ta `tenant_provider_identities` satırı doğrula. Runbook: `DEPLOY-COOLIFY.md`.
-- [ ] **AUDIT-F09-02** per-key API scope map (breaking): `api_keys.scopes` → JSONB / tablo; guard + permissions + issuance UX; mevcut key migrate/rotate; negatif izolasyon testleri. Yeni endpoint’ler scope haritasına dahil.
+- [x] **AUDIT-F09-02** per-key API scope map (2026-08-11): `api_keys.scopes` → JSONB `resource:action` (`0041`); `OrgPermissionGuard` deny-by-default; `permissions.ts`'e audit/members/api_keys/webhook_subscriptions/scorecard; issuance UX'te scope seçimi. Session-only yüzeyler (audit-logs, `/me/data-*`, api-keys, members, settings/**, tenants, ad-metrics) API key'e scope verilse bile kapalı. shared 99 · api 471.
 
 ### A6. MARKET-02 — 30 günlük pazar kapısı
 
@@ -94,7 +94,7 @@ Bağımlı: PILOT-02 verileri.
 - ✅ **GAP-F09-19** Kişiye bağlı not thread’i — DOMAIN-02 ile zaten var (`case_notes` →
   `contact_id`; tür filtresi yok). Açık sorular §5 kapandı. Kod yok. **(M)**
 - — **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker’da 0 satır). **(L)**
-- — **GAP-F09-23** Dosya silme endpoint’i (soft-delete + audit; KVKK). Aynı choke point (`file-mime` / storage). **(M)**
+- ✅ **GAP-F09-23** Dosya silme endpoint'i (2026-08-10): `DELETE /v1/contacts/:id/files/:fileId` soft-delete (`0039`) + audit; blob korunur. Yan bulgu: `FilesSweepService` soft-deleted pending dosyanın blob'unu hard-silebiliyordu → `deleted_at IS NULL` guard'ı. api 453.
 
 ---
 
@@ -175,7 +175,7 @@ Bunlar backlog değil; **yapılmama kararı** (liste tam metin: YAPILACAKLAR):
 | Deploy vs CI | ✅ OPS-03 — CI yeşil olmadan auto-deploy yok (`workflow_dispatch` kaçış); audit job continue-on-error |
 | Tedarik zinciri | ✅ Dependabot + `pnpm audit` CI (rapor; bloklamaz) |
 | TestSprite TC002/TC003 | ✅ TEST-02 (2026-08-10): `/contacts` + TC016/017 |
-| Dosya silme | Endpoint yok (GAP-F09-23) |
+| Dosya silme | ✅ `DELETE /v1/contacts/:id/files/:fileId` soft-delete + audit (GAP-F09-23) |
 | Kişi not thread | ✅ `/v1/contacts/:id/case-notes` + `ContactCaseNotesThread` (GAP-F09-19) |
 | Dev panel Nest modülü | Yok (bilinçli); UI `isDevPanelEnabled` ile gizlendi (GAP-28 ✅) |
 

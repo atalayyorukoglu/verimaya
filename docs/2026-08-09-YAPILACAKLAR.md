@@ -180,10 +180,6 @@
   bağlanmalı. Karar verilmeden id/anahtar değiştirilirse TestSprite TC006 da kırılır.
   **Dosyalar:** `apps/web/src/routes/settings/organization/+page.svelte`,
   `apps/web/src/lib/i18n/messages.ts`, `testsprite_tests/TC006_*.py`. **(S)**
-- **AUDIT-F09-07b** KVKK m.11'in hasta/contact tarafı: `/v1/contacts/:id/data-export` +
-  `data-deletion-request`. AUDIT-F09-07 bilinçli olarak yalnız panel kullanıcısını
-  kapsadı (self-service, en dar yüzey); asıl kişisel veri yığını `contacts`'ta.
-  Anonimleştirilecek alan listesi LEG-02 hukukçu onayına bağlı. **(M)**
 - **SEC-03 artığı — `@fastify/static` route guard bypass.** Yama yalnız ≥10.1.1'de;
   NestJS peer `^8||^9` + bull-board `^9.1.3` major atlama ister. Tek kalan high advisory.
   Upstream peer aralığı genişleyince veya bull-board yükseltilince kapanır. **(M)**
