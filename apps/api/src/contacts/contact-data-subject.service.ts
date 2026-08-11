@@ -186,6 +186,7 @@ export class ContactDataSubjectService {
 					displayName: ANONYMIZED_DISPLAY_NAME,
 					phone: null,
 					email: null,
+					notes: null,
 					updatedAt: now
 				})
 				.where(eq(contacts.id, contactId));

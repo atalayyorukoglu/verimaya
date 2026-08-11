@@ -67,12 +67,13 @@ describe('AUDIT-F09-07b contact data-subject rights isolation', () => {
 			const [row] = await tx`
 				insert into contacts (
 					tenant_id, contact_type_id, contact_type_name,
-					first_name, last_name, display_name, phone, email
+					first_name, last_name, display_name, phone, email, notes
 				)
 				values (
 					${tenantA},
 					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
-					'Hasta', 'Ada', 'Yılmaz', 'Ada Yılmaz', '+905551112233', ${`ada-${tenantA.slice(0, 8)}@example.com`}
+					'Hasta', 'Ada', 'Yılmaz', 'Ada Yılmaz', '+905551112233', ${`ada-${tenantA.slice(0, 8)}@example.com`},
+					'ada-private-note'
 				)
 				returning id`;
 			const [txRow] = await tx`
@@ -180,6 +181,7 @@ describe('AUDIT-F09-07b contact data-subject rights isolation', () => {
 		expect(stillThere.contact!.firstName).toBe('Anonymized');
 		expect(stillThere.contact!.displayName).toBe('Anonymized Contact');
 		expect(stillThere.contact!.phone).toBeNull();
+		expect(stillThere.contact!.notes).toBeNull();
 		expect(stillThere.contact!.deletedAt).toBeNull();
 
 		expect(stillThere.tx).toBeTruthy();
