@@ -7,7 +7,7 @@
 		title,
 		description,
 		hint = undefined,
-		ctaHref = '/features',
+		ctaHref = '/toolkit',
 		ctaLabel = undefined,
 		children
 	}: {

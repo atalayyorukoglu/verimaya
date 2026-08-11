@@ -32,22 +32,22 @@ describe('GAP-28 dev panel gate', () => {
 		});
 	});
 
-	describe('filterDevPanelNavItems (sidebar / Sistem → Geliştirici)', () => {
+	describe('filterDevPanelNavItems (sidebar / Sistem → Platform)', () => {
 		const items = [
-			{ href: '/features', labelKey: 'nav.features' },
+			{ href: '/toolkit', labelKey: 'nav.tools' },
 			{ href: '/settings', labelKey: 'nav.settings' },
 			{ href: DEV_PANEL_HREF, labelKey: 'nav.developer' }
 		];
 
-		it('hides Geliştirici when the flag is off', () => {
+		it('hides Platform when the flag is off', () => {
 			const filtered = filterDevPanelNavItems(items, false);
-			expect(filtered.map((i) => i.href)).toEqual(['/features', '/settings']);
+			expect(filtered.map((i) => i.href)).toEqual(['/toolkit', '/settings']);
 			expect(filtered.some((i) => i.href === DEV_PANEL_HREF)).toBe(false);
 		});
 
-		it('keeps Geliştirici when the flag is on', () => {
+		it('keeps Platform when the flag is on', () => {
 			const filtered = filterDevPanelNavItems(items, true);
-			expect(filtered.map((i) => i.href)).toEqual(['/features', '/settings', DEV_PANEL_HREF]);
+			expect(filtered.map((i) => i.href)).toEqual(['/toolkit', '/settings', DEV_PANEL_HREF]);
 		});
 	});
 

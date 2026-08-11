@@ -8,7 +8,6 @@ import Wrench from '@lucide/svelte/icons/wrench';
 import Library from '@lucide/svelte/icons/library';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
-import Sparkles from '@lucide/svelte/icons/sparkles';
 import Bot from '@lucide/svelte/icons/bot';
 
 import type { MessageKey } from '$lib/i18n/messages';
@@ -18,11 +17,11 @@ import type { MessageKey } from '$lib/i18n/messages';
  * `labelKey` bilinçli olarak string değil — yanlış anahtar derleme hatası verir.
  * Kural: docs/TASARIM.md § Dil ve slug.
  *
- * Sidebar IA (düz):
+ * Sidebar IA:
  *   Panel (grup dışı)
- *   Kayıtlar → Kişiler, Randevular, Finans, Raporlar
- *   Büyüme → Araçlar, Kaynaklar  (hub sayfaları; alt ürünler kartlardan)
- *   Sistem → Maya AI (mock), Özellikler, Ayarlar, Geliştirici (`/dev` — MSW-only; gated by
+ *   Maya AI (grup dışı — Panel’in hemen altında)
+ *   Ürünler → Kişiler, Randevular, Finans, Raporlar + açık ürün modülleri (ör. Kampanya Asistanı)
+ *   Sistem → Araçlar, Kaynaklar, Ayarlar, Platform (`/dev` — gated by
  *   `isDevPanelEnabled` in `$lib/dev-panel`, filtered in AppShell)
  */
 export type NavItem = {
@@ -43,34 +42,44 @@ export const panelNavItem: NavItem = {
 	icon: LayoutDashboard
 };
 
-/** Panel nav — CF dashboard grupları, TickPort renkleri; docs/TASARIM.md */
-export const navGroups: NavGroup[] = [
-	{
-		labelKey: 'nav.group.records',
-		items: [
-			{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
-			{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
-			{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
-			{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
-		]
-	},
-	{
-		labelKey: 'nav.group.growth',
-		items: [
-			{ labelKey: 'nav.tools', href: '/toolkit', icon: Wrench },
-			{ labelKey: 'nav.resources', href: '/knowledge', icon: Library }
-		]
-	},
-	{
-		labelKey: 'nav.group.system',
-		items: [
-			{ labelKey: 'nav.maya', href: '/maya', icon: Bot },
-			{ labelKey: 'nav.features', href: '/features', icon: Sparkles },
-			{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
-			{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }
-		]
-	}
+/** Standalone entry — directly under Panel, outside groups. */
+export const mayaNavItem: NavItem = {
+	labelKey: 'nav.maya',
+	href: '/maya',
+	icon: Bot
+};
+
+/** Fixed Ürünler entries (toggleable modules appended at runtime). */
+export const coreProductNavItems: NavItem[] = [
+	{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
+	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
+	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
+	{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
 ];
+
+const systemNavItems: NavItem[] = [
+	{ labelKey: 'nav.tools', href: '/toolkit', icon: Wrench },
+	{ labelKey: 'nav.resources', href: '/knowledge', icon: Library },
+	{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
+	{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }
+];
+
+/**
+ * Builds sidebar groups. Ürünler is reactive: pass enabled modules from
+ * `$lib/product-modules.svelte`.
+ */
+export function buildNavGroups(enabledProductModules: NavItem[]): NavGroup[] {
+	return [
+		{
+			labelKey: 'nav.group.products',
+			items: [...coreProductNavItems, ...enabledProductModules]
+		},
+		{
+			labelKey: 'nav.group.system',
+			items: systemNavItems
+		}
+	];
+}
 
 /** Flatten links in a group (kept for AppShell helpers). */
 export function navGroupItems(group: NavGroup): NavItem[] {

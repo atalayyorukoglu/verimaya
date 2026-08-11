@@ -20,7 +20,7 @@
 			{t('settings.importExport.body')}
 		</p>
 		<a
-			href="/features"
+			href="/toolkit"
 			class="mt-5 inline-flex h-9 items-center rounded-[6px] bg-surface-2 px-4 text-sm font-medium text-text hover:bg-border"
 		>
 			{t('settings.importExport.cta')}

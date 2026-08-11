@@ -22,11 +22,21 @@ export type Feature = {
 };
 
 /**
- * Tek kaynak: /features sayfası buradan render edilir.
+ * Tek kaynak: /toolkit (eski /features → 308) buradan render edilir.
  * Durum taksonomisi: docs/CHANGELOG-KURALLARI.md § Özellik durumu.
  * "Yayında"ya geçen özellik aynı commit'te changelog.ts'e de yazılır.
  */
 export const features: Feature[] = [
+	{
+		id: 'campaign-assistant',
+		module: 'Pazarlama',
+		title: 'Kampanya Asistanı',
+		description:
+			'Pazarlama hub’ı — gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontrolleri tek yerde.',
+		status: 'kod-hazir',
+		released_at: '2026-07-22',
+		version: '0.2.0'
+	},
 	{
 		id: 'patients-list',
 		module: 'Hasta Takibi',

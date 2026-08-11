@@ -5,7 +5,14 @@
 	import type { Tenant } from '@verimaya/shared';
 	import { cn } from '$lib/utils';
 	import { apiGet } from '$lib/api';
-	import { mobileTabItems, navGroupItems, navGroups, panelNavItem } from '$lib/navigation';
+	import {
+		buildNavGroups,
+		mayaNavItem,
+		mobileTabItems,
+		navGroupItems,
+		panelNavItem
+	} from '$lib/navigation';
+	import { getEnabledProductNavItems } from '$lib/product-modules.svelte';
 	import { filterDevPanelNavItems, canAccessPlatformPanel } from '$lib/dev-panel';
 	import { DEV_PANEL_ENABLED } from '$lib/dev-panel-enabled';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -64,6 +71,8 @@
 
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
 
+	const navGroups = $derived(buildNavGroups(getEnabledProductNavItems()));
+
 	const visibleGroups = $derived(
 		navGroups
 			.map((group) => ({
@@ -76,6 +85,7 @@
 	);
 
 	const showPanelNav = $derived(canSeeNav(panelNavItem.href, role));
+	const showMayaNav = $derived(canSeeNav(mayaNavItem.href, role));
 
 	const visibleTabs = $derived(mobileTabItems.filter((item) => canSeeNav(item.href, role)));
 
@@ -125,6 +135,7 @@
 
 	const allNavHrefs = $derived([
 		panelNavItem.href,
+		mayaNavItem.href,
 		...navGroups.flatMap((g) =>
 			filterDevPanelNavItems(navGroupItems(g), platformPanelEnabled).map((i) => i.href)
 		),
@@ -267,29 +278,58 @@
 			class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto px-2 py-3"
 			aria-label={t('shell.aria.mainMenu')}
 		>
-			{#if showPanelNav}
-				{@const panelActive = isActive(panelNavItem.href)}
-				{@const PanelIcon = panelNavItem.icon}
+			{#if showPanelNav || showMayaNav}
 				<ul class="space-y-0">
-					<li>
-						<a
-							href={panelNavItem.href}
-							class={cn(
-								'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-								panelActive
-									? 'bg-brand-subtle text-brand-text'
-									: 'text-text-muted hover:bg-surface-2 hover:text-text'
-							)}
-							aria-current={panelActive ? 'page' : undefined}
-						>
-							<PanelIcon class="size-4 shrink-0" aria-hidden="true" />
-							<span class="truncate">{t(panelNavItem.labelKey)}</span>
-						</a>
-					</li>
+					{#if showPanelNav}
+						{@const panelActive = isActive(panelNavItem.href)}
+						{@const PanelIcon = panelNavItem.icon}
+						<li>
+							<a
+								href={panelNavItem.href}
+								class={cn(
+									'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+									panelActive
+										? 'bg-brand-subtle text-brand-text'
+										: 'text-text-muted hover:bg-surface-2 hover:text-text'
+								)}
+								aria-current={panelActive ? 'page' : undefined}
+							>
+								<PanelIcon class="size-4 shrink-0" aria-hidden="true" />
+								<span class="truncate">{t(panelNavItem.labelKey)}</span>
+							</a>
+						</li>
+					{/if}
+					{#if showMayaNav}
+						{@const mayaActive = isActive(mayaNavItem.href)}
+						{@const MayaIcon = mayaNavItem.icon}
+						<li>
+							<a
+								href={mayaNavItem.href}
+								class={cn(
+									'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+									mayaActive
+										? 'bg-brand-subtle text-brand-text'
+										: 'text-text-muted hover:bg-surface-2 hover:text-text'
+								)}
+								aria-current={mayaActive ? 'page' : undefined}
+							>
+								<MayaIcon class="size-4 shrink-0" aria-hidden="true" />
+								<span class="truncate">{t(mayaNavItem.labelKey)}</span>
+							</a>
+						</li>
+					{/if}
 				</ul>
 			{/if}
 			{#each visibleGroups as group, gi (group.labelKey)}
-				<div class={showPanelNav ? (gi === 0 ? 'mt-3' : 'mt-4') : gi === 0 ? '' : 'mt-4'}>
+				<div
+					class={showPanelNav || showMayaNav
+						? gi === 0
+							? 'mt-3'
+							: 'mt-4'
+						: gi === 0
+							? ''
+							: 'mt-4'}
+				>
 					<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
 						{t(group.labelKey)}
 					</p>
@@ -358,30 +398,60 @@
 				class="sidebar-nav-scroll flex-1 overflow-y-auto px-2 py-3"
 				aria-label={t('shell.aria.allMenu')}
 			>
-				{#if showPanelNav}
-					{@const panelActive = isActive(panelNavItem.href)}
-					{@const PanelIcon = panelNavItem.icon}
+				{#if showPanelNav || showMayaNav}
 					<ul class="space-y-0">
-						<li>
-							<a
-								href={panelNavItem.href}
-								onclick={closeMobile}
-								class={cn(
-									'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-									panelActive
-										? 'bg-brand-subtle text-brand-text'
-										: 'text-text-muted hover:bg-surface-2 hover:text-text'
-								)}
-								aria-current={panelActive ? 'page' : undefined}
-							>
-								<PanelIcon class="size-4 shrink-0" aria-hidden="true" />
-								<span class="truncate">{t(panelNavItem.labelKey)}</span>
-							</a>
-						</li>
+						{#if showPanelNav}
+							{@const panelActive = isActive(panelNavItem.href)}
+							{@const PanelIcon = panelNavItem.icon}
+							<li>
+								<a
+									href={panelNavItem.href}
+									onclick={closeMobile}
+									class={cn(
+										'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+										panelActive
+											? 'bg-brand-subtle text-brand-text'
+											: 'text-text-muted hover:bg-surface-2 hover:text-text'
+									)}
+									aria-current={panelActive ? 'page' : undefined}
+								>
+									<PanelIcon class="size-4 shrink-0" aria-hidden="true" />
+									<span class="truncate">{t(panelNavItem.labelKey)}</span>
+								</a>
+							</li>
+						{/if}
+						{#if showMayaNav}
+							{@const mayaActive = isActive(mayaNavItem.href)}
+							{@const MayaIcon = mayaNavItem.icon}
+							<li>
+								<a
+									href={mayaNavItem.href}
+									onclick={closeMobile}
+									class={cn(
+										'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+										mayaActive
+											? 'bg-brand-subtle text-brand-text'
+											: 'text-text-muted hover:bg-surface-2 hover:text-text'
+									)}
+									aria-current={mayaActive ? 'page' : undefined}
+								>
+									<MayaIcon class="size-4 shrink-0" aria-hidden="true" />
+									<span class="truncate">{t(mayaNavItem.labelKey)}</span>
+								</a>
+							</li>
+						{/if}
 					</ul>
 				{/if}
 				{#each visibleGroups as group, gi (group.labelKey)}
-					<div class={showPanelNav ? (gi === 0 ? 'mt-3' : 'mt-4') : gi === 0 ? '' : 'mt-4'}>
+					<div
+						class={showPanelNav || showMayaNav
+							? gi === 0
+								? 'mt-3'
+								: 'mt-4'
+							: gi === 0
+								? ''
+								: 'mt-4'}
+					>
 						<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
 							{t(group.labelKey)}
 						</p>

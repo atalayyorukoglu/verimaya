@@ -30,14 +30,8 @@ const tr = {
 	'locale.tr': 'Türkçe',
 
 	// Panel navigasyonu — grup başlıkları
-	'nav.group.records': 'Kayıtlar',
-	'nav.group.growth': 'Büyüme',
-	'nav.group.tools': 'Araçlar',
-	'nav.group.resources': 'Kaynaklar',
+	'nav.group.products': 'Ürünler',
 	'nav.group.system': 'Sistem',
-	'nav.group.main': 'Kayıtlar',
-	'nav.group.finance': 'Finans',
-	'nav.group.marketing': 'Araçlar',
 
 	// Panel navigasyonu — bağlantılar
 	'nav.dashboard': 'Panel',
@@ -50,15 +44,11 @@ const tr = {
 	'nav.tools': 'Araçlar',
 	'nav.tools.documentTitle': 'Araçlar · Veri Maya',
 	'nav.tools.title': 'Araçlar',
-	'nav.tools.description': 'AI Karne ve kampanya araçları.',
-	'nav.tools.card.scorecard': 'Hazırlık skoru ve AI operasyon karnesi.',
-	'nav.tools.card.campaigns': 'Pazarlama hub’ı — hesap, simülatör ve kampanya araçları.',
+	'nav.tools.description': 'Modül yetenekleri, durumları ve Ürünler menüsünde gösterme tercihleri.',
 	'nav.resources': 'Kaynaklar',
 	'nav.resources.documentTitle': 'Kaynaklar · Veri Maya',
 	'nav.resources.title': 'Kaynaklar',
-	'nav.resources.description': 'AI hazırlık, dokümantasyon ve rehberler.',
-	'nav.resources.card.aiPrep': 'AI operasyon hazırlığı.',
-	'nav.resources.card.docs': 'Ürün rehberleri ve dokümantasyon.',
+	'nav.resources.description': 'Operasyon ve satış rehberleri.',
 	'nav.aiPrep': 'Ai Hazırlık',
 	'nav.aiPrep.documentTitle': 'Ai Hazırlık · Veri Maya',
 	'nav.aiPrep.title': 'Ai Hazırlık',
@@ -68,6 +58,7 @@ const tr = {
 	'nav.docs.title': 'Dokümantasyon & Rehberler',
 	'nav.docs.description': 'Ürün rehberleri ve dokümantasyon — içerik yakında.',
 	'nav.marketingOverview': 'Kampanyalar',
+	'nav.campaignAssistant': 'Kampanya Asistanı',
 	'nav.calculator': 'Hesap',
 	'nav.simulator': 'Simülatör',
 	'nav.compliance': 'Uyumluluk',
@@ -1153,7 +1144,7 @@ const tr = {
 	'changelog.documentTitle': 'Yenilikler · Veri Maya',
 	'changelog.title': 'Yenilikler',
 	'changelog.description':
-		'Kullanıcıya dönük değişiklikler — packages/shared/src/changelog.ts. Özellik durumu /features ile aynı taksonomi.',
+		'Kullanıcıya dönük değişiklikler — packages/shared/src/changelog.ts. Özellik durumu /toolkit ile aynı taksonomi.',
 	'changelog.empty': 'Henüz kayıt yok.',
 	'changelog.versionFallback': 'Sürüm {version}',
 	'changelog.kind.yeni': 'Yeni',
@@ -1162,13 +1153,103 @@ const tr = {
 	'changelog.kind.kaldirildi': 'Kaldırıldı',
 	'changelog.kind.guvenlik': 'Güvenlik',
 
-	// features
-	'features.documentTitle': 'Özellikler · Veri Maya',
-	'features.title': 'Özellikler',
-	'features.description':
-		'Mevcut ve planlanan yetenekler — veri kaynağı packages/shared/src/features.ts.',
+	// features (filter labels reused on /toolkit)
 	'features.filterAll': 'Tümü',
 	'features.versionLink': 'Sürüm {version} yenilikleri',
+
+	// toolkit (Araçlar — features listesi)
+	'toolkit.showInProducts': 'Ürünlerde Göster',
+	'toolkit.hideInProducts': 'Ürünlerde Gizle',
+	'toolkit.module.patientTracking': 'Hasta Takibi',
+	'toolkit.module.appointments': 'Randevu',
+	'toolkit.module.finance': 'Finans',
+	'toolkit.module.whatsapp': 'WhatsApp',
+	'toolkit.module.integrations': 'Entegrasyonlar',
+	'toolkit.module.reporting': 'Raporlama',
+	'toolkit.module.marketing': 'Pazarlama',
+	'toolkit.module.platform': 'Platform',
+	'toolkit.feature.fallback.title': 'Özellik',
+	'toolkit.feature.fallback.description': 'Açıklama yakında.',
+	'toolkit.feature.campaign-assistant.title': 'Kampanya Asistanı',
+	'toolkit.feature.campaign-assistant.description':
+		'Pazarlama hub’ı — gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontrolleri tek yerde.',
+	'toolkit.feature.patients-list.title': 'Hasta listesi ve detay',
+	'toolkit.feature.patients-list.description':
+		'Lead ve hasta kayıtlarını listeleyin, durumlarını takip edin, not ve iletişim bilgilerine tek ekrandan ulaşın.',
+	'toolkit.feature.appointments-calendar.title': 'Randevu takvimi',
+	'toolkit.feature.appointments-calendar.description':
+		'Klinik, otel ve transfer notlarıyla birlikte randevuları gün/hafta görünümünde yönetin.',
+	'toolkit.feature.finance-ledger.title': 'Gelir-gider işlemleri',
+	'toolkit.feature.finance-ledger.description':
+		'Tahsilat ve ödemeleri hasta bağlantısı, ödeme durumu ve fatura bilgisiyle kaydedin.',
+	'toolkit.feature.whatsapp-import.title': 'AI ile WhatsApp işlem aktarımı',
+	'toolkit.feature.whatsapp-import.description':
+		'Grup mesajını yapıştırın veya WAHA kuyruğundan seçin; AI işlemleri ayrıştırır, onay sonrası kayıt açılır.',
+	'toolkit.feature.ghl-sync.title': 'GoHighLevel senkronu',
+	'toolkit.feature.ghl-sync.description':
+		'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Veri Maya ile eşleştirin.',
+	'toolkit.feature.ads-metrics.title': 'Meta ve Google Ads metrikleri',
+	'toolkit.feature.ads-metrics.description':
+		'Reklam harcaması ve dönüşümleri günlük özet olarak panele çekin.',
+	'toolkit.feature.ads-connect.title': 'Meta & Google Ads bağlantısı',
+	'toolkit.feature.ads-connect.description':
+		'Reklam hesabınızı bağlayın; kampanya harcaması günlük çekilir ve Gerçek ROAS raporunu besler.',
+	'toolkit.feature.n8n-api.title': 'n8n ve dış API',
+	'toolkit.feature.n8n-api.description':
+		'Scope’lu API anahtarı ve imzalı webhook’larla otomasyonları bağlayın.',
+	'toolkit.feature.reports-dashboard.title': 'Özet raporlar ve dashboard',
+	'toolkit.feature.reports-dashboard.description':
+		'Lead, dönüşüm, tahsilat ve mesaj hacmini dönemsel kartlarda görün.',
+	'toolkit.feature.real-roas.title': 'Gerçek ROAS raporu',
+	'toolkit.feature.real-roas.description':
+		'Reklam harcamanızı dönem tahsilatıyla kıyaslayın; hasta başına maliyet ve kaynak kırılımı.',
+	'toolkit.feature.truth-calculator.title': 'Gerçek ROAS hesabı',
+	'toolkit.feature.truth-calculator.description':
+		'Platform ROAS’ını katkı payı ve maliyetlerle gerçek kâra çevirin; başabaş ve hasta başı reklam tavanını görün.',
+	'toolkit.feature.ad-simulator.title': 'Reklam matematiği simülatörü',
+	'toolkit.feature.ad-simulator.description':
+		'CPC, dönüşüm ve satış oranıyla satış başı maliyet, trafik ışığı ve ölçek tavanını hesaplayın.',
+	'toolkit.feature.ad-compliance.title': 'Reklam uyumluluk taraması',
+	'toolkit.feature.ad-compliance.description':
+		'Reklam veya landing metnindeki yasaklı / riskli sağlık vaatlerini tarayın.',
+	'toolkit.feature.marketing-templates.title': 'UTM ve bütçe şablonları',
+	'toolkit.feature.marketing-templates.description':
+		'UTM linki üretin; 3:2:2 kreatif ve 60/30/10 bütçe bölüşümünü hızlıca çıkarın.',
+	'toolkit.feature.trust-score.title': 'Ölçüm olgunluğu (Trust Score)',
+	'toolkit.feature.trust-score.description':
+		'Consent, CAPI, enhanced conversions ve CRM geri bildirim checklist’iyle ölçüm skorunu görün.',
+	'toolkit.feature.campaign-precheck.title': 'Yayın öncesi kontrol',
+	'toolkit.feature.campaign-precheck.description':
+		'Kampanyayı yayınlamadan önce uyumluluk, birim ekonomi ve ölçüm eşiğini tek ekranda kontrol edin.',
+	'toolkit.feature.duplicate-scan.title': 'Kişi ve hasta çift kayıt',
+	'toolkit.feature.duplicate-scan.description':
+		'Telefon, e-posta veya ada göre mükerrerleri tarayın; kayıtları birleştirin.',
+	'toolkit.feature.multi-tenant.title': 'Çok kiracılı organizasyon',
+	'toolkit.feature.multi-tenant.description':
+		'Her klinik/acente kendi verisini görür; ekip rolleriyle erişim sınırlanır.',
+	'toolkit.feature.free-ai-scorecard.title': 'Ücretsiz yapay zeka karnesi',
+	'toolkit.feature.free-ai-scorecard.description':
+		'Üyeliksiz 5 dakikalık karne: kliniğin yapay zeka hazırlığında kanıtı olmayan alanları net cümlelerle görün.',
+	'toolkit.feature.in-product-scorecard.title': 'Ürün içi yapay zeka karnesi',
+	'toolkit.feature.in-product-scorecard.description':
+		'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması — panel /scorecard.',
+
+	// knowledge (Kaynaklar rehberleri)
+	'knowledge.back': 'Kaynaklara dön',
+	'knowledge.comingSoon': 'İçerik yakında.',
+	'knowledge.notFound.title': 'Rehber bulunamadı',
+	'knowledge.notFound.description': 'Bu rehber mevcut değil veya taşınmış olabilir.',
+	'knowledge.notFound.documentTitle': 'Rehber bulunamadı · Veri Maya',
+	'knowledge.guide.documentTitle': '{title} · Veri Maya',
+	'knowledge.guide.aiPrepGuide.title': 'Ai Hazırlık Rehberi',
+	'knowledge.guide.aiPrepGuide.description':
+		'Klinik veya acentenizde AI operasyonuna geçiş için hazırlık adımları.',
+	'knowledge.guide.keywordSelection.title': 'Anahtar kelime seçiminde dikkat edilmesi gerekenler',
+	'knowledge.guide.keywordSelection.description':
+		'Reklam ve SEO anahtar kelime seçiminde yaygın hatalar ve kontrol listesi.',
+	'knowledge.guide.salesDiscounts.title': 'Satış yaparken indirim nasıl yapılır',
+	'knowledge.guide.salesDiscounts.description':
+		'İndirim tekliflerini marj ve konumlandırma bozmadan nasıl kurgularsınız.',
 
 	// contacts
 	'contacts.list.documentTitle': 'Kişiler · Veri Maya',
@@ -1696,14 +1777,8 @@ const en: Record<MessageKey, string> = {
 	'locale.en': 'English',
 	'locale.tr': 'Türkçe',
 
-	'nav.group.records': 'Records',
-	'nav.group.growth': 'Growth',
-	'nav.group.tools': 'Tools',
-	'nav.group.resources': 'Resources',
+	'nav.group.products': 'Products',
 	'nav.group.system': 'System',
-	'nav.group.main': 'Records',
-	'nav.group.finance': 'Finance',
-	'nav.group.marketing': 'Tools',
 
 	'nav.dashboard': 'Dashboard',
 	'nav.contacts': 'Contacts',
@@ -1715,15 +1790,12 @@ const en: Record<MessageKey, string> = {
 	'nav.tools': 'Tools',
 	'nav.tools.documentTitle': 'Tools · Veri Maya',
 	'nav.tools.title': 'Tools',
-	'nav.tools.description': 'AI scorecard and campaign tools.',
-	'nav.tools.card.scorecard': 'Readiness score and AI operations scorecard.',
-	'nav.tools.card.campaigns': 'Marketing hub — calculator, simulator, and campaign tools.',
+	'nav.tools.description':
+		'Module capabilities, status, and preferences for showing items under Products.',
 	'nav.resources': 'Resources',
 	'nav.resources.documentTitle': 'Resources · Veri Maya',
 	'nav.resources.title': 'Resources',
-	'nav.resources.description': 'AI prep, documentation, and guides.',
-	'nav.resources.card.aiPrep': 'AI operations prep.',
-	'nav.resources.card.docs': 'Product guides and documentation.',
+	'nav.resources.description': 'Operations and sales guides.',
 	'nav.aiPrep': 'AI Prep',
 	'nav.aiPrep.documentTitle': 'AI Prep · Veri Maya',
 	'nav.aiPrep.title': 'AI Prep',
@@ -1733,6 +1805,7 @@ const en: Record<MessageKey, string> = {
 	'nav.docs.title': 'Docs & guides',
 	'nav.docs.description': 'Product guides and documentation — content coming soon.',
 	'nav.marketingOverview': 'Campaigns',
+	'nav.campaignAssistant': 'Campaign Assistant',
 	'nav.calculator': 'Calculator',
 	'nav.simulator': 'Simulator',
 	'nav.compliance': 'Compliance',
@@ -2789,7 +2862,7 @@ const en: Record<MessageKey, string> = {
 	'changelog.documentTitle': 'Changelog · Veri Maya',
 	'changelog.title': 'Changelog',
 	'changelog.description':
-		'User-facing changes — packages/shared/src/changelog.ts. Same taxonomy as /features.',
+		'User-facing changes — packages/shared/src/changelog.ts. Same taxonomy as /toolkit.',
 	'changelog.empty': 'No entries yet.',
 	'changelog.versionFallback': 'Version {version}',
 	'changelog.kind.yeni': 'New',
@@ -2798,12 +2871,100 @@ const en: Record<MessageKey, string> = {
 	'changelog.kind.kaldirildi': 'Removed',
 	'changelog.kind.guvenlik': 'Security',
 
-	'features.documentTitle': 'Features · Veri Maya',
-	'features.title': 'Features',
-	'features.description':
-		'Current and planned capabilities — data from packages/shared/src/features.ts.',
 	'features.filterAll': 'All',
 	'features.versionLink': 'Version {version} release notes',
+
+	'toolkit.showInProducts': 'Show in Products',
+	'toolkit.hideInProducts': 'Hide from Products',
+	'toolkit.module.patientTracking': 'Patient tracking',
+	'toolkit.module.appointments': 'Appointments',
+	'toolkit.module.finance': 'Finance',
+	'toolkit.module.whatsapp': 'WhatsApp',
+	'toolkit.module.integrations': 'Integrations',
+	'toolkit.module.reporting': 'Reporting',
+	'toolkit.module.marketing': 'Marketing',
+	'toolkit.module.platform': 'Platform',
+	'toolkit.feature.fallback.title': 'Feature',
+	'toolkit.feature.fallback.description': 'Description coming soon.',
+	'toolkit.feature.campaign-assistant.title': 'Campaign Assistant',
+	'toolkit.feature.campaign-assistant.description':
+		'Marketing hub — real ROAS calculator, simulator, compliance scan, and pre-launch checks in one place.',
+	'toolkit.feature.patients-list.title': 'Patient list and detail',
+	'toolkit.feature.patients-list.description':
+		'List leads and patients, track status, and reach notes and contact details from one screen.',
+	'toolkit.feature.appointments-calendar.title': 'Appointment calendar',
+	'toolkit.feature.appointments-calendar.description':
+		'Manage appointments in day/week views with clinic, hotel, and transfer notes.',
+	'toolkit.feature.finance-ledger.title': 'Income and expense ledger',
+	'toolkit.feature.finance-ledger.description':
+		'Record collections and payments with patient links, payment status, and invoice info.',
+	'toolkit.feature.whatsapp-import.title': 'AI WhatsApp transaction import',
+	'toolkit.feature.whatsapp-import.description':
+		'Paste a group message or pick from the WAHA queue; AI extracts transactions, then you approve.',
+	'toolkit.feature.ghl-sync.title': 'GoHighLevel sync',
+	'toolkit.feature.ghl-sync.description':
+		'Match GHL leads and opportunities to Veri Maya with field-level ownership rules.',
+	'toolkit.feature.ads-metrics.title': 'Meta and Google Ads metrics',
+	'toolkit.feature.ads-metrics.description':
+		'Pull ad spend and conversions into the panel as a daily summary.',
+	'toolkit.feature.ads-connect.title': 'Meta & Google Ads connection',
+	'toolkit.feature.ads-connect.description':
+		'Connect your ad account; daily campaign spend feeds the Real ROAS report.',
+	'toolkit.feature.n8n-api.title': 'n8n and external API',
+	'toolkit.feature.n8n-api.description':
+		'Connect automations with scoped API keys and signed webhooks.',
+	'toolkit.feature.reports-dashboard.title': 'Summary reports and dashboard',
+	'toolkit.feature.reports-dashboard.description':
+		'See leads, conversion, collections, and message volume on period cards.',
+	'toolkit.feature.real-roas.title': 'Real ROAS report',
+	'toolkit.feature.real-roas.description':
+		'Compare ad spend to period collections; cost per patient and source breakdown.',
+	'toolkit.feature.truth-calculator.title': 'Real ROAS calculator',
+	'toolkit.feature.truth-calculator.description':
+		'Turn platform ROAS into real profit with contribution margin and costs; break-even and ad-spend caps.',
+	'toolkit.feature.ad-simulator.title': 'Ad math simulator',
+	'toolkit.feature.ad-simulator.description':
+		'CPC, conversion, and close rates into cost per sale, traffic light, and scale ceiling.',
+	'toolkit.feature.ad-compliance.title': 'Ad compliance scan',
+	'toolkit.feature.ad-compliance.description':
+		'Scan ad or landing copy for banned / risky health claims.',
+	'toolkit.feature.marketing-templates.title': 'UTM and budget templates',
+	'toolkit.feature.marketing-templates.description':
+		'Generate UTM links; quickly build 3:2:2 creative and 60/30/10 budget splits.',
+	'toolkit.feature.trust-score.title': 'Measurement maturity (Trust Score)',
+	'toolkit.feature.trust-score.description':
+		'See measurement score with consent, CAPI, enhanced conversions, and CRM feedback checklist.',
+	'toolkit.feature.campaign-precheck.title': 'Pre-launch check',
+	'toolkit.feature.campaign-precheck.description':
+		'Check compliance, unit economics, and measurement thresholds before going live.',
+	'toolkit.feature.duplicate-scan.title': 'Contact and patient duplicates',
+	'toolkit.feature.duplicate-scan.description':
+		'Scan duplicates by phone, email, or name; merge records.',
+	'toolkit.feature.multi-tenant.title': 'Multi-tenant organization',
+	'toolkit.feature.multi-tenant.description':
+		'Each clinic/agency sees only its data; team roles limit access.',
+	'toolkit.feature.free-ai-scorecard.title': 'Free AI readiness scorecard',
+	'toolkit.feature.free-ai-scorecard.description':
+		'No-signup 5-minute scorecard: clear sentences on areas without AI-readiness evidence.',
+	'toolkit.feature.in-product-scorecard.title': 'In-product AI scorecard',
+	'toolkit.feature.in-product-scorecard.description':
+		'Tenant measurement profile, 43 criteria, auto-fill and comparison — panel /scorecard.',
+
+	'knowledge.back': 'Back to resources',
+	'knowledge.comingSoon': 'Content coming soon.',
+	'knowledge.notFound.title': 'Guide not found',
+	'knowledge.notFound.description': 'This guide does not exist or may have moved.',
+	'knowledge.notFound.documentTitle': 'Guide not found · Veri Maya',
+	'knowledge.guide.documentTitle': '{title} · Veri Maya',
+	'knowledge.guide.aiPrepGuide.title': 'AI Prep Guide',
+	'knowledge.guide.aiPrepGuide.description':
+		'Steps to prepare your clinic or agency for AI operations.',
+	'knowledge.guide.keywordSelection.title': 'What to watch when choosing keywords',
+	'knowledge.guide.keywordSelection.description':
+		'Common mistakes and a checklist for ads and SEO keyword selection.',
+	'knowledge.guide.salesDiscounts.title': 'How to discount while selling',
+	'knowledge.guide.salesDiscounts.description':
+		'How to structure discount offers without breaking margin or positioning.',
 
 	'contacts.list.documentTitle': 'Contacts · Veri Maya',
 	'contacts.list.title': 'Contacts',

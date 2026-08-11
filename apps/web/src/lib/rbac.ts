@@ -7,7 +7,7 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/patients': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/appointments': ['owner', 'admin', 'manager', 'agent', 'readonly'],
 	'/scorecard': ['owner', 'admin', 'manager', 'readonly'],
-	'/toolkit': ['owner', 'admin', 'manager', 'readonly'],
+	'/toolkit': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/knowledge': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/resources/ai-prep': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/resources/docs': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
