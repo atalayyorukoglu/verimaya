@@ -3,7 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
+import { TenantContextService } from '../tenant/tenant-context.service';
 import { MeService } from './me.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -29,6 +31,12 @@ describe('MeService active organization membership', () => {
 				(${organizationB}, 'Organization B', ${`me-b-${organizationB.slice(0, 8)}`}, now())
 		`;
 		await sql`
+			insert into tenants (id, name, slug)
+			values
+				(${organizationA}, 'Organization A', ${`me-a-${organizationA.slice(0, 8)}`}),
+				(${organizationB}, 'Organization B', ${`me-b-${organizationB.slice(0, 8)}`})
+		`;
+		await sql`
 			insert into "user" (id, name, email)
 			values
 				(${validUser}, 'Valid User', ${`valid-${validUser.slice(0, 8)}@example.com`}),
@@ -44,14 +52,15 @@ describe('MeService active organization membership', () => {
 				(${organizationA}, ${unknownRoleUser}, 'unrecognized_role', now())
 		`;
 
-		service = new MeService({ client: db } as DbService);
+		const dbService = { client: db, sql } as unknown as DbService;
+		service = new MeService(dbService, new TenantContextService(dbService));
 	});
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
 		await sql`delete from member where organization_id in (${organizationA}, ${organizationB})`;
 		await sql`delete from "user" where id in (${validUser}, ${otherOrganizationUser}, ${noMembershipUser}, ${unknownRoleUser})`;
-		await sql`delete from organization where id in (${organizationA}, ${organizationB})`;
+		await purgeTenantFixtures(sql, [organizationA, organizationB]);
 		await closeDb();
 	});
 
@@ -111,7 +120,7 @@ describe('MeService active organization membership', () => {
 		});
 	});
 
-	it('maps a valid membership to the shared MembershipUser contract', async () => {
+	it('maps a valid membership to the shared Me contract with empty preferences', async () => {
 		await expect(
 			service.resolveMembershipUser({
 				userId: validUser,
@@ -124,7 +133,8 @@ describe('MeService active organization membership', () => {
 			display_name: 'Valid User',
 			tenant_id: organizationA,
 			role: 'manager',
-			platform_admin: false
+			platform_admin: false,
+			preferences: { enabled_product_modules: [] }
 		});
 	});
 
@@ -145,5 +155,37 @@ describe('MeService active organization membership', () => {
 			if (prev === undefined) delete process.env.PLATFORM_ADMIN_EMAILS;
 			else process.env.PLATFORM_ADMIN_EMAILS = prev;
 		}
+	});
+
+	it('saves and returns preferences on subsequent me resolve', async () => {
+		await expect(
+			service.savePreferences(validUser, organizationA, {
+				enabled_product_modules: ['campaign-assistant']
+			})
+		).resolves.toEqual({ enabled_product_modules: ['campaign-assistant'] });
+
+		await expect(
+			service.resolveMembershipUser({
+				userId: validUser,
+				activeOrganizationId: organizationA,
+				requestId: 'request-with-prefs'
+			})
+		).resolves.toMatchObject({
+			preferences: { enabled_product_modules: ['campaign-assistant'] }
+		});
+	});
+
+	it('replace semantics clear previously enabled modules', async () => {
+		await service.savePreferences(validUser, organizationA, {
+			enabled_product_modules: ['campaign-assistant']
+		});
+		await expect(
+			service.savePreferences(validUser, organizationA, {
+				enabled_product_modules: []
+			})
+		).resolves.toEqual({ enabled_product_modules: [] });
+		await expect(service.getPreferences(validUser, organizationA)).resolves.toEqual({
+			enabled_product_modules: []
+		});
 	});
 });

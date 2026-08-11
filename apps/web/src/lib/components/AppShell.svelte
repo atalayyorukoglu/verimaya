@@ -12,11 +12,14 @@
 		navGroupItems,
 		panelNavItem
 	} from '$lib/navigation';
-	import { getEnabledProductNavItems } from '$lib/product-modules.svelte';
+	import {
+		getEnabledProductNavItems,
+		applyServerProductModules
+	} from '$lib/product-modules.svelte';
 	import { filterDevPanelNavItems, canAccessPlatformPanel } from '$lib/dev-panel';
 	import { DEV_PANEL_ENABLED } from '$lib/dev-panel-enabled';
 	import { t } from '$lib/i18n/locale.svelte';
-	import { canAccessPath, canSeeNav, DEFAULT_ROLE, roleLabels } from '$lib/rbac';
+	import { canAccessPath, canSeeNav, DEFAULT_ROLE } from '$lib/rbac';
 	import { useQueryScope, resetQueryScope } from '$lib/query-scope.svelte';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
@@ -72,6 +75,12 @@
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
 
 	const navGroups = $derived(buildNavGroups(getEnabledProductNavItems()));
+
+	$effect(() => {
+		const prefs = qs.meQuery.data?.preferences?.enabled_product_modules;
+		if (!prefs) return;
+		applyServerProductModules(prefs);
+	});
 
 	const visibleGroups = $derived(
 		navGroups
@@ -544,7 +553,6 @@
 							<div class="border-b border-border px-3 py-2">
 								<p class="truncate text-sm font-medium text-text">{t('shell.demoUser')}</p>
 								<p class="truncate text-xs text-text-faint">demo@verimaya.app</p>
-								<p class="mt-1 text-xs text-text-muted">Rol: {roleLabels[role]}</p>
 							</div>
 							{#if canSeeNav('/settings', role)}
 								<a

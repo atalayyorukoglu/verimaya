@@ -1160,6 +1160,7 @@ const tr = {
 	// toolkit (Araçlar — features listesi)
 	'toolkit.showInProducts': 'Ürünlerde Göster',
 	'toolkit.hideInProducts': 'Ürünlerde Gizle',
+	'toolkit.productModules.saveFailed': 'Ürün tercihi kaydedilemedi. Yeniden deneyin.',
 	'toolkit.module.patientTracking': 'Hasta Takibi',
 	'toolkit.module.appointments': 'Randevu',
 	'toolkit.module.finance': 'Finans',
@@ -2876,6 +2877,7 @@ const en: Record<MessageKey, string> = {
 
 	'toolkit.showInProducts': 'Show in Products',
 	'toolkit.hideInProducts': 'Hide from Products',
+	'toolkit.productModules.saveFailed': 'Could not save product preference. Please try again.',
 	'toolkit.module.patientTracking': 'Patient tracking',
 	'toolkit.module.appointments': 'Appointments',
 	'toolkit.module.finance': 'Finance',

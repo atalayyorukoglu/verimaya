@@ -64,6 +64,18 @@ paths:
                       - readonly
                   platform_admin:
                     type: boolean
+                  preferences:
+                    type: object
+                    properties:
+                      enabled_product_modules:
+                        type: array
+                        items:
+                          type: string
+                          enum:
+                            - campaign-assistant
+                    required:
+                      - enabled_product_modules
+                    additionalProperties: false
                 required:
                   - id
                   - email
@@ -72,7 +84,43 @@ paths:
                   - tenant_id
                   - role
                   - platform_admin
+                  - preferences
                 additionalProperties: false
+  /me/preferences:
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled_product_modules:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - campaign-assistant
+                required:
+                  - enabled_product_modules
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled_product_modules:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - campaign-assistant
+              required:
+                - enabled_product_modules
+              additionalProperties: false
   /me/data-export:
     get:
       responses:

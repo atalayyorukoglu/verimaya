@@ -302,6 +302,13 @@
       "when": 1755000000000,
       "tag": "0042_tenants_soft_delete_fk_restrict",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1755100000000,
+      "tag": "0043_user_ui_preferences",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ export const API_V1_PREFIX = '/v1';
 /** Canonical /v1 path constants — MSW handlers and NestJS should match these. */
 export const apiPaths = {
 	me: `${API_V1_PREFIX}/me`,
+	mePreferences: `${API_V1_PREFIX}/me/preferences`,
 	meDataExport: `${API_V1_PREFIX}/me/data-export`,
 	meDataDeletionRequest: `${API_V1_PREFIX}/me/data-deletion-request`,
 	tenantsCurrent: `${API_V1_PREFIX}/tenants/current`,
@@ -204,6 +205,10 @@ import {
 	platformTenantSchema,
 	platformTenantUpdateSchema
 } from './platform.js';
+import {
+	userUiPreferencesSchema,
+	userUiPreferencesUpdateSchema
+} from './product-modules.js';
 import { auditLogSchema } from './audit.js';
 import { dataDeletionRequestSchema, dataExportSchema } from './data-subject.js';
 import { adMetricSchema, adMetricsSyncResultSchema } from './ad-metrics.js';
@@ -240,6 +245,10 @@ import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './we
 export const apiContract = {
 	'GET /v1/me': {
 		response: meSchema
+	},
+	'PUT /v1/me/preferences': {
+		body: userUiPreferencesUpdateSchema,
+		response: userUiPreferencesSchema
 	},
 	'GET /v1/me/data-export': {
 		response: dataExportSchema

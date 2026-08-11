@@ -10,11 +10,28 @@
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	import {
 		isProductModuleEnabled,
 		productModuleForFeatureId,
 		setProductModuleEnabled
 	} from '$lib/product-modules.svelte';
+
+	const queryClient = useQueryClient();
+	let preferenceError = $state<string | null>(null);
+	let preferenceSavingId = $state<string | null>(null);
+
+	async function onToggleProductModule(moduleId: string, enabled: boolean) {
+		preferenceError = null;
+		preferenceSavingId = moduleId;
+		try {
+			await setProductModuleEnabled(moduleId, enabled, queryClient);
+		} catch {
+			preferenceError = t('toolkit.productModules.saveFailed');
+		} finally {
+			preferenceSavingId = null;
+		}
+	}
 
 	const FEATURE_DESCRIPTION_KEYS = {
 		'campaign-assistant': 'toolkit.feature.campaign-assistant.description',
@@ -113,6 +130,10 @@
 <div class="mx-auto max-w-3xl min-w-0">
 	<PageHeader title={t('nav.tools.title')} description={t('nav.tools.description')} />
 
+	{#if preferenceError}
+		<p class="mb-4 text-sm text-danger" role="alert">{preferenceError}</p>
+	{/if}
+
 	<div class="mb-6 flex flex-wrap gap-2">
 		<button
 			type="button"
@@ -175,8 +196,9 @@
 											type="button"
 											role="switch"
 											aria-checked={enabled}
-											class="inline-flex items-center gap-2 rounded-[6px] border border-border px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-											onclick={() => setProductModuleEnabled(productModule.id, !enabled)}
+											disabled={preferenceSavingId === productModule.id}
+											class="inline-flex items-center gap-2 rounded-[6px] border border-border px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-60"
+											onclick={() => void onToggleProductModule(productModule.id, !enabled)}
 										>
 											<span
 												class="relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors {enabled

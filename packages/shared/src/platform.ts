@@ -1,11 +1,14 @@
 import { z } from 'zod';
 import { isoDateTime, uuid } from './common.js';
+import { userUiPreferencesSchema } from './product-modules.js';
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema, userRoleSchema } from './user.js';
 
 /** Session user profile — org membership + platform flag (not org RBAC). */
 export const meSchema = membershipUserSchema.extend({
-	platform_admin: z.boolean()
+	platform_admin: z.boolean(),
+	/** Per user + active org UI prefs (e.g. Ürünlerde Göster modules). */
+	preferences: userUiPreferencesSchema
 });
 
 export type Me = z.infer<typeof meSchema>;

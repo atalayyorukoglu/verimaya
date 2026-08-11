@@ -34,6 +34,7 @@ import {
 	aggregateAiCorrectionsReport,
 	approveDraftsRequestSchema,
 	trustScoreSettings,
+	userUiPreferencesUpdateSchema,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
 	compareByCreatedAtDesc,
@@ -838,6 +839,14 @@ const mswAdsConnected = new Set<string>(['meta']);
 
 export const handlers = [
 	http.get('/v1/me', () => HttpResponse.json(demoUser)),
+
+	http.put('/v1/me/preferences', async ({ request }) => {
+		const body = await request.json();
+		const parsed = userUiPreferencesUpdateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz tercihler', parsed.error.flatten());
+		demoUser.preferences = parsed.data;
+		return HttpResponse.json(parsed.data);
+	}),
 
 	http.get('/v1/tenants/current', ({ request }) => {
 		const store = getStore(scenarioFrom(request));

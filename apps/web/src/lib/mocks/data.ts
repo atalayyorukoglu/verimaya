@@ -51,14 +51,18 @@ export const demoTenant: Tenant = {
 	created_at: '2026-01-15T10:00:00.000Z'
 };
 
-export const demoUser: MembershipUser & { platform_admin: boolean } = {
+export const demoUser: MembershipUser & {
+	platform_admin: boolean;
+	preferences: { enabled_product_modules: string[] };
+} = {
 	id: DEMO_USER_ID,
 	email: 'demo@verimaya.app',
 	display_name: 'Demo Kullanıcı',
 	created_at: '2026-01-15T10:00:00.000Z',
 	tenant_id: DEMO_TENANT_ID,
 	role: 'owner',
-	platform_admin: true
+	platform_admin: true,
+	preferences: { enabled_product_modules: [] }
 };
 
 const STATUSES: ContactStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];
