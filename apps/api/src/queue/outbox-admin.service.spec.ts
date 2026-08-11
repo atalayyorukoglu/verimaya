@@ -7,6 +7,7 @@ import { outboxEvents } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { OutboxAdminService } from './outbox-admin.service';
 import type { QueueService } from './queue.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -59,14 +60,7 @@ describe('OutboxAdminService requeue (AUDIT-F09-05)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const id of [tenantA, tenantB]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${id}, true)`;
-				await tx`delete from outbox_events where tenant_id = ${id}`;
-			});
-			await sql`delete from tenants where id = ${id}`;
-			await sql`delete from organization where id = ${id}`;
-		}
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

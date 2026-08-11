@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -61,16 +62,7 @@ describe('patients RLS isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			await tx`delete from contacts where tenant_id = ${tenantA}`;
-		});
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			await tx`delete from contacts where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

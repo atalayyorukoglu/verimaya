@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { TenantUpdate } from '@verimaya/shared';
 import { tenants, transactions } from '../db/schema';
 import { toTenant } from '../common/mappers';
@@ -51,6 +51,28 @@ export class TenantsService {
 
 			const locked = await this.hasTransactions(db);
 			return toTenant(row!, locked);
+		});
+	}
+
+	/**
+	 * AUDIT-F09-06: soft-delete only. Hard DELETE of a tenant with child rows is
+	 * rejected by ON DELETE restrict FKs — intentional teardown is this UPDATE.
+	 */
+	async softDelete(tenantId: string, actor?: AuditActor) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const existing = await this.findRow(db, tenantId);
+			if (existing.deletedAt) {
+				return toTenant(existing, await this.hasTransactions(db));
+			}
+			const [row] = await db
+				.update(tenants)
+				.set({ deletedAt: new Date() })
+				.where(and(eq(tenants.id, tenantId), isNull(tenants.deletedAt)))
+				.returning();
+			if (actor) {
+				await writeAuditLog(db, tenantId, actor, 'delete', 'tenant', existing.name);
+			}
+			return toTenant(row ?? existing, await this.hasTransactions(db));
 		});
 	}
 

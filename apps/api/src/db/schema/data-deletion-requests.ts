@@ -13,7 +13,7 @@ export const dataDeletionRequests = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		subjectUserId: uuid('subject_user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'restrict' }),

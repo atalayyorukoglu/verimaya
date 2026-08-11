@@ -25,7 +25,7 @@ export const scorecardProfiles = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		band: text('band').notNull(),
 		setupS1: boolean('setup_s1').notNull(),
 		setupS2: boolean('setup_s2').notNull(),
@@ -50,7 +50,7 @@ export const scorecardAssessments = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		profileId: uuid('profile_id')
 			.notNull()
 			.references(() => scorecardProfiles.id, { onDelete: 'cascade' }),
@@ -77,7 +77,7 @@ export const scorecardAnswers = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		assessmentId: uuid('assessment_id')
 			.notNull()
 			.references(() => scorecardAssessments.id, { onDelete: 'cascade' }),

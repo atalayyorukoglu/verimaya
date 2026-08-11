@@ -14,6 +14,7 @@ import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { IdempotencyService } from './idempotency.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -44,12 +45,7 @@ describe('IDEM-01: idempotency key replay identity (tenant + key + method + norm
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from idempotency_keys where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 
@@ -131,12 +127,7 @@ describe('IDEM-01: idempotency key replay identity (tenant + key + method + norm
 			expect(b.replayed).toBe(false);
 			expect(calls).toBe(2);
 		} finally {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${otherTenantId}, true)`;
-				await tx`delete from idempotency_keys where tenant_id = ${otherTenantId}`;
-			});
-			await sql`delete from tenants where id = ${otherTenantId}`;
-			await sql`delete from organization where id = ${otherTenantId}`;
+			await purgeTenantFixtures(sql, [otherTenantId]);
 		}
 	});
 

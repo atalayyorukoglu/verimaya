@@ -22,6 +22,7 @@ import {
 	financeCategoryUpdateSchema,
 	organizationCreateSchema,
 	organizationUpdateSchema,
+	settingsReorderSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureUpdateSchema
 } from '@verimaya/shared';
@@ -77,6 +78,16 @@ export class SettingsController {
 		return result.body;
 	}
 
+	@Put('finance-categories/reorder')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'GAP-27 absolute-set reorder (id→sort_order pairs); foreign ids skipped — repeat calls converge to the same order.'
+	)
+	reorderFinanceCategories(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(settingsReorderSchema, body, req);
+		return this.settingsService.reorderFinanceCategories(getActiveOrgId(req), input);
+	}
+
 	@Patch('finance-categories/:id')
 	@RequireOrgPermission('settings', 'update')
 	@IdempotencyExempt(
@@ -129,6 +140,16 @@ export class SettingsController {
 		);
 		reply.status(result.statusCode);
 		return result.body;
+	}
+
+	@Put('contact-types/reorder')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'GAP-27 absolute-set reorder (id→sort_order pairs); foreign ids skipped — repeat calls converge to the same order.'
+	)
+	reorderContactTypes(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(settingsReorderSchema, body, req);
+		return this.settingsService.reorderContactTypes(getActiveOrgId(req), input);
 	}
 
 	@Patch('contact-types/:id')
@@ -237,6 +258,16 @@ export class SettingsController {
 		);
 		reply.status(result.statusCode);
 		return result.body;
+	}
+
+	@Put('appointment-types/reorder')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'GAP-27 absolute-set reorder (id→sort_order pairs); foreign ids skipped — repeat calls converge to the same order.'
+	)
+	reorderAppointmentTypes(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(settingsReorderSchema, body, req);
+		return this.settingsService.reorderAppointmentTypes(getActiveOrgId(req), input);
 	}
 
 	@Delete('appointment-types/:id')

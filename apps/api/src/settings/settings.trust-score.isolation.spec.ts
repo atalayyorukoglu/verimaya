@@ -5,6 +5,7 @@ import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { SettingsService } from './settings.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -48,9 +49,7 @@ describe('settings trust-score tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from tenant_settings where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

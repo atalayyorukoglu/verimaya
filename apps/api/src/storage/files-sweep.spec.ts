@@ -13,6 +13,7 @@ import {
 	isEligiblePendingFile
 } from './files-sweep.service';
 import { LocalFileStorage, getUploadDir } from './local-file.storage';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -130,14 +131,7 @@ describe('FilesSweepService (Adım 30a)', () => {
 	});
 
 	afterAll(async () => {
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from files where tenant_id = ${tenantId}`;
-			await tx`delete from jobs where tenant_id = ${tenantId}`;
-			await tx`delete from contacts where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

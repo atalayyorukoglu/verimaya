@@ -27,7 +27,7 @@ export const tenantProviderIdentities = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		provider: text('provider').notNull(),
 		ciphertext: bytea('ciphertext').notNull(),
 		keyHash: text('key_hash').notNull(),

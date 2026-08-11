@@ -4,6 +4,7 @@ import { closeDb, getDb } from '../../db/client';
 import { DbService } from '../../db/db.service';
 import { TenantContextService } from '../../tenant/tenant-context.service';
 import { GhlSyncService } from './ghl.sync.service';
+import { purgeTenantFixtures } from '../../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -39,12 +40,7 @@ describe('GhlSyncService tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from contacts where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from external_ids where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from jobs where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from audit_logs where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

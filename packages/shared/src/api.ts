@@ -39,12 +39,15 @@ export const apiPaths = {
 	transaction: (id: string) => `${API_V1_PREFIX}/transactions/${id}`,
 	auditLogs: `${API_V1_PREFIX}/audit-logs`,
 	settingsFinanceCategories: `${API_V1_PREFIX}/settings/finance-categories`,
+	settingsFinanceCategoriesReorder: `${API_V1_PREFIX}/settings/finance-categories/reorder`,
 	settingsFinanceCategory: (id: string) => `${API_V1_PREFIX}/settings/finance-categories/${id}`,
 	settingsContactTypes: `${API_V1_PREFIX}/settings/contact-types`,
+	settingsContactTypesReorder: `${API_V1_PREFIX}/settings/contact-types/reorder`,
 	settingsContactType: (id: string) => `${API_V1_PREFIX}/settings/contact-types/${id}`,
 	settingsOrganizations: `${API_V1_PREFIX}/settings/organizations`,
 	settingsOrganization: (id: string) => `${API_V1_PREFIX}/settings/organizations/${id}`,
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
+	settingsAppointmentTypesReorder: `${API_V1_PREFIX}/settings/appointment-types/reorder`,
 	settingsCredential: (provider: string) => `${API_V1_PREFIX}/settings/credentials/${provider}`,
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
@@ -183,6 +186,7 @@ import {
 	financeCategorySchema,
 	appointmentTypeSettingSchema
 } from './finance-category.js';
+import { settingsReorderResultSchema, settingsReorderSchema } from './settings-reorder.js';
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema, memberRoleUpdateSchema } from './user.js';
 import { auditLogSchema } from './audit.js';
@@ -297,6 +301,10 @@ export const apiContract = {
 	'GET /v1/settings/contact-types': {
 		response: z.object({ items: z.array(contactTypeSchema) })
 	},
+	'PUT /v1/settings/contact-types/reorder': {
+		body: settingsReorderSchema,
+		response: settingsReorderResultSchema
+	},
 	'PATCH /v1/settings/contact-types/:id': {
 		body: contactTypeUpdateSchema,
 		response: contactTypeSchema
@@ -379,8 +387,16 @@ export const apiContract = {
 	'GET /v1/settings/finance-categories': {
 		response: z.object({ items: z.array(financeCategorySchema) })
 	},
+	'PUT /v1/settings/finance-categories/reorder': {
+		body: settingsReorderSchema,
+		response: settingsReorderResultSchema
+	},
 	'GET /v1/settings/appointment-types': {
 		response: z.object({ items: z.array(appointmentTypeSettingSchema) })
+	},
+	'PUT /v1/settings/appointment-types/reorder': {
+		body: settingsReorderSchema,
+		response: settingsReorderResultSchema
 	},
 	'GET /v1/settings/credentials/:provider': {
 		response: credentialStatusSchema

@@ -7,6 +7,7 @@ import { TenantContextService } from '../../tenant/tenant-context.service';
 import { GhlReconcileService } from './ghl.reconcile.service';
 import { GhlSyncService } from './ghl.sync.service';
 import type { GhlClient, GhlRemoteContact } from './ghl.types';
+import { purgeTenantFixtures } from '../../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -42,12 +43,7 @@ describe('GhlReconcileService (Adım 43)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from contacts where tenant_id = ${tenantId}`;
-		await sql`delete from external_ids where tenant_id = ${tenantId}`;
-		await sql`delete from jobs where tenant_id = ${tenantId}`;
-		await sql`delete from audit_logs where tenant_id = ${tenantId}`;
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 		delete process.env.GHL_CLIENT_ID;
 		delete process.env.GHL_CLIENT_SECRET;

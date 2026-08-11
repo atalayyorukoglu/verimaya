@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * GAP-07: appointment-metrics isolation, rate math, soft-delete exclusion,
@@ -220,15 +221,7 @@ describe('GAP-07: appointment-metrics report', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantA, tenantB, tenantLondon, tenantIstanbul]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from appointments where tenant_id = ${tenantId}`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-			});
-			await sql`delete from tenants where id = ${tenantId}`;
-			await sql`delete from organization where id = ${tenantId}`;
-		}
+		await purgeTenantFixtures(sql, [tenantA, tenantB, tenantLondon, tenantIstanbul]);
 		await closeDb();
 	});
 

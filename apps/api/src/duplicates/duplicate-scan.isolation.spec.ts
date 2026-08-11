@@ -9,6 +9,7 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 import { toContact } from '../common/mappers';
 import { contacts } from '../db/schema/contacts';
 import { and, asc, isNull , sql as drizzleSql} from 'drizzle-orm';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * AUDIT-F09-17: duplicate-groups scan row cap + truncated envelope
@@ -113,16 +114,7 @@ describe('AUDIT-F09-17 duplicate-scan cap', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantA, tenantB]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-				await tx`delete from contact_types where tenant_id = ${tenantId}`;
-			});
-		}
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

@@ -8,7 +8,7 @@ export const appointments = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		contactId: uuid('contact_id')
 			.notNull()
 			.references(() => contacts.id, { onDelete: 'cascade' }),

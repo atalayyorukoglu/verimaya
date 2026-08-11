@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * AUDIT-01 (Faz 8) — reports.service.ts date boundaries must honor the tenant
@@ -137,14 +138,7 @@ describe('AUDIT-01: reports date boundaries honor tenant timezone (Opus §[MEDIU
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantLondon, tenantIstanbul]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-			});
-			await sql`delete from tenants where id = ${tenantId}`;
-			await sql`delete from organization where id = ${tenantId}`;
-		}
+		await purgeTenantFixtures(sql, [tenantLondon, tenantIstanbul]);
 		await sql`delete from "user" where id = ${testUserId}`;
 		await closeDb();
 	});

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DbService } from '../db/db.service';
@@ -17,6 +17,26 @@ export type TenantDb = PostgresJsDatabase<typeof schema>;
 @Injectable()
 export class TenantContextService {
 	constructor(private readonly db: DbService) {}
+
+	/**
+	 * AUDIT-F09-06: soft-deleted tenants cannot be the active org for any API call.
+	 * `tenants` has no RLS — safe to read without SET LOCAL.
+	 */
+	async assertTenantActive(tenantId: string, requestId?: string): Promise<void> {
+		const rows = await this.db.sql<Array<{ deleted_at: Date | string | null }>>`
+			select deleted_at from tenants where id = ${tenantId}::uuid
+		`;
+		const row = rows[0];
+		if (!row || row.deleted_at != null) {
+			throw new ForbiddenException({
+				error: {
+					code: 'tenant_inactive',
+					message: 'This organization is inactive'
+				},
+				request_id: requestId
+			});
+		}
+	}
 
 	async withTenant<T>(tenantId: string, fn: (ctx: { db: TenantDb }) => Promise<T>): Promise<T> {
 		return this.db.client.transaction(async (tx) => {

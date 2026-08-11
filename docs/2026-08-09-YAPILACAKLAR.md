@@ -187,7 +187,6 @@
 - **SEC-03 artığı — `@fastify/static` route guard bypass.** Yama yalnız ≥10.1.1'de;
   NestJS peer `^8||^9` + bull-board `^9.1.3` major atlama ister. Tek kalan high advisory.
   Upstream peer aralığı genişleyince veya bull-board yükseltilince kapanır. **(M)**
-- **AUDIT-F09-06** `tenants` FK davranışı → `restrict` + soft-delete (`tenants.deleted_at`); 10y mali saklama + KVKK silme yetkisi dengesi. **(L)**
 - **AUDIT-F09-07b** (yeni — F09-07 kapsamında dışı): hasta/contact KVKK m.11 — `/v1/contacts/:id/data-export` + `data-deletion-request`; Açık sorular §1 contact anonimizasyonu (ad/telefon/e-posta maske, mali kayıtlar kalır). Operator/admin aracılı; hasta hesabı yok. **(L)** — LEG-02 hukukçu.
 
 ### Faz 9 — Tracker gap P2 (sıra dışı; PILOT-02 geri bildirimi seçer)
@@ -203,7 +202,6 @@
   (Açık sorular §9).
 - **GAP-25:** Kapsamlı veri silme (`/data/delete-scope`) + wipe — "tehlikeli" onayı korunur.
 - **GAP-26:** AI prompt özelleştirme — Açık sorular §6.
-- **GAP-27:** Toplu `reorder` endpoint'i (kısmen PATCH ile karşılanıyor).
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (teknik ad `verimaya`;
   görünen marka **"Veri Maya"**).
 - **IOS-01:** iOS donmuş; birikmiş drift (DOMAIN-01 enum + marketing adları iOS'a uygulanmadı) —
@@ -260,6 +258,23 @@
 > kendi commit'ine self-reference olur; `git log --grep=<kalem-id>` ile bulunur).
 > 2026-08-09 öncesi kapananların tamamı `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de.
 
+- ✅ **GAP-27** — toplu reorder (2026-08-11). `PUT .../contact-types|appointment-types|
+  finance-categories/reorder` absolute-set (`items[{id,sort_order}]`, max 500);
+  yabancı id atlanır, `updated` gerçek sayım; idempotency-exempt. Finance zaten PATCH
+  `sort_order` ile tek tek yazılıyordu; contact/appointment `sort_order` kolonu + create
+  auto-increment vardı. Tipik N ≈ 5–30.
+  **Görüş:** Durum enum + checklist (Tracker G-27'nin 4. ayağı) bilinçli dışarıda —
+  Verimaya'da status tenant-CRUD yok; checklist skip adayı. shared 102 · api 479 ·
+  openapi 74 · MSW handlers.
+- ✅ **AUDIT-F09-06** — tenants soft-delete + FK restrict (2026-08-11). Migration `0042`:
+  `tenants.deleted_at` + tüm `tenant_id → tenants` CASCADE→RESTRICT + `tenants→organization`
+  RESTRICT. better-auth `disableOrganizationDeletion: true` + `beforeDeleteOrganization`
+  soft-delete+APIError (defense). `ActiveOrgGuard` soft-deleted tenant'a 403
+  `tenant_inactive`. Spec cleanup `purgeTenantFixtures`.
+  **Görüş:** AUDIT-REPORT: org delete CASCADE = total data loss + 10y mali saklama
+  çatışması. Org hard-delete engellendi (restrict + disable); soft-delete satır+iş verisi
+  kalır. Saklama süresi / hangi veri ne kadar tutulur → **LEG-02**. shared 102 · api 479 ·
+  openapi 74 · fresh 0000→0042 OK.
 - ✅ **AUDIT-F09-02** — per-key API scope map (2026-08-11). `api_keys.scopes` → JSONB
   `resource:action[]`; OrgPermissionGuard short-circuit kaldırıldı (deny-by-default);
   `permissions.ts` +5 kaynak (audit/members/api_keys/webhook_subscriptions/scorecard);

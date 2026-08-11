@@ -10,7 +10,7 @@ export const contacts = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		contactTypeId: uuid('contact_type_id')
 			.notNull()
 			.references(() => contactTypes.id, { onDelete: 'restrict' }),

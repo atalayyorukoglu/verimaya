@@ -5,6 +5,7 @@ import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { SettingsService } from './settings.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -50,17 +51,7 @@ describe('settings ai-disclosure tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			await tx`delete from audit_logs where tenant_id = ${tenantA}`;
-		});
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			await tx`delete from audit_logs where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenant_settings where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

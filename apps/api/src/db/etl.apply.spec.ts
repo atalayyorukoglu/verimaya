@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from './client';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const require = createRequire(import.meta.url);
 const {
@@ -67,21 +68,7 @@ describe('ETL apply layer 1+2 (Adım 28–29)', () => {
 	});
 
 	afterAll(async () => {
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from case_notes where tenant_id = ${tenantId}`;
-			await tx`delete from files where tenant_id = ${tenantId}`;
-			await tx`delete from transactions where tenant_id = ${tenantId}`;
-			await tx`delete from appointments where tenant_id = ${tenantId}`;
-			await tx`delete from contacts where tenant_id = ${tenantId}`;
-			await tx`delete from contacts where tenant_id = ${tenantId}`;
-			await tx`delete from external_ids where tenant_id = ${tenantId}`;
-			await tx`delete from finance_categories where tenant_id = ${tenantId}`;
-			await tx`delete from contact_types where tenant_id = ${tenantId}`;
-			await tx`delete from tenant_settings where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

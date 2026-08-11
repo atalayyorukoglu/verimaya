@@ -11,6 +11,7 @@ export * from './case-note.js';
 export * from './contact.js';
 export * from './duplicate.js';
 export * from './finance-category.js';
+export * from './settings-reorder.js';
 export * from './defaults.js';
 export * from './audit.js';
 export * from './data-subject.js';

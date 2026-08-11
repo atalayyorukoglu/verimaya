@@ -8,6 +8,7 @@ import { LocalFileStorage } from '../storage/local-file.storage';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { WhatsappService } from './whatsapp.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -97,16 +98,7 @@ describe('inbound_messages RLS isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			await tx`delete from inbound_messages where tenant_id = ${tenantA}`;
-		});
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			await tx`delete from inbound_messages where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

@@ -12,6 +12,7 @@ import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { ORG_PERMISSION_METADATA_KEY } from '../common/require-org-permission.decorator';
 import { generateApiKey, hashApiKey } from './api-key-crypto';
 import { ApiKeyGuard } from './api-key.guard';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -121,16 +122,7 @@ describe('api_keys RLS isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			await tx`delete from api_keys where tenant_id = ${tenantA}`;
-		});
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			await tx`delete from api_keys where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 
@@ -235,12 +227,7 @@ describe('AUDIT-F09-02 API key scopes (deny-by-default)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from api_keys where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

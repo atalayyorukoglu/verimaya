@@ -8,7 +8,7 @@ export const adMetricsDaily = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		provider: text('provider').notNull(),
 		date: date('date', { mode: 'string' }).notNull(),
 		campaignId: text('campaign_id').notNull(),

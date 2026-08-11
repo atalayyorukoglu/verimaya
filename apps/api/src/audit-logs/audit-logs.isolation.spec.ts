@@ -7,6 +7,7 @@ import { closeDb, getDb } from '../db/client';
 import { parseQuery } from '../common/mappers';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { AuditLogsService } from './audit-logs.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * GAP-F09-13: audit_logs RLS isolation + list filters.
@@ -131,16 +132,7 @@ describe('audit_logs RLS isolation + filters (GAP-F09-13)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			await tx`delete from audit_logs where tenant_id = ${tenantA}`;
-		});
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			await tx`delete from audit_logs where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await sql`delete from "user" where id in (${actorA}, ${actorB})`;
 		await closeDb();
 	});

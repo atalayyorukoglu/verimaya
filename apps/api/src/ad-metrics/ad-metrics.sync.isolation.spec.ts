@@ -8,6 +8,7 @@ import { SettingsService } from '../settings/settings.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { FIXTURE_META_CAMPAIGN_ID } from './ad-metrics.fixtures';
 import { AdMetricsSyncService } from './ad-metrics.sync.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -50,9 +51,7 @@ describe('AdMetricsSyncService tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from ad_metrics_daily where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

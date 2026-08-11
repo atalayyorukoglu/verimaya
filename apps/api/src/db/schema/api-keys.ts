@@ -9,7 +9,7 @@ export const apiKeys = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		name: text('name').notNull(),
 		keyPrefix: text('key_prefix').notNull(),
 		keyHash: text('key_hash').notNull(),

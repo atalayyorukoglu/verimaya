@@ -6,6 +6,7 @@ import { closeDb, getDb } from '../db/client';
 import { parseQuery } from '../common/mappers';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * GAP-F09-14: server-side transaction duplicate scan — full-period GROUP BY,
@@ -177,15 +178,7 @@ describe('GAP-F09-14: reports transaction-duplicates', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantA, tenantB]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from transactions where tenant_id = ${tenantId}`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-			});
-			await sql`delete from tenants where id = ${tenantId}`;
-			await sql`delete from organization where id = ${tenantId}`;
-		}
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

@@ -17,7 +17,7 @@ export const integrationEvents = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		provider: text('provider').notNull(),
 		externalEventId: text('external_event_id').notNull(),
 		payloadHash: text('payload_hash').notNull(),
@@ -59,7 +59,7 @@ export const outboxEvents = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		eventType: text('event_type').notNull(),
 		destinationUrl: text('destination_url').notNull(),
 		payload: jsonb('payload').notNull(),
@@ -91,7 +91,7 @@ export const jobs = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		queue: text('queue').notNull().default('default'),
 		jobType: text('job_type').notNull(),
 		payload: jsonb('payload').notNull(),

@@ -4,6 +4,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { closeDb, getDb } from '../db/client';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { MembersService } from './members.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -74,8 +75,7 @@ describe('members list isolation (member table has no RLS — explicit org filte
 		});
 		await sql`delete from member where organization_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from "user" where id in (${userA}, ${userB})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 
@@ -158,8 +158,7 @@ describe('members role update isolation (GAP-02)', () => {
 		});
 		await sql`delete from member where organization_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from "user" where id in (${ownerA}, ${agentA}, ${ownerB})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

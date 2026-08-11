@@ -12,6 +12,7 @@ import { ReportsService } from '../reports/reports.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { TransactionsService } from '../transactions/transactions.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * GAP-06: soft-delete for patients / transactions / appointments / contacts.
@@ -131,17 +132,7 @@ describe('GAP-06 soft-delete isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from audit_logs where tenant_id = ${tenantId}`;
-			await tx`delete from transactions where tenant_id = ${tenantId}`;
-			await tx`delete from appointments where tenant_id = ${tenantId}`;
-			await tx`delete from contacts where tenant_id = ${tenantId}`;
-			await tx`delete from contacts where tenant_id = ${tenantId}`;
-			await tx`delete from contact_types where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

@@ -7,6 +7,7 @@ import { closeDb, getDb } from '../db/client';
 import { parseBody } from '../common/mappers';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { TenantsService } from './tenants.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -56,11 +57,7 @@ describe('tenants current (get/update)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantId, async () => {
-			await sql`delete from transactions where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id in (${tenantId}, ${otherTenantId})`;
-		await sql`delete from organization where id in (${tenantId}, ${otherTenantId})`;
+		await purgeTenantFixtures(sql, [tenantId, otherTenantId]);
 		await closeDb();
 	});
 

@@ -7,7 +7,7 @@ export const idempotencyKeys = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		key: text('key').notNull(),
 		method: text('method').notNull(),
 		/**

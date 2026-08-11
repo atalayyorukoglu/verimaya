@@ -8,6 +8,7 @@ import { TenantContextService } from '../../tenant/tenant-context.service';
 import { DisclosingOutboundMessagePort } from './disclosing-outbound.port';
 import { StubOutboundMessagePort } from './outbound.stub';
 import { WHATSAPP_OUTBOUND_STUB_JOB_TYPE } from './outbound.port';
+import { purgeTenantFixtures } from '../../test/purge-tenant-fixtures';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -49,14 +50,7 @@ describe('DisclosingOutboundMessagePort (Adım 24)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from jobs where tenant_id = ${tenantId}`;
-			await tx`delete from audit_logs where tenant_id = ${tenantId}`;
-			await tx`delete from tenant_settings where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

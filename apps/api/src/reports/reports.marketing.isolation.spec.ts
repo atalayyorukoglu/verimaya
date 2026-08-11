@@ -4,6 +4,7 @@ import { sql as drizzleSql } from 'drizzle-orm';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -149,18 +150,7 @@ describe('reports marketing tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async (tx) => {
-			await tx`delete from transactions where tenant_id = ${tenantA}`;
-			await tx`delete from ad_metrics_daily where tenant_id = ${tenantA}`;
-			await tx`delete from contacts where tenant_id = ${tenantA}`;
-		});
-		await withTenantSession(tenantB, async (tx) => {
-			await tx`delete from transactions where tenant_id = ${tenantB}`;
-			await tx`delete from ad_metrics_daily where tenant_id = ${tenantB}`;
-			await tx`delete from contacts where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 	});
 
 	it('Tenant A marketing report excludes Tenant B spend, revenue, and sources', async () => {
@@ -262,13 +252,7 @@ describe('reports marketing ad spend FX (OPS-02c)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantGbp, async (tx) => {
-			await tx`delete from transactions where tenant_id = ${tenantGbp}`;
-			await tx`delete from ad_metrics_daily where tenant_id = ${tenantGbp}`;
-			await tx`delete from contacts where tenant_id = ${tenantGbp}`;
-		});
-		await sql`delete from tenants where id = ${tenantGbp}`;
-		await sql`delete from organization where id = ${tenantGbp}`;
+		await purgeTenantFixtures(sql, [tenantGbp]);
 	});
 
 	it('TRY spend + GBP tenant uses spend_base for ROAS', async () => {
@@ -408,13 +392,7 @@ describe('reports marketing effective window + attribution', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantW, async (tx) => {
-			await tx`delete from transactions where tenant_id = ${tenantW}`;
-			await tx`delete from ad_metrics_daily where tenant_id = ${tenantW}`;
-			await tx`delete from contacts where tenant_id = ${tenantW}`;
-		});
-		await sql`delete from tenants where id = ${tenantW}`;
-		await sql`delete from organization where id = ${tenantW}`;
+		await purgeTenantFixtures(sql, [tenantW]);
 	});
 
 	it('(a) all-time request: effective spend window equals tahsilat window (ad_metrics MIN/MAX)', async () => {

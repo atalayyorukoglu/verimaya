@@ -5,6 +5,7 @@ import { closeDb, getDb } from '../db/client';
 import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * AUDIT-01 (Faz 8) — patient file-label timezone leak isolation spec.
@@ -147,16 +148,7 @@ describe('AUDIT-01: patient file-label uses the correct tenant timezone (Opus §
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantIstanbul, tenantLondon]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from files where tenant_id = ${tenantId}`;
-				await tx`delete from appointments where tenant_id = ${tenantId}`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-			});
-			await sql`delete from tenants where id = ${tenantId}`;
-			await sql`delete from organization where id = ${tenantId}`;
-		}
+		await purgeTenantFixtures(sql, [tenantIstanbul, tenantLondon]);
 		await sql`delete from "user" where id = ${testUserId}`;
 		await closeDb();
 	});

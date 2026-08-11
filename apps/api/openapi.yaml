@@ -1665,6 +1665,49 @@ paths:
                 required:
                   - items
                 additionalProperties: false
+  /settings/contact-types/reorder:
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                required:
+                  - updated
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sort_order:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - id
+                      - sort_order
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 500
+              required:
+                - items
+              additionalProperties: false
   /settings/contact-types/{id}:
     patch:
       responses:
@@ -4093,6 +4136,49 @@ paths:
                 required:
                   - items
                 additionalProperties: false
+  /settings/finance-categories/reorder:
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                required:
+                  - updated
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sort_order:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - id
+                      - sort_order
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 500
+              required:
+                - items
+              additionalProperties: false
   /settings/appointment-types:
     get:
       responses:
@@ -4130,6 +4216,49 @@ paths:
                 required:
                   - items
                 additionalProperties: false
+  /settings/appointment-types/reorder:
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                required:
+                  - updated
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sort_order:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - id
+                      - sort_order
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 500
+              required:
+                - items
+              additionalProperties: false
   /settings/credentials/{provider}:
     get:
       responses:

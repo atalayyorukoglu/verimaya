@@ -13,7 +13,7 @@ export const externalIds = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		source: text('source').notNull(),
 		entityType: text('entity_type').notNull(),
 		externalId: text('external_id').notNull(),

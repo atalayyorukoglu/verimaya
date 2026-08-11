@@ -7,6 +7,7 @@ import { closeDb, getDb } from '../db/client';
 import { parseBody } from '../common/mappers';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { TenantsService } from './tenants.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * AUDIT-F09-12: tenants GET/PATCH `/v1/tenants/current` isolation.
@@ -94,14 +95,7 @@ describe('tenants current isolation (AUDIT-F09-12)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from audit_logs where tenant_id = ${tenantA}`;
-		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from audit_logs where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

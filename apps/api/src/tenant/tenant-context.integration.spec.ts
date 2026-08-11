@@ -5,6 +5,7 @@ import { closeDb, getDb } from '../db/client';
 import { tenants } from '../db/schema';
 import { DbService } from '../db/db.service';
 import { TenantContextService } from './tenant-context.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -35,8 +36,7 @@ describe('TenantContextService.withTenant (real drizzle transaction)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

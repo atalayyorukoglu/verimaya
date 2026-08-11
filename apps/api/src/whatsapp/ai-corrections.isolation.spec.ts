@@ -6,6 +6,7 @@ import { closeDb, getDb } from '../db/client';
 import { parseQuery } from '../common/mappers';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { AiCorrectionsService } from './ai-corrections.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -85,14 +86,7 @@ describe('ai_corrections tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from ai_corrections where tenant_id = ${tenantA}`;
-		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from ai_corrections where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 
@@ -222,15 +216,7 @@ describe('GAP-F09-15: ai_corrections report aggregation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from ai_corrections where tenant_id = ${tenantA}`;
-			await sql`delete from inbound_messages where tenant_id = ${tenantA}`;
-		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from ai_corrections where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

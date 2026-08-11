@@ -6,6 +6,7 @@ import { closeDb, getDb } from '../db/client';
 import type { CryptoService } from '../common/crypto.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { SettingsService } from './settings.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * GAP-F09-17 (G-18): contact type rename.
@@ -54,15 +55,7 @@ describe('GAP-F09-17 contact type rename', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantA, tenantB]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-				await tx`delete from contact_types where tenant_id = ${tenantId}`;
-			});
-		}
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

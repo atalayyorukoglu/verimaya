@@ -79,7 +79,8 @@ Bağımlı: PILOT-02 verileri.
 ### B1. Ops / güvenlik / KVKK
 
 - [x] **OPS-03** Deploy CI kapısı: `workflow_run` → CI success + main + push; paths gate job'da; `workflow_dispatch` kaçış kaldı (2026-08-10).
-- — **AUDIT-F09-06** `tenants` FK → `restrict` + soft-delete (`deleted_at`); 10y mali saklama ↔ KVKK. **(L)**
+- [x] **AUDIT-F09-06** `tenants` FK → `restrict` + soft-delete (`deleted_at`); better-auth
+  `disableOrganizationDeletion`; ActiveOrgGuard `tenant_inactive` (2026-08-11). **LEG-02** saklama.
 - — **AUDIT-F09-07b** hasta/contact KVKK m.11 (`/v1/contacts/:id/…`); Açık sorular §1. **(L)** — LEG-02.
   ~~AUDIT-F09-07 panel `/v1/me/…`~~ → Son kapananlar (2026-08-10).
 - [x] **AUDIT-F09-20** `corsOrigins` allowlist hot-reload — no-op (AUDIT «Fix: None required»; boot-time env bilinçli; 2026-08-10).
@@ -109,7 +110,7 @@ Bağımlı: PILOT-02 verileri.
 
 - — **GAP-25** Kapsamlı veri silme (`/data/delete-scope`) + wipe — “tehlikeli” onay korunur
 - — **GAP-26** AI prompt özelleştirme — Açık sorular §6
-- — **GAP-27** Toplu `reorder` endpoint (kısmen PATCH ile var)
+- ✅ **GAP-27** Toplu `reorder` endpoint — `PUT .../reorder` ×3 (contact/appointment/finance types); max 500 (2026-08-11)
 - ✅ **GAP-28** Dev panel üretimde gizlendi (Nest yazılmadı; MSW+DEV kapısı) — YAPILACAKLAR
 - ✅ **GAP-29** Randevu öncesi eksik iletişim uyarısı (bloklamaz; phone/email) — YAPILACAKLAR
 - — **PRODUCT-01** Komisyon takibi discovery (acente seçilirse)

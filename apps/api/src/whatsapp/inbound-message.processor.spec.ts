@@ -12,6 +12,7 @@ import { DEFAULT_QUEUE_NAME } from '../queue/queue.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { InboundMessageProcessor } from './inbound-message.processor';
 import { WhatsappService } from './whatsapp.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -56,13 +57,7 @@ describe('InboundMessageProcessor (Adım 24a)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from jobs where tenant_id = ${tenantId}`;
-			await tx`delete from inbound_messages where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

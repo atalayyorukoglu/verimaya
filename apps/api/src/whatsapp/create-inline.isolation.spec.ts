@@ -19,6 +19,7 @@ import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import type { FastifyRequest } from 'fastify';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -96,17 +97,7 @@ describe('GAP-F09-16 whatsapp inline create', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantA, tenantB]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-				await tx`delete from contacts where tenant_id = ${tenantId}`;
-				await tx`delete from finance_categories where tenant_id = ${tenantId}`;
-				await tx`delete from contact_types where tenant_id = ${tenantId}`;
-			});
-		}
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

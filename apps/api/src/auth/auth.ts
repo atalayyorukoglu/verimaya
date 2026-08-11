@@ -1,5 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
 import {
@@ -61,6 +62,13 @@ export function createAuth() {
 					finance,
 					readonly
 				},
+				/**
+				 * AUDIT-F09-06: hard org delete would delete `organization` while
+				 * `tenants.id → organization.id` is ON DELETE restrict — and even before
+				 * that, CASCADE used to wipe every tenant-scoped table. Soft-delete the
+				 * tenant instead; physical org delete stays disabled.
+				 */
+				disableOrganizationDeletion: true,
 				organizationHooks: {
 					afterCreateOrganization: async ({ organization: org }) => {
 						await db.insert(tenants).values({
@@ -75,13 +83,19 @@ export function createAuth() {
 							.update(tenants)
 							.set({ name: org.name, slug: org.slug })
 							.where(eq(tenants.id, org.id));
+					},
+					beforeDeleteOrganization: async ({ organization: org }) => {
+						// Defense if disableOrganizationDeletion is ever flipped off:
+						// soft-delete tenant, then refuse hard delete so restrict FKs hold.
+						await db
+							.update(tenants)
+							.set({ deletedAt: new Date() })
+							.where(eq(tenants.id, org.id));
+						throw new APIError('BAD_REQUEST', {
+							message:
+								'Organization hard-delete is disabled; tenant was soft-deleted instead'
+						});
 					}
-					// AUDIT-03 (Faz 8, DEFERRED): better-auth's organization plugin
-					// exposes a delete endpoint that cascades the entire tenant.
-					// Mitigation deferred to AUDIT-F09 follow-up — requires either a
-					// better-auth fork or a reverse-proxy deny rule. The current
-					// single-tenant pilot doesn't have a way to trigger this from the UI
-					// (no org-switcher delete affordance), so practical risk is low.
 				}
 			}),
 			twoFactor({

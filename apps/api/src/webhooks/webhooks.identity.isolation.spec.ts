@@ -13,6 +13,7 @@ import {
 	signWebhookPayload
 } from './webhooks.identity';
 import type { WebhookRequestWithRawBody } from './webhooks.signature';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * WEBHOOK-01 (Faz 8) — negative isolation tests for cross-tenant webhook spoof.
@@ -103,16 +104,7 @@ describe('WEBHOOK-01 cross-tenant isolation (Opus denetimi §[CRITICAL])', () =>
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		for (const tenantId of [tenantA, tenantB]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-				await tx`delete from jobs where tenant_id = ${tenantId}`;
-				await tx`delete from inbound_messages where tenant_id = ${tenantId}`;
-				await tx`delete from tenant_provider_identities where tenant_id = ${tenantId}`;
-			});
-			await sql`delete from tenants where id = ${tenantId}`;
-			await sql`delete from organization where id = ${tenantId}`;
-		}
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

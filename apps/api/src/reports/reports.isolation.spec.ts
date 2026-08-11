@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -90,16 +91,7 @@ describe('reports summary tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from transactions where tenant_id = ${tenantA}`;
-			await sql`delete from contacts where tenant_id = ${tenantA}`;
-			await sql`delete from contact_types where tenant_id = ${tenantA}`;
-		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from transactions where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

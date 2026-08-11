@@ -7,6 +7,7 @@ import type { CryptoService } from '../common/crypto.service';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { defaultAppointmentTypeId } from './appointment-type-defaults';
 import { SettingsService } from './settings.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -59,16 +60,7 @@ describe('settings appointment-types tenant isolation (GAP-01)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from appointment_types where tenant_id = ${tenantA}`;
-			await sql`delete from tenant_settings where tenant_id = ${tenantA}`;
-		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from appointment_types where tenant_id = ${tenantB}`;
-			await sql`delete from tenant_settings where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

@@ -6,12 +6,16 @@ import {
 	UnauthorizedException
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
+import { TenantContextService } from '../tenant/tenant-context.service';
 
 @Injectable()
 export class ActiveOrgGuard implements CanActivate {
-	canActivate(context: ExecutionContext): boolean {
+	constructor(private readonly tenantContext: TenantContextService) {}
+
+	async canActivate(context: ExecutionContext): Promise<boolean> {
 		const req = context.switchToHttp().getRequest<FastifyRequest>();
-		getActiveOrgId(req);
+		const orgId = getActiveOrgId(req);
+		await this.tenantContext.assertTenantActive(orgId, req.id);
 		return true;
 	}
 }

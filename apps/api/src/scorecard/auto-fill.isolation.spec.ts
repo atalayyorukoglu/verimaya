@@ -5,6 +5,7 @@ import { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ScorecardAutoFillService } from './auto-fill.service';
 import { ScorecardService } from './scorecard.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -101,24 +102,7 @@ describe('scorecard auto-fill integration (Adım 35)', () => {
 	});
 
 	afterAll(async () => {
-		for (const tid of [emptyTenant, richTenant]) {
-			await sql.begin(async (tx) => {
-				await tx`select set_config('app.current_tenant_id', ${tid}, true)`;
-				await tx`delete from scorecard_answers where tenant_id = ${tid}`;
-				await tx`delete from scorecard_assessments where tenant_id = ${tid}`;
-				await tx`delete from scorecard_profiles where tenant_id = ${tid}`;
-				await tx`delete from ai_corrections where tenant_id = ${tid}`;
-				await tx`delete from inbound_messages where tenant_id = ${tid}`;
-				await tx`delete from audit_logs where tenant_id = ${tid}`;
-				await tx`delete from jobs where tenant_id = ${tid}`;
-				await tx`delete from webhook_subscriptions where tenant_id = ${tid}`;
-				await tx`delete from api_keys where tenant_id = ${tid}`;
-				await tx`delete from tenant_credentials where tenant_id = ${tid}`;
-				await tx`delete from tenant_settings where tenant_id = ${tid}`;
-			});
-		}
-		await sql`delete from tenants where id in (${emptyTenant}, ${richTenant})`;
-		await sql`delete from organization where id in (${emptyTenant}, ${richTenant})`;
+		await purgeTenantFixtures(sql, [emptyTenant, richTenant]);
 		await closeDb();
 	});
 

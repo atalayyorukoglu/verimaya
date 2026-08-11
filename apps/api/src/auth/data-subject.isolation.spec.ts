@@ -7,6 +7,7 @@ import { dataDeletionRequests } from '../db/schema/data-deletion-requests';
 import { user } from '../db/schema/auth';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { DataSubjectService } from './data-subject.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * AUDIT-F09-07: panel-user data-export + data-deletion-request.
@@ -114,8 +115,7 @@ describe('AUDIT-F09-07 data-subject rights isolation', () => {
 		});
 		await sql`delete from member where organization_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from "user" where id in (${userA}, ${userB}, ${userBoth})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

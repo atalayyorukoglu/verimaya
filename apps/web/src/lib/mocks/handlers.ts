@@ -24,6 +24,7 @@ import {
 	contactListQuerySchema,
 	financeCategoryCreateSchema,
 	financeCategoryUpdateSchema,
+	settingsReorderSchema,
 	mergeRecordsSchema,
 	userRoleSchema,
 	apiKeyCreateSchema,
@@ -1893,6 +1894,21 @@ export const handlers = [
 		return HttpResponse.json({ items });
 	}),
 
+	http.put('/v1/settings/contact-types/reorder', async ({ request }) => {
+		const body = await request.json();
+		const parsed = settingsReorderSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz sıralama', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		let updated = 0;
+		for (const item of parsed.data.items) {
+			const row = store.contactTypes.find((t) => t.id === item.id);
+			if (!row) continue;
+			row.sort_order = item.sort_order;
+			updated += 1;
+		}
+		return HttpResponse.json({ updated });
+	}),
+
 	http.post('/v1/settings/contact-types', async ({ request }) => {
 		const body = await request.json();
 		const parsed = contactTypeCreateSchema.safeParse(body);
@@ -2316,6 +2332,23 @@ export const handlers = [
 		return HttpResponse.json(item, { status: 201 });
 	}),
 
+	http.put('/v1/settings/finance-categories/reorder', async ({ request }) => {
+		const body = await request.json();
+		const parsed = settingsReorderSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz sıralama', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		let updated = 0;
+		const now = nowIso();
+		for (const item of parsed.data.items) {
+			const row = store.financeCategories.find((c) => c.id === item.id);
+			if (!row) continue;
+			row.sort_order = item.sort_order;
+			row.updated_at = now;
+			updated += 1;
+		}
+		return HttpResponse.json({ updated });
+	}),
+
 	http.patch('/v1/settings/finance-categories/:id', async ({ params, request }) => {
 		const body = await request.json();
 		const parsed = financeCategoryUpdateSchema.safeParse(body);
@@ -2344,6 +2377,21 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const items = [...store.appointmentTypes].sort((a, b) => a.sort_order - b.sort_order);
 		return HttpResponse.json({ items });
+	}),
+
+	http.put('/v1/settings/appointment-types/reorder', async ({ request }) => {
+		const body = await request.json();
+		const parsed = settingsReorderSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz sıralama', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		let updated = 0;
+		for (const item of parsed.data.items) {
+			const row = store.appointmentTypes.find((t) => t.id === item.id);
+			if (!row) continue;
+			row.sort_order = item.sort_order;
+			updated += 1;
+		}
+		return HttpResponse.json({ updated });
 	}),
 
 	http.post('/v1/settings/appointment-types', async ({ request }) => {

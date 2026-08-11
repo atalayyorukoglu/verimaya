@@ -14,6 +14,7 @@ import type { FileStoragePort } from '../storage/storage.types';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { assertUploadMimeMatchesBytes } from './file-mime';
 import { ContactsService } from './contacts.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
  * AUDIT-F09-08 + GAP-F09-24: magic-byte MIME sniff + safe inline preview.
@@ -181,18 +182,7 @@ describe('AUDIT-F09-08 + GAP-F09-24 patient file MIME + preview', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
-			await tx`delete from files where tenant_id = ${tenantA}`;
-			await tx`delete from contacts where tenant_id = ${tenantA}`;
-		});
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
-			await tx`delete from files where tenant_id = ${tenantB}`;
-			await tx`delete from contacts where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await sql`delete from "user" where id = ${uploaderUserId}`;
 		await closeDb();
 	});

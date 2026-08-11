@@ -6,6 +6,7 @@ import { CryptoService } from '../common/crypto.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import type { QueueService } from '../queue/queue.service';
 import { WebhookSubscriptionsService } from './webhook-subscriptions.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -80,14 +81,7 @@ describe('webhook_subscriptions tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from webhook_subscriptions where tenant_id = ${tenantA}`;
-		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from webhook_subscriptions where tenant_id = ${tenantB}`;
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

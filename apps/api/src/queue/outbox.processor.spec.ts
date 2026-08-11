@@ -7,6 +7,7 @@ import { outboxEvents } from '../db/schema';
 import { CryptoService } from '../common/crypto.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { OutboxProcessor } from './outbox.processor';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -40,12 +41,7 @@ describe('OutboxProcessor DLQ (AUDIT-F09-05)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from outbox_events where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

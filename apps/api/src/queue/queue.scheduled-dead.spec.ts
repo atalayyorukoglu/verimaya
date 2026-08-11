@@ -8,6 +8,7 @@ import { jobs } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { GHL_RECONCILE_JOB_TYPE } from './queue.constants';
 import { DEFAULT_QUEUE_NAME, type DefaultQueueJobData, QueueService } from './queue.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -42,12 +43,7 @@ describe('QueueService.markScheduledJobDead (AUDIT-F09-05)', () => {
 
 	afterAll(async () => {
 		const { sql: pg } = getDb(databaseUrl);
-		await pg.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from jobs where tenant_id = ${tenantId}`;
-		});
-		await pg`delete from tenants where id = ${tenantId}`;
-		await pg`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(pg, [tenantId]);
 		await closeDb();
 	});
 

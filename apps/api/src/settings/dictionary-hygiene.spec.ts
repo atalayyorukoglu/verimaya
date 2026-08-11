@@ -11,6 +11,7 @@ import type { CryptoService } from '../common/crypto.service';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { defaultAppointmentTypeId } from './appointment-type-defaults';
 import { SettingsService } from './settings.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -42,15 +43,7 @@ async function insertTenant(tenantId: string, label: string) {
 
 async function deleteTenant(tenantId: string) {
 	const { sql } = getDb(databaseUrl);
-	await withTenantSession(tenantId, async () => {
-		await sql`delete from contacts where tenant_id = ${tenantId}`;
-		await sql`delete from finance_categories where tenant_id = ${tenantId}`;
-		await sql`delete from contact_types where tenant_id = ${tenantId}`;
-		await sql`delete from appointment_types where tenant_id = ${tenantId}`;
-		await sql`delete from tenant_settings where tenant_id = ${tenantId}`;
-	});
-	await sql`delete from tenants where id = ${tenantId}`;
-	await sql`delete from organization where id = ${tenantId}`;
+	await purgeTenantFixtures(sql, [tenantId]);
 }
 
 function conflictBody(err: unknown): { code?: string; message?: string } {

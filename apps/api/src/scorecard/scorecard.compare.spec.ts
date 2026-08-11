@@ -5,6 +5,7 @@ import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ScorecardService } from './scorecard.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -33,14 +34,7 @@ describe('scorecard compare + baseline block (Adım 37)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from scorecard_answers where tenant_id = ${tenantId}`;
-			await tx`delete from scorecard_assessments where tenant_id = ${tenantId}`;
-			await tx`delete from scorecard_profiles where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

@@ -13,7 +13,7 @@ export const organizations = pgTable(
 		id: uuid('id').defaultRandom().primaryKey(),
 		tenantId: uuid('tenant_id')
 			.notNull()
-			.references(() => tenants.id, { onDelete: 'cascade' }),
+			.references(() => tenants.id, { onDelete: 'restrict' }),
 		name: text('name').notNull(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })

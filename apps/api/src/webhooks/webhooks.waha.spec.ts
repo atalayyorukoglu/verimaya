@@ -14,6 +14,7 @@ import {
 	signWebhookPayload
 } from './webhooks.identity';
 import type { WebhookRequestWithRawBody } from './webhooks.signature';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -109,14 +110,7 @@ describe('WAHA webhook HMAC ingest (Adım 22 + WEBHOOK-01)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from jobs where tenant_id = ${tenantId}`;
-			await tx`delete from inbound_messages where tenant_id = ${tenantId}`;
-			await tx`delete from tenant_provider_identities where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

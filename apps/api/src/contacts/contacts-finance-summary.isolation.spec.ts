@@ -6,6 +6,7 @@ import { closeDb, getDb } from '../db/client';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { ContactsService } from './contacts.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -31,7 +32,7 @@ describe('patient finance summary tenant isolation', () => {
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
-		const { db, sql } = getDb(databaseUrl);
+		const { sql } = getDb(databaseUrl);
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -112,16 +113,7 @@ describe('patient finance summary tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantDb(tenantA, async (tdb) => {
-			await tdb.execute(drizzleSql`delete from transactions where tenant_id = ${tenantA}`);
-			await tdb.execute(drizzleSql`delete from contacts where tenant_id = ${tenantA}`);
-		});
-		await withTenantDb(tenantB, async (tdb) => {
-			await tdb.execute(drizzleSql`delete from transactions where tenant_id = ${tenantB}`);
-			await tdb.execute(drizzleSql`delete from contacts where tenant_id = ${tenantB}`);
-		});
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

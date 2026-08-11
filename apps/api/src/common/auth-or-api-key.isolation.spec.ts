@@ -16,6 +16,7 @@ import { LocalFileStorage } from '../storage/local-file.storage';
 import { AuthOrApiKeyGuard } from './auth-or-api-key.guard';
 import { getActiveOrgId } from './active-org.guard';
 import { OrgPermissionGuard } from './org-permission.guard';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -157,18 +158,7 @@ async function seedFixture(): Promise<Fixture> {
 
 async function destroyFixture(fx: Fixture): Promise<void> {
 	const { sql } = getDb(databaseUrl);
-	await sql.begin(async (tx) => {
-		await tx`select set_config('app.current_tenant_id', ${fx.tenantA}, true)`;
-		await tx`delete from contacts where tenant_id = ${fx.tenantA}`;
-		await tx`delete from api_keys where tenant_id = ${fx.tenantA}`;
-	});
-	await sql.begin(async (tx) => {
-		await tx`select set_config('app.current_tenant_id', ${fx.tenantB}, true)`;
-		await tx`delete from contacts where tenant_id = ${fx.tenantB}`;
-		await tx`delete from api_keys where tenant_id = ${fx.tenantB}`;
-	});
-	await sql`delete from tenants where id in (${fx.tenantA}, ${fx.tenantB})`;
-	await sql`delete from organization where id in (${fx.tenantA}, ${fx.tenantB})`;
+	await purgeTenantFixtures(sql, [fx.tenantA, fx.tenantB]);
 }
 
 describe('AuthOrApiKeyGuard dual-auth tenant isolation', () => {

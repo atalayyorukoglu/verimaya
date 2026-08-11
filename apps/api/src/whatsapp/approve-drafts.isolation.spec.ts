@@ -16,6 +16,7 @@ import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { WhatsappService } from './whatsapp.service';
+import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -95,15 +96,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql.begin(async (tx) => {
-			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
-			await tx`delete from ai_corrections where tenant_id = ${tenantId}`;
-			await tx`delete from transactions where tenant_id = ${tenantId}`;
-			await tx`delete from idempotency_keys where tenant_id = ${tenantId}`;
-			await tx`delete from inbound_messages where tenant_id = ${tenantId}`;
-		});
-		await sql`delete from tenants where id = ${tenantId}`;
-		await sql`delete from organization where id = ${tenantId}`;
+		await purgeTenantFixtures(sql, [tenantId]);
 		await closeDb();
 	});
 

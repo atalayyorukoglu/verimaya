@@ -9,6 +9,7 @@ import { SettingsService } from '../../settings/settings.service';
 import { TenantContextService } from '../../tenant/tenant-context.service';
 import { AdsAdapterRegistry } from './ads-adapter.registry';
 import { STUB_META_CAMPAIGN_ID, StubAdsAdapter } from './ads.stub-adapter';
+import { purgeTenantFixtures } from '../../test/purge-tenant-fixtures';
 
 process.env.CREDENTIALS_ENCRYPTION_KEY ??= randomBytes(32).toString('hex');
 
@@ -55,10 +56,7 @@ describe('Ads OAuth stub sync tenant isolation', () => {
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await sql`delete from ad_metrics_daily where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from tenant_credentials where tenant_id in (${tenantA}, ${tenantB})`;
-		await sql`delete from tenants where id in (${tenantA}, ${tenantB})`;
-		await sql`delete from organization where id in (${tenantA}, ${tenantB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
 		await closeDb();
 	});
 

@@ -14,6 +14,7 @@ import type {
 	FinanceCategoryUpdate,
 	OrganizationCreate,
 	OrganizationUpdate,
+	SettingsReorder,
 	TrustScoreSettings,
 	WhatsappAiDisclosure,
 	WhatsappAiDisclosureUpdate
@@ -204,6 +205,13 @@ export class SettingsService {
 		});
 	}
 
+	/** GAP-27: absolute-set bulk reorder — foreign/other-tenant ids are skipped. */
+	async reorderFinanceCategories(tenantId: string, input: SettingsReorder) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.reorderRowsWithDb(db, 'finance_categories', input)
+		);
+	}
+
 	async createContactType(tenantId: string, input: ContactTypeCreate) {
 		return this.tenantContext.withTenant(tenantId, ({ db }) =>
 			this.createContactTypeWithDb(db, tenantId, input)
@@ -288,6 +296,13 @@ export class SettingsService {
 				throw err;
 			}
 		});
+	}
+
+	/** GAP-27: absolute-set bulk reorder — foreign/other-tenant ids are skipped. */
+	async reorderContactTypes(tenantId: string, input: SettingsReorder) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.reorderRowsWithDb(db, 'contact_types', input)
+		);
 	}
 
 	async deleteContactType(tenantId: string, id: string) {
@@ -506,6 +521,13 @@ export class SettingsService {
 			}
 			throw err;
 		}
+	}
+
+	/** GAP-27: absolute-set bulk reorder — foreign/other-tenant ids are skipped. */
+	async reorderAppointmentTypes(tenantId: string, input: SettingsReorder) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.reorderRowsWithDb(db, 'appointment_types', input)
+		);
 	}
 
 	async deleteAppointmentType(tenantId: string, id: string) {
@@ -730,5 +752,42 @@ export class SettingsService {
 			});
 		}
 		return row;
+	}
+
+	/**
+	 * GAP-27: one transaction (via withTenant) updates every owned row; RLS + WHERE id
+	 * silently skips foreign tenants / unknown ids — `updated` is the real count.
+	 */
+	private async reorderRowsWithDb(
+		db: TenantDb,
+		kind: 'contact_types' | 'appointment_types' | 'finance_categories',
+		input: SettingsReorder
+	): Promise<{ updated: number }> {
+		let updated = 0;
+		for (const item of input.items) {
+			if (kind === 'finance_categories') {
+				const rows = await db
+					.update(financeCategories)
+					.set({ sortOrder: item.sort_order, updatedAt: new Date() })
+					.where(eq(financeCategories.id, item.id))
+					.returning({ id: financeCategories.id });
+				updated += rows.length;
+			} else if (kind === 'contact_types') {
+				const rows = await db
+					.update(contactTypes)
+					.set({ sortOrder: item.sort_order })
+					.where(eq(contactTypes.id, item.id))
+					.returning({ id: contactTypes.id });
+				updated += rows.length;
+			} else {
+				const rows = await db
+					.update(appointmentTypes)
+					.set({ sortOrder: item.sort_order })
+					.where(eq(appointmentTypes.id, item.id))
+					.returning({ id: appointmentTypes.id });
+				updated += rows.length;
+			}
+		}
+		return { updated };
 	}
 }
