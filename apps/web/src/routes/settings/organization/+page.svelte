@@ -32,14 +32,12 @@
 
 	let name = $state('');
 	let baseCurrency = $state<SupportedCurrency>('TRY');
-	let patientsLabel = $state('Hastalar');
 	let timezone = $state<TenantTimezone>('Europe/Istanbul');
 	let hydratedFor = $state<string | null>(null);
 
 	function hydrateFrom(tenant: Tenant) {
 		name = tenant.name;
 		baseCurrency = tenant.base_currency;
-		patientsLabel = tenant.contacts_section_label;
 		timezone = (TENANT_TIMEZONES as readonly string[]).includes(tenant.timezone)
 			? (tenant.timezone as TenantTimezone)
 			: 'Europe/Istanbul';
@@ -66,7 +64,6 @@
 		savedAt = null;
 		const payload: TenantUpdate = {
 			name: name.trim(),
-			contacts_section_label: patientsLabel.trim() || 'Hastalar',
 			timezone
 		};
 		if (!currencyLocked) {
@@ -139,22 +136,6 @@
 						{/each}
 					</select>
 					<p class="mt-1 text-xs text-text-faint">{t('settings.organization.timezoneHint')}</p>
-				</div>
-
-				<div>
-					<label class={labelClass} for="tenant-patients-label"
-						>{t('settings.organization.patientsLabel')}</label
-					>
-					<input
-						id="tenant-patients-label"
-						class={fieldClass}
-						bind:value={patientsLabel}
-						maxlength="50"
-						placeholder="Hastalar"
-					/>
-					<p class="mt-1 text-xs text-text-faint">
-						{t('settings.organization.patientsLabelHint')}
-					</p>
 				</div>
 			</div>
 

@@ -63,32 +63,26 @@ async def run_test():
         await elem.click(timeout=10000)
         
         # -> Click the 'Organizasyon' card on the Settings page to open Organization settings.
-        # Organizasyon Firma adı, baz para birimi ve bölüm... link
-        elem = page.get_by_role('link', name='Organizasyon Firma adı, baz para birimi ve bölüm etiketleri.', exact=True)
+        # Organizasyon Firma adı, baz para birimi ve saat dilimi. link
+        elem = page.get_by_role('link', name='Organizasyon Firma adı, baz para birimi ve saat dilimi.', exact=True)
         await elem.click(timeout=10000)
         
-        # -> Change the 'Firma adı' field… (id=tenant-name). Bölüm etiketi id=tenant-patients-label
-        # hâlâ var; tenant.contacts_section_label'a yazar (DOMAIN-02; UI metni '"Hastalar" bölüm etiketi').
+        # -> Change the 'Firma adı' field (id=tenant-name), currency, timezone — then Kaydet.
         # text field
         elem = page.locator('[id="tenant-name"]')
         await elem.wait_for(state="visible", timeout=10000)
         await elem.fill("Demo Klinik Updated")
         
-        # -> Change currency / timezone / section label, then Kaydet.
+        # -> Change currency / timezone, then Kaydet.
         # TRY GBP EUR USD dropdown
-        elem = page.locator("xpath=/html/body/div/div/div/main/div/form/div/div[2]/select").nth(0)
+        elem = page.locator('[id="tenant-currency"]')
         await elem.wait_for(state="visible", timeout=10000)
-        await elem.select_option("")
+        await elem.select_option("USD")
         
         # Europe/Istanbul …
-        elem = page.locator("xpath=/html/body/div/div/div/main/div/form/div/div[3]/select").nth(0)
+        elem = page.locator('[id="tenant-timezone"]')
         await elem.wait_for(state="visible", timeout=10000)
-        await elem.select_option("")
-        
-        # contacts section label (legacy id tenant-patients-label)
-        elem = page.locator('[id="tenant-patients-label"]')
-        await elem.wait_for(state="visible", timeout=10000)
-        await elem.fill("Patients")
+        await elem.select_option("Europe/London")
         
         # Kaydet button
         elem = page.get_by_role('button', name='Kaydet', exact=True)
@@ -98,9 +92,9 @@ async def run_test():
         
         # --> Verify the updated organization information is displayed
         # Assert: Organization name field displays 'Demo Klinik Updated'.
-        await expect(page.locator("xpath=/html/body/div[1]/div[1]/div/main/div/form/div[1]/div[1]/input").nth(0)).to_have_value("Demo Klinik Updated", timeout=15000), "Organization name field displays 'Demo Klinik Updated'."
-        # Assert: The contacts section label field displays 'Patients'.
-        await expect(page.locator('[id="tenant-patients-label"]')).to_have_value("Patients", timeout=15000), "The contacts section label field displays 'Patients'."
+        await expect(page.locator('[id="tenant-name"]')).to_have_value("Demo Klinik Updated", timeout=15000), "Organization name field displays 'Demo Klinik Updated'."
+        # Assert: Timezone select shows Europe/London.
+        await expect(page.locator('[id="tenant-timezone"]')).to_have_value("Europe/London", timeout=15000), "Timezone field displays 'Europe/London'."
         # Assert: The sidebar app label reflects the updated organization name 'Veri Maya — Demo Klinik Updated'.
         await expect(page.locator("xpath=/html/body/div[1]/div[1]/aside/div[1]/a").nth(0)).to_have_attribute("aria-label", "Veri Maya \u2014 Demo Klinik Updated", timeout=15000), "The sidebar app label reflects the updated organization name 'Veri Maya \u2014 Demo Klinik Updated'."
         await asyncio.sleep(5)
@@ -114,4 +108,3 @@ async def run_test():
             await pw.stop()
 
 asyncio.run(run_test())
-    

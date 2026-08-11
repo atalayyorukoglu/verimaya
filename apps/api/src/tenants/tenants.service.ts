@@ -41,7 +41,6 @@ export class TenantsService {
 				.set({
 					name: input.name ?? existing.name,
 					baseCurrency: input.base_currency ?? existing.baseCurrency,
-					contactsSectionLabel: input.contacts_section_label ?? existing.contactsSectionLabel,
 					timezone: input.timezone ?? existing.timezone
 				})
 				.where(eq(tenants.id, tenantId))

@@ -68,17 +68,15 @@ describe('tenants current (get/update)', () => {
 		expect(tenant.name).toBe('Test Tenant');
 		expect(tenant.base_currency).toBe('TRY');
 		expect(tenant.base_currency_locked).toBe(false);
-		expect(tenant.contacts_section_label).toBe('Hastalar');
 		expect(tenant.timezone).toBe('Europe/Istanbul');
 	});
 
-	it('updates name, base_currency, timezone and contacts_section_label when unlocked', async () => {
+	it('updates name, base_currency and timezone when unlocked', async () => {
 		const updated = await tenantsService.update(
 			tenantId,
 			{
 				name: 'Renamed Tenant',
 				base_currency: 'USD',
-				contacts_section_label: 'Misafirler',
 				timezone: 'Asia/Riyadh'
 			},
 			actor
@@ -86,7 +84,6 @@ describe('tenants current (get/update)', () => {
 
 		expect(updated.name).toBe('Renamed Tenant');
 		expect(updated.base_currency).toBe('USD');
-		expect(updated.contacts_section_label).toBe('Misafirler');
 		expect(updated.timezone).toBe('Asia/Riyadh');
 		expect(updated.base_currency_locked).toBe(false);
 
@@ -99,7 +96,7 @@ describe('tenants current (get/update)', () => {
 
 		expect(updated.name).toBe('Renamed Tenant');
 		expect(updated.base_currency).toBe('EUR');
-		expect(updated.contacts_section_label).toBe('Misafirler');
+		expect(updated.timezone).toBe('Asia/Riyadh');
 	});
 
 	it('allows same base_currency PATCH after first transaction', async () => {

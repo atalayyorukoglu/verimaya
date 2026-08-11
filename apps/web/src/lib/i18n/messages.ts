@@ -1454,7 +1454,7 @@ const tr = {
 	'settings.documentTitle': 'Ayarlar · Veri Maya',
 	'settings.title': 'Ayarlar',
 	'settings.description': 'Organizasyon, bağlantılar, finans kategorileri ve tercihler.',
-	'settings.nav.org.description': 'Firma adı, baz para birimi ve bölüm etiketleri.',
+	'settings.nav.org.description': 'Firma adı, baz para birimi ve saat dilimi.',
 	'settings.nav.team.description': 'Üyeler ve roller.',
 	'settings.nav.access.title': 'Erişim',
 	'settings.nav.audit.title': 'Denetim kaydı',
@@ -1617,9 +1617,6 @@ const tr = {
 	'settings.organization.loadError': 'Ayarlar yüklenemedi.',
 	'settings.organization.name': 'Firma adı',
 	'settings.organization.currency': 'Varsayılan para birimi',
-	'settings.organization.patientsLabel': '"Hastalar" bölüm etiketi',
-	'settings.organization.patientsLabelHint':
-		'Örn. diş kliniği "Hastalar", acente "Misafirler" diyebilir.',
 	'settings.organization.createdAt': 'Oluşturulma',
 	'settings.organization.slugFootnote':
 		'Slug değiştirilemez. Üye ve rol yönetimi {link} sayfasında.',
@@ -3165,7 +3162,7 @@ const en: Record<MessageKey, string> = {
 	'settings.documentTitle': 'Settings · Veri Maya',
 	'settings.title': 'Settings',
 	'settings.description': 'Organization, connections, finance categories, and preferences.',
-	'settings.nav.org.description': 'Company name, base currency, and section labels.',
+	'settings.nav.org.description': 'Company name, base currency, and timezone.',
 	'settings.nav.team.description': 'Members and roles.',
 	'settings.nav.access.title': 'Access',
 	'settings.nav.audit.title': 'Audit log',
@@ -3319,9 +3316,6 @@ const en: Record<MessageKey, string> = {
 	'settings.organization.loadError': 'Could not load settings.',
 	'settings.organization.name': 'Company name',
 	'settings.organization.currency': 'Default currency',
-	'settings.organization.patientsLabel': '"Patients" section label',
-	'settings.organization.patientsLabelHint':
-		'e.g. a dental clinic may say "Patients", an agency "Guests".',
 	'settings.organization.createdAt': 'Created',
 	'settings.organization.slugFootnote':
 		'Slug cannot be changed. Member and role management is on the {link} page.',

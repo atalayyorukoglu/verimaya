@@ -344,11 +344,6 @@ paths:
                   base_currency_locked:
                     type: boolean
                     default: false
-                  contacts_section_label:
-                    type: string
-                    minLength: 1
-                    maxLength: 80
-                    default: Hastalar
                   timezone:
                     type: string
                     minLength: 1
@@ -406,11 +401,6 @@ paths:
                         base_currency_locked:
                           type: boolean
                           default: false
-                        contacts_section_label:
-                          type: string
-                          minLength: 1
-                          maxLength: 80
-                          default: Hastalar
                         timezone:
                           type: string
                           minLength: 1
@@ -470,11 +460,6 @@ paths:
                   base_currency_locked:
                     type: boolean
                     default: false
-                  contacts_section_label:
-                    type: string
-                    minLength: 1
-                    maxLength: 80
-                    default: Hastalar
                   timezone:
                     type: string
                     minLength: 1
@@ -549,11 +534,6 @@ paths:
                   base_currency_locked:
                     type: boolean
                     default: false
-                  contacts_section_label:
-                    type: string
-                    minLength: 1
-                    maxLength: 80
-                    default: Hastalar
                   timezone:
                     type: string
                     minLength: 1

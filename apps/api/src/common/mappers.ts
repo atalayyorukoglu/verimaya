@@ -238,7 +238,6 @@ export function toTenant(row: TenantRow, baseCurrencyLocked = false): Tenant {
 		slug: row.slug,
 		base_currency: row.baseCurrency as Tenant['base_currency'],
 		base_currency_locked: baseCurrencyLocked,
-		contacts_section_label: row.contactsSectionLabel,
 		timezone: row.timezone as Tenant['timezone'],
 		data_retention_until: row.dataRetentionUntil
 			? toIsoDateTime(row.dataRetentionUntil)

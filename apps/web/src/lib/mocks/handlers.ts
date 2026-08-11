@@ -2530,7 +2530,6 @@ export const handlers = [
 			slug,
 			base_currency: 'TRY',
 			base_currency_locked: false,
-			contacts_section_label: 'Hastalar',
 			timezone: 'Europe/Istanbul',
 			data_retention_until: null,
 			created_at: now
@@ -2572,7 +2571,6 @@ export const handlers = [
 			slug,
 			base_currency: 'TRY',
 			base_currency_locked: false,
-			contacts_section_label: 'Hastalar',
 			timezone: 'Europe/Istanbul',
 			data_retention_until: null,
 			created_at: now

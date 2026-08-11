@@ -51,8 +51,6 @@ export const tenantSchema = z.object({
 	 * Computed on read; not stored on tenants row.
 	 */
 	base_currency_locked: z.boolean().default(false),
-	/** UI label for the contacts/karne section (tenant-writable display text) */
-	contacts_section_label: z.string().min(1).max(80).default('Hastalar'),
 	timezone: tenantTimezoneSchema.default(DEFAULT_TENANT_TIMEZONE),
 	/**
 	 * AUDIT-F09-07: optional legal retention horizon (UTC). Downstream sweeps may

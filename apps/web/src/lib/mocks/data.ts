@@ -45,7 +45,6 @@ export const demoTenant: Tenant = {
 	slug: 'demo-klinik',
 	base_currency: 'TRY',
 	base_currency_locked: true,
-	contacts_section_label: 'Hastalar',
 	timezone: 'Europe/Istanbul',
 	data_retention_until: null,
 	created_at: '2026-01-15T10:00:00.000Z'
@@ -417,7 +416,6 @@ function makeExtraTenants(): Tenant[] {
 		slug: s.slug,
 		base_currency: 'TRY' as const,
 		base_currency_locked: false,
-		contacts_section_label: 'Hastalar',
 		timezone: 'Europe/Istanbul' as const,
 		data_retention_until: null,
 		created_at: iso(faker.date.past({ years: 1 }))
