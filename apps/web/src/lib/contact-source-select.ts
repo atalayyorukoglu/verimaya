@@ -23,7 +23,7 @@ export type ContactSourceSelectState = {
 export const CONTACT_SOURCE_LEGACY_CATCH_ALL = 'Diğer';
 
 /** Preset labels rendered in the panel Kaynak select (legacy catch-all excluded). */
-export const CONTACT_SOURCE_SELECT_PRESETS = CONTACT_SOURCE_PRESETS.filter(
+export const CONTACT_SOURCE_SELECT_PRESETS = (CONTACT_SOURCE_PRESETS as readonly string[]).filter(
 	(preset) => preset !== CONTACT_SOURCE_LEGACY_CATCH_ALL
 );
 
