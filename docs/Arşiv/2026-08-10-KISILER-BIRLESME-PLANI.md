@@ -1,8 +1,8 @@
 # DOMAIN-02 — Hastalar + Kişiler tek modülde birleşme planı (2026-08-10)
 
-> **Durum:** §0 kararları kapandı (2026-08-10, Atalay). Faz A uygulamaya açık.
-> Bu dosya `docs/2026-08-09-YAPILACAKLAR.md`'nin yerine geçmez — birleşme işi oraya
-> tek kalem olarak (`DOMAIN-02`) girer, adım ayrıntısı burada durur.
+> **Durum:** §0 kararları kapandı (2026-08-10, Atalay). Faz A–F + E3 ✅; kalan E4 GHL.
+> Bu dosya `docs/2026-08-11-YAPILACAKLAR.md`'nin yerine geçmez — birleşme işi orada
+> kalem 4 (`DOMAIN-02 E4`); adım ayrıntısı burada durur.
 
 ---
 

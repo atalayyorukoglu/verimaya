@@ -10,7 +10,7 @@ Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (m
 
 Kod kapsamı pilot seviyesine yakın; güvenlik, veri doğruluğu ve canlı kabul kapıları kapatılıyor. Dahili pilot henüz resmi olarak başlamadı.
 
-**Aktif yapılacaklar listesi (tek kaynak):** [`docs/2026-08-09-YAPILACAKLAR.md`](./docs/2026-08-09-YAPILACAKLAR.md) — öncelik sıralı, kabul kriterli. Tüm eski plan/rapor/durum belgeleri artık [`docs/Arşiv/`](./docs/Arşiv/) altında (2026-08-03 listesi dahil); aktif iş yalnız YAPILACAKLAR dosyasındadır.
+**Aktif yapılacaklar listesi (tek kaynak):** [`docs/2026-08-11-YAPILACAKLAR.md`](./docs/2026-08-11-YAPILACAKLAR.md) — öncelik sıralı, kabul kriterli. Tüm eski plan/rapor/durum belgeleri [`docs/Arşiv/`](./docs/Arşiv/) altında (2026-08-03 ve 2026-08-09 listeleri dahil); aktif iş yalnız bu YAPILACAKLAR dosyasındadır.
 Gerçek durum ve açık riskler (arşiv, tarihli kanıt): [`docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md`](./docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md).
 
 Mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).

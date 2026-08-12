@@ -8,7 +8,7 @@
 > Daha eski: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` (Faz 0–7).
 >
 > **Durum anı:** branch `main`. DOMAIN-02 merge+deploy (E4 GHL hariç). Prod migrate
-> `0033`–`0038` (+ sonraları). Panel tek **Kişiler**. Pilot tenant: `Demo Klinik`.
+> `0045`'e kadar uygulandı (2026-08-12). Panel tek **Kişiler**. Pilot tenant: `Demo Klinik`.
 > Smoke: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`.
 
 ---
@@ -59,10 +59,13 @@
 
 > Migration 0028–0038 prod'da. Kalan: insan gözüyle ekran kanıtı.
 
-- [ ] **Prod smoke turu** — `docs/2026-08-09-PROD-SMOKE-REHBERI.md` §1–§3
-  (**👤 SEN TIKLA**: soft-delete B, filtre D, sayı E). Takılan maddeye bu dosyada kalem aç;
-  takılan yoksa rehberdeki Sonuç'u işaretle.
+- [x] **Prod smoke turu** — `docs/2026-08-09-PROD-SMOKE-REHBERI.md` §1–§3 (2026-08-12).
+  **Görüş:** kullanıcı turu yaptı, takılan madde bildirmedi. Tur sırasında bulunan panel
+  kusurları ayrı kalem olarak açılıp kapandı (bkz. Son kapananlar · panel düzeltmeleri).
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org dahil) — devam eden kural.
+  **2026-08-12 ihlali:** `Demo Tek Ay Klinik` açıldı; gezinme trafiği artınca auth rate-limit
+  kusurunu tetikleyip prod'da oturum kesintisi çıkardı (Son kapananlar · RATE-01). Org silindi,
+  kurala dönüldü. Kural pilot boyunca yürürlükte.
 - [ ] **Tenant adı:** `Demo Klinik` rename veya olduğu gibi bırak — karar ver, Görüş'e yaz (ucuz).
 - **Bağımlı:** yok.
 - **Kabul:** PROD-SMOKE-REHBERI Sonuç "takılan yok".
@@ -217,6 +220,25 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **PILOT-01 prod deploy ✅** (2026-08-12) — migration `0044` + `0045` prod'da uygulandı.
+  **Görüş:** Coolify API Terminal → `db:migrate`; `0044` kolon düşürdü, `0045` tablo açtı,
+  ikisi de psql ile doğrulandı. Not: prod Postgres rolü `postgres`/`verimaya` —
+  `DEPLOY-COOLIFY.md`'deki `verimaya` owner rolü kurulumda yok.
+- **RATE-01 ✅** (2026-08-12) — prod oturum kesintisi: panelde gezerken atılma + tekrar giriş yapamama.
+  **Görüş:** sıkı 10/dk auth limiti `get-session`'ı da sayıyordu; SPA her rota değişiminde onu
+  çağırdığı için ~10 gezinme kotayı doldurup 429 → boş oturum → `/login` üretiyordu. Ayrıca
+  `trustProxy` yoktu, kota tüm kullanıcılar için tek kovaydı. Limit yalnız kimlik uçlarına
+  daraltıldı + `TRUST_PROXY` env'i eklendi. Kusur Faz 8'den beri koddaydı, deploy'dan gelmedi. `34ef59a`
+- **Panel düzeltmeleri ✅** (2026-08-12) — smoke turunda bulunan 6 kusur, altı ayrı commit.
+  **Görüş:** silinen org listede/login'de görünüyordu (kök sebep: silme `tenants.deleted_at`
+  yazıyor, liste better-auth `organization` tablosundan geliyordu) · profil rozeti hardcoded
+  `demo@verimaya.app` gösteriyordu · ekip listesinde ad/e-posta boştu · şifre değiştirme yüzeyi
+  yoktu. Org değiştirici eklendi (logout ile geçiş yerine). `da3f5ee` `bd74eec` `6cd8526`
+  `52234f8` `95cbfe2` `1ebf560`
+- **CI/deploy zinciri ✅** (2026-08-12) — web image build'i atlanıyordu.
+  **Görüş:** Prettier formatı CI `Lint and format (web)` adımını kırıyordu; `deploy-web.yml`
+  gate'i red CI'da build'i atladığı için panelde hiçbir değişiklik görünmüyordu. Format
+  düzeltildi, zincir baştan sona döndü. `ca2c65c`
 - **SEC-03 artığı ✅** (2026-08-11) — `@fastify/static` GHSA-83w8-p2f5-377r kapandı.
   **Görüş:** override yerine upstream bump yetti (Nest platform-fastify 11.1.29 +
   bull-board 8.6.0 static ^10 istiyor); `fastify` 5.11'e hizalandı. `pnpm audit

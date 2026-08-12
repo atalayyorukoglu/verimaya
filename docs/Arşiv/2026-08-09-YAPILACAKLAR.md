@@ -1,13 +1,14 @@
 # Verimaya — Yapılacaklar (2026-08-09 · pilot-öncesi kapanış → pazar kapısı)
 
-> **Bu dosya tek kaynaktır.** 2026-08-03 listesinin devamıdır; o dosya Faz 0–7 +
-> denetim sonrası kapanan tüm işlerin Görüş'leriyle birlikte
-> `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`'de durur. Kapanan işin kanıtı oradadır,
-> buraya taşınmaz.
+> **ARŞİV — 2026-08-11 re-base.** Aktif liste:
+> [`docs/2026-08-11-YAPILACAKLAR.md`](../2026-08-11-YAPILACAKLAR.md).
+> Bu dosya dönem kapananları + Görüş kanıtı için saklanır; yeni iş buradan üretilmez.
 >
-> **Durum anı:** branch `main`, DOMAIN-02 merge (`cc86b2c`, 2026-08-10). Prod:
-> migrate `0033`–`0038` + API/web deploy edildi; panel tek **Kişiler**. E4 GHL testi açık.
-> Smoke rehberi: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`. Pilot tenant: `Demo Klinik`.
+> 2026-08-03 dönemi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+>
+> **Durum anı (kapanış):** branch `main`, DOMAIN-02 merge (`cc86b2c`, 2026-08-10). Prod:
+> migrate `0033`–`0038` + API/web deploy; panel tek **Kişiler**. E4 GHL testi açık kaldı.
+> Smoke: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`. Pilot tenant: `Demo Klinik`.
 
 ---
 
@@ -366,9 +367,9 @@
 ## Kaynaklar
 
 - `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` — önceki liste (Faz 0–7 + denetim sonrası kapananlar)
-- `docs/2026-08-10-TUM-ACIK-ISLER.md` — yönelim notu: "Faz 8" karışıklığı, panelde göze
-  çarpan eksiklerin gerçek mi bilinçli mi olduğu, nereye bakmalı tablosu. **Kalem listesi
-  değil** — kalem durumu yalnız bu dosyadadır, oraya kopyalanmaz.
+- `docs/Arşiv/2026-08-10-TUM-ACIK-ISLER.md` — yönelim notu (2026-08-11'de aktif listeye emildi;
+  panelde göze çarpanlar + "Faz 8" karışıklığı). Kalem durumu artık yalnız
+  `docs/2026-08-11-YAPILACAKLAR.md`'dedir.
 - `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md` — sıralı prod deploy + canlı kontrol listesi
 - `docs/2026-08-09-PROD-SMOKE-REHBERI.md` — kalem 1: tıklama sırası + tutarsızlık notları
 - `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md` — migration A kanıtı (eski checklist)

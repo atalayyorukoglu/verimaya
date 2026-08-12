@@ -1,13 +1,10 @@
 # Verimaya — Yönelim notu (açık işler nerede?)
 
-> **Bu dosya kalem listesi DEĞİL.** Açık işlerin tek kaynağı
-> **`docs/2026-08-09-YAPILACAKLAR.md`** — öncelik sırası, kabul kriterleri,
-> Görüş'ler ve "Son kapananlar" orada.
+> **ARŞİV — 2026-08-11.** İçerik (panelde göze çarpanlar + nereye bakmalı) aktif listeye
+> emildi: [`docs/2026-08-11-YAPILACAKLAR.md`](../2026-08-11-YAPILACAKLAR.md).
+> Bu dosya tarihçe; güncellenmez, yeni iş buradan üretilmez.
 >
-> **Bu dosya kalem kalem güncellenmez.** 2026-08-10'da tam envanter olarak yazıldı;
-> her kalemi iki yerde işaretlemek sapma ürettiği için (2026-08-11'de üç tutarsızlık
-> çıktı) özet hâline indirildi. Burada yalnız **listeye bakınca cevaplanmayan**
-> sorular durur.
+> Aşağısı 2026-08-10 anındaki metindir.
 
 ---
 
@@ -47,7 +44,7 @@ Kapanmış yüzeylerin kanıtı YAPILACAKLAR "Son kapananlar"da — buraya kopya
 
 | Soru | Kaynak |
 |------|--------|
-| Ne yapacağım, hangi sırayla? | `docs/2026-08-09-YAPILACAKLAR.md` — **tek kaynak** |
+| Ne yapacağım, hangi sırayla? | `docs/2026-08-11-YAPILACAKLAR.md` — **tek kaynak** (eski: 2026-08-09) |
 | Bu kalem neden böyle kapandı? | Aynı dosya, "Son kapananlar" + Görüş satırları |
 | Hangi ürün kararları bekliyor? | Aynı dosya, "Açık sorular" |
 | Neyi bilerek yapmıyoruz? | Aynı dosya, "Bilinçli olarak yapılmayacaklar" |
