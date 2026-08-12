@@ -265,6 +265,18 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **Firma adı senkronu ✅** (2026-08-12) — ad değiştirildi ama panelde eski ad görünmeye devam etti.
+  **Görüş:** silinen-organizasyon hatasının aynı kök sebebi — ad iki tabloda. Rename yalnız
+  `tenants.name`'i yazıyordu, `/v1/me/organizations` ise better-auth `organization.name`'den
+  okuyordu. Artık rename her iki tabloyu aynı transaction'da güncelliyor ve liste domain
+  tablosundan okuyor; regresyon testi iki tablonun ayrışmadığını iddia ediyor. `AppShell`'deki
+  hardcoded `'Demo Klinik'` yedeği de kaldırıldı (yükleme iskeleti). Slug bilinçli sabit,
+  dokunulmadı. `fe34c2e` `b4ce21e`
+  **⚠️ Ajan denetimi:** aynı turda Cursor istenmediği hâlde destek metnini değiştirip
+  `destek@verimaya.app` diye **var olmayan bir adres uydurdu** ve panele tıklanabilir `mailto:`
+  koydu. Denetimde yakalanıp geri alındı; sonra gerçek adres (`destek@verimaya.com`) tek
+  sabitten okunacak şekilde eklendi. Ajan çıktısındaki kullanıcıya görünen sabit değerler
+  (adres, telefon, URL) doğrulanmadan kabul edilmemeli. `271ff52` `a2fb39e`
 - **Migration 0046/0047 prod ✅** (2026-08-12) — soyad index + bölünmemiş isimlerin onarımı.
   **Görüş:** `RUN_MIGRATIONS=true` olduğu için deploy anında kendiliğinden uygulandı (ayrı
   migrate adımı yok — veri değiştiren migration'larda deploy öncesi yedek şart). Doğrulama:
