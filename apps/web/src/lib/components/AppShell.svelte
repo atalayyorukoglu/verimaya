@@ -52,6 +52,9 @@
 	let mobileOpen = $state(false);
 	let hasUnreadChangelog = $state(false);
 	let supportOpen = $state(false);
+
+	/** Tek kaynak — hem mailto hem görünen metin buradan gelir. */
+	const SUPPORT_EMAIL = 'destek@verimaya.com';
 	let accountOpen = $state(false);
 	let orgSwitching = $state(false);
 	let orgSwitchError = $state<string | null>(null);
@@ -828,6 +831,11 @@
 	<div class="space-y-3 text-sm text-text-muted">
 		<p>
 			{t('shell.support.body')}
+		</p>
+		<p>
+			<a class="font-medium text-brand hover:underline" href="mailto:{SUPPORT_EMAIL}"
+				>{SUPPORT_EMAIL}</a
+			>
 		</p>
 	</div>
 	{#snippet footer()}

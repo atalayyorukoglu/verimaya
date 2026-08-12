@@ -1658,8 +1658,7 @@ const tr = {
 	'shell.support.title': 'Destek',
 	'shell.support.description': 'Sorun bildirimi ve yardım',
 	'shell.support.close': 'Kapat',
-	'shell.support.body':
-		'Sorun veya geri bildirim için pilot boyunca doğrudan ürün ekibiyle iletişime geçin. Destek adresi yayına alındığında bu ekrana eklenecek.',
+	'shell.support.body': 'Sorun veya geri bildirim için destek ekibine yazın.',
 	'shell.sidebar.copyright': '{year} © All rights reserved.',
 	'shell.sidebar.brandPrefix': 'A brand of ',
 	'shell.sidebar.brandName': 'Albion Signature Group Limited',
@@ -3382,8 +3381,7 @@ const en: Record<MessageKey, string> = {
 	'shell.support.title': 'Support',
 	'shell.support.description': 'Report issues and get help',
 	'shell.support.close': 'Close',
-	'shell.support.body':
-		'During the pilot, contact the product team directly for issues or feedback. A support address will be added here once it goes live.',
+	'shell.support.body': 'Write to our support team for issues or feedback.',
 	'shell.sidebar.copyright': '{year} © All rights reserved.',
 	'shell.sidebar.brandPrefix': 'A brand of ',
 	'shell.sidebar.brandName': 'Albion Signature Group Limited',
