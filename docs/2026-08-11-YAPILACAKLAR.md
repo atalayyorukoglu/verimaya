@@ -8,8 +8,10 @@
 > Daha eski: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` (Faz 0–7).
 >
 > **Durum anı:** branch `main`. DOMAIN-02 merge+deploy (E4 GHL hariç). Prod migrate
-> `0045`'e kadar uygulandı (2026-08-12). Panel tek **Kişiler**. Pilot tenant: `Demo Klinik`.
-> Smoke: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`.
+> `0047`'ye kadar uygulandı (2026-08-12, psql ile doğrulandı — bkz. Son kapananlar · 0046/0047).
+> Panel tek **Kişiler** (soyad sırası + load-more düzeltildi).
+> Pilot tenant: `Demo Klinik`. Smoke: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`.
+> Web canlı = GHCR `verimaya-web:main` (CI yeşil → imaj → Coolify); Restart eski imajı açar.
 
 ---
 
@@ -220,6 +222,42 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **Migration 0046/0047 prod ✅** (2026-08-12) — soyad index + bölünmemiş isimlerin onarımı.
+  **Görüş:** `RUN_MIGRATIONS=true` olduğu için deploy anında kendiliğinden uygulandı (ayrı
+  migrate adımı yok — veri değiştiren migration'larda deploy öncesi yedek şart). Doğrulama:
+  index var, bölünmemiş kalan 34 satırın tamamı `Otel`/`Transfer`/`Klinik` — yani 0047'nin
+  bilinçli hariç tuttuğu kurum tipleri; kişi kaydı kalmadı.
+  **Bilinen sınır:** heuristik ilk boşluktan bölüyor, çift isimler (`Ayşe Nur Yılmaz` →
+  `Ayşe` / `Nur Yılmaz`) yanlış ayrışıyor. `display_name` dokunulmadığı için tam isim
+  kaybolmuyor; düzeltme elle. 0035 ile aynı heuristik.
+- **Keyset sayfalama testi ✅** (2026-08-12) — load-more hatasının sınıfı kalıcı kapatıldı.
+  **Görüş:** mevcut `contact-list-cursor.spec.ts` yalnız cursor kodlamasını test ediyordu;
+  sayfa 2'nin sayfa 1'in devamı olduğunu kanıtlayan test yoktu. 15 kişilik fixture (aynı
+  soyad, aynı ad+soyad, NULL soyad, TR harfler, `|` içeren isim), limit=2 ve 5 ile tam
+  gezinti; tekrar/atlama yok, son sayfada cursor yok. `aeb3083`
+- **Kişiler load-more + soyad sırası ✅** (2026-08-12) — telefon defteri sırası (`last_name`
+  ASC) geldi; “Daha fazla yükle” ikinci sayfada 1 kişi görüp duruyordu.
+  **Görüş:** sıra değişmişti, sayfa imleci hâlâ `created_at` kullanıyordu — keyset uyumsuz.
+  `list()` soyad cursor'ına bağlandı; MSW aynı sözleşmeye çekildi. `fbc8d74` `8c02d3b`
+- **CI/deploy kapısı (2. tur) ✅** (2026-08-12) — Coolify restart/redeploy panelde değişiklik
+  göstermiyordu.
+  **Görüş:** web VPS'te build edilmez; GHCR `:main` yalnız CI yeşil olunca push edilir.
+  Prettier → `$effect` içinde `periodKey;` (eslint) → API test (yanlış cursor) → svelte-check
+  (`Diğer` preset'ten düşmüş) sırayla kırmızı kaldı; her kırmızı Deploy web'i skip etti.
+  Format/`void`/Kaynak select düzeltildi, zincir döndü. Restart ≠ yeni imaj.
+  `34626f3` `a0c9964` `cdf7350`
+- **Sorumlu alanı 500 ✅** (2026-08-12) — kişi kaydında Sorumlu seçince 500.
+  **Görüş:** form `member.id` gönderiyordu, kolon `user.id` bekliyordu. Panel `user_id`
+  yolluyor; API her iki id'yi de çözüyor. `7bdced2` `f9b748e` `6313897`
+- **Kişiler seçim modu ✅** (2026-08-12) — toplu tür atama checkbox'ları varsayılan gizli.
+  **Görüş:** “Toplu işlem” ile açılıyor; kalıcı sütun ara sıra kullanılan işi sürekli
+  gürültü yapıyordu. `a70d41b` `3e58344`
+- **Sidebar footer telif + Albion ✅** (2026-08-12) — sürüm satırının altına yıl + marka.
+  **Görüş:** TickPort footer; metin `messages.ts`. `a680935` `6ab9da6`
+- **RATE-01 artığı (CF IP) ✅** (2026-08-12) — `TRUST_PROXY=1` Cloudflare arkasında edge IP'de
+  kalıyordu (kota yine paylaşılıyordu).
+  **Görüş:** hop artırmak XFF sahteciliğine açık. `TRUST_CF_CONNECTING_IP=true` iken anahtar
+  `CF-Connecting-IP`. `d14215a`
 - **PILOT-01 prod deploy ✅** (2026-08-12) — migration `0044` + `0045` prod'da uygulandı.
   **Görüş:** Coolify API Terminal → `db:migrate`; `0044` kolon düşürdü, `0045` tablo açtı,
   ikisi de psql ile doğrulandı. Not: prod Postgres rolü `postgres`/`verimaya` —
