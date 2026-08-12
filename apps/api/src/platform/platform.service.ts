@@ -173,6 +173,7 @@ export class PlatformService {
     return {
       items: rows.map((r) => ({
         id: r.id,
+        user_id: r.id,
         email: r.email,
         display_name: r.displayName,
         created_at: r.createdAt.toISOString(),
@@ -286,6 +287,7 @@ export class PlatformService {
       .limit(1);
     return {
       id: userId,
+      user_id: userId,
       email: u!.email,
       display_name: u!.name,
       created_at: u!.createdAt.toISOString(),

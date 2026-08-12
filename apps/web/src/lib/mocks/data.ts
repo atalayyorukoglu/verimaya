@@ -55,6 +55,7 @@ export const demoUser: MembershipUser & {
 	preferences: { enabled_product_modules: string[] };
 } = {
 	id: DEMO_USER_ID,
+	user_id: DEMO_USER_ID,
 	email: 'demo@verimaya.app',
 	display_name: 'Demo Kullanıcı',
 	created_at: '2026-01-15T10:00:00.000Z',
@@ -66,7 +67,7 @@ export const demoUser: MembershipUser & {
 
 const STATUSES: ContactStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];
 
-const SOURCES = ['Dijital Reklam', 'Referans', 'Organik', 'WhatsApp', 'Diğer'] as const;
+const SOURCES = ['Dijital Reklam', 'Referans', 'Organik', 'WhatsApp'] as const;
 const MEDIUMS = ['Meta Ads', 'Google Ads', 'Instagram', 'TikTok', 'Web Formu', 'Telefon'] as const;
 
 const LONG_NAME = 'Aleksandra-Maria Katarzyna von Habsburg-Lorraine-Wojciechowski-Papadopoulos';
@@ -320,17 +321,21 @@ const TEAM: { name: string; role: UserRole }[] = [
 ];
 
 function makeMembers(): MembershipUser[] {
-	return TEAM.map((m, i) => ({
-		id: i === 0 ? DEMO_USER_ID : faker.string.uuid(),
-		email:
-			i === 0
-				? 'demo@verimaya.app'
-				: `${m.name.toLowerCase().replace(/[^a-z]+/g, '.')}@verimaya.app`,
-		display_name: m.name,
-		created_at: iso(faker.date.past({ years: 1 })),
-		tenant_id: DEMO_TENANT_ID,
-		role: m.role
-	}));
+	return TEAM.map((m, i) => {
+		const userId = i === 0 ? DEMO_USER_ID : faker.string.uuid();
+		return {
+			id: faker.string.uuid(),
+			user_id: userId,
+			email:
+				i === 0
+					? 'demo@verimaya.app'
+					: `${m.name.toLowerCase().replace(/[^a-z]+/g, '.')}@verimaya.app`,
+			display_name: m.name,
+			created_at: iso(faker.date.past({ years: 1 })),
+			tenant_id: DEMO_TENANT_ID,
+			role: m.role
+		};
+	});
 }
 
 function makeAuditLogs(
@@ -430,6 +435,7 @@ function makeDevMembers(tenants: Tenant[]): MembershipUser[] {
 		extras.push(
 			{
 				id: faker.string.uuid(),
+				user_id: faker.string.uuid(),
 				email: 'demo@verimaya.app',
 				display_name: 'Demo Kullanıcı',
 				created_at: iso(faker.date.past({ years: 1 })),
@@ -438,6 +444,7 @@ function makeDevMembers(tenants: Tenant[]): MembershipUser[] {
 			},
 			{
 				id: faker.string.uuid(),
+				user_id: faker.string.uuid(),
 				email: `ops@${t.slug}.demo`,
 				display_name: 'Operasyon',
 				created_at: iso(faker.date.past({ years: 1 })),
@@ -446,6 +453,7 @@ function makeDevMembers(tenants: Tenant[]): MembershipUser[] {
 			},
 			{
 				id: faker.string.uuid(),
+				user_id: faker.string.uuid(),
 				email: `finance@${t.slug}.demo`,
 				display_name: 'Finans',
 				created_at: iso(faker.date.past({ years: 1 })),

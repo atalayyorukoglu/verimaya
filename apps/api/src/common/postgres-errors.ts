@@ -31,3 +31,14 @@ function matchesUniqueViolation(err: object, constraintName?: string): boolean {
 	if (!constraintName) return true;
 	return (err as { constraint_name?: unknown }).constraint_name === constraintName;
 }
+
+/** Postgres SQLSTATE 23503 — foreign_key_violation */
+export function isForeignKeyViolation(err: unknown): boolean {
+	let current: unknown = err;
+	for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth += 1) {
+		if (!current || typeof current !== 'object') return false;
+		if ((current as { code?: unknown }).code === '23503') return true;
+		current = (current as { cause?: unknown }).cause;
+	}
+	return false;
+}

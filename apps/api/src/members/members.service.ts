@@ -59,9 +59,13 @@ type MemberRow = {
 
 type MemberWithUserId = MemberRow & { userId: string };
 
-function toMembershipUser(row: MemberRow, tenantId: string): MembershipUser {
+function toMembershipUser(
+	row: MemberRow & { userId: string },
+	tenantId: string
+): MembershipUser {
 	return {
 		id: row.id,
+		user_id: row.userId,
 		tenant_id: tenantId,
 		email: row.email,
 		display_name: row.displayName,
@@ -98,6 +102,7 @@ export class MembersService {
 		const rows = await this.db.client
 			.select({
 				id: member.id,
+				userId: member.userId,
 				role: member.role,
 				createdAt: member.createdAt,
 				email: user.email,
@@ -184,6 +189,7 @@ export class MembersService {
 			return toMembershipUser(
 				{
 					id: row.id,
+					userId: existing.userId,
 					role: row.role,
 					createdAt: row.createdAt,
 					email: existing.email,

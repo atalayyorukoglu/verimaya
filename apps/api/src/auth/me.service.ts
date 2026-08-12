@@ -55,6 +55,7 @@ export class MeService {
 
 		return {
 			id: membership.id,
+			user_id: input.userId,
 			email: membership.email,
 			display_name: membership.displayName,
 			created_at: membership.createdAt.toISOString(),

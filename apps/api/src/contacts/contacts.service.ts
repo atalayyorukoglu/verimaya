@@ -31,10 +31,12 @@ import {
 	contactTypes,
 	contacts,
 	files,
+	member,
 	tenants,
 	transactions
 } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
+import { isForeignKeyViolation } from '../common/postgres-errors';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toContact, toContactCaseNote, toContactFile } from '../common/mappers';
@@ -745,28 +747,46 @@ export class ContactsService {
 		const firstName = input.first_name.trim();
 		const lastName = input.last_name?.trim() || null;
 		const displayName = deriveDisplayName(firstName, lastName);
-		const [row] = await db
-			.insert(contacts)
-			.values({
-				tenantId,
-				contactTypeId: input.contact_type_id,
-				contactTypeName: typeName,
-				firstName,
-				lastName,
-				displayName,
-				phone: input.phone ?? null,
-				email: input.email ?? null,
-				notes: input.notes ?? null,
-				organizationId: input.organization_id ?? null,
-				status: input.status ?? null,
-				assignedUserId: input.assigned_user_id ?? null,
-				source: input.source ?? null,
-				medium: input.medium ?? null,
-				campaign: input.campaign ?? null,
-				referredByContactId: input.referred_by_contact_id ?? null,
-				isInternal: input.is_internal ?? false
-			})
-			.returning();
+		const assignedUserId = await this.resolveAssignedUserId(
+			db,
+			tenantId,
+			input.assigned_user_id ?? null
+		);
+		let row;
+		try {
+			[row] = await db
+				.insert(contacts)
+				.values({
+					tenantId,
+					contactTypeId: input.contact_type_id,
+					contactTypeName: typeName,
+					firstName,
+					lastName,
+					displayName,
+					phone: input.phone ?? null,
+					email: input.email ?? null,
+					notes: input.notes ?? null,
+					organizationId: input.organization_id ?? null,
+					status: input.status ?? null,
+					assignedUserId,
+					source: input.source ?? null,
+					medium: input.medium ?? null,
+					campaign: input.campaign ?? null,
+					referredByContactId: input.referred_by_contact_id ?? null,
+					isInternal: input.is_internal ?? false
+				})
+				.returning();
+		} catch (err) {
+			if (isForeignKeyViolation(err) && assignedUserId) {
+				throw new BadRequestException({
+					error: {
+						code: 'invalid_assignee',
+						message: 'Assigned user must be a member of this organization'
+					}
+				});
+			}
+			throw err;
+		}
 		return toContact(row!);
 	}
 
@@ -793,40 +813,54 @@ export class ContactsService {
 				? input.last_name?.trim() || null
 				: existing.lastName;
 		const displayName = deriveDisplayName(firstName, lastName);
+		const assignedUserId =
+			input.assigned_user_id !== undefined
+				? await this.resolveAssignedUserId(db, existing.tenantId, input.assigned_user_id)
+				: existing.assignedUserId;
 
-		const [row] = await db
-			.update(contacts)
-			.set({
-				contactTypeId,
-				contactTypeName,
-				firstName,
-				lastName,
-				displayName,
-				phone: input.phone !== undefined ? input.phone : existing.phone,
-				email: input.email !== undefined ? input.email : existing.email,
-				notes: input.notes !== undefined ? input.notes : existing.notes,
-				organizationId:
-					input.organization_id !== undefined
-						? input.organization_id
-						: existing.organizationId,
-				status: input.status !== undefined ? input.status : existing.status,
-				assignedUserId:
-					input.assigned_user_id !== undefined
-						? input.assigned_user_id
-						: existing.assignedUserId,
-				source: input.source !== undefined ? input.source : existing.source,
-				medium: input.medium !== undefined ? input.medium : existing.medium,
-				campaign: input.campaign !== undefined ? input.campaign : existing.campaign,
-				referredByContactId:
-					input.referred_by_contact_id !== undefined
-						? input.referred_by_contact_id
-						: existing.referredByContactId,
-				isInternal:
-					input.is_internal !== undefined ? input.is_internal : existing.isInternal,
-				updatedAt: new Date()
-			})
-			.where(eq(contacts.id, id))
-			.returning();
+		let row;
+		try {
+			[row] = await db
+				.update(contacts)
+				.set({
+					contactTypeId,
+					contactTypeName,
+					firstName,
+					lastName,
+					displayName,
+					phone: input.phone !== undefined ? input.phone : existing.phone,
+					email: input.email !== undefined ? input.email : existing.email,
+					notes: input.notes !== undefined ? input.notes : existing.notes,
+					organizationId:
+						input.organization_id !== undefined
+							? input.organization_id
+							: existing.organizationId,
+					status: input.status !== undefined ? input.status : existing.status,
+					assignedUserId,
+					source: input.source !== undefined ? input.source : existing.source,
+					medium: input.medium !== undefined ? input.medium : existing.medium,
+					campaign: input.campaign !== undefined ? input.campaign : existing.campaign,
+					referredByContactId:
+						input.referred_by_contact_id !== undefined
+							? input.referred_by_contact_id
+							: existing.referredByContactId,
+					isInternal:
+						input.is_internal !== undefined ? input.is_internal : existing.isInternal,
+					updatedAt: new Date()
+				})
+				.where(eq(contacts.id, id))
+				.returning();
+		} catch (err) {
+			if (isForeignKeyViolation(err) && input.assigned_user_id !== undefined) {
+				throw new BadRequestException({
+					error: {
+						code: 'invalid_assignee',
+						message: 'Assigned user must be a member of this organization'
+					}
+				});
+			}
+			throw err;
+		}
 
 		return toContact(row!);
 	}
@@ -1038,6 +1072,36 @@ export class ContactsService {
 		await writeAuditLog(db, tenantId, actor, 'update', 'contact', keepName);
 
 		return toContact(updatedKeep!);
+	}
+
+	private async resolveAssignedUserId(
+		db: TenantDb,
+		tenantId: string,
+		assignedUserId: string | null
+	): Promise<string | null> {
+		if (!assignedUserId) return null;
+
+		const [byUserId] = await db
+			.select({ userId: member.userId })
+			.from(member)
+			.where(and(eq(member.organizationId, tenantId), eq(member.userId, assignedUserId)))
+			.limit(1);
+		if (byUserId) return assignedUserId;
+
+		// Panel once sent membership row id (`/v1/members` item id) instead of auth user id.
+		const [byMemberId] = await db
+			.select({ userId: member.userId })
+			.from(member)
+			.where(and(eq(member.organizationId, tenantId), eq(member.id, assignedUserId)))
+			.limit(1);
+		if (byMemberId) return byMemberId.userId;
+
+		throw new BadRequestException({
+			error: {
+				code: 'invalid_assignee',
+				message: 'Assigned user must be a member of this organization'
+			}
+		});
 	}
 
 	private async findActiveRow(db: TenantDb, id: string) {

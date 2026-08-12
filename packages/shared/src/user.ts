@@ -23,6 +23,8 @@ export type User = z.infer<typeof userSchema>;
 
 /** User as seen inside a tenant (membership-scoped). */
 export const membershipUserSchema = userSchema.extend({
+	/** Auth user id — use for FKs such as contacts.assigned_user_id */
+	user_id: uuid,
 	tenant_id: uuid,
 	role: userRoleSchema
 });

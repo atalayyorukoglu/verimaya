@@ -17,6 +17,7 @@
 	import { contactStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
+	import { memberMatchesAssignee } from '$lib/member-assignee';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -71,7 +72,7 @@
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<ContactsPage>(
 				listUrl('contacts', {
-					limit: 25,
+					limit: 15,
 					q: search || undefined,
 					type_id: typeId || undefined,
 					cursor: pageParam
@@ -98,7 +99,7 @@
 
 	function assigneeName(userId: string | null): string | null {
 		if (!userId) return null;
-		return members.find((m) => m.id === userId)?.display_name ?? null;
+		return members.find((m) => memberMatchesAssignee(m, userId))?.display_name ?? null;
 	}
 
 	function submitSearch(e: Event) {

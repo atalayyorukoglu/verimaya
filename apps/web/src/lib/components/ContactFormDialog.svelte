@@ -36,6 +36,7 @@
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n/locale.svelte';
+	import { memberAssigneeUserId } from '$lib/member-assignee';
 	import { type DeleteConfirmPhase, runConfirmedDelete } from '$lib/components/delete-confirm-flow';
 
 	const ORG_LINKED_TYPE_NAMES = new Set(['Klinik', 'Otel', 'Transfer']);
@@ -125,6 +126,9 @@
 	const showMedium = $derived(sourceSelect === CONTACT_SOURCE_WITH_MEDIUM);
 	const showCampaign = $derived(sourceSelect !== CONTACT_SOURCE_SELECT_UNKNOWN);
 	const members = $derived(membersQuery.data?.items ?? []);
+	const assignableMembers = $derived(
+		members.filter((m) => memberAssigneeUserId(m))
+	);
 
 	const referralSearchQuery = createQuery(() => ({
 		queryKey: qs.keys.contacts.list({ q: referredBySearch, for: 'referral-picker' }),
@@ -439,8 +443,8 @@
 						<label class={labelClass} for="c-assignee">{t('contacts.form.assignee')}</label>
 						<select id="c-assignee" class={fieldClass} bind:value={assigned_user_id}>
 							<option value="">—</option>
-							{#each members as m (m.id)}
-								<option value={m.id}>{m.display_name}</option>
+							{#each assignableMembers as m (m.id)}
+								<option value={memberAssigneeUserId(m)}>{m.display_name}</option>
 							{/each}
 						</select>
 					</div>

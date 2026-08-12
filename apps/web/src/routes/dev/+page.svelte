@@ -159,7 +159,7 @@
 		if (!window.confirm(t('dev.removeConfirm', { email: u.email }))) return;
 		error = null;
 		try {
-			await apiSend(apiPaths.platformTenantMember(targetTenantId, u.id), 'DELETE');
+			await apiSend(apiPaths.platformTenantMember(targetTenantId, u.user_id), 'DELETE');
 			await refreshUsers();
 			await queryClient.invalidateQueries({ queryKey: qs.keys.members.all() });
 		} catch (err) {

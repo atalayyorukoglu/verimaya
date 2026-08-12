@@ -39,6 +39,7 @@ import {
 	whatsappCreateContactSchema,
 	compareByCreatedAtDesc,
 	compareByCreatedAtAsc,
+	compareByLastNameAsc,
 	compareByOccurredOnDesc,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
@@ -2076,9 +2077,9 @@ export const handlers = [
 		}
 		const typeId = parsed.data.type_id;
 		if (typeId) items = items.filter((c) => c.contact_type_id === typeId);
-		// CONTRACT-02: the real API orders by created_at desc, not display_name — the
-		// contacts list page doesn't re-sort client-side, so this was a real MSW/API drift.
-		items.sort(compareByCreatedAtDesc);
+		// CONTRACT-02: phonebook order (last_name ASC NULLS LAST, first_name, id) —
+		// display stays Ad Soyad via display_name; only the list sequence is by surname.
+		items.sort(compareByLastNameAsc);
 		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
@@ -2564,6 +2565,7 @@ export const handlers = [
 		if (body.grant_self_admin !== false) {
 			store.members.push({
 				id: crypto.randomUUID(),
+				user_id: DEMO_USER_ID,
 				email: demoUser.email,
 				display_name: demoUser.display_name,
 				created_at: now,
@@ -2605,6 +2607,7 @@ export const handlers = [
 		if (body.grant_self_admin !== false) {
 			store.members.push({
 				id: crypto.randomUUID(),
+				user_id: DEMO_USER_ID,
 				email: demoUser.email,
 				display_name: demoUser.display_name,
 				created_at: now,
@@ -2712,8 +2715,10 @@ export const handlers = [
 			return HttpResponse.json(existing);
 		}
 
+		const userId = crypto.randomUUID();
 		const user: MembershipUser = {
 			id: crypto.randomUUID(),
+			user_id: userId,
 			email,
 			display_name,
 			created_at: nowIso(),
@@ -2748,8 +2753,10 @@ export const handlers = [
 			return HttpResponse.json(existing);
 		}
 
+		const userId = crypto.randomUUID();
 		const user: MembershipUser = {
 			id: crypto.randomUUID(),
+			user_id: userId,
 			email,
 			display_name,
 			created_at: nowIso(),
@@ -2766,7 +2773,7 @@ export const handlers = [
 			return badRequest('Kendi üyeliğini bu ekrandan kaldıramazsın');
 		}
 		const idx = store.members.findIndex(
-			(m) => m.id === params.userId && m.tenant_id === params.tenantId
+			(m) => m.user_id === params.userId && m.tenant_id === params.tenantId
 		);
 		if (idx < 0) return notFound('Üye bulunamadı');
 		store.members.splice(idx, 1);
@@ -2779,7 +2786,7 @@ export const handlers = [
 			return badRequest('Kendi üyeliğini bu ekrandan kaldıramazsın');
 		}
 		const idx = store.members.findIndex(
-			(m) => m.id === params.userId && m.tenant_id === params.tenantId
+			(m) => m.user_id === params.userId && m.tenant_id === params.tenantId
 		);
 		if (idx < 0) return notFound('Üye bulunamadı');
 		store.members.splice(idx, 1);
