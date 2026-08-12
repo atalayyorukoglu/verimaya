@@ -97,7 +97,12 @@
 		return local.slice(0, 2).toUpperCase();
 	}
 
-	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
+	const tenantPending = $derived(tenantQuery.isPending);
+	const tenantName = $derived(tenantQuery.data?.name ?? '');
+	/** Never empty/undefined — brand alone until tenant name is known. */
+	const homeAriaLabel = $derived(
+		tenantName ? t('shell.aria.homeWithTenant', { name: tenantName }) : t('shell.aria.home')
+	);
 	const activeOrgId = $derived(tenantQuery.data?.id ?? me?.tenant_id ?? null);
 
 	const orgsQuery = createQuery(() => ({
@@ -359,7 +364,7 @@
 			</p>
 			<div class="mt-3 flex items-center gap-2">
 				<Button type="button" class="h-8 px-3 text-xs" onclick={() => void acceptInstall()}>
-					Kur
+					{t('shell.pwa.install')}
 				</Button>
 				<button
 					type="button"
@@ -375,8 +380,18 @@
 	<!-- Desktop sidebar — TickPort: full viewport height, footer pinned -->
 	<aside class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex">
 		<div class="flex h-14 shrink-0 items-center border-b border-border bg-bg px-4">
-			<a href="/" class="block min-w-0 rounded-md" aria-label="Veri Maya — {tenantName}">
-				<SiteLogo />
+			<a href="/" class="block min-w-0 rounded-md" aria-label={homeAriaLabel}>
+				{#if tenantPending}
+					<span class="flex items-center gap-1" aria-hidden="true">
+						<span class="size-6 shrink-0 animate-pulse rounded bg-surface-2"></span>
+						<span class="space-y-1">
+							<span class="block h-3.5 w-20 animate-pulse rounded bg-surface-2"></span>
+							<span class="block h-2.5 w-14 animate-pulse rounded bg-surface-2"></span>
+						</span>
+					</span>
+				{:else}
+					<SiteLogo />
+				{/if}
 			</a>
 		</div>
 
@@ -486,10 +501,20 @@
 				<a
 					href="/"
 					class="block min-w-0 flex-1 rounded-md"
-					aria-label="Veri Maya — {tenantName}"
+					aria-label={homeAriaLabel}
 					onclick={closeMobile}
 				>
-					<SiteLogo />
+					{#if tenantPending}
+						<span class="flex items-center gap-1" aria-hidden="true">
+							<span class="size-6 shrink-0 animate-pulse rounded bg-surface-2"></span>
+							<span class="space-y-1">
+								<span class="block h-3.5 w-20 animate-pulse rounded bg-surface-2"></span>
+								<span class="block h-2.5 w-14 animate-pulse rounded bg-surface-2"></span>
+							</span>
+						</span>
+					{:else}
+						<SiteLogo />
+					{/if}
 				</a>
 				<button
 					type="button"
@@ -599,12 +624,12 @@
 		<header
 			class="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-bg/95 px-3 backdrop-blur sm:px-4 md:static"
 		>
-			<a
-				href="/"
-				class="shrink-0 rounded-md text-text md:hidden"
-				aria-label="Veri Maya — {tenantName}"
-			>
-				<BrandMark class="h-7 w-7" title="" />
+			<a href="/" class="shrink-0 rounded-md text-text md:hidden" aria-label={homeAriaLabel}>
+				{#if tenantPending}
+					<span class="block size-7 animate-pulse rounded bg-surface-2" aria-hidden="true"></span>
+				{:else}
+					<BrandMark class="h-7 w-7" title="" />
+				{/if}
 			</a>
 			<CommandPalette />
 
@@ -811,7 +836,7 @@
 		</p>
 	</div>
 	{#snippet footer()}
-		<Button type="button" onclick={() => (supportOpen = false)}>Kapat</Button>
+		<Button type="button" onclick={() => (supportOpen = false)}>{t('shell.support.close')}</Button>
 	{/snippet}
 </Dialog>
 
