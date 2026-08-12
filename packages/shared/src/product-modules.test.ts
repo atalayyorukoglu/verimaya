@@ -29,6 +29,7 @@ describe('product-modules / user UI preferences contract', () => {
 	it('meSchema requires preferences', () => {
 		const base = {
 			id: '11111111-1111-4111-8111-111111111111',
+			user_id: '11111111-1111-4111-8111-111111111111',
 			email: 'a@example.com',
 			display_name: 'A',
 			created_at: '2026-01-01T00:00:00.000Z',
