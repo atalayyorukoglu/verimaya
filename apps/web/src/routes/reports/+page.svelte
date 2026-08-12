@@ -99,9 +99,7 @@
 	let txSaving = $state(false);
 	let txFormError = $state<string | null>(null);
 
-	const dateRange = $derived(
-		resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone)
-	);
+	const dateRange = $derived(resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone));
 
 	const txQuery = createQuery(() => ({
 		queryKey: qs.keys.transactions.list({ for: 'reports', from: dateRange.from, to: dateRange.to }),

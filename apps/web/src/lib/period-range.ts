@@ -4,7 +4,10 @@ export type PeriodKey = 'bu-ay' | 'gecen-ay' | 'tum' | 'ozel';
 
 export type DateRange = { from: string | null; to: string | null };
 
-export function monthRangeInTz(offsetMonths: number, timeZone: string): { from: string; to: string } {
+export function monthRangeInTz(
+	offsetMonths: number,
+	timeZone: string
+): { from: string; to: string } {
 	const todayKey = toTenantDayKey(new Date(), timeZone);
 	const [year, month] = todayKey.split('-').map(Number);
 	let targetYear = year;

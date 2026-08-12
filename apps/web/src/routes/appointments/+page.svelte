@@ -92,9 +92,7 @@
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
 
-	const periodRange = $derived(
-		resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone)
-	);
+	const periodRange = $derived(resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone));
 
 	const listFilters = $derived({
 		from: periodRange.from ?? undefined,

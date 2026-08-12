@@ -1,5 +1,9 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { compareByCreatedAtDesc, compareByLastNameAsc, compareByOccurredOnDesc } from '@verimaya/shared';
+import {
+	compareByCreatedAtDesc,
+	compareByLastNameAsc,
+	compareByOccurredOnDesc
+} from '@verimaya/shared';
 import { ATALAY_CONTACT_ID, CONTACT_KLINIK_ID, getStore } from './data';
 import { server } from './server';
 
