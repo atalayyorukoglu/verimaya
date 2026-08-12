@@ -829,11 +829,6 @@
 		<p>
 			{t('shell.support.body')}
 		</p>
-		<p>
-			<a class="font-medium text-brand hover:underline" href="mailto:destek@verimaya.app"
-				>destek@verimaya.app</a
-			>
-		</p>
 	</div>
 	{#snippet footer()}
 		<Button type="button" onclick={() => (supportOpen = false)}>{t('shell.support.close')}</Button>
