@@ -1,3 +1,4 @@
+-- @veri-migration: Split person contacts where first_name held full display_name (last_name never split)
 -- Repair person contacts where first_name holds the full display_name but last_name was never split.
 -- Matches migration 0035 heuristic; display_name stays unchanged.
 

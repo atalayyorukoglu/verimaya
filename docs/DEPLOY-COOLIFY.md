@@ -71,11 +71,20 @@ Migrate: `DATABASE_URL` = owner / superuser.
 
 **Migrasyon (önerilen):** Pre-deploy / one-shot:
 
+Deploy’a basmadan önce bekleyen migration’ları kontrol et:
+
+```bash
+pnpm --filter @verimaya/api migrate:pending
+```
+
+Çıktıda `-- @veri-migration:` işaretli dosya varsa **önce yedek al** (script exit kodu 2). Sonra uygula:
+
 ```bash
 pnpm --filter @verimaya/api db:migrate
 ```
 
-Alternatif: `RUN_MIGRATIONS=true` (entrypoint migrate + start).
+Alternatif: `RUN_MIGRATIONS=true` (entrypoint migrate + start). Entrypoint migration’ı
+engellemez; `migrate:pending` yalnız görünürlük — deploy öncesi insan kontrolü.
 
 Volume: `UPLOAD_DIR` mount (local driver veya `local://` legacy satırlar için).
 
@@ -471,6 +480,14 @@ Deploy/site düzelince çoğu kez kendiliğinden yeşile döner. Kalırsa: Serve
 
 ## Migrasyon (tekrar)
 
+Deploy öncesi:
+
+```bash
+pnpm --filter @verimaya/api migrate:pending
+```
+
+Veri migration’ı işaretliyse (exit 2 / “DİKKAT… yedek al”) **önce yedek al**, sonra:
+
 ```bash
 pnpm --filter @verimaya/api db:migrate
 ```
@@ -576,18 +593,24 @@ yeni tablo, index/unique, plugin alanları (`two_factor_*`, `active_organization
 
 1. Farkı `apps/api/src/db/schema/auth.ts` (+ gerekirse `auth.ts` adapter `schema` map) güncelle.
 2. SQL: sıradaki numara = journal’daki son `NNNN` + 1 (ör. son `0032_…` ise `0033_better_auth_…sql`).
-3. Ya elle `ALTER TABLE … ADD COLUMN …` yaz **ya da** şema güncelken:
+3. **Veri migration işareti:** mevcut satırları yeniden yazan (UPDATE/backfill ile canlı veriyi
+   değiştiren) migration dosyasının **başına** şunu koy:
+   `-- @veri-migration: <tek satır açıklama>`.
+   `migrate:pending` bu işareti görünce deploy öncesi uyarı + exit 2 verir.
+   Aynı migration’da yeni kolonu dolduran meşru backfill için işaret **zorunlu değil**;
+   işaret, operatörün “önce yedek” kararı içindir.
+4. Ya elle `ALTER TABLE … ADD COLUMN …` yaz **ya da** şema güncelken:
 
 ```bash
 pnpm --filter @verimaya/api db:generate
 ```
 
 Üretilen SQL’i gözden geçir (drop/rename/text-id gibi yıkıcı diff varsa red et, elle daralt).
-4. Journal: `drizzle-kit generate` yazar; elle SQL ekliyorsan `apps/api/drizzle/meta/_journal.json`
+5. Journal: `drizzle-kit generate` yazar; elle SQL ekliyorsan `apps/api/drizzle/meta/_journal.json`
    içine yeni `tag` satırını mevcut desene uyarak ekle (eksik journal → migrate atlar veya kırılır).
-5. Yeni **tablo** varsa `verimaya_app` GRANT ekle. Auth tablolarına RLS ekleme —
+6. Yeni **tablo** varsa `verimaya_app` GRANT ekle. Auth tablolarına RLS ekleme —
    TEHDIT-MODELI kabulünü bilinçli bozmadıkça dokunma.
-6. Uygula (önce staging/lokal):
+7. Uygula (önce staging/lokal):
 
 ```bash
 pnpm --filter @verimaya/api db:migrate
