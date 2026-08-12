@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { TenantUpdate } from '@verimaya/shared';
-import { tenants, transactions } from '../db/schema';
+import { organization, tenants, transactions } from '../db/schema';
 import { toTenant } from '../common/mappers';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -36,15 +36,25 @@ export class TenantsService {
 				});
 			}
 
+			const nextName = input.name ?? existing.name;
+
 			const [row] = await db
 				.update(tenants)
 				.set({
-					name: input.name ?? existing.name,
+					name: nextName,
 					baseCurrency: input.base_currency ?? existing.baseCurrency,
 					timezone: input.timezone ?? existing.timezone
 				})
 				.where(eq(tenants.id, tenantId))
 				.returning();
+
+			// Keep better-auth `organization.name` in lockstep (same id). Slug is immutable here.
+			if (nextName !== existing.name) {
+				await db
+					.update(organization)
+					.set({ name: nextName })
+					.where(eq(organization.id, tenantId));
+			}
 
 			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', row!.name);
 

@@ -76,14 +76,15 @@ export class MeService {
 		const rows = await this.db.client
 			.select({
 				id: organization.id,
-				name: organization.name,
+				// Domain table is the display-name source of truth (synced on tenant PATCH).
+				name: tenants.name,
 				slug: organization.slug
 			})
 			.from(member)
 			.innerJoin(organization, eq(member.organizationId, organization.id))
 			.innerJoin(tenants, eq(tenants.id, organization.id))
 			.where(and(eq(member.userId, userId), isNull(tenants.deletedAt)))
-			.orderBy(asc(organization.name));
+			.orderBy(asc(tenants.name));
 
 		return { items: rows };
 	}
