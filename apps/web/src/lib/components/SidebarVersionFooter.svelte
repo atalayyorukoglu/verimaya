@@ -10,11 +10,9 @@
 	const year = new Date().getFullYear();
 </script>
 
-<div
-	class="flex w-full flex-col items-center gap-1.5 text-center text-[10px] leading-snug text-text-muted"
->
-	<span>Veri Maya · v{version}</span>
-	<div class="flex flex-col gap-0.5">
+<div class="flex w-full flex-col items-center gap-1.5 text-center leading-snug text-text-muted">
+	<span class="text-[12px]">Veri Maya · v{version}</span>
+	<div class="flex flex-col gap-0.5 text-[8px]">
 		<p>{t('shell.sidebar.copyright', { year })}</p>
 		<p>
 			{t('shell.sidebar.brandPrefix')}
