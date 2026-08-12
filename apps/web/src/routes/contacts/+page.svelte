@@ -35,6 +35,7 @@
 	let editing = $state<Contact | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
+	let selectionMode = $state(false);
 	let selectedIds = $state<string[]>([]);
 	let bulkTypeId = $state('');
 	let bulkBusy = $state(false);
@@ -128,6 +129,17 @@
 		formOpen = true;
 	}
 
+	function enterSelectionMode() {
+		selectionMode = true;
+	}
+
+	function exitSelectionMode() {
+		selectionMode = false;
+		selectedIds = [];
+		bulkTypeId = '';
+		bulkError = null;
+	}
+
 	function toggleRow(id: string, checked: boolean) {
 		if (checked) {
 			if (!selectedIds.includes(id)) selectedIds = [...selectedIds, id];
@@ -164,7 +176,7 @@
 				contact_ids: selectedIds,
 				contact_type_id: bulkTypeId
 			});
-			clearSelection();
+			exitSelectionMode();
 			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
 		} catch (err) {
 			bulkError = err instanceof Error ? err.message : t('contacts.bulk.failed');
@@ -246,17 +258,26 @@
 				<option value={ct.id}>{ct.name}</option>
 			{/each}
 		</select>
-		<div class="flex gap-2">
+		<div class="flex flex-wrap gap-2">
 			<Button type="submit" variant="secondary">{t('contacts.list.filterApply')}</Button>
 			{#if search || typeId}
 				<Button type="button" variant="outline" onclick={clearFilters}
 					>{t('contacts.list.filterClear')}</Button
 				>
 			{/if}
+			{#if selectionMode}
+				<Button type="button" variant="outline" disabled={bulkBusy} onclick={exitSelectionMode}
+					>{t('contacts.bulk.modeExit')}</Button
+				>
+			{:else}
+				<Button type="button" variant="outline" onclick={enterSelectionMode}
+					>{t('contacts.bulk.modeEnter')}</Button
+				>
+			{/if}
 		</div>
 	</form>
 
-	{#if selectedIds.length > 0}
+	{#if selectionMode && selectedIds.length > 0}
 		<div
 			class="mb-4 flex flex-col gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5 sm:flex-row sm:items-center"
 		>
@@ -294,6 +315,8 @@
 		{#if bulkError}
 			<p class="mb-4 text-sm text-danger">{bulkError}</p>
 		{/if}
+	{:else if selectionMode && bulkError}
+		<p class="mb-4 text-sm text-danger">{bulkError}</p>
 	{/if}
 
 	{#if contactsQuery.isPending}
@@ -310,16 +333,21 @@
 			<table class="w-full table-fixed text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						<th class="w-8 px-3 py-3">
-							<input
-								type="checkbox"
-								class="size-4 rounded border-border"
-								checked={allPageSelected}
-								aria-label={t('contacts.bulk.selectAll')}
-								onchange={(e) => toggleAllPage(e.currentTarget.checked)}
-							/>
-						</th>
-						<th class="w-[22%] px-4 py-3 font-medium">{t('contacts.list.col.name')}</th>
+						{#if selectionMode}
+							<th class="w-8 px-3 py-3">
+								<input
+									type="checkbox"
+									class="size-4 rounded border-border"
+									checked={allPageSelected}
+									aria-label={t('contacts.bulk.selectAll')}
+									onchange={(e) => toggleAllPage(e.currentTarget.checked)}
+								/>
+							</th>
+						{/if}
+						<th
+							class="{selectionMode ? 'w-[22%]' : 'w-[24%]'} px-4 py-3 font-medium"
+							>{t('contacts.list.col.name')}</th
+						>
 						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
 						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
 						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.source')}</th>
@@ -331,15 +359,17 @@
 				<tbody class="divide-y divide-border">
 					{#each items as c (c.id)}
 						<tr class="transition-colors hover:bg-surface-2/60">
-							<td class="px-3 py-3">
-								<input
-									type="checkbox"
-									class="size-4 rounded border-border"
-									checked={selectedIds.includes(c.id)}
-									aria-label={t('contacts.bulk.selectRow')}
-									onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
-								/>
-							</td>
+							{#if selectionMode}
+								<td class="px-3 py-3">
+									<input
+										type="checkbox"
+										class="size-4 rounded border-border"
+										checked={selectedIds.includes(c.id)}
+										aria-label={t('contacts.bulk.selectRow')}
+										onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
+									/>
+								</td>
+							{/if}
 							<td class="px-4 py-3">
 								<a href={`/contacts/${c.id}`} class="font-medium text-text hover:underline">
 									<span class="line-clamp-2 break-all">{c.display_name}</span>
@@ -375,28 +405,32 @@
 		</div>
 
 		<ul class="space-y-2 md:hidden">
-			<li class="flex items-center gap-3 px-1 py-1">
-				<input
-					type="checkbox"
-					class="size-4 rounded border-border"
-					checked={allPageSelected}
-					aria-label={t('contacts.bulk.selectAll')}
-					onchange={(e) => toggleAllPage(e.currentTarget.checked)}
-				/>
-				<span class="text-xs text-text-faint">{t('contacts.bulk.selectAll')}</span>
-			</li>
+			{#if selectionMode}
+				<li class="flex items-center gap-3 px-1 py-1">
+					<input
+						type="checkbox"
+						class="size-4 rounded border-border"
+						checked={allPageSelected}
+						aria-label={t('contacts.bulk.selectAll')}
+						onchange={(e) => toggleAllPage(e.currentTarget.checked)}
+					/>
+					<span class="text-xs text-text-faint">{t('contacts.bulk.selectAll')}</span>
+				</li>
+			{/if}
 			{#each items as c (c.id)}
 				<li class="min-w-0">
 					<div
 						class="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-surface p-4"
 					>
-						<input
-							type="checkbox"
-							class="mt-1 size-4 shrink-0 rounded border-border"
-							checked={selectedIds.includes(c.id)}
-							aria-label={t('contacts.bulk.selectRow')}
-							onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
-						/>
+						{#if selectionMode}
+							<input
+								type="checkbox"
+								class="mt-1 size-4 shrink-0 rounded border-border"
+								checked={selectedIds.includes(c.id)}
+								aria-label={t('contacts.bulk.selectRow')}
+								onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
+							/>
+						{/if}
 						<a href={`/contacts/${c.id}`} class="min-w-0 flex-1 hover:opacity-90">
 							<div class="flex flex-wrap items-center gap-2">
 								<p class="min-w-0 flex-1 text-sm font-medium break-all text-text">

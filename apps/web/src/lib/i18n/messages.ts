@@ -263,6 +263,8 @@ const tr = {
 	'contacts.bulk.failed': 'Toplu tür atama başarısız',
 	'contacts.bulk.selectAll': 'Sayfadaki herkesi seç',
 	'contacts.bulk.selectRow': 'Kişiyi seç',
+	'contacts.bulk.modeEnter': 'Toplu işlem',
+	'contacts.bulk.modeExit': 'Seçimi kapat',
 
 	'settings.contactTypes.rename': 'Yeniden adlandır',
 	'settings.contactTypes.renameSave': 'Kaydet',
@@ -2024,6 +2026,8 @@ const en: Record<MessageKey, string> = {
 	'contacts.bulk.failed': 'Bulk type assignment failed',
 	'contacts.bulk.selectAll': 'Select everyone on this page',
 	'contacts.bulk.selectRow': 'Select contact',
+	'contacts.bulk.modeEnter': 'Bulk edit',
+	'contacts.bulk.modeExit': 'Done selecting',
 
 	'settings.contactTypes.rename': 'Rename',
 	'settings.contactTypes.renameSave': 'Save',
