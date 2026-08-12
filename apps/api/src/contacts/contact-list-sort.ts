@@ -7,10 +7,8 @@ const institutionTypesSql = sql.join(
 	sql`, `
 );
 
-/** Mirrors `contactListSortKeys` in packages/shared — keep in sync. */
-export function contactSortLastNameExpr(table: typeof contacts = contacts): SQL.Aliased<
-	string | null
-> {
+/** Unaliased — use in WHERE / ORDER BY (SELECT aliases are invalid there). */
+export function contactSortLastNameSql(table: typeof contacts = contacts): SQL<string | null> {
 	return sql<string | null>`
 		COALESCE(
 			NULLIF(btrim(${table.lastName}), ''),
@@ -28,15 +26,32 @@ export function contactSortLastNameExpr(table: typeof contacts = contacts): SQL.
 				)
 			END
 		)
-	`.as('sort_last_name');
+	`;
 }
 
-export function contactSortFirstNameExpr(table: typeof contacts = contacts): SQL.Aliased<string> {
-	return sql<string>`
+/** Mirrors `contactListSortKeys` in packages/shared — keep in sync. */
+export function contactSortLastNameExpr(table: typeof contacts = contacts): SQL.Aliased<
+	string | null
+> {
+	return contactSortLastNameSql(table).as('sort_last_name');
+}
+
+export function contactSortFirstNameSql(table: typeof contacts = contacts): SQL<string | null> {
+	return sql<string | null>`
 		CASE
 			WHEN ${table.contactTypeName} IN (${institutionTypesSql}) THEN btrim(${table.displayName})
-			WHEN NULLIF(btrim(${table.lastName}), '') IS NOT NULL THEN btrim(${table.firstName})
+			WHEN NULLIF(btrim(${table.lastName}), '') IS NOT NULL THEN COALESCE(
+				NULLIF(btrim(${table.firstName}), ''),
+				NULLIF(split_part(btrim(${table.displayName}), ' ', 1), ''),
+				btrim(${table.displayName})
+			)
 			ELSE split_part(btrim(${table.displayName}), ' ', 1)
 		END
-	`.as('sort_first_name');
+	`;
+}
+
+export function contactSortFirstNameExpr(table: typeof contacts = contacts): SQL.Aliased<
+	string | null
+> {
+	return contactSortFirstNameSql(table).as('sort_first_name');
 }

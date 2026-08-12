@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, lt, or, sql, type SQL } from 'drizzle-orm';
+import { and, eq, lt, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import {
 	decodeContactListCursor,
@@ -67,8 +67,8 @@ export function buildOccurredOnCursorPage<T extends { id: string; occurredOn: st
  * Keyset window after the decoded cursor row (PostgreSQL ASC nulls-last semantics).
  */
 export function contactListCursorCondition(
-	sortLastNameCol: SQL.Aliased<string | null>,
-	sortFirstNameCol: SQL.Aliased<string | null>,
+	sortLastNameCol: SQL<string | null>,
+	sortFirstNameCol: SQL<string | null>,
 	idCol: PgColumn,
 	cursor?: string
 ): SQL | undefined {

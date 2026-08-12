@@ -39,6 +39,7 @@ import {
 	whatsappCreateContactSchema,
 	compareByCreatedAtDesc,
 	compareByCreatedAtAsc,
+	compareByLastNameAsc,
 	compareByOccurredOnDesc,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
@@ -2076,9 +2077,8 @@ export const handlers = [
 		}
 		const typeId = parsed.data.type_id;
 		if (typeId) items = items.filter((c) => c.contact_type_id === typeId);
-		// CONTRACT-02: the real API orders by created_at desc, not display_name — the
-		// contacts list page doesn't re-sort client-side, so this was a real MSW/API drift.
-		items.sort(compareByCreatedAtDesc);
+		// CONTRACT-02: phonebook order (last_name ASC NULLS LAST, first_name, id).
+		items.sort(compareByLastNameAsc);
 		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 

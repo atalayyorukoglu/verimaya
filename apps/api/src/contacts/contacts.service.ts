@@ -6,7 +6,7 @@ import {
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, getTableColumns, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import type {
 	MergeRecords,
 	ContactCaseNoteCreate,
@@ -38,7 +38,7 @@ import {
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { isForeignKeyViolation } from '../common/postgres-errors';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
-import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
+import { buildContactListCursorPage, contactListCursorCondition } from '../common/list-query';
 import { toContact, toContactCaseNote, toContactFile } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
 import {
@@ -49,6 +49,12 @@ import {
 	type FileStoragePort
 } from '../storage/storage.types';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+import {
+	contactSortFirstNameExpr,
+	contactSortFirstNameSql,
+	contactSortLastNameExpr,
+	contactSortLastNameSql
+} from './contact-list-sort';
 
 function deriveDisplayName(firstName: string, lastName: string | null | undefined): string {
 	return `${firstName}${lastName?.trim() ? ` ${lastName.trim()}` : ''}`.trim();
@@ -71,8 +77,11 @@ export class ContactsService {
 
 	async list(tenantId: string, params: ContactListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const cursorCond = createdAtCursorCondition(
-				contacts.createdAt,
+			const sortLastNameSql = contactSortLastNameSql();
+			const sortFirstNameSql = contactSortFirstNameSql();
+			const cursorCond = contactListCursorCondition(
+				sortLastNameSql,
+				sortFirstNameSql,
 				contacts.id,
 				params.cursor
 			);
@@ -96,13 +105,21 @@ export class ContactsService {
 			if (cursorCond) pageFilters.push(cursorCond);
 
 			const rows = await db
-				.select()
+				.select({
+					...getTableColumns(contacts),
+					sort_last_name: contactSortLastNameExpr(),
+					sort_first_name: contactSortFirstNameExpr()
+				})
 				.from(contacts)
 				.where(and(...pageFilters))
-				.orderBy(desc(contacts.createdAt), desc(contacts.id))
+				.orderBy(
+					sql`${sortLastNameSql} ASC NULLS LAST`,
+					sql`${sortFirstNameSql} ASC NULLS LAST`,
+					asc(contacts.id)
+				)
 				.limit(params.limit + 1);
 
-			const page = buildCursorPage(rows, params.limit);
+			const page = buildContactListCursorPage(rows, params.limit);
 			return {
 				items: page.items.map(toContact),
 				next_cursor: page.next_cursor,
