@@ -11,7 +11,12 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { getAuth } from './auth/auth';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
-import { parseTrustProxyEnv, skipStrictAuthRateLimit } from './common/rate-limit.config';
+import {
+	createRateLimitKeyGenerator,
+	parseTrustCfConnectingIpEnv,
+	parseTrustProxyEnv,
+	skipStrictAuthRateLimit
+} from './common/rate-limit.config';
 import { initSentry } from './common/sentry';
 import { mountOpenApiDocs } from './docs/openapi.mount';
 import { MAX_UPLOAD_BYTES } from './storage/storage.types';
@@ -187,10 +192,17 @@ async function bootstrap() {
 	//     organization/* navigation (those stay on the global bucket).
 	// Per-tenant token bucket (Redis-backed) is a follow-up for AUDIT-F09 — for the
 	// pilot a per-IP cap is sufficient and uses no extra infra.
+	// Key: CF-Connecting-IP when TRUST_CF_CONNECTING_IP is on (Cloudflare edge),
+	// else req.ip (trustProxy). Prefer CF header over raising TRUST_PROXY hops —
+	// hop count is variable and leftmost XFF is attacker-controlled.
+	const rateLimitKeyGenerator = createRateLimitKeyGenerator(
+		parseTrustCfConnectingIpEnv(process.env.TRUST_CF_CONNECTING_IP)
+	);
 	await app.register(rateLimit, {
 		global: true,
 		max: 600,
 		timeWindow: '1 minute',
+		keyGenerator: rateLimitKeyGenerator,
 		allowList: (req: FastifyRequest) => {
 			const path = req.url.split('?')[0] ?? '';
 			return !path.startsWith('/v1/public/karne');
@@ -210,6 +222,7 @@ async function bootstrap() {
 		global: true,
 		max: 10,
 		timeWindow: '1 minute',
+		keyGenerator: rateLimitKeyGenerator,
 		allowList: skipStrictAuthRateLimit,
 		errorResponseBuilder: (req: FastifyRequest, context: errorResponseBuilderContext) =>
 			new HttpException(

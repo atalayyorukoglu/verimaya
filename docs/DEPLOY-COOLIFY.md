@@ -167,7 +167,8 @@ API CORS / auth:
 | `WEBHOOK_IDENTITY_DEFAULT_TENANT` | Shim açıkken kabul edilen tek tenant UUID; boşsa shim etkisiz |
 | `WAHA_WEBHOOK_SECRET` | Shim / lokal HMAC; prod’da asıl kaynak `tenant_provider_identities` |
 | `WEBHOOK_SECRET_<PROVIDER>` | Generic provider shim (ör. `WEBHOOK_SECRET_GHL`); aynı PILOT-02 kapanışı |
-| `TRUST_PROXY` | Rate-limit gerçek istemci IP’si için. **Prod: `1`** (Coolify/Traefik tek hop; Cloudflare → Traefik XFF taşır). Varsayılan kapalı. Kör `true` koyma — sahte `X-Forwarded-For` ile kova aşılır. Alternatif: docker proxy CIDR (ör. `172.16.0.0/12`) |
+| `TRUST_PROXY` | Fastify `req.ip` / log için hop güveni. **Prod: `1`** (Coolify/Traefik tek hop). Varsayılan kapalı. Kör `true` koyma — sahte `X-Forwarded-For` ile kova aşılır. Rate-limit anahtarı için hop sayısını artırma (`2` vb.); Cloudflare öndeyse `TRUST_CF_CONNECTING_IP` tercih edilir (edge IP’ye takılmayı ve saldırgan XFF’ini önler). Alternatif: docker proxy CIDR (ör. `172.16.0.0/12`) |
+| `TRUST_CF_CONNECTING_IP` | Rate-limit anahtarını `CF-Connecting-IP`’den çöz. **Prod (Cloudflare önde): `true`**. Varsayılan kapalı — origin’e doğrudan erişilebilirse başlık uydurulup limit aşılır. Yalnızca Cloudflare’in origin’e ulaştığı ve başlığı ezdiği kurulumda aç. |
 
 Opsiyonel: `LLM_*`, Ads OAuth (`META_*`, `GOOGLE_ADS_*`).
 Meta Ads canlı: `docs/ADS-META-GOLIVE.md` (redirect URI = `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`).
