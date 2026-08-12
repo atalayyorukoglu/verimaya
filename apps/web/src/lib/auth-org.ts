@@ -44,10 +44,7 @@ export function slugifyOrganizationName(name: string): string {
 
 /** After sign-in: auto-set sole live org, or prompt pick/create. Deleted active org is ignored. */
 export async function checkOrganizationGate(): Promise<OrgGateResult> {
-	const [activeId, orgs] = await Promise.all([
-		getActiveOrganizationId(),
-		listUserOrganizations()
-	]);
+	const [activeId, orgs] = await Promise.all([getActiveOrganizationId(), listUserOrganizations()]);
 	const decision = resolveOrganizationGate(activeId, orgs);
 	if (decision.action === 'activate') {
 		await setActiveOrganization(decision.organizationId);

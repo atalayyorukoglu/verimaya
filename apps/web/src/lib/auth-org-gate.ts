@@ -9,9 +9,7 @@ export type OrgGateResult =
 	| { action: 'pick'; organizations: OrganizationSummary[] }
 	| { action: 'create' };
 
-export type OrgGateDecision =
-	| OrgGateResult
-	| { action: 'activate'; organizationId: string };
+export type OrgGateDecision = OrgGateResult | { action: 'activate'; organizationId: string };
 
 /**
  * Pure gate: a soft-deleted org (absent from `orgs`) is never active or auto-picked.

@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { resolveOrganizationGate, type OrganizationSummary } from './auth-org-gate';
 
-const liveA: OrganizationSummary = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', name: 'A', slug: 'a' };
-const liveB: OrganizationSummary = { id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', name: 'B', slug: 'b' };
+const liveA: OrganizationSummary = {
+	id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+	name: 'A',
+	slug: 'a'
+};
+const liveB: OrganizationSummary = {
+	id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+	name: 'B',
+	slug: 'b'
+};
 const deletedId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 describe('resolveOrganizationGate', () => {

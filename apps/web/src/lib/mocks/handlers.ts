@@ -934,9 +934,7 @@ export const handlers = [
 
 	http.post('/v1/members/:id/password-reset', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const member = store.members.find(
-			(m) => m.id === params.id && m.tenant_id === store.tenant.id
-		);
+		const member = store.members.find((m) => m.id === params.id && m.tenant_id === store.tenant.id);
 		if (!member) return notFound('Üye bulunamadı');
 		if (member.id === DEMO_USER_ID) {
 			return HttpResponse.json(

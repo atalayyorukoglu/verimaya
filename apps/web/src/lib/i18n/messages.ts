@@ -369,8 +369,7 @@ const tr = {
 	'settings.team.roleSelfDisabled': 'Kendi rolünüzü değiştiremezsiniz',
 	'settings.team.roleUpdateError': 'Rol güncellenemedi',
 	'settings.team.resetPassword': 'Şifre sıfırla',
-	'settings.team.resetPasswordConfirm':
-		'“{name}” için şifre sıfırlama e-postası gönderilsin mi?',
+	'settings.team.resetPasswordConfirm': '“{name}” için şifre sıfırlama e-postası gönderilsin mi?',
 	'settings.team.resetPasswordSent': 'Şifre sıfırlama e-postası gönderildi.',
 	'settings.team.resetPasswordFailed': 'Şifre sıfırlama e-postası gönderilemedi',
 	'settings.team.footnote':
@@ -3355,7 +3354,8 @@ const en: Record<MessageKey, string> = {
 	'shell.orgs.switchFailed': 'Could not switch organization',
 	'shell.password.change': 'Change password',
 	'shell.password.title': 'Change your password',
-	'shell.password.description': 'Enter your current and new password. Other sessions will be signed out.',
+	'shell.password.description':
+		'Enter your current and new password. Other sessions will be signed out.',
 	'shell.password.current': 'Current password',
 	'shell.password.new': 'New password',
 	'shell.password.confirm': 'New password (again)',
