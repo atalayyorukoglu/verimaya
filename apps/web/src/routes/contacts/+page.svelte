@@ -344,8 +344,7 @@
 								/>
 							</th>
 						{/if}
-						<th
-							class="{selectionMode ? 'w-[22%]' : 'w-[24%]'} px-4 py-3 font-medium"
+						<th class="{selectionMode ? 'w-[22%]' : 'w-[24%]'} px-4 py-3 font-medium"
 							>{t('contacts.list.col.name')}</th
 						>
 						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
