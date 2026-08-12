@@ -90,7 +90,7 @@
 	let drill = $state<Drill>(null);
 
 	$effect(() => {
-		periodKey;
+		void periodKey;
 		drill = null;
 	});
 

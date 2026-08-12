@@ -201,8 +201,8 @@
 	}
 
 	$effect(() => {
-		periodKey;
-		if (periodKey === 'ozel') customFrom;
+		void periodKey;
+		if (periodKey === 'ozel') void customFrom;
 		syncAnchorToPeriod();
 	});
 
