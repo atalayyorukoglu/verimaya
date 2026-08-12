@@ -14,6 +14,7 @@ describe('isStrictAuthRateLimitedPath', () => {
 		expect(isStrictAuthRateLimitedPath('/v1/auth/request-password-reset')).toBe(true);
 		expect(isStrictAuthRateLimitedPath('/v1/auth/reset-password')).toBe(true);
 		expect(isStrictAuthRateLimitedPath('/v1/auth/reset-password/abc-token')).toBe(true);
+		expect(isStrictAuthRateLimitedPath('/v1/auth/change-password')).toBe(true);
 		expect(isStrictAuthRateLimitedPath('/v1/auth/two-factor/verify-totp')).toBe(true);
 		expect(isStrictAuthRateLimitedPath('/v1/auth/two-factor/verify-backup-code')).toBe(true);
 		expect(isStrictAuthRateLimitedPath('/v1/auth/two-factor/verify-otp')).toBe(true);
@@ -90,6 +91,21 @@ describe('strict auth rate-limit (fastify)', () => {
 				method: 'POST',
 				url: '/v1/auth/sign-in/email',
 				payload: { email: 'a@b.co', password: 'x' }
+			});
+			last = res.statusCode;
+			if (i < 10) expect(res.statusCode).toBe(200);
+		}
+		expect(last).toBe(429);
+	});
+
+	it('does 429 change-password after the strict 10/min bucket', async () => {
+		const app = await makeStrictApp();
+		let last = 200;
+		for (let i = 0; i < 11; i++) {
+			const res = await app.inject({
+				method: 'POST',
+				url: '/v1/auth/change-password',
+				payload: { currentPassword: 'x', newPassword: 'yyyyyyyy' }
 			});
 			last = res.statusCode;
 			if (i < 10) expect(res.statusCode).toBe(200);

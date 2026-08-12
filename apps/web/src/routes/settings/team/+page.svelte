@@ -34,7 +34,9 @@
 	const roleOptions = $derived(userRoleSchema.options);
 
 	let savingId = $state<string | null>(null);
+	let resettingId = $state<string | null>(null);
 	let error = $state<string | null>(null);
+	let resetNotice = $state<string | null>(null);
 
 	function roleTone(role: UserRole): 'brand' | 'info' | 'warning' | 'success' | 'neutral' {
 		switch (role) {
@@ -77,6 +79,22 @@
 			savingId = null;
 		}
 	}
+
+	async function sendReset(member: MembershipUser) {
+		if (!canManageRoles || isSelf(member)) return;
+		if (!confirm(t('settings.team.resetPasswordConfirm', { name: member.display_name }))) return;
+		resettingId = member.id;
+		error = null;
+		resetNotice = null;
+		try {
+			await apiSend(apiPaths.memberPasswordReset(member.id), 'POST');
+			resetNotice = t('settings.team.resetPasswordSent');
+		} catch (err) {
+			error = err instanceof Error ? err.message : t('settings.team.resetPasswordFailed');
+		} finally {
+			resettingId = null;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -105,6 +123,9 @@
 		{#if error}
 			<p class="mb-3 text-sm text-danger" role="alert">{error}</p>
 		{/if}
+		{#if resetNotice}
+			<p class="mb-3 text-sm text-success" role="status">{resetNotice}</p>
+		{/if}
 		<ul
 			class="min-w-0 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
 		>
@@ -124,6 +145,14 @@
 						<p class="text-xs text-text-muted">{formatDate(member.created_at)}</p>
 					</div>
 					{#if canManageRoles && !isSelf(member)}
+						<button
+							type="button"
+							class="shrink-0 text-xs font-medium text-brand hover:underline disabled:opacity-50"
+							disabled={resettingId === member.id}
+							onclick={() => void sendReset(member)}
+						>
+							{resettingId === member.id ? t('common.wait') : t('settings.team.resetPassword')}
+						</button>
 						<label class="sr-only" for={`role-${member.id}`}>{t('settings.team.roleLabel')}</label>
 						<select
 							id={`role-${member.id}`}

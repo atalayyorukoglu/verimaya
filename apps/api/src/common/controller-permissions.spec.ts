@@ -587,6 +587,15 @@ describe('remaining authenticated controller organization permissions', () => {
 		).rejects.toBeInstanceOf(ForbiddenException);
 		await expect(
 			guard.canActivate(
+				makeContext(
+					sessionRequest('readonly'),
+					MembersController.prototype.sendPasswordReset,
+					MembersController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
 				makeContext(sessionRequest('readonly'), TenantsController.prototype.getCurrent, TenantsController)
 			)
 		).resolves.toBe(true);
@@ -756,6 +765,45 @@ describe('remaining authenticated controller organization permissions', () => {
 		await expect(
 			guard.canActivate(
 				makeContext(sessionRequest('owner'), GhlController.prototype.disconnect, GhlController)
+			)
+		).resolves.toBe(true);
+	});
+
+	it('restricts member password-reset email to owner/admin (members.update)', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('manager'),
+					MembersController.prototype.sendPasswordReset,
+					MembersController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('agent'),
+					MembersController.prototype.sendPasswordReset,
+					MembersController
+				)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('owner'),
+					MembersController.prototype.sendPasswordReset,
+					MembersController
+				)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(
+					sessionRequest('admin'),
+					MembersController.prototype.sendPasswordReset,
+					MembersController
+				)
 			)
 		).resolves.toBe(true);
 	});

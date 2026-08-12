@@ -35,3 +35,10 @@ export const memberRoleUpdateSchema = z.object({
 });
 
 export type MemberRoleUpdate = z.infer<typeof memberRoleUpdateSchema>;
+
+/** POST /v1/members/:id/password-reset — send better-auth reset email (admin/owner). */
+export const memberPasswordResetResultSchema = z.object({
+	sent: z.literal(true)
+});
+
+export type MemberPasswordResetResult = z.infer<typeof memberPasswordResetResultSchema>;

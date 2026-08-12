@@ -17,6 +17,8 @@ const STRICT_AUTH_PATH_PREFIXES = [
 	'/v1/auth/reset-password',
 	// Legacy alias still listed in better-auth's own special-rule matchers.
 	'/v1/auth/forget-password',
+	// Signed-in password change (current + new) — credential-bearing.
+	'/v1/auth/change-password',
 	// 2FA verification during login (TOTP + backup; verify-otp exists on the plugin).
 	'/v1/auth/two-factor/verify-totp',
 	'/v1/auth/two-factor/verify-backup-code',

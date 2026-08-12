@@ -19,6 +19,7 @@ export const apiPaths = {
 		`${API_V1_PREFIX}/platform/tenants/${tenantId}/members/${userId}`,
 	members: `${API_V1_PREFIX}/members`,
 	member: (id: string) => `${API_V1_PREFIX}/members/${id}`,
+	memberPasswordReset: (id: string) => `${API_V1_PREFIX}/members/${id}/password-reset`,
 	appointments: `${API_V1_PREFIX}/appointments`,
 	appointment: (id: string) => `${API_V1_PREFIX}/appointments/${id}`,
 	contacts: `${API_V1_PREFIX}/contacts`,
@@ -198,7 +199,11 @@ import {
 } from './finance-category.js';
 import { settingsReorderResultSchema, settingsReorderSchema } from './settings-reorder.js';
 import { tenantSchema } from './tenant.js';
-import { membershipUserSchema, memberRoleUpdateSchema } from './user.js';
+import {
+	membershipUserSchema,
+	memberPasswordResetResultSchema,
+	memberRoleUpdateSchema
+} from './user.js';
 import {
 	meOrganizationListSchema,
 	meSchema,
@@ -446,6 +451,9 @@ export const apiContract = {
 	'PATCH /v1/members/:id': {
 		body: memberRoleUpdateSchema,
 		response: membershipUserSchema
+	},
+	'POST /v1/members/:id/password-reset': {
+		response: memberPasswordResetResultSchema
 	},
 	'GET /v1/audit-logs': {
 		response: cursorPageSchema(auditLogSchema)

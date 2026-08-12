@@ -12,6 +12,43 @@ import { buildCursorPage, createdAtCursorCondition } from '../common/list-query'
 import { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
+export type MemberPasswordResetSender = (input: {
+	email: string;
+	redirectTo: string;
+}) => Promise<void>;
+
+function passwordResetRedirectTo(): string {
+	const origins = (process.env.TRUSTED_ORIGINS ?? 'http://localhost:5173')
+		.split(',')
+		.map((s) => s.trim())
+		.filter(Boolean);
+	const appOrigin =
+		origins.find((origin) => {
+			try {
+				const host = new URL(origin).hostname;
+				return host === 'app.localhost' || host.startsWith('app.');
+			} catch {
+				return false;
+			}
+		}) ??
+		origins[0] ??
+		'http://localhost:5173';
+	return `${appOrigin.replace(/\/$/, '')}/reset-password`;
+}
+
+async function sendBetterAuthPasswordReset(input: {
+	email: string;
+	redirectTo: string;
+}): Promise<void> {
+	const { getAuth } = await import('../auth/auth');
+	await getAuth().api.requestPasswordReset({
+		body: {
+			email: input.email,
+			redirectTo: input.redirectTo
+		}
+	});
+}
+
 type MemberRow = {
 	id: string;
 	role: string;
@@ -39,6 +76,14 @@ export class MembersService {
 		private readonly tenantContext: TenantContextService,
 		private readonly db: DbService
 	) {}
+
+	private passwordResetSender: MemberPasswordResetSender = sendBetterAuthPasswordReset;
+
+	/** Test-only: skip better-auth / outbound mail. */
+	usePasswordResetSender(sender: MemberPasswordResetSender): this {
+		this.passwordResetSender = sender;
+		return this;
+	}
 
 	/**
 	 * `member` + `user` have no RLS. Join on the session client (same pattern as
@@ -147,6 +192,45 @@ export class MembersService {
 				tenantId
 			);
 		});
+	}
+
+	/**
+	 * Admin/owner sends better-auth's existing reset email — never sets a password.
+	 * Soft-deleted orgs are already unreachable (ActiveOrg + live tenant).
+	 */
+	async sendPasswordResetEmail(
+		tenantId: string,
+		memberId: string,
+		actor: AuditActor
+	): Promise<{ sent: true }> {
+		const existing = await this.findMemberRow(tenantId, memberId);
+
+		if (actor.actorId && existing.userId === actor.actorId) {
+			throw new ForbiddenException({
+				error: {
+					code: 'cannot_reset_own_password',
+					message: 'Use change-password for your own password'
+				}
+			});
+		}
+
+		await this.passwordResetSender({
+			email: existing.email,
+			redirectTo: passwordResetRedirectTo()
+		});
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await writeAuditLog(
+				db,
+				tenantId,
+				actor,
+				'update',
+				'user',
+				`${existing.displayName}: password reset email`
+			);
+		});
+
+		return { sent: true };
 	}
 
 	private async findMemberRow(

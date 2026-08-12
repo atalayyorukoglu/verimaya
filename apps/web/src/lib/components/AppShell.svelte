@@ -4,7 +4,7 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { Tenant } from '@verimaya/shared';
 	import { cn } from '$lib/utils';
-	import { apiGet } from '$lib/api';
+	import { apiGet, fieldClass, labelClass } from '$lib/api';
 	import {
 		buildNavGroups,
 		mayaNavItem,
@@ -55,6 +55,13 @@
 	let accountOpen = $state(false);
 	let orgSwitching = $state(false);
 	let orgSwitchError = $state<string | null>(null);
+	let passwordOpen = $state(false);
+	let currentPassword = $state('');
+	let newPassword = $state('');
+	let newPassword2 = $state('');
+	let passwordBusy = $state(false);
+	let passwordError = $state<string | null>(null);
+	let passwordOk = $state(false);
 	let desktopNavEl: HTMLElement | undefined = $state();
 	let mobileNavEl: HTMLElement | undefined = $state();
 	let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null);
@@ -215,6 +222,50 @@
 			orgSwitchError = err instanceof Error ? err.message : t('shell.orgs.switchFailed');
 		} finally {
 			orgSwitching = false;
+		}
+	}
+
+	function openPasswordDialog() {
+		closeAccount();
+		currentPassword = '';
+		newPassword = '';
+		newPassword2 = '';
+		passwordError = null;
+		passwordOk = false;
+		passwordOpen = true;
+	}
+
+	async function submitPasswordChange(e: Event) {
+		e.preventDefault();
+		if (newPassword !== newPassword2) {
+			passwordError = t('shell.password.mismatch');
+			return;
+		}
+		if (newPassword.length < 8) {
+			passwordError = t('shell.password.tooShort');
+			return;
+		}
+		passwordBusy = true;
+		passwordError = null;
+		passwordOk = false;
+		try {
+			const { error } = await authClient.changePassword({
+				currentPassword,
+				newPassword,
+				revokeOtherSessions: true
+			});
+			if (error) {
+				passwordError = error.message || t('shell.password.failed');
+				return;
+			}
+			currentPassword = '';
+			newPassword = '';
+			newPassword2 = '';
+			passwordOk = true;
+		} catch (err) {
+			passwordError = err instanceof Error ? err.message : t('shell.password.failed');
+		} finally {
+			passwordBusy = false;
 		}
 	}
 
@@ -638,6 +689,13 @@
 									{/if}
 								</div>
 							{/if}
+							<button
+								type="button"
+								class="block w-full px-3 py-2 text-left text-sm text-text hover:bg-surface-2"
+								onclick={openPasswordDialog}
+							>
+								{t('shell.password.change')}
+							</button>
 							{#if canSeeNav('/settings', role)}
 								<a
 									href="/settings"
@@ -754,5 +812,63 @@
 	</div>
 	{#snippet footer()}
 		<Button type="button" onclick={() => (supportOpen = false)}>Kapat</Button>
+	{/snippet}
+</Dialog>
+
+<Dialog
+	bind:open={passwordOpen}
+	title={t('shell.password.title')}
+	description={t('shell.password.description')}
+>
+	<form id="change-password-form" class="space-y-3" onsubmit={submitPasswordChange}>
+		<div>
+			<label class={labelClass} for="pw-current">{t('shell.password.current')}</label>
+			<input
+				id="pw-current"
+				type="password"
+				autocomplete="current-password"
+				required
+				bind:value={currentPassword}
+				class={fieldClass}
+			/>
+		</div>
+		<div>
+			<label class={labelClass} for="pw-new">{t('shell.password.new')}</label>
+			<input
+				id="pw-new"
+				type="password"
+				autocomplete="new-password"
+				required
+				minlength="8"
+				bind:value={newPassword}
+				class={fieldClass}
+			/>
+		</div>
+		<div>
+			<label class={labelClass} for="pw-new2">{t('shell.password.confirm')}</label>
+			<input
+				id="pw-new2"
+				type="password"
+				autocomplete="new-password"
+				required
+				minlength="8"
+				bind:value={newPassword2}
+				class={fieldClass}
+			/>
+		</div>
+		{#if passwordError}
+			<p class="text-sm text-danger" role="alert">{passwordError}</p>
+		{/if}
+		{#if passwordOk}
+			<p class="text-sm text-success" role="status">{t('shell.password.success')}</p>
+		{/if}
+	</form>
+	{#snippet footer()}
+		<Button type="button" variant="outline" onclick={() => (passwordOpen = false)}>
+			{t('common.cancel')}
+		</Button>
+		<Button type="submit" form="change-password-form" disabled={passwordBusy}>
+			{passwordBusy ? t('common.wait') : t('shell.password.submit')}
+		</Button>
 	{/snippet}
 </Dialog>

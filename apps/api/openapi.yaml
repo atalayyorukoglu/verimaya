@@ -4932,6 +4932,29 @@ paths:
               required:
                 - role
               additionalProperties: false
+  /members/{id}/password-reset:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sent:
+                    type: boolean
+                    enum:
+                      - true
+                required:
+                  - sent
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /audit-logs:
     get:
       responses:

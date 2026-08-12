@@ -4,7 +4,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
-import { MembersService } from './members.service';
+import { MembersService, type MemberPasswordResetSender } from './members.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
@@ -12,10 +12,12 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
-function makeMembersService(): MembersService {
+function makeMembersService(sender?: MemberPasswordResetSender): MembersService {
 	const { db, sql } = getDb(databaseUrl);
 	const dbService = { client: db, sql } as unknown as DbService;
-	return new MembersService(new TenantContextService(dbService), dbService);
+	const service = new MembersService(new TenantContextService(dbService), dbService);
+	if (sender) service.usePasswordResetSender(sender);
+	return service;
 }
 
 describe('members list isolation (member table has no RLS — explicit org filter required)', () => {
@@ -263,5 +265,126 @@ describe('members role update isolation (GAP-02)', () => {
 
 		await sql`delete from member where id = ${secondOwnerMember}`;
 		await sql`delete from "user" where id = ${secondOwnerUser}`;
+	});
+});
+
+describe('members password-reset isolation', () => {
+	const tenantA = randomUUID();
+	const tenantB = randomUUID();
+	const ownerA = randomUUID();
+	const agentA = randomUUID();
+	const ownerB = randomUUID();
+	const memberIdA = randomUUID();
+	const agentMemberIdA = randomUUID();
+	const memberIdB = randomUUID();
+	const sent: Array<{ email: string; redirectTo: string }> = [];
+	let membersService: MembersService;
+
+	beforeAll(async () => {
+		process.env.DATABASE_URL = databaseUrl;
+		process.env.TRUSTED_ORIGINS = 'http://localhost:5173,http://app.localhost:5173';
+		const { sql } = getDb(databaseUrl);
+
+		await sql`
+			insert into organization (id, name, slug, created_at)
+			values
+				(${tenantA}, 'Reset Tenant A', ${`reset-a-${tenantA.slice(0, 8)}`}, now()),
+				(${tenantB}, 'Reset Tenant B', ${`reset-b-${tenantB.slice(0, 8)}`}, now())
+		`;
+		await sql`
+			insert into tenants (id, name, slug)
+			values
+				(${tenantA}, 'Reset Tenant A', ${`reset-a-${tenantA.slice(0, 8)}`}),
+				(${tenantB}, 'Reset Tenant B', ${`reset-b-${tenantB.slice(0, 8)}`})
+		`;
+		await sql`
+			insert into "user" (id, name, email)
+			values
+				(${ownerA}, 'Reset Owner A', ${`reset-owner-a-${ownerA.slice(0, 8)}@example.com`}),
+				(${agentA}, 'Reset Agent A', ${`reset-agent-a-${agentA.slice(0, 8)}@example.com`}),
+				(${ownerB}, 'Reset Owner B', ${`reset-owner-b-${ownerB.slice(0, 8)}@example.com`})
+		`;
+		await sql`
+			insert into member (id, organization_id, user_id, role, created_at)
+			values
+				(${memberIdA}, ${tenantA}, ${ownerA}, 'owner', now()),
+				(${agentMemberIdA}, ${tenantA}, ${agentA}, 'agent', now()),
+				(${memberIdB}, ${tenantB}, ${ownerB}, 'owner', now())
+		`;
+
+		membersService = makeMembersService(async (input) => {
+			sent.push(input);
+		});
+	});
+
+	afterAll(async () => {
+		const { sql } = getDb(databaseUrl);
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`delete from audit_logs where tenant_id = ${tenantA}`;
+		});
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			await tx`delete from audit_logs where tenant_id = ${tenantB}`;
+		});
+		await sql`delete from member where organization_id in (${tenantA}, ${tenantB})`;
+		await sql`delete from "user" where id in (${ownerA}, ${agentA}, ${ownerB})`;
+		await purgeTenantFixtures(sql, [tenantA, tenantB]);
+		await closeDb();
+	});
+
+	it('Tenant A cannot reset Tenant B member (404) and does not send mail', async () => {
+		const before = sent.length;
+		await expect(
+			membersService.sendPasswordResetEmail(tenantA, memberIdB, {
+				actorId: ownerA,
+				actorDisplayName: 'Reset Owner A'
+			})
+		).rejects.toThrow(NotFoundException);
+		expect(sent).toHaveLength(before);
+	});
+
+	it('rejects resetting own password', async () => {
+		const before = sent.length;
+		await expect(
+			membersService.sendPasswordResetEmail(tenantA, memberIdA, {
+				actorId: ownerA,
+				actorDisplayName: 'Reset Owner A'
+			})
+		).rejects.toThrow(ForbiddenException);
+		expect(sent).toHaveLength(before);
+	});
+
+	it('sends reset for a tenant member, writes audit, stays tenant-scoped', async () => {
+		const result = await membersService.sendPasswordResetEmail(tenantA, agentMemberIdA, {
+			actorId: ownerA,
+			actorDisplayName: 'Reset Owner A'
+		});
+		expect(result).toEqual({ sent: true });
+		expect(sent.at(-1)?.email).toContain('reset-agent-a-');
+		expect(sent.at(-1)?.redirectTo).toBe('http://app.localhost:5173/reset-password');
+
+		const { sql } = getDb(databaseUrl);
+		const logsA = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select entity_type, entity_label, actor_display_name
+				from audit_logs
+				where tenant_id = ${tenantA} and entity_type = 'user'
+				order by created_at desc
+			`;
+		});
+		expect(logsA.length).toBeGreaterThanOrEqual(1);
+		expect(logsA[0]?.actor_display_name).toBe('Reset Owner A');
+		expect(String(logsA[0]?.entity_label)).toContain('password reset email');
+
+		const logsB = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			return tx`
+				select id from audit_logs
+				where tenant_id = ${tenantB} and entity_type = 'user'
+			`;
+		});
+		expect(logsB).toHaveLength(0);
 	});
 });

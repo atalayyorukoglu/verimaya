@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { cursorPageParams, memberRoleUpdateSchema } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
@@ -40,6 +40,19 @@ export class MembersController {
 			getActiveOrgId(req),
 			id,
 			input,
+			getActorFromRequest(req)
+		);
+	}
+
+	@Post(':id/password-reset')
+	@RequireOrgPermission('members', 'update')
+	@IdempotencyExempt(
+		'Sends better-auth reset email; a retry may deliver a second mail. Harmless and expected.'
+	)
+	sendPasswordReset(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.membersService.sendPasswordResetEmail(
+			getActiveOrgId(req),
+			id,
 			getActorFromRequest(req)
 		);
 	}
