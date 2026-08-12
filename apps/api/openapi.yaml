@@ -50,6 +50,9 @@ paths:
                   created_at:
                     type: string
                     format: date-time
+                  user_id:
+                    type: string
+                    format: uuid
                   tenant_id:
                     type: string
                     format: uuid
@@ -81,6 +84,7 @@ paths:
                   - email
                   - display_name
                   - created_at
+                  - user_id
                   - tenant_id
                   - role
                   - platform_admin
@@ -666,6 +670,9 @@ paths:
                         created_at:
                           type: string
                           format: date-time
+                        user_id:
+                          type: string
+                          format: uuid
                         tenant_id:
                           type: string
                           format: uuid
@@ -683,6 +690,7 @@ paths:
                         - email
                         - display_name
                         - created_at
+                        - user_id
                         - tenant_id
                         - role
                       additionalProperties: false
@@ -718,6 +726,9 @@ paths:
                   created_at:
                     type: string
                     format: date-time
+                  user_id:
+                    type: string
+                    format: uuid
                   tenant_id:
                     type: string
                     format: uuid
@@ -735,6 +746,7 @@ paths:
                   - email
                   - display_name
                   - created_at
+                  - user_id
                   - tenant_id
                   - role
                 additionalProperties: false
@@ -4833,6 +4845,9 @@ paths:
                         created_at:
                           type: string
                           format: date-time
+                        user_id:
+                          type: string
+                          format: uuid
                         tenant_id:
                           type: string
                           format: uuid
@@ -4850,6 +4865,7 @@ paths:
                         - email
                         - display_name
                         - created_at
+                        - user_id
                         - tenant_id
                         - role
                       additionalProperties: false
@@ -4887,6 +4903,9 @@ paths:
                   created_at:
                     type: string
                     format: date-time
+                  user_id:
+                    type: string
+                    format: uuid
                   tenant_id:
                     type: string
                     format: uuid
@@ -4904,6 +4923,7 @@ paths:
                   - email
                   - display_name
                   - created_at
+                  - user_id
                   - tenant_id
                   - role
                 additionalProperties: false
