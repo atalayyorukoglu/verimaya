@@ -70,7 +70,21 @@
 	const platformPanelEnabled = $derived(
 		canAccessPlatformPanel(qs.meQuery.data?.platform_admin === true, DEV_PANEL_ENABLED)
 	);
+	const me = $derived(qs.meQuery.data);
+	const mePending = $derived(qs.meQuery.isPending);
+	const meInitials = $derived(accountInitials(me?.display_name, me?.email));
 	const queryClient = useQueryClient();
+
+	function accountInitials(name: string | undefined, email: string | undefined): string {
+		const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+		if (parts.length >= 2) {
+			return `${parts[0]![0]!}${parts[1]![0]!}`.toUpperCase();
+		}
+		if (parts[0] && parts[0].length >= 2) return parts[0].slice(0, 2).toUpperCase();
+		if (parts[0]) return parts[0][0]!.toUpperCase();
+		const local = (email ?? '').split('@')[0] ?? '';
+		return local.slice(0, 2).toUpperCase();
+	}
 
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
 
@@ -544,15 +558,27 @@
 							accountOpen = !accountOpen;
 						}}
 					>
-						PF
+						{#if mePending}
+							<span class="size-4 animate-pulse rounded-full bg-surface-2" aria-hidden="true"
+							></span>
+						{:else}
+							{meInitials}
+						{/if}
 					</button>
 					{#if accountOpen}
 						<div
 							class="absolute right-0 z-40 mt-2 w-56 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
 						>
 							<div class="border-b border-border px-3 py-2">
-								<p class="truncate text-sm font-medium text-text">{t('shell.demoUser')}</p>
-								<p class="truncate text-xs text-text-faint">demo@verimaya.app</p>
+								{#if mePending}
+									<div class="space-y-1.5" aria-hidden="true">
+										<div class="h-4 w-28 animate-pulse rounded bg-surface-2"></div>
+										<div class="h-3 w-36 animate-pulse rounded bg-surface-2"></div>
+									</div>
+								{:else}
+									<p class="truncate text-sm font-medium text-text">{me?.display_name ?? ''}</p>
+									<p class="truncate text-xs text-text-faint">{me?.email ?? ''}</p>
+								{/if}
 							</div>
 							{#if canSeeNav('/settings', role)}
 								<a
