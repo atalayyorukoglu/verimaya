@@ -68,7 +68,10 @@
   **2026-08-12 ihlali:** `Demo Tek Ay Klinik` açıldı; gezinme trafiği artınca auth rate-limit
   kusurunu tetikleyip prod'da oturum kesintisi çıkardı (Son kapananlar · RATE-01). Org silindi,
   kurala dönüldü. Kural pilot boyunca yürürlükte.
-- [ ] **Tenant adı:** `Demo Klinik` rename veya olduğu gibi bırak — karar ver, Görüş'e yaz (ucuz).
+- [~] **Tenant adı:** **Karar (2026-08-12): rename.** Silme değerlendirildi ve reddedildi —
+  pilot verisi (757 dosya / 548 işlem / 703 randevu) PILOT-01 smoke kanıtının ve OPS-02e
+  kaynak doluluğu ölçümünün dayanağı; ayrıca tek org olduğu için silmek panele girişi kilitler.
+  Kalan: adı Ayarlar → Organizasyon → Firma adı'ndan değiştir (30 saniye).
 - **Bağımlı:** yok.
 - **Kabul:** PROD-SMOKE-REHBERI Sonuç "takılan yok".
 
@@ -257,7 +260,8 @@
 - **RATE-01 artığı (CF IP) ✅** (2026-08-12) — `TRUST_PROXY=1` Cloudflare arkasında edge IP'de
   kalıyordu (kota yine paylaşılıyordu).
   **Görüş:** hop artırmak XFF sahteciliğine açık. `TRUST_CF_CONNECTING_IP=true` iken anahtar
-  `CF-Connecting-IP`. `d14215a`
+  `CF-Connecting-IP`. Prod'da açıldı (2026-08-12) — `TRUST_PROXY=1` de duruyor, `req.ip`/log
+  onu kullanmaya devam ediyor. `d14215a`
 - **PILOT-01 prod deploy ✅** (2026-08-12) — migration `0044` + `0045` prod'da uygulandı.
   **Görüş:** Coolify API Terminal → `db:migrate`; `0044` kolon düşürdü, `0045` tablo açtı,
   ikisi de psql ile doğrulandı. Not: prod Postgres rolü `postgres`/`verimaya` —
