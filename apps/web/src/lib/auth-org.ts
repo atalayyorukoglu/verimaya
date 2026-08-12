@@ -1,8 +1,11 @@
 import type { MeOrganization } from '@verimaya/shared';
 import { apiGet, apiPaths } from '$lib/api';
 import { authClient } from '$lib/auth';
+import { resolveOrganizationGate, type OrgGateResult } from './auth-org-gate';
 
 export type OrganizationSummary = MeOrganization;
+export type { OrgGateResult };
+export { resolveOrganizationGate };
 
 export async function getActiveOrganizationId(): Promise<string | null> {
 	const { data } = await authClient.getSession();
@@ -39,21 +42,16 @@ export function slugifyOrganizationName(name: string): string {
 	return base || 'org';
 }
 
-export type OrgGateResult =
-	| { action: 'proceed' }
-	| { action: 'pick'; organizations: OrganizationSummary[] }
-	| { action: 'create' };
-
-/** After sign-in: auto-set sole org, or prompt pick/create when none active. */
+/** After sign-in: auto-set sole live org, or prompt pick/create. Deleted active org is ignored. */
 export async function checkOrganizationGate(): Promise<OrgGateResult> {
-	const activeId = await getActiveOrganizationId();
-	if (activeId) return { action: 'proceed' };
-
-	const orgs = await listUserOrganizations();
-	if (orgs.length === 1) {
-		await setActiveOrganization(orgs[0]!.id);
+	const [activeId, orgs] = await Promise.all([
+		getActiveOrganizationId(),
+		listUserOrganizations()
+	]);
+	const decision = resolveOrganizationGate(activeId, orgs);
+	if (decision.action === 'activate') {
+		await setActiveOrganization(decision.organizationId);
 		return { action: 'proceed' };
 	}
-	if (orgs.length > 1) return { action: 'pick', organizations: orgs };
-	return { action: 'create' };
+	return decision;
 }
