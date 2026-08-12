@@ -22,6 +22,7 @@
 	import { canAccessPath, canSeeNav, DEFAULT_ROLE } from '$lib/rbac';
 	import { useQueryScope, resetQueryScope } from '$lib/query-scope.svelte';
 	import Bell from '@lucide/svelte/icons/bell';
+	import Check from '@lucide/svelte/icons/check';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
@@ -36,6 +37,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
 	import { authClient } from '$lib/auth';
+	import { listUserOrganizations, setActiveOrganization } from '$lib/auth-org';
 	import { USE_MSW } from '$lib/env';
 
 	type BeforeInstallPromptEvent = Event & {
@@ -51,6 +53,8 @@
 	let hasUnreadChangelog = $state(false);
 	let supportOpen = $state(false);
 	let accountOpen = $state(false);
+	let orgSwitching = $state(false);
+	let orgSwitchError = $state<string | null>(null);
 	let desktopNavEl: HTMLElement | undefined = $state();
 	let mobileNavEl: HTMLElement | undefined = $state();
 	let installPromptEvent = $state<BeforeInstallPromptEvent | null>(null);
@@ -87,6 +91,15 @@
 	}
 
 	const tenantName = $derived(tenantQuery.data?.name ?? 'Demo Klinik');
+	const activeOrgId = $derived(tenantQuery.data?.id ?? me?.tenant_id ?? null);
+
+	const orgsQuery = createQuery(() => ({
+		queryKey: ['me', 'organizations', me?.id ?? 'anon'] as const,
+		queryFn: listUserOrganizations,
+		enabled: Boolean(me?.id)
+	}));
+	const orgs = $derived(orgsQuery.data ?? []);
+	const showOrgSwitcher = $derived(orgs.length > 1);
 
 	const navGroups = $derived(buildNavGroups(getEnabledProductNavItems()));
 
@@ -183,6 +196,26 @@
 
 	function closeAccount() {
 		accountOpen = false;
+		orgSwitchError = null;
+	}
+
+	async function switchOrganization(organizationId: string) {
+		if (organizationId === activeOrgId || orgSwitching) {
+			closeAccount();
+			return;
+		}
+		orgSwitching = true;
+		orgSwitchError = null;
+		try {
+			await setActiveOrganization(organizationId);
+			closeAccount();
+			await resetQueryScope(queryClient);
+			await goto('/');
+		} catch (err) {
+			orgSwitchError = err instanceof Error ? err.message : t('shell.orgs.switchFailed');
+		} finally {
+			orgSwitching = false;
+		}
 	}
 
 	async function signOut() {
@@ -567,7 +600,7 @@
 					</button>
 					{#if accountOpen}
 						<div
-							class="absolute right-0 z-40 mt-2 w-56 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
+							class="absolute right-0 z-40 mt-2 w-64 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
 						>
 							<div class="border-b border-border px-3 py-2">
 								{#if mePending}
@@ -580,6 +613,31 @@
 									<p class="truncate text-xs text-text-faint">{me?.email ?? ''}</p>
 								{/if}
 							</div>
+							{#if showOrgSwitcher}
+								<div class="border-b border-border py-1">
+									<p
+										class="px-3 py-1 text-[10px] font-semibold tracking-wider text-text-faint uppercase"
+									>
+										{t('shell.orgs.switch')}
+									</p>
+									{#each orgs as org (org.id)}
+										<button
+											type="button"
+											class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-2 disabled:opacity-50"
+											disabled={orgSwitching}
+											onclick={() => void switchOrganization(org.id)}
+										>
+											<span class="min-w-0 flex-1 truncate">{org.name}</span>
+											{#if org.id === activeOrgId}
+												<Check class="size-3.5 shrink-0 text-brand" aria-hidden="true" />
+											{/if}
+										</button>
+									{/each}
+									{#if orgSwitchError}
+										<p class="px-3 py-1 text-xs text-danger" role="alert">{orgSwitchError}</p>
+									{/if}
+								</div>
+							{/if}
 							{#if canSeeNav('/settings', role)}
 								<a
 									href="/settings"
