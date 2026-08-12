@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { closeDb, getDb } from '../db/client';
-import type { TenantContextService } from '../tenant/tenant-context.service';
+import { DbService } from '../db/db.service';
+import { TenantContextService } from '../tenant/tenant-context.service';
 import { MembersService } from './members.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
@@ -11,14 +12,10 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
+function makeMembersService(): MembersService {
+	const { db, sql } = getDb(databaseUrl);
+	const dbService = { client: db, sql } as unknown as DbService;
+	return new MembersService(new TenantContextService(dbService), dbService);
 }
 
 describe('members list isolation (member table has no RLS — explicit org filter required)', () => {
@@ -30,7 +27,7 @@ describe('members list isolation (member table has no RLS — explicit org filte
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
-		const { db, sql } = getDb(databaseUrl);
+		const { sql } = getDb(databaseUrl);
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -57,21 +54,18 @@ describe('members list isolation (member table has no RLS — explicit org filte
 				(${tenantB}, ${userB}, 'owner', now())
 		`;
 
-		const tenantContext = {
-			withTenant: async <T>(id: string, fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>) =>
-				withTenantSession(id, () => fn({ tx: sql, db }))
-		} as TenantContextService;
-
-		membersService = new MembersService(tenantContext);
+		membersService = makeMembersService();
 	});
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from audit_logs where tenant_id = ${tenantA}`;
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`delete from audit_logs where tenant_id = ${tenantA}`;
 		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from audit_logs where tenant_id = ${tenantB}`;
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			await tx`delete from audit_logs where tenant_id = ${tenantB}`;
 		});
 		await sql`delete from member where organization_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from "user" where id in (${userA}, ${userB})`;
@@ -85,6 +79,7 @@ describe('members list isolation (member table has no RLS — explicit org filte
 		expect(result.items).toHaveLength(1);
 		expect(result.items[0]!.tenant_id).toBe(tenantA);
 		expect(result.items[0]!.email).toContain('user-a-');
+		expect(result.items[0]!.display_name).toBe('User A');
 		expect(result.items.some((m) => m.email.includes('user-b-'))).toBe(false);
 	});
 
@@ -94,6 +89,7 @@ describe('members list isolation (member table has no RLS — explicit org filte
 		expect(result.items).toHaveLength(1);
 		expect(result.items[0]!.tenant_id).toBe(tenantB);
 		expect(result.items[0]!.email).toContain('user-b-');
+		expect(result.items[0]!.display_name).toBe('User B');
 		expect(result.items.some((m) => m.email.includes('user-a-'))).toBe(false);
 	});
 });
@@ -111,7 +107,7 @@ describe('members role update isolation (GAP-02)', () => {
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
-		const { db, sql } = getDb(databaseUrl);
+		const { sql } = getDb(databaseUrl);
 
 		await sql`
 			insert into organization (id, name, slug, created_at)
@@ -140,21 +136,18 @@ describe('members role update isolation (GAP-02)', () => {
 				(${memberIdB}, ${tenantB}, ${ownerB}, 'owner', now())
 		`;
 
-		const tenantContext = {
-			withTenant: async <T>(id: string, fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>) =>
-				withTenantSession(id, () => fn({ tx: sql, db }))
-		} as TenantContextService;
-
-		membersService = new MembersService(tenantContext);
+		membersService = makeMembersService();
 	});
 
 	afterAll(async () => {
 		const { sql } = getDb(databaseUrl);
-		await withTenantSession(tenantA, async () => {
-			await sql`delete from audit_logs where tenant_id = ${tenantA}`;
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`delete from audit_logs where tenant_id = ${tenantA}`;
 		});
-		await withTenantSession(tenantB, async () => {
-			await sql`delete from audit_logs where tenant_id = ${tenantB}`;
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			await tx`delete from audit_logs where tenant_id = ${tenantB}`;
 		});
 		await sql`delete from member where organization_id in (${tenantA}, ${tenantB})`;
 		await sql`delete from "user" where id in (${ownerA}, ${agentA}, ${ownerB})`;
@@ -215,24 +208,26 @@ describe('members role update isolation (GAP-02)', () => {
 		expect(listedB.items.every((m) => m.role === 'owner')).toBe(true);
 
 		const { sql } = getDb(databaseUrl);
-		const logsA = await withTenantSession(tenantA, () =>
-			sql`
+		const logsA = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
 				select entity_type, entity_label, actor_display_name
 				from audit_logs
 				where tenant_id = ${tenantA} and entity_type = 'user'
 				order by created_at desc
-			`
-		);
+			`;
+		});
 		expect(logsA.length).toBeGreaterThanOrEqual(1);
 		expect(logsA[0]?.actor_display_name).toBe('Owner A');
 		expect(String(logsA[0]?.entity_label)).toContain('agent → manager');
 
-		const logsB = await withTenantSession(tenantB, () =>
-			sql`
+		const logsB = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			return tx`
 				select id from audit_logs
 				where tenant_id = ${tenantB} and entity_type = 'user'
-			`
-		);
+			`;
+		});
 		expect(logsB).toHaveLength(0);
 	});
 

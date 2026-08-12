@@ -9,7 +9,8 @@ import type { MemberRoleUpdate, MembershipUser, UserRole } from '@verimaya/share
 import { member, user } from '../db/schema';
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
-import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+import { DbService } from '../db/db.service';
+import { TenantContextService } from '../tenant/tenant-context.service';
 
 type MemberRow = {
 	id: string;
@@ -34,34 +35,40 @@ function toMembershipUser(row: MemberRow, tenantId: string): MembershipUser {
 
 @Injectable()
 export class MembersService {
-	constructor(private readonly tenantContext: TenantContextService) {}
+	constructor(
+		private readonly tenantContext: TenantContextService,
+		private readonly db: DbService
+	) {}
 
+	/**
+	 * `member` + `user` have no RLS. Join on the session client (same pattern as
+	 * MeService.findMembership) — a tenant transaction can drop aliased `user`
+	 * columns so the panel showed empty name/email.
+	 */
 	async list(tenantId: string, params: { cursor?: string; limit: number }) {
-		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const cursorCond = createdAtCursorCondition(member.createdAt, member.id, params.cursor);
-			const filters = [eq(member.organizationId, tenantId)];
-			if (cursorCond) filters.push(cursorCond);
+		const cursorCond = createdAtCursorCondition(member.createdAt, member.id, params.cursor);
+		const filters = [eq(member.organizationId, tenantId)];
+		if (cursorCond) filters.push(cursorCond);
 
-			const rows = await db
-				.select({
-					id: member.id,
-					role: member.role,
-					createdAt: member.createdAt,
-					email: user.email,
-					displayName: user.name
-				})
-				.from(member)
-				.innerJoin(user, eq(member.userId, user.id))
-				.where(and(...filters))
-				.orderBy(desc(member.createdAt), desc(member.id))
-				.limit(params.limit + 1);
+		const rows = await this.db.client
+			.select({
+				id: member.id,
+				role: member.role,
+				createdAt: member.createdAt,
+				email: user.email,
+				displayName: user.name
+			})
+			.from(member)
+			.innerJoin(user, eq(member.userId, user.id))
+			.where(and(...filters))
+			.orderBy(desc(member.createdAt), desc(member.id))
+			.limit(params.limit + 1);
 
-			const page = buildCursorPage(rows, params.limit);
-			return {
-				items: page.items.map((row) => toMembershipUser(row, tenantId)),
-				next_cursor: page.next_cursor
-			};
-		});
+		const page = buildCursorPage(rows, params.limit);
+		return {
+			items: page.items.map((row) => toMembershipUser(row, tenantId)),
+			next_cursor: page.next_cursor
+		};
 	}
 
 	async updateRole(
@@ -71,7 +78,7 @@ export class MembersService {
 		actor: AuditActor
 	): Promise<MembershipUser> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const existing = await this.findMemberRow(db, tenantId, memberId);
+			const existing = await this.findMemberRow(tenantId, memberId);
 
 			if (actor.actorId && existing.userId === actor.actorId) {
 				throw new ForbiddenException({
@@ -143,11 +150,10 @@ export class MembersService {
 	}
 
 	private async findMemberRow(
-		db: TenantDb,
 		tenantId: string,
 		memberId: string
 	): Promise<MemberWithUserId> {
-		const [row] = await db
+		const [row] = await this.db.client
 			.select({
 				id: member.id,
 				role: member.role,
