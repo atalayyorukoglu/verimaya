@@ -81,10 +81,36 @@
 
 > Kod yok; karar işi. Karar metni Görüş + Obsidian `01-kararlar.md`'ye işlenir.
 
-- [ ] **(a)** Birincil segment: acente mi klinik mi? (ilk 20 görüşme tek segmente odaklanır)
-- [ ] **(b)** OrbisMed çıkar çatışması: veri ayrımı, tüzel ayrım, erişim/audit, referans anlatısı
+> **Kurumsal gerçek (2026-08-12'de netleşti):** satıcı **Albion Signature (UK)** — faturayı o
+> kesiyor. **OrbisMed**, Türkiye'de bir sağlık turizmi acentesi ve **ilk müşteri**.
+> ⚠️ `docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md` §7.2 OrbisMed'i "ürün sahibinin
+> işletmesi" sanıyor — o premis YANLIŞ, arşiv metnine güvenme.
+
+- [x] **(a) Birincil segment: acente.** (2026-08-12)
+  **Görüş:** karar erişimle verildi — görüşmelerin çoğu acente tarafında ayarlanabiliyor ve
+  ödeyen ilk müşteri (OrbisMed) acente. Ürün bugün iki segmentin kesişimi olan operasyon +
+  finansta güçlü; acenteye özel eksik komisyon takibi (PRODUCT-01), kliniğe özel eksik
+  e-Nabız/e-Fatura. İlk 20 görüşme yalnız acente.
+- [x] **(b) Veri ayrımı + destek erişimi + sınır ötesi aktarım.** (2026-08-12)
+  *(Eski başlık "OrbisMed çıkar çatışması" idi; premis yanlış olduğu için yeniden yazıldı —
+  ortada çıkar çatışması yok, normal satıcı-müşteri ilişkisi var. Tüzel ayrım da zaten mevcut:
+  UK firma ≠ Türkiye'deki acente.)*
+  **Karar: şeffaflık modeli.** Platform yöneticisi yetkisi olduğu gibi kalır; taahhüt yazılı
+  olarak "destek için erişim açabilirim, açtığım anda bu sizin kendi denetim kaydınıza düşer,
+  siz görürsünüz" şeklinde verilir. Sessiz/görünmez erişim yok.
+  **Teknik dayanak (kodda karşılığı var):** satır bazlı izolasyon `FORCE ROW LEVEL SECURITY`
+  ile; uygulama rolü `NOBYPASSRLS`; tenant'lı her endpoint'te negatif izolasyon testi zorunlu;
+  platform üye ekleme işlemi müşterinin tenant'ındaki denetim kaydına yazılıyor
+  (`platform.service.ts:280`).
+  **Bilinen sınır:** `PLATFORM_ADMIN_EMAILS` listesindeki e-posta `POST /v1/platform/tenants/:id/members`
+  ile kendini herhangi bir tenant'a üye ekleyebilir; önceden müşteri onayı istenmiyor. Taahhüt
+  bunu gizlemiyor, denetim kaydına dayanıyor.
+  **Sınır ötesi aktarım → LEG-02.** UK tüzel kişilik + Türkiye'deki müşteri + sağlık verisi =
+  KVKK yurtdışına aktarım maddesi. Bekleyen'deki "AB veri lokasyonu + DPA şablonları" ve
+  "Veri işleme envanteri" kalemleri bu karara bağlandı; müşteri sözleşmesinde karşılığı olmalı.
 - [ ] **(c)** Kapasite: haftalık sabit gün/saat + pilot boyunca feature freeze taahhüdü
 - **Kabul:** Üç karar yazılı; (c)'deki freeze taahhüdü kalem 5'in (PILOT-02) giriş şartıdır.
+  (a) ve (b) ✅ — kalan yalnız (c).
 
 ---
 
@@ -181,7 +207,10 @@
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse).
 - **CSP/HSTS** canlıda kanıtlı denetim.
-- **Veri işleme envanteri** + **AB veri lokasyonu + DPA şablonları**.
+- **Veri işleme envanteri** + **AB veri lokasyonu + DPA şablonları**. **LEG-02'ye bağlı
+  (2026-08-12):** satıcı Albion Signature (UK), müşteri Türkiye'de sağlık turizmi acentesi —
+  yani sağlık verisinin yurtdışına aktarımı var. KVKK aktarım dayanağı + DPA + aydınlatma
+  metni hukukçu görüşü gerektiriyor. Karar dayanağı: MARKET-01 (b).
 - **DOC-03b/d artıkları (kullanıcı):** Obsidian `00-proje-ozeti` + `01-kararlar` marka +
   `04-ilerleme-log` — sıradaki vault oturumu.
 - **İsteğe bağlı ops:** Coolify `verimaya-web-image` → `verimaya-web`; API GHCR path B.
