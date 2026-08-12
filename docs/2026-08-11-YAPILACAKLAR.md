@@ -108,9 +108,20 @@
   **Sınır ötesi aktarım → LEG-02.** UK tüzel kişilik + Türkiye'deki müşteri + sağlık verisi =
   KVKK yurtdışına aktarım maddesi. Bekleyen'deki "AB veri lokasyonu + DPA şablonları" ve
   "Veri işleme envanteri" kalemleri bu karara bağlandı; müşteri sözleşmesinde karşılığı olmalı.
-- [ ] **(c)** Kapasite: haftalık sabit gün/saat + pilot boyunca feature freeze taahhüdü
-- **Kabul:** Üç karar yazılı; (c)'deki freeze taahhüdü kalem 5'in (PILOT-02) giriş şartıdır.
-  (a) ve (b) ✅ — kalan yalnız (c).
+- [x] **(c) Kapasite + feature freeze.** (2026-08-12)
+  **Görüş:** haftalık taahhüt **7 saat**, iki sabit blok — Salı 10:00–14:00 görüşme/satış,
+  Perşembe 10:00–13:00 pilot desteği + haftalık rapor. Blok dışına randevu konabilir ama
+  garanti değil. Kaçan blok aynı hafta telafi; iki hafta üst üste kaçarsa pilot süresi uzar.
+  **Freeze kabul edildi:** pilot boyunca yalnız hata + güvenlik + veri düzeltme migration'ı.
+  Yeni ekran/alan/entegrasyon/rapor yok; "sonraki sürümde" demek de söz sayılır. İstisna
+  yalnız pilotun devamını engelleyen eksik için, kararı ürün tarafı verir ve yazılı olur.
+  **Not:** freeze pilot RESMEN başlayınca yürürlükte. 2026-08-12'deki panel düzeltmelerinin
+  bir kısmı (org değiştirici, şifre değiştirme) yeni yüzeydi — pilot başlamadığı için ihlal
+  sayılmıyor, ama aynı iş pilot içinde ihlal olur.
+  **Satış ekibi çıktısı:** çerçeve sayfa olarak yayınlandı (segment + randevu blokları +
+  freeze kuralı + "verilerimi görebiliyor musunuz" cevabı + hukuki taahhüt yasağı).
+- **Kabul:** ✅ Üç karar da yazılı (2026-08-12). (c)'deki freeze taahhüdü kalem 5'in (PILOT-02)
+  giriş şartıydı — karşılandı. Bu blok bir sonraki re-base'de "Son kapananlar"a taşınır.
 
 ---
 
