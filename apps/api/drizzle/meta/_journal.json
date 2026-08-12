@@ -323,6 +323,20 @@
       "when": 1755300000000,
       "tag": "0045_contact_data_subject_rights",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1755400000000,
+      "tag": "0046_contacts_last_name_list_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1755500000000,
+      "tag": "0047_contacts_split_unsplit_names",
+      "breakpoints": true
     }
   ]
 }

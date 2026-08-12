@@ -5,7 +5,7 @@
 	"scripts": {
 		"dev": "turbo run dev --filter=@verimaya/web",
 		"dev:api": "turbo run dev --filter=@verimaya/api",
-		"dev:all": "turbo run dev --filter=@verimaya/web --filter=@verimaya/api",
+		"dev:all": "turbo run dev --filter=@verimaya/web --filter=@verimaya/api --env-mode=loose",
 		"build": "turbo run build",
 		"lint": "turbo run lint",
 		"check": "turbo run check",

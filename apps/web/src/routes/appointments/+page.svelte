@@ -23,9 +23,16 @@
 	import { t } from '$lib/i18n/locale.svelte';
 	import { appointmentStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PeriodSelector from '$lib/components/PeriodSelector.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import AppointmentOpsList from '$lib/components/AppointmentOpsList.svelte';
+	import {
+		dayKeyToDate,
+		monthRangeInTz,
+		resolvePeriodRange,
+		type PeriodKey
+	} from '$lib/period-range';
 	import { Button } from '$lib/components/ui/button';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -50,8 +57,9 @@
 	let qInput = $state('');
 	let appliedQ = $state('');
 	let status = $state('');
-	let from = $state('');
-	let to = $state('');
+	let periodKey = $state<PeriodKey>('bu-ay');
+	let customFrom = $state('');
+	let customTo = $state('');
 
 	const statusOptions = $derived(appointmentStatusSchema.options);
 
@@ -84,14 +92,13 @@
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
 
-	const rangeFromDay = $derived(toTenantDayKey(rangeStart, tenantTimezone));
-	const rangeToDay = $derived(
-		toTenantDayKey(view === 'day' ? rangeStart : addDays(rangeStart, 6), tenantTimezone)
+	const periodRange = $derived(
+		resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone)
 	);
 
 	const listFilters = $derived({
-		from: from || rangeFromDay,
-		to: to || rangeToDay,
+		from: periodRange.from ?? undefined,
+		to: periodRange.to ?? undefined,
 		contact_id: contactFilterId,
 		q: appliedQ || undefined,
 		status: (status || undefined) as AppointmentStatus | undefined
@@ -178,9 +185,28 @@
 		qInput = '';
 		appliedQ = '';
 		status = '';
-		from = '';
-		to = '';
 	}
+
+	function syncAnchorToPeriod() {
+		if (periodKey === 'bu-ay') {
+			anchor = startOfDay(new Date());
+			return;
+		}
+		if (periodKey === 'gecen-ay') {
+			const { from } = monthRangeInTz(-1, tenantTimezone);
+			anchor = startOfDay(dayKeyToDate(from));
+			return;
+		}
+		if (periodKey === 'ozel' && customFrom) {
+			anchor = startOfDay(dayKeyToDate(customFrom));
+		}
+	}
+
+	$effect(() => {
+		periodKey;
+		if (periodKey === 'ozel') customFrom;
+		syncAnchorToPeriod();
+	});
 
 	function openCreate() {
 		editing = null;
@@ -228,7 +254,17 @@
 	}
 
 	function shift(dir: -1 | 1) {
-		anchor = addDays(anchor, view === 'day' ? dir : dir * 7);
+		const step = view === 'day' ? dir : dir * 7;
+		let next = addDays(anchor, step);
+		if (periodRange.from) {
+			const min = startOfDay(dayKeyToDate(periodRange.from));
+			if (next < min) next = min;
+		}
+		if (periodRange.to) {
+			const max = startOfDay(dayKeyToDate(periodRange.to));
+			if (next > max) next = max;
+		}
+		anchor = next;
 	}
 
 	function clearContactFilter() {
@@ -299,6 +335,8 @@
 		{/snippet}
 	</PageHeader>
 
+	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone} />
+
 	{#if contactFilterId}
 		<div
 			class="mb-4 flex flex-wrap items-center gap-2 rounded-[6px] border border-border bg-surface-2/50 px-3 py-2 text-sm"
@@ -336,21 +374,9 @@
 				<option value={s}>{appointmentStatusLabels[s]}</option>
 			{/each}
 		</select>
-		<input
-			type="date"
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
-			aria-label={t('appointments.filter.from')}
-			bind:value={from}
-		/>
-		<input
-			type="date"
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
-			aria-label={t('appointments.filter.to')}
-			bind:value={to}
-		/>
 		<div class="flex gap-2">
 			<Button type="submit" variant="secondary">{t('appointments.filter.apply')}</Button>
-			{#if appliedQ || status || from || to}
+			{#if appliedQ || status}
 				<Button type="button" variant="outline" onclick={clearFilters}
 					>{t('appointments.filter.clear')}</Button
 				>

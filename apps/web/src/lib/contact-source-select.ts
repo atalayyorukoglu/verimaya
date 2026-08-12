@@ -19,7 +19,15 @@ export type ContactSourceSelectState = {
 	customSource: string;
 };
 
-const presetSet = new Set<string>(CONTACT_SOURCE_PRESETS);
+/** Retired preset — stored rows may still carry this literal; never offer as a select option. */
+export const CONTACT_SOURCE_LEGACY_CATCH_ALL = 'Diğer';
+
+/** Preset labels rendered in the panel Kaynak select (legacy catch-all excluded). */
+export const CONTACT_SOURCE_SELECT_PRESETS = CONTACT_SOURCE_PRESETS.filter(
+	(preset) => preset !== CONTACT_SOURCE_LEGACY_CATCH_ALL
+);
+
+const presetSet = new Set<string>(CONTACT_SOURCE_SELECT_PRESETS);
 
 /**
  * Map a stored `contacts.source` into select + optional custom field.
@@ -35,10 +43,10 @@ export function initContactSourceSelect(
 	if (!trimmed) {
 		return { selectValue: CONTACT_SOURCE_SELECT_UNKNOWN, customSource: '' };
 	}
-	if (presetSet.has(trimmed)) {
-		return { selectValue: trimmed, customSource: '' };
+	if (trimmed === CONTACT_SOURCE_LEGACY_CATCH_ALL || !presetSet.has(trimmed)) {
+		return { selectValue: CONTACT_SOURCE_SELECT_OTHER, customSource: trimmed };
 	}
-	return { selectValue: CONTACT_SOURCE_SELECT_OTHER, customSource: trimmed };
+	return { selectValue: trimmed, customSource: '' };
 }
 
 /** Resolve select + custom field to the value written on create/update. */

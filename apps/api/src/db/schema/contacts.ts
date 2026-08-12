@@ -54,6 +54,12 @@ export const contacts = pgTable(
 			table.tenantId,
 			table.status,
 			table.updatedAt
+		),
+		index('contacts_tenant_last_name_first_name_id_idx').on(
+			table.tenantId,
+			table.lastName,
+			table.firstName,
+			table.id
 		)
 	]
 );

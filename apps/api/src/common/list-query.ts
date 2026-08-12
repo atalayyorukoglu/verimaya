@@ -1,8 +1,10 @@
-import { and, eq, lt, or, type SQL } from 'drizzle-orm';
+import { and, eq, gt, isNull, lt, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import {
+	decodeContactListCursor,
 	decodeCursor,
 	decodeOccurredOnCursor,
+	encodeContactListCursor,
 	encodeCursor,
 	encodeOccurredOnCursor
 } from './pagination';
@@ -57,5 +59,60 @@ export function buildOccurredOnCursorPage<T extends { id: string; occurredOn: st
 	const last = items.at(-1);
 	const next_cursor =
 		hasMore && last ? encodeOccurredOnCursor(last.occurredOn, last.id) : null;
+	return { items, next_cursor };
+}
+
+/**
+ * Contacts list: `last_name ASC NULLS LAST, first_name ASC NULLS LAST, id ASC`.
+ * Keyset window after the decoded cursor row (PostgreSQL ASC nulls-last semantics).
+ */
+export function contactListCursorCondition(
+	sortLastNameCol: SQL.Aliased<string | null>,
+	sortFirstNameCol: SQL.Aliased<string | null>,
+	idCol: PgColumn,
+	cursor?: string
+): SQL | undefined {
+	if (!cursor) return undefined;
+	const decoded = decodeContactListCursor(cursor);
+	if (!decoded) return undefined;
+
+	const { lastName, firstName, id } = decoded;
+
+	const afterFirstName = (): SQL => {
+		if (firstName === null) {
+			return sql`(${sortFirstNameCol} IS NULL AND ${idCol} > ${id})`;
+		}
+		return sql`(
+			${sortFirstNameCol} > ${firstName}
+			OR (${sortFirstNameCol} = ${firstName} AND ${idCol} > ${id})
+			OR ${sortFirstNameCol} IS NULL
+		)`;
+	};
+
+	if (lastName === null) {
+		return sql`(${sortLastNameCol} IS NULL AND ${afterFirstName()})`;
+	}
+
+	return sql`(
+		${sortLastNameCol} > ${lastName}
+		OR (${sortLastNameCol} = ${lastName} AND ${afterFirstName()})
+		OR ${sortLastNameCol} IS NULL
+	)`;
+}
+
+export function buildContactListCursorPage<
+	T extends {
+		id: string;
+		sort_last_name: string | null;
+		sort_first_name: string | null;
+	}
+>(rows: T[], limit: number): { items: T[]; next_cursor: string | null } {
+	const hasMore = rows.length > limit;
+	const items = hasMore ? rows.slice(0, limit) : rows;
+	const last = items.at(-1);
+	const next_cursor =
+		hasMore && last
+			? encodeContactListCursor(last.sort_last_name, last.sort_first_name, last.id)
+			: null;
 	return { items, next_cursor };
 }

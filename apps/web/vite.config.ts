@@ -1,10 +1,18 @@
+import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
 // Unit tests: apps/web/vitest.config.ts (separate — sveltekit() breaks node env).
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+	const apiEnv = loadEnv(mode, resolve(__dirname, '../api'), '');
+	const apiProxyTarget =
+		process.env.API_PROXY_TARGET ??
+		apiEnv.API_PROXY_TARGET ??
+		`http://127.0.0.1:${process.env.API_PORT ?? apiEnv.API_PORT ?? '3000'}`;
+
+	return {
 	plugins: [
 		tailwindcss(),
 		sveltekit({
@@ -29,8 +37,7 @@ export default defineConfig({
 		// Same-origin /v1 so session cookies work on app.localhost (PSL: *.localhost ≠ localhost).
 		proxy: {
 			'/v1': {
-				// Override when API_PORT≠3000 (e.g. occupied): API_PROXY_TARGET=http://127.0.0.1:3001
-				target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000',
+				target: apiProxyTarget,
 				changeOrigin: true
 			}
 		}
@@ -43,9 +50,10 @@ export default defineConfig({
 		allowedHosts: ['localhost', 'app.localhost'],
 		proxy: {
 			'/v1': {
-				target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000',
+				target: apiProxyTarget,
 				changeOrigin: true
 			}
 		}
 	}
+	};
 });

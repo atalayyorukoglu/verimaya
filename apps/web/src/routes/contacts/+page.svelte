@@ -30,7 +30,6 @@
 	let q = $state('');
 	let search = $state('');
 	let typeId = $state('');
-	let typeDraft = $state('');
 	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
@@ -60,10 +59,7 @@
 	$effect(() => {
 		if (defaultTypeApplied || contactTypes.length === 0) return;
 		const hasta = contactTypes.find((ct) => ct.name === 'Hasta');
-		if (hasta) {
-			typeId = hasta.id;
-			typeDraft = hasta.id;
-		}
+		if (hasta) typeId = hasta.id;
 		defaultTypeApplied = true;
 	});
 
@@ -105,14 +101,16 @@
 	function submitSearch(e: Event) {
 		e.preventDefault();
 		search = q.trim();
-		typeId = typeDraft;
+		selectedIds = [];
+	}
+
+	function onTypeFilterChange() {
 		selectedIds = [];
 	}
 
 	function clearFilters() {
 		q = '';
 		search = '';
-		typeDraft = '';
 		typeId = '';
 		selectedIds = [];
 		defaultTypeApplied = true;
@@ -251,7 +249,8 @@
 		/>
 		<select
 			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-44"
-			bind:value={typeDraft}
+			bind:value={typeId}
+			onchange={onTypeFilterChange}
 			aria-label={t('contacts.list.filterTypeAria')}
 		>
 			<option value="">{t('contacts.list.filterTypeAll')}</option>

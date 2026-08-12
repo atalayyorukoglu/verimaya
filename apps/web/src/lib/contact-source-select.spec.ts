@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CONTACT_SOURCE_PRESETS } from '@verimaya/shared';
 import {
+	CONTACT_SOURCE_LEGACY_CATCH_ALL,
 	CONTACT_SOURCE_SELECT_OTHER,
+	CONTACT_SOURCE_SELECT_PRESETS,
 	CONTACT_SOURCE_SELECT_UNKNOWN,
 	initContactSourceSelect,
 	resolveContactSource
@@ -9,10 +10,14 @@ import {
 
 describe('contact source select mapping', () => {
 	it('selecting a preset submits that exact display label', () => {
-		for (const preset of CONTACT_SOURCE_PRESETS) {
+		for (const preset of CONTACT_SOURCE_SELECT_PRESETS) {
 			expect(resolveContactSource(preset, '')).toBe(preset);
 			expect(resolveContactSource(preset, 'ignored custom')).toBe(preset);
 		}
+	});
+
+	it('legacy catch-all preset is not offered in the select list', () => {
+		expect(CONTACT_SOURCE_SELECT_PRESETS).not.toContain(CONTACT_SOURCE_LEGACY_CATCH_ALL);
 	});
 
 	it('Bilinmiyor (UNKNOWN sentinel) submits null — never stored as a literal', () => {
@@ -30,6 +35,13 @@ describe('contact source select mapping', () => {
 		expect(init.selectValue).toBe(CONTACT_SOURCE_SELECT_OTHER);
 		expect(init.customSource).toBe('ghl');
 		expect(resolveContactSource(init.selectValue, init.customSource)).toBe('ghl');
+	});
+
+	it("legacy stored source 'Diğer' opens in Diğer mode (not a duplicate preset)", () => {
+		const init = initContactSourceSelect('Diğer');
+		expect(init.selectValue).toBe(CONTACT_SOURCE_SELECT_OTHER);
+		expect(init.customSource).toBe('Diğer');
+		expect(resolveContactSource(init.selectValue, init.customSource)).toBe('Diğer');
 	});
 
 	it('null/empty stored source opens on Bilinmiyor (UNKNOWN)', () => {

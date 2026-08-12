@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql as drizzleSql, eq } from 'drizzle-orm';
-import { compareByCreatedAtDesc, compareByOccurredOnDesc } from '@verimaya/shared';
+import { compareByCreatedAtDesc, compareByLastNameAsc, compareByOccurredOnDesc } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { appointments } from '../db/schema/appointments';
 import { AppointmentsService } from '../appointments/appointments.service';
@@ -232,10 +232,26 @@ describe('CONTRACT-02: API list endpoints match the shared filter + order contra
 		expect(clinicOnly.items.map((c) => c.id)).not.toContain(contactHotel);
 	});
 
-	it('patients: list is ordered newest first (created_at desc, id tiebreak)', async () => {
+	it('contacts: list is ordered by last_name asc (phonebook), then first_name, id', async () => {
 		const page = await contactsService.list(tenantId, { limit: 25 });
-		expect([...page.items].sort(compareByCreatedAtDesc)).toEqual(page.items);
+		expect([...page.items].sort(compareByLastNameAsc)).toEqual(page.items);
 		expect(page.items.map((p) => p.id)).toContain(patientA);
 		expect(page.items.map((p) => p.id)).toContain(patientB);
+	});
+
+	it('contacts: cursor pagination covers every row exactly once', async () => {
+		const seen = new Set<string>();
+		let cursor: string | undefined;
+		let guard = 0;
+		while (guard++ < 20) {
+			const page = await contactsService.list(tenantId, { limit: 1, cursor });
+			for (const item of page.items) {
+				expect(seen.has(item.id)).toBe(false);
+				seen.add(item.id);
+			}
+			if (!page.next_cursor) break;
+			cursor = page.next_cursor;
+		}
+		expect(seen.size).toBe(4);
 	});
 });

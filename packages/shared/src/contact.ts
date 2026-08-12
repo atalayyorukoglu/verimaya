@@ -94,8 +94,7 @@ export const CONTACT_SOURCE_PRESETS = [
 	'Dijital Reklam',
 	'Referans',
 	'Organik',
-	'WhatsApp',
-	'Diğer'
+	'WhatsApp'
 ] as const;
 
 export type ContactSourcePreset = (typeof CONTACT_SOURCE_PRESETS)[number];

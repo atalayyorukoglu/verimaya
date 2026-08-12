@@ -9,12 +9,7 @@
 		MembershipUser,
 		Organization
 	} from '@verimaya/shared';
-	import {
-		apiPaths,
-		CONTACT_MEDIUM_PRESETS,
-		CONTACT_SOURCE_PRESETS,
-		contactStatusLabels
-	} from '@verimaya/shared';
+	import { apiPaths, CONTACT_MEDIUM_PRESETS, contactStatusLabels } from '@verimaya/shared';
 	import {
 		apiGet,
 		apiSend,
@@ -27,6 +22,7 @@
 	import {
 		CONTACT_SOURCE_REFERRAL,
 		CONTACT_SOURCE_SELECT_OTHER,
+		CONTACT_SOURCE_SELECT_PRESETS,
 		CONTACT_SOURCE_SELECT_UNKNOWN,
 		CONTACT_SOURCE_WITH_MEDIUM,
 		initContactSourceSelect,
@@ -458,7 +454,7 @@
 					>
 						<option value={CONTACT_SOURCE_SELECT_UNKNOWN}>{t('contacts.form.sourceUnknown')}</option
 						>
-						{#each CONTACT_SOURCE_PRESETS as preset (preset)}
+						{#each CONTACT_SOURCE_SELECT_PRESETS as preset (preset)}
 							<option value={preset}>{preset}</option>
 						{/each}
 						<option value={CONTACT_SOURCE_SELECT_OTHER}>{t('contacts.form.sourceOther')}</option>

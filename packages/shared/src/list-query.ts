@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { contactListSortKeys } from './contact-list-sort.js';
 import { appointmentStatusSchema } from './appointment.js';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
 import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
@@ -63,8 +64,12 @@ export type ContactListQuery = z.infer<typeof contactListQuerySchema>;
  * orderings — display_name, occurred_on, starts_at — that silently diverged from
  * the real API; that was a real MSW/API contract bug, not a stylistic choice).
  *
- * Exception — `GET /v1/transactions`: business date order
- * (`occurred_on` desc, `id` desc). See `compareByOccurredOnDesc`.
+ * Exceptions:
+ * - `GET /v1/transactions`: business date order (`occurred_on` desc, `id` desc).
+ *   See `compareByOccurredOnDesc`.
+ * - `GET /v1/contacts`: phonebook order (`last_name` asc nulls last, `first_name`
+ *   asc nulls last, `id` asc). Display stays Ad Soyad (`display_name`); only the
+ *   list order is by surname. See `compareByLastNameAsc`.
  */
 export function compareByCreatedAtDesc<T extends { created_at: string; id: string }>(
 	a: T,
@@ -87,4 +92,31 @@ export function compareByOccurredOnDesc<T extends { occurred_on: string; id: str
 	b: T
 ): number {
 	return b.occurred_on.localeCompare(a.occurred_on) || b.id.localeCompare(a.id);
+}
+
+/** Nullable text ASC with NULLS LAST (PostgreSQL ASC default is NULLS FIRST — do not rely on it). */
+function compareNullableTextAsc(a: string | null, b: string | null): number {
+	if (a === b) return 0;
+	if (a === null) return 1;
+	if (b === null) return -1;
+	return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** Contacts list order / MSW parity (phonebook keys ASC NULLS LAST, id ASC). */
+export function compareByLastNameAsc<
+	T extends {
+		last_name: string | null;
+		first_name: string;
+		display_name: string;
+		contact_type_name: string;
+		id: string;
+	}
+>(a: T, b: T): number {
+	const ka = contactListSortKeys(a);
+	const kb = contactListSortKeys(b);
+	return (
+		compareNullableTextAsc(ka.sortLastName, kb.sortLastName) ||
+		compareNullableTextAsc(ka.sortFirstName, kb.sortFirstName) ||
+		(a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+	);
 }

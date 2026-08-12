@@ -7,8 +7,7 @@ describe('CONTACT_SOURCE_PRESETS / CONTACT_MEDIUM_PRESETS', () => {
 			'Dijital Reklam',
 			'Referans',
 			'Organik',
-			'WhatsApp',
-			'Diğer'
+			'WhatsApp'
 		]);
 		expect([...CONTACT_MEDIUM_PRESETS]).toEqual([
 			'Meta Ads',

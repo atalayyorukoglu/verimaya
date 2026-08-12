@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { compareByCreatedAtDesc, compareByOccurredOnDesc } from '@verimaya/shared';
+import { compareByCreatedAtDesc, compareByLastNameAsc, compareByOccurredOnDesc } from '@verimaya/shared';
 import { ATALAY_CONTACT_ID, CONTACT_KLINIK_ID, getStore } from './data';
 import { server } from './server';
 
@@ -182,7 +182,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 		const klinikType = store.contactTypes.find((t) => t.name === 'Klinik')!;
 		const expected = store.contacts
 			.filter((c) => c.contact_type_id === klinikType.id)
-			.sort(compareByCreatedAtDesc)
+			.sort(compareByLastNameAsc)
 			.map((c) => c.id);
 		expect(expected.length).toBeGreaterThan(0);
 		const page = await fetchPage<{ id: string }>(`/v1/contacts?type_id=${klinikType.id}&limit=100`);
@@ -200,7 +200,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 					(c.email?.toLowerCase().includes(q) ?? false) ||
 					(c.phone?.includes(q) ?? false)
 			)
-			.sort(compareByCreatedAtDesc)
+			.sort(compareByLastNameAsc)
 			.map((c) => c.id);
 		expect(expected.length).toBeGreaterThan(0);
 		const page = await fetchPage<{ id: string }>(`/v1/contacts?q=${q}&limit=100`);
@@ -208,7 +208,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 	});
 
 	it('contacts: cursor pagination covers every row exactly once, in order', async () => {
-		const expected = [...store.contacts].sort(compareByCreatedAtDesc).map((c) => c.id);
+		const expected = [...store.contacts].sort(compareByLastNameAsc).map((c) => c.id);
 		const all = await fetchAllPages<{ id: string }>('/v1/contacts', 3);
 		expect(all.map((c) => c.id)).toEqual(expected);
 	});

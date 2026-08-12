@@ -32,7 +32,9 @@
 	import { formatDate, formatMoney, formatPercent, formatRatio } from '$lib/format';
 	import { amountInBase, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
+	import { resolvePeriodRange, type PeriodKey } from '$lib/period-range';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PeriodSelector from '$lib/components/PeriodSelector.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import ConsistencyIssuesList from '$lib/components/ConsistencyIssuesList.svelte';
@@ -48,7 +50,6 @@
 
 	type TxPage = { items: Transaction[]; next_cursor: string | null };
 	type TabKey = 'ozet' | 'kategori' | 'pazarlama';
-	type PeriodKey = 'bu-ay' | 'gecen-ay' | 'tum' | 'ozel';
 	type Drill =
 		| null
 		| { mode: 'category'; label: string }
@@ -64,39 +65,6 @@
 	}));
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
-
-	function monthRangeInTz(offsetMonths: number, timeZone: string): { from: string; to: string } {
-		const todayKey = toTenantDayKey(new Date(), timeZone);
-		const [year, month] = todayKey.split('-').map(Number);
-		let targetYear = year;
-		let targetMonth = month + offsetMonths;
-		while (targetMonth < 1) {
-			targetMonth += 12;
-			targetYear--;
-		}
-		while (targetMonth > 12) {
-			targetMonth -= 12;
-			targetYear++;
-		}
-		const from = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
-		const lastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
-		const to = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-		return { from, to };
-	}
-
-	function periodLabel(key: PeriodKey, from: string, to: string): string {
-		if (key === 'bu-ay') {
-			const d = new Date();
-			return new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(d);
-		}
-		if (key === 'gecen-ay') {
-			const d = new Date();
-			d.setMonth(d.getMonth() - 1);
-			return new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(d);
-		}
-		if (key === 'tum') return t('reports.period.allTime');
-		return `${from} → ${to}`;
-	}
 
 	function subtitleKey(s: string | null | undefined): string {
 		return (s || 'Genel').trim() || 'Genel';
@@ -116,18 +84,14 @@
 	});
 
 	let periodKey = $state<PeriodKey>('bu-ay');
-	let customFrom = $state('2026-01-01');
-	let customTo = $state('2026-01-31');
+	let customFrom = $state('');
+	let customTo = $state('');
 	let kindFilter = $state<'all' | 'income' | 'expense'>('all');
 	let drill = $state<Drill>(null);
 
-	let customRangeHydrated = $state(false);
 	$effect(() => {
-		if (customRangeHydrated || !tenantQuery.data) return;
-		const r = monthRangeInTz(0, tenantTimezone);
-		customFrom = r.from;
-		customTo = r.to;
-		customRangeHydrated = true;
+		periodKey;
+		drill = null;
 	});
 
 	let txFormOpen = $state(false);
@@ -135,15 +99,9 @@
 	let txSaving = $state(false);
 	let txFormError = $state<string | null>(null);
 
-	const dateRange = $derived.by(() => {
-		const tz = tenantTimezone;
-		if (periodKey === 'bu-ay') return monthRangeInTz(0, tz);
-		if (periodKey === 'gecen-ay') return monthRangeInTz(-1, tz);
-		if (periodKey === 'ozel') return { from: customFrom, to: customTo };
-		return { from: null as string | null, to: null as string | null };
-	});
-
-	const periodText = $derived(periodLabel(periodKey, dateRange.from ?? '', dateRange.to ?? ''));
+	const dateRange = $derived(
+		resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone)
+	);
 
 	const txQuery = createQuery(() => ({
 		queryKey: qs.keys.transactions.list({ for: 'reports', from: dateRange.from, to: dateRange.to }),
@@ -505,16 +463,6 @@
 		void goto(`${url.pathname}${url.search}`, { replaceState: true, noScroll: true });
 	}
 
-	function setPeriod(next: PeriodKey) {
-		periodKey = next;
-		drill = null;
-		if (next === 'ozel') {
-			const r = monthRangeInTz(0, tenantTimezone);
-			customFrom = r.from;
-			customTo = r.to;
-		}
-	}
-
 	function openEditTx(tx: Transaction) {
 		editingTx = tx;
 		txFormError = null;
@@ -610,46 +558,7 @@
 	</div>
 
 	<!-- Dönem seçici -->
-	<section class="mb-4 rounded-lg border border-border bg-surface p-3 sm:p-4">
-		<div class="flex flex-wrap items-center justify-between gap-2">
-			<p class="text-xs font-medium text-text-muted">{t('reports.period.label')}</p>
-			<p class="text-xs font-semibold text-text">{periodText}</p>
-		</div>
-		<div class="mt-2 flex flex-wrap gap-1.5">
-			{#each [{ key: 'bu-ay', label: t('reports.period.thisMonth') }, { key: 'gecen-ay', label: t('reports.period.lastMonth') }, { key: 'tum', label: t('reports.period.allTime') }, { key: 'ozel', label: t('reports.period.custom') }] as opt (opt.key)}
-				<button
-					type="button"
-					class="cursor-pointer rounded-[6px] px-2.5 py-1.5 text-xs font-medium transition-colors {periodKey ===
-					opt.key
-						? 'bg-brand text-primary-foreground'
-						: 'bg-surface-2 text-text-muted hover:text-text'}"
-					onclick={() => setPeriod(opt.key as PeriodKey)}
-				>
-					{opt.label}
-				</button>
-			{/each}
-		</div>
-		{#if periodKey === 'ozel'}
-			<div class="mt-3 grid grid-cols-2 gap-2 sm:max-w-md">
-				<label class="grid gap-1 text-xs text-text-muted">
-					{t('reports.period.from')}
-					<input
-						type="date"
-						class="h-9 rounded-[6px] border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
-						bind:value={customFrom}
-					/>
-				</label>
-				<label class="grid gap-1 text-xs text-text-muted">
-					{t('reports.period.to')}
-					<input
-						type="date"
-						class="h-9 rounded-[6px] border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
-						bind:value={customTo}
-					/>
-				</label>
-			</div>
-		{/if}
-	</section>
+	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone} />
 
 	{#if loading}
 		<p class="text-sm text-text-muted">{t('reports.loading')}</p>
