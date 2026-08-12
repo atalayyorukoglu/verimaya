@@ -1656,6 +1656,9 @@ const tr = {
 	'shell.support.description': 'Demo ortamı — gerçek destek kanalı yok.',
 	'shell.support.body':
 		'Sorun veya geri bildirim için geliştiriciye yazın. Üretimde bu ekran ticket / e-posta formuna bağlanacak.',
+	'shell.sidebar.copyright': '{year} © All rights reserved.',
+	'shell.sidebar.brandPrefix': 'A brand of ',
+	'shell.sidebar.brandName': 'Albion Signature Group Limited',
 
 	// appointments form / ops
 	'appointments.form.editTitle': 'Randevuyu düzenle',
@@ -3373,6 +3376,9 @@ const en: Record<MessageKey, string> = {
 	'shell.support.description': 'Demo environment — no real support channel.',
 	'shell.support.body':
 		'Write to the developer for issues or feedback. In production this screen will connect to a ticket / email form.',
+	'shell.sidebar.copyright': '{year} © All rights reserved.',
+	'shell.sidebar.brandPrefix': 'A brand of ',
+	'shell.sidebar.brandName': 'Albion Signature Group Limited',
 
 	'appointments.form.editTitle': 'Edit appointment',
 	'appointments.form.createTitle': 'New appointment',
