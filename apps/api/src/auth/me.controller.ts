@@ -32,6 +32,16 @@ export class MeController {
 	}
 
 	/**
+	 * Orgs the session user may enter — better-auth memberships minus
+	 * soft-deleted tenants. Used before an active org is chosen (login gate).
+	 */
+	@Get('organizations')
+	@UseGuards(SessionGuard)
+	listOrganizations(@Req() req: FastifyRequest) {
+		return this.meService.listOrganizations(req.authSession!.user.id);
+	}
+
+	/**
 	 * Personal UI preferences for the session user in the active organization
 	 * (e.g. which product modules appear under Ürünler). Not an org-admin setting.
 	 */

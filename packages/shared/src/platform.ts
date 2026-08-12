@@ -13,6 +13,22 @@ export const meSchema = membershipUserSchema.extend({
 
 export type Me = z.infer<typeof meSchema>;
 
+/**
+ * Session user's better-auth organizations, intersected with `tenants`
+ * (`deleted_at IS NULL`). Soft-deleted tenants never appear.
+ */
+export const meOrganizationSchema = z.object({
+	id: uuid,
+	name: z.string().min(1).max(255),
+	slug: z.string().min(1).max(64)
+});
+
+export type MeOrganization = z.infer<typeof meOrganizationSchema>;
+
+export const meOrganizationListSchema = z.object({
+	items: z.array(meOrganizationSchema)
+});
+
 /** Platform list includes soft-deleted tenants (`deleted_at`). */
 export const platformTenantSchema = tenantSchema.extend({
 	deleted_at: isoDateTime.nullable().default(null)

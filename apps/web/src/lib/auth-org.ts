@@ -1,20 +1,18 @@
+import type { MeOrganization } from '@verimaya/shared';
+import { apiGet, apiPaths } from '$lib/api';
 import { authClient } from '$lib/auth';
 
-export type OrganizationSummary = {
-	id: string;
-	name: string;
-	slug: string;
-};
+export type OrganizationSummary = MeOrganization;
 
 export async function getActiveOrganizationId(): Promise<string | null> {
 	const { data } = await authClient.getSession();
 	return data?.session?.activeOrganizationId ?? null;
 }
 
+/** Active (non-soft-deleted) orgs only — server intersects better-auth memberships with tenants. */
 export async function listUserOrganizations(): Promise<OrganizationSummary[]> {
-	const { data, error } = await authClient.organization.list();
-	if (error) throw new Error(error.message ?? 'Organizasyonlar yüklenemedi');
-	return (data ?? []) as OrganizationSummary[];
+	const data = await apiGet<{ items: OrganizationSummary[] }>(apiPaths.meOrganizations);
+	return data.items;
 }
 
 export async function setActiveOrganization(organizationId: string): Promise<void> {

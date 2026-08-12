@@ -7,6 +7,7 @@ export const API_V1_PREFIX = '/v1';
 /** Canonical /v1 path constants — MSW handlers and NestJS should match these. */
 export const apiPaths = {
 	me: `${API_V1_PREFIX}/me`,
+	meOrganizations: `${API_V1_PREFIX}/me/organizations`,
 	mePreferences: `${API_V1_PREFIX}/me/preferences`,
 	meDataExport: `${API_V1_PREFIX}/me/data-export`,
 	meDataDeletionRequest: `${API_V1_PREFIX}/me/data-deletion-request`,
@@ -199,6 +200,7 @@ import { settingsReorderResultSchema, settingsReorderSchema } from './settings-r
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema, memberRoleUpdateSchema } from './user.js';
 import {
+	meOrganizationListSchema,
 	meSchema,
 	platformMemberListSchema,
 	platformMemberUpsertSchema,
@@ -252,6 +254,9 @@ import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './we
 export const apiContract = {
 	'GET /v1/me': {
 		response: meSchema
+	},
+	'GET /v1/me/organizations': {
+		response: meOrganizationListSchema
 	},
 	'PUT /v1/me/preferences': {
 		body: userUiPreferencesUpdateSchema,

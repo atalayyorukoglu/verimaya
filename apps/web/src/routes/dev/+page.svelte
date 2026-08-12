@@ -34,7 +34,9 @@
 		enabled: platformEnabled
 	}));
 
-	const tenants = $derived(tenantsQuery.data?.items ?? []);
+	const tenants = $derived(
+		(tenantsQuery.data?.items ?? []).filter((row) => row.deleted_at == null)
+	);
 
 	let targetTenantId = $state('');
 	let hydratedTarget = $state(false);
@@ -222,15 +224,8 @@
 						</thead>
 						<tbody class="divide-y divide-border">
 							{#each tenants as row (row.id)}
-								<tr class={row.deleted_at ? 'opacity-60' : ''}>
-									<td class="px-3 py-2 font-medium text-text">
-										{row.name}
-										{#if row.deleted_at}
-											<span class="ml-2 text-[10px] font-normal tracking-wide text-danger uppercase"
-												>{t('dev.deletedBadge')}</span
-											>
-										{/if}
-									</td>
+								<tr>
+									<td class="px-3 py-2 font-medium text-text">{row.name}</td>
 									<td class="px-3 py-2 font-mono text-[11px] text-text-faint">{row.id}</td>
 									<td class="space-x-3 px-3 py-2 text-right">
 										<button
@@ -240,15 +235,13 @@
 										>
 											{t('dev.rename')}
 										</button>
-										{#if !row.deleted_at}
-											<button
-												type="button"
-												class="cursor-pointer text-xs font-medium text-danger hover:underline"
-												onclick={() => deleteOrg(row)}
-											>
-												{t('dev.delete')}
-											</button>
-										{/if}
+										<button
+											type="button"
+											class="cursor-pointer text-xs font-medium text-danger hover:underline"
+											onclick={() => deleteOrg(row)}
+										>
+											{t('dev.delete')}
+										</button>
 									</td>
 								</tr>
 							{/each}
@@ -267,9 +260,7 @@
 				{t('dev.targetOrg')}
 				<select class="{fieldClass} mt-1" bind:value={targetTenantId}>
 					{#each tenants as row (row.id)}
-						<option value={row.id}
-							>{row.name}{row.deleted_at ? ` (${t('dev.deletedBadge')})` : ''}</option
-						>
+						<option value={row.id}>{row.name}</option>
 					{/each}
 				</select>
 			</label>

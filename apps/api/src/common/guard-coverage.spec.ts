@@ -63,6 +63,8 @@ const PUBLIC_ROUTE_ALLOWLIST: Record<string, string> = {
     "WAHA inbound webhook — same queue-first public surface",
   "MeController.me":
     "Session-only own profile; not an org-scoped resource (no OrgPermissionGuard)",
+  "MeController.listOrganizations":
+    "Session-only membership list (soft-deleted tenants excluded); needed before ActiveOrg exists",
   "MeController.putPreferences":
     "Personal UI prefs for session user + active org; Session+ActiveOrg; not an org-admin settings resource (no OrgPermissionGuard)",
   "MeController.dataExport":

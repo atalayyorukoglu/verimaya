@@ -840,6 +840,13 @@ const mswAdsConnected = new Set<string>(['meta']);
 export const handlers = [
 	http.get('/v1/me', () => HttpResponse.json(demoUser)),
 
+	http.get('/v1/me/organizations', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({
+			items: store.tenants.map((t) => ({ id: t.id, name: t.name, slug: t.slug }))
+		});
+	}),
+
 	http.put('/v1/me/preferences', async ({ request }) => {
 		const body = await request.json();
 		const parsed = userUiPreferencesUpdateSchema.safeParse(body);

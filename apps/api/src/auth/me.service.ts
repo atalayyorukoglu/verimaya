@@ -12,9 +12,9 @@ import {
 	type UserUiPreferences,
 	type UserUiPreferencesUpdate
 } from '@verimaya/shared';
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { DbService } from '../db/db.service';
-import { member, user, userUiPreferences } from '../db/schema';
+import { member, organization, tenants, user, userUiPreferences } from '../db/schema';
 import { isPlatformAdminEmail } from '../platform/platform-admin';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
@@ -63,6 +63,28 @@ export class MeService {
 			platform_admin,
 			preferences
 		};
+	}
+
+	/**
+	 * Memberships of the session user whose tenant is still active.
+	 * Intersects better-auth `organization` + `member` with `tenants.deleted_at IS NULL`
+	 * so a soft-deleted org never appears in pickers or switchers.
+	 * Not tenant-GUC scoped: the user is the subject (cross-org membership list).
+	 */
+	async listOrganizations(userId: string) {
+		const rows = await this.db.client
+			.select({
+				id: organization.id,
+				name: organization.name,
+				slug: organization.slug
+			})
+			.from(member)
+			.innerJoin(organization, eq(member.organizationId, organization.id))
+			.innerJoin(tenants, eq(tenants.id, organization.id))
+			.where(and(eq(member.userId, userId), isNull(tenants.deletedAt)))
+			.orderBy(asc(organization.name));
+
+		return { items: rows };
 	}
 
 	async resolveOrganizationRole(
