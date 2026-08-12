@@ -126,9 +126,7 @@
 	const showMedium = $derived(sourceSelect === CONTACT_SOURCE_WITH_MEDIUM);
 	const showCampaign = $derived(sourceSelect !== CONTACT_SOURCE_SELECT_UNKNOWN);
 	const members = $derived(membersQuery.data?.items ?? []);
-	const assignableMembers = $derived(
-		members.filter((m) => memberAssigneeUserId(m))
-	);
+	const assignableMembers = $derived(members.filter((m) => memberAssigneeUserId(m)));
 
 	const referralSearchQuery = createQuery(() => ({
 		queryKey: qs.keys.contacts.list({ q: referredBySearch, for: 'referral-picker' }),
