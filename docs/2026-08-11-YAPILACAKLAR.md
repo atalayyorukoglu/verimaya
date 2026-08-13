@@ -141,9 +141,16 @@
     AND created_at > now() - interval '30 days';
   ```
   Geçmiş 757 satır kalıcı kaynaksız (legacy — karar arşivde).
-- [ ] **Meta go-live:** 7 gün veri, idempotent sync, log denetimi
-- [ ] **Google go-live:** aynı (hesap TRY — OPS-02c ile panel doğru para biriminde)
-- [ ] Hata yüzeyleme + sync penceresi doğrulaması
+- [~] **Google go-live** — bağlandı, veri çekti (2026-08-13). Rakamlar Google Ads paneliyle
+  uyuşuyor; senkron ikinci kez koşturuldu, toplam artmadı (mükerrer yazma yok). **Kalan:
+  7 gün temiz senkron penceresi** — saat 2026-08-13'te başladı.
+- [~] **Meta go-live** — bağlandı (2026-08-13). App oluşturuldu, Marketing API + redirect URI
+  kuruldu, `META_APP_ID`/`META_APP_SECRET` prod'da. **Kalan: 7 gün temiz senkron penceresi.**
+  Not: uygulama Development modunda yeterli — kendi reklam hesabının verisi için App Review
+  gerekmiyor.
+- [x] **`ENABLE_INTEGRATION_SCHEDULERS=true`** prod'da açıldı (2026-08-13). Bununla
+  `ad_metrics.sync` + `ghl.reconcile` 6 saatte bir, `files.sweep_pending` günlük çalışıyor.
+- [ ] Hata yüzeyleme + sync penceresi doğrulaması (7 gün dolunca)
 - **Bağımlı:** yok; ROAS attribution kapanmadan dışarıya gösterilmez.
 - **Kabul:** İki provider 7 gün temiz sync + `attribution_missing` guard yeşil (kapsam ≥ %80).
 
