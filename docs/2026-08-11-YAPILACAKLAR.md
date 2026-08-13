@@ -154,9 +154,12 @@
 > Adım ayrıntısı: `docs/Arşiv/2026-08-10-KISILER-BIRLESME-PLANI.md`. Faz A–F + E3 ✅.
 > Deploy: `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md`.
 
-- [ ] **E4 — GHL ad/soyad çift yönlü senkron** insan doğrulaması (panel ↔ GHL).
-- **Kabul:** E4 yeşil → bu blok "Son kapananlar"a taşınır.
-- **Not:** E4 bitmeden DOMAIN-02 kapanmış sayılmaz; PILOT-02 girişi buna bağlı.
+- [x] **E4 ✅ (2026-08-13)** — bkz. Son kapananlar · DOMAIN-02 E4. Blok kapandı, PILOT-02 girişi açıldı.
+
+> **Artık (ertelendi, acil değil):** GHL'deki bazı kişilerin ad/soyadı **küçük harf** kayıtlı.
+> Senkron kusuru değil — GHL ne tutuyorsa panel onu gösteriyor, doğrusu bu (ad GHL'e ait).
+> **Karar (2026-08-13): GHL'de düzeltilecek, kod dokunulmayacak.** Panelde büyütmek sahiplik
+> ilkesini büker ve `de Souza` gibi isimleri bozar. Kapasiteye göre yapılır.
 
 ---
 
@@ -265,6 +268,20 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **DOMAIN-02 E4 ✅** (2026-08-13) — GHL ↔ panel ad/soyad doğrulaması. **DOMAIN-02 kapandı.**
+  **Görüş:** kalemin "çift yönlü" ifadesi yanlıştı — `ghl.field-ownership.ts` (mimari ilke 5)
+  adın sahibini **GHL** olarak tanımlıyor, panel geri yazmaz. Doğrulama tek yönlü yapıldı:
+  GHL'de değiştir → panelde ad/soyad ayrı ayrı doğru geliyor (canlı, kullanıcı). Ters yön
+  koddan garanti: GHL istemcisinde yazma metodu yok (`getContact`/`listContacts` sadece) +
+  geri yazmadığını iddia eden test.
+  **Yol boyunca çıkan üç kusur kapatıldı:** (1) `GHL_CLIENT_ID` prod'da boştu → panel
+  `client_id=` ile bozuk yetkilendirme linki üretiyordu; env dokümana eklendi. (2) GHL
+  Marketplace redirect URI'de kendi markasını reddediyor (`ghl` kelimesi) → callback
+  `/v1/integrations/crm/callback`'e taşındı. (3) GHL'in ayrı `firstName`/`lastName` alanları
+  yerine birleşik alan okunuyor ve ilk boşluktan yeniden bölünüyordu → `Ancuta Monica` /
+  `Naste-0` yanlış bölünüp yazımı bozuluyordu; artık ayrı alanlar olduğu gibi alınıyor.
+  Ayrıca elle senkron tetikleyici eklendi (6 saatlik zamanlayıcıyı beklemeden test için).
+  `aba9e33` `654bbab` `dec663c` `7026e45`
 - **Firma adı senkronu ✅** (2026-08-12) — ad değiştirildi ama panelde eski ad görünmeye devam etti.
   **Görüş:** silinen-organizasyon hatasının aynı kök sebebi — ad iki tabloda. Rename yalnız
   `tenants.name`'i yazıyordu, `/v1/me/organizations` ise better-auth `organization.name`'den
