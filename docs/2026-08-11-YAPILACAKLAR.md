@@ -130,7 +130,7 @@
 > Runbook: `docs/ADS-META-GOLIVE.md`, `docs/ADS-GOOGLE-GOLIVE.md`.
 > OPS-02c / 02c-fx / 02d ✅ (arşivde). Guard kapanmadan Pazarlama sekmesi müşteriye gösterilmez.
 
-- [~] **OPS-02e — `contacts.source` doluluğu.** Giriş tarafı ✅ (preset + zorunlu + "Bilinmiyor").
+- [x] **OPS-02e ✅ — `contacts.source` doluluğu.** Giriş tarafı ✅ (preset + zorunlu + "Bilinmiyor").
   Kapanış: **yeni kayıtlarda kaynak doluluğu ≥ %80** (`ATTRIBUTION_COVERAGE_THRESHOLD`).
   Haftalık ölçüm (DOMAIN-02 sonrası tablo `contacts`; soft-delete + Hasta türü):
   ```sql
@@ -141,6 +141,14 @@
     AND created_at > now() - interval '30 days';
   ```
   Geçmiş 757 satır kalıcı kaynaksız (legacy — karar arşivde).
+  **✅ ÖLÇÜM (2026-08-13): eşik geçildi.** Ham sorgu %2.6 gösteriyordu ama yanıltıcı —
+  legacy aktarımın `created_at`'i de 30 gün penceresine düşüyor. Güne göre kırılım:
+  `2026-08-07` → 742 kayıt / 1 dolu (toplu legacy aktarımı, kapsam dışı) ·
+  `2026-08-12` → 1/1 · `2026-08-13` → 18/18.
+  Legacy hariç **19/19 = %100**. Bugünkü 18 kayıt GHL senkronundan geldi ve onlar da
+  kaynakla geldi — yani yalnız form değil, senkron yolu da kaynağı dolduruyor.
+  **Not:** ölçüm tekrarlanırken `created_at >= '2026-08-08'` ile legacy aktarım hariç
+  tutulmalı; yoksa oran kalıcı olarak yanlış düşük görünür.
 - [~] **Google go-live** — bağlandı, veri çekti (2026-08-13). Rakamlar Google Ads paneliyle
   uyuşuyor; senkron ikinci kez koşturuldu, toplam artmadı (mükerrer yazma yok). **Kalan:
   7 gün temiz senkron penceresi** — saat 2026-08-13'te başladı.
