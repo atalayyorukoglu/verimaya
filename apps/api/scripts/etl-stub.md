@@ -16,7 +16,7 @@ Eşleme: `docs/legacy-reference/ETL-ESLEME.md`. Script: `apps/api/scripts/etl.js
 3. **Kişiler & hastalar** — contacts + patients + `external_ids` ✅ (Adım 28)
 4. **İlişkili veri** — randevu, işlem, dosya meta, case notları ✅ (Adım 29)
 5. **Doğrulama** — `etl:verify` satır / para / duplicate ✅ (Adım 30)
-6. **Kesim** — `docs/ETL-KESIM.md` kontrol listesi ✅ (Adım 30)
+6. **Kesim** — `docs/Arşiv/ETL-KESIM.md` kontrol listesi ✅ (Adım 30)
 
 ## CLI
 
@@ -34,7 +34,7 @@ TRACKER_DATABASE_URL=postgresql://… \
   pnpm --filter @verimaya/api etl:verify -- --tenant-id <uuid> --tracker-tenant-id <tracker-tenant-uuid>
 ```
 
-Kesim runbook: `docs/ETL-KESIM.md`.
+Kesim runbook: `docs/Arşiv/ETL-KESIM.md`.
 
 ### Apply katmanları
 

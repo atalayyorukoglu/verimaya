@@ -4,7 +4,7 @@ Tarih: 2026-08-07
 
 Kaynaklar:
 
-- `docs/tracker-verimaya-sayfa-karsilastirma.md` (sayfa envanteri — başlangıç noktası)
+- `docs/Arşiv/tracker-verimaya-sayfa-karsilastirma.md` (sayfa envanteri — başlangıç noktası)
 - `docs/legacy-reference/`: `README.md`, `ayarlar.md`, `raporlar.md`, `case-expenses.md`, `dosyalar.md`, `kisiler.md`, `doviz.md`, `dev-panel.md`, `ETL-ESLEME.md`
 - `AGENTS.md`, `docs/2026-08-03-YAPILACAKLAR.md`
 - Tracker FE: `frontend/src/App.tsx`, `routes/**` (özellikle `TransactionsPage`, `AppointmentsPage`, `ContactsPage`, `ReportsPage`, `DashboardPage`, `WhatsAppImportPage`, `settings/**`)

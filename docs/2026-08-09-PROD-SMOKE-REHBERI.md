@@ -185,7 +185,7 @@ Bunları “düzeltilecek ürün bug’ı” sanma. Rehber + liste senkronu içi
 
 ## 4. DOMAIN-02 — Kişiler birleşmesi (2026-08-10)
 
-> Detaylı checklist: `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md` § canlı kontrol.
+> Detaylı checklist: `docs/Arşiv/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md` § canlı kontrol.
 > Prod deploy sonrası tıklama (E3).
 
 - [x] Menüde tek **Kişiler**; `/patients` → `/contacts` redirect
@@ -202,5 +202,5 @@ Bunları “düzeltilecek ürün bug’ı” sanma. Rehber + liste senkronu içi
 - Arşiv checklist (A kanıtı + eski C/F/G kod denetimi): `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md`
 - Önceki yapılacaklar: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`
 - Aktif sıra: `docs/2026-08-09-YAPILACAKLAR.md`
-- DOMAIN-02 deploy: `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md`
+- DOMAIN-02 deploy: `docs/Arşiv/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md`
 

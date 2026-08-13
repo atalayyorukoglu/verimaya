@@ -169,7 +169,7 @@
 ### 4. DOMAIN-02 — kalan: E4 GHL
 
 > Adım ayrıntısı: `docs/Arşiv/2026-08-10-KISILER-BIRLESME-PLANI.md`. Faz A–F + E3 ✅.
-> Deploy: `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md`.
+> Deploy: `docs/Arşiv/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md`.
 
 - [x] **E4 ✅ (2026-08-13)** — bkz. Son kapananlar · DOMAIN-02 E4. Blok kapandı, PILOT-02 girişi açıldı.
 
@@ -397,7 +397,7 @@
 |------|--------|
 | Önceki dönem kapananları | `docs/Arşiv/2026-08-09-YAPILACAKLAR.md`, `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` |
 | Kişiler birleşmesi adımları | `docs/Arşiv/2026-08-10-KISILER-BIRLESME-PLANI.md` |
-| DOMAIN-02 deploy | `docs/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md` |
+| DOMAIN-02 deploy | `docs/Arşiv/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md` |
 | Prod tıklama | `docs/2026-08-09-PROD-SMOKE-REHBERI.md` |
 | Migration A kanıtı | `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md` |
 | Tracker gap | `docs/tracker-verimaya-ozellik-gap.md` |
