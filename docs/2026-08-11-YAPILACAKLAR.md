@@ -184,9 +184,16 @@
 > KPI: aktif kullanıcı/gün, Tracker’a dönüş, AI taslak kabul/düzeltme/red, finans mutabakat,
 > randevu kaçırma, webhook/job fail, destek süresi, haftalık yedek + restore.
 
-- [ ] Pilot planını yaz, KPI'ları tanımla
-- [ ] Feature freeze ilan et — yalnız hata + güvenlik + veri düzeltme migration; yeni yüzey yok
-- [ ] 2–4 hafta çalıştır + haftalık raporla
+> **Plan: `docs/2026-08-13-PILOT-02-PLANI.md`** — tarihler, KPI ölçüm kaynakları, haftalık ritim.
+
+- [x] **Pilot planı + KPI tanımları yazıldı** (2026-08-13).
+  **Görüş:** 17 Ağustos – 6 Eylül (3 hafta), OrbisMed'den 2–3 kullanıcı. Sekiz KPI'ın her
+  birine ölçüm kaynağı bağlandı; beşi sistemden (audit log, ai_corrections, no_show oranı,
+  hata logları), üçü elle (Tracker'a dönüş, finans mutabakat, destek süresi). Elle olanlar
+  toplanmazsa o KPI boş kalır — planda açıkça yazılı.
+- [ ] **Feature freeze ilan et** — 17 Ağustos'ta yürürlüğe girer; yalnız hata + güvenlik +
+  veri düzeltme migration'ı, yeni yüzey yok
+- [ ] 3 hafta çalıştır + her Perşembe raporla (20 Ağu · 27 Ağu · 3 Eyl)
 - **Kabul:** KPI raporu yazılı; freeze ihlali varsa listelenmiş.
 
 #### Pilot-02 sonu kapıları (ikinci müşteri öncesi ZORUNLU)
