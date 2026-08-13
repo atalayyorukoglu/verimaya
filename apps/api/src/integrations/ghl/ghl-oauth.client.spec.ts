@@ -26,7 +26,7 @@ describe('GhlOAuthClient', () => {
 		const url = new URL(
 			client.buildAuthorizeUrl({
 				state: 'st-1',
-				redirectUri: 'http://localhost:3000/v1/integrations/ghl/callback'
+				redirectUri: 'http://localhost:3000/v1/integrations/crm/callback'
 			})
 		);
 		expect(url.origin + url.pathname).toBe(
@@ -60,7 +60,7 @@ describe('GhlOAuthClient', () => {
 		const before = Date.now();
 		const { secret } = await client.exchangeCode({
 			code: 'auth-code',
-			redirectUri: 'http://localhost:3000/v1/integrations/ghl/callback'
+			redirectUri: 'http://localhost:3000/v1/integrations/crm/callback'
 		});
 		const parsed = parseGhlStoredSecret(secret);
 		expect(parsed.accessToken).toBe('access-1');

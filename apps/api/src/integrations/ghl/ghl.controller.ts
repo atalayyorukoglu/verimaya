@@ -51,7 +51,10 @@ function webPublicUrl(): string {
 }
 
 function ghlCallbackRedirectUri(): string {
-	return `${ghlRedirectBase()}/v1/integrations/ghl/callback`;
+	// Brand-neutral path required: GHL Marketplace rejects redirect URIs that
+	// contain "ghl" / Highlevel references ("The redirect uri contains a Highlevel
+	// reference"). Authorize + token exchange must use this same URI.
+	return `${ghlRedirectBase()}/v1/integrations/crm/callback`;
 }
 
 /**
@@ -210,8 +213,9 @@ export class GhlController {
 /**
  * Public OAuth callback — provider redirects the browser here with `code`+`state`.
  * No session/API-key; tenant is recovered from signed OAuth state (AUDIT-F09-18 split).
+ * Path is `integrations/crm` (not `ghl`) — GHL Marketplace brand restriction on redirect URIs.
  */
-@Controller('integrations/ghl')
+@Controller('integrations/crm')
 export class GhlOAuthCallbackController {
 	private readonly oauth: GhlOAuthClient;
 

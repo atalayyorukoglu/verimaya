@@ -64,7 +64,8 @@ export const apiPaths = {
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
 	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
-	integrationsGhlCallback: `${API_V1_PREFIX}/integrations/ghl/callback`,
+	// Neutral path — GHL Marketplace rejects redirect URIs containing "ghl"/Highlevel.
+	integrationsGhlCallback: `${API_V1_PREFIX}/integrations/crm/callback`,
 	integrationsGhlReconcile: `${API_V1_PREFIX}/integrations/ghl/reconcile`,
 	integrationsGhl: `${API_V1_PREFIX}/integrations/ghl`,
 	integrationsAdsStatus: `${API_V1_PREFIX}/integrations/ads/status`,
