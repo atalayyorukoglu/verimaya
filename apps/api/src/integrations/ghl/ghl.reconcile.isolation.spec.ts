@@ -54,6 +54,8 @@ describe('GhlReconcileService (Adım 43)', () => {
 			{
 				id: 'c_rec_1',
 				locationId: 'loc-1',
+				firstName: null,
+				lastName: null,
 				fullName: 'Reconcile Correct Name',
 				phone: '+905551111111',
 				email: 'rec@example.com',

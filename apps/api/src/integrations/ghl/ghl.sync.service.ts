@@ -57,6 +57,31 @@ function splitPersonName(fullName: string): { firstName: string; lastName: strin
 	return { firstName: parts[0]!, lastName: parts.slice(1).join(' ') };
 }
 
+/**
+ * Name write priority: (1) GHL separate first/last as-is; (2) else split combined.
+ * Does not alter casing. displayName follows today's rule (= fullName source).
+ */
+function resolvePersonName(remote: GhlRemoteContact): {
+	firstName: string | null;
+	lastName: string | null;
+	displayName: string;
+} | null {
+	const first = normStr(remote.firstName);
+	const last = normStr(remote.lastName);
+	const combined = normStr(remote.fullName);
+
+	if (first != null || last != null) {
+		const fromParts = [first, last].filter(Boolean).join(' ').trim();
+		const displayName = fromParts || combined;
+		if (!displayName) return null;
+		return { firstName: first, lastName: last, displayName };
+	}
+
+	if (!combined) return null;
+	const split = splitPersonName(combined);
+	return { firstName: split.firstName, lastName: split.lastName, displayName: combined };
+}
+
 type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
 
 /**
@@ -91,14 +116,16 @@ export class GhlSyncService {
 		remote: GhlRemoteContact
 	): Promise<ApplyRemoteContactResult> {
 		const externalId = remote.id.trim();
-		const fullName = normStr(remote.fullName);
-		if (!fullName || !isSafeExternalId(externalId)) {
+		const resolved = resolvePersonName(remote);
+		if (!resolved || !isSafeExternalId(externalId)) {
 			return { action: 'skipped', contactId: null, changedFields: [] };
 		}
 
+		const { firstName: nextFirst, lastName: nextLast, displayName: nextFullName } = resolved;
+
 		const ownedPatch = pickOwnedFields(
 			{
-				fullName,
+				fullName: nextFullName,
 				phone: normStr(remote.phone),
 				email: normEmail(remote.email),
 				status: 'scheduled',
@@ -130,9 +157,11 @@ export class GhlSyncService {
 				}
 
 				const changedFields: string[] = [];
-				const nextFullName = String(ownedPatch.fullName);
-				const { firstName: nextFirst, lastName: nextLast } = splitPersonName(nextFullName);
-				if (row.displayName !== nextFullName) changedFields.push('fullName');
+				const nameChanged =
+					row.displayName !== nextFullName ||
+					normStr(row.firstName) !== nextFirst ||
+					normStr(row.lastName) !== nextLast;
+				if (nameChanged) changedFields.push('fullName');
 
 				const nextPhone =
 					ownedPatch.phone != null ? String(ownedPatch.phone) : row.phone;
@@ -174,8 +203,7 @@ export class GhlSyncService {
 			}
 
 			const hastaType = await this.requireHastaType(db, tenantId);
-			const { firstName, lastName } = splitPersonName(String(ownedPatch.fullName));
-			const displayName = String(ownedPatch.fullName);
+			const displayName = nextFullName;
 
 			const [created] = await db
 				.insert(contacts)
@@ -183,8 +211,8 @@ export class GhlSyncService {
 					tenantId,
 					contactTypeId: hastaType.id,
 					contactTypeName: hastaType.name,
-					firstName,
-					lastName,
+					firstName: nextFirst,
+					lastName: nextLast,
 					displayName,
 					phone: ownedPatch.phone != null ? String(ownedPatch.phone) : null,
 					email: ownedPatch.email != null ? String(ownedPatch.email) : null,
@@ -223,22 +251,25 @@ export class GhlSyncService {
 
 		if (parsed.kind === 'unknown') {
 			action = 'skipped_unknown';
-		} else if (parsed.kind === 'contact' || parsed.contact?.fullName) {
+		} else if (parsed.kind === 'contact' || parsed.contact?.fullName || parsed.contact?.firstName) {
 			const contact = parsed.contact;
 			const externalId = contact?.externalId ?? parsed.externalId;
+			const hasName = Boolean(contact?.fullName || contact?.firstName || contact?.lastName);
 
-			if (!contact?.fullName || !externalId || !isSafeExternalId(externalId)) {
+			if (!hasName || !externalId || !isSafeExternalId(externalId)) {
 				action = 'skipped_incomplete';
 				this.logger.log(
-					`GHL event ${event.integrationEventId}: incomplete/unsafe contact fields (need fullName+safe externalId)`
+					`GHL event ${event.integrationEventId}: incomplete/unsafe contact fields (need name+safe externalId)`
 				);
 			} else {
 				const applied = await this.applyRemoteContact(event.tenantId, {
 					id: externalId,
 					locationId: null,
-					fullName: contact.fullName,
-					phone: contact.phone,
-					email: contact.email,
+					firstName: contact!.firstName,
+					lastName: contact!.lastName,
+					fullName: contact!.fullName,
+					phone: contact!.phone,
+					email: contact!.email,
 					dateUpdated: null
 				});
 				contactId = applied.contactId;

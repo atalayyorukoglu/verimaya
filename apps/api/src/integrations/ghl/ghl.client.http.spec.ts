@@ -61,9 +61,43 @@ describe('GhlHttpClient', () => {
 		expect(contact).toEqual({
 			id: 'c1',
 			locationId: 'loc-1',
+			firstName: null,
+			lastName: null,
 			fullName: 'Ada Lovelace',
 			phone: '+1',
 			email: 'ada@example.com',
+			dateUpdated: null
+		});
+	});
+
+	it('getContact prefers separate first/last over lowercased combined name', async () => {
+		const fetchFn: FetchFn = async () =>
+			jsonResponse({
+				contact: {
+					id: 'c_live',
+					locationId: 'loc-1',
+					firstName: 'Ancuta Monica',
+					lastName: 'Naste-0',
+					fullName: 'ancuta monica naste-0',
+					name: 'ancuta monica naste-0'
+				}
+			});
+
+		const client = new GhlHttpClient(sync, settings, {
+			fetchFn,
+			oauth,
+			minRequestGapMs: 0,
+			sleepFn: async () => undefined
+		});
+		const contact = await client.getContact(tenantId, 'c_live');
+		expect(contact).toEqual({
+			id: 'c_live',
+			locationId: 'loc-1',
+			firstName: 'Ancuta Monica',
+			lastName: 'Naste-0',
+			fullName: 'Ancuta Monica Naste-0',
+			phone: null,
+			email: null,
 			dateUpdated: null
 		});
 	});

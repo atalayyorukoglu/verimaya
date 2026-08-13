@@ -18,14 +18,17 @@ function pickString(source: Record<string, unknown> | null, keys: string[]): str
 	return null;
 }
 
+/**
+ * Display / fallback name. Prefer GHL's separate first/last (correct casing +
+ * field boundaries) over combined fields, which GHL often lowercases.
+ */
 function composeFullName(source: Record<string, unknown> | null): string | null {
-	const direct = pickString(source, ['fullName', 'full_name', 'name', 'contactName']);
-	if (direct) return direct;
-
 	const first = pickString(source, ['firstName', 'first_name']);
 	const last = pickString(source, ['lastName', 'last_name']);
-	const combined = [first, last].filter(Boolean).join(' ').trim();
-	return combined || null;
+	const fromParts = [first, last].filter(Boolean).join(' ').trim();
+	if (fromParts) return fromParts;
+
+	return pickString(source, ['fullName', 'full_name', 'name', 'contactName']);
 }
 
 /**
@@ -91,6 +94,8 @@ export function extractGhlContactFields(payload: Record<string, unknown>): GhlCo
 
 	return {
 		externalId,
+		firstName: pickString(source, ['firstName', 'first_name']),
+		lastName: pickString(source, ['lastName', 'last_name']),
 		fullName: composeFullName(source),
 		phone: pickString(source, ['phone', 'phoneNumber', 'phone_number']),
 		email: pickString(source, ['email', 'emailAddress', 'email_address'])

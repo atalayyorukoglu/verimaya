@@ -56,14 +56,16 @@ function defaultSleep(ms: number): Promise<void> {
 function mapContact(row: GhlContactApiRow): GhlRemoteContact | null {
 	const id = row.id?.trim();
 	if (!id) return null;
-	const fullName =
-		row.fullName?.trim() ||
-		row.name?.trim() ||
-		[row.firstName, row.lastName].filter(Boolean).join(' ').trim() ||
-		null;
+	const firstName = row.firstName?.trim() || null;
+	const lastName = row.lastName?.trim() || null;
+	const fromParts = [firstName, lastName].filter(Boolean).join(' ').trim() || null;
+	// Prefer separate first/last over combined (GHL combined is often lowercased).
+	const fullName = fromParts || row.fullName?.trim() || row.name?.trim() || null;
 	return {
 		id,
 		locationId: row.locationId?.trim() || null,
+		firstName,
+		lastName,
 		fullName,
 		phone: row.phone?.trim() || null,
 		email: row.email?.trim() || null,

@@ -18,6 +18,10 @@ export type GhlSyncAction =
 /** Contact fields extracted from a fixture-shaped GHL webhook payload. */
 export type GhlContactFields = {
 	externalId: string | null;
+	/** GHL firstName as sent — prefer over splitting fullName when present. */
+	firstName: string | null;
+	/** GHL lastName as sent — prefer over splitting fullName when present. */
+	lastName: string | null;
 	fullName: string | null;
 	phone: string | null;
 	email: string | null;
@@ -37,6 +41,10 @@ export type GhlProcessResult = {
 export type GhlRemoteContact = {
 	id: string;
 	locationId: string | null;
+	/** Separate GHL firstName — when set, sync must not re-split fullName. */
+	firstName: string | null;
+	/** Separate GHL lastName — when set, sync must not re-split fullName. */
+	lastName: string | null;
 	fullName: string | null;
 	phone: string | null;
 	email: string | null;

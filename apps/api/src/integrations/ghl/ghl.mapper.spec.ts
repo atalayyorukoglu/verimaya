@@ -22,9 +22,50 @@ describe('ghl.mapper', () => {
 		expect(extractGhlExternalId(payload, 'contact')).toBe('c_100');
 		expect(extractGhlContactFields(payload)).toEqual({
 			externalId: 'c_100',
+			firstName: 'Ayşe',
+			lastName: 'Yılmaz',
 			fullName: 'Ayşe Yılmaz',
 			phone: '+905551112233',
 			email: 'ayse@example.com'
+		});
+	});
+
+	it('keeps multi-word firstName and prefers separate fields over lowercased combined', () => {
+		const payload = {
+			type: 'ContactCreate',
+			contact: {
+				id: 'c_live',
+				firstName: 'Ancuta Monica',
+				lastName: 'Naste-0',
+				fullName: 'ancuta monica naste-0',
+				name: 'ancuta monica naste-0'
+			}
+		};
+		expect(extractGhlContactFields(payload)).toEqual({
+			externalId: 'c_live',
+			firstName: 'Ancuta Monica',
+			lastName: 'Naste-0',
+			fullName: 'Ancuta Monica Naste-0',
+			phone: null,
+			email: null
+		});
+	});
+
+	it('falls back to combined fullName when first/last absent', () => {
+		const payload = {
+			type: 'ContactCreate',
+			contact: {
+				id: 'c_combined',
+				fullName: 'John Doe'
+			}
+		};
+		expect(extractGhlContactFields(payload)).toEqual({
+			externalId: 'c_combined',
+			firstName: null,
+			lastName: null,
+			fullName: 'John Doe',
+			phone: null,
+			email: null
 		});
 	});
 

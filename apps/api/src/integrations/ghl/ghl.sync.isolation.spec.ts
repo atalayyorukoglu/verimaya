@@ -115,4 +115,109 @@ describe('GhlSyncService tenant isolation', () => {
 		});
 		expect(notesRow[0]?.notes).toBeNull();
 	});
+
+	it('preserves GHL firstName/lastName boundaries and casing (live case)', async () => {
+		const externalId = 'c_ancuta_live';
+		const result = await syncService.processInboundEvent({
+			integrationEventId: randomUUID(),
+			tenantId: tenantA,
+			payload: {
+				type: 'ContactCreate',
+				contact: {
+					id: externalId,
+					firstName: 'Ancuta Monica',
+					lastName: 'Naste-0',
+					fullName: 'ancuta monica naste-0',
+					name: 'ancuta monica naste-0',
+					phone: '+905550000010',
+					email: 'ancuta@example.com'
+				}
+			}
+		});
+		expect(result.action).toBe('contact_created');
+		expect(result.contactId).toBeTruthy();
+
+		const { sql } = getDb(databaseUrl);
+		const rows = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select first_name, last_name, display_name from contacts
+				where id = ${result.contactId!} and deleted_at is null
+			`;
+		});
+		expect(rows).toHaveLength(1);
+		expect(rows[0]?.first_name).toBe('Ancuta Monica');
+		expect(rows[0]?.last_name).toBe('Naste-0');
+		expect(rows[0]?.display_name).toBe('Ancuta Monica Naste-0');
+
+		const leaked = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			return tx`
+				select id from contacts
+				where id = ${result.contactId!} and deleted_at is null
+			`;
+		});
+		expect(leaked).toHaveLength(0);
+	});
+
+	it('splits combined-only fullName on first space (legacy fallback)', async () => {
+		const externalId = 'c_combined_only';
+		const result = await syncService.processInboundEvent({
+			integrationEventId: randomUUID(),
+			tenantId: tenantA,
+			payload: {
+				type: 'ContactCreate',
+				contact: {
+					id: externalId,
+					fullName: 'Isolation Patient Combined',
+					phone: '+905550000011',
+					email: 'combined@example.com'
+				}
+			}
+		});
+		expect(result.action).toBe('contact_created');
+
+		const { sql } = getDb(databaseUrl);
+		const rows = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select first_name, last_name, display_name from contacts
+				where id = ${result.contactId!} and deleted_at is null
+			`;
+		});
+		expect(rows[0]?.first_name).toBe('Isolation');
+		expect(rows[0]?.last_name).toBe('Patient Combined');
+		expect(rows[0]?.display_name).toBe('Isolation Patient Combined');
+	});
+
+	it('keeps firstName as-is when lastName is empty', async () => {
+		const externalId = 'c_first_only';
+		const result = await syncService.processInboundEvent({
+			integrationEventId: randomUUID(),
+			tenantId: tenantA,
+			payload: {
+				type: 'ContactCreate',
+				contact: {
+					id: externalId,
+					firstName: 'OnlyFirst',
+					lastName: '',
+					phone: '+905550000012',
+					email: 'firstonly@example.com'
+				}
+			}
+		});
+		expect(result.action).toBe('contact_created');
+
+		const { sql } = getDb(databaseUrl);
+		const rows = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select first_name, last_name, display_name from contacts
+				where id = ${result.contactId!} and deleted_at is null
+			`;
+		});
+		expect(rows[0]?.first_name).toBe('OnlyFirst');
+		expect(rows[0]?.last_name).toBeNull();
+		expect(rows[0]?.display_name).toBe('OnlyFirst');
+	});
 });
