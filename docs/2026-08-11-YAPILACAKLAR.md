@@ -68,10 +68,12 @@
   **2026-08-12 ihlali:** `Demo Tek Ay Klinik` açıldı; gezinme trafiği artınca auth rate-limit
   kusurunu tetikleyip prod'da oturum kesintisi çıkardı (Son kapananlar · RATE-01). Org silindi,
   kurala dönüldü. Kural pilot boyunca yürürlükte.
-- [~] **Tenant adı:** **Karar (2026-08-12): rename.** Silme değerlendirildi ve reddedildi —
-  pilot verisi (757 dosya / 548 işlem / 703 randevu) PILOT-01 smoke kanıtının ve OPS-02e
-  kaynak doluluğu ölçümünün dayanağı; ayrıca tek org olduğu için silmek panele girişi kilitler.
-  Kalan: adı Ayarlar → Organizasyon → Firma adı'ndan değiştir (30 saniye).
+- [x] **Tenant adı ✅** (2026-08-13) — rename yapıldı.
+  **Görüş:** silme değerlendirildi ve reddedildi — pilot verisi PILOT-01 smoke kanıtının ve
+  OPS-02e ölçümünün dayanağı; ayrıca tek org olduğu için silmek panele girişi kilitlerdi.
+  Rename sırasında iki tablo ayrışması ortaya çıktı ve kapatıldı (Son kapananlar · Firma adı
+  senkronu).
+- **PILOT-01 ✅ kapandı** (2026-08-13). Kalan tek satır aşağıdaki *devam eden kural*; iş değil.
 - **Bağımlı:** yok.
 - **Kabul:** PROD-SMOKE-REHBERI Sonuç "takılan yok".
 
