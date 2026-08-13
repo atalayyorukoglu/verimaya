@@ -1,7 +1,7 @@
 # Prod kontrol listesi — migration 0028–0030 sonrası
 
 > **Arşiv (2026-08-09).** Aktif tıklama rehberi + tutarsızlıklar:
-> [`docs/2026-08-09-PROD-SMOKE-REHBERI.md`](../2026-08-09-PROD-SMOKE-REHBERI.md).
+> [`docs/2026-08-09-PROD-SMOKE-REHBERI.md`](./2026-08-09-PROD-SMOKE-REHBERI.md).
 > Bu dosya § A migration kanıtı ve eski C/F/G kod denetimi için saklanır.
 
 Tarih: 2026-08-08 · Tenant: Demo Klinik (kendi firmamız) · Kaynak: bu turda kapanan

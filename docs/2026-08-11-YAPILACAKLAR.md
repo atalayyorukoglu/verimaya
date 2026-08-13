@@ -10,7 +10,7 @@
 > **Durum anı:** branch `main`. DOMAIN-02 merge+deploy (E4 GHL hariç). Prod migrate
 > `0047`'ye kadar uygulandı (2026-08-12, psql ile doğrulandı — bkz. Son kapananlar · 0046/0047).
 > Panel tek **Kişiler** (soyad sırası + load-more düzeltildi).
-> Pilot tenant: `Demo Klinik`. Smoke: `docs/2026-08-09-PROD-SMOKE-REHBERI.md`.
+> Pilot tenant: `Demo Klinik`. Smoke: `docs/Arşiv/2026-08-09-PROD-SMOKE-REHBERI.md`.
 > Web canlı = GHCR `verimaya-web:main` (CI yeşil → imaj → Coolify); Restart eski imajı açar.
 
 ---
@@ -61,7 +61,7 @@
 
 > Migration 0028–0038 prod'da. Kalan: insan gözüyle ekran kanıtı.
 
-- [x] **Prod smoke turu** — `docs/2026-08-09-PROD-SMOKE-REHBERI.md` §1–§3 (2026-08-12).
+- [x] **Prod smoke turu** — `docs/Arşiv/2026-08-09-PROD-SMOKE-REHBERI.md` §1–§3 (2026-08-12).
   **Görüş:** kullanıcı turu yaptı, takılan madde bildirmedi. Tur sırasında bulunan panel
   kusurları ayrı kalem olarak açılıp kapandı (bkz. Son kapananlar · panel düzeltmeleri).
 - [ ] Pilot boyunca **ikinci organizasyon yaratma** (demo/test org dahil) — devam eden kural.
@@ -398,7 +398,7 @@
 | Önceki dönem kapananları | `docs/Arşiv/2026-08-09-YAPILACAKLAR.md`, `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` |
 | Kişiler birleşmesi adımları | `docs/Arşiv/2026-08-10-KISILER-BIRLESME-PLANI.md` |
 | DOMAIN-02 deploy | `docs/Arşiv/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md` |
-| Prod tıklama | `docs/2026-08-09-PROD-SMOKE-REHBERI.md` |
+| Prod tıklama | `docs/Arşiv/2026-08-09-PROD-SMOKE-REHBERI.md` |
 | Migration A kanıtı | `docs/Arşiv/2026-08-08-PROD-KONTROL-LISTESI.md` |
 | Tracker gap | `docs/tracker-verimaya-ozellik-gap.md` |
 | Denetim | `AUDIT-REPORT.md` |
