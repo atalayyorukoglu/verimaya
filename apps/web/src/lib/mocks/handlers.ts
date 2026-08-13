@@ -1281,6 +1281,23 @@ export const handlers = [
 		return HttpResponse.json({ mode: 'oauth', upserted: 3 });
 	}),
 
+	http.post('/v1/integrations/ghl/reconcile', () => {
+		return HttpResponse.json(
+			{
+				status: 'completed',
+				mode: 'live',
+				lookback_days: 7,
+				scanned: 2,
+				created: 1,
+				updated: 1,
+				unchanged: 0,
+				skipped: 0,
+				diff_count: 2
+			},
+			{ status: 200 }
+		);
+	}),
+
 	http.post('/v1/transactions', async ({ request }) => {
 		const body = await request.json();
 		const parsed = transactionCreateSchema.safeParse(body);

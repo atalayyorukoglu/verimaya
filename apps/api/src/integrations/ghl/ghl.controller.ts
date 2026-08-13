@@ -3,18 +3,26 @@ import {
 	Delete,
 	Get,
 	HttpCode,
+	Logger,
+	Post,
 	Query,
 	Req,
 	Res,
 	UseGuards
 } from '@nestjs/common';
-import { ghlOAuthCallbackQuery, type GhlConnectionStatus } from '@verimaya/shared';
+import {
+	ghlOAuthCallbackQuery,
+	type GhlConnectionStatus,
+	type GhlReconcileTriggerResult
+} from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId } from '../../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../../common/auth-or-api-key.guard';
 import { IdempotencyExempt } from '../../common/idempotent.decorator';
 import { OrgPermissionGuard } from '../../common/org-permission.guard';
 import { RequireOrgPermission } from '../../common/require-org-permission.decorator';
+import { GHL_RECONCILE_JOB_TYPE } from '../../queue/queue.constants';
+import { QueueService } from '../../queue/queue.service';
 import { SettingsService } from '../../settings/settings.service';
 import {
 	ghlOAuthClientFromEnv,
@@ -22,6 +30,7 @@ import {
 	type GhlOAuthClient
 } from './ghl-oauth.client';
 import { GHL_OAUTH_PROVIDER, GhlOAuthStateService } from './ghl-oauth.state';
+import { GhlReconcileService } from './ghl.reconcile.service';
 
 function ghlRedirectBase(): string {
 	const base =
@@ -53,10 +62,13 @@ function ghlCallbackRedirectUri(): string {
 @UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class GhlController {
 	private readonly oauth: GhlOAuthClient;
+	private readonly logger = new Logger(GhlController.name);
 
 	constructor(
 		private readonly oauthState: GhlOAuthStateService,
-		private readonly settings: SettingsService
+		private readonly settings: SettingsService,
+		private readonly queue: QueueService,
+		private readonly ghlReconcile: GhlReconcileService
 	) {
 		this.oauth = ghlOAuthClientFromEnv();
 	}
@@ -104,6 +116,42 @@ export class GhlController {
 		return reply.redirect(url, 302);
 	}
 
+	/**
+	 * Manual one-shot GHL→panel pull. Prefers BullMQ (`enqueueGhlReconcile`); if the queue
+	 * is unavailable, runs {@link GhlReconcileService.reconcile} inline so the work is not
+	 * silently lost. Never writes panel fields back to GHL.
+	 */
+	@Post('reconcile')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'Ownership-aware GHL upserts converge on repeat (same as AdMetricsController.sync). In-flight BullMQ jobs for the same tenant are deduped before enqueue so a double-click does not stack work.'
+	)
+	async reconcile(
+		@Req() req: FastifyRequest,
+		@Res({ passthrough: true }) reply: FastifyReply
+	): Promise<GhlReconcileTriggerResult> {
+		const tenantId = getActiveOrgId(req);
+		const queued = await this.tryEnqueueReconcile(tenantId);
+		if (queued) {
+			reply.status(202);
+			return queued;
+		}
+
+		const result = await this.ghlReconcile.reconcile(tenantId);
+		reply.status(200);
+		return {
+			status: 'completed',
+			mode: result.mode,
+			lookback_days: result.lookbackDays,
+			scanned: result.scanned,
+			created: result.created,
+			updated: result.updated,
+			unchanged: result.unchanged,
+			skipped: result.skipped,
+			diff_count: result.diffCount
+		};
+	}
+
 	@Delete()
 	@HttpCode(204)
 	@RequireOrgPermission('settings', 'update')
@@ -112,6 +160,50 @@ export class GhlController {
 	)
 	async disconnect(@Req() req: FastifyRequest) {
 		await this.settings.deleteCredential(getActiveOrgId(req), GHL_OAUTH_PROVIDER);
+	}
+
+	/**
+	 * Returns a queued response when enqueue succeeds (or an in-flight job already exists).
+	 * Returns null when the queue is down so the caller can run reconcile inline.
+	 */
+	private async tryEnqueueReconcile(
+		tenantId: string
+	): Promise<Extract<GhlReconcileTriggerResult, { status: 'queued' }> | null> {
+		const queue = this.queue.getDefaultQueue();
+		if (!queue) {
+			this.logger.warn(
+				`ghl.reconcile manual: default queue not ready — running inline for tenant=${tenantId}`
+			);
+			return null;
+		}
+
+		try {
+			const inFlight = await queue.getJobs(['waiting', 'active', 'delayed', 'paused']);
+			const existing = inFlight.find(
+				(job) =>
+					job.name === GHL_RECONCILE_JOB_TYPE && job.data.tenantId === tenantId
+			);
+			if (existing) {
+				return {
+					status: 'queued',
+					job_id: String(existing.id),
+					already_queued: true
+				};
+			}
+
+			const job = await this.queue.enqueueGhlReconcile(tenantId);
+			return {
+				status: 'queued',
+				job_id: String(job.id),
+				already_queued: false
+			};
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			this.logger.warn(
+				`ghl.reconcile manual: enqueue failed (${message}) — running inline for tenant=${tenantId}`
+			);
+			return null;
+		}
 	}
 }
 

@@ -65,6 +65,7 @@ export const apiPaths = {
 	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
 	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
 	integrationsGhlCallback: `${API_V1_PREFIX}/integrations/ghl/callback`,
+	integrationsGhlReconcile: `${API_V1_PREFIX}/integrations/ghl/reconcile`,
 	integrationsGhl: `${API_V1_PREFIX}/integrations/ghl`,
 	integrationsAdsStatus: `${API_V1_PREFIX}/integrations/ads/status`,
 	integrationsAdsGoogleCustomerId: `${API_V1_PREFIX}/integrations/ads/google/customer-id`,
@@ -239,7 +240,7 @@ import {
 	reportTransactionDuplicatesSchema
 } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
-import { ghlConnectionStatus } from './ghl-connection.js';
+import { ghlConnectionStatus, ghlReconcileTriggerResult } from './ghl-connection.js';
 import {
 	adConnectionsResponse,
 	adConnectionStatus,
@@ -481,6 +482,9 @@ export const apiContract = {
 	},
 	'GET /v1/integrations/ghl/status': {
 		response: ghlConnectionStatus
+	},
+	'POST /v1/integrations/ghl/reconcile': {
+		response: ghlReconcileTriggerResult
 	},
 	'GET /v1/integrations/ads/status': {
 		response: adConnectionsResponse

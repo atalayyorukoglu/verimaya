@@ -468,6 +468,15 @@ const tr = {
 	'settings.ghl.loading': 'Bağlantı durumu yükleniyor…',
 	'settings.ghl.loadError': 'Bağlantı durumu yüklenemedi.',
 	'settings.ghl.disconnectError': 'Bağlantı kesilemedi',
+	'settings.ghl.sync': 'Şimdi senkronla',
+	'settings.ghl.syncing': 'Senkronlanıyor…',
+	'settings.ghl.syncHint':
+		"GHL'den kişileri şimdi çek. Panel ad/soyad/telefon/e-posta'yı GHL'e geri yazmaz — yalnız çekim.",
+	'settings.ghl.syncQueued': 'Senkron kuyruğa alındı; arka planda çalışacak.',
+	'settings.ghl.syncQueuedAlready': 'Senkron zaten kuyrukta; yeni iş eklenmedi.',
+	'settings.ghl.syncOk':
+		'Senkron tamam: {scanned} tarandı, {created} oluşturuldu, {updated} güncellendi ({mode}).',
+	'settings.ghl.syncError': 'Senkron başarısız.',
 	'settings.ghl.ownership.heading': 'Alan sahipliği',
 	'settings.ghl.ownership.lead': 'Lead durumu ve pipeline aşaması: GHL sahibi',
 	'settings.ghl.ownership.ops': 'Randevu, finans ve operasyon alanları: Veri Maya sahibi',
@@ -2232,6 +2241,15 @@ const en: Record<MessageKey, string> = {
 	'settings.ghl.loading': 'Loading connection status…',
 	'settings.ghl.loadError': 'Could not load connection status.',
 	'settings.ghl.disconnectError': 'Could not disconnect',
+	'settings.ghl.sync': 'Sync now',
+	'settings.ghl.syncing': 'Syncing…',
+	'settings.ghl.syncHint':
+		'Pull contacts from GHL now. The panel does not write name/phone/email back to GHL — pull only.',
+	'settings.ghl.syncQueued': 'Sync queued; it will run in the background.',
+	'settings.ghl.syncQueuedAlready': 'Sync is already queued; no new job was added.',
+	'settings.ghl.syncOk':
+		'Sync done: {scanned} scanned, {created} created, {updated} updated ({mode}).',
+	'settings.ghl.syncError': 'Sync failed.',
 	'settings.ghl.ownership.heading': 'Field ownership',
 	'settings.ghl.ownership.lead': 'Lead status and pipeline stage: GHL owns',
 	'settings.ghl.ownership.ops': 'Appointments, finance, and ops fields: Veri Maya owns',

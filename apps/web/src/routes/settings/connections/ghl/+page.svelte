@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { GhlConnectionStatus } from '@verimaya/shared';
+	import {
+		apiPaths,
+		type GhlConnectionStatus,
+		type GhlReconcileTriggerResult
+	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { PUBLIC_API_URL } from '$lib/env';
@@ -9,6 +13,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import IntegrationCard from '$lib/components/IntegrationCard.svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
@@ -17,7 +22,7 @@
 
 	const statusQuery = createQuery(() => ({
 		queryKey: qs.keys.integrations.ghlStatus(),
-		queryFn: () => apiGet<GhlConnectionStatus>('/v1/integrations/ghl/status'),
+		queryFn: () => apiGet<GhlConnectionStatus>(apiPaths.integrationsGhlStatus),
 		enabled: qs.ready
 	}));
 
@@ -53,17 +58,48 @@
 
 	let disconnecting = $state(false);
 	let disconnectError = $state<string | null>(null);
+	let syncing = $state(false);
+	let syncError = $state<string | null>(null);
+	let syncOk = $state<string | null>(null);
 
 	async function disconnect() {
 		disconnecting = true;
 		disconnectError = null;
 		try {
-			await apiSend('/v1/integrations/ghl', 'DELETE');
+			await apiSend(apiPaths.integrationsGhl, 'DELETE');
 			await queryClient.invalidateQueries({ queryKey: qs.keys.integrations.ghlStatus() });
 		} catch (err) {
 			disconnectError = err instanceof Error ? err.message : t('settings.ghl.disconnectError');
 		} finally {
 			disconnecting = false;
+		}
+	}
+
+	async function syncNow() {
+		syncing = true;
+		syncError = null;
+		syncOk = null;
+		try {
+			const result = await apiSend<GhlReconcileTriggerResult>(
+				apiPaths.integrationsGhlReconcile,
+				'POST'
+			);
+			if (result.status === 'queued') {
+				syncOk = result.already_queued
+					? t('settings.ghl.syncQueuedAlready')
+					: t('settings.ghl.syncQueued');
+			} else {
+				syncOk = t('settings.ghl.syncOk', {
+					scanned: String(result.scanned),
+					created: String(result.created),
+					updated: String(result.updated),
+					mode: result.mode
+				});
+			}
+		} catch (err) {
+			syncError = err instanceof Error ? err.message : t('settings.ghl.syncError');
+		} finally {
+			syncing = false;
 		}
 	}
 </script>
@@ -91,6 +127,21 @@
 		</div>
 	{/if}
 
+	{#if syncOk}
+		<div
+			class="mb-4 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
+			role="status"
+		>
+			{syncOk}
+		</div>
+	{/if}
+
+	{#if syncError}
+		<div class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+			{syncError}
+		</div>
+	{/if}
+
 	{#if statusQuery.isPending}
 		<p class="text-sm text-text-muted">{t('settings.ghl.loading')}</p>
 	{:else if statusQuery.isError}
@@ -108,6 +159,17 @@
 					? () => void disconnect()
 					: undefined}
 			/>
+
+			{#if statusQuery.data?.connected}
+				<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
+					<p class="text-sm text-text-muted">{t('settings.ghl.syncHint')}</p>
+					<div class="mt-3">
+						<Button type="button" size="sm" disabled={syncing} onclick={() => void syncNow()}>
+							{syncing ? t('settings.ghl.syncing') : t('settings.ghl.sync')}
+						</Button>
+					</div>
+				</div>
+			{/if}
 
 			<div class="rounded-lg border border-border bg-surface p-4 sm:p-5">
 				<h2 class="text-sm font-semibold text-text">{t('settings.ghl.ownership.heading')}</h2>

@@ -5321,6 +5321,76 @@ paths:
                   - location_id
                   - user_type
                 additionalProperties: false
+  /integrations/ghl/reconcile:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: object
+                    properties:
+                      status:
+                        type: string
+                        enum:
+                          - queued
+                      job_id:
+                        type: string
+                        minLength: 1
+                      already_queued:
+                        type: boolean
+                    required:
+                      - status
+                      - job_id
+                      - already_queued
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      status:
+                        type: string
+                        enum:
+                          - completed
+                      mode:
+                        type: string
+                        enum:
+                          - live
+                          - skipped_no_oauth
+                          - skipped_no_app_credentials
+                      lookback_days:
+                        type: integer
+                        exclusiveMinimum: true
+                        minimum: 0
+                      scanned:
+                        type: integer
+                        minimum: 0
+                      created:
+                        type: integer
+                        minimum: 0
+                      updated:
+                        type: integer
+                        minimum: 0
+                      unchanged:
+                        type: integer
+                        minimum: 0
+                      skipped:
+                        type: integer
+                        minimum: 0
+                      diff_count:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - status
+                      - mode
+                      - lookback_days
+                      - scanned
+                      - created
+                      - updated
+                      - unchanged
+                      - skipped
+                      - diff_count
+                    additionalProperties: false
   /integrations/ads/status:
     get:
       responses:

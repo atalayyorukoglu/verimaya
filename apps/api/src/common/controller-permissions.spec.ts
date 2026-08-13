@@ -767,6 +767,26 @@ describe('remaining authenticated controller organization permissions', () => {
 				makeContext(sessionRequest('owner'), GhlController.prototype.disconnect, GhlController)
 			)
 		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('agent'), GhlController.prototype.reconcile, GhlController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('manager'), GhlController.prototype.reconcile, GhlController)
+			)
+		).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('owner'), GhlController.prototype.reconcile, GhlController)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest('admin'), GhlController.prototype.reconcile, GhlController)
+			)
+		).resolves.toBe(true);
 	});
 
 	it('restricts member password-reset email to owner/admin (members.update)', async () => {
