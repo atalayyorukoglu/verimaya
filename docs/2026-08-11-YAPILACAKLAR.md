@@ -239,7 +239,6 @@
 
 ## Bekleyen (MARKET-02 sonrası / ikinci müşteri eşiği)
 
-- **GAP-25:** Kapsamlı veri silme (`/data/delete-scope`) + wipe.
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Veri Maya"**).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse).
@@ -291,6 +290,14 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **G-25 / GAP-25 kapsamlı veri silme ✅** (2026-08-14) — `POST /v1/settings/data-delete/preview|execute`;
+  kapsam seçimi (transactions/appointments/contacts/files, varsayılan hiçbiri); önizleme
+  `plan_token` (CryptoService, 10 dk TTL, jti tek kullanımlık); org adı birebir onay; yalnız
+  `owner` (G-11 override ile genişlemez); audit_logs silinmez ve wipe kaydı yazılır; tek
+  transaction. Panel: `/settings/data-delete` (Tehlikeli bölge).
+  **Görüş:** Tracker wipe audit’i de siliyordu — Verimaya bilerek iz bırakır. Kişiler seçince
+  randevu/dosya/case_notes önizlemede cascade olarak görünür. Kırmızı: owner/ad/token/audit/
+  rollback kapanınca spec düştü; yeşil restore 8/8.
 - **G-11 tenant izin matrisi ✅** (2026-08-14) — `tenant_permission_overrides` (RLS) +
   `GET/PATCH /v1/settings/permissions`; etkin izin = kod varsayılanı ∩ deny override
   (`hasOrgPermission` + `OrgPermissionGuard`); owner members/settings kilitli; genişletme yok.

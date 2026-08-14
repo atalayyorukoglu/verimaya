@@ -38,6 +38,7 @@ export * from './ai-disclosure.js';
 export * from './ai-prompt.js';
 export * from './permission-matrix.js';
 export * from './import-export.js';
+export * from './data-delete.js';
 export * from './marketing/index.js';
 export * from './scorecard/index.js';
 export * from './scorecard-api.js';

@@ -26,6 +26,7 @@ import { StorageModule } from "./storage/storage.module";
 import { PlatformModule } from "./platform/platform.module";
 import { FxModule } from "./fx/fx.module";
 import { ImportExportModule } from "./import-export/import-export.module";
+import { DataDeleteModule } from "./data-delete/data-delete.module";
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ImportExportModule } from "./import-export/import-export.module";
     WhatsappModule,
     SettingsModule,
     ImportExportModule,
+    DataDeleteModule,
     AuditLogsModule,
     AdsModule,
     GhlModule,

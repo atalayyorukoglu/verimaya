@@ -109,7 +109,7 @@ Tür: `eksik` | `sadeleşmiş` | `placeholder` | `ölü-kod-tracker` | `bilinçl
 
 | ID | Modül | Özellik | Tracker kanıtı | Verimaya durumu | Tür | Öncelik | Pilot etkisi | Not |
 |---|---|---|---|---|---|---|---|---|
-| G-25 | Ayarlar | data/delete-scope + wipe | `tenant_admin.py:102,132` | **AÇIK** — yok | eksik | P3 | Test temizliği | YAPILACAKLAR GAP-25 |
+| G-25 | Ayarlar | data/delete-scope + wipe | `tenant_admin.py:102,132` | **KAPANDI** — `POST /v1/settings/data-delete/preview|execute` + `/settings/data-delete` | kapandı | P3 | Test temizliği | YAPILACAKLAR Son kapananlar |
 | G-26 | Ayarlar | AI prompt özelleştirme | `/ai-prompt` | **AÇIK** — disclosure var, prompt yok | eksik | P3 | — | YAPILACAKLAR GAP-26 |
 | G-27 | Ayarlar | Toplu reorder | 4× `PUT .../reorder` | **KAPANDI** — finance/contact/appointment types reorder | sadeleşmiş→kapandı | ~~P3~~ | — | |
 | G-28 | Geliştirici | Dev panel gerçek arka uç | `dev_panel.py` | **KAPANDI** — Nest `platform.controller.ts` + `/dev` → `/v1/platform` | placeholder→kapandı | ~~P3~~ | — | MSW değil; platform allowlist |

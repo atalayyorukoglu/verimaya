@@ -12,6 +12,7 @@
 	import ChartColumn from '@lucide/svelte/icons/chart-column';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Contact from '@lucide/svelte/icons/contact';
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import Megaphone from '@lucide/svelte/icons/megaphone';
@@ -23,9 +24,10 @@
 		description: string;
 		icon: Component;
 		badge?: string;
+		tone?: 'danger';
 	};
 
-	type Section = { label: string; cards: Card[] };
+	type Section = { label: string; cards: Card[]; tone?: 'danger' };
 
 	const sections = $derived<Section[]>([
 		{
@@ -141,6 +143,19 @@
 					badge: 'Demo'
 				}
 			]
+		},
+		{
+			label: t('settings.nav.dangerZone'),
+			tone: 'danger',
+			cards: [
+				{
+					href: '/settings/data-delete',
+					title: t('settings.nav.dataDelete.title'),
+					description: t('settings.nav.dataDelete.description'),
+					icon: TriangleAlert,
+					tone: 'danger'
+				}
+			]
 		}
 	]);
 </script>
@@ -155,7 +170,11 @@
 	<div class="space-y-8">
 		{#each sections as section (section.label)}
 			<section>
-				<h2 class="mb-3 text-xs font-semibold tracking-wider text-text-muted uppercase">
+				<h2
+					class="mb-3 text-xs font-semibold tracking-wider uppercase {section.tone === 'danger'
+						? 'text-danger'
+						: 'text-text-muted'}"
+				>
 					{section.label}
 				</h2>
 				<ul class="grid gap-3 sm:grid-cols-2">
@@ -164,9 +183,16 @@
 						<li class="flex min-h-0">
 							<a
 								href={card.href}
-								class="flex h-full min-h-[7rem] w-full items-start gap-3 rounded-lg border border-border bg-surface p-4 transition-colors hover:bg-surface-2/60"
+								class="flex h-full min-h-[7rem] w-full items-start gap-3 rounded-lg border p-4 transition-colors {card.tone ===
+								'danger'
+									? 'border-danger/40 bg-danger/5 hover:bg-danger/10'
+									: 'border-border bg-surface hover:bg-surface-2/60'}"
 							>
-								<Icon class="mt-0.5 size-4 shrink-0 text-text-muted" />
+								<Icon
+									class="mt-0.5 size-4 shrink-0 {card.tone === 'danger'
+										? 'text-danger'
+										: 'text-text-muted'}"
+								/>
 								<div class="min-w-0 flex-1">
 									<div class="flex flex-wrap items-center gap-2">
 										<h3 class="font-medium text-text">{card.title}</h3>

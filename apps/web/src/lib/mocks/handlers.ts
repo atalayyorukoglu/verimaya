@@ -38,6 +38,10 @@ import {
 	whatsappAiPromptUpdateSchema,
 	defaultWhatsappAiPrompt,
 	buildPermissionMatrixFromOverrides,
+	dataDeletePreviewBodySchema,
+	dataDeleteExecuteBodySchema,
+	expandDataDeleteTables,
+	DATA_DELETE_PLAN_TTL_MS,
 	permissionMatrixPatchSchema,
 	type PermissionOverride,
 	whatsappCreateCategorySchema,
@@ -2056,6 +2060,99 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		store.aiPrompt = defaultWhatsappAiPrompt();
 		return HttpResponse.json(store.aiPrompt);
+	}),
+
+	http.post('/v1/settings/data-delete/preview', async ({ request }) => {
+		if (demoUser.role !== 'owner') {
+			return HttpResponse.json(
+				{ error: { code: 'owner_required', message: 'Only owner' }, request_id: 'msw' },
+				{ status: 403 }
+			);
+		}
+		const body = await request.json();
+		const parsed = dataDeletePreviewBodySchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz kapsam', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const tables = expandDataDeleteTables(parsed.data.scopes);
+		const counts = tables.map((table) => {
+			let count = 0;
+			if (table === 'transactions') count = store.transactions.length;
+			else if (table === 'appointments') count = store.appointments.length;
+			else if (table === 'contacts') count = store.contacts.length;
+			else if (table === 'files') count = store.files.length;
+			else if (table === 'case_notes') count = store.caseNotes?.length ?? 0;
+			return { table, count };
+		});
+		const exp = Date.now() + DATA_DELETE_PLAN_TTL_MS;
+		return HttpResponse.json({
+			plan_token: `msw-data-delete:${parsed.data.scopes.join(',')}:${exp}`,
+			expires_at: new Date(exp).toISOString(),
+			organization_name: store.tenant.name,
+			scopes: parsed.data.scopes,
+			counts,
+			total_rows: counts.reduce((s, c) => s + c.count, 0)
+		});
+	}),
+
+	http.post('/v1/settings/data-delete/execute', async ({ request }) => {
+		if (demoUser.role !== 'owner') {
+			return HttpResponse.json(
+				{ error: { code: 'owner_required', message: 'Only owner' }, request_id: 'msw' },
+				{ status: 403 }
+			);
+		}
+		const body = await request.json();
+		const parsed = dataDeleteExecuteBodySchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz silme isteği', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		if (parsed.data.confirm_organization_name.trim() !== store.tenant.name.trim()) {
+			return HttpResponse.json(
+				{
+					error: {
+						code: 'confirm_organization_name_mismatch',
+						message: 'Organization name mismatch'
+					},
+					request_id: 'msw'
+				},
+				{ status: 400 }
+			);
+		}
+		if (!parsed.data.plan_token.startsWith('msw-data-delete:')) {
+			return HttpResponse.json(
+				{ error: { code: 'invalid_plan_token', message: 'Invalid token' }, request_id: 'msw' },
+				{ status: 400 }
+			);
+		}
+		const scopePart = parsed.data.plan_token.split(':')[1] ?? '';
+		const scopes = scopePart.split(',').filter(Boolean) as Array<
+			'transactions' | 'appointments' | 'contacts' | 'files'
+		>;
+		const tables = expandDataDeleteTables(scopes);
+		const deleted = tables.map((table) => {
+			let count = 0;
+			if (table === 'transactions') {
+				count = store.transactions.length;
+				store.transactions = [];
+			} else if (table === 'appointments') {
+				count = store.appointments.length;
+				store.appointments = [];
+			} else if (table === 'contacts') {
+				count = store.contacts.length;
+				store.contacts = [];
+			} else if (table === 'files') {
+				count = store.files.length;
+				store.files = [];
+			} else if (table === 'case_notes' && store.caseNotes) {
+				count = store.caseNotes.length;
+				store.caseNotes = [];
+			}
+			return { table, count };
+		});
+		return HttpResponse.json({
+			scopes,
+			deleted,
+			total_deleted: deleted.reduce((s, c) => s + c.count, 0)
+		});
 	}),
 
 	http.get('/v1/settings/permissions', ({ request }) => {

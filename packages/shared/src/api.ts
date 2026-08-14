@@ -80,6 +80,8 @@ export const apiPaths = {
 	settingsImportBundleExport: `${API_V1_PREFIX}/settings/import-export/bundle/export.xlsx`,
 	settingsImportBundleDryRun: `${API_V1_PREFIX}/settings/import-export/bundle/import/dry-run`,
 	settingsImportBundleCommit: `${API_V1_PREFIX}/settings/import-export/bundle/import/commit`,
+	settingsDataDeletePreview: `${API_V1_PREFIX}/settings/data-delete/preview`,
+	settingsDataDeleteExecute: `${API_V1_PREFIX}/settings/data-delete/execute`,
 	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
 	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
 	// Neutral path — GHL Marketplace rejects redirect URIs containing "ghl"/Highlevel.
@@ -298,6 +300,12 @@ import {
 	importDryRunResultSchema,
 	xlsxDownloadSchema
 } from './import-export.js';
+import {
+	dataDeleteExecuteBodySchema,
+	dataDeleteExecuteResultSchema,
+	dataDeletePreviewBodySchema,
+	dataDeletePreviewResultSchema
+} from './data-delete.js';
 import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
 
 /**
@@ -577,6 +585,14 @@ export const apiContract = {
 	'POST /v1/settings/import-export/bundle/import/commit': {
 		body: importCommitBodySchema,
 		response: importBundleCommitResultSchema
+	},
+	'POST /v1/settings/data-delete/preview': {
+		body: dataDeletePreviewBodySchema,
+		response: dataDeletePreviewResultSchema
+	},
+	'POST /v1/settings/data-delete/execute': {
+		body: dataDeleteExecuteBodySchema,
+		response: dataDeleteExecuteResultSchema
 	},
 	'GET /v1/integrations/ghl/status': {
 		response: ghlConnectionStatus

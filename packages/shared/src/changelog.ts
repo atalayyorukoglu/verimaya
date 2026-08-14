@@ -20,6 +20,18 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.9.0',
+		date: '2026-08-14',
+		title: 'Tehlikeli bölge: operasyonel veri silme',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'Ayarlar',
+				text: 'Sahip, Ayarlar → Tehlikeli bölgede seçtiği işlem/randevu/kişi/dosya verisini önce önizleyip organizasyon adını yazarak kalıcı silebilir; denetim kaydı ve org ayarları korunur.'
+			}
+		]
+	},
+	{
 		version: '0.8.0',
 		date: '2026-08-10',
 		title: 'Kişiler tek modül',

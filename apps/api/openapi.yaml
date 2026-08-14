@@ -8166,6 +8166,159 @@ paths:
               required:
                 - plan_token
               additionalProperties: false
+  /settings/data-delete/preview:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_token:
+                    type: string
+                    minLength: 1
+                  expires_at:
+                    type: string
+                    format: date-time
+                  organization_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  scopes:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - transactions
+                        - appointments
+                        - contacts
+                        - files
+                    minItems: 1
+                  counts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        table:
+                          type: string
+                          enum:
+                            - files
+                            - appointments
+                            - case_notes
+                            - contact_data_deletion_requests
+                            - transactions
+                            - contacts
+                            - external_ids
+                        count:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - table
+                        - count
+                      additionalProperties: false
+                  total_rows:
+                    type: integer
+                    minimum: 0
+                required:
+                  - plan_token
+                  - expires_at
+                  - organization_name
+                  - scopes
+                  - counts
+                  - total_rows
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - transactions
+                      - appointments
+                      - contacts
+                      - files
+                  minItems: 1
+                  maxItems: 4
+              required:
+                - scopes
+              additionalProperties: false
+  /settings/data-delete/execute:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scopes:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - transactions
+                        - appointments
+                        - contacts
+                        - files
+                    minItems: 1
+                  deleted:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        table:
+                          type: string
+                          enum:
+                            - files
+                            - appointments
+                            - case_notes
+                            - contact_data_deletion_requests
+                            - transactions
+                            - contacts
+                            - external_ids
+                        count:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - table
+                        - count
+                      additionalProperties: false
+                  total_deleted:
+                    type: integer
+                    minimum: 0
+                required:
+                  - scopes
+                  - deleted
+                  - total_deleted
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_token:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000000
+                confirm_organization_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+              required:
+                - plan_token
+                - confirm_organization_name
+              additionalProperties: false
   /integrations/ghl/status:
     get:
       responses:
