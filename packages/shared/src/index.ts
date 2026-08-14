@@ -35,6 +35,7 @@ export * from './credentials.js';
 export * from './webhook-subscription.js';
 export * from './ai-correction.js';
 export * from './ai-disclosure.js';
+export * from './ai-prompt.js';
 export * from './marketing/index.js';
 export * from './scorecard/index.js';
 export * from './scorecard-api.js';

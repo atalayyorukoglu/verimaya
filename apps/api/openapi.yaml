@@ -5481,6 +5481,105 @@ paths:
               required:
                 - secret
               additionalProperties: false
+  /settings/ai-prompt:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    maxLength: 2000
+                  is_default:
+                    type: boolean
+                  updated_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                required:
+                  - text
+                  - is_default
+                  - updated_by
+                  - updated_at
+                additionalProperties: false
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    maxLength: 2000
+                  is_default:
+                    type: boolean
+                  updated_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                required:
+                  - text
+                  - is_default
+                  - updated_by
+                  - updated_at
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+              required:
+                - text
+              additionalProperties: false
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    maxLength: 2000
+                  is_default:
+                    type: boolean
+                  updated_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                required:
+                  - text
+                  - is_default
+                  - updated_by
+                  - updated_at
+                additionalProperties: false
   /integrations/ghl/status:
     get:
       responses:

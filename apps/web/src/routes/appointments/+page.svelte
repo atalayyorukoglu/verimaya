@@ -415,7 +415,9 @@
 			{/each}
 		</select>
 		<div class="flex gap-2">
-			<Button type="submit" variant="secondary" class="min-h-11">{t('appointments.filter.apply')}</Button>
+			<Button type="submit" variant="secondary" class="min-h-11"
+				>{t('appointments.filter.apply')}</Button
+			>
 			{#if appliedQ || status || contactInvolvesId}
 				<Button type="button" variant="outline" class="min-h-11" onclick={clearFilters}
 					>{t('appointments.filter.clear')}</Button

@@ -92,6 +92,7 @@ describe('inbound_messages RLS isolation', () => {
 			new ContactsService(tenantContext, new LocalFileStorage()),
 			tenantContext,
 			new TransactionsService(tenantContext),
+			{ getAiPrompt: async () => ({ text: '', is_default: true, updated_by: null, updated_at: null }) } as never,
 			new HeuristicLlmClient()
 		);
 	});

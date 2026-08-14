@@ -243,7 +243,6 @@
 - **GAP-08 — içe/dışa aktarım uygulaması** — kapsam kilitli; panelde yer tutucu ("Faz 8'de").
   İkinci müşteriden önce zorunlu (Açık sorular §9).
 - **GAP-25:** Kapsamlı veri silme (`/data/delete-scope`) + wipe.
-- **GAP-26:** AI prompt özelleştirme — Açık sorular §6.
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Veri Maya"**).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse).
@@ -283,7 +282,8 @@
 
 3. **Randevu durumu enum kalacak mı?** Tenant kendi durumunu isterse enum → FK. PILOT-02.
 4. **Checklist ölü özellik mi?** → GAP-F09-20 skip olabilir.
-6. **AI prompt tenant'a açılmalı mı?** (GAP-26)
+6. **AI prompt tenant'a açılmalı mı?** (GAP-26) — **evet, sınırlı:** çekirdek prompt
+   sunucuda; tenant metni ek not (max 2000), reset zorunlu, şema sunucu kontrolünde.
 7. **Tenant düzeyinde izin matrisi?** Tracker 9×5; bizde 8×6. Pilotta ölç; talep yoksa skip.
 8. **P2P payer/payee geri gelecek mi?** Freeze öncesi karar ucuz, sonra pahalı.
 9. **İçe/dışa aktarım ikinci müşteriden önce mi?** (GAP-08)
@@ -295,6 +295,12 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **G-26 AI prompt özelleştirme ✅** (2026-08-14) — `GET/PUT/DELETE /v1/settings/ai-prompt`;
+  tenant notu çekirdek prompt’a eklenir (yerine geçmez), max 2000, reset her zaman mümkün;
+  LLM invalid JSON → heuristic fallback.
+  **Görüş:** Tracker tam prompt replace idi; Verimaya bilinçli “ek not + çerçeve” — destek
+  yükünü ve şema kaçışını sınırlar. Isolation + DELETE reset kırmızı-yeşil: reset sonrası
+  `is_default` false bırakılınca spec düştü.
 - **G-05r `contact_involves` ✅** (2026-08-14) — randevu listesi `contact_involves` ile
   `contact_id` / `clinic_contact_id` / `hotel_contact_id` / `transfer_contact_id` OR;
   panel Combobox + kişi profilinden derin link.

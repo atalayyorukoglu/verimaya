@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { transactionDraftSchema, type TransactionDraft } from '@verimaya/shared';
+import {
+	frameTenantAiPromptNote,
+	transactionDraftSchema,
+	type TransactionDraft
+} from '@verimaya/shared';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type {
 	LlmClient,
@@ -36,6 +40,20 @@ type CallModelOk = {
 	records: TransactionDraft[];
 	usage: Omit<LlmUsageLedger, 'path' | 'error'>;
 };
+
+/** Core extraction contract — always server-owned; tenant notes are appended only. */
+export function buildWhatsappExtractionSystemPrompt(tenantPromptNote?: string | null): string {
+	const core = [
+		'You extract finance transaction drafts from WhatsApp messages for a medical tourism ops platform.',
+		'Return ONLY valid JSON: {"records":[...]} matching TransactionDraft fields.',
+		'amount is integer minor units (kuruş/cents). currency is TRY|GBP|EUR|USD.',
+		'kind is income|expense. Do not invent patients; set patient_id only to a patient_ref UUID from the provided list (or null).',
+		'Message text may contain placeholders like [TELEFON]/[EPOSTA]/[HASTA] — ignore them for matching.',
+		'If nothing can be extracted, return {"records":[]}.'
+	].join(' ');
+	const framed = frameTenantAiPromptNote(tenantPromptNote ?? '');
+	return framed ? `${core}\n\n${framed}` : core;
+}
 
 function parseDraftsPayload(raw: unknown): TransactionDraft[] {
 	if (!raw || typeof raw !== 'object') {
@@ -139,14 +157,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 	private async callModel(ctx: LlmParseContext): Promise<CallModelOk> {
 		const maskedUser = buildMaskedLlmUserPayload(ctx);
 
-		const system = [
-			'You extract finance transaction drafts from WhatsApp messages for a medical tourism ops platform.',
-			'Return ONLY valid JSON: {"records":[...]} matching TransactionDraft fields.',
-			'amount is integer minor units (kuruş/cents). currency is TRY|GBP|EUR|USD.',
-			'kind is income|expense. Do not invent patients; set patient_id only to a patient_ref UUID from the provided list (or null).',
-			'Message text may contain placeholders like [TELEFON]/[EPOSTA]/[HASTA] — ignore them for matching.',
-			'If nothing can be extracted, return {"records":[]}.'
-		].join(' ');
+		const system = buildWhatsappExtractionSystemPrompt(ctx.tenantPromptNote);
 
 		const user = JSON.stringify(maskedUser);
 

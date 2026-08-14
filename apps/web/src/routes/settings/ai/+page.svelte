@@ -3,7 +3,9 @@
 	import {
 		apiPaths,
 		DEFAULT_WHATSAPP_AI_DISCLOSURE_TEXT,
-		type WhatsappAiDisclosure
+		WHATSAPP_AI_PROMPT_MAX_LENGTH,
+		type WhatsappAiDisclosure,
+		type WhatsappAiPrompt
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, labelClass, textareaClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
@@ -12,22 +14,20 @@
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n/locale.svelte';
 
-	const STORAGE_KEY = 'verimaya:ai-prompt';
-
-	function getDefaultPrompt(): string {
-		return t('settings.ai.prompt.defaultBody');
-	}
-
-	let value = $state('');
-	let savedOk = $state(false);
-	let isDefault = $state(true);
-
 	let disclosureEnabled = $state(false);
 	let disclosureText = $state(DEFAULT_WHATSAPP_AI_DISCLOSURE_TEXT);
 	let disclosureSaving = $state(false);
 	let disclosureSavedOk = $state(false);
 	let disclosureError = $state<string | null>(null);
 	let disclosureHydrated = $state(false);
+
+	let promptText = $state('');
+	let promptIsDefault = $state(true);
+	let promptSaving = $state(false);
+	let promptResetting = $state(false);
+	let promptSavedOk = $state(false);
+	let promptError = $state<string | null>(null);
+	let promptHydrated = $state(false);
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
@@ -38,16 +38,11 @@
 		enabled: qs.ready
 	}));
 
-	$effect(() => {
-		const stored = localStorage.getItem(STORAGE_KEY);
-		if (stored) {
-			value = stored;
-			isDefault = false;
-		} else {
-			value = getDefaultPrompt();
-			isDefault = true;
-		}
-	});
+	const promptQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.aiPrompt(),
+		queryFn: () => apiGet<WhatsappAiPrompt>(apiPaths.settingsAiPrompt),
+		enabled: qs.ready
+	}));
 
 	$effect(() => {
 		const data = disclosureQuery.data;
@@ -57,20 +52,13 @@
 		disclosureHydrated = true;
 	});
 
-	function savePrompt() {
-		localStorage.setItem(STORAGE_KEY, value);
-		isDefault = false;
-		savedOk = true;
-		setTimeout(() => (savedOk = false), 2000);
-	}
-
-	function resetPrompt() {
-		localStorage.removeItem(STORAGE_KEY);
-		value = getDefaultPrompt();
-		isDefault = true;
-		savedOk = true;
-		setTimeout(() => (savedOk = false), 2000);
-	}
+	$effect(() => {
+		const data = promptQuery.data;
+		if (!data || promptHydrated) return;
+		promptText = data.text;
+		promptIsDefault = data.is_default;
+		promptHydrated = true;
+	});
 
 	async function saveDisclosure() {
 		disclosureSaving = true;
@@ -91,6 +79,42 @@
 			disclosureSaving = false;
 		}
 	}
+
+	async function savePrompt() {
+		promptSaving = true;
+		promptError = null;
+		try {
+			const saved = await apiSend<WhatsappAiPrompt>(apiPaths.settingsAiPrompt, 'PUT', {
+				text: promptText
+			});
+			promptText = saved.text;
+			promptIsDefault = saved.is_default;
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.aiPrompt() });
+			promptSavedOk = true;
+			setTimeout(() => (promptSavedOk = false), 2000);
+		} catch (err) {
+			promptError = err instanceof Error ? err.message : t('settings.ai.prompt.error');
+		} finally {
+			promptSaving = false;
+		}
+	}
+
+	async function resetPrompt() {
+		promptResetting = true;
+		promptError = null;
+		try {
+			const saved = await apiSend<WhatsappAiPrompt>(apiPaths.settingsAiPrompt, 'DELETE');
+			promptText = saved.text;
+			promptIsDefault = saved.is_default;
+			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.aiPrompt() });
+			promptSavedOk = true;
+			setTimeout(() => (promptSavedOk = false), 2000);
+		} catch (err) {
+			promptError = err instanceof Error ? err.message : t('settings.ai.prompt.error');
+		} finally {
+			promptResetting = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -105,20 +129,20 @@
 		<h2 class="text-sm font-semibold text-text">{t('settings.ai.disclosure.heading')}</h2>
 		<p class="mt-1 text-sm text-text-muted">{t('settings.ai.disclosure.why')}</p>
 
-		<label class="mt-4 flex items-start gap-2">
+		<label class="mt-4 flex min-h-11 items-start gap-2">
 			<input
 				type="checkbox"
 				class="mt-1 size-4 rounded border-border"
 				bind:checked={disclosureEnabled}
 				disabled={disclosureQuery.isPending}
 			/>
-			<span class="text-sm text-text">{t('settings.ai.disclosure.enabled')}</span>
+			<span class="text-base text-text">{t('settings.ai.disclosure.enabled')}</span>
 		</label>
 
 		<label class="mt-4 grid gap-1">
 			<span class={labelClass}>{t('settings.ai.disclosure.textLabel')}</span>
 			<textarea
-				class="{textareaClass} min-h-28 text-sm"
+				class="{textareaClass} min-h-28 text-base"
 				bind:value={disclosureText}
 				maxlength={2000}
 				disabled={disclosureQuery.isPending}></textarea>
@@ -127,6 +151,7 @@
 		<div class="mt-4 flex flex-wrap items-center gap-2">
 			<Button
 				type="button"
+				class="min-h-11"
 				onclick={saveDisclosure}
 				disabled={disclosureSaving || disclosureQuery.isPending}
 			>
@@ -146,25 +171,57 @@
 	</section>
 
 	<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-		<label class="grid gap-1">
+		<h2 class="text-sm font-semibold text-text">{t('settings.ai.prompt.heading')}</h2>
+		<p class="mt-1 text-sm text-text-muted">{t('settings.ai.prompt.why')}</p>
+
+		<label class="mt-4 grid gap-1">
 			<span class={labelClass}>
 				{t('settings.ai.prompt.label')}
-				{#if isDefault}
+				{#if promptIsDefault}
 					<span class="font-normal text-text-faint">({t('settings.ai.prompt.default')})</span>
 				{/if}
 			</span>
-			<textarea class="{textareaClass} min-h-48 font-mono text-xs" bind:value></textarea>
+			<textarea
+				class="{textareaClass} min-h-48 text-base"
+				bind:value={promptText}
+				maxlength={WHATSAPP_AI_PROMPT_MAX_LENGTH}
+				placeholder={t('settings.ai.prompt.placeholder')}
+				disabled={promptQuery.isPending}></textarea>
+			<span class="text-xs text-text-faint"
+				>{t('settings.ai.prompt.charCount', {
+					count: promptText.length,
+					max: WHATSAPP_AI_PROMPT_MAX_LENGTH
+				})}</span
+			>
 		</label>
 		<div class="mt-4 flex flex-wrap items-center gap-2">
-			<Button type="button" onclick={savePrompt}>{t('settings.ai.prompt.save')}</Button>
-			<Button type="button" variant="outline" onclick={resetPrompt}
-				>{t('settings.ai.prompt.reset')}</Button
+			<Button
+				type="button"
+				class="min-h-11"
+				onclick={savePrompt}
+				disabled={promptSaving || promptResetting || promptQuery.isPending || !promptText.trim()}
 			>
-			{#if savedOk}
+				{promptSaving ? t('settings.ai.prompt.saving') : t('settings.ai.prompt.save')}
+			</Button>
+			<Button
+				type="button"
+				variant="outline"
+				class="min-h-11"
+				onclick={resetPrompt}
+				disabled={promptSaving || promptResetting || promptQuery.isPending || promptIsDefault}
+			>
+				{promptResetting ? t('settings.ai.prompt.resetting') : t('settings.ai.prompt.reset')}
+			</Button>
+			{#if promptSavedOk}
 				<span class="text-sm text-success">{t('settings.ai.prompt.saved')}</span>
 			{/if}
+			{#if promptError}
+				<span class="text-sm text-danger">{promptError}</span>
+			{/if}
+			{#if promptQuery.isError}
+				<span class="text-sm text-danger">{t('settings.ai.prompt.loadError')}</span>
+			{/if}
 		</div>
+		<p class="mt-3 text-xs text-text-faint">{t('settings.ai.prompt.footnote')}</p>
 	</section>
-
-	<p class="mt-3 text-xs text-text-faint">{t('settings.ai.prompt.footnote')}</p>
 </div>

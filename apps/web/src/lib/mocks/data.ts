@@ -19,8 +19,10 @@ import type {
 	MembershipUser,
 	UserRole,
 	WebhookSubscription,
-	TrustScoreSettings
+	TrustScoreSettings,
+	WhatsappAiPrompt
 } from '@verimaya/shared';
+import { defaultWhatsappAiPrompt } from '@verimaya/shared';
 
 export type MockScenario = 'default' | 'empty' | 'large' | 'attribution_missing';
 
@@ -411,6 +413,8 @@ export type DemoStore = {
 	aiCorrections: AiCorrection[];
 	/** Persisted Trust Score checklist (MSW). */
 	trustScore: TrustScoreSettings;
+	/** G-26: tenant AI extraction note (MSW). */
+	aiPrompt: WhatsappAiPrompt;
 };
 
 function makeExtraTenants(): Tenant[] {
@@ -1139,7 +1143,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 			apiKeys: [],
 			webhookSubscriptions: [],
 			aiCorrections: [],
-			trustScore: { checks: [] }
+			trustScore: { checks: [] },
+			aiPrompt: defaultWhatsappAiPrompt()
 		};
 	}
 
@@ -1432,7 +1437,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 		apiKeys: makeApiKeys(),
 		webhookSubscriptions: makeWebhookSubscriptions(),
 		aiCorrections: makeAiCorrections(),
-		trustScore: { checks: [] }
+		trustScore: { checks: [] },
+		aiPrompt: defaultWhatsappAiPrompt()
 	};
 }
 

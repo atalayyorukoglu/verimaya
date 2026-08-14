@@ -312,7 +312,7 @@ const tr = {
 	// Ayarlar · AI
 	'settings.ai.title': 'AI ayarları',
 	'settings.ai.description':
-		"WhatsApp AI şeffaflığı (EU AI Act m.50) ve demo sistem prompt'u. İfşa metni giden AI mesajlarına eklenecek.",
+		'WhatsApp AI şeffaflığı (EU AI Act m.50) ve işlem çıkarımına eklenecek tenant notu.',
 	'settings.ai.disclosure.heading': 'WhatsApp AI ifşa metni',
 	'settings.ai.disclosure.why':
 		"EU AI Act m.50 gereği AI destekli giden mesajlarda alıcı bilgilendirilmelidir. Bu ayar karne kriteri 7.6'yı besler. Giden gönderim yolu henüz bağlı değil; metin giden AI mesajlarına eklenecek.",
@@ -325,13 +325,23 @@ const tr = {
 	'settings.ai.disclosure.loadError': 'Ayar yüklenemedi.',
 	'settings.ai.disclosure.note':
 		"Gerçek WhatsApp gönderimi henüz yok. Port + ifşa hook'u hazır; gönderim ayrı karardır.",
-	'settings.ai.prompt.label': 'Prompt',
+	'settings.ai.prompt.heading': 'İşlem çıkarım notu',
+	'settings.ai.prompt.why':
+		'Sunucu çekirdek prompt’u ve çıktı şemasını tutar. Bu metin ona eklenir; talimat olarak değil, yalnızca operasyon bağlamı olarak çerçevelenir. AI çıkarımı taslaktır — insan onayı olmadan kesin kayda yazılmaz.',
+	'settings.ai.prompt.label': 'Tenant notu',
 	'settings.ai.prompt.default': 'varsayılan',
+	'settings.ai.prompt.placeholder':
+		'Örn. Tutarlar çoğunlukla GBP; otel giderlerinde “Marriott” yazılır…',
+	'settings.ai.prompt.charCount': '{count} / {max}',
 	'settings.ai.prompt.save': 'Kaydet',
+	'settings.ai.prompt.saving': 'Kaydediliyor…',
 	'settings.ai.prompt.reset': 'Varsayılana dön',
+	'settings.ai.prompt.resetting': 'Sıfırlanıyor…',
 	'settings.ai.prompt.saved': 'Kaydedildi.',
+	'settings.ai.prompt.error': 'Kayıt başarısız.',
+	'settings.ai.prompt.loadError': 'Prompt yüklenemedi.',
 	'settings.ai.prompt.footnote':
-		"Prompt demo: localStorage. Gerçek tenant prompt'u ayrı iş; ifşa ayarı API'de saklanır.",
+		'Not bozuk JSON ürettirse çıkarım güvenli şekilde heuristiğe düşer; taslak akışı bozulmaz.',
 
 	// Ayarlar · AI öğrenme (GAP-F09-15)
 	'settings.aiLearning.title': 'AI öğrenme raporu',
@@ -2191,7 +2201,7 @@ const en: Record<MessageKey, string> = {
 
 	'settings.ai.title': 'AI settings',
 	'settings.ai.description':
-		'WhatsApp AI transparency (EU AI Act Art. 50) and demo system prompt. Disclosure will be added to outbound AI messages.',
+		'WhatsApp AI transparency (EU AI Act Art. 50) and the tenant note appended to transaction extraction.',
 	'settings.ai.disclosure.heading': 'WhatsApp AI disclosure',
 	'settings.ai.disclosure.why':
 		'EU AI Act Art. 50 requires recipients to be informed about AI-assisted outbound messages. This setting feeds scorecard criterion 7.6. Outbound delivery is not wired yet; the text will be prepended to outbound AI messages.',
@@ -2204,13 +2214,22 @@ const en: Record<MessageKey, string> = {
 	'settings.ai.disclosure.loadError': 'Could not load setting.',
 	'settings.ai.disclosure.note':
 		'Real WhatsApp send is not available yet. Port + disclosure hook are ready; shipping send is a separate decision.',
-	'settings.ai.prompt.label': 'Prompt',
+	'settings.ai.prompt.heading': 'Extraction note',
+	'settings.ai.prompt.why':
+		'The server keeps the core prompt and output schema. This text is appended only — framed as operational context, not instructions. AI extraction is draft; nothing is final without human approval.',
+	'settings.ai.prompt.label': 'Tenant note',
 	'settings.ai.prompt.default': 'default',
+	'settings.ai.prompt.placeholder': 'E.g. Amounts are usually GBP; hotel expenses say “Marriott”…',
+	'settings.ai.prompt.charCount': '{count} / {max}',
 	'settings.ai.prompt.save': 'Save',
+	'settings.ai.prompt.saving': 'Saving…',
 	'settings.ai.prompt.reset': 'Reset to default',
+	'settings.ai.prompt.resetting': 'Resetting…',
 	'settings.ai.prompt.saved': 'Saved.',
+	'settings.ai.prompt.error': 'Save failed.',
+	'settings.ai.prompt.loadError': 'Could not load prompt.',
 	'settings.ai.prompt.footnote':
-		'Prompt is demo localStorage. Real tenant prompt is separate; disclosure is stored via API.',
+		'If the note causes invalid JSON, extraction safely falls back to the heuristic; the draft flow stays intact.',
 
 	// Settings · AI learning (GAP-F09-15)
 	'settings.aiLearning.title': 'AI learning report',

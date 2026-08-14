@@ -4,6 +4,11 @@ export type LlmParseContext = {
 	message: string;
 	/** Hasta-type contacts used as opaque match hints (AGENTS ilke 6 — drafts only). */
 	patients: Contact[];
+	/**
+	 * Optional tenant operational note (G-26). Appended to the core system prompt
+	 * as framed non-instructional context; never replaces server output schema rules.
+	 */
+	tenantPromptNote?: string | null;
 };
 
 /** Path taken for a single parse call — written to `jobs` ledger (Adım 25). */

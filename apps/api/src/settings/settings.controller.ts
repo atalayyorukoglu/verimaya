@@ -24,7 +24,8 @@ import {
 	organizationUpdateSchema,
 	settingsReorderSchema,
 	trustScoreSettings,
-	whatsappAiDisclosureUpdateSchema
+	whatsappAiDisclosureUpdateSchema,
+	whatsappAiPromptUpdateSchema
 } from '@verimaya/shared';
 import { SessionGuard } from '../auth/session.guard';
 import {
@@ -334,5 +335,35 @@ export class SettingsController {
 			input,
 			getActorFromRequest(req)
 		);
+	}
+
+	@Get('ai-prompt')
+	@RequireOrgPermission('settings', 'read')
+	getAiPrompt(@Req() req: FastifyRequest) {
+		return this.settingsService.getAiPrompt(getActiveOrgId(req));
+	}
+
+	@Put('ai-prompt')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'True upsert via onConflictDoUpdate (tenant_id, key) — repeat PUTs converge to the same stored value. The accompanying audit-log row is append-only by design; a duplicate entry on a genuine retry is harmless.'
+	)
+	putAiPrompt(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(whatsappAiPromptUpdateSchema, body, req);
+		return this.settingsService.saveAiPrompt(
+			getActiveOrgId(req),
+			input,
+			getActorFromRequest(req)
+		);
+	}
+
+	@Delete('ai-prompt')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE removes the tenant_settings row (or is a no-op when already default). Repeat DELETEs converge to the same default response; audit rows are append-only.'
+	)
+	@HttpCode(200)
+	resetAiPrompt(@Req() req: FastifyRequest) {
+		return this.settingsService.resetAiPrompt(getActiveOrgId(req), getActorFromRequest(req));
 	}
 }

@@ -35,6 +35,8 @@ import {
 	approveDraftsRequestSchema,
 	trustScoreSettings,
 	userUiPreferencesUpdateSchema,
+	whatsappAiPromptUpdateSchema,
+	defaultWhatsappAiPrompt,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
 	compareByCreatedAtDesc,
@@ -1023,8 +1025,14 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.appointments];
-		const { contact_id: contactId, contact_involves: contactInvolves, from, to, status, q } =
-			parsed.data;
+		const {
+			contact_id: contactId,
+			contact_involves: contactInvolves,
+			from,
+			to,
+			status,
+			q
+		} = parsed.data;
 		if (contactId) items = items.filter((a) => a.contact_id === contactId);
 		if (contactInvolves) {
 			items = items.filter(
@@ -2020,6 +2028,31 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		store.trustScore = parsed.data;
 		return HttpResponse.json(store.trustScore);
+	}),
+
+	http.get('/v1/settings/ai-prompt', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(store.aiPrompt ?? defaultWhatsappAiPrompt());
+	}),
+
+	http.put('/v1/settings/ai-prompt', async ({ request }) => {
+		const body = await request.json();
+		const parsed = whatsappAiPromptUpdateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz AI prompt', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		store.aiPrompt = {
+			text: parsed.data.text,
+			is_default: false,
+			updated_by: 'Demo User',
+			updated_at: new Date().toISOString()
+		};
+		return HttpResponse.json(store.aiPrompt);
+	}),
+
+	http.delete('/v1/settings/ai-prompt', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		store.aiPrompt = defaultWhatsappAiPrompt();
+		return HttpResponse.json(store.aiPrompt);
 	}),
 
 	http.get('/v1/settings/contact-types', ({ request }) => {

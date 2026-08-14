@@ -17,15 +17,19 @@ import type {
 	SettingsReorder,
 	TrustScoreSettings,
 	WhatsappAiDisclosure,
-	WhatsappAiDisclosureUpdate
+	WhatsappAiDisclosureUpdate,
+	WhatsappAiPrompt,
+	WhatsappAiPromptUpdate
 } from '@verimaya/shared';
 import {
 	DEFAULT_APPOINTMENT_TYPE_NAMES,
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS,
 	defaultWhatsappAiDisclosure,
+	defaultWhatsappAiPrompt,
 	trustScoreSettings,
-	whatsappAiDisclosureSchema
+	whatsappAiDisclosureSchema,
+	whatsappAiPromptSchema
 } from '@verimaya/shared';
 import {
 	appointmentTypes,
@@ -46,6 +50,8 @@ import { defaultAppointmentTypeId } from './appointment-type-defaults';
 const TRUST_SCORE_KEY = 'trust_score';
 const WHATSAPP_AI_DISCLOSURE_KEY = 'whatsapp_ai_disclosure';
 const AI_DISCLOSURE_AUDIT_LABEL = 'whatsapp_ai_disclosure';
+const WHATSAPP_AI_PROMPT_KEY = 'whatsapp_ai_prompt';
+const AI_PROMPT_AUDIT_LABEL = 'whatsapp_ai_prompt';
 
 /** Presence in tenant_settings ⇒ defaults were applied once; empty list must not re-seed. */
 const APPOINTMENT_TYPES_SEEDED_KEY = 'appointment_types_defaults_seeded';
@@ -707,6 +713,61 @@ export class SettingsService {
 		});
 
 		return value;
+	}
+
+	async getAiPrompt(tenantId: string): Promise<WhatsappAiPrompt> {
+		const raw = await this.getTenantSetting(tenantId, WHATSAPP_AI_PROMPT_KEY);
+		if (raw == null) return defaultWhatsappAiPrompt();
+		const parsed = whatsappAiPromptSchema.safeParse(raw);
+		return parsed.success ? parsed.data : defaultWhatsappAiPrompt();
+	}
+
+	async saveAiPrompt(
+		tenantId: string,
+		input: WhatsappAiPromptUpdate,
+		actor: AuditActor
+	): Promise<WhatsappAiPrompt> {
+		const value: WhatsappAiPrompt = {
+			text: input.text,
+			is_default: false,
+			updated_by: actor.actorDisplayName,
+			updated_at: new Date().toISOString()
+		};
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.insert(tenantSettings)
+				.values({
+					tenantId,
+					key: WHATSAPP_AI_PROMPT_KEY,
+					value
+				})
+				.onConflictDoUpdate({
+					target: [tenantSettings.tenantId, tenantSettings.key],
+					set: {
+						value,
+						updatedAt: new Date()
+					}
+				});
+
+			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', AI_PROMPT_AUDIT_LABEL);
+		});
+
+		return value;
+	}
+
+	async resetAiPrompt(tenantId: string, actor: AuditActor): Promise<WhatsappAiPrompt> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.delete(tenantSettings)
+				.where(
+					and(eq(tenantSettings.tenantId, tenantId), eq(tenantSettings.key, WHATSAPP_AI_PROMPT_KEY))
+				);
+
+			await writeAuditLog(db, tenantId, actor, 'delete', 'tenant', AI_PROMPT_AUDIT_LABEL);
+		});
+
+		return defaultWhatsappAiPrompt();
 	}
 
 	private duplicateTypeNameConflict(message: string): ConflictException {

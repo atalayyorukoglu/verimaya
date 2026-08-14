@@ -70,6 +70,7 @@ export const apiPaths = {
 	settingsCredential: (provider: string) => `${API_V1_PREFIX}/settings/credentials/${provider}`,
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
+	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
 	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
 	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
 	// Neutral path — GHL Marketplace rejects redirect URIs containing "ghl"/Highlevel.
@@ -272,6 +273,10 @@ import {
 	aiCorrectionSchema,
 	aiCorrectionsReportSchema
 } from './ai-correction.js';
+import {
+	whatsappAiPromptSchema,
+	whatsappAiPromptUpdateSchema
+} from './ai-prompt.js';
 import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
 
 /**
@@ -508,6 +513,16 @@ export const apiContract = {
 	'PUT /v1/settings/credentials/:provider': {
 		body: credentialUpsertSchema,
 		response: credentialStatusSchema
+	},
+	'GET /v1/settings/ai-prompt': {
+		response: whatsappAiPromptSchema
+	},
+	'PUT /v1/settings/ai-prompt': {
+		body: whatsappAiPromptUpdateSchema,
+		response: whatsappAiPromptSchema
+	},
+	'DELETE /v1/settings/ai-prompt': {
+		response: whatsappAiPromptSchema
 	},
 	'GET /v1/integrations/ghl/status': {
 		response: ghlConnectionStatus

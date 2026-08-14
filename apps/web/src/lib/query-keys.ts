@@ -60,6 +60,7 @@ export function queryKeys(scope: QueryScope) {
 			organizations: () => k('settings', 'organizations'),
 			financeCategories: () => k('settings', 'finance-categories'),
 			aiDisclosure: () => k('settings', 'ai-disclosure'),
+			aiPrompt: () => k('settings', 'ai-prompt'),
 			apiKeys: () => k('settings', 'api-keys'),
 			webhookSubscriptions: () => k('settings', 'webhook-subscriptions'),
 			trustScore: () => k('settings', 'trust-score')

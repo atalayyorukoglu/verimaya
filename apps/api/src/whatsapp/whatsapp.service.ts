@@ -15,6 +15,7 @@ import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { ContactsService } from '../contacts/contacts.service';
+import { SettingsService } from '../settings/settings.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import {
@@ -53,6 +54,7 @@ export class WhatsappService {
 		private readonly contactsService: ContactsService,
 		private readonly tenantContext: TenantContextService,
 		private readonly transactionsService: TransactionsService,
+		private readonly settings: SettingsService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
@@ -60,8 +62,13 @@ export class WhatsappService {
 		const { items: patients } = await this.contactsService.list(tenantId, {
 			limit: 100
 		});
+		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const result = await this.llm.parseTransactionDrafts({ message, patients });
+			const result = await this.llm.parseTransactionDrafts({
+				message,
+				patients,
+				tenantPromptNote
+			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
 			return result.records;
 		});
@@ -99,6 +106,7 @@ export class WhatsappService {
 	/** LLM/heuristic parse of a single inbox item; stashes drafts (or an error) into `payload`. */
 	async parseInboxItem(tenantId: string, id: string): Promise<{ records: TransactionDraft[] }> {
 		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
+		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, id);
@@ -115,7 +123,8 @@ export class WhatsappService {
 
 			const result = await this.llm.parseTransactionDrafts({
 				message: display.body,
-				patients
+				patients,
+				tenantPromptNote
 			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
 			const records = result.records;
@@ -136,19 +145,21 @@ export class WhatsappService {
 		inboundMessageId: string
 	): Promise<ProcessInboundOutcome> {
 		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
+		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, inboundMessageId);
 			if (row.status !== 'new') {
 				return 'skipped';
 			}
-			return this.processNewInboundRow(db, row, patients);
+			return this.processNewInboundRow(db, row, patients, tenantPromptNote);
 		});
 	}
 
 	/** Parse every `new` message with text; skips media-only messages. Does not create transactions. */
 	async processInbox(tenantId: string): Promise<InboundMessageProcessResponse> {
 		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
+		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const rows = await db
@@ -167,7 +178,7 @@ export class WhatsappService {
 				if (!display.body?.trim()) continue;
 
 				processed++;
-				const outcome = await this.processNewInboundRow(db, row, patients);
+				const outcome = await this.processNewInboundRow(db, row, patients, tenantPromptNote);
 				if (outcome === 'parsed') parsed++;
 				else if (outcome === 'error') error++;
 			}
@@ -263,7 +274,8 @@ export class WhatsappService {
 	private async processNewInboundRow(
 		db: TenantDb,
 		row: InboundMessageRow,
-		patients: Contact[]
+		patients: Contact[],
+		tenantPromptNote: string | null
 	): Promise<'parsed' | 'error'> {
 		const payload = asRecord(row.payload) ?? {};
 		const display = extractInboundDisplayFields(payload);
@@ -278,7 +290,8 @@ export class WhatsappService {
 
 		const result = await this.llm.parseTransactionDrafts({
 			message: display.body,
-			patients
+			patients,
+			tenantPromptNote
 		});
 		await writeLlmParseLedger(db, row.tenantId, result.usage);
 		const records = result.records;
@@ -288,6 +301,13 @@ export class WhatsappService {
 			parse_error: isError ? PARSE_ERROR_NO_MATCH : null
 		});
 		return isError ? 'error' : 'parsed';
+	}
+
+	private async resolveTenantPromptNote(tenantId: string): Promise<string | null> {
+		const prompt = await this.settings.getAiPrompt(tenantId);
+		if (prompt.is_default) return null;
+		const text = prompt.text.trim();
+		return text.length > 0 ? text : null;
 	}
 
 	private async setStatus(
