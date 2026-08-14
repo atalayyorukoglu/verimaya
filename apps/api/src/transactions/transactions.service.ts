@@ -1,12 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
-import type { TransactionCreate, TransactionListQuery, TransactionUpdate } from '@verimaya/shared';
+import {
+	DEFAULT_CONTACT_TYPE_NAMES,
+	type TransactionCreate,
+	type TransactionListQuery,
+	type TransactionUpdate
+} from '@verimaya/shared';
 import { contacts, tenants, transactions } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+
+const HASTA_TYPE = DEFAULT_CONTACT_TYPE_NAMES[0];
+const PERSONEL_TYPE = DEFAULT_CONTACT_TYPE_NAMES[4];
 
 @Injectable()
 export class TransactionsService {
@@ -21,6 +29,9 @@ export class TransactionsService {
 			);
 			const baseFilters: SQL[] = [isNull(transactions.deletedAt)];
 			if (params.contact_id) baseFilters.push(eq(transactions.contactId, params.contact_id));
+			if (params.case_contact_id) {
+				baseFilters.push(eq(transactions.caseContactId, params.case_contact_id));
+			}
 			if (params.from) baseFilters.push(gte(transactions.occurredOn, params.from));
 			if (params.to) baseFilters.push(lte(transactions.occurredOn, params.to));
 			if (params.kind) baseFilters.push(eq(transactions.kind, params.kind));
@@ -61,13 +72,20 @@ export class TransactionsService {
 	}
 
 	async createWithDb(db: TenantDb, tenantId: string, input: TransactionCreate) {
+		await this.assertTypedContact(db, input.case_contact_id, HASTA_TYPE, 'case_contact_id');
+		await this.assertTypedContact(
+			db,
+			input.responsible_contact_id,
+			PERSONEL_TYPE,
+			'responsible_contact_id'
+		);
 		const denorm = await this.resolveDenormalized(db, tenantId, input);
 		const [row] = await db
 			.insert(transactions)
 			.values({
 				tenantId,
 				kind: input.kind,
-				title: input.title,
+				title: input.title ?? null,
 				subtitle: input.subtitle ?? null,
 				category: input.category ?? null,
 				occurredOn: input.occurred_on,
@@ -84,6 +102,8 @@ export class TransactionsService {
 				contactId: input.contact_id ?? null,
 				contactDisplayName: denorm.contactDisplayName,
 				contactLabel: denorm.contactLabel,
+				caseContactId: input.case_contact_id ?? null,
+				responsibleContactId: input.responsible_contact_id ?? null,
 				description: input.description ?? null
 			})
 			.returning();
@@ -100,7 +120,7 @@ export class TransactionsService {
 
 		const merged = {
 			kind: (input.kind ?? existing.kind) as TransactionCreate['kind'],
-			title: input.title ?? existing.title,
+			title: input.title !== undefined ? input.title : existing.title,
 			subtitle: input.subtitle !== undefined ? input.subtitle : existing.subtitle,
 			category: input.category !== undefined ? input.category : existing.category,
 			occurred_on: input.occurred_on ?? existing.occurredOn,
@@ -122,8 +142,22 @@ export class TransactionsService {
 			contact_id: input.contact_id !== undefined ? input.contact_id : existing.contactId,
 			contact_label:
 				input.contact_label !== undefined ? input.contact_label : existing.contactLabel,
+			case_contact_id:
+				input.case_contact_id !== undefined ? input.case_contact_id : existing.caseContactId,
+			responsible_contact_id:
+				input.responsible_contact_id !== undefined
+					? input.responsible_contact_id
+					: existing.responsibleContactId,
 			description: input.description !== undefined ? input.description : existing.description
 		} satisfies TransactionCreate;
+
+		await this.assertTypedContact(db, merged.case_contact_id, HASTA_TYPE, 'case_contact_id');
+		await this.assertTypedContact(
+			db,
+			merged.responsible_contact_id,
+			PERSONEL_TYPE,
+			'responsible_contact_id'
+		);
 
 		const denorm = await this.resolveDenormalized(db, tenantId, merged);
 
@@ -148,6 +182,8 @@ export class TransactionsService {
 				contactId: merged.contact_id,
 				contactDisplayName: denorm.contactDisplayName,
 				contactLabel: denorm.contactLabel,
+				caseContactId: merged.case_contact_id,
+				responsibleContactId: merged.responsible_contact_id,
 				description: merged.description,
 				updatedAt: new Date()
 			})
@@ -157,12 +193,7 @@ export class TransactionsService {
 		return toTransaction(row!);
 	}
 
-	async softDeleteWithDb(
-		db: TenantDb,
-		tenantId: string,
-		id: string,
-		actor: AuditActor
-	) {
+	async softDeleteWithDb(db: TenantDb, tenantId: string, id: string, actor: AuditActor) {
 		const existing = await this.findActiveRow(db, id);
 		if (!existing) {
 			throw new NotFoundException({
@@ -175,7 +206,14 @@ export class TransactionsService {
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
 			.where(eq(transactions.id, id));
 
-		await writeAuditLog(db, tenantId, actor, 'delete', 'transaction', existing.title);
+		await writeAuditLog(
+			db,
+			tenantId,
+			actor,
+			'delete',
+			'transaction',
+			existing.title ?? existing.id
+		);
 
 		return { id, deleted: true as const };
 	}
@@ -187,6 +225,36 @@ export class TransactionsService {
 			.where(and(eq(transactions.id, id), isNull(transactions.deletedAt)))
 			.limit(1);
 		return row;
+	}
+
+	private async assertTypedContact(
+		db: TenantDb,
+		contactId: string | null | undefined,
+		expectedTypeName: string,
+		field: string
+	) {
+		if (!contactId) return;
+		const [row] = await db
+			.select({
+				id: contacts.id,
+				contactTypeName: contacts.contactTypeName
+			})
+			.from(contacts)
+			.where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
+			.limit(1);
+		if (!row) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact not found' }
+			});
+		}
+		if (row.contactTypeName !== expectedTypeName) {
+			throw new BadRequestException({
+				error: {
+					code: 'invalid_contact_type',
+					message: `${field} must reference a ${expectedTypeName} contact`
+				}
+			});
+		}
 	}
 
 	private async resolveDenormalized(

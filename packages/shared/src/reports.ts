@@ -142,6 +142,21 @@ export const reportMonthlySchema = z.object({
 });
 export type ReportMonthly = z.infer<typeof reportMonthlySchema>;
 
+/** Expenses grouped by responsible staff (Personel). Null id = unassigned. */
+export const reportResponsibleRowSchema = z.object({
+	responsible_contact_id: uuid.nullable(),
+	responsible_label: z.string().min(1).max(255),
+	expense_base: moneyMinor,
+	transaction_count: z.number().int().nonnegative()
+});
+export type ReportResponsibleRow = z.infer<typeof reportResponsibleRowSchema>;
+
+export const reportByResponsibleSchema = z.object({
+	period: reportPeriodSchema,
+	items: z.array(reportResponsibleRowSchema)
+});
+export type ReportByResponsible = z.infer<typeof reportByResponsibleSchema>;
+
 /** GAP-07: rates are fractions in [0, 1] (UI formats as percent). Total 0 → rates 0. */
 export const reportClinicMetricsRowSchema = z.object({
 	clinic_contact_id: uuid.nullable(),
@@ -303,6 +318,7 @@ export type ReportUrlPath =
 	| 'by-category'
 	| 'monthly'
 	| 'by-category-detail'
+	| 'by-responsible'
 	| 'contact-distribution'
 	| 'balances'
 	| 'appointment-metrics'

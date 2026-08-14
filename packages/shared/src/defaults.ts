@@ -4,6 +4,7 @@ export const DEFAULT_CONTACT_TYPE_NAMES = [
 	'Klinik',
 	'Otel',
 	'Transfer',
+	'Personel',
 	'Diğer'
 ] as const;
 

@@ -37,6 +37,7 @@ export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
 export const transactionListQuerySchema = cursorPageParams
 	.extend({
 		contact_id: uuid.optional(),
+		case_contact_id: uuid.optional(),
 		from: isoDate.optional(),
 		to: isoDate.optional(),
 		kind: transactionKindSchema.optional(),

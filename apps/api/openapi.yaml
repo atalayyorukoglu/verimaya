@@ -2895,8 +2895,8 @@ paths:
                             - expense
                         title:
                           type: string
-                          minLength: 1
                           maxLength: 255
+                          nullable: true
                         subtitle:
                           type: string
                           maxLength: 255
@@ -2979,6 +2979,16 @@ paths:
                           type: string
                           maxLength: 255
                           nullable: true
+                        case_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        responsible_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         description:
                           type: string
                           maxLength: 8000
@@ -3040,8 +3050,8 @@ paths:
                       - expense
                   title:
                     type: string
-                    minLength: 1
                     maxLength: 255
+                    nullable: true
                   subtitle:
                     type: string
                     maxLength: 255
@@ -3124,6 +3134,16 @@ paths:
                     type: string
                     maxLength: 255
                     nullable: true
+                  case_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  responsible_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
                   description:
                     type: string
                     maxLength: 8000
@@ -3765,8 +3785,8 @@ paths:
                             - expense
                         title:
                           type: string
-                          minLength: 1
                           maxLength: 255
+                          nullable: true
                         subtitle:
                           type: string
                           maxLength: 255
@@ -3849,6 +3869,16 @@ paths:
                           type: string
                           maxLength: 255
                           nullable: true
+                        case_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        responsible_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         description:
                           type: string
                           maxLength: 8000
@@ -6210,6 +6240,59 @@ paths:
                 required:
                   - period
                   - category
+                  - items
+                additionalProperties: false
+  /reports/by-responsible:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                        nullable: true
+                      to:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                        nullable: true
+                    required:
+                      - from
+                      - to
+                    additionalProperties: false
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        responsible_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        responsible_label:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        expense_base:
+                          type: integer
+                        transaction_count:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - responsible_contact_id
+                        - responsible_label
+                        - expense_base
+                        - transaction_count
+                      additionalProperties: false
+                required:
+                  - period
                   - items
                 additionalProperties: false
   /reports/monthly:

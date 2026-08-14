@@ -56,7 +56,8 @@ export const transactionSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
 	kind: transactionKindSchema,
-	title: z.string().min(1).max(255),
+	/** Optional; Tracker form never collects a title. List UI derives a label when empty. */
+	title: z.string().max(255).nullable(),
 	subtitle: z.string().max(255).nullable(),
 	category: z.string().max(128).nullable(),
 	occurred_on: isoDate,
@@ -85,12 +86,52 @@ export const transactionSchema = z.object({
 	contact_display_name: z.string().max(255).nullable(),
 	/** Free-text counterparty when contact_id is unset (WhatsApp drafts etc.) */
 	contact_label: z.string().max(255).nullable(),
+	/**
+	 * Patient (case) this cost/revenue belongs to — independent of `contact_id`
+	 * (the payee/payer counterparty). Optional; must be contact type Hasta when set.
+	 */
+	case_contact_id: uuid.nullable().default(null),
+	/**
+	 * Staff member who spent / owns the expense (Personel). Optional.
+	 */
+	responsible_contact_id: uuid.nullable().default(null),
 	description: z.string().max(8000).nullable(),
 	created_at: isoDateTime,
 	updated_at: isoDateTime
 });
 
 export type Transaction = z.infer<typeof transactionSchema>;
+
+/**
+ * List/detail label when `title` is empty — Tracker-style derived display.
+ * Order: title → category › subtitle → contact name → description first line → —.
+ */
+export function deriveTransactionLabel(input: {
+	title?: string | null;
+	category?: string | null;
+	subtitle?: string | null;
+	contact_display_name?: string | null;
+	contact_label?: string | null;
+	description?: string | null;
+}): string {
+	const title = input.title?.trim();
+	if (title) return title;
+
+	const category = input.category?.trim() ?? '';
+	const subtitle = input.subtitle?.trim() ?? '';
+	if (category && subtitle) return `${category} › ${subtitle}`;
+	if (category) return category;
+	if (subtitle) return subtitle;
+
+	const contact =
+		input.contact_display_name?.trim() || input.contact_label?.trim() || '';
+	if (contact) return contact;
+
+	const firstLine = input.description?.split(/\r?\n/, 1)[0]?.trim() ?? '';
+	if (firstLine) return firstLine;
+
+	return '—';
+}
 
 export const transactionCreateSchema = transactionSchema.omit({
 	id: true,

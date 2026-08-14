@@ -28,7 +28,7 @@ describe('appointmentListQuerySchema (GAP-04)', () => {
 });
 
 describe('transactionListQuerySchema (GAP-03)', () => {
-	it('accepts kind, status, category, q alongside existing filters', () => {
+	it('accepts kind, status, category, q, case_contact_id alongside existing filters', () => {
 		const parsed = transactionListQuerySchema.parse({
 			limit: 10,
 			kind: 'expense',
@@ -36,7 +36,8 @@ describe('transactionListQuerySchema (GAP-03)', () => {
 			category: 'Konaklama',
 			q: 'otel',
 			from: '2026-08-01',
-			to: '2026-08-31'
+			to: '2026-08-31',
+			case_contact_id: '00000000-0000-4000-8000-000000000099'
 		});
 		expect(parsed).toMatchObject({
 			limit: 10,
@@ -45,7 +46,8 @@ describe('transactionListQuerySchema (GAP-03)', () => {
 			category: 'Konaklama',
 			q: 'otel',
 			from: '2026-08-01',
-			to: '2026-08-31'
+			to: '2026-08-31',
+			case_contact_id: '00000000-0000-4000-8000-000000000099'
 		});
 	});
 

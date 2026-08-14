@@ -15,6 +15,7 @@
 	} from '@verimaya/shared';
 	import {
 		apiPaths,
+		deriveTransactionLabel,
 		invoiceStatusLabels,
 		SUPPORTED_CURRENCIES,
 		toTenantDayKey,
@@ -87,7 +88,6 @@
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
 
 	let kind = $state<TransactionKind>('income');
-	let title = $state('');
 	let subtitle = $state('');
 	let category = $state('');
 	let occurred_on = $state('');
@@ -102,6 +102,8 @@
 	let paidMajor = $state('');
 	let contact_id = $state('');
 	let contact_label = $state('');
+	let case_contact_id = $state('');
+	let responsible_contact_id = $state('');
 	let payment_method = $state('');
 	let description = $state('');
 	let deletePhase = $state<DeleteConfirmPhase>('form');
@@ -123,6 +125,24 @@
 			label: c.display_name,
 			description: c.contact_type_name
 		}))
+	);
+	const caseContactOptions = $derived(
+		(contactsQuery.data?.items ?? [])
+			.filter((c) => c.contact_type_name === 'Hasta')
+			.map((c) => ({
+				value: c.id,
+				label: c.display_name,
+				description: c.contact_type_name
+			}))
+	);
+	const responsibleContactOptions = $derived(
+		(contactsQuery.data?.items ?? [])
+			.filter((c) => c.contact_type_name === 'Personel')
+			.map((c) => ({
+				value: c.id,
+				label: c.display_name,
+				description: c.contact_type_name
+			}))
 	);
 	const paymentMethodOptions = $derived.by(() => {
 		const options: string[] = [...TRANSACTION_PAYMENT_METHODS];
@@ -166,7 +186,6 @@
 			return;
 		}
 		kind = transaction?.kind ?? 'income';
-		title = transaction?.title ?? '';
 		subtitle = transaction?.subtitle ?? '';
 		category = transaction?.category ?? '';
 		occurred_on = transaction?.occurred_on ?? toTenantDayKey(new Date(), tenantTimezone);
@@ -180,6 +199,8 @@
 		paidMajor = transaction?.paid_amount != null ? String(transaction.paid_amount / 100) : '';
 		contact_id = transaction?.contact_id ?? defaultContactId ?? '';
 		contact_label = transaction?.contact_label ?? '';
+		case_contact_id = transaction?.case_contact_id ?? '';
+		responsible_contact_id = transaction?.responsible_contact_id ?? '';
 		payment_method = transaction?.payment_method ?? '';
 		description = transaction?.description ?? '';
 		deletePhase = 'form';
@@ -192,10 +213,12 @@
 
 	const deleteDetail = $derived.by(() => {
 		if (!transaction) return '';
-		const label = transaction.category
-			? `${transaction.title} (${transaction.category})`
-			: transaction.title;
-		return `${label} · ${formatMoney(transaction.amount, transaction.currency)} · ${formatDate(transaction.occurred_on)}`;
+		const label = deriveTransactionLabel(transaction);
+		const withCat =
+			transaction.category && label !== transaction.category
+				? `${label} (${transaction.category})`
+				: label;
+		return `${withCat} · ${formatMoney(transaction.amount, transaction.currency)} · ${formatDate(transaction.occurred_on)}`;
 	});
 
 	const dialogTitle = $derived(
@@ -294,7 +317,7 @@
 
 		const payload = {
 			kind,
-			title: title.trim(),
+			title: null,
 			subtitle: subtitle.trim() || null,
 			category: category.trim() || null,
 			occurred_on,
@@ -316,6 +339,8 @@
 				}
 				return contact_label.trim() || null;
 			})(),
+			case_contact_id: case_contact_id || null,
+			responsible_contact_id: responsible_contact_id || null,
 			description: description.trim() || null
 		};
 		await onsubmit(payload);
@@ -371,10 +396,6 @@
 						{/each}
 					</select>
 				</div>
-			</div>
-			<div class="min-w-0">
-				<label class={labelClass} for="tx-title">{t('finance.form.title')}</label>
-				<input id="tx-title" class={fieldClass} bind:value={title} required maxlength={255} />
 			</div>
 			<div class="grid min-w-0 gap-3 sm:grid-cols-3">
 				<div class="min-w-0">
@@ -521,6 +542,30 @@
 					/>
 				</div>
 			</div>
+			<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-case">{t('finance.form.case')}</label>
+					<Combobox
+						id="tx-case"
+						bind:value={case_contact_id}
+						options={caseContactOptions}
+						placeholder={t('finance.form.caseSearchPlaceholder')}
+						emptyText={t('finance.form.caseEmpty')}
+						clearLabel={t('finance.form.caseClear')}
+					/>
+				</div>
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-responsible">{t('finance.form.responsible')}</label>
+					<Combobox
+						id="tx-responsible"
+						bind:value={responsible_contact_id}
+						options={responsibleContactOptions}
+						placeholder={t('finance.form.responsibleSearchPlaceholder')}
+						emptyText={t('finance.form.responsibleEmpty')}
+						clearLabel={t('finance.form.responsibleClear')}
+					/>
+				</div>
+			</div>
 			<div class="min-w-0">
 				<label class={labelClass} for="tx-invoice">{t('finance.form.invoice')}</label>
 				<select id="tx-invoice" class={fieldClass} bind:value={invoice_status}>
@@ -576,7 +621,7 @@
 			<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
 				>{t('common.cancel')}</Button
 			>
-			<Button type="submit" form="tx-form" disabled={saving || !title.trim() || !amountMajor}>
+			<Button type="submit" form="tx-form" disabled={saving || !amountMajor}>
 				{saving ? t('common.saving') : isEdit ? t('common.save') : t('common.create')}
 			</Button>
 		{/if}

@@ -573,7 +573,7 @@ function buildReportConsistency(
 	) => {
 		items.push({
 			transaction_id: t.id,
-			title: t.title,
+			title: t.title ?? '—',
 			occurred_on: t.occurred_on,
 			severity,
 			code,
@@ -655,10 +655,11 @@ function buildReportTransactionDuplicates(
 	>();
 	for (const t of rows) {
 		const key = `${t.amount}|${t.currency}|${t.occurred_on}|${t.kind}`;
+		const title = t.title ?? '—';
 		const existing = map.get(key);
 		if (existing) {
 			existing.count += 1;
-			if (t.title.localeCompare(existing.title) < 0) existing.title = t.title;
+			if (title.localeCompare(existing.title) < 0) existing.title = title;
 		} else {
 			map.set(key, {
 				count: 1,
@@ -666,7 +667,7 @@ function buildReportTransactionDuplicates(
 				currency: t.currency,
 				occurred_on: t.occurred_on,
 				kind: t.kind,
-				title: t.title
+				title
 			});
 		}
 	}
@@ -1014,7 +1015,7 @@ export const handlers = [
 		const transactions = store.transactions
 			.filter(
 				(t) =>
-					t.title.toLowerCase().includes(q) ||
+					(t.title?.toLowerCase().includes(q) ?? false) ||
 					(t.contact_display_name?.toLowerCase().includes(q) ?? false) ||
 					(t.category?.toLowerCase().includes(q) ?? false)
 			)
@@ -1135,8 +1136,18 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.transactions];
-		const { contact_id: contactId, from, to, kind, status, category, q } = parsed.data;
+		const {
+			contact_id: contactId,
+			case_contact_id: caseContactId,
+			from,
+			to,
+			kind,
+			status,
+			category,
+			q
+		} = parsed.data;
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
+		if (caseContactId) items = items.filter((t) => t.case_contact_id === caseContactId);
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
 		if (kind) items = items.filter((t) => t.kind === kind);
@@ -1146,7 +1157,7 @@ export const handlers = [
 			const needle = q.toLowerCase();
 			items = items.filter(
 				(t) =>
-					t.title.toLowerCase().includes(needle) ||
+					(t.title?.toLowerCase().includes(needle) ?? false) ||
 					(t.subtitle?.toLowerCase().includes(needle) ?? false) ||
 					(t.category?.toLowerCase().includes(needle) ?? false) ||
 					(t.contact_display_name?.toLowerCase().includes(needle) ?? false) ||
@@ -1217,6 +1228,44 @@ export const handlers = [
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
 		return HttpResponse.json(buildReportByCategory(store, from, to));
+	}),
+
+	http.get('/v1/reports/by-responsible', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		const rows = filterTransactionsByPeriod(store.transactions, from, to).filter(
+			(t) => t.kind === 'expense'
+		);
+		const map = new Map<
+			string,
+			{
+				responsible_contact_id: string | null;
+				responsible_label: string;
+				expense_base: number;
+				transaction_count: number;
+			}
+		>();
+		for (const t of rows) {
+			const key = t.responsible_contact_id ?? '';
+			const contact = t.responsible_contact_id
+				? store.contacts.find((c) => c.id === t.responsible_contact_id)
+				: null;
+			const cur = map.get(key) ?? {
+				responsible_contact_id: t.responsible_contact_id,
+				responsible_label: contact?.display_name ?? 'Atanmamış',
+				expense_base: 0,
+				transaction_count: 0
+			};
+			cur.transaction_count += 1;
+			cur.expense_base += t.amount_base ?? t.amount;
+			map.set(key, cur);
+		}
+		return HttpResponse.json({
+			period: { from, to },
+			items: [...map.values()].sort((a, b) => b.expense_base - a.expense_base)
+		});
 	}),
 
 	http.get('/v1/reports/marketing', ({ request }) => {

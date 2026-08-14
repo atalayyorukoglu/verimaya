@@ -136,6 +136,8 @@ export function toTransaction(row: TransactionRow): Transaction {
 		contact_id: row.contactId,
 		contact_display_name: row.contactDisplayName,
 		contact_label: row.contactLabel,
+		case_contact_id: row.caseContactId,
+		responsible_contact_id: row.responsibleContactId,
 		description: row.description,
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)

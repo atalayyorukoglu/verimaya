@@ -208,9 +208,10 @@ export class WhatsappService {
 				amount: draft.amount,
 				paid_amount: draft.paid_amount,
 				currency: draft.currency,
-				
 				contact_id: draft.contact_id ?? null,
 				contact_label: draft.contact_label ?? null,
+				case_contact_id: null,
+				responsible_contact_id: null,
 				amount_base: draft.amount_base,
 				base_currency: null,
 				fx_rate: draft.fx_rate,

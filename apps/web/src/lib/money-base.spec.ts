@@ -26,6 +26,8 @@ function tx(
 		contact_id: null,
 		contact_display_name: null,
 		contact_label: null,
+		case_contact_id: null,
+		responsible_contact_id: null,
 		description: null,
 		created_at: '2026-01-01T00:00:00.000Z',
 		updated_at: '2026-01-01T00:00:00.000Z',

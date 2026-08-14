@@ -14,6 +14,7 @@
 	} from '@verimaya/shared';
 	import {
 		apiPaths,
+		deriveTransactionLabel,
 		listUrl,
 		transactionKindLabels,
 		transactionKindSchema,
@@ -40,6 +41,7 @@
 	const qs = useQueryScope();
 
 	const contactFilterId = $derived(page.url.searchParams.get('contact'));
+	const caseContactFilterId = $derived(page.url.searchParams.get('case_contact'));
 
 	let qInput = $state('');
 	let categoryInput = $state('');
@@ -60,6 +62,7 @@
 
 	const listFilters = $derived({
 		contact_id: contactFilterId,
+		case_contact_id: caseContactFilterId,
 		q: appliedQ || undefined,
 		kind: (kind || undefined) as TransactionKind | undefined,
 		status: (status || undefined) as TransactionStatus | undefined,
@@ -69,7 +72,16 @@
 	});
 
 	const filtersActive = $derived(
-		Boolean(appliedQ || appliedCategory || kind || status || from || to || contactFilterId)
+		Boolean(
+			appliedQ ||
+			appliedCategory ||
+			kind ||
+			status ||
+			from ||
+			to ||
+			contactFilterId ||
+			caseContactFilterId
+		)
 	);
 
 	const tenantQuery = createQuery(() => ({
@@ -97,6 +109,7 @@
 					limit: 25,
 					cursor: pageParam,
 					contact_id: listFilters.contact_id,
+					case_contact_id: listFilters.case_contact_id,
 					q: listFilters.q,
 					kind: listFilters.kind,
 					status: listFilters.status,
@@ -118,6 +131,11 @@
 
 	const filterContact = $derived(
 		contactFilterId ? (contactsQuery.data?.items ?? []).find((c) => c.id === contactFilterId) : null
+	);
+	const filterCaseContact = $derived(
+		caseContactFilterId
+			? (contactsQuery.data?.items ?? []).find((c) => c.id === caseContactFilterId)
+			: null
 	);
 
 	const inboxQuery = createQuery(() => ({
@@ -248,11 +266,31 @@
 				>
 			</p>
 			<a
-				href="/finance"
+				href={caseContactFilterId ? `/finance?case_contact=${caseContactFilterId}` : '/finance'}
 				class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text"
 			>
 				<X class="size-3.5" />
 				{t('finance.filter.clearContact')}
+			</a>
+		</div>
+	{/if}
+
+	{#if caseContactFilterId}
+		<div
+			class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand/30 bg-brand-subtle px-3 py-2"
+		>
+			<p class="text-sm text-text">
+				{t('finance.filter.patient')}
+				<span class="font-medium"
+					>{filterCaseContact?.display_name ?? caseContactFilterId.slice(0, 8)}</span
+				>
+			</p>
+			<a
+				href={contactFilterId ? `/finance?contact=${contactFilterId}` : '/finance'}
+				class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text"
+			>
+				<X class="size-3.5" />
+				{t('finance.filter.clearPatient')}
 			</a>
 		</div>
 	{/if}
@@ -340,7 +378,7 @@
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
 						<th class="w-[14%] px-4 py-3 font-medium">{t('finance.col.date')}</th>
-						<th class="w-[36%] px-4 py-3 font-medium">{t('finance.col.title')}</th>
+						<th class="w-[36%] px-4 py-3 font-medium">{t('finance.col.label')}</th>
 						<th class="w-[12%] px-4 py-3 font-medium">{t('finance.col.kind')}</th>
 						<th class="w-[16%] px-4 py-3 font-medium">{t('finance.col.status')}</th>
 						<th class="w-[22%] px-4 py-3 text-right font-medium">{t('finance.col.amount')}</th>
@@ -357,7 +395,7 @@
 								>{formatDate(tx.occurred_on)}</td
 							>
 							<td class="min-w-0 px-4 py-3">
-								<p class="truncate font-medium text-text">{tx.title}</p>
+								<p class="truncate font-medium text-text">{deriveTransactionLabel(tx)}</p>
 								<p class="truncate text-xs text-text-faint">
 									{tx.contact_display_name ?? tx.subtitle ?? '—'}
 								</p>
@@ -398,7 +436,7 @@
 					>
 						<div class="flex min-w-0 items-start justify-between gap-2">
 							<div class="min-w-0 flex-1 overflow-hidden">
-								<p class="truncate text-sm font-medium text-text">{tx.title}</p>
+								<p class="truncate text-sm font-medium text-text">{deriveTransactionLabel(tx)}</p>
 								<p class="text-xs text-text-faint">{formatDate(tx.occurred_on)}</p>
 							</div>
 							<div class="shrink-0 text-right">

@@ -10,7 +10,7 @@ export const transactions = pgTable(
 			.notNull()
 			.references(() => tenants.id, { onDelete: 'restrict' }),
 		kind: text('kind').notNull(),
-		title: text('title').notNull(),
+		title: text('title'),
 		subtitle: text('subtitle'),
 		category: text('category'),
 		occurredOn: date('occurred_on', { mode: 'string' }).notNull(),
@@ -27,6 +27,12 @@ export const transactions = pgTable(
 		contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
 		contactDisplayName: text('contact_display_name'),
 		contactLabel: text('contact_label'),
+		caseContactId: uuid('case_contact_id').references(() => contacts.id, {
+			onDelete: 'set null'
+		}),
+		responsibleContactId: uuid('responsible_contact_id').references(() => contacts.id, {
+			onDelete: 'set null'
+		}),
 		description: text('description'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
@@ -56,6 +62,11 @@ export const transactions = pgTable(
 			table.contactId,
 			table.occurredOn,
 			table.id
+		),
+		index('transactions_tenant_id_case_contact_id_idx').on(table.tenantId, table.caseContactId),
+		index('transactions_tenant_id_responsible_contact_id_idx').on(
+			table.tenantId,
+			table.responsibleContactId
 		)
 	]
 );

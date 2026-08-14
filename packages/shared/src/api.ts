@@ -126,6 +126,7 @@ export const apiPaths = {
 	reportsSummary: `${API_V1_PREFIX}/reports/summary`,
 	reportsByCategory: `${API_V1_PREFIX}/reports/by-category`,
 	reportsByCategoryDetail: `${API_V1_PREFIX}/reports/by-category-detail`,
+	reportsByResponsible: `${API_V1_PREFIX}/reports/by-responsible`,
 	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`,
 	reportsContactDistribution: `${API_V1_PREFIX}/reports/contact-distribution`,
 	reportsBalances: `${API_V1_PREFIX}/reports/balances`,
@@ -141,6 +142,7 @@ export type ListQueryParams = {
 	from?: string;
 	to?: string;
 	contact_id?: string | null;
+	case_contact_id?: string | null;
 	type_id?: string | null;
 	kind?: string;
 	status?: string;
@@ -162,6 +164,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.from) url.searchParams.set('from', params.from);
 	if (params?.to) url.searchParams.set('to', params.to);
 	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
+	if (params?.case_contact_id) url.searchParams.set('case_contact_id', params.case_contact_id);
 	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
 	if (params?.kind) url.searchParams.set('kind', params.kind);
 	if (params?.status) url.searchParams.set('status', params.status);
@@ -242,6 +245,7 @@ import {
 	reportBalancesSchema,
 	reportByCategoryDetailSchema,
 	reportByCategorySchema,
+	reportByResponsibleSchema,
 	reportConsistencySchema,
 	reportMonthlySchema,
 	reportContactDistributionSchema,
@@ -540,6 +544,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/by-category-detail': {
 		response: reportByCategoryDetailSchema
+	},
+	'GET /v1/reports/by-responsible': {
+		response: reportByResponsibleSchema
 	},
 	'GET /v1/reports/monthly': {
 		response: reportMonthlySchema

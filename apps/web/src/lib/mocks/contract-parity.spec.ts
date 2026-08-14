@@ -155,7 +155,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 		const byQ = store.transactions
 			.filter(
 				(t) =>
-					t.title.toLowerCase().includes(needle) ||
+					(t.title?.toLowerCase().includes(needle) ?? false) ||
 					(t.subtitle?.toLowerCase().includes(needle) ?? false) ||
 					(t.category?.toLowerCase().includes(needle) ?? false) ||
 					(t.contact_display_name?.toLowerCase().includes(needle) ?? false) ||

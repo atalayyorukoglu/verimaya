@@ -241,6 +241,8 @@ function makeTransaction(
 						() => faker.helpers.arrayElement(['Müjdat Bey', 'Sehmuz Bey', 'Klinik Ortak']),
 						{ probability: 0.2 }
 					) ?? null),
+		case_contact_id: null,
+		responsible_contact_id: null,
 		description: null,
 		created_at: iso(faker.date.recent({ days: 60 })),
 		updated_at: iso(new Date()),
@@ -467,7 +469,16 @@ function makeDevMembers(tenants: Tenant[]): MembershipUser[] {
 
 function makeContactTypes(): ContactType[] {
 	const now = iso(new Date());
-	const names = ['Otel', 'Transfer', 'Klinik', 'Hasta', 'Laboratuvar', 'Diğer', 'İç personel'];
+	const names = [
+		'Otel',
+		'Transfer',
+		'Klinik',
+		'Hasta',
+		'Personel',
+		'Laboratuvar',
+		'Diğer',
+		'İç personel'
+	];
 	return names.map((name, i) => ({
 		id: `eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee${i + 1}`,
 		tenant_id: DEMO_TENANT_ID,
