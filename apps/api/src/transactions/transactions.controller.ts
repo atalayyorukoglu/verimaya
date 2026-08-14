@@ -12,6 +12,7 @@ import {
 	UseGuards
 } from '@nestjs/common';
 import {
+	transactionAuditDraftSchema,
 	transactionCreateSchema,
 	transactionListQuerySchema,
 	transactionUpdateSchema
@@ -24,7 +25,7 @@ import {
 	getIdempotencyKey
 } from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
-import { Idempotent } from '../common/idempotent.decorator';
+import { IdempotencyExempt, Idempotent } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
@@ -46,6 +47,16 @@ export class TransactionsController {
 	list(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
 		const params = parseQuery(transactionListQuerySchema, query, req);
 		return this.transactionsService.list(getActiveOrgId(req), params);
+	}
+
+	@Post('audit-draft')
+	@RequireOrgPermission('finance', 'read')
+	@IdempotencyExempt(
+		'Read-only consistency check for an unsaved draft — evaluates shared rules, writes nothing.'
+	)
+	auditDraft(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(transactionAuditDraftSchema, body, req);
+		return this.transactionsService.auditDraft(getActiveOrgId(req), input);
 	}
 
 	@Post()

@@ -8,6 +8,8 @@
 		SupportedCurrency,
 		Tenant,
 		Transaction,
+		TransactionAuditDraftResponse,
+		TransactionAuditIssue,
 		TransactionCreate,
 		TransactionKind,
 		TransactionStatus,
@@ -23,7 +25,7 @@
 		transactionKindLabels,
 		transactionStatusLabels
 	} from '@verimaya/shared';
-	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
+	import { apiGet, apiSend, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -109,6 +111,7 @@
 	let deletePhase = $state<DeleteConfirmPhase>('form');
 	/** User edited base amount or rate — auto FX must not overwrite until they clear base. */
 	let amountBaseTouched = $state(false);
+	let auditIssues = $state<TransactionAuditIssue[]>([]);
 
 	const categoryOptions = $derived(
 		(catsQuery.data?.items ?? [])
@@ -206,10 +209,82 @@
 		deletePhase = 'form';
 		// Preserve saved base amount on edit; new rows start auto-fill.
 		amountBaseTouched = transaction?.amount_base != null;
+		auditIssues = [];
 	});
 
 	const isEdit = $derived(!!transaction);
 	const confirmingDelete = $derived(deletePhase === 'confirm');
+
+	/** G-04: debounce live audit — never blocks save. */
+	$effect(() => {
+		if (!open || confirmingDelete || !qs.ready) {
+			return;
+		}
+		const draftKind = kind;
+		const draftCategory = category;
+		const draftStatus = status;
+		const draftCurrency = currency;
+		const draftAmountMajor = amountMajor;
+		const draftPaidMajor = paidMajor;
+		const draftContactId = contact_id;
+		const draftContactLabel = contact_label;
+		const draftCaseId = case_contact_id;
+		const draftResponsibleId = responsible_contact_id;
+		const draftAmountBase = displayAmountBase;
+		const draftNeedsFx = needsFx;
+
+		const controller = new AbortController();
+		const timer = setTimeout(() => {
+			const amountParsed = Math.round(Number.parseFloat(draftAmountMajor.replace(',', '.')) * 100);
+			const amount = Number.isFinite(amountParsed) && amountParsed > 0 ? amountParsed : null;
+			let paid_amount: number | null = null;
+			if (draftStatus === 'paid' && amount != null) {
+				paid_amount = amount;
+			} else if (draftStatus === 'partial') {
+				const paid = Math.round(Number.parseFloat(draftPaidMajor.replace(',', '.')) * 100);
+				paid_amount = Number.isFinite(paid) ? paid : null;
+			} else if (draftStatus === 'unpaid') {
+				paid_amount = 0;
+			}
+			let amount_base: number | null = null;
+			if (!draftNeedsFx && amount != null) {
+				amount_base = amount;
+			} else if (draftNeedsFx && draftAmountBase.trim() !== '') {
+				const base = Math.round(Number.parseFloat(draftAmountBase.replace(',', '.')) * 100);
+				amount_base = Number.isFinite(base) ? base : null;
+			}
+
+			void apiSend<TransactionAuditDraftResponse>(
+				apiPaths.transactionsAuditDraft,
+				'POST',
+				{
+					kind: draftKind,
+					category: draftCategory.trim() || null,
+					contact_id: draftContactId || null,
+					contact_label: draftContactLabel.trim() || null,
+					case_contact_id: draftCaseId || null,
+					responsible_contact_id: draftResponsibleId || null,
+					currency: draftCurrency,
+					amount,
+					paid_amount,
+					amount_base,
+					status: draftStatus
+				},
+				{ signal: controller.signal }
+			)
+				.then((res) => {
+					if (!controller.signal.aborted) auditIssues = res.items;
+				})
+				.catch(() => {
+					if (!controller.signal.aborted) auditIssues = [];
+				});
+		}, 400);
+
+		return () => {
+			controller.abort();
+			clearTimeout(timer);
+		};
+	});
 
 	const deleteDetail = $derived.by(() => {
 		if (!transaction) return '';
@@ -589,7 +664,27 @@
 				></textarea>
 			</div>
 			{#if error}
-				<p class="text-sm text-danger">{error}</p>
+				<p class="min-w-0 text-sm break-words text-danger">{error}</p>
+			{/if}
+			{#if auditIssues.length > 0}
+				<div
+					class="min-w-0 space-y-1.5 rounded-[6px] border border-warning/40 bg-warning/10 px-3 py-2"
+					role="status"
+				>
+					<p class="text-xs font-semibold text-text">{t('finance.form.auditTitle')}</p>
+					<p class="text-[11px] break-words text-text-faint">{t('finance.form.auditHint')}</p>
+					<ul class="min-w-0 space-y-1">
+						{#each auditIssues as issue (issue.code + issue.message_key)}
+							<li
+								class="min-w-0 text-xs break-words {issue.severity === 'error'
+									? 'text-danger'
+									: 'text-warning'}"
+							>
+								{t(issue.message_key as MessageKey)}
+							</li>
+						{/each}
+					</ul>
+				</div>
 			{/if}
 		</form>
 	{/if}

@@ -48,6 +48,7 @@ export const apiPaths = {
 	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
 	transactions: `${API_V1_PREFIX}/transactions`,
 	transaction: (id: string) => `${API_V1_PREFIX}/transactions/${id}`,
+	transactionsAuditDraft: `${API_V1_PREFIX}/transactions/audit-draft`,
 	fxRate: (params: { from: string; to: string; on: string }) => {
 		const url = new URL(`${API_V1_PREFIX}/fx/rate`, 'http://local');
 		url.searchParams.set('from', params.from);
@@ -189,6 +190,10 @@ import {
 } from './contact.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
+import {
+	transactionAuditDraftResponseSchema,
+	transactionAuditDraftSchema
+} from './transaction-consistency.js';
 import { fxRateQuerySchema, fxRateResponseSchema } from './fx.js';
 import {
 	approveDraftsRequestSchema,
@@ -409,6 +414,10 @@ export const apiContract = {
 	},
 	'GET /v1/transactions/:id': {
 		response: transactionSchema
+	},
+	'POST /v1/transactions/audit-draft': {
+		body: transactionAuditDraftSchema,
+		response: transactionAuditDraftResponseSchema
 	},
 	'DELETE /v1/transactions/:id': {
 		response: softDeleteResultSchema

@@ -907,6 +907,9 @@ paths:
                           type: string
                           maxLength: 8000
                           nullable: true
+                        contact_info_incomplete:
+                          type: boolean
+                          default: false
                         created_at:
                           type: string
                           format: date-time
@@ -1055,6 +1058,9 @@ paths:
                     type: string
                     maxLength: 8000
                     nullable: true
+                  contact_info_incomplete:
+                    type: boolean
+                    default: false
                   created_at:
                     type: string
                     format: date-time
@@ -1659,6 +1665,9 @@ paths:
                           type: string
                           maxLength: 8000
                           nullable: true
+                        contact_info_incomplete:
+                          type: boolean
+                          default: false
                         created_at:
                           type: string
                           format: date-time
@@ -3204,6 +3213,112 @@ paths:
           required: true
           schema:
             type: string
+  /transactions/audit-draft:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        severity:
+                          type: string
+                          enum:
+                            - warning
+                            - error
+                        code:
+                          type: string
+                          enum:
+                            - category_missing
+                            - income_contact_missing
+                            - expense_contact_missing
+                            - fx_missing
+                            - paid_amount_mismatch
+                            - unpaid_with_payment
+                            - partial_amount_invalid
+                            - contact_equals_responsible
+                            - responsible_not_internal
+                        message_key:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                      required:
+                        - severity
+                        - code
+                        - message_key
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind:
+                  type: string
+                  enum:
+                    - income
+                    - expense
+                  nullable: true
+                category:
+                  type: string
+                  maxLength: 128
+                  nullable: true
+                contact_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                contact_label:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                case_contact_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                responsible_contact_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                currency:
+                  type: string
+                  enum:
+                    - TRY
+                    - GBP
+                    - EUR
+                    - USD
+                  nullable: true
+                amount:
+                  type: integer
+                  exclusiveMinimum: true
+                  minimum: 0
+                  nullable: true
+                paid_amount:
+                  type: integer
+                  minimum: 0
+                  nullable: true
+                amount_base:
+                  type: integer
+                  minimum: 0
+                  nullable: true
+                status:
+                  type: string
+                  enum:
+                    - paid
+                    - partial
+                    - unpaid
+                  nullable: true
+              additionalProperties: false
   /fx/rate:
     get:
       responses:
@@ -6641,6 +6756,8 @@ paths:
                             - paid_amount_mismatch
                             - unpaid_with_payment
                             - partial_amount_invalid
+                            - contact_equals_responsible
+                            - responsible_not_internal
                         message_key:
                           type: string
                           minLength: 1
@@ -6677,6 +6794,8 @@ paths:
                       - paid_amount_mismatch
                       - unpaid_with_payment
                       - partial_amount_invalid
+                      - contact_equals_responsible
+                      - responsible_not_internal
                     properties:
                       category_missing:
                         type: integer
@@ -6697,6 +6816,12 @@ paths:
                         type: integer
                         minimum: 0
                       partial_amount_invalid:
+                        type: integer
+                        minimum: 0
+                      contact_equals_responsible:
+                        type: integer
+                        minimum: 0
+                      responsible_not_internal:
                         type: integer
                         minimum: 0
                     additionalProperties: false

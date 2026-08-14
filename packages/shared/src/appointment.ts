@@ -31,16 +31,30 @@ export const appointmentSchema = z.object({
 	hotel_contact_id: uuid.nullable().default(null),
 	transfer_contact_id: uuid.nullable().default(null),
 	notes: z.string().max(8000).nullable(),
+	/**
+	 * Server-derived: linked contact has neither phone nor email (both blank).
+	 * Advisory only — never blocks create/update.
+	 */
+	contact_info_incomplete: z.boolean().default(false),
 	created_at: isoDateTime,
 	updated_at: isoDateTime
 });
 
 export type Appointment = z.infer<typeof appointmentSchema>;
 
+/** True when both phone and email are blank/whitespace. */
+export function isContactInfoIncomplete(
+	phone: string | null | undefined,
+	email: string | null | undefined
+): boolean {
+	return !(phone?.trim()) && !(email?.trim());
+}
+
 export const appointmentCreateSchema = appointmentSchema.omit({
 	id: true,
 	tenant_id: true,
 	contact_display_name: true,
+	contact_info_incomplete: true,
 	created_at: true,
 	updated_at: true
 });

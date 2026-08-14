@@ -169,6 +169,7 @@ function makeAppointment(contact: Contact, overrides: Partial<Appointment> = {})
 		hotel_contact_id: null,
 		transfer_contact_id: null,
 		notes: null,
+		contact_info_incomplete: !contact.phone?.trim() && !contact.email?.trim(),
 		created_at: iso(faker.date.recent({ days: 30 })),
 		updated_at: iso(new Date()),
 		...overrides

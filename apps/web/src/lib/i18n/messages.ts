@@ -542,6 +542,8 @@ const tr = {
 	'reports.consistency.unpaid_with_payment': 'Durum “ödenmedi” ama paid_amount > 0.',
 	'reports.consistency.partial_amount_invalid':
 		'Durum “kısmi” ama ödenen tutar boş, ≤0 veya tutara eşit/büyük.',
+	'reports.consistency.contact_equals_responsible': 'Kişi ve sorumlu aynı olamaz.',
+	'reports.consistency.responsible_not_internal': 'Sorumlu, şirket içi personel olmalı.',
 	'settings.dataQuality.title': 'Veri kalitesi',
 	'settings.dataQuality.description':
 		'Son 7 günlük tutarlılık denetimi (tam dönem, sunucu tarafı) + mükerrer şüphe.',
@@ -663,6 +665,8 @@ const tr = {
 	'appointments.loadError': 'Randevular yüklenemedi.',
 	'appointments.emptyDay': 'Boş',
 	'appointments.fallbackTitle': 'Randevu',
+	'appointments.contactInfoIncomplete': 'İletişim eksik',
+	'appointments.contactInfoIncompleteHint': 'Telefon ve e-posta yok — detayları kontrol edin.',
 	'appointments.saveFailed': 'Kayıt başarısız',
 	'appointments.delete': 'Sil',
 	'appointments.deleteFailed': 'Silme başarısız',
@@ -1871,6 +1875,8 @@ const tr = {
 	'finance.form.paymentMethod.promissoryNote': 'Senet',
 	'finance.form.paymentMethod.other': 'Diğer',
 	'finance.form.descriptionLabel': 'Açıklama',
+	'finance.form.auditTitle': 'Canlı tutarlılık',
+	'finance.form.auditHint': 'Uyarılar kaydı engellemez — sadece kontrol için.',
 	'finance.form.none': '—',
 
 	// DevToolbar (lib/components — in scope)
@@ -2397,6 +2403,8 @@ const en: Record<MessageKey, string> = {
 	'reports.consistency.unpaid_with_payment': 'Status is “unpaid” but paid_amount > 0.',
 	'reports.consistency.partial_amount_invalid':
 		'Status is “partial” but paid amount is missing, ≤0, or ≥ full amount.',
+	'reports.consistency.contact_equals_responsible': 'Contact and responsible cannot be the same.',
+	'reports.consistency.responsible_not_internal': 'Responsible must be internal staff.',
 	'settings.dataQuality.title': 'Data quality',
 	'settings.dataQuality.description':
 		'Last 7 days consistency audit (full period, server-side) + duplicate suspicion.',
@@ -2515,6 +2523,8 @@ const en: Record<MessageKey, string> = {
 	'appointments.loadError': 'Could not load appointments.',
 	'appointments.emptyDay': 'Empty',
 	'appointments.fallbackTitle': 'Appointment',
+	'appointments.contactInfoIncomplete': 'Contact details missing',
+	'appointments.contactInfoIncompleteHint': 'No phone or email — check the details.',
 	'appointments.saveFailed': 'Save failed',
 	'appointments.delete': 'Delete',
 	'appointments.deleteFailed': 'Delete failed',
@@ -3676,6 +3686,8 @@ const en: Record<MessageKey, string> = {
 	'finance.form.paymentMethod.promissoryNote': 'Promissory note',
 	'finance.form.paymentMethod.other': 'Other',
 	'finance.form.descriptionLabel': 'Description',
+	'finance.form.auditTitle': 'Live consistency',
+	'finance.form.auditHint': 'Warnings do not block save — advisory only.',
 	'finance.form.none': '—',
 
 	'dev.toolbar.scenario.empty': 'Empty list',

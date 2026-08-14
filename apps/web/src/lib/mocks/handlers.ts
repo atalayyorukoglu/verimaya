@@ -41,12 +41,16 @@ import {
 	compareByCreatedAtAsc,
 	compareByLastNameAsc,
 	compareByOccurredOnDesc,
+	deriveTransactionLabel,
+	evaluateTransactionConsistency,
+	isContactInfoIncomplete,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	DUPLICATE_SCAN_ROW_CAP,
 	tenantDayRange,
 	toTenantDayKey,
 	resolveCollectedAmount,
+	transactionAuditDraftSchema,
 	type AiCorrection,
 	type ApiKey,
 	type ApiKeyCreated,
@@ -565,47 +569,37 @@ function buildReportConsistency(
 	};
 	const items: Item[] = [];
 
-	const push = (
-		t: Transaction,
-		severity: 'warning' | 'error',
-		code: string,
-		message_key: string
-	) => {
-		items.push({
-			transaction_id: t.id,
-			title: t.title ?? '—',
-			occurred_on: t.occurred_on,
-			severity,
-			code,
-			message_key
-		});
-	};
-
 	for (const t of rows) {
-		if (!(t.category ?? '').trim()) {
-			push(t, 'warning', 'category_missing', 'reports.consistency.category_missing');
-		}
-		if (t.kind === 'income' && !t.contact_id) {
-			push(t, 'warning', 'income_contact_missing', 'reports.consistency.income_contact_missing');
-		}
-		if (t.kind === 'expense' && !t.contact_id && !(t.contact_label ?? '').trim()) {
-			push(t, 'warning', 'expense_contact_missing', 'reports.consistency.expense_contact_missing');
-		}
-		// Same-currency amount_base may be null on purpose (ETL-ESLEME §3.4).
-		if (t.currency !== base && t.amount_base == null) {
-			push(t, 'warning', 'fx_missing', 'reports.consistency.fx_missing');
-		}
-		if (t.status === 'paid' && t.paid_amount != null && t.paid_amount !== t.amount) {
-			push(t, 'error', 'paid_amount_mismatch', 'reports.consistency.paid_amount_mismatch');
-		}
-		if (t.status === 'unpaid' && (t.paid_amount ?? 0) > 0) {
-			push(t, 'error', 'unpaid_with_payment', 'reports.consistency.unpaid_with_payment');
-		}
-		if (
-			t.status === 'partial' &&
-			(t.paid_amount == null || t.paid_amount <= 0 || t.paid_amount >= t.amount)
-		) {
-			push(t, 'error', 'partial_amount_invalid', 'reports.consistency.partial_amount_invalid');
+		const responsible = t.responsible_contact_id
+			? store.contacts.find((c) => c.id === t.responsible_contact_id)
+			: undefined;
+		const issues = evaluateTransactionConsistency(
+			{
+				kind: t.kind,
+				category: t.category,
+				contact_id: t.contact_id,
+				contact_label: t.contact_label,
+				case_contact_id: t.case_contact_id,
+				responsible_contact_id: t.responsible_contact_id,
+				currency: t.currency,
+				amount: t.amount,
+				paid_amount: t.paid_amount,
+				amount_base: t.amount_base,
+				status: t.status,
+				responsible_is_internal: responsible?.is_internal ?? null
+			},
+			{ baseCurrency: base }
+		);
+		const title = deriveTransactionLabel(t);
+		for (const issue of issues) {
+			items.push({
+				transaction_id: t.id,
+				title,
+				occurred_on: t.occurred_on,
+				severity: issue.severity,
+				code: issue.code,
+				message_key: issue.message_key
+			});
 		}
 	}
 
@@ -1055,6 +1049,14 @@ export const handlers = [
 		// re-sorts by starts_at client-side regardless, so this doesn't change behavior.
 		items.sort(compareByCreatedAtDesc);
 
+		items = items.map((a) => {
+			const c = store.contacts.find((x) => x.id === a.contact_id);
+			return {
+				...a,
+				contact_info_incomplete: isContactInfoIncomplete(c?.phone, c?.email)
+			};
+		});
+
 		const type_counts: Record<string, number> = {};
 		const status_counts: Record<string, number> = {};
 		for (const a of items) {
@@ -1090,6 +1092,7 @@ export const handlers = [
 			id: crypto.randomUUID(),
 			tenant_id: DEMO_TENANT_ID,
 			contact_display_name: contact.display_name,
+			contact_info_incomplete: isContactInfoIncomplete(contact.phone, contact.email),
 			...resolved,
 			created_at: now,
 			updated_at: now
@@ -1113,6 +1116,7 @@ export const handlers = [
 			...store.appointments[idx],
 			...resolved,
 			contact_display_name: contact?.display_name ?? store.appointments[idx].contact_display_name,
+			contact_info_incomplete: isContactInfoIncomplete(contact?.phone, contact?.email),
 			updated_at: nowIso()
 		};
 		store.appointments[idx] = updated;
@@ -1128,6 +1132,24 @@ export const handlers = [
 		store.appointments.splice(idx, 1);
 		refreshUsage(store);
 		return HttpResponse.json({ id, deleted: true as const });
+	}),
+
+	http.post('/v1/transactions/audit-draft', async ({ request }) => {
+		const body = await request.json();
+		const parsed = transactionAuditDraftSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz taslak', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const responsible = parsed.data.responsible_contact_id
+			? store.contacts.find((c) => c.id === parsed.data.responsible_contact_id)
+			: undefined;
+		const items = evaluateTransactionConsistency(
+			{
+				...parsed.data,
+				responsible_is_internal: responsible?.is_internal ?? null
+			},
+			{ baseCurrency: store.tenant.base_currency }
+		);
+		return HttpResponse.json({ items });
 	}),
 
 	http.get('/v1/transactions', ({ request }) => {

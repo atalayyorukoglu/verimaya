@@ -15,6 +15,8 @@ import {
 	tenantDayRange,
 	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
+	deriveTransactionLabel,
+	evaluateTransactionConsistency,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	resolveCollectedAmount,
@@ -29,9 +31,7 @@ import {
 	type ReportByCategoryDetailParams,
 	type ReportByResponsible,
 	type ReportConsistency,
-	type ReportConsistencyCode,
 	type ReportConsistencyItem,
-	type ReportConsistencySeverity,
 	type ReportMonthly,
 	type ReportContactDistribution,
 	type ReportPeriodParams,
@@ -335,11 +335,7 @@ export class ReportsService {
 		});
 	}
 
-	/**
-	 * GAP-05: full-period transaction consistency audit.
-	 * Counts = SQL FILTER aggregation over the whole period; items = capped list (LIMIT 100).
-	 * BF-04/BF-05 rules (responsible_party, payer/payee) and contact_type_mismatch are out of scope.
-	 */
+	/** G-04: full-period audit using the same shared rules as unsaved transaction drafts. */
 	async consistency(
 		tenantId: string,
 		params: ReportPeriodParams
@@ -349,111 +345,83 @@ export class ReportsService {
 			const period: SQL[] = [isNull(transactions.deletedAt)];
 			if (params.from) period.push(gte(transactions.occurredOn, params.from));
 			if (params.to) period.push(lte(transactions.occurredOn, params.to));
-			const periodWhere = and(...period)!;
-
-			const emptyCategory = sql`btrim(coalesce(${transactions.category}, '')) = ''`;
-			const incomeNoPatient = sql`${transactions.kind} = 'income' AND ${transactions.contactId} IS NULL`;
-			const expenseNoContact = sql`${transactions.kind} = 'expense' AND ${transactions.contactId} IS NULL AND btrim(coalesce(${transactions.contactLabel}, '')) = ''`;
-			// FX: foreign currency without base snapshot. Same-currency rows may have
-			// amount_base NULL on purpose (ETL-ESLEME.md §3.4 — resolver uses amount).
-			const fxMissing = sql`${transactions.currency} <> ${tenantBase} AND ${transactions.amountBase} IS NULL`;
-			const paidMismatch = sql`${transactions.status} = 'paid' AND ${transactions.paidAmount} IS NOT NULL AND ${transactions.paidAmount} <> ${transactions.amount}`;
-			const unpaidWithPay = sql`${transactions.status} = 'unpaid' AND coalesce(${transactions.paidAmount}, 0) > 0`;
-			const partialInvalid = sql`${transactions.status} = 'partial' AND (${transactions.paidAmount} IS NULL OR ${transactions.paidAmount} <= 0 OR ${transactions.paidAmount} >= ${transactions.amount})`;
-
-			const [agg] = await db
+			const counts_by_code: ReportConsistency['counts_by_code'] = {};
+			const allItems: Array<ReportConsistencyItem & { occurredOn: string }> = [];
+			const rows = await db
 				.select({
-					category_missing: sql<number>`(count(*) filter (where ${emptyCategory}))::int`,
-					income_contact_missing: sql<number>`(count(*) filter (where ${incomeNoPatient}))::int`,
-					expense_contact_missing: sql<number>`(count(*) filter (where ${expenseNoContact}))::int`,
-					fx_missing: sql<number>`(count(*) filter (where ${fxMissing}))::int`,
-					paid_amount_mismatch: sql<number>`(count(*) filter (where ${paidMismatch}))::int`,
-					unpaid_with_payment: sql<number>`(count(*) filter (where ${unpaidWithPay}))::int`,
-					partial_amount_invalid: sql<number>`(count(*) filter (where ${partialInvalid}))::int`
+					id: transactions.id,
+					title: transactions.title,
+					subtitle: transactions.subtitle,
+					category: transactions.category,
+					occurredOn: transactions.occurredOn,
+					kind: transactions.kind,
+					status: transactions.status,
+					amount: transactions.amount,
+					amountBase: transactions.amountBase,
+					currency: transactions.currency,
+					paidAmount: transactions.paidAmount,
+					contactId: transactions.contactId,
+					contactLabel: transactions.contactLabel,
+					contactDisplayName: transactions.contactDisplayName,
+					responsibleContactId: transactions.responsibleContactId,
+					responsibleIsInternal: contacts.isInternal,
+					description: transactions.description
 				})
 				.from(transactions)
-				.where(periodWhere);
+				.leftJoin(contacts, eq(transactions.responsibleContactId, contacts.id))
+				.where(and(...period));
 
-			const counts_by_code: ReportConsistency['counts_by_code'] = {};
-			const addCount = (code: ReportConsistencyCode, raw: number | null | undefined) => {
-				const n = Number(raw ?? 0);
-				if (n > 0) counts_by_code[code] = n;
-			};
-			addCount('category_missing', agg?.category_missing);
-			addCount('income_contact_missing', agg?.income_contact_missing);
-			addCount('expense_contact_missing', agg?.expense_contact_missing);
-			addCount('fx_missing', agg?.fx_missing);
-			addCount('paid_amount_mismatch', agg?.paid_amount_mismatch);
-			addCount('unpaid_with_payment', agg?.unpaid_with_payment);
-			addCount('partial_amount_invalid', agg?.partial_amount_invalid);
+			for (const row of rows) {
+				const issues = evaluateTransactionConsistency(
+					{
+						kind: row.kind,
+						category: row.category,
+						contact_id: row.contactId,
+						contact_label: row.contactLabel,
+						responsible_contact_id: row.responsibleContactId,
+						currency: row.currency,
+						amount: row.amount,
+						amount_base: row.amountBase,
+						paid_amount: row.paidAmount,
+						status: row.status,
+						responsible_is_internal: row.responsibleIsInternal
+					},
+					{ baseCurrency: tenantBase }
+				);
+				const title = deriveTransactionLabel({
+					title: row.title,
+					subtitle: row.subtitle,
+					category: row.category,
+					contact_display_name: row.contactDisplayName,
+					contact_label: row.contactLabel,
+					description: row.description
+				});
 
-			const warning =
-				(counts_by_code.category_missing ?? 0) +
-				(counts_by_code.income_contact_missing ?? 0) +
-				(counts_by_code.expense_contact_missing ?? 0) +
-				(counts_by_code.fx_missing ?? 0);
-			const error =
-				(counts_by_code.paid_amount_mismatch ?? 0) +
-				(counts_by_code.unpaid_with_payment ?? 0) +
-				(counts_by_code.partial_amount_invalid ?? 0);
+				for (const issue of issues) {
+					counts_by_code[issue.code] = (counts_by_code[issue.code] ?? 0) + 1;
+					allItems.push({
+						transaction_id: row.id,
+						title,
+						occurred_on: String(row.occurredOn).slice(0, 10),
+						severity: issue.severity,
+						code: issue.code,
+						message_key: issue.message_key,
+						occurredOn: row.occurredOn
+					});
+				}
+			}
 
-			const branch = (
-				severity: ReportConsistencySeverity,
-				code: ReportConsistencyCode,
-				messageKey: string,
-				pred: SQL
-			) => sql`
-				SELECT
-					${transactions.id} AS transaction_id,
-					${transactions.title} AS title,
-					${transactions.occurredOn} AS occurred_on,
-					${severity}::text AS severity,
-					${code}::text AS code,
-					${messageKey}::text AS message_key
-				FROM ${transactions}
-				WHERE ${and(periodWhere, pred)}
-			`;
-
-			const itemResult = await db.execute(sql`
-				SELECT transaction_id, title, occurred_on, severity, code, message_key
-				FROM (
-					${branch('warning', 'category_missing', 'reports.consistency.category_missing', emptyCategory)}
-					UNION ALL
-					${branch('warning', 'income_contact_missing', 'reports.consistency.income_contact_missing', incomeNoPatient)}
-					UNION ALL
-					${branch('warning', 'expense_contact_missing', 'reports.consistency.expense_contact_missing', expenseNoContact)}
-					UNION ALL
-					${branch('warning', 'fx_missing', 'reports.consistency.fx_missing', fxMissing)}
-					UNION ALL
-					${branch('error', 'paid_amount_mismatch', 'reports.consistency.paid_amount_mismatch', paidMismatch)}
-					UNION ALL
-					${branch('error', 'unpaid_with_payment', 'reports.consistency.unpaid_with_payment', unpaidWithPay)}
-					UNION ALL
-					${branch('error', 'partial_amount_invalid', 'reports.consistency.partial_amount_invalid', partialInvalid)}
-				) AS issues
-				ORDER BY
-					CASE severity WHEN 'error' THEN 0 ELSE 1 END,
-					occurred_on DESC,
-					transaction_id DESC
-				LIMIT ${REPORT_CONSISTENCY_ITEMS_LIMIT}
-			`);
-
-			const items: ReportConsistencyItem[] = [...itemResult].map((row) => {
-				const occurred =
-					typeof row.occurred_on === 'string'
-						? row.occurred_on.slice(0, 10)
-						: row.occurred_on instanceof Date
-							? row.occurred_on.toISOString().slice(0, 10)
-							: String(row.occurred_on).slice(0, 10);
-				return {
-					transaction_id: String(row.transaction_id),
-					title: String(row.title),
-					occurred_on: occurred,
-					severity: row.severity as ReportConsistencySeverity,
-					code: row.code as ReportConsistencyCode,
-					message_key: String(row.message_key)
-				};
-			});
+			const items = allItems
+				.sort(
+					(a, b) =>
+						(a.severity === 'error' ? 0 : 1) - (b.severity === 'error' ? 0 : 1) ||
+						b.occurredOn.localeCompare(a.occurredOn) ||
+						b.transaction_id.localeCompare(a.transaction_id)
+				)
+				.slice(0, REPORT_CONSISTENCY_ITEMS_LIMIT)
+				.map(({ occurredOn: _, ...item }) => item);
+			const error = allItems.filter((item) => item.severity === 'error').length;
+			const warning = allItems.length - error;
 
 			return {
 				period: { from: params.from ?? null, to: params.to ?? null },

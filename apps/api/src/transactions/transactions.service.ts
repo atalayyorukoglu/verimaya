@@ -2,7 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
+	evaluateTransactionConsistency,
 	type TransactionCreate,
+	type TransactionAuditDraft,
+	type TransactionAuditDraftResponse,
 	type TransactionListQuery,
 	type TransactionUpdate
 } from '@verimaya/shared';
@@ -216,6 +219,41 @@ export class TransactionsService {
 		);
 
 		return { id, deleted: true as const };
+	}
+
+	async auditDraft(
+		tenantId: string,
+		input: TransactionAuditDraft
+	): Promise<TransactionAuditDraftResponse> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [tenant] = await db
+				.select({ baseCurrency: tenants.baseCurrency })
+				.from(tenants)
+				.where(eq(tenants.id, tenantId))
+				.limit(1);
+
+			let responsible_is_internal: boolean | null = null;
+			if (input.responsible_contact_id) {
+				const [contact] = await db
+					.select({ isInternal: contacts.isInternal })
+					.from(contacts)
+					.where(
+						and(
+							eq(contacts.id, input.responsible_contact_id),
+							isNull(contacts.deletedAt)
+						)
+					)
+					.limit(1);
+				responsible_is_internal = contact?.isInternal ?? null;
+			}
+
+			return {
+				items: evaluateTransactionConsistency(
+					{ ...input, responsible_is_internal },
+					{ baseCurrency: tenant?.baseCurrency ?? 'TRY' }
+				)
+			};
+		});
 	}
 
 	private async findActiveRow(db: TenantDb, id: string) {

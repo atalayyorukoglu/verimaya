@@ -119,6 +119,11 @@ const INTENTIONAL_PERMISSION_LOCKS: Array<{
 		reason: 'Cross-resource: patient route exposes finance aggregates'
 	},
 	{
+		key: 'TransactionsController.auditDraft',
+		permission: { resource: 'finance', action: 'read' },
+		reason: 'POST body carries unsaved draft fields but endpoint is read-only (writes nothing)'
+	},
+	{
 		key: 'ContactsController.dataExport',
 		permission: { resource: 'contact', action: 'delete' },
 		reason:

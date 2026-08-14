@@ -196,27 +196,29 @@ export const reportAppointmentMetricsSchema = z.object({
 });
 export type ReportAppointmentMetrics = z.infer<typeof reportAppointmentMetricsSchema>;
 
-/** GAP-05: transaction consistency audit (server-side, full period — not page-capped). */
-export const reportConsistencySeveritySchema = z.enum(['warning', 'error']);
-export type ReportConsistencySeverity = z.infer<typeof reportConsistencySeveritySchema>;
+/**
+ * GAP-05 / G-04: transaction consistency audit (server-side, full period — not page-capped).
+ * Rule engine lives in `transaction-consistency.ts` (shared with audit-draft).
+ */
+export {
+	transactionConsistencySeveritySchema as reportConsistencySeveritySchema,
+	transactionConsistencyCodeSchema as reportConsistencyCodeSchema,
+	transactionConsistencyCodeMeta as reportConsistencyCodeMeta,
+	type TransactionConsistencySeverity as ReportConsistencySeverity,
+	type TransactionConsistencyCode as ReportConsistencyCode
+} from './transaction-consistency.js';
 
-export const reportConsistencyCodeSchema = z.enum([
-	'category_missing',
-	'income_contact_missing',
-	'expense_contact_missing',
-	'fx_missing',
-	'paid_amount_mismatch',
-	'unpaid_with_payment',
-	'partial_amount_invalid'
-]);
-export type ReportConsistencyCode = z.infer<typeof reportConsistencyCodeSchema>;
+import {
+	transactionConsistencyCodeSchema,
+	transactionConsistencySeveritySchema
+} from './transaction-consistency.js';
 
 export const reportConsistencyItemSchema = z.object({
 	transaction_id: uuid,
 	title: z.string(),
 	occurred_on: isoDate,
-	severity: reportConsistencySeveritySchema,
-	code: reportConsistencyCodeSchema,
+	severity: transactionConsistencySeveritySchema,
+	code: transactionConsistencyCodeSchema,
 	/** i18n catalog key — never a localized string from the server. */
 	message_key: z.string().min(1).max(128)
 });
@@ -224,41 +226,6 @@ export type ReportConsistencyItem = z.infer<typeof reportConsistencyItemSchema>;
 
 /** Max issue rows returned in `items` (full totals live in `counts` / `counts_by_code`). */
 export const REPORT_CONSISTENCY_ITEMS_LIMIT = 100;
-
-/** Severity + i18n key for each consistency code (UI grouping / labels). */
-export const reportConsistencyCodeMeta: Record<
-	ReportConsistencyCode,
-	{ severity: ReportConsistencySeverity; message_key: string }
-> = {
-	category_missing: {
-		severity: 'warning',
-		message_key: 'reports.consistency.category_missing'
-	},
-	income_contact_missing: {
-		severity: 'warning',
-		message_key: 'reports.consistency.income_contact_missing'
-	},
-	expense_contact_missing: {
-		severity: 'warning',
-		message_key: 'reports.consistency.expense_contact_missing'
-	},
-	fx_missing: {
-		severity: 'warning',
-		message_key: 'reports.consistency.fx_missing'
-	},
-	paid_amount_mismatch: {
-		severity: 'error',
-		message_key: 'reports.consistency.paid_amount_mismatch'
-	},
-	unpaid_with_payment: {
-		severity: 'error',
-		message_key: 'reports.consistency.unpaid_with_payment'
-	},
-	partial_amount_invalid: {
-		severity: 'error',
-		message_key: 'reports.consistency.partial_amount_invalid'
-	}
-};
 
 export const reportConsistencySchema = z.object({
 	period: reportPeriodSchema,
@@ -268,7 +235,7 @@ export const reportConsistencySchema = z.object({
 		warning: z.number().int().nonnegative()
 	}),
 	/** Full-period issue counts keyed by rule code (includes codes beyond the items limit). */
-	counts_by_code: z.record(reportConsistencyCodeSchema, z.number().int().nonnegative()),
+	counts_by_code: z.record(transactionConsistencyCodeSchema, z.number().int().nonnegative()),
 	/** True when error+warning exceeds items.length (list is capped). */
 	truncated: z.boolean()
 });
