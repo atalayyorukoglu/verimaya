@@ -91,7 +91,10 @@ export function toContact(row: ContactRow): Contact {
 	};
 }
 
-export function toAppointment(row: AppointmentRow): Appointment {
+export function toAppointment(
+	row: AppointmentRow,
+	extras?: { contact_info_incomplete?: boolean }
+): Appointment {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
@@ -109,6 +112,7 @@ export function toAppointment(row: AppointmentRow): Appointment {
 		hotel_contact_id: row.hotelContactId,
 		transfer_contact_id: row.transferContactId,
 		notes: row.notes,
+		contact_info_incomplete: extras?.contact_info_incomplete ?? false,
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)
 	};

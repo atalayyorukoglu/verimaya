@@ -295,6 +295,17 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **G-04 Taslak canlı audit ✅** (2026-08-14) — `evaluateTransactionConsistency` shared saf
+  motor; `GET /v1/reports/consistency` + `POST /v1/transactions/audit-draft` aynı kurallar;
+  form debounce ile uyarı gösterir, kaydı engellemez.
+  **Görüş:** SQL FILTER yerine satır+join + ortak fonksiyon — iki kural seti riski kalktı.
+  Yeni: `contact_equals_responsible` / `responsible_not_internal`; kategori→hasta zorunluluğu
+  bilinçli yok. Kırmızı: `income_contact_missing` kuralı silinince unit + GAP-05 isolation kırıldı.
+- **G-29 Eksik iletişim uyarısı ✅** (2026-08-14) — randevu list/detay `contact_info_incomplete`
+  (telefon ve e-posta ikisi de boş); sunucu join ile türetir; rozet engelleyici değil.
+  **Görüş:** Tracker “biri boşsa” idi; Verimaya kararı her iki alan boş. Isolation’da
+  complete / incomplete / phone-only + tenant B sızıntısı yok. Kırmızı: helper ters çevrilince
+  G-29 spec düştü.
 - **Bakiye açık tutar filtresi ✅** (2026-08-14) — bakiye listesi yalnız `open ≠ 0`
   kişileri gösteriyor; alacak/borç yön filtresi ve yöne özel boş durumları eklendi.
   **Görüş:** `collected ≠ 0` koşulu, tamamen kapanmış bakiyeyi yeniden listeye sokuyordu;

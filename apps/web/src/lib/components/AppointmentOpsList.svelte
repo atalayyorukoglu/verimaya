@@ -51,6 +51,14 @@
 							>
 								{appt.contact_display_name}
 							</a>
+							{#if appt.contact_info_incomplete}
+								<p class="mt-1">
+									<StatusBadge label={t('appointments.contactInfoIncomplete')} tone="warning" />
+								</p>
+								<p class="mt-0.5 text-[11px] break-words text-text-faint">
+									{t('appointments.contactInfoIncompleteHint')}
+								</p>
+							{/if}
 							<p class="truncate text-xs text-text-faint">
 								{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
 							</p>

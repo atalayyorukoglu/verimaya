@@ -6,7 +6,11 @@ import type {
 	AppointmentStatus,
 	AppointmentUpdate
 } from '@verimaya/shared';
-import { appointmentStatusSchema, tenantDayRange } from '@verimaya/shared';
+import {
+	appointmentStatusSchema,
+	isContactInfoIncomplete,
+	tenantDayRange
+} from '@verimaya/shared';
 import { appointments, contacts, tenants } from '../db/schema';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
@@ -79,15 +83,31 @@ export class AppointmentsService {
 			if (cursorCond) pageFilters.push(cursorCond);
 
 			const rows = await db
-				.select()
+				.select({
+					appointment: appointments,
+					phone: contacts.phone,
+					email: contacts.email
+				})
 				.from(appointments)
+				.leftJoin(contacts, eq(appointments.contactId, contacts.id))
 				.where(and(...pageFilters))
 				.orderBy(desc(appointments.createdAt), desc(appointments.id))
 				.limit(params.limit + 1);
 
-			const page = buildCursorPage(rows, params.limit);
+			const page = buildCursorPage(
+				rows.map((row) => ({
+					...row,
+					id: row.appointment.id,
+					createdAt: row.appointment.createdAt
+				})),
+				params.limit
+			);
 			return {
-				items: page.items.map(toAppointment),
+				items: page.items.map((row) =>
+					toAppointment(row.appointment, {
+						contact_info_incomplete: isContactInfoIncomplete(row.phone, row.email)
+					})
+				),
 				next_cursor: page.next_cursor,
 				type_counts,
 				status_counts
@@ -96,13 +116,13 @@ export class AppointmentsService {
 	}
 
 	async createWithDb(db: TenantDb, tenantId: string, input: AppointmentCreate) {
-		const contactDisplayName = await this.requireContactName(db, input.contact_id);
+		const contact = await this.requireContact(db, input.contact_id);
 		const [row] = await db
 			.insert(appointments)
 			.values({
 				tenantId,
 				contactId: input.contact_id,
-				contactDisplayName,
+				contactDisplayName: contact.displayName,
 				title: input.title ?? null,
 				appointmentType: input.appointment_type ?? null,
 				status: input.status ?? 'scheduled',
@@ -117,7 +137,9 @@ export class AppointmentsService {
 				notes: input.notes ?? null
 			})
 			.returning();
-		return toAppointment(row!);
+		return toAppointment(row!, {
+			contact_info_incomplete: isContactInfoIncomplete(contact.phone, contact.email)
+		});
 	}
 
 	async updateWithDb(db: TenantDb, id: string, input: AppointmentUpdate) {
@@ -129,16 +151,13 @@ export class AppointmentsService {
 		}
 
 		const contactId = input.contact_id ?? existing.contactId;
-		const contactDisplayName =
-			input.contact_id !== undefined
-				? await this.requireContactName(db, contactId)
-				: existing.contactDisplayName;
+		const contact = await this.requireContact(db, contactId);
 
 		const [row] = await db
 			.update(appointments)
 			.set({
 				contactId,
-				contactDisplayName,
+				contactDisplayName: contact.displayName,
 				title: input.title !== undefined ? input.title : existing.title,
 				appointmentType:
 					input.appointment_type !== undefined
@@ -176,7 +195,9 @@ export class AppointmentsService {
 			.where(eq(appointments.id, id))
 			.returning();
 
-		return toAppointment(row!);
+		return toAppointment(row!, {
+			contact_info_incomplete: isContactInfoIncomplete(contact.phone, contact.email)
+		});
 	}
 
 	async softDeleteWithDb(
@@ -226,9 +247,13 @@ export class AppointmentsService {
 		return row;
 	}
 
-	private async requireContactName(db: TenantDb, contactId: string) {
+	private async requireContact(db: TenantDb, contactId: string) {
 		const [contact] = await db
-			.select({ displayName: contacts.displayName })
+			.select({
+				displayName: contacts.displayName,
+				phone: contacts.phone,
+				email: contacts.email
+			})
 			.from(contacts)
 			.where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
 			.limit(1);
@@ -237,6 +262,6 @@ export class AppointmentsService {
 				error: { code: 'not_found', message: 'Contact not found' }
 			});
 		}
-		return contact.displayName;
+		return contact;
 	}
 }

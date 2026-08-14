@@ -131,7 +131,7 @@ export class ContactDataSubjectService {
 					: null,
 				contact: toContact(contact),
 				case_notes: noteRows.map(toContactCaseNote),
-				appointments: appointmentRows.map(toAppointment),
+				appointments: appointmentRows.map((row) => toAppointment(row)),
 				files: fileRows.map(toContactFile),
 				finance_summary: {
 					income_base: incomeBase,

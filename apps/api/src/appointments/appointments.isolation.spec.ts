@@ -367,4 +367,73 @@ describe('appointments tenant isolation', () => {
 		expect(listB.status_counts.scheduled).toBe(1);
 		expect(listA.items.some((a) => a.id === appointmentB)).toBe(false);
 	});
+
+	it('G-29: derives contact_info_incomplete on create and list without cross-tenant leakage', async () => {
+		const marker = `G29-${randomUUID().slice(0, 8)}`;
+		const [completeContactId, incompleteContactId, phoneOnlyContactId] = await withTenantSession(
+			tenantA,
+			async (tdb) => {
+				const completeContact = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: contactTypeA,
+					first_name: `${marker} Complete`,
+					phone: '+905551112233',
+					email: 'complete@g29.test'
+				});
+				const incompleteContact = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: contactTypeA,
+					first_name: `${marker} Incomplete`,
+					phone: null,
+					email: null
+				});
+				const phoneOnlyContact = await contactsService.createWithDb(tdb, tenantA, {
+					contact_type_id: contactTypeA,
+					first_name: `${marker} Phone only`,
+					phone: '+905554445566',
+					email: null
+				});
+				return [completeContact.id, incompleteContact.id, phoneOnlyContact.id];
+			}
+		);
+
+		const createAppointment = async (contactId: string, title: string) =>
+			withTenantSession(tenantA, async (tdb) =>
+				appointmentsService.createWithDb(tdb, tenantA, {
+					contact_id: contactId,
+					starts_at: new Date().toISOString(),
+					ends_at: null,
+					title,
+					appointment_type: null,
+					status: 'scheduled',
+					clinic_name: null,
+					hotel_name: null,
+					transfer_note: null,
+					clinic_contact_id: null,
+					hotel_contact_id: null,
+					transfer_contact_id: null,
+					notes: null
+				})
+			);
+
+		const [complete, incomplete, phoneOnly] = await Promise.all([
+			createAppointment(completeContactId, `${marker} complete`),
+			createAppointment(incompleteContactId, `${marker} incomplete`),
+			createAppointment(phoneOnlyContactId, `${marker} phone-only`)
+		]);
+
+		expect(complete.contact_info_incomplete).toBe(false);
+		expect(incomplete.contact_info_incomplete).toBe(true);
+		expect(phoneOnly.contact_info_incomplete).toBe(false);
+
+		const listA = await appointmentsService.list(tenantA, { limit: 25, q: marker });
+		expect(listA.items).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ id: complete.id, contact_info_incomplete: false }),
+				expect.objectContaining({ id: incomplete.id, contact_info_incomplete: true }),
+				expect.objectContaining({ id: phoneOnly.id, contact_info_incomplete: false })
+			])
+		);
+
+		const listB = await appointmentsService.list(tenantB, { limit: 25 });
+		expect(listB.items.some((appointment) => appointment.id === incomplete.id)).toBe(false);
+	});
 });
