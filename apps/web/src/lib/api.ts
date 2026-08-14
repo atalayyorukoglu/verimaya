@@ -122,6 +122,25 @@ export async function apiUpload<T>(
 	return res.json() as Promise<T>;
 }
 
+/** Binary download (xlsx etc.) — triggers browser save via blob URL. */
+export async function apiDownload(path: string, fallbackFilename: string): Promise<void> {
+	const res = await apiFetch(path);
+	if (!res.ok) await parseError(res);
+	const blob = await res.blob();
+	const cd = res.headers.get('Content-Disposition') ?? '';
+	const match = /filename="([^"]+)"/i.exec(cd);
+	const filename = match?.[1] ?? fallbackFilename;
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	a.rel = 'noopener';
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	URL.revokeObjectURL(url);
+}
+
 export const fieldClass =
 	'border-border bg-surface text-text placeholder:text-text-faint box-border h-9 w-full min-w-0 max-w-full rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40';
 

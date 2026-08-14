@@ -25,6 +25,7 @@ import { ScorecardModule } from "./scorecard/scorecard.module";
 import { StorageModule } from "./storage/storage.module";
 import { PlatformModule } from "./platform/platform.module";
 import { FxModule } from "./fx/fx.module";
+import { ImportExportModule } from "./import-export/import-export.module";
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { FxModule } from "./fx/fx.module";
     WebhooksModule,
     WhatsappModule,
     SettingsModule,
+    ImportExportModule,
     AuditLogsModule,
     AdsModule,
     GhlModule,

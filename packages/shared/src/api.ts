@@ -71,6 +71,10 @@ export const apiPaths = {
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
+	settingsImportContactsTemplate: `${API_V1_PREFIX}/settings/import-export/contacts/template.xlsx`,
+	settingsImportContactsExport: `${API_V1_PREFIX}/settings/import-export/contacts/export.xlsx`,
+	settingsImportContactsDryRun: `${API_V1_PREFIX}/settings/import-export/contacts/import/dry-run`,
+	settingsImportContactsCommit: `${API_V1_PREFIX}/settings/import-export/contacts/import/commit`,
 	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
 	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
 	// Neutral path — GHL Marketplace rejects redirect URIs containing "ghl"/Highlevel.
@@ -277,6 +281,12 @@ import {
 	whatsappAiPromptSchema,
 	whatsappAiPromptUpdateSchema
 } from './ai-prompt.js';
+import {
+	importCommitBodySchema,
+	importCommitResultSchema,
+	importDryRunResultSchema,
+	xlsxDownloadSchema
+} from './import-export.js';
 import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
 
 /**
@@ -523,6 +533,19 @@ export const apiContract = {
 	},
 	'DELETE /v1/settings/ai-prompt': {
 		response: whatsappAiPromptSchema
+	},
+	'GET /v1/settings/import-export/contacts/template.xlsx': {
+		response: xlsxDownloadSchema
+	},
+	'GET /v1/settings/import-export/contacts/export.xlsx': {
+		response: xlsxDownloadSchema
+	},
+	'POST /v1/settings/import-export/contacts/import/dry-run': {
+		response: importDryRunResultSchema
+	},
+	'POST /v1/settings/import-export/contacts/import/commit': {
+		body: importCommitBodySchema,
+		response: importCommitResultSchema
 	},
 	'GET /v1/integrations/ghl/status': {
 		response: ghlConnectionStatus

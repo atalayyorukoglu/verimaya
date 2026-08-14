@@ -5580,6 +5580,144 @@ paths:
                   - updated_by
                   - updated_at
                 additionalProperties: false
+  /settings/import-export/contacts/template.xlsx:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+  /settings/import-export/contacts/export.xlsx:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+  /settings/import-export/contacts/import/dry-run:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_token:
+                    type: string
+                    nullable: true
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  summary:
+                    type: object
+                    properties:
+                      total_rows:
+                        type: integer
+                        minimum: 0
+                      create:
+                        type: integer
+                        minimum: 0
+                      update:
+                        type: integer
+                        minimum: 0
+                      unchanged:
+                        type: integer
+                        minimum: 0
+                      error:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - total_rows
+                      - create
+                      - update
+                      - unchanged
+                      - error
+                    additionalProperties: false
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row_number:
+                          type: integer
+                          exclusiveMinimum: true
+                          minimum: 0
+                        action:
+                          type: string
+                          enum:
+                            - create
+                            - update
+                            - unchanged
+                            - error
+                        external_id:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        label:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        errors:
+                          type: array
+                          items:
+                            type: string
+                            maxLength: 500
+                          default: []
+                      required:
+                        - row_number
+                        - action
+                        - external_id
+                        - label
+                      additionalProperties: false
+                required:
+                  - plan_token
+                  - expires_at
+                  - summary
+                  - rows
+                additionalProperties: false
+  /settings/import-export/contacts/import/commit:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created:
+                    type: integer
+                    minimum: 0
+                  updated:
+                    type: integer
+                    minimum: 0
+                  unchanged:
+                    type: integer
+                    minimum: 0
+                required:
+                  - created
+                  - updated
+                  - unchanged
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_token:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000000
+              required:
+                - plan_token
+              additionalProperties: false
   /integrations/ghl/status:
     get:
       responses:

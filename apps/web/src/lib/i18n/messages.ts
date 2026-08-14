@@ -1695,10 +1695,32 @@ const tr = {
 	'settings.importExport.documentTitle': 'İçe / dışa aktar · Ayarlar · Veri Maya',
 	'settings.importExport.title': 'İçe / dışa aktar',
 	'settings.importExport.description':
-		'Contacts, hastalar, randevular, işlemler — önizle sonra uygula.',
-	'settings.importExport.body':
-		'Tracker’daki import/export/delete Ayarlar’a gömülüydü ve toplu silme riskliydi. Veri Maya’da ETL + kontrollü migrasyon; bu ekran şimdilik yer tutucu.',
-	'settings.importExport.cta': 'Özelliklere bak',
+		'Kişileri Excel ile içe/dışa aktarın — önce önizleme, sonra uygula.',
+	'settings.importExport.contacts.title': 'Kişiler',
+	'settings.importExport.contacts.blurb':
+		'Şablon indirin, doldurun, önizleyin; hatalar düzelmeden kayıt uygulanmaz. Silme yoktur.',
+	'settings.importExport.downloadTemplate': 'Şablon indir',
+	'settings.importExport.downloadExport': 'Dışa aktar',
+	'settings.importExport.chooseFile': 'Excel dosyası (.xlsx)',
+	'settings.importExport.dryRun': 'Önizle (dry-run)',
+	'settings.importExport.commit': 'Uygula',
+	'settings.importExport.errorGeneric': 'İşlem başarısız',
+	'settings.importExport.errorsBlockCommit':
+		'Hatalı satırlar var — düzeltilmeden uygulama yapılamaz.',
+	'settings.importExport.summary':
+		'Toplam {total} · yeni {create} · güncelleme {update} · aynı {unchanged} · hata {error}',
+	'settings.importExport.commitDone':
+		'Uygulandı: {created} yeni, {updated} güncellendi, {unchanged} aynı.',
+	'settings.importExport.col.row': 'Satır',
+	'settings.importExport.col.action': 'İşlem',
+	'settings.importExport.col.label': 'Kişi',
+	'settings.importExport.col.errors': 'Hatalar',
+	'settings.importExport.action.create': 'Yeni',
+	'settings.importExport.action.update': 'Güncelle',
+	'settings.importExport.action.unchanged': 'Aynı',
+	'settings.importExport.action.error': 'Hata',
+	'settings.importExport.footnote':
+		'Limit: 5 MB / 2000 satır. Idempotency: external_id (veya içerik özeti). Toplu silme yok.',
 
 	// settings organization leftovers
 	'settings.organization.title': 'Organizasyon',
@@ -3539,10 +3561,31 @@ const en: Record<MessageKey, string> = {
 	'settings.importExport.documentTitle': 'Import / export · Settings · Veri Maya',
 	'settings.importExport.title': 'Import / export',
 	'settings.importExport.description':
-		'Contacts, patients, appointments, transactions — preview then apply.',
-	'settings.importExport.body':
-		'Tracker embedded import/export/delete in Settings and bulk delete was risky. Veri Maya will use ETL + controlled migration; this screen is a placeholder for now.',
-	'settings.importExport.cta': 'View features',
+		'Import and export contacts via Excel — preview first, then apply.',
+	'settings.importExport.contacts.title': 'Contacts',
+	'settings.importExport.contacts.blurb':
+		'Download the template, fill it in, preview; nothing is written until errors are fixed. No delete.',
+	'settings.importExport.downloadTemplate': 'Download template',
+	'settings.importExport.downloadExport': 'Export',
+	'settings.importExport.chooseFile': 'Excel file (.xlsx)',
+	'settings.importExport.dryRun': 'Preview (dry-run)',
+	'settings.importExport.commit': 'Apply',
+	'settings.importExport.errorGeneric': 'Request failed',
+	'settings.importExport.errorsBlockCommit': 'There are error rows — fix them before applying.',
+	'settings.importExport.summary':
+		'Total {total} · create {create} · update {update} · unchanged {unchanged} · error {error}',
+	'settings.importExport.commitDone':
+		'Applied: {created} created, {updated} updated, {unchanged} unchanged.',
+	'settings.importExport.col.row': 'Row',
+	'settings.importExport.col.action': 'Action',
+	'settings.importExport.col.label': 'Contact',
+	'settings.importExport.col.errors': 'Errors',
+	'settings.importExport.action.create': 'Create',
+	'settings.importExport.action.update': 'Update',
+	'settings.importExport.action.unchanged': 'Unchanged',
+	'settings.importExport.action.error': 'Error',
+	'settings.importExport.footnote':
+		'Limits: 5 MB / 2000 rows. Idempotency: external_id (or content hash). No bulk delete.',
 
 	'settings.organization.title': 'Organization',
 	'settings.organization.description': 'Company profile and defaults.',
