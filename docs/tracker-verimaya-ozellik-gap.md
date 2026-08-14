@@ -116,9 +116,13 @@ Tür: `eksik` | `sadeleşmiş` | `placeholder` | `ölü-kod-tracker` | `bilinçl
 **G-22 — Case ↔ işlem otomatik bağlama**
 Bir hastanın bağlı olduğu kişi (`contact_id`) üzerinden girilmiş, henüz hastaya bağlanmamış işlemleri tek çağrıda hastaya bağlar.
 - Tracker: `backend/app/routers/cases.py:106` `auto_link_transactions` — `contact_id`, `payer_contact_id`, `payee_contact_id` üçünden biri eşleşen ve `case_id IS NULL` olan işlemleri toplu `UPDATE` eder, `{"updated": n}` döner.
-- Verimaya: karşılığı yok. İşlem hastaya yalnız oluşturma/düzenleme anında bağlanıyor.
-- Bağımlılık: `transactions.patient_id` (var), P2P alanları (yok — G-33'e bakınız; `contact_id` tek başına yeterli).
-- Öneri: **taşı** (basitleştirilmiş: yalnız `contact_id` eşleşmesi). ETL sonrası değeri yüksek, tek endpoint.
+- Verimaya: auto-link endpoint karşılığı yok. İşlem hastaya `case_contact_id` ile yalnız
+  oluşturma/düzenleme anında bağlanıyor.
+- Bağımlılık: `transactions.patient_id` yok; DOMAIN-02 bunu `contact_id`'ye eritti.
+  `case_contact_id` de hasta bağlantısı için 2026-08-14'te eklendi. P2P alanları yok
+  (G-33'e bakınız; basit auto-link için `contact_id` + `case_contact_id` yeterli).
+- Öneri: **taşı** (basitleştirilmiş: `contact_id` + `case_contact_id` eşleşmesi). ETL
+  sonrası değeri yüksek, tek endpoint.
 
 **G-31 — Toplu case oluşturma / toplu auto-link**
 - Tracker: `cases.py:135,183`, ikisi de `Depends(require_dev_user)` — yani tenant kullanıcısına açık değil.

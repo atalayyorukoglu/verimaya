@@ -7,8 +7,9 @@
 > `docs/Arşiv/2026-08-10-TUM-ACIK-ISLER.md` (yönelim notu; içeriği buraya emildi).
 > Daha eski: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` (Faz 0–7).
 >
-> **Durum anı:** branch `main`. DOMAIN-02 merge+deploy (E4 GHL hariç). Prod migrate
-> `0047`'ye kadar uygulandı (2026-08-12, psql ile doğrulandı — bkz. Son kapananlar · 0046/0047).
+> **Durum anı:** branch `main`. DOMAIN-02 kapandı. Prod migrate
+> `0052`'ye kadar uygulandı (2026-08-14; `RUN_MIGRATIONS=true`, entrypoint `set -e` ile
+> migrate-sonra-başlat — bkz. Son kapananlar · 0048–0052).
 > Panel tek **Kişiler** (soyad sırası + load-more düzeltildi).
 > Pilot tenant: `Demo Klinik`. Smoke: `docs/Arşiv/2026-08-09-PROD-SMOKE-REHBERI.md`.
 > Web canlı = GHCR `verimaya-web:main` (CI yeşil → imaj → Coolify); Restart eski imajı açar.
@@ -47,8 +48,10 @@
 |-------|--------|--------|
 | `/settings/import-export` → “Faz 8'de” | Özellik yok; yer tutucu bilinçli | Bekleyen · GAP-08 |
 | Ads Meta / Google canlı veri | Kod + runbook var; hesap go-live açık | **3. OPS-02** |
-| GHL ↔ panel ad/soyad çift yön | Kod var; insan testi yok | **4. DOMAIN-02 E4** |
+| GHL → panel ad/soyad | **Canlı insan testiyle doğrulandı** — alan sahibi GHL | Son kapananlar |
 | “Hastalar bölüm etiketi” ayarı | **Kaldırıldı** — `contact_types` rename ile mükerrerdi | Son kapananlar |
+| Finans kategori yönetimi | **Tracker paritesi kapandı** — sıralama + ayrı detay + satır içi alt kategori | Son kapananlar |
+| İşlem formunda başlık / hasta / sorumlu | **Kapandı** — başlık opsiyonel, hasta ve sorumlu ayrı alan | Son kapananlar |
 | Dev panel (`/dev`) Nest `/v1/dev` | Bilinçli yok; prod gizli / platform allowlist | GAP-28 (kapandı) |
 | Hub `/tr/` `/en/` SEO ağacı | Bilinçli yok (kısmi UI i18n) | Bilinçli yapılmayacaklar |
 | Randevu checklist şablonları | Muhtemelen hiç yapılmayacak | GAP-F09-20 (skip adayı) |
@@ -292,20 +295,43 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
-- **FX hafta sonu/tatil önbelleği ✅** (2026-08-14) — önbellek anahtarı sağlayıcının kur
-  gününden ayrılıp istenen güne bağlandı.
-  **Görüş:** Cumartesi isteği Cuma `rate_date` ile yazılınca ikinci Cumartesi sorgusu
-  isabet alamıyordu. `requested_date` unique anahtar; `rate_date` gerçek ECB günü olarak kaldı.
+- **Bakiye açık tutar filtresi ✅** (2026-08-14) — bakiye listesi yalnız `open ≠ 0`
+  kişileri gösteriyor; alacak/borç yön filtresi ve yöne özel boş durumları eklendi.
+  **Görüş:** `collected ≠ 0` koşulu, tamamen kapanmış bakiyeyi yeniden listeye sokuyordu;
+  tahsilat geçmişi ile bugün açık olan tutar aynı kavram değil. Gerçek DB testi bunu koruyor.
+- **İşlem formu Tracker paritesi A/B/C ✅** (2026-08-14) — başlık opsiyonel + türetilmiş
+  liste etiketi; karşı taraftan bağımsız `case_contact_id` (hasta); Personel tipi,
+  `responsible_contact_id` ve sorumlu bazlı gider raporu eklendi.
+  **Görüş:** hasta maliyeti `financeSummary` içinde `amount_base` boş satırları
+  `if (base == null) continue` ile sessizce atıyordu; elle kur yüzünden çoğu satır eksikti.
+  Bu nedenle otomatik kur, `case_contact_id` ile doğru hasta maliyetinin ön koşuluydu.
+- **Otomatik işlem kuru + FX önbelleği ✅** (2026-08-14) — form ECB/Frankfurter kurunu
+  çekip snapshot alanlarını dolduruyor; sağlayıcı hatası kaydı engellemiyor. Tatil anahtarı
+  istenen güne bağlandı, gerçek kur günü ayrıca korunuyor.
+  **Görüş:** ilk cache testi DB’yi mock’layıp servisin `where` koşulunu yok saydığı için hata
+  geri konduğunda bile yeşildi. Sorgu davranışı gerçek Postgres `*.isolation.spec.ts` ile
+  sınanmalı; `requested_date` cache anahtarı, `rate_date` gerçek ECB günüdür.
 - **Web cache politikası ✅** (2026-08-14) — SPA/hub kabukları ile service worker her
   kullanımda doğrulanıyor; içerik hash’li SvelteKit asset’leri bir yıl immutable.
-  **Görüş:** origin başlığı yokken Cloudflare ve tarayıcı eski kabuğu tutuyor, kabuk da eski
-  chunk hash’lerine işaret ediyordu. HTML için `no-store` yerine revalidation seçildi.
+  **Görüş:** `nginx.conf` SPA kabuğuna hiç `Cache-Control` vermiyordu; tarayıcı heuristic
+  cache ile deploy’u günlerce sakladı. Cloudflare Browser Cache TTL 4 saatlik taban gibi
+  davranıyor (`hub-interact.js`: origin 60 sn, canlı 14400); `/sw.js` 4 saat, HTML CF’de cache’siz.
+- **Finans kategori yönetimi Tracker paritesi ✅** (2026-08-14) — gelir/gider listelerine
+  yukarı/aşağı sıralama, ayrı kategori detay rotası ve satır bazlı alt kategori düzenleme
+  geldi; virgülle ayrılan textarea kaldırıldı.
+  **Görüş:** API’de CRUD ve `sort_order` bulunması panel paritesi demek değildi; kullanıcı
+  alt kategorileri tek metin alanında düzenliyordu. Tracker’ın satır modeli hatayı yerelleştiriyor.
 - **Mobil finans UX ✅** (2026-08-14) — işlem formu yatay taşma, iOS zoom, tarih sığdırma,
   kişi combobox, ödeme yöntemi select, liste 44px arama + `from`/`to` filtresi.
-  **Görüş:** kategori CRUD zaten vardı; canlı kur bilinçli yok (snapshot); sığdırma için
+  **Görüş:** kategori CRUD vardı ama yönetim paritesi yoktu; kur snapshot modeli korunarak
+  otomatik dolduruldu. Sığdırma için
   eklenen `-webkit-appearance:none` tarih değerinin dikey ortalamasını da düşürmüştü —
   shadow part'lara `height:100%` + flex ile kutu yüksekliğinden bağımsız düzeltildi. Rapor:
   `docs/2026-08-14-mobil-ux-duzeltmeleri.md`.
+- **Migration 0048–0052 prod ✅** (2026-08-14) — FX oranları/istenen tarih,
+  opsiyonel işlem başlığı, hasta bağlantısı ve sorumlu/Personel değişiklikleri uygulandı.
+  **Görüş:** Coolify’da `RUN_MIGRATIONS=true`; entrypoint `set -e` ile önce migrate ediyor,
+  hata olursa API başlamıyor. Prod sürümü artık `0052`, ayrı elle migrate adımı yok.
 - **DOMAIN-02 E4 ✅** (2026-08-13) — GHL ↔ panel ad/soyad doğrulaması. **DOMAIN-02 kapandı.**
   **Görüş:** kalemin "çift yönlü" ifadesi yanlıştı — `ghl.field-ownership.ts` (mimari ilke 5)
   adın sahibini **GHL** olarak tanımlıyor, panel geri yazmaz. Doğrulama tek yönlü yapıldı:
