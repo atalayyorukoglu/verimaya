@@ -295,6 +295,12 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **Bakiyeler İşlemler’e gömüldü ✅** (2026-08-14) — ortak `BalancesPanel`; İşlemler’de açılır
+  bölüm (mobil kapalı / masaüstü açık, localStorage); `/finance/balances` derin link canlı;
+  kapalıyken lazy query, açılınca `qs.keys.reports.balances()` cache paylaşımı.
+  **Görüş:** Bakiye `GET /v1/reports/balances` filtre almaz — tüm işlemler aggregate’i.
+  İşlem filtrelerinin yanına koyunca “bu aralığın bakiyesi” sanılır; blokta bağımsız not zorunlu.
+  İleride bakiyeyi `from`/`to`/türe bağlamak ayrı ürün kararı + API sözleşmesi ister.
 - **G-04 Taslak canlı audit ✅** (2026-08-14) — `evaluateTransactionConsistency` shared saf
   motor; `GET /v1/reports/consistency` + `POST /v1/transactions/audit-draft` aynı kurallar;
   form debounce ile uyarı gösterir, kaydı engellemez.

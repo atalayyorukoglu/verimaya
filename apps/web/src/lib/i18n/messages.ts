@@ -1436,6 +1436,14 @@ const tr = {
 	'finance.balances.title': 'Bakiyeler',
 	'finance.balances.description':
 		'Kişi/firma etiketli işlemlerden net borç–alacak. Para birimi bazında; farklı birimler toplanmaz.',
+	'finance.balances.independent':
+		'Bakiyeler bu sayfadaki işlem filtrelerinden bağımsızdır ve tüm işlemlerden hesaplanır.',
+	'finance.balances.fullPage': 'Tam sayfada aç',
+	'finance.balances.expand': 'Bakiyeleri aç',
+	'finance.balances.collapse': 'Bakiyeleri kapat',
+	'finance.balances.summaryPayable': 'Borç',
+	'finance.balances.summaryReceivable': 'Alacak',
+	'finance.balances.summaryUnavailable': 'Toplamları görmek için bölümü açın.',
 	'finance.balances.loading': 'Yükleniyor…',
 	'finance.balances.loadError': 'Bakiyeler yüklenemedi.',
 	'finance.balances.filterAll': 'Tümü',
@@ -1445,6 +1453,7 @@ const tr = {
 	'finance.balances.emptyFiltered': 'Bu filtrede kayıt yok.',
 	'finance.balances.debtor': 'Borçlu',
 	'finance.balances.creditor': ' → alacaklı ',
+	'finance.balances.self': 'Biz',
 	'finance.balances.collected': 'Tahsil edilmiş: {amount}',
 	'finance.balances.footnote':
 		'Bakiyeler {contactId} + para birimi bazında sunucudan gelir. Dizindeki kişiler:',
@@ -3268,6 +3277,14 @@ const en: Record<MessageKey, string> = {
 	'finance.balances.title': 'Balances',
 	'finance.balances.description':
 		'Net payables/receivables from contact-tagged transactions. Per currency; currencies are not summed.',
+	'finance.balances.independent':
+		'Balances are independent of the transaction filters on this page and are calculated from all transactions.',
+	'finance.balances.fullPage': 'Open full page',
+	'finance.balances.expand': 'Expand balances',
+	'finance.balances.collapse': 'Collapse balances',
+	'finance.balances.summaryPayable': 'Payable',
+	'finance.balances.summaryReceivable': 'Receivable',
+	'finance.balances.summaryUnavailable': 'Expand the section to see totals.',
 	'finance.balances.loading': 'Loading…',
 	'finance.balances.loadError': 'Could not load balances.',
 	'finance.balances.filterAll': 'All',
@@ -3277,6 +3294,7 @@ const en: Record<MessageKey, string> = {
 	'finance.balances.emptyFiltered': 'No records for this filter.',
 	'finance.balances.debtor': 'Debtor',
 	'finance.balances.creditor': ' → creditor ',
+	'finance.balances.self': 'Us',
 	'finance.balances.collected': 'Collected: {amount}',
 	'finance.balances.footnote':
 		'Balances come from the server by {contactId} + currency. Directory contacts:',

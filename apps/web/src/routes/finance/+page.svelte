@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type {
 		ContractResponse,
@@ -27,6 +28,7 @@
 	import { amountInBase } from '$lib/money-base';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { transactionStatusTone } from '$lib/status-tone';
+	import BalancesPanel from '$lib/components/BalancesPanel.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
@@ -175,6 +177,11 @@
 		to = '';
 	}
 
+	function financeHref(name?: 'contact' | 'case_contact', value?: string): string {
+		if (!name || !value) return '/finance';
+		return `/finance?${name}=${encodeURIComponent(value)}`;
+	}
+
 	function openCreate() {
 		editing = null;
 		formOpen = true;
@@ -230,13 +237,7 @@
 		{#snippet actions()}
 			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
 				<a
-					href="/finance/balances"
-					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
-				>
-					{t('finance.balances')}
-				</a>
-				<a
-					href="/finance/ai-transaction"
+					href={resolve('/finance/ai-transaction')}
 					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
 				>
 					<Sparkles class="size-4" />
@@ -266,7 +267,7 @@
 				>
 			</p>
 			<a
-				href={caseContactFilterId ? `/finance?case_contact=${caseContactFilterId}` : '/finance'}
+				href={resolve(financeHref('case_contact', caseContactFilterId ?? undefined) as '/finance')}
 				class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text"
 			>
 				<X class="size-3.5" />
@@ -286,7 +287,7 @@
 				>
 			</p>
 			<a
-				href={contactFilterId ? `/finance?contact=${contactFilterId}` : '/finance'}
+				href={resolve(financeHref('contact', contactFilterId ?? undefined) as '/finance')}
 				class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text"
 			>
 				<X class="size-3.5" />
@@ -294,6 +295,8 @@
 			</a>
 		</div>
 	{/if}
+
+	<BalancesPanel collapsible />
 
 	<form
 		class="mb-4 flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end"
