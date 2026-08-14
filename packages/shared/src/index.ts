@@ -7,6 +7,7 @@ export * from './platform.js';
 export * from './product-modules.js';
 export * from './appointment.js';
 export * from './transaction.js';
+export * from './fx.js';
 export * from './inbound-message.js';
 export * from './file.js';
 export * from './case-note.js';

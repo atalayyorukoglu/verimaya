@@ -1830,6 +1830,10 @@ const tr = {
 	'finance.form.fxRate': 'Kur (1 {currency} = ? {base})',
 	'finance.form.fxLocked': 'Kayıt anı kuru — sonradan değişmez.',
 	'finance.form.fxPlaceholder': 'örn. 43',
+	'finance.form.fxLoading': 'Kur yükleniyor…',
+	'finance.form.fxDated': '{date} tarihli kur uygulandı.',
+	'finance.form.fxError':
+		'Kur alınamadı. Baz tutarı elle girebilir veya boş bırakabilirsiniz — kayıt engellenmez.',
 	'finance.form.moneyPlaceholder': '0,00',
 	'finance.form.paidAmount': 'Ödenen tutar ({currency})',
 	'finance.form.category': 'Kategori',
@@ -3614,6 +3618,10 @@ const en: Record<MessageKey, string> = {
 	'finance.form.fxRate': 'Rate (1 {currency} = ? {base})',
 	'finance.form.fxLocked': 'Rate at save time — does not change later.',
 	'finance.form.fxPlaceholder': 'e.g. 43',
+	'finance.form.fxLoading': 'Loading rate…',
+	'finance.form.fxDated': 'Using rate dated {date}.',
+	'finance.form.fxError':
+		'Could not fetch the rate. Enter the base amount manually or leave it blank — saving is not blocked.',
 	'finance.form.moneyPlaceholder': '0.00',
 	'finance.form.paidAmount': 'Paid amount ({currency})',
 	'finance.form.category': 'Category',

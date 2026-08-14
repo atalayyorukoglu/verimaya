@@ -99,8 +99,11 @@ export function queryKeys(scope: QueryScope) {
 			compare: (previousId: string, currentId: string) =>
 				k('scorecard', 'compare', previousId, currentId)
 		},
-		search: {
+			search: {
 			query: (q: string) => k('search', q)
+		},
+		fx: {
+			rate: (params: { from: string; to: string; on: string }) => k('fx', 'rate', params)
 		}
 	};
 }

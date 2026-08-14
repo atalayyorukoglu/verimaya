@@ -4,7 +4,7 @@
  * INTENTIONAL EXCEPTION to multi-tenant rules:
  * - No `tenant_id` — the visitor is not a tenant yet (anonymous lead).
  * - No RLS — there is no `app.current_tenant_id` for this traffic.
- * This is the single documented exception (docs/MIMARI.md § Değişmez ilkeler).
+ * This is a documented exception alongside `fx_rates` (docs/MIMARI.md § Değişmez ilkeler).
  * Do not copy this pattern to any other domain table.
  *
  * PII: no IP storage. user_agent_family is a coarse family (chrome/safari/…), not the raw UA.

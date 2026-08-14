@@ -24,6 +24,7 @@ import { KarneModule } from "./karne/karne.module";
 import { ScorecardModule } from "./scorecard/scorecard.module";
 import { StorageModule } from "./storage/storage.module";
 import { PlatformModule } from "./platform/platform.module";
+import { FxModule } from "./fx/fx.module";
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { PlatformModule } from "./platform/platform.module";
     ContactsModule,
     AppointmentsModule,
     TransactionsModule,
+    FxModule,
     WebhooksModule,
     WhatsappModule,
     SettingsModule,

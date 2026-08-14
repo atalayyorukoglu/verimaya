@@ -48,6 +48,13 @@ export const apiPaths = {
 	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
 	transactions: `${API_V1_PREFIX}/transactions`,
 	transaction: (id: string) => `${API_V1_PREFIX}/transactions/${id}`,
+	fxRate: (params: { from: string; to: string; on: string }) => {
+		const url = new URL(`${API_V1_PREFIX}/fx/rate`, 'http://local');
+		url.searchParams.set('from', params.from);
+		url.searchParams.set('to', params.to);
+		url.searchParams.set('on', params.on);
+		return `${url.pathname}${url.search}`;
+	},
 	auditLogs: `${API_V1_PREFIX}/audit-logs`,
 	settingsFinanceCategories: `${API_V1_PREFIX}/settings/finance-categories`,
 	settingsFinanceCategoriesReorder: `${API_V1_PREFIX}/settings/finance-categories/reorder`,
@@ -179,6 +186,7 @@ import {
 } from './contact.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import { transactionSchema } from './transaction.js';
+import { fxRateQuerySchema, fxRateResponseSchema } from './fx.js';
 import {
 	approveDraftsRequestSchema,
 	approveDraftsResponseSchema,
@@ -400,6 +408,10 @@ export const apiContract = {
 	},
 	'DELETE /v1/transactions/:id': {
 		response: softDeleteResultSchema
+	},
+	'GET /v1/fx/rate': {
+		query: fxRateQuerySchema,
+		response: fxRateResponseSchema
 	},
 	'POST /v1/whatsapp/parse': {
 		response: z.object({ records: z.array(transactionDraftSchema) })

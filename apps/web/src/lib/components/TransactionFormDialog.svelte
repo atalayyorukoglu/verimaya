@@ -3,6 +3,7 @@
 	import type {
 		Contact,
 		FinanceCategory,
+		FxRateResponse,
 		InvoiceStatus,
 		SupportedCurrency,
 		Tenant,
@@ -94,14 +95,18 @@
 	let invoice_status = $state<InvoiceStatus>('none');
 	let currency = $state<SupportedCurrency>('TRY');
 	let amountMajor = $state('');
+	/** Manual base / rate overrides when amountBaseTouched (Tracker equivTouched). */
 	let amountBaseMajor = $state('');
 	let fxRate = $state('');
+	let fxDated = $state<string | null>(null);
 	let paidMajor = $state('');
 	let contact_id = $state('');
 	let contact_label = $state('');
 	let payment_method = $state('');
 	let description = $state('');
 	let deletePhase = $state<DeleteConfirmPhase>('form');
+	/** User edited base amount or rate — auto FX must not overwrite until they clear base. */
+	let amountBaseTouched = $state(false);
 
 	const categoryOptions = $derived(
 		(catsQuery.data?.items ?? [])
@@ -125,6 +130,38 @@
 		return options;
 	});
 
+	const fxQuery = createQuery(() => ({
+		queryKey: qs.keys.fx.rate({ from: currency, to: tenantBase, on: occurred_on }),
+		queryFn: () =>
+			apiGet<FxRateResponse>(
+				apiPaths.fxRate({ from: currency, to: tenantBase, on: occurred_on })
+			),
+		enabled: open && qs.ready && needsFx && !!occurred_on && !!tenantQuery.data,
+		retry: 1,
+		staleTime: 60_000
+	}));
+
+	const fxFetching = $derived(needsFx && (fxQuery.isPending || fxQuery.isFetching));
+	const fxError = $derived(needsFx && fxQuery.isError);
+	const fxInfo = $derived(needsFx && fxQuery.isSuccess ? fxQuery.data : null);
+
+	const displayFxRate = $derived.by(() => {
+		if (amountBaseTouched) return fxRate;
+		if (fxInfo) return String(fxInfo.rate);
+		return fxRate;
+	});
+	const displayFxDated = $derived.by(() => {
+		if (amountBaseTouched) return fxDated;
+		return fxInfo?.date ?? fxDated;
+	});
+	const displayAmountBase = $derived.by(() => {
+		if (amountBaseTouched) return amountBaseMajor;
+		if (!fxInfo) return amountBaseMajor;
+		const amount = Number.parseFloat(amountMajor.replace(',', '.'));
+		if (!Number.isFinite(amount) || amount <= 0) return '';
+		return (Math.round(amount * fxInfo.rate * 100) / 100).toFixed(2);
+	});
+
 	$effect(() => {
 		if (!open) {
 			deletePhase = 'form';
@@ -141,12 +178,15 @@
 		amountMajor = transaction ? String(transaction.amount / 100) : '';
 		amountBaseMajor = transaction?.amount_base != null ? String(transaction.amount_base / 100) : '';
 		fxRate = transaction?.fx_rate != null ? String(transaction.fx_rate) : '';
+		fxDated = transaction?.fx_dated ?? null;
 		paidMajor = transaction?.paid_amount != null ? String(transaction.paid_amount / 100) : '';
 		contact_id = transaction?.contact_id ?? defaultContactId ?? '';
 		contact_label = transaction?.contact_label ?? '';
 		payment_method = transaction?.payment_method ?? '';
 		description = transaction?.description ?? '';
 		deletePhase = 'form';
+		// Preserve saved base amount on edit; new rows start auto-fill.
+		amountBaseTouched = transaction?.amount_base != null;
 	});
 
 	const isEdit = $derived(!!transaction);
@@ -179,6 +219,46 @@
 		if (option) contact_label = option.label;
 	}
 
+	function onCurrencyChange(e: Event) {
+		const next = (e.currentTarget as HTMLSelectElement).value as SupportedCurrency;
+		currency = next;
+		amountBaseTouched = false;
+		if (next === tenantBase) {
+			amountBaseMajor = '';
+			fxRate = '';
+			fxDated = null;
+		} else {
+			amountBaseMajor = '';
+			fxRate = '';
+			fxDated = null;
+		}
+	}
+
+	function onAmountBaseInput(e: Event) {
+		const value = (e.currentTarget as HTMLInputElement).value;
+		if (value.trim() === '') {
+			amountBaseMajor = '';
+			amountBaseTouched = false;
+			return;
+		}
+		const rateSnapshot = displayFxRate;
+		const datedSnapshot = displayFxDated;
+		amountBaseMajor = value;
+		fxRate = rateSnapshot;
+		fxDated = datedSnapshot;
+		amountBaseTouched = true;
+	}
+
+	function onFxRateInput(e: Event) {
+		const value = (e.currentTarget as HTMLInputElement).value;
+		const baseSnapshot = displayAmountBase;
+		const datedSnapshot = displayFxDated;
+		fxRate = value;
+		amountBaseMajor = baseSnapshot;
+		fxDated = datedSnapshot;
+		amountBaseTouched = true;
+	}
+
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		if (confirmingDelete) return;
@@ -196,14 +276,22 @@
 
 		let amount_base: number | null;
 		let fx_rate: number | null;
+		let fx_dated: string | null;
 		if (!needsFx) {
 			amount_base = amount;
 			fx_rate = 1;
+			fx_dated = occurred_on;
+		} else if (displayAmountBase.trim() === '') {
+			// FX provider down or user left blank — allow save; finance summary skips null base.
+			amount_base = null;
+			fx_rate = null;
+			fx_dated = null;
 		} else {
-			amount_base = Math.round(Number.parseFloat(amountBaseMajor.replace(',', '.')) * 100);
+			amount_base = Math.round(Number.parseFloat(displayAmountBase.replace(',', '.')) * 100);
 			if (!Number.isFinite(amount_base) || amount_base <= 0) return;
-			const rate = Number.parseFloat(fxRate.replace(',', '.'));
+			const rate = Number.parseFloat(displayFxRate.replace(',', '.'));
 			fx_rate = Number.isFinite(rate) && rate > 0 ? rate : null;
+			fx_dated = displayFxDated ?? occurred_on;
 		}
 
 		const payload = {
@@ -221,7 +309,7 @@
 			amount_base,
 			base_currency: tenantBase,
 			fx_rate,
-			fx_dated: needsFx ? occurred_on : occurred_on,
+			fx_dated,
 			contact_id: contact_id || null,
 			contact_label: (() => {
 				if (contact_id) {
@@ -293,7 +381,7 @@
 			<div class="grid min-w-0 gap-3 sm:grid-cols-3">
 				<div class="min-w-0">
 					<label class={labelClass} for="tx-currency">{t('finance.form.currency')}</label>
-					<select id="tx-currency" class={fieldClass} bind:value={currency}>
+					<select id="tx-currency" class={fieldClass} value={currency} onchange={onCurrencyChange}>
 						{#each SUPPORTED_CURRENCIES as c (c)}
 							<option value={c}>{c}</option>
 						{/each}
@@ -326,12 +414,29 @@
 						<input
 							id="tx-base"
 							class={fieldClass}
-							bind:value={amountBaseMajor}
+							value={displayAmountBase}
+							oninput={onAmountBaseInput}
 							inputmode="decimal"
-							required
 							placeholder={t('finance.form.moneyPlaceholder')}
+							aria-busy={fxFetching}
 						/>
-						<p class="mt-1 text-[11px] text-text-faint">{t('finance.form.fxLocked')}</p>
+						{#if fxFetching}
+							<p class="mt-1 min-w-0 break-words text-[11px] text-text-faint">
+								{t('finance.form.fxLoading')}
+							</p>
+						{:else if fxError}
+							<p class="mt-1 min-w-0 break-words text-[11px] text-warning">
+								{t('finance.form.fxError')}
+							</p>
+						{:else if displayFxDated}
+							<p class="mt-1 min-w-0 break-words text-[11px] text-text-faint">
+								{t('finance.form.fxDated', { date: displayFxDated })}
+							</p>
+						{:else}
+							<p class="mt-1 min-w-0 break-words text-[11px] text-text-faint">
+								{t('finance.form.fxLocked')}
+							</p>
+						{/if}
 					</div>
 					<div class="min-w-0">
 						<label class={labelClass} for="tx-fx"
@@ -340,7 +445,8 @@
 						<input
 							id="tx-fx"
 							class={fieldClass}
-							bind:value={fxRate}
+							value={displayFxRate}
+							oninput={onFxRateInput}
 							inputmode="decimal"
 							placeholder={t('finance.form.fxPlaceholder')}
 						/>
@@ -472,11 +578,7 @@
 			<Button variant="ghost" type="button" onclick={() => (open = false)} disabled={saving}
 				>{t('common.cancel')}</Button
 			>
-			<Button
-				type="submit"
-				form="tx-form"
-				disabled={saving || !title.trim() || !amountMajor || (needsFx && !amountBaseMajor)}
-			>
+			<Button type="submit" form="tx-form" disabled={saving || !title.trim() || !amountMajor}>
 				{saving ? t('common.saving') : isEdit ? t('common.save') : t('common.create')}
 			</Button>
 		{/if}

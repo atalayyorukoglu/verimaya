@@ -337,6 +337,13 @@
       "when": 1755500000000,
       "tag": "0047_contacts_split_unsplit_names",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1755600000000,
+      "tag": "0048_fx_rates",
+      "breakpoints": true
     }
   ]
 }
