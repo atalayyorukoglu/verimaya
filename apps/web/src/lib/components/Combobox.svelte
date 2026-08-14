@@ -15,6 +15,7 @@
 		emptyText,
 		clearLabel,
 		disabled = false,
+		inputClass = fieldClass,
 		onselect
 	}: {
 		id: string;
@@ -24,6 +25,8 @@
 		emptyText: string;
 		clearLabel: string;
 		disabled?: boolean;
+		/** Override default fieldClass (e.g. mobile 44px / 16px). */
+		inputClass?: string;
 		onselect?: (option: ComboboxOption | null) => void;
 	} = $props();
 
@@ -135,7 +138,7 @@
 			? optionId(filteredOptions[activeIndex])
 			: undefined}
 		autocomplete="off"
-		class="{fieldClass} min-w-0"
+		class="{inputClass} min-w-0"
 		{placeholder}
 		{disabled}
 		value={inputValue}

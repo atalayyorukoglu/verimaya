@@ -295,6 +295,12 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **G-05r `contact_involves` ✅** (2026-08-14) — randevu listesi `contact_involves` ile
+  `contact_id` / `clinic_contact_id` / `hotel_contact_id` / `transfer_contact_id` OR;
+  panel Combobox + kişi profilinden derin link.
+  **Görüş:** `contact_id` hasta-only kaldı; klinik/otel/transfer araması için ayrı param.
+  Isolation’da dört rol + tenant B sızıntısı yok. Kırmızı: yalnız hasta FK bırakınca klinik
+  eşleşmesi `[]` döndü.
 - **ETL işlem eşlemesi şema güncellemesi ✅** (2026-08-14) — `case_id`→`case_contact_id`,
   `responsible_contact_id` taşınıyor, boş/`İşlem` başlık → null, `--fx-backfill` (varsayılan)
   eksik `amount_base` için ECB/`fx_rates`; verify tip sayımları + fixture dry-run.

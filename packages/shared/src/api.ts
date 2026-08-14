@@ -143,6 +143,8 @@ export type ListQueryParams = {
 	from?: string;
 	to?: string;
 	contact_id?: string | null;
+	/** G-05r: appointment role-agnostic contact filter */
+	contact_involves?: string | null;
 	case_contact_id?: string | null;
 	type_id?: string | null;
 	kind?: string;
@@ -165,6 +167,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.from) url.searchParams.set('from', params.from);
 	if (params?.to) url.searchParams.set('to', params.to);
 	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
+	if (params?.contact_involves) url.searchParams.set('contact_involves', params.contact_involves);
 	if (params?.case_contact_id) url.searchParams.set('case_contact_id', params.case_contact_id);
 	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
 	if (params?.kind) url.searchParams.set('kind', params.kind);

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, count, desc, eq, gte, isNull, lt, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, lt, or, type SQL } from 'drizzle-orm';
 import type {
 	AppointmentCreate,
 	AppointmentListQuery,
@@ -32,6 +32,17 @@ export class AppointmentsService {
 			);
 			const baseFilters: SQL[] = [isNull(appointments.deletedAt)];
 			if (params.contact_id) baseFilters.push(eq(appointments.contactId, params.contact_id));
+			if (params.contact_involves) {
+				const id = params.contact_involves;
+				baseFilters.push(
+					or(
+						eq(appointments.contactId, id),
+						eq(appointments.clinicContactId, id),
+						eq(appointments.hotelContactId, id),
+						eq(appointments.transferContactId, id)
+					)!
+				);
+			}
 			if (params.from) {
 				const { start } = tenantDayRange(params.from, timezone);
 				baseFilters.push(gte(appointments.startsAt, start));

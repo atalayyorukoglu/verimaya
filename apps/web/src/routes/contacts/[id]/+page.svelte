@@ -528,7 +528,7 @@
 				<h2 class="text-sm font-semibold text-text">{t('contacts.detail.appointments')}</h2>
 				<div class="flex flex-wrap items-center gap-2">
 					<a
-						href={`/appointments?contact=${contact.id}`}
+						href={`/appointments?contact_involves=${contact.id}`}
 						class="text-xs font-medium text-brand hover:underline"
 						>{t('contacts.detail.calendarLink')}</a
 					>

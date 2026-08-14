@@ -18,7 +18,23 @@ describe('appointmentListQuerySchema (GAP-04)', () => {
 		});
 	});
 
+	it('accepts contact_involves uuid (G-05r)', () => {
+		const parsed = appointmentListQuerySchema.parse({
+			limit: 10,
+			contact_involves: '00000000-0000-4000-8000-0000000000aa'
+		});
+		expect(parsed.contact_involves).toBe('00000000-0000-4000-8000-0000000000aa');
+	});
+
 	it('rejects unknown query keys (.strict)', () => {
+		const result = appointmentListQuerySchema.safeParse({
+			limit: 10,
+			not_a_real_filter: '1'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects non-uuid contact_involves', () => {
 		const result = appointmentListQuerySchema.safeParse({
 			limit: 10,
 			contact_involves: '1'

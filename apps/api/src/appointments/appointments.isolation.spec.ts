@@ -176,6 +176,121 @@ describe('appointments tenant isolation', () => {
 		expect(result.items).toHaveLength(0);
 	});
 
+	it('G-05r: contact_involves matches patient / clinic / hotel / transfer role FKs', async () => {
+		const clinicId = await withTenantSession(tenantA, async (tdb) => {
+			const c = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Clinic Involves'
+			});
+			return c.id;
+		});
+		const hotelId = await withTenantSession(tenantA, async (tdb) => {
+			const c = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Hotel Involves'
+			});
+			return c.id;
+		});
+		const transferId = await withTenantSession(tenantA, async (tdb) => {
+			const c = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Transfer Involves'
+			});
+			return c.id;
+		});
+
+		const asClinic = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Clinic role visit',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: clinicId,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+			return a.id;
+		});
+		const asHotel = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Hotel role visit',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: hotelId,
+				transfer_contact_id: null,
+				notes: null
+			});
+			return a.id;
+		});
+		const asTransfer = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Transfer role visit',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: transferId,
+				notes: null
+			});
+			return a.id;
+		});
+
+		const byClinic = await appointmentsService.list(tenantA, {
+			limit: 25,
+			contact_involves: clinicId
+		});
+		expect(byClinic.items.map((a) => a.id)).toEqual([asClinic]);
+
+		const byHotel = await appointmentsService.list(tenantA, {
+			limit: 25,
+			contact_involves: hotelId
+		});
+		expect(byHotel.items.map((a) => a.id)).toEqual([asHotel]);
+
+		const byTransfer = await appointmentsService.list(tenantA, {
+			limit: 25,
+			contact_involves: transferId
+		});
+		expect(byTransfer.items.map((a) => a.id)).toEqual([asTransfer]);
+
+		const byPatient = await appointmentsService.list(tenantA, {
+			limit: 50,
+			contact_involves: patientA
+		});
+		const patientIds = byPatient.items.map((a) => a.id);
+		expect(patientIds).toContain(appointmentA);
+		expect(patientIds).toContain(asClinic);
+		expect(patientIds).toContain(asHotel);
+		expect(patientIds).toContain(asTransfer);
+	});
+
+	it("G-05r: Tenant A contact_involves with Tenant B contact does not leak", async () => {
+		const result = await appointmentsService.list(tenantA, {
+			limit: 25,
+			contact_involves: patientB
+		});
+		expect(result.items).toHaveLength(0);
+	});
+
 	it('Tenant A cannot update Tenant B appointment', async () => {
 		await withTenantSession(tenantA, async (tdb) => {
 			await expect(

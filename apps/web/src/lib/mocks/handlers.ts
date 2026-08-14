@@ -1023,8 +1023,18 @@ export const handlers = [
 		if (!parsed.success) return parsed.response;
 		const store = getStore(scenarioFrom(request));
 		let items = [...store.appointments];
-		const { contact_id: contactId, from, to, status, q } = parsed.data;
+		const { contact_id: contactId, contact_involves: contactInvolves, from, to, status, q } =
+			parsed.data;
 		if (contactId) items = items.filter((a) => a.contact_id === contactId);
+		if (contactInvolves) {
+			items = items.filter(
+				(a) =>
+					a.contact_id === contactInvolves ||
+					a.clinic_contact_id === contactInvolves ||
+					a.hotel_contact_id === contactInvolves ||
+					a.transfer_contact_id === contactInvolves
+			);
+		}
 		if (status) items = items.filter((a) => a.status === status);
 		const tz = store.tenant.timezone;
 		if (from) {

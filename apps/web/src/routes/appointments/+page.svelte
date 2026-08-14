@@ -27,6 +27,7 @@
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import AppointmentOpsList from '$lib/components/AppointmentOpsList.svelte';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import {
 		dayKeyToDate,
 		monthRangeInTz,
@@ -57,6 +58,7 @@
 	let qInput = $state('');
 	let appliedQ = $state('');
 	let status = $state('');
+	let contactInvolvesId = $state(page.url.searchParams.get('contact_involves') ?? '');
 	let periodKey = $state<PeriodKey>('bu-ay');
 	let customFrom = $state('');
 	let customTo = $state('');
@@ -98,6 +100,7 @@
 		from: periodRange.from ?? undefined,
 		to: periodRange.to ?? undefined,
 		contact_id: contactFilterId,
+		contact_involves: contactInvolvesId || undefined,
 		q: appliedQ || undefined,
 		status: (status || undefined) as AppointmentStatus | undefined
 	});
@@ -111,6 +114,7 @@
 			from: listFilters.from,
 			to: listFilters.to,
 			contact_id: listFilters.contact_id,
+			contact_involves: listFilters.contact_involves,
 			q: listFilters.q,
 			status: listFilters.status
 		}),
@@ -121,6 +125,7 @@
 					from: listFilters.from,
 					to: listFilters.to,
 					contact_id: listFilters.contact_id,
+					contact_involves: listFilters.contact_involves,
 					q: listFilters.q,
 					status: listFilters.status
 				})
@@ -134,9 +139,20 @@
 		enabled: qs.ready
 	}));
 
+	const contactOptions = $derived(
+		(contactsQuery.data?.items ?? []).map((c) => ({
+			value: c.id,
+			label: c.display_name,
+			description: c.contact_type_name
+		}))
+	);
+
 	const filterContact = $derived(
 		contactFilterId ? (contactsQuery.data?.items ?? []).find((c) => c.id === contactFilterId) : null
 	);
+
+	const filterInputClass =
+		'border-border bg-surface text-text placeholder:text-text-faint box-border h-11 min-h-11 w-full min-w-0 max-w-full rounded-[6px] border px-3 text-base outline-none focus:ring-2 focus:ring-brand/40';
 
 	const byDay = $derived.by(() => {
 		const map = new Map<string, Appointment[]>();
@@ -174,15 +190,31 @@
 			.map((s) => ({ status: s, count: counts[s]! }));
 	});
 
+	function syncInvolvesUrl(id: string) {
+		const url = new URL(page.url);
+		if (id) {
+			url.searchParams.set('contact_involves', id);
+		} else {
+			url.searchParams.delete('contact_involves');
+		}
+		const next = `${url.pathname}${url.search}`;
+		const current = `${page.url.pathname}${page.url.search}`;
+		if (next === current) return;
+		void goto(next, { replaceState: true, keepFocus: true, noScroll: true });
+	}
+
 	function applyFilters(e: Event) {
 		e.preventDefault();
 		appliedQ = qInput.trim();
+		syncInvolvesUrl(contactInvolvesId);
 	}
 
 	function clearFilters() {
 		qInput = '';
 		appliedQ = '';
 		status = '';
+		contactInvolvesId = '';
+		syncInvolvesUrl('');
 	}
 
 	function syncAnchorToPeriod() {
@@ -355,27 +387,37 @@
 	{/if}
 
 	<form
-		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center"
+		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end"
 		onsubmit={applyFilters}
 	>
+		<label class="grid min-w-0 flex-1 gap-1 lg:min-w-[14rem]">
+			<span class="text-xs font-medium text-text-muted">{t('appointments.filter.involves')}</span>
+			<Combobox
+				id="appointments-contact-involves"
+				bind:value={contactInvolvesId}
+				options={contactOptions}
+				placeholder={t('appointments.filter.involvesPlaceholder')}
+				emptyText={t('appointments.filter.involvesEmpty')}
+				clearLabel={t('appointments.filter.involvesClear')}
+				inputClass={filterInputClass}
+				onselect={(option) => syncInvolvesUrl(option?.value ?? '')}
+			/>
+		</label>
 		<input
-			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:min-w-[12rem]"
+			class="{filterInputClass} flex-1 lg:min-w-[12rem]"
 			placeholder={t('appointments.filter.qPlaceholder')}
 			bind:value={qInput}
 		/>
-		<select
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
-			bind:value={status}
-		>
+		<select class="{filterInputClass} lg:w-44" bind:value={status}>
 			<option value="">{t('appointments.filter.statusAll')}</option>
 			{#each statusOptions as s (s)}
 				<option value={s}>{appointmentStatusLabels[s]}</option>
 			{/each}
 		</select>
 		<div class="flex gap-2">
-			<Button type="submit" variant="secondary">{t('appointments.filter.apply')}</Button>
-			{#if appliedQ || status}
-				<Button type="button" variant="outline" onclick={clearFilters}
+			<Button type="submit" variant="secondary" class="min-h-11">{t('appointments.filter.apply')}</Button>
+			{#if appliedQ || status || contactInvolvesId}
+				<Button type="button" variant="outline" class="min-h-11" onclick={clearFilters}
 					>{t('appointments.filter.clear')}</Button
 				>
 			{/if}

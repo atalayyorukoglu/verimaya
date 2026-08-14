@@ -20,10 +20,15 @@ import { transactionKindSchema, transactionStatusSchema } from './transaction.js
  *   each to UTC `[start, endExclusive)` bounds on `starts_at` (TIME-01).
  */
 
-/** GAP-04 (G-05): status (exact) + q (contact name / notes / clinic / hotel). */
+/**
+ * GAP-04 (G-05) + G-05r: status/q + `contact_involves` (any role FK:
+ * patient / clinic / hotel / transfer).
+ */
 export const appointmentListQuerySchema = cursorPageParams
 	.extend({
 		contact_id: uuid.optional(),
+		/** Match appointments where this contact appears in any role FK. */
+		contact_involves: uuid.optional(),
 		from: isoDate.optional(),
 		to: isoDate.optional(),
 		status: appointmentStatusSchema.optional(),
