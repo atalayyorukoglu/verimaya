@@ -292,6 +292,10 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **Web cache politikası ✅** (2026-08-14) — SPA/hub kabukları ile service worker her
+  kullanımda doğrulanıyor; içerik hash’li SvelteKit asset’leri bir yıl immutable.
+  **Görüş:** origin başlığı yokken Cloudflare ve tarayıcı eski kabuğu tutuyor, kabuk da eski
+  chunk hash’lerine işaret ediyordu. HTML için `no-store` yerine revalidation seçildi.
 - **Mobil finans UX ✅** (2026-08-14) — işlem formu yatay taşma, iOS zoom, tarih sığdırma,
   kişi combobox, ödeme yöntemi select, liste 44px arama + `from`/`to` filtresi.
   **Görüş:** kategori CRUD zaten vardı; canlı kur bilinçli yok (snapshot); sığdırma için

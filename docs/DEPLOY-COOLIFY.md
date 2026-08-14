@@ -138,6 +138,12 @@ Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /i
 
 **nginx (imaj içi):** Apex/www host’ta `/` → `hub.html` (prerender hub); app host’ta `/` → SPA `index.html`. Eski `/vitrin` → `301 /`. Cloudflare’de ayrıca `/`→`/vitrin` redirect **gerekmez**.
 
+**Web cache politikası:** SPA `index.html` kabuğu ve prerender `hub.html`
+`Cache-Control: no-cache, must-revalidate`; `/sw.js` `no-cache`; içerik hash’li
+`/_app/immutable/` dosyaları `public, max-age=31536000, immutable` döner. Kabuk her
+kullanımda doğrulanmazsa eski HTML, artık bulunmayan eski chunk hash’lerine işaret edebilir
+ve deploy edilen düzeltmeler kullanıcıya günlerce ulaşmayabilir.
+
 API CORS / auth:
 
 - `TRUSTED_ORIGINS`: `https://verimaya.com,https://app.verimaya.com` (gerekirse `www`)
