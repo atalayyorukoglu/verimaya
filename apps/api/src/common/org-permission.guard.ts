@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { apiKeyHasScope } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { MeService } from '../auth/me.service';
+import { PermissionOverridesService } from '../auth/permission-overrides.service';
 import { hasOrgPermission } from '../auth/permissions';
 import {
 	ORG_PERMISSION_METADATA_KEY,
@@ -13,7 +14,8 @@ import {
 export class OrgPermissionGuard implements CanActivate {
 	constructor(
 		private readonly reflector: Reflector,
-		private readonly meService: MeService
+		private readonly meService: MeService,
+		private readonly permissionOverrides: PermissionOverridesService
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,6 +32,7 @@ export class OrgPermissionGuard implements CanActivate {
 		// AUDIT-F09-02: API keys no longer bypass RBAC. Deny-by-default — the key must
 		// carry an explicit `resource:action` scope matching `@RequireOrgPermission`.
 		// Unknown / unmapped endpoints are rejected (no scope → insufficient_scope).
+		// Tenant role overrides do not apply to API keys (explicit scopes are the ACL).
 		if (req.apiKeyAuth) {
 			if (
 				!apiKeyHasScope(
@@ -54,12 +57,18 @@ export class OrgPermissionGuard implements CanActivate {
 			throw this.insufficientPermission(req.id);
 		}
 
+		const tenantId = session.session.activeOrganizationId;
+		if (!tenantId) {
+			throw this.insufficientPermission(req.id);
+		}
+
 		const role = await this.meService.resolveOrganizationRole({
 			userId: session.user.id,
-			activeOrganizationId: session.session.activeOrganizationId,
+			activeOrganizationId: tenantId,
 			requestId: String(req.id)
 		});
-		if (!hasOrgPermission(role, requirement.resource, requirement.action)) {
+		const deniedKeys = await this.permissionOverrides.getDeniedKeys(tenantId);
+		if (!hasOrgPermission(role, requirement.resource, requirement.action, deniedKeys)) {
 			throw this.insufficientPermission(req.id);
 		}
 

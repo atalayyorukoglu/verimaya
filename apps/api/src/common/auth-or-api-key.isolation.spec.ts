@@ -130,7 +130,10 @@ async function seedFixture(): Promise<Fixture> {
 	const guard = new AuthOrApiKeyGuard(apiKeyGuard, new SessionGuard());
 	const orgGuard = new OrgPermissionGuard(
 		new Reflector(),
-		new MeService({ client: db } as DbService)
+		new MeService({ client: db } as DbService),
+		{
+			getDeniedKeys: async () => new Set<string>()
+		} as import('../auth/permission-overrides.service').PermissionOverridesService
 	);
 
 	// Mirror production TenantContextService: drizzle transaction + SET LOCAL.

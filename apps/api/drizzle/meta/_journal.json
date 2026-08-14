@@ -372,6 +372,13 @@
       "when": 1755604000000,
       "tag": "0052_transactions_responsible_and_personel",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1755605000000,
+      "tag": "0053_tenant_permission_overrides",
+      "breakpoints": true
     }
   ]
 }

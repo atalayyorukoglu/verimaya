@@ -1531,18 +1531,31 @@ const tr = {
 	'settings.nav.dataQuality.description':
 		'İşlem özeti, eksik alanlar; kişi/hasta çift kayıt linkleri.',
 
-	// settings access
+	// settings access (G-11)
 	'settings.access.documentTitle': 'Erişim · Ayarlar · Veri Maya',
 	'settings.access.title': 'Erişim',
 	'settings.access.description':
-		'Rol → izin matrisi (demo). Üst bardaki rol değiştirici ile menü görünürlüğünü dene.',
-	'settings.access.col.permission': 'İzin',
-	'settings.access.perm.finance': 'Finans / işlemler',
-	'settings.access.perm.integrations': 'Bağlantılar (Ayarlar)',
-	'settings.access.perm.team': 'Ekip yönetimi',
-	'settings.access.perm.audit': 'Denetim kaydı',
+		'Tenant izin matrisi. Varsayılan kod matrisi üzerine yalnız kısıtlama (deny) uygulanır; yetki genişletme yok.',
+	'settings.access.col.resource': 'Kaynak',
+	'settings.access.col.view': 'Görüntüle',
+	'settings.access.col.edit': 'Düzenle',
+	'settings.access.resetCell': 'Varsayılana dön',
+	'settings.access.overridden': 'Varsayılandan sapıyor',
+	'settings.access.locked': 'Kilitli (owner kendini kilitleyemez)',
+	'settings.access.loading': 'Yükleniyor…',
+	'settings.access.loadError': 'İzin matrisi yüklenemedi.',
+	'settings.access.saveError': 'İzin güncellenemedi.',
+	'settings.access.readOnly': 'Matrisi değiştirmek için sahip veya yönetici olmalısınız.',
+	'settings.access.resource.contact': 'Kişiler',
+	'settings.access.resource.finance': 'Finans',
+	'settings.access.resource.settings': 'Ayarlar',
+	'settings.access.resource.audit': 'Denetim kaydı',
+	'settings.access.resource.members': 'Üyeler',
+	'settings.access.resource.api_keys': 'API anahtarları',
+	'settings.access.resource.webhook_subscriptions': 'Webhook abonelikleri',
+	'settings.access.resource.scorecard': 'Karne',
 	'settings.access.footnote':
-		'Gerçek yetkilendirme Faz 0b’de better-auth organization rolleri ile bağlanacak. Bu tablo `rbac.ts` ile uyumlu bir önizleme.',
+		'Override yalnız kısıtlar. Owner üye/ayar yönetimi hücreleri kilitlidir. API zorlaması panel gizlemesinden bağımsızdır.',
 
 	// settings ai default prompt
 	'settings.ai.prompt.defaultBody':
@@ -3420,14 +3433,27 @@ const en: Record<MessageKey, string> = {
 	'settings.access.documentTitle': 'Access · Settings · Veri Maya',
 	'settings.access.title': 'Access',
 	'settings.access.description':
-		'Role → permission matrix (demo). Try menu visibility with the role switcher in the top bar.',
-	'settings.access.col.permission': 'Permission',
-	'settings.access.perm.finance': 'Finance / transactions',
-	'settings.access.perm.integrations': 'Connections (Settings)',
-	'settings.access.perm.team': 'Team management',
-	'settings.access.perm.audit': 'Audit log',
+		'Tenant permission matrix. Overrides may only restrict the code defaults — no privilege escalation.',
+	'settings.access.col.resource': 'Resource',
+	'settings.access.col.view': 'View',
+	'settings.access.col.edit': 'Edit',
+	'settings.access.resetCell': 'Reset to default',
+	'settings.access.overridden': 'Differs from default',
+	'settings.access.locked': 'Locked (owner cannot lock themselves out)',
+	'settings.access.loading': 'Loading…',
+	'settings.access.loadError': 'Could not load the permission matrix.',
+	'settings.access.saveError': 'Could not update permissions.',
+	'settings.access.readOnly': 'Only owners or admins can change the matrix.',
+	'settings.access.resource.contact': 'Contacts',
+	'settings.access.resource.finance': 'Finance',
+	'settings.access.resource.settings': 'Settings',
+	'settings.access.resource.audit': 'Audit log',
+	'settings.access.resource.members': 'Members',
+	'settings.access.resource.api_keys': 'API keys',
+	'settings.access.resource.webhook_subscriptions': 'Webhook subscriptions',
+	'settings.access.resource.scorecard': 'Scorecard',
 	'settings.access.footnote':
-		'Real authorization will connect in Phase 0b via better-auth organization roles. This table is a preview aligned with `rbac.ts`.',
+		'Overrides only restrict. Owner member/settings admin cells are locked. API enforcement is independent of panel chrome.',
 
 	'settings.ai.prompt.defaultBody':
 		'Extract finance transactions from a WhatsApp group message.\n- Do not treat amounts as minor units (cents); show major units to the user.\n- Kind: income or expense.\n- If present: patient name, category, subcategory, contact/vendor label, date.\n- Leave uncertain fields empty; do not invent.',

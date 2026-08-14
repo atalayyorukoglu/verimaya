@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker/locale/en';
+import { defaultWhatsappAiPrompt } from '@verimaya/shared';
 import type {
 	AiCorrection,
 	AdMetric,
@@ -14,6 +15,7 @@ import type {
 	Organization,
 	ContactCaseNote,
 	ContactFile,
+	PermissionOverride,
 	Tenant,
 	Transaction,
 	MembershipUser,
@@ -22,7 +24,6 @@ import type {
 	TrustScoreSettings,
 	WhatsappAiPrompt
 } from '@verimaya/shared';
-import { defaultWhatsappAiPrompt } from '@verimaya/shared';
 
 export type MockScenario = 'default' | 'empty' | 'large' | 'attribution_missing';
 
@@ -415,6 +416,8 @@ export type DemoStore = {
 	trustScore: TrustScoreSettings;
 	/** G-26: tenant AI extraction note (MSW). */
 	aiPrompt: WhatsappAiPrompt;
+	/** G-11: deny-only permission overrides (MSW). */
+	permissionOverrides: PermissionOverride[];
 };
 
 function makeExtraTenants(): Tenant[] {
@@ -1144,7 +1147,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 			webhookSubscriptions: [],
 			aiCorrections: [],
 			trustScore: { checks: [] },
-			aiPrompt: defaultWhatsappAiPrompt()
+			aiPrompt: defaultWhatsappAiPrompt(),
+			permissionOverrides: []
 		};
 	}
 
@@ -1438,7 +1442,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 		webhookSubscriptions: makeWebhookSubscriptions(),
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },
-		aiPrompt: defaultWhatsappAiPrompt()
+		aiPrompt: defaultWhatsappAiPrompt(),
+		permissionOverrides: []
 	};
 }
 

@@ -5580,6 +5580,2187 @@ paths:
                   - updated_by
                   - updated_at
                 additionalProperties: false
+  /settings/permissions:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resources:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - contact
+                        - finance
+                        - settings
+                        - audit
+                        - members
+                        - api_keys
+                        - webhook_subscriptions
+                        - scorecard
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - owner
+                        - admin
+                        - manager
+                        - agent
+                        - finance
+                        - readonly
+                  defaults:
+                    type: object
+                    required: &a3
+                      - owner
+                      - admin
+                      - manager
+                      - agent
+                      - finance
+                      - readonly
+                    properties:
+                      owner:
+                        type: object
+                        required: &a2
+                          - contact
+                          - finance
+                          - settings
+                          - audit
+                          - members
+                          - api_keys
+                          - webhook_subscriptions
+                          - scorecard
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      admin:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      manager:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      agent:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      finance:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      readonly:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                    additionalProperties: false
+                  overrides:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        role:
+                          type: string
+                          enum:
+                            - owner
+                            - admin
+                            - manager
+                            - agent
+                            - finance
+                            - readonly
+                        resource:
+                          type: string
+                          enum:
+                            - contact
+                            - finance
+                            - settings
+                            - audit
+                            - members
+                            - api_keys
+                            - webhook_subscriptions
+                            - scorecard
+                        action:
+                          type: string
+                          enum:
+                            - create
+                            - read
+                            - update
+                            - delete
+                        allowed:
+                          type: boolean
+                          enum:
+                            - false
+                      required:
+                        - role
+                        - resource
+                        - action
+                        - allowed
+                      additionalProperties: false
+                  effective:
+                    type: object
+                    required: *a3
+                    properties:
+                      owner:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      admin:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      manager:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      agent:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      finance:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      readonly:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                    additionalProperties: false
+                  locked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        role:
+                          type: string
+                          enum:
+                            - owner
+                            - admin
+                            - manager
+                            - agent
+                            - finance
+                            - readonly
+                        resource:
+                          type: string
+                          enum:
+                            - contact
+                            - finance
+                            - settings
+                            - audit
+                            - members
+                            - api_keys
+                            - webhook_subscriptions
+                            - scorecard
+                        action:
+                          type: string
+                          enum:
+                            - create
+                            - read
+                            - update
+                            - delete
+                      required:
+                        - role
+                        - resource
+                        - action
+                      additionalProperties: false
+                required:
+                  - resources
+                  - roles
+                  - defaults
+                  - overrides
+                  - effective
+                  - locked
+                additionalProperties: false
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resources:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - contact
+                        - finance
+                        - settings
+                        - audit
+                        - members
+                        - api_keys
+                        - webhook_subscriptions
+                        - scorecard
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - owner
+                        - admin
+                        - manager
+                        - agent
+                        - finance
+                        - readonly
+                  defaults:
+                    type: object
+                    required: *a3
+                    properties:
+                      owner:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      admin:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      manager:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      agent:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      finance:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      readonly:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                    additionalProperties: false
+                  overrides:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        role:
+                          type: string
+                          enum:
+                            - owner
+                            - admin
+                            - manager
+                            - agent
+                            - finance
+                            - readonly
+                        resource:
+                          type: string
+                          enum:
+                            - contact
+                            - finance
+                            - settings
+                            - audit
+                            - members
+                            - api_keys
+                            - webhook_subscriptions
+                            - scorecard
+                        action:
+                          type: string
+                          enum:
+                            - create
+                            - read
+                            - update
+                            - delete
+                        allowed:
+                          type: boolean
+                          enum:
+                            - false
+                      required:
+                        - role
+                        - resource
+                        - action
+                        - allowed
+                      additionalProperties: false
+                  effective:
+                    type: object
+                    required: *a3
+                    properties:
+                      owner:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      admin:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      manager:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      agent:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      finance:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                      readonly:
+                        type: object
+                        required: *a2
+                        properties:
+                          contact:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          finance:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          settings:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          audit:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          members:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          api_keys:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          webhook_subscriptions:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                          scorecard:
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                                - create
+                                - read
+                                - update
+                                - delete
+                        additionalProperties: false
+                    additionalProperties: false
+                  locked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        role:
+                          type: string
+                          enum:
+                            - owner
+                            - admin
+                            - manager
+                            - agent
+                            - finance
+                            - readonly
+                        resource:
+                          type: string
+                          enum:
+                            - contact
+                            - finance
+                            - settings
+                            - audit
+                            - members
+                            - api_keys
+                            - webhook_subscriptions
+                            - scorecard
+                        action:
+                          type: string
+                          enum:
+                            - create
+                            - read
+                            - update
+                            - delete
+                      required:
+                        - role
+                        - resource
+                        - action
+                      additionalProperties: false
+                required:
+                  - resources
+                  - roles
+                  - defaults
+                  - overrides
+                  - effective
+                  - locked
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                changes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                        enum:
+                          - owner
+                          - admin
+                          - manager
+                          - agent
+                          - finance
+                          - readonly
+                      resource:
+                        type: string
+                        enum:
+                          - contact
+                          - finance
+                          - settings
+                          - audit
+                          - members
+                          - api_keys
+                          - webhook_subscriptions
+                          - scorecard
+                      action:
+                        type: string
+                        enum:
+                          - create
+                          - read
+                          - update
+                          - delete
+                      allowed:
+                        anyOf:
+                          - type: boolean
+                            enum:
+                              - false
+                          - enum:
+                              - "null"
+                            nullable: true
+                    required:
+                      - role
+                      - resource
+                      - action
+                      - allowed
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 200
+              required:
+                - changes
+              additionalProperties: false
   /settings/import-export/contacts/template.xlsx:
     get:
       responses:
@@ -5667,7 +7848,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: &a2 []
+                          default: &a4 []
                       required:
                         - row_number
                         - action
@@ -5884,7 +8065,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: *a2
+                          default: *a4
                         sheet:
                           type: string
                           enum:

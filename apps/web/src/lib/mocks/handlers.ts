@@ -37,6 +37,9 @@ import {
 	userUiPreferencesUpdateSchema,
 	whatsappAiPromptUpdateSchema,
 	defaultWhatsappAiPrompt,
+	buildPermissionMatrixFromOverrides,
+	permissionMatrixPatchSchema,
+	type PermissionOverride,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
 	compareByCreatedAtDesc,
@@ -2053,6 +2056,36 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		store.aiPrompt = defaultWhatsappAiPrompt();
 		return HttpResponse.json(store.aiPrompt);
+	}),
+
+	http.get('/v1/settings/permissions', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(buildPermissionMatrixFromOverrides(store.permissionOverrides));
+	}),
+
+	http.patch('/v1/settings/permissions', async ({ request }) => {
+		const body = await request.json();
+		const parsed = permissionMatrixPatchSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz izin matrisi', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		const next = new Map<string, PermissionOverride>(
+			store.permissionOverrides.map((o) => [`${o.role}:${o.resource}:${o.action}`, o])
+		);
+		for (const change of parsed.data.changes) {
+			const key = `${change.role}:${change.resource}:${change.action}`;
+			if (change.allowed === false) {
+				next.set(key, {
+					role: change.role,
+					resource: change.resource,
+					action: change.action,
+					allowed: false
+				});
+			} else {
+				next.delete(key);
+			}
+		}
+		store.permissionOverrides = [...next.values()];
+		return HttpResponse.json(buildPermissionMatrixFromOverrides(store.permissionOverrides));
 	}),
 
 	http.get('/v1/settings/contact-types', ({ request }) => {

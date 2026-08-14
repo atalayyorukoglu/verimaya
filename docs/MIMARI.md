@@ -56,6 +56,12 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
 - better-auth: e-posta/şifre + admin'e TOTP 2FA; JWT access/refresh, refresh rotation.
 - Tenant credential'ları AES-GCM şifreli, anahtar yalnız deploy secret'ında.
 - Günlük otomatik Postgres yedeği + sunucu dışı kopya + aylık restore provası.
+- **G-11 tenant izin override (2026-08-14):** kod varsayılanı
+  `organizationRolePermissionDefaults` (`packages/shared`); tenant yalnız **deny**
+  satırı yazabilir (`tenant_permission_overrides`, RLS). Etkin izin =
+  `hasOrgPermission(role, resource, action, deniedKeys)` — tek çözümleme yolu
+  (`OrgPermissionGuard`). Owner `members`/`settings` yönetim hücreleri kilitli
+  (self-lock yok). Yetki **genişletme** bu turda yok (ayrı ürün kararı).
 - KVKK: veri işleme envanteri, export/silme endpoint'i, LLM'e giden veride PII minimizasyonu
   (**uygulandı 2026-07-30:** WhatsApp → OpenAI-uyumlu istemci yolu `buildMaskedLlmUserPayload`
   tek geçiş noktasından geçer — telefon/e-posta/TCKN/IBAN/kart + kişi adı; modele yalnız

@@ -71,6 +71,7 @@ export const apiPaths = {
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
+	settingsPermissions: `${API_V1_PREFIX}/settings/permissions`,
 	settingsImportContactsTemplate: `${API_V1_PREFIX}/settings/import-export/contacts/template.xlsx`,
 	settingsImportContactsExport: `${API_V1_PREFIX}/settings/import-export/contacts/export.xlsx`,
 	settingsImportContactsDryRun: `${API_V1_PREFIX}/settings/import-export/contacts/import/dry-run`,
@@ -285,6 +286,10 @@ import {
 	whatsappAiPromptSchema,
 	whatsappAiPromptUpdateSchema
 } from './ai-prompt.js';
+import {
+	permissionMatrixPatchSchema,
+	permissionMatrixSchema
+} from './permission-matrix.js';
 import {
 	importBundleCommitResultSchema,
 	importBundleDryRunResultSchema,
@@ -539,6 +544,13 @@ export const apiContract = {
 	},
 	'DELETE /v1/settings/ai-prompt': {
 		response: whatsappAiPromptSchema
+	},
+	'GET /v1/settings/permissions': {
+		response: permissionMatrixSchema
+	},
+	'PATCH /v1/settings/permissions': {
+		body: permissionMatrixPatchSchema,
+		response: permissionMatrixSchema
 	},
 	'GET /v1/settings/import-export/contacts/template.xlsx': {
 		response: xlsxDownloadSchema

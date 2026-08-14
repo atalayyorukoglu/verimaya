@@ -221,7 +221,10 @@ describe('AUDIT-F09-02 API key scopes (deny-by-default)', () => {
 		sessionGuard = new SessionGuard();
 		orgPermissionGuard = new OrgPermissionGuard(
 			new Reflector(),
-			new MeService({ client: db } as DbService)
+			new MeService({ client: db } as DbService),
+			{
+				getDeniedKeys: async () => new Set<string>()
+			} as import('../auth/permission-overrides.service').PermissionOverridesService
 		);
 	});
 

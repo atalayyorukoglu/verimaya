@@ -209,7 +209,10 @@ describe('GhlController.reconcile permission (settings.update)', () => {
 		new Reflector(),
 		{
 			resolveOrganizationRole: vi.fn(async ({ userId }: { userId: string }) => userId as UserRole)
-		} as unknown as MeService
+		} as unknown as MeService,
+		{
+			getDeniedKeys: vi.fn(async () => new Set<string>())
+		} as unknown as import('../../auth/permission-overrides.service').PermissionOverridesService
 	);
 
 	it('exposes settings:update on reconcile (same as authorize/disconnect)', () => {

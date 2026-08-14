@@ -22,12 +22,14 @@ import {
 	financeCategoryUpdateSchema,
 	organizationCreateSchema,
 	organizationUpdateSchema,
+	permissionMatrixPatchSchema,
 	settingsReorderSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureUpdateSchema,
 	whatsappAiPromptUpdateSchema
 } from '@verimaya/shared';
 import { SessionGuard } from '../auth/session.guard';
+import { PermissionOverridesService } from '../auth/permission-overrides.service';
 import {
 	ActiveOrgGuard,
 	getActiveOrgId,
@@ -46,6 +48,7 @@ import { SettingsService } from './settings.service';
 export class SettingsController {
 	constructor(
 		private readonly settingsService: SettingsService,
+		private readonly permissionOverrides: PermissionOverridesService,
 		private readonly idempotency: IdempotencyService
 	) {}
 
@@ -365,5 +368,25 @@ export class SettingsController {
 	@HttpCode(200)
 	resetAiPrompt(@Req() req: FastifyRequest) {
 		return this.settingsService.resetAiPrompt(getActiveOrgId(req), getActorFromRequest(req));
+	}
+
+	@Get('permissions')
+	@RequireOrgPermission('settings', 'read')
+	getPermissions(@Req() req: FastifyRequest) {
+		return this.permissionOverrides.getMatrix(getActiveOrgId(req));
+	}
+
+	@Patch('permissions')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'G-11 absolute deny/reset cells — repeat PATCHes with the same changes converge; audit rows are append-only.'
+	)
+	patchPermissions(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(permissionMatrixPatchSchema, body, req);
+		return this.permissionOverrides.applyChanges(
+			getActiveOrgId(req),
+			input,
+			getActorFromRequest(req)
+		);
 	}
 }

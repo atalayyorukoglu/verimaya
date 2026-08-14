@@ -26,4 +26,5 @@ export * from './external-ids';
 export * from './scorecard';
 export * from './tenant-provider-identities';
 export * from './user-ui-preferences';
+export * from './tenant-permission-overrides';
 export * from './fx-rates';

@@ -8,8 +8,7 @@
 > Daha eski: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` (Faz 0–7).
 >
 > **Durum anı:** branch `main`. DOMAIN-02 kapandı. Prod migrate
-> `0052`'ye kadar uygulandı (2026-08-14; `RUN_MIGRATIONS=true`, entrypoint `set -e` ile
-> migrate-sonra-başlat — bkz. Son kapananlar · 0048–0052).
+> `0053`'ye kadar (G-11 tenant_permission_overrides; lokal `pnpm db:migrate`).
 > Panel tek **Kişiler** (soyad sırası + load-more düzeltildi).
 > Pilot tenant: `Demo Klinik`. Smoke: `docs/Arşiv/2026-08-09-PROD-SMOKE-REHBERI.md`.
 > Web canlı = GHCR `verimaya-web:main` (CI yeşil → imaj → Coolify); Restart eski imajı açar.
@@ -282,7 +281,6 @@
 4. **Checklist ölü özellik mi?** → GAP-F09-20 skip olabilir.
 6. **AI prompt tenant'a açılmalı mı?** (GAP-26) — **evet, sınırlı:** çekirdek prompt
    sunucuda; tenant metni ek not (max 2000), reset zorunlu, şema sunucu kontrolünde.
-7. **Tenant düzeyinde izin matrisi?** Tracker 9×5; bizde 8×6. Pilotta ölç; talep yoksa skip.
 8. **P2P payer/payee geri gelecek mi?** Freeze öncesi karar ucuz, sonra pahalı.
 9. ~~**İçe/dışa aktarım ikinci müşteriden önce mi?** (GAP-08)~~ → **evet, uygulandı** (G-09/G-10).
 
@@ -293,6 +291,13 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **G-11 tenant izin matrisi ✅** (2026-08-14) — `tenant_permission_overrides` (RLS) +
+  `GET/PATCH /v1/settings/permissions`; etkin izin = kod varsayılanı ∩ deny override
+  (`hasOrgPermission` + `OrgPermissionGuard`); owner members/settings kilitli; genişletme yok.
+  Panel: `/settings/access` (görüntüle/düzenle, sapma vurgusu, varsayılana dön).
+  **Görüş:** Override yalnız kısıtlar — genişletme ayrı ürün kararı (pilot talebi yokken
+  self-lock/escalation yüzeyini büyütmemek). Kırmızı: deny set yok sayılınca finance:read
+  403 spec’i düştü; guard yolu panel gizlemesinden bağımsız.
 - **G-09 / G-10 + GAP-08 içe/dışa aktarım ✅** (2026-08-14) — `/settings/import-export`:
   kişi + bundle (Cases/Appointments/Transactions) şablon→export→dry-run→commit;
   `plan_token` (CryptoService) dry-run çıktısını bağlar; silme yok.

@@ -308,7 +308,10 @@ function createGuard(roles: Record<string, UserRole>): OrgPermissionGuard {
 	const meService = {
 		resolveOrganizationRole: vi.fn(async ({ userId }: { userId: string }) => roles[userId]!)
 	} as unknown as MeService;
-	return new OrgPermissionGuard(new Reflector(), meService);
+	const permissionOverrides = {
+		getDeniedKeys: vi.fn(async () => new Set<string>())
+	} as unknown as import('../auth/permission-overrides.service').PermissionOverridesService;
+	return new OrgPermissionGuard(new Reflector(), meService, permissionOverrides);
 }
 
 describe('transaction and settings organization permissions', () => {

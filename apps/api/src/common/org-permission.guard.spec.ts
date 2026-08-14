@@ -115,7 +115,13 @@ describe('OrgPermissionGuard', () => {
 				(${organizationA}, ${unknownRoleUser}, 'unknown_role', now())
 		`;
 
-		guard = new OrgPermissionGuard(new Reflector(), new MeService({ client: db } as DbService));
+		guard = new OrgPermissionGuard(
+			new Reflector(),
+			new MeService({ client: db } as DbService),
+			{
+				getDeniedKeys: async () => new Set<string>()
+			} as import('../auth/permission-overrides.service').PermissionOverridesService
+		);
 	});
 
 	afterAll(async () => {
