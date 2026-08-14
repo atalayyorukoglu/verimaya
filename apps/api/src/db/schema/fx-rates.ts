@@ -15,6 +15,8 @@ export const fxRates = pgTable(
 	'fx_rates',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
+		/** Requested calendar day; this is the cache lookup key. */
+		requestedDate: date('requested_date', { mode: 'string' }).notNull(),
 		/** Provider's rate day (may differ from the requested calendar day on weekends/holidays). */
 		rateDate: date('rate_date', { mode: 'string' }).notNull(),
 		fromCurrency: text('from_currency').notNull(),
@@ -24,8 +26,8 @@ export const fxRates = pgTable(
 		fetchedAt: timestamptz('fetched_at').notNull().defaultNow()
 	},
 	(table) => [
-		uniqueIndex('fx_rates_date_from_to_uidx').on(
-			table.rateDate,
+		uniqueIndex('fx_rates_requested_date_from_to_uidx').on(
+			table.requestedDate,
 			table.fromCurrency,
 			table.toCurrency
 		),

@@ -30,20 +30,25 @@ Shared: `packages/shared/src/fx.ts` → `fxRateQuerySchema` / `fxRateResponseSch
 
 ## Önbellek davranışı
 
-Tablo: `fx_rates` (migration `0048_fx_rates`).
+Tablo: `fx_rates` (migration `0048_fx_rates` + düzeltme `0049_fx_rates_requested_date`).
 
 - **Global referans verisi** — `tenant_id` yok, RLS yok (ECB kuru tenant’tan bağımsız).
   Gerekçe: `AGENTS.md` madde 1 istisnası + `docs/MIMARI.md`.
-- Unique: `(rate_date, from_currency, to_currency)`.
-- `rate_date` = sağlayıcının tarihi (istenilen tarih değil).
+- Unique/cache anahtarı: `(requested_date, from_currency, to_currency)`.
+- `requested_date` = kullanıcının sorduğu ve ileri tarih kırpması uygulanmış takvim günü.
+  Önbellek bu alanla aranır; aynı istek ikinci kez geldiğinde sağlayıcıya çıkılmaz.
+- `rate_date` = sağlayıcının gerçekten döndürdüğü kur günü. Hafta sonu/tatilde
+  `requested_date`’ten önce olabilir; API yanıtındaki `date` ve işlemdeki `fx_dated`
+  bu alandan beslenir.
 - Geçmiş ECB kurları değişmez → süresiz cache; `ON CONFLICT DO NOTHING`.
 - `from === to` → cache/sağlayıcı yok, `rate: 1`, `date` = kırpılmış `on`.
 - İleri `on` → bugüne (UTC) kırpılır (Frankfurter ileri tarihe 404 verir).
 
-Hafta sonu: istek Cumartesi ise Frankfurter Cuma döner; satır Cuma ile yazılır.
-Aynı Cumartesi için ikinci istek cache’te Cumartesi anahtarı bulamaz ve sağlayıcıya
-yine gider (nadir; iş günü istekleri ikinci seferde cache isabeti alır). Bilinçli
-basitlik — yanlış iş günü kuru uydurulmaz.
+Hafta sonu örneği: Cumartesi ve Pazar iki ayrı `requested_date` satırı olabilir;
+ikisinin `rate_date` değeri de aynı Cuma günüdür. İstenen tarih anahtar olmalıdır,
+çünkü dış servis çağrısının tekrar edilip edilmeyeceğini tanımlayan şey kullanıcının
+sorgusudur. Kur günü ayrı tutulur; böylece kullanılan gerçek ECB günü uydurulmadan
+ve kullanıcıdan gizlenmeden gösterilir.
 
 ## Form davranışı (`TransactionFormDialog`)
 
@@ -68,6 +73,7 @@ basitlik — yanlış iş günü kuru uydurulmaz.
 ## Dosyalar
 
 - `apps/api/drizzle/0048_fx_rates.sql`
+- `apps/api/drizzle/0049_fx_rates_requested_date.sql`
 - `apps/api/src/integrations/frankfurter/frankfurter.client.ts`
 - `apps/api/src/fx/*`
 - `packages/shared/src/fx.ts`

@@ -292,6 +292,10 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **FX hafta sonu/tatil önbelleği ✅** (2026-08-14) — önbellek anahtarı sağlayıcının kur
+  gününden ayrılıp istenen güne bağlandı.
+  **Görüş:** Cumartesi isteği Cuma `rate_date` ile yazılınca ikinci Cumartesi sorgusu
+  isabet alamıyordu. `requested_date` unique anahtar; `rate_date` gerçek ECB günü olarak kaldı.
 - **Web cache politikası ✅** (2026-08-14) — SPA/hub kabukları ile service worker her
   kullanımda doğrulanıyor; içerik hash’li SvelteKit asset’leri bir yıl immutable.
   **Görüş:** origin başlığı yokken Cloudflare ve tarayıcı eski kabuğu tutuyor, kabuk da eski

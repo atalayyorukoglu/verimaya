@@ -202,6 +202,57 @@ describe('FxService', () => {
 		expect(select).toHaveBeenCalledTimes(2);
 	});
 
+	it('caches a weekend request by requested date when provider date differs', async () => {
+		const requestedDate = '2026-03-14';
+		const storedRows: Array<Record<string, unknown>> = [];
+		const realisticSelectLimit = vi.fn(async () =>
+			storedRows
+				.filter(
+					(row) =>
+						row.requestedDate === requestedDate &&
+						row.fromCurrency === 'TRY' &&
+						row.toCurrency === 'GBP'
+				)
+				.map((row) => ({ rate: row.rate, rateDate: row.rateDate }))
+		);
+		const realisticSelectWhere = vi.fn(() => ({ limit: realisticSelectLimit }));
+		const realisticSelectFrom = vi.fn(() => ({ where: realisticSelectWhere }));
+		const realisticSelect = vi.fn(() => ({ from: realisticSelectFrom }));
+		const realisticOnConflict = vi.fn(async () => undefined);
+		const realisticInsertValues = vi.fn((row: Record<string, unknown>) => {
+			storedRows.push(row);
+			return { onConflictDoNothing: realisticOnConflict };
+		});
+		const realisticInsert = vi.fn(() => ({ values: realisticInsertValues }));
+		const realisticDb = {
+			client: { select: realisticSelect, insert: realisticInsert }
+		} as unknown as DbService;
+		const realisticProvider = {
+			fetchRate: vi.fn().mockResolvedValue({
+				rate: 0.022,
+				rateDate: '2026-03-13',
+				url: 'https://api.frankfurter.dev/v1/2026-03-14?from=TRY&to=GBP'
+			})
+		};
+		const realisticService = new FxService(
+			realisticDb,
+			realisticProvider as unknown as FrankfurterClient
+		);
+
+		const first = await realisticService.getRate(
+			{ from: 'TRY', to: 'GBP', on: requestedDate },
+			'req-1'
+		);
+		const second = await realisticService.getRate(
+			{ from: 'TRY', to: 'GBP', on: requestedDate },
+			'req-2'
+		);
+
+		expect(first).toMatchObject({ date: '2026-03-13', cached: false });
+		expect(second).toMatchObject({ date: '2026-03-13', cached: true });
+		expect(realisticProvider.fetchRate).toHaveBeenCalledTimes(1);
+	});
+
 	it('fetches, caches provider date, and returns uncached flag', async () => {
 		selectLimit.mockResolvedValue([]);
 		frankfurter.fetchRate.mockResolvedValue({
@@ -223,6 +274,7 @@ describe('FxService', () => {
 		});
 		expect(insertValues).toHaveBeenCalledWith(
 			expect.objectContaining({
+				requestedDate: '2026-03-14',
 				rateDate: '2026-03-13',
 				fromCurrency: 'TRY',
 				toCurrency: 'GBP',

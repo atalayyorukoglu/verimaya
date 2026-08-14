@@ -48,7 +48,7 @@ export class FxService {
 
 		try {
 			const fetched = await this.frankfurter.fetchRate(on, from, to);
-			await this.upsertCache(fetched.rateDate, from, to, fetched.rate);
+			await this.upsertCache(on, fetched.rateDate, from, to, fetched.rate);
 			return {
 				from,
 				to,
@@ -78,7 +78,7 @@ export class FxService {
 			.from(fxRates)
 			.where(
 				and(
-					eq(fxRates.rateDate, on),
+					eq(fxRates.requestedDate, on),
 					eq(fxRates.fromCurrency, from),
 					eq(fxRates.toCurrency, to)
 				)
@@ -90,6 +90,7 @@ export class FxService {
 	}
 
 	private async upsertCache(
+		requestedDate: string,
 		rateDate: string,
 		from: SupportedCurrency,
 		to: SupportedCurrency,
@@ -98,6 +99,7 @@ export class FxService {
 		await this.db.client
 			.insert(fxRates)
 			.values({
+				requestedDate,
 				rateDate,
 				fromCurrency: from,
 				toCurrency: to,
@@ -105,7 +107,7 @@ export class FxService {
 				provider: 'frankfurter'
 			})
 			.onConflictDoNothing({
-				target: [fxRates.rateDate, fxRates.fromCurrency, fxRates.toCurrency]
+				target: [fxRates.requestedDate, fxRates.fromCurrency, fxRates.toCurrency]
 			});
 	}
 }
