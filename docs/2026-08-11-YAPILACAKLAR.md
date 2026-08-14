@@ -46,7 +46,7 @@
 
 | Yüzey | Durum | Kalem |
 |-------|--------|--------|
-| `/settings/import-export` → “Faz 8'de” | Özellik yok; yer tutucu bilinçli | Bekleyen · GAP-08 |
+| `/settings/import-export` | **Canlı** — kişi + bundle (vaka/randevu/işlem) dry-run→commit | Son kapananlar · G-09/G-10 |
 | Ads Meta / Google canlı veri | Kod + runbook var; hesap go-live açık | **3. OPS-02** |
 | GHL → panel ad/soyad | **Canlı insan testiyle doğrulandı** — alan sahibi GHL | Son kapananlar |
 | “Hastalar bölüm etiketi” ayarı | **Kaldırıldı** — `contact_types` rename ile mükerrerdi | Son kapananlar |
@@ -240,8 +240,6 @@
 
 ## Bekleyen (MARKET-02 sonrası / ikinci müşteri eşiği)
 
-- **GAP-08 — içe/dışa aktarım uygulaması** — kapsam kilitli; panelde yer tutucu ("Faz 8'de").
-  İkinci müşteriden önce zorunlu (Açık sorular §9).
 - **GAP-25:** Kapsamlı veri silme (`/data/delete-scope`) + wipe.
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Veri Maya"**).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
@@ -286,7 +284,7 @@
    sunucuda; tenant metni ek not (max 2000), reset zorunlu, şema sunucu kontrolünde.
 7. **Tenant düzeyinde izin matrisi?** Tracker 9×5; bizde 8×6. Pilotta ölç; talep yoksa skip.
 8. **P2P payer/payee geri gelecek mi?** Freeze öncesi karar ucuz, sonra pahalı.
-9. **İçe/dışa aktarım ikinci müşteriden önce mi?** (GAP-08)
+9. ~~**İçe/dışa aktarım ikinci müşteriden önce mi?** (GAP-08)~~ → **evet, uygulandı** (G-09/G-10).
 
 ---
 
@@ -295,6 +293,12 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **G-09 / G-10 + GAP-08 içe/dışa aktarım ✅** (2026-08-14) — `/settings/import-export`:
+  kişi + bundle (Cases/Appointments/Transactions) şablon→export→dry-run→commit;
+  `plan_token` (CryptoService) dry-run çıktısını bağlar; silme yok.
+  **Görüş:** Sütunlar bugünkü şema (minor unit tutar, case/responsible contact, FX snapshot).
+  Limit 5 MB / 2000 satır/sayfa; idempotency `external_ids.source=xlsx_import`. Kırmızı-yeşil:
+  formül sanitizasyonu kapatılınca export spec düştü; `12.50` tutar reddedildi.
 - **G-26 AI prompt özelleştirme ✅** (2026-08-14) — `GET/PUT/DELETE /v1/settings/ai-prompt`;
   tenant notu çekirdek prompt’a eklenir (yerine geçmez), max 2000, reset her zaman mümkün;
   LLM invalid JSON → heuristic fallback.

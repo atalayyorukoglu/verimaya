@@ -75,6 +75,10 @@ export const apiPaths = {
 	settingsImportContactsExport: `${API_V1_PREFIX}/settings/import-export/contacts/export.xlsx`,
 	settingsImportContactsDryRun: `${API_V1_PREFIX}/settings/import-export/contacts/import/dry-run`,
 	settingsImportContactsCommit: `${API_V1_PREFIX}/settings/import-export/contacts/import/commit`,
+	settingsImportBundleTemplate: `${API_V1_PREFIX}/settings/import-export/bundle/template.xlsx`,
+	settingsImportBundleExport: `${API_V1_PREFIX}/settings/import-export/bundle/export.xlsx`,
+	settingsImportBundleDryRun: `${API_V1_PREFIX}/settings/import-export/bundle/import/dry-run`,
+	settingsImportBundleCommit: `${API_V1_PREFIX}/settings/import-export/bundle/import/commit`,
 	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
 	integrationsGhlAuthorize: `${API_V1_PREFIX}/integrations/ghl/authorize`,
 	// Neutral path — GHL Marketplace rejects redirect URIs containing "ghl"/Highlevel.
@@ -282,6 +286,8 @@ import {
 	whatsappAiPromptUpdateSchema
 } from './ai-prompt.js';
 import {
+	importBundleCommitResultSchema,
+	importBundleDryRunResultSchema,
 	importCommitBodySchema,
 	importCommitResultSchema,
 	importDryRunResultSchema,
@@ -546,6 +552,19 @@ export const apiContract = {
 	'POST /v1/settings/import-export/contacts/import/commit': {
 		body: importCommitBodySchema,
 		response: importCommitResultSchema
+	},
+	'GET /v1/settings/import-export/bundle/template.xlsx': {
+		response: xlsxDownloadSchema
+	},
+	'GET /v1/settings/import-export/bundle/export.xlsx': {
+		response: xlsxDownloadSchema
+	},
+	'POST /v1/settings/import-export/bundle/import/dry-run': {
+		response: importBundleDryRunResultSchema
+	},
+	'POST /v1/settings/import-export/bundle/import/commit': {
+		body: importCommitBodySchema,
+		response: importBundleCommitResultSchema
 	},
 	'GET /v1/integrations/ghl/status': {
 		response: ghlConnectionStatus

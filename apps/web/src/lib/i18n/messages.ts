@@ -1721,6 +1721,17 @@ const tr = {
 	'settings.importExport.action.error': 'Hata',
 	'settings.importExport.footnote':
 		'Limit: 5 MB / 2000 satır. Idempotency: external_id (veya içerik özeti). Toplu silme yok.',
+	'settings.importExport.bundle.title': 'Vaka + randevu + işlem paketi',
+	'settings.importExport.bundle.blurb':
+		'Tek Excel dosyasında Cases (hasta), Appointments (randevu) ve Transactions (işlem) sayfaları — önce önizleme, sonra uygula.',
+	'settings.importExport.bundle.summary':
+		'Toplam {total} · yeni {create} · güncelleme {update} · aynı {unchanged} · hata {error}',
+	'settings.importExport.bundle.commitDone':
+		'Uygulandı — Vakalar: {casesCreated} yeni/{casesUpdated} güncelleme · Randevular: {appointmentsCreated} yeni/{appointmentsUpdated} güncelleme · İşlemler: {transactionsCreated} yeni/{transactionsUpdated} güncelleme.',
+	'settings.importExport.bundle.col.sheet': 'Sayfa',
+	'settings.importExport.bundle.sheet.cases': 'Vakalar',
+	'settings.importExport.bundle.sheet.appointments': 'Randevular',
+	'settings.importExport.bundle.sheet.transactions': 'İşlemler',
 
 	// settings organization leftovers
 	'settings.organization.title': 'Organizasyon',
@@ -3586,6 +3597,17 @@ const en: Record<MessageKey, string> = {
 	'settings.importExport.action.error': 'Error',
 	'settings.importExport.footnote':
 		'Limits: 5 MB / 2000 rows. Idempotency: external_id (or content hash). No bulk delete.',
+	'settings.importExport.bundle.title': 'Cases + appointments + transactions bundle',
+	'settings.importExport.bundle.blurb':
+		'One Excel file with Cases (patients), Appointments and Transactions sheets — preview first, then apply.',
+	'settings.importExport.bundle.summary':
+		'Total {total} · create {create} · update {update} · unchanged {unchanged} · error {error}',
+	'settings.importExport.bundle.commitDone':
+		'Applied — Cases: {casesCreated} created/{casesUpdated} updated · Appointments: {appointmentsCreated} created/{appointmentsUpdated} updated · Transactions: {transactionsCreated} created/{transactionsUpdated} updated.',
+	'settings.importExport.bundle.col.sheet': 'Sheet',
+	'settings.importExport.bundle.sheet.cases': 'Cases',
+	'settings.importExport.bundle.sheet.appointments': 'Appointments',
+	'settings.importExport.bundle.sheet.transactions': 'Transactions',
 
 	'settings.organization.title': 'Organization',
 	'settings.organization.description': 'Company profile and defaults.',
