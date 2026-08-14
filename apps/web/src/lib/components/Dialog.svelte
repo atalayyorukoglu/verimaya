@@ -3,6 +3,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import { focusTrap } from '$lib/actions/focus-trap';
 	import { portal } from '$lib/actions/portal';
+	import { t } from '$lib/i18n/locale.svelte';
 
 	let {
 		open = $bindable(false),
@@ -28,7 +29,10 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#if open}
-	<div use:portal class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+	<div
+		use:portal
+		class="fixed inset-0 z-50 flex min-w-0 items-end justify-center p-2 sm:items-center sm:p-4"
+	>
 		<div
 			role="presentation"
 			class="absolute inset-0 bg-black/60"
@@ -40,7 +44,7 @@
 			aria-modal="true"
 			aria-labelledby={titleId}
 			tabindex="-1"
-			class="relative z-10 flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[12px] border border-border bg-surface sm:max-w-lg sm:rounded-[8px]"
+			class="relative z-10 flex max-h-[90dvh] w-full max-w-full min-w-0 flex-col overflow-hidden rounded-[12px] border border-border bg-surface sm:max-w-lg sm:rounded-[8px]"
 		>
 			<div class="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
 				<div class="min-w-0">
@@ -52,17 +56,17 @@
 				<button
 					type="button"
 					class="shrink-0 rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
-					aria-label="Kapat"
+					aria-label={t('common.close')}
 					onclick={() => (open = false)}
 				>
 					<X class="size-4" />
 				</button>
 			</div>
-			<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+			<div class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-4">
 				{@render children()}
 			</div>
 			{#if footer}
-				<div class="flex justify-end gap-2 border-t border-border px-4 py-3">
+				<div class="flex min-w-0 flex-wrap justify-end gap-2 border-t border-border px-4 py-3">
 					{@render footer()}
 				</div>
 			{/if}

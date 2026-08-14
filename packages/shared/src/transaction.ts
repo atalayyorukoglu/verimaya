@@ -19,6 +19,18 @@ export type TransactionKind = z.infer<typeof transactionKindSchema>;
 export const transactionStatusSchema = z.enum(['paid', 'partial', 'unpaid']);
 export type TransactionStatus = z.infer<typeof transactionStatusSchema>;
 
+/** Stored transaction payment-method values used by all clients. */
+export const TRANSACTION_PAYMENT_METHODS = [
+	'Nakit',
+	'Kredi Kartı',
+	'Banka Havalesi/EFT',
+	'Çek',
+	'Senet',
+	'Diğer'
+] as const;
+
+export type TransactionPaymentMethod = (typeof TRANSACTION_PAYMENT_METHODS)[number];
+
 /**
  * Collected amount in the transaction's native currency (minor units).
  *

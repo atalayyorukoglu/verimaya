@@ -168,7 +168,7 @@
 	}
 
 	body {
-		@apply min-h-dvh overflow-x-hidden bg-bg font-sans text-[15px] leading-normal text-text;
+		@apply min-h-dvh bg-bg font-sans text-[15px] leading-normal text-text;
 	}
 
 	a,
@@ -186,6 +186,29 @@
 	button:disabled,
 	[aria-disabled='true'] {
 		cursor: not-allowed;
+	}
+}
+
+input[type='date'] {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+input[type='date']::-webkit-date-and-time-value {
+	text-align: left;
+	min-width: 0;
+}
+
+@media (max-width: 767px) {
+	input,
+	textarea,
+	select {
+		font-size: 16px;
 	}
 }
 

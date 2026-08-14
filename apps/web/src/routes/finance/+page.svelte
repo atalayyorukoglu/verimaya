@@ -47,6 +47,8 @@
 	let appliedCategory = $state('');
 	let kind = $state('');
 	let status = $state('');
+	let from = $state('');
+	let to = $state('');
 
 	let formOpen = $state(false);
 	let editing = $state<Transaction | null>(null);
@@ -61,11 +63,13 @@
 		q: appliedQ || undefined,
 		kind: (kind || undefined) as TransactionKind | undefined,
 		status: (status || undefined) as TransactionStatus | undefined,
-		category: appliedCategory || undefined
+		category: appliedCategory || undefined,
+		from: from || undefined,
+		to: to || undefined
 	});
 
 	const filtersActive = $derived(
-		Boolean(appliedQ || appliedCategory || kind || status || contactFilterId)
+		Boolean(appliedQ || appliedCategory || kind || status || from || to || contactFilterId)
 	);
 
 	const tenantQuery = createQuery(() => ({
@@ -96,7 +100,9 @@
 					q: listFilters.q,
 					kind: listFilters.kind,
 					status: listFilters.status,
-					category: listFilters.category
+					category: listFilters.category,
+					from: listFilters.from,
+					to: listFilters.to
 				})
 			),
 		initialPageParam: null as string | null,
@@ -147,6 +153,8 @@
 		appliedCategory = '';
 		kind = '';
 		status = '';
+		from = '';
+		to = '';
 	}
 
 	function openCreate() {
@@ -250,16 +258,16 @@
 	{/if}
 
 	<form
-		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center"
+		class="mb-4 flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end"
 		onsubmit={applyFilters}
 	>
 		<input
-			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:min-w-[12rem]"
+			class="box-border h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:min-w-[12rem] lg:text-sm"
 			placeholder={t('finance.filter.qPlaceholder')}
 			bind:value={qInput}
 		/>
 		<select
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
+			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-40 lg:text-sm"
 			bind:value={kind}
 		>
 			<option value="">{t('finance.filter.kindAll')}</option>
@@ -268,7 +276,7 @@
 			{/each}
 		</select>
 		<select
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-40"
+			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-40 lg:text-sm"
 			bind:value={status}
 		>
 			<option value="">{t('finance.filter.statusAll')}</option>
@@ -277,14 +285,36 @@
 			{/each}
 		</select>
 		<input
-			class="h-9 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:w-44"
+			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-44 lg:text-sm"
 			placeholder={t('finance.filter.categoryPlaceholder')}
 			bind:value={categoryInput}
 		/>
+		<div class="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:contents">
+			<label class="min-w-0 text-xs font-medium text-text-muted lg:w-40">
+				<span class="mb-1 block lg:sr-only">{t('finance.filter.from')}</span>
+				<input
+					type="date"
+					class="h-11 w-full max-w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:text-sm"
+					aria-label={t('finance.filter.from')}
+					bind:value={from}
+				/>
+			</label>
+			<label class="min-w-0 text-xs font-medium text-text-muted lg:w-40">
+				<span class="mb-1 block lg:sr-only">{t('finance.filter.to')}</span>
+				<input
+					type="date"
+					class="h-11 w-full max-w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:text-sm"
+					aria-label={t('finance.filter.to')}
+					bind:value={to}
+				/>
+			</label>
+		</div>
 		<div class="flex gap-2">
-			<Button type="submit" variant="secondary">{t('finance.filter.apply')}</Button>
-			{#if appliedQ || appliedCategory || kind || status}
-				<Button type="button" variant="outline" onclick={clearFilters}
+			<Button class="min-h-11 lg:min-h-9" type="submit" variant="secondary"
+				>{t('finance.filter.apply')}</Button
+			>
+			{#if appliedQ || appliedCategory || kind || status || from || to}
+				<Button class="min-h-11 lg:min-h-9" type="button" variant="outline" onclick={clearFilters}
 					>{t('finance.filter.clear')}</Button
 				>
 			{/if}

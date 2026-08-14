@@ -335,6 +335,72 @@ describe('transactions tenant isolation', () => {
 		expect(leak.items).toHaveLength(0);
 	});
 
+	it('from / to inclusive date range does not leak Tenant B', async () => {
+		const inRangeId = await withTenantSession(tenantA, async (tdb) => {
+			const t = await transactionsService.createWithDb(tdb, tenantA, {
+				kind: 'income',
+				title: 'In range',
+				subtitle: null,
+				category: null,
+				occurred_on: '2026-05-15',
+				status: 'paid',
+				invoice_status: 'none',
+				payment_method: null,
+				amount: 500,
+				paid_amount: 500,
+				currency: 'TRY',
+				amount_base: 500,
+				base_currency: 'TRY',
+				fx_rate: null,
+				fx_dated: null,
+				contact_id: patientA,
+				contact_label: null,
+				description: null
+			});
+			return t.id;
+		});
+		await withTenantSession(tenantA, async (tdb) => {
+			await transactionsService.createWithDb(tdb, tenantA, {
+				kind: 'income',
+				title: 'Out of range',
+				subtitle: null,
+				category: null,
+				occurred_on: '2026-06-01',
+				status: 'paid',
+				invoice_status: 'none',
+				payment_method: null,
+				amount: 500,
+				paid_amount: 500,
+				currency: 'TRY',
+				amount_base: 500,
+				base_currency: 'TRY',
+				fx_rate: null,
+				fx_dated: null,
+				contact_id: patientA,
+				contact_label: null,
+				description: null
+			});
+		});
+
+		const ranged = await transactionsService.list(tenantA, {
+			limit: 25,
+			from: '2026-05-01',
+			to: '2026-05-31'
+		});
+		expect(ranged.items.map((t) => t.id)).toContain(inRangeId);
+		expect(
+			ranged.items.every((t) => t.occurred_on >= '2026-05-01' && t.occurred_on <= '2026-05-31')
+		).toBe(true);
+
+		const leakRange = await transactionsService.list(tenantA, {
+			limit: 25,
+			from: '2026-01-01',
+			to: '2026-12-31',
+			contact_id: patientB
+		});
+		expect(leakRange.items).toHaveLength(0);
+	});
+
 	it('total_count reflects filters and is not reduced by cursor', async () => {
 		const taggedId = await withTenantSession(tenantA, async (tdb) => {
 			const t = await transactionsService.createWithDb(tdb, tenantA, {

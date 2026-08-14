@@ -34,14 +34,18 @@ describe('transactionListQuerySchema (GAP-03)', () => {
 			kind: 'expense',
 			status: 'unpaid',
 			category: 'Konaklama',
-			q: 'otel'
+			q: 'otel',
+			from: '2026-08-01',
+			to: '2026-08-31'
 		});
 		expect(parsed).toMatchObject({
 			limit: 10,
 			kind: 'expense',
 			status: 'unpaid',
 			category: 'Konaklama',
-			q: 'otel'
+			q: 'otel',
+			from: '2026-08-01',
+			to: '2026-08-31'
 		});
 	});
 

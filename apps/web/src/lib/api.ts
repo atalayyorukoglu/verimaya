@@ -123,9 +123,9 @@ export async function apiUpload<T>(
 }
 
 export const fieldClass =
-	'border-border bg-surface text-text placeholder:text-text-faint h-9 w-full rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40';
+	'border-border bg-surface text-text placeholder:text-text-faint box-border h-9 w-full min-w-0 max-w-full rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40';
 
 export const textareaClass =
-	'border-border bg-surface text-text placeholder:text-text-faint min-h-24 w-full rounded-[6px] border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/40';
+	'border-border bg-surface text-text placeholder:text-text-faint box-border min-h-24 w-full min-w-0 max-w-full rounded-[6px] border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/40';
 
 export const labelClass = 'text-text-muted mb-1 block text-xs font-medium';

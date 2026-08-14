@@ -17,14 +17,17 @@
 		invoiceStatusLabels,
 		SUPPORTED_CURRENCIES,
 		toTenantDayKey,
+		TRANSACTION_PAYMENT_METHODS,
 		transactionKindLabels,
 		transactionStatusLabels
 	} from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n/locale.svelte';
+	import type { MessageKey } from '$lib/i18n/messages';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { type DeleteConfirmPhase, runConfirmedDelete } from '$lib/components/delete-confirm-flow';
 
@@ -50,6 +53,15 @@
 	const statuses = Object.keys(transactionStatusLabels) as TransactionStatus[];
 	const invoiceStatuses = Object.keys(invoiceStatusLabels) as InvoiceStatus[];
 	const qs = useQueryScope();
+
+	const paymentMethodMessageKeys = {
+		Nakit: 'finance.form.paymentMethod.cash',
+		'Kredi Kartı': 'finance.form.paymentMethod.creditCard',
+		'Banka Havalesi/EFT': 'finance.form.paymentMethod.bankTransfer',
+		Çek: 'finance.form.paymentMethod.cheque',
+		Senet: 'finance.form.paymentMethod.promissoryNote',
+		Diğer: 'finance.form.paymentMethod.other'
+	} as const satisfies Record<(typeof TRANSACTION_PAYMENT_METHODS)[number], MessageKey>;
 
 	const tenantQuery = createQuery(() => ({
 		queryKey: qs.keys.tenants.current(),
@@ -100,6 +112,18 @@
 	const selectedCategory = $derived(categoryOptions.find((c) => c.name === category) ?? null);
 	const subtitleOptions = $derived(selectedCategory?.subcategories ?? []);
 	const needsFx = $derived(currency !== tenantBase);
+	const contactOptions = $derived(
+		(contactsQuery.data?.items ?? []).map((c) => ({
+			value: c.id,
+			label: c.display_name,
+			description: c.contact_type_name
+		}))
+	);
+	const paymentMethodOptions = $derived.by(() => {
+		const options: string[] = [...TRANSACTION_PAYMENT_METHODS];
+		if (payment_method && !options.includes(payment_method)) options.push(payment_method);
+		return options;
+	});
 
 	$effect(() => {
 		if (!open) {
@@ -143,6 +167,17 @@
 				? t('finance.form.editTitle')
 				: t('finance.form.createTitle')
 	);
+
+	function paymentMethodLabel(value: string): string {
+		if (value in paymentMethodMessageKeys) {
+			return t(paymentMethodMessageKeys[value as keyof typeof paymentMethodMessageKeys]);
+		}
+		return value;
+	}
+
+	function selectContact(option: { value: string; label: string } | null) {
+		if (option) contact_label = option.label;
+	}
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -220,10 +255,10 @@
 	description={confirmingDelete ? undefined : t('finance.form.description', { base: tenantBase })}
 >
 	{#if confirmingDelete}
-		<div class="space-y-3">
+		<div class="min-w-0 space-y-3">
 			<p class="text-sm text-text">{t('finance.deleteConfirmBody')}</p>
 			<p
-				class="rounded-[6px] border border-danger/30 bg-danger/10 px-3 py-2 text-sm font-medium text-text"
+				class="rounded-[6px] border border-danger/30 bg-danger/10 px-3 py-2 text-sm font-medium break-words text-text"
 			>
 				{deleteDetail}
 			</p>
@@ -232,9 +267,9 @@
 			{/if}
 		</div>
 	{:else}
-		<form id="tx-form" class="space-y-3" onsubmit={handleSubmit}>
-			<div class="grid gap-3 sm:grid-cols-2">
-				<div>
+		<form id="tx-form" class="min-w-0 space-y-3" onsubmit={handleSubmit}>
+			<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+				<div class="min-w-0">
 					<label class={labelClass} for="tx-kind">{t('finance.form.kind')}</label>
 					<select id="tx-kind" class={fieldClass} bind:value={kind}>
 						{#each kinds as k (k)}
@@ -242,8 +277,8 @@
 						{/each}
 					</select>
 				</div>
-				<div>
-					<label class={labelClass} for="tx-status">Durum</label>
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-status">{t('finance.form.status')}</label>
 					<select id="tx-status" class={fieldClass} bind:value={status}>
 						{#each statuses as s (s)}
 							<option value={s}>{transactionStatusLabels[s]}</option>
@@ -251,53 +286,57 @@
 					</select>
 				</div>
 			</div>
-			<div>
+			<div class="min-w-0">
 				<label class={labelClass} for="tx-title">{t('finance.form.title')}</label>
 				<input id="tx-title" class={fieldClass} bind:value={title} required maxlength={255} />
 			</div>
-			<div class="grid gap-3 sm:grid-cols-3">
-				<div>
-					<label class={labelClass} for="tx-currency">Para birimi</label>
+			<div class="grid min-w-0 gap-3 sm:grid-cols-3">
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-currency">{t('finance.form.currency')}</label>
 					<select id="tx-currency" class={fieldClass} bind:value={currency}>
 						{#each SUPPORTED_CURRENCIES as c (c)}
 							<option value={c}>{c}</option>
 						{/each}
 					</select>
 				</div>
-				<div>
-					<label class={labelClass} for="tx-amount">Tutar ({currency})</label>
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-amount">{t('finance.form.amount', { currency })}</label>
 					<input
 						id="tx-amount"
 						class={fieldClass}
 						bind:value={amountMajor}
 						inputmode="decimal"
 						required
-						placeholder="0,00"
+						placeholder={t('finance.form.moneyPlaceholder')}
 					/>
 				</div>
-				<div>
-					<label class={labelClass} for="tx-date">Tarih</label>
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-date">{t('finance.form.date')}</label>
 					<input id="tx-date" class={fieldClass} type="date" bind:value={occurred_on} required />
 				</div>
 			</div>
 			{#if needsFx}
 				<div
-					class="grid gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2"
+					class="grid min-w-0 gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2"
 				>
-					<div>
-						<label class={labelClass} for="tx-base">Baz tutar ({tenantBase})</label>
+					<div class="min-w-0">
+						<label class={labelClass} for="tx-base"
+							>{t('finance.form.baseAmount', { currency: tenantBase })}</label
+						>
 						<input
 							id="tx-base"
 							class={fieldClass}
 							bind:value={amountBaseMajor}
 							inputmode="decimal"
 							required
-							placeholder="0,00"
+							placeholder={t('finance.form.moneyPlaceholder')}
 						/>
 						<p class="mt-1 text-[11px] text-text-faint">{t('finance.form.fxLocked')}</p>
 					</div>
-					<div>
-						<label class={labelClass} for="tx-fx">Kur (1 {currency} = ? {tenantBase})</label>
+					<div class="min-w-0">
+						<label class={labelClass} for="tx-fx"
+							>{t('finance.form.fxRate', { currency, base: tenantBase })}</label
+						>
 						<input
 							id="tx-fx"
 							class={fieldClass}
@@ -309,7 +348,7 @@
 				</div>
 			{/if}
 			{#if status === 'partial'}
-				<div>
+				<div class="min-w-0">
 					<label class={labelClass} for="tx-paid"
 						>{t('finance.form.paidAmount', { currency })}</label
 					>
@@ -319,16 +358,16 @@
 						bind:value={paidMajor}
 						inputmode="decimal"
 						required
-						placeholder="0,00"
+						placeholder={t('finance.form.moneyPlaceholder')}
 					/>
 				</div>
 			{/if}
-			<div class="grid gap-3 sm:grid-cols-2">
-				<div>
-					<label class={labelClass} for="tx-category">Kategori</label>
+			<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-category">{t('finance.form.category')}</label>
 					{#if categoryOptions.length > 0}
 						<select id="tx-category" class={fieldClass} bind:value={category}>
-							<option value="">—</option>
+							<option value="">{t('finance.form.none')}</option>
 							{#each categoryOptions as c (c.id)}
 								<option value={c.name}>{c.name}</option>
 							{/each}
@@ -337,11 +376,11 @@
 						<input id="tx-category" class={fieldClass} bind:value={category} maxlength={128} />
 					{/if}
 				</div>
-				<div>
-					<label class={labelClass} for="tx-subtitle">Alt kategori</label>
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-subtitle">{t('finance.form.subcategory')}</label>
 					{#if subtitleOptions.length > 0}
 						<select id="tx-subtitle" class={fieldClass} bind:value={subtitle}>
-							<option value="">—</option>
+							<option value="">{t('finance.form.none')}</option>
 							{#each subtitleOptions as s (s)}
 								<option value={s}>{s}</option>
 							{/each}
@@ -351,27 +390,23 @@
 					{/if}
 				</div>
 			</div>
-			<div class="grid gap-3 sm:grid-cols-2">
-				<div>
+			<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+				<div class="min-w-0">
 					<label class={labelClass} for="tx-contact">{t('finance.form.contact')}</label>
-					<select
+					<Combobox
 						id="tx-contact"
-						class={fieldClass}
 						bind:value={contact_id}
-						onchange={() => {
-							if (!contact_id) return;
-							const c = contactsQuery.data?.items.find((x) => x.id === contact_id);
-							if (c) contact_label = c.display_name;
-						}}
-					>
-						<option value="">— serbest etiket —</option>
-						{#each contactsQuery.data?.items ?? [] as c (c.id)}
-							<option value={c.id}>{c.display_name} ({c.contact_type_name})</option>
-						{/each}
-					</select>
+						options={contactOptions}
+						placeholder={t('finance.form.contactSearchPlaceholder')}
+						emptyText={t('finance.form.contactEmpty')}
+						clearLabel={t('finance.form.contactClear')}
+						onselect={selectContact}
+					/>
 				</div>
-				<div>
-					<label class={labelClass} for="tx-contact-label">Etiket (yedek)</label>
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-contact-label"
+						>{t('finance.form.contactFallback')}</label
+					>
 					<input
 						id="tx-contact-label"
 						class={fieldClass}
@@ -382,19 +417,24 @@
 					/>
 				</div>
 			</div>
-			<div>
-				<label class={labelClass} for="tx-invoice">Fatura</label>
+			<div class="min-w-0">
+				<label class={labelClass} for="tx-invoice">{t('finance.form.invoice')}</label>
 				<select id="tx-invoice" class={fieldClass} bind:value={invoice_status}>
 					{#each invoiceStatuses as s (s)}
 						<option value={s}>{invoiceStatusLabels[s]}</option>
 					{/each}
 				</select>
 			</div>
-			<div>
+			<div class="min-w-0">
 				<label class={labelClass} for="tx-method">{t('finance.form.paymentMethod')}</label>
-				<input id="tx-method" class={fieldClass} bind:value={payment_method} maxlength={64} />
+				<select id="tx-method" class={fieldClass} bind:value={payment_method}>
+					<option value="">{t('finance.form.paymentMethodNone')}</option>
+					{#each paymentMethodOptions as method (method)}
+						<option value={method}>{paymentMethodLabel(method)}</option>
+					{/each}
+				</select>
 			</div>
-			<div>
+			<div class="min-w-0">
 				<label class={labelClass} for="tx-desc">{t('finance.form.descriptionLabel')}</label>
 				<textarea id="tx-desc" class={textareaClass} bind:value={description} maxlength={8000}
 				></textarea>
