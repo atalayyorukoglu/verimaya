@@ -592,7 +592,7 @@ export class ReportsService {
 			}
 
 			const items = [...map.values()]
-				.filter((row) => row.open_amount !== 0 || row.collected_amount !== 0)
+				.filter((row) => row.open_amount !== 0)
 				.sort((a, b) => Math.abs(b.open_amount) - Math.abs(a.open_amount));
 
 			return { items };

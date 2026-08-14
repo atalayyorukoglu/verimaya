@@ -5,11 +5,16 @@
 	import { apiGet } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
+	import {
+		filterBalancesByDirection,
+		type BalanceDirectionFilter
+	} from '$lib/finance/balance-direction-filter';
 	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 
 	const qs = useQueryScope();
+	let directionFilter = $state<BalanceDirectionFilter>('all');
 
 	const balancesQuery = createQuery(() => ({
 		queryKey: qs.keys.reports.balances(),
@@ -18,6 +23,7 @@
 	}));
 
 	const balances = $derived(balancesQuery.data?.items ?? []);
+	const filteredBalances = $derived(filterBalancesByDirection(balances, directionFilter));
 	const footnoteParts = $derived(
 		t('finance.balances.footnote', { contactId: '\u0001' }).split('\u0001')
 	);
@@ -36,6 +42,42 @@
 
 	<PageHeader title={t('finance.balances.title')} description={t('finance.balances.description')} />
 
+	<div class="mb-4 flex w-full overflow-hidden rounded-lg border border-border sm:w-fit">
+		<button
+			type="button"
+			class={[
+				'min-h-11 min-w-0 flex-1 px-2 text-base leading-tight sm:flex-none sm:px-4',
+				directionFilter === 'all' ? 'bg-surface-2 font-medium text-text' : 'text-text-muted'
+			]}
+			aria-pressed={directionFilter === 'all'}
+			onclick={() => (directionFilter = 'all')}
+		>
+			{t('finance.balances.filterAll')}
+		</button>
+		<button
+			type="button"
+			class={[
+				'min-h-11 min-w-0 flex-1 border-l border-border px-2 text-base leading-tight sm:flex-none sm:px-4',
+				directionFilter === 'payable' ? 'bg-surface-2 font-medium text-text' : 'text-text-muted'
+			]}
+			aria-pressed={directionFilter === 'payable'}
+			onclick={() => (directionFilter = 'payable')}
+		>
+			{t('finance.balances.filterPayable')}
+		</button>
+		<button
+			type="button"
+			class={[
+				'min-h-11 min-w-0 flex-1 border-l border-border px-2 text-base leading-tight sm:flex-none sm:px-4',
+				directionFilter === 'receivable' ? 'bg-surface-2 font-medium text-text' : 'text-text-muted'
+			]}
+			aria-pressed={directionFilter === 'receivable'}
+			onclick={() => (directionFilter = 'receivable')}
+		>
+			{t('finance.balances.filterReceivable')}
+		</button>
+	</div>
+
 	{#if balancesQuery.isPending}
 		<p class="text-sm text-text-muted">{t('finance.balances.loading')}</p>
 	{:else if balancesQuery.isError}
@@ -44,9 +86,13 @@
 		<div class="rounded-lg border border-border bg-surface p-6 text-center">
 			<p class="text-sm text-text-muted">{t('finance.balances.empty')}</p>
 		</div>
+	{:else if filteredBalances.length === 0}
+		<div class="rounded-lg border border-border bg-surface p-6 text-center">
+			<p class="text-sm text-text-muted">{t('finance.balances.emptyFiltered')}</p>
+		</div>
 	{:else}
 		<ul class="space-y-2">
-			{#each balances as row (`${row.contact_id}-${row.currency}`)}
+			{#each filteredBalances as row (`${row.contact_id}-${row.currency}`)}
 				<li class="rounded-lg border border-border bg-surface px-4 py-3">
 					<div class="flex min-w-0 items-start gap-3">
 						<span
@@ -63,7 +109,7 @@
 									<span class="font-medium">{row.contact_label}</span>
 									<span class="text-text-faint"> ({row.currency})</span>
 								</p>
-							{:else}
+							{:else if row.open_amount > 0}
 								<p class="text-sm text-text">
 									<span class="text-text-muted">{t('finance.balances.debtor')}</span>
 									<span class="font-medium"> {row.contact_label}</span>
