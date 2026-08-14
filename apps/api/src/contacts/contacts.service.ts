@@ -6,7 +6,7 @@ import {
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, getTableColumns, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, getTableColumns, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import type {
 	MergeRecords,
 	ContactCaseNoteCreate,
@@ -168,7 +168,13 @@ export class ContactsService {
 				})
 				.from(transactions)
 				.where(
-					and(eq(transactions.contactId, contactId), isNull(transactions.deletedAt))
+					and(
+						or(
+							eq(transactions.contactId, contactId),
+							eq(transactions.caseContactId, contactId)
+						),
+						isNull(transactions.deletedAt)
+					)
 				);
 
 			let incomeBase = 0;
