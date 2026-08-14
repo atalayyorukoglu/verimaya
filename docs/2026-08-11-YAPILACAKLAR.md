@@ -295,6 +295,11 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **ETL işlem eşlemesi şema güncellemesi ✅** (2026-08-14) — `case_id`→`case_contact_id`,
+  `responsible_contact_id` taşınıyor, boş/`İşlem` başlık → null, `--fx-backfill` (varsayılan)
+  eksik `amount_base` için ECB/`fx_rates`; verify tip sayımları + fixture dry-run.
+  **Görüş:** Eski ETL `case` ile `contact_id`'yi birleştiriyordu — hasta maliyeti yanlış kişiye
+  yazılırdı. Tracker `counterparty_*` ECB'yi ezer; kur yoksa null + “kur bulunamadı”, uydurma yok.
 - **Bakiyeler İşlemler’e gömüldü ✅** (2026-08-14) — ortak `BalancesPanel`; İşlemler’de açılır
   bölüm (mobil kapalı / masaüstü açık, localStorage); `/finance/balances` derin link canlı;
   kapalıyken lazy query, açılınca `qs.keys.reports.balances()` cache paylaşımı.

@@ -58,8 +58,9 @@ Env:
 
 /**
  * @param {ReturnType<typeof mapFixture>} mapped
+ * @param {import('./etl.js') extends never ? never : any} [source]
  */
-function expectedFromMapped(mapped) {
+function expectedFromMapped(mapped, source) {
 	const incomeMinor = mapped.transactions
 		.filter((t) => t.verimaya.kind === 'income' && t.verimaya.amount != null)
 		.reduce((s, t) => s + /** @type {number} */ (t.verimaya.amount), 0);
@@ -77,6 +78,14 @@ function expectedFromMapped(mapped) {
 			currency: t.verimaya.currency
 		}));
 
+	const srcTx = /** @type {{ case_id?: unknown, responsible_contact_id?: unknown }[]} */ (
+		source?.transactions ?? []
+	);
+	const withCase = srcTx.filter((t) => t.case_id != null && String(t.case_id).trim() !== '').length;
+	const withResponsible = srcTx.filter(
+		(t) => t.responsible_contact_id != null && String(t.responsible_contact_id).trim() !== ''
+	).length;
+
 	return {
 		counts: {
 			// Cases land as Hasta contacts; total contacts = parties + patients.
@@ -85,7 +94,9 @@ function expectedFromMapped(mapped) {
 			appointments: mapped.appointments.filter((a) => a._case_legacy).length,
 			transactions: mapped.transactions.filter((t) => t.verimaya.amount != null).length,
 			files: mapped.files.filter((f) => f._case_legacy).length,
-			case_notes: mapped.case_notes.filter((n) => n._case_legacy).length
+			case_notes: mapped.case_notes.filter((n) => n._case_legacy).length,
+			transactions_with_case_contact: withCase,
+			transactions_with_responsible: withResponsible
 		},
 		money: {
 			income_minor: incomeMinor,
@@ -94,7 +105,12 @@ function expectedFromMapped(mapped) {
 			transaction_count: mapped.transactions.filter((t) => t.verimaya.amount != null).length
 		},
 		sample_transactions: sampleTx,
-		duplicates: expectedDuplicatesFromMapped(mapped)
+		duplicates: expectedDuplicatesFromMapped(mapped),
+		/** Wrong-type FKs must be zero after apply. */
+		type_guards: {
+			case_contact_not_hasta: 0,
+			responsible_not_personel: 0
+		}
 	};
 }
 
@@ -156,6 +172,26 @@ async function actualFromTenant(sql, tenantId) {
 		const [external] = await tx`
 			select count(*)::int as n from external_ids where source = ${SOURCE}
 		`;
+		const [withCase] = await tx`
+			select count(*)::int as n from transactions where case_contact_id is not null
+		`;
+		const [withResponsible] = await tx`
+			select count(*)::int as n from transactions where responsible_contact_id is not null
+		`;
+		const [caseWrongType] = await tx`
+			select count(*)::int as n
+			from transactions t
+			join contacts c on c.id = t.case_contact_id
+			where t.case_contact_id is not null
+				and c.contact_type_name is distinct from 'Hasta'
+		`;
+		const [respWrongType] = await tx`
+			select count(*)::int as n
+			from transactions t
+			join contacts c on c.id = t.responsible_contact_id
+			where t.responsible_contact_id is not null
+				and c.contact_type_name is distinct from 'Personel'
+		`;
 
 		const [money] = await tx`
 			select
@@ -168,7 +204,7 @@ async function actualFromTenant(sql, tenantId) {
 		const samples = await tx`
 			select title, amount, currency
 			from transactions
-			order by occurred_on, title
+			order by occurred_on, coalesce(title, ''), id
 			limit 8
 		`;
 
@@ -208,7 +244,9 @@ async function actualFromTenant(sql, tenantId) {
 				transactions: transactions.n,
 				files: files.n,
 				case_notes: caseNotes.n,
-				external_ids: external.n
+				external_ids: external.n,
+				transactions_with_case_contact: withCase.n,
+				transactions_with_responsible: withResponsible.n
 			},
 			money: {
 				income_minor: income,
@@ -225,6 +263,10 @@ async function actualFromTenant(sql, tenantId) {
 				patient_email: patientEmailDupes.map((r) => ({ key: r.key, n: r.n })),
 				patient_phone: patientPhoneDupes.map((r) => ({ key: r.key, n: r.n })),
 				contact_email: contactEmailDupes.map((r) => ({ key: r.key, n: r.n }))
+			},
+			type_guards: {
+				case_contact_not_hasta: caseWrongType.n,
+				responsible_not_personel: respWrongType.n
 			}
 		};
 	});
@@ -288,6 +330,19 @@ function buildDiffs(input) {
 		ok: dupeTotal === expectedDupeTotal
 	});
 
+	rows.push({
+		check: 'type.case_contact_hasta',
+		expected: expected.type_guards.case_contact_not_hasta,
+		actual: actual.type_guards.case_contact_not_hasta,
+		ok: actual.type_guards.case_contact_not_hasta === 0
+	});
+	rows.push({
+		check: 'type.responsible_personel',
+		expected: expected.type_guards.responsible_not_personel,
+		actual: actual.type_guards.responsible_not_personel,
+		ok: actual.type_guards.responsible_not_personel === 0
+	});
+
 	return rows;
 }
 
@@ -311,7 +366,8 @@ function printReport(report) {
 				actual: {
 					counts: report.actual.counts,
 					money: report.actual.money,
-					duplicates: report.actual.duplicates
+					duplicates: report.actual.duplicates,
+					type_guards: report.actual.type_guards
 				}
 			},
 			null,
@@ -345,7 +401,7 @@ function printReport(report) {
  */
 async function verifyEtl(opts) {
 	const mapped = attachContactLegacy(mapFixture(opts.source, opts.tenantId), opts.source);
-	const expected = expectedFromMapped(mapped);
+	const expected = expectedFromMapped(mapped, opts.source);
 	const actual = await actualFromTenant(opts.sql, opts.tenantId);
 	const diffs = buildDiffs({ expected, actual });
 	const failed = diffs.filter((d) => !d.ok);

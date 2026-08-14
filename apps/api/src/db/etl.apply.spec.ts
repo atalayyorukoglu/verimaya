@@ -18,7 +18,8 @@ const {
 		sql: unknown,
 		tenantId: string,
 		mapped: unknown,
-		batchSize: number
+		batchSize: number,
+		opts?: { fxBackfill?: boolean; fetchFn?: typeof fetch }
 	) => Promise<{
 		contacts: { inserted: number; skipped: number };
 		patients: { inserted: number; skipped: number };
@@ -34,7 +35,7 @@ const {
 		contacts: unknown[];
 		patients: unknown[];
 		appointments: unknown[];
-		transactions: { verimaya: { amount: number | null; title: string } }[];
+		transactions: { verimaya: { amount: number | null; title: string | null } }[];
 		files: unknown[];
 		case_notes: unknown[];
 	};
@@ -84,7 +85,23 @@ describe('ETL apply layer 1+2 (Adım 28–29)', () => {
 			typeof mapFixture
 		>;
 
-		const first = await applyAll(sql, tenantId, mapped, 1000);
+		const mockFetch: typeof fetch = async (input) => {
+			const url = String(input);
+			const from = /from=([A-Z]+)/.exec(url)?.[1] ?? 'EUR';
+			const rates: Record<string, number> = { EUR: 35.5, USD: 32, GBP: 42 };
+			return new Response(
+				JSON.stringify({
+					date: '2026-07-14',
+					rates: { TRY: rates[from] ?? 30 }
+				}),
+				{ status: 200, headers: { 'content-type': 'application/json' } }
+			);
+		};
+
+		const first = await applyAll(sql, tenantId, mapped, 1000, {
+			fxBackfill: true,
+			fetchFn: mockFetch
+		});
 		expect(first.contacts.inserted).toBe(mapped.contacts.length);
 		expect(first.patients.inserted).toBe(mapped.patients.length);
 		expect(first.appointments.inserted).toBe(mapped.appointments.length);
@@ -95,7 +112,8 @@ describe('ETL apply layer 1+2 (Adım 28–29)', () => {
 		const money = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			return tx`
-				select title, amount, currency, paid_amount
+				select title, amount, currency, paid_amount, case_contact_id, contact_id,
+					responsible_contact_id, amount_base
 				from transactions
 				where title = 'Örnek 100 TL'
 			`;
@@ -108,13 +126,46 @@ describe('ETL apply layer 1+2 (Adım 28–29)', () => {
 		const gbp = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
 			return tx`
-				select amount, currency from transactions where title = 'Operasyon peşinat'
+				select amount, currency, amount_base, case_contact_id, contact_id
+				from transactions where title = 'Operasyon peşinat'
 			`;
 		});
 		expect(gbp[0]!.amount).toBe(150000);
 		expect(gbp[0]!.currency).toBe('GBP');
+		expect(gbp[0]!.amount_base).toBe(5250000);
+		expect(gbp[0]!.case_contact_id).toBeTruthy();
+		expect(gbp[0]!.contact_id).toBeNull();
 
-		const second = await applyAll(sql, tenantId, mapped, 1000);
+		const hotel = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`
+				select case_contact_id, contact_id, responsible_contact_id, amount_base, title
+				from transactions where title = 'Otel'
+			`;
+		});
+		expect(hotel[0]!.case_contact_id).toBeTruthy();
+		expect(hotel[0]!.contact_id).toBeTruthy();
+		expect(hotel[0]!.responsible_contact_id).toBeTruthy();
+		expect(hotel[0]!.case_contact_id).not.toBe(hotel[0]!.contact_id);
+		expect(hotel[0]!.amount_base).toBe(Math.round(12000 * 35.5));
+
+		const placeholder = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`
+				select title, case_contact_id, contact_id
+				from transactions
+				where description like 'Eski ETL placeholder%'
+			`;
+		});
+		expect(placeholder).toHaveLength(1);
+		expect(placeholder[0]!.title).toBeNull();
+		expect(placeholder[0]!.case_contact_id).toBeTruthy();
+		expect(placeholder[0]!.contact_id).toBeTruthy();
+
+		const second = await applyAll(sql, tenantId, mapped, 1000, {
+			fxBackfill: true,
+			fetchFn: mockFetch
+		});
 		expect(second.contacts.inserted).toBe(0);
 		expect(second.patients.inserted).toBe(0);
 		expect(second.appointments.inserted).toBe(0);

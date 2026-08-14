@@ -53,7 +53,7 @@ const APPOINTMENT_STATUS_MAP = {
  * @typedef {{ id: string | number, full_name: string, phone: string | null, email: string | null, status: string | null, source: string | null, notes: string | null, contact_id: string | number | null }} SourceCase
  * @typedef {{ kind: string, name: string, subcategories: string[] }} SourceFinanceCategory
  * @typedef {{ id: string | number, case_id: string | number | null, contact_id?: string | number | null, title?: string | null, type?: string | null, status?: string | null, starts_at: string, ends_at?: string | null, clinic_name?: string | null, hotel_name?: string | null, transfer_note?: string | null, notes?: string | null, clinic_contact_id?: string | number | null, hotel_contact_id?: string | number | null, transfer_contact_id?: string | number | null }} SourceAppointment
- * @typedef {{ id: string | number, case_id?: string | number | null, kind: string, title: string, subtitle?: string | null, category?: string | null, occurred_on: string, status: string, invoice_status?: string, payment_method?: string | null, amount_major?: number, amount?: number, currency: string, paid_amount_major?: number | null, paid_amount?: number | null, contact_id?: string | number | null, contact_label?: string | null, description?: string | null, counterparty_amount?: number | null, equivalent_currency?: string | null }} SourceTransaction
+ * @typedef {{ id: string | number, case_id?: string | number | null, kind: string, title?: string | null, subtitle?: string | null, category?: string | null, occurred_on: string, status: string, invoice_status?: string, payment_method?: string | null, amount_major?: number, amount?: number, currency: string, paid_amount_major?: number | null, paid_amount?: number | null, contact_id?: string | number | null, responsible_contact_id?: string | number | null, contact_label?: string | null, description?: string | null, counterparty_amount?: number | null, equivalent_currency?: string | null }} SourceTransaction
  * @typedef {{ id: string | number, case_id: string | number | null, appointment_id?: string | number | null, filename: string, mime_type?: string | null, size_bytes?: number | null }} SourceFile
  * @typedef {{ id: string | number, case_id: string | number, body: string, author_display_name?: string | null }} SourceCaseNote
  * @typedef {{
@@ -74,20 +74,23 @@ const APPOINTMENT_STATUS_MAP = {
  * @param {string[]} argv
  */
 function parseArgs(argv) {
-	/** @type {{ fixture: string | null, apply: boolean, help: boolean, tenantId: string | null, trackerTenantId: string | null, batchSize: number }} */
+	/** @type {{ fixture: string | null, apply: boolean, help: boolean, tenantId: string | null, trackerTenantId: string | null, batchSize: number, fxBackfill: boolean }} */
 	const out = {
 		fixture: null,
 		apply: false,
 		help: false,
 		tenantId: null,
 		trackerTenantId: null,
-		batchSize: DEFAULT_BATCH
+		batchSize: DEFAULT_BATCH,
+		fxBackfill: true
 	};
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
 		if (arg === '--') continue;
 		if (arg === '--apply') out.apply = true;
 		else if (arg === '--help' || arg === '-h') out.help = true;
+		else if (arg === '--fx-backfill') out.fxBackfill = true;
+		else if (arg === '--no-fx-backfill') out.fxBackfill = false;
 		else if (arg === '--fixture') {
 			const next = argv[++i];
 			if (!next) throw new Error('--fixture requires a path');
@@ -116,6 +119,44 @@ function parseArgs(argv) {
 }
 
 /**
+ * Empty / legacy ETL placeholder → null; keep meaningful WhatsApp/AI titles.
+ * @param {string | null | undefined} title
+ * @returns {string | null}
+ */
+function normalizeTransactionTitle(title) {
+	const trimmed = title != null ? String(title).trim() : '';
+	if (!trimmed || trimmed === 'İşlem') return null;
+	return trimmed;
+}
+
+/**
+ * Calendar YYYY-MM-DD only (avoid TZ shift from Date#toISOString).
+ * @param {unknown} value
+ */
+function toIsoDate(value) {
+	if (typeof value === 'string') {
+		const m = value.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+		if (m) return m[1];
+	}
+	if (value instanceof Date && !Number.isNaN(value.getTime())) {
+		const y = value.getUTCFullYear();
+		const mo = String(value.getUTCMonth() + 1).padStart(2, '0');
+		const d = String(value.getUTCDate()).padStart(2, '0');
+		return `${y}-${mo}-${d}`;
+	}
+	return String(value).slice(0, 10);
+}
+
+function utcTodayIso() {
+	return toIsoDate(new Date());
+}
+
+/** @param {string} on @param {string} [today] */
+function clampFxDate(on, today = utcTodayIso()) {
+	return on > today ? today : on;
+}
+
+/**
  * Tracker major-unit amounts → Verimaya minor-unit integers.
  * @param {number} major
  */
@@ -124,8 +165,8 @@ function toMinor(major) {
 }
 
 /**
- * Immutable FX snapshot from Tracker counterparty_* (never live rates).
- * Native-currency rows leave all four fields null — resolver uses amount.
+ * Immutable FX snapshot from Tracker counterparty_* (never overwritten by ECB).
+ * Native-currency rows leave all four fields null — resolveBaseAmount uses amount.
  *
  * @param {{
  *   currency: string,
@@ -164,6 +205,188 @@ function resolveFxSnapshot(input) {
 		};
 	}
 	return { amount_base: null, base_currency: null, fx_rate: null, fx_dated: null };
+}
+
+/**
+ * ECB/Frankfurter rate → Verimaya FX snapshot (minor units).
+ * @param {{ rate: number, rateDate: string }} rateInfo
+ * @param {{ amountMinor: number, tenantBase: string, occurredOn: string }} input
+ */
+function snapshotFromEcbRate(rateInfo, input) {
+	const rate = Number(rateInfo.rate);
+	return {
+		amount_base: Math.round(input.amountMinor * rate),
+		base_currency: input.tenantBase,
+		fx_rate: rate,
+		fx_dated: rateInfo.rateDate || input.occurredOn
+	};
+}
+
+const DEFAULT_FRANKFURTER_BASE = 'https://api.frankfurter.dev/v1';
+
+/**
+ * Cached FX getter: in-memory → fx_rates table → Frankfurter v1.
+ * @param {import('postgres').Sql | null} sql
+ * @param {{
+ *   fetchFn?: typeof fetch,
+ *   frankfurterBase?: string,
+ *   seedRates?: Map<string, { rate: number, rateDate: string }>
+ * }} [opts]
+ * @returns {(on: string, from: string, to: string) => Promise<{ rate: number, rateDate: string } | null>}
+ */
+function createFxRateGetter(sql, opts = {}) {
+	/** @type {Map<string, { rate: number, rateDate: string } | null>} */
+	const mem = new Map(opts.seedRates ?? []);
+	const fetchFn = opts.fetchFn ?? globalThis.fetch;
+	const apiBase = (opts.frankfurterBase ?? DEFAULT_FRANKFURTER_BASE).replace(/\/$/, '');
+
+	return async function getRate(on, from, to) {
+		const requested = clampFxDate(toIsoDate(on));
+		const fromC = String(from).toUpperCase();
+		const toC = String(to).toUpperCase();
+		if (fromC === toC) {
+			return { rate: 1, rateDate: requested };
+		}
+		const key = `${requested}|${fromC}|${toC}`;
+		if (mem.has(key)) return mem.get(key) ?? null;
+
+		if (sql) {
+			const [cached] = await sql`
+				select rate, rate_date
+				from fx_rates
+				where requested_date = ${requested}
+					and from_currency = ${fromC}
+					and to_currency = ${toC}
+				limit 1
+			`;
+			if (cached && Number(cached.rate) > 0) {
+				const hit = {
+					rate: Number(cached.rate),
+					rateDate: toIsoDate(cached.rate_date)
+				};
+				mem.set(key, hit);
+				return hit;
+			}
+		}
+
+		if (typeof fetchFn !== 'function') {
+			mem.set(key, null);
+			return null;
+		}
+
+		try {
+			const url = `${apiBase}/${requested}?from=${encodeURIComponent(fromC)}&to=${encodeURIComponent(toC)}`;
+			const res = await fetchFn(url, { redirect: 'follow' });
+			if (!res.ok) {
+				mem.set(key, null);
+				return null;
+			}
+			const body = /** @type {{ date?: string, rates?: Record<string, number> }} */ (
+				await res.json()
+			);
+			const rate = body.rates?.[toC];
+			if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) {
+				mem.set(key, null);
+				return null;
+			}
+			const rateDate = body.date ? toIsoDate(body.date) : requested;
+			const hit = { rate, rateDate };
+			if (sql) {
+				await sql`
+					insert into fx_rates (
+						requested_date, rate_date, from_currency, to_currency, rate, provider
+					) values (
+						${requested}, ${rateDate}, ${fromC}, ${toC}, ${rate}, 'frankfurter'
+					)
+					on conflict (requested_date, from_currency, to_currency) do nothing
+				`;
+			}
+			mem.set(key, hit);
+			return hit;
+		} catch {
+			mem.set(key, null);
+			return null;
+		}
+	};
+}
+
+/**
+ * Fill amount_base from Tracker snapshot first; optionally ECB for remaining foreign rows.
+ * Mutates item.verimaya FX fields. Tracker counterparty_* always wins over ECB.
+ *
+ * @param {ReturnType<typeof mapFixture>['transactions']} transactions
+ * @param {{
+ *   tenantBase: string,
+ *   fxBackfill?: boolean,
+ *   getRate?: (on: string, from: string, to: string) => Promise<{ rate: number, rateDate: string } | null>
+ * }} opts
+ */
+async function enrichMappedFx(transactions, opts) {
+	const tenantBase = String(opts.tenantBase ?? 'TRY').trim().toUpperCase();
+	const fxBackfill = opts.fxBackfill !== false;
+	const report = {
+		tracker_snapshot: 0,
+		ecb_filled: 0,
+		missing_rate: /** @type {string[]} */ ([]),
+		native_or_skipped: 0
+	};
+
+	for (const item of transactions) {
+		const currency = String(item.verimaya.currency ?? 'TRY').toUpperCase();
+		const amountMajor =
+			item._amount_major != null
+				? item._amount_major
+				: item.verimaya.amount != null
+					? item.verimaya.amount / 100
+					: NaN;
+		let fx = resolveFxSnapshot({
+			currency,
+			amountMajor,
+			occurredOn: item.verimaya.occurred_on,
+			counterpartyMajor: item._counterparty_major,
+			equivalentCurrency: item._equivalent_currency,
+			tenantBase
+		});
+
+		if (fx.amount_base != null) {
+			report.tracker_snapshot++;
+		} else if (
+			fxBackfill &&
+			currency !== tenantBase &&
+			item.verimaya.amount != null &&
+			Number.isFinite(item.verimaya.amount) &&
+			item.verimaya.amount > 0
+		) {
+			if (!opts.getRate) {
+				report.missing_rate.push(
+					`transaction ${item.legacy_id}: kur bulunamadı (${currency}→${tenantBase} @ ${item.verimaya.occurred_on})`
+				);
+			} else {
+				const rateInfo = await opts.getRate(item.verimaya.occurred_on, currency, tenantBase);
+				if (!rateInfo) {
+					report.missing_rate.push(
+						`transaction ${item.legacy_id}: kur bulunamadı (${currency}→${tenantBase} @ ${item.verimaya.occurred_on})`
+					);
+				} else {
+					fx = snapshotFromEcbRate(rateInfo, {
+						amountMinor: item.verimaya.amount,
+						tenantBase,
+						occurredOn: item.verimaya.occurred_on
+					});
+					report.ecb_filled++;
+				}
+			}
+		} else {
+			report.native_or_skipped++;
+		}
+
+		item.verimaya.amount_base = fx.amount_base;
+		item.verimaya.base_currency = fx.base_currency;
+		item.verimaya.fx_rate = fx.fx_rate;
+		item.verimaya.fx_dated = fx.fx_dated;
+	}
+
+	return report;
 }
 
 /**
@@ -351,6 +574,8 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 		const legacy = extId(t.id);
 		const caseLegacy = t.case_id != null ? extId(t.case_id) : null;
 		const contactLegacy = t.contact_id != null ? extId(t.contact_id) : null;
+		const responsibleLegacy =
+			t.responsible_contact_id != null ? extId(t.responsible_contact_id) : null;
 		const major = transactionMajorAmount(t);
 		const paidMajor = transactionPaidMajor(t);
 		const { currency, coerced } = normalizeCurrency(t.currency);
@@ -365,6 +590,7 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 			legacy_id: legacy,
 			_case_legacy: caseLegacy,
 			_contact_legacy: contactLegacy,
+			_responsible_legacy: responsibleLegacy,
 			_currency_coerced: coerced,
 			_amount_major: Number.isFinite(major) ? major : null,
 			_counterparty_major: counterpartyMajor,
@@ -374,7 +600,7 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 				id: mapId('transaction', legacy),
 				tenant_id: tenantPlaceholder,
 				kind: t.kind,
-				title: (t.title && String(t.title).trim()) || 'İşlem',
+				title: normalizeTransactionTitle(t.title),
 				subtitle: t.subtitle ?? null,
 				category: t.category ?? null,
 				occurred_on: t.occurred_on,
@@ -384,10 +610,18 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 				amount: Number.isFinite(major) ? toMinor(major) : null,
 				paid_amount: paidMajor == null || !Number.isFinite(paidMajor) ? null : toMinor(paidMajor),
 				currency,
-				patient_id: caseLegacy != null ? (patientIdMap.get(caseLegacy) ?? null) : null,
-				patient_display_name: patient?.verimaya.full_name ?? null,
+				amount_base: null,
+				base_currency: null,
+				fx_rate: null,
+				fx_dated: null,
+				/** Hasta contact from Tracker case_id (cases→contacts map). */
+				case_contact_id: caseLegacy != null ? (patientIdMap.get(caseLegacy) ?? null) : null,
+				case_contact_display_name: patient?.verimaya.full_name ?? null,
+				/** Counterparty — never merged with case_contact_id. */
 				contact_id: contactLegacy != null ? (contactIdMap.get(contactLegacy) ?? null) : null,
 				contact_label: t.contact_label ?? null,
+				responsible_contact_id:
+					responsibleLegacy != null ? (contactIdMap.get(responsibleLegacy) ?? null) : null,
 				description: t.description ?? null
 			}
 		};
@@ -551,7 +785,7 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 				id, case_id, kind, title, subtitle, category, occurred_on, status,
 				invoice_status, payment_method, amount, paid_amount, currency,
 				counterparty_amount, equivalent_currency,
-				contact_id, contact_label, description
+				contact_id, responsible_contact_id, contact_label, description
 			from transactions
 			where tenant_id = ${trackerTenantId}
 			order by occurred_on, created_at
@@ -638,7 +872,7 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 				id: String(t.id),
 				case_id: t.case_id != null ? String(t.case_id) : null,
 				kind: String(t.kind),
-				title: String(t.title),
+				title: t.title != null ? String(t.title) : null,
 				subtitle: t.subtitle != null ? String(t.subtitle) : null,
 				category: t.category != null ? String(t.category) : null,
 				occurred_on: String(t.occurred_on),
@@ -653,6 +887,8 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 				equivalent_currency:
 					t.equivalent_currency != null ? String(t.equivalent_currency) : null,
 				contact_id: t.contact_id != null ? String(t.contact_id) : null,
+				responsible_contact_id:
+					t.responsible_contact_id != null ? String(t.responsible_contact_id) : null,
 				contact_label: t.contact_label != null ? String(t.contact_label) : null,
 				description: t.description != null ? String(t.description) : null
 			})),
@@ -730,7 +966,7 @@ async function loadExternalMaps(sql, tenantId) {
 	/** @type {Map<string, string>} */
 	const appointmentMap = new Map();
 	/** @type {Map<string, string>} */
-	const patientNames = new Map();
+	const contactNames = new Map();
 
 	await withTenant(sql, tenantId, async (tx) => {
 		const rows = await tx`
@@ -748,17 +984,16 @@ async function loadExternalMaps(sql, tenantId) {
 			} else if (row.entity_type === 'patient') patientMap.set(ext, internal);
 			else if (row.entity_type === 'appointment') appointmentMap.set(ext, internal);
 		}
-		// Cases are stored as Hasta contacts; also accept legacy external_ids.entity_type=patient.
-		const caseContacts = await tx`
+		const allContacts = await tx`
 			select id, display_name from contacts
-			where tenant_id = ${tenantId} and contact_type_name = 'Hasta' and deleted_at is null
+			where tenant_id = ${tenantId} and deleted_at is null
 		`;
-		for (const p of caseContacts) {
-			patientNames.set(String(p.id), String(p.display_name));
+		for (const p of allContacts) {
+			contactNames.set(String(p.id), String(p.display_name));
 		}
 	});
 
-	return { contactMap, patientMap, appointmentMap, patientNames };
+	return { contactMap, patientMap, appointmentMap, contactNames };
 }
 
 /**
@@ -844,6 +1079,17 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
 				returning id
 			`;
 			typeByName.set('hasta', String(row.id));
+			stats.contact_types.inserted++;
+		}
+
+		const needsPersonel = mapped.transactions.some((t) => t._responsible_legacy);
+		if (needsPersonel && !typeByName.has('personel')) {
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${tenantId}, 'Personel', ${sortOrder + typeByName.size + 1})
+				returning id
+			`;
+			typeByName.set('personel', String(row.id));
 			stats.contact_types.inserted++;
 		}
 
@@ -992,17 +1238,24 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
  * @param {string} tenantId
  * @param {ReturnType<typeof mapFixture>} mapped
  * @param {number} batchSize
+ * @param {{ fxBackfill?: boolean, fetchFn?: typeof fetch }} [opts]
  */
-async function applyLayer2(sql, tenantId, mapped, batchSize) {
+async function applyLayer2(sql, tenantId, mapped, batchSize, opts = {}) {
 	const stats = {
 		appointments: { inserted: 0, skipped: 0 },
 		transactions: { inserted: 0, skipped: 0 },
 		files: { inserted: 0, skipped: 0 },
 		case_notes: { inserted: 0, skipped: 0 },
+		fx: {
+			tracker_snapshot: 0,
+			ecb_filled: 0,
+			missing_rate: /** @type {string[]} */ ([]),
+			native_or_skipped: 0
+		},
 		errors: /** @type {string[]} */ ([])
 	};
 
-	const { contactMap, patientMap, appointmentMap, patientNames } = await loadExternalMaps(
+	const { contactMap, patientMap, appointmentMap, contactNames } = await loadExternalMaps(
 		sql,
 		tenantId
 	);
@@ -1014,6 +1267,17 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 		`;
 		if (row?.base_currency) tenantBase = String(row.base_currency);
 	});
+
+	const getRate = createFxRateGetter(sql, { fetchFn: opts.fetchFn });
+	const fxReport = await enrichMappedFx(mapped.transactions, {
+		tenantBase,
+		fxBackfill: opts.fxBackfill !== false,
+		getRate
+	});
+	stats.fx = fxReport;
+	for (const msg of fxReport.missing_rate) {
+		stats.errors.push(msg);
+	}
 
 	for (let i = 0; i < mapped.appointments.length; i += batchSize) {
 		const batch = mapped.appointments.slice(i, i + batchSize);
@@ -1066,7 +1330,7 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 						${internalId},
 						${tenantId},
 						${patientId},
-						${patientNames.get(patientId) ?? item.verimaya.patient_display_name},
+						${contactNames.get(patientId) ?? item.verimaya.patient_display_name},
 						${item.verimaya.title},
 						${item.verimaya.appointment_type},
 						${item.verimaya.status},
@@ -1112,45 +1376,40 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 					);
 				}
 
+				// case_id → case_contact_id; contact_id → contact_id (never merge).
 				const caseContactId = item._case_legacy
 					? (patientMap.get(item._case_legacy) ?? null)
 					: null;
 				const partyContactId = item._contact_legacy
 					? (contactMap.get(item._contact_legacy) ?? null)
 					: null;
-				const contactId = caseContactId ?? partyContactId;
+				const responsibleContactId = item._responsible_legacy
+					? (contactMap.get(item._responsible_legacy) ?? null)
+					: null;
 				if (item._case_legacy && !caseContactId) {
 					stats.errors.push(
-						`transaction ${legacy}: Hasta contact for case ${item._case_legacy} not found — contact_id null`
+						`transaction ${legacy}: Hasta contact for case ${item._case_legacy} not found — case_contact_id null`
 					);
 				}
-				if (item._contact_legacy && !partyContactId && !caseContactId) {
+				if (item._contact_legacy && !partyContactId) {
 					stats.errors.push(
 						`transaction ${legacy}: contact ${item._contact_legacy} not found — contact_id null`
 					);
 				}
+				if (item._responsible_legacy && !responsibleContactId) {
+					stats.errors.push(
+						`transaction ${legacy}: responsible contact ${item._responsible_legacy} not found — responsible_contact_id null`
+					);
+				}
 
 				const internalId = randomUUID();
-				const amountMajor =
-					item._amount_major != null
-						? item._amount_major
-						: item.verimaya.amount != null
-							? item.verimaya.amount / 100
-							: NaN;
-				const fx = resolveFxSnapshot({
-					currency: item.verimaya.currency,
-					amountMajor,
-					occurredOn: item.verimaya.occurred_on,
-					counterpartyMajor: item._counterparty_major,
-					equivalentCurrency: item._equivalent_currency,
-					tenantBase
-				});
 				await tx`
 					insert into transactions (
 						id, tenant_id, kind, title, subtitle, category, occurred_on, status,
 						invoice_status, payment_method, amount, paid_amount, currency,
 						amount_base, base_currency, fx_rate, fx_dated,
-						contact_id, contact_display_name, contact_label, description
+						contact_id, contact_display_name, contact_label,
+						case_contact_id, responsible_contact_id, description
 					) values (
 						${internalId},
 						${tenantId},
@@ -1165,13 +1424,15 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
 						${item.verimaya.amount},
 						${item.verimaya.paid_amount},
 						${item.verimaya.currency},
-						${fx.amount_base},
-						${fx.base_currency},
-						${fx.fx_rate},
-						${fx.fx_dated},
-						${contactId},
-						${contactId ? (patientNames.get(contactId) ?? null) : null},
+						${item.verimaya.amount_base},
+						${item.verimaya.base_currency},
+						${item.verimaya.fx_rate},
+						${item.verimaya.fx_dated},
+						${partyContactId},
+						${partyContactId ? (contactNames.get(partyContactId) ?? null) : null},
 						${item.verimaya.contact_label},
+						${caseContactId},
+						${responsibleContactId},
 						${item.verimaya.description}
 					)
 				`;
@@ -1299,10 +1560,11 @@ async function applyLayer2(sql, tenantId, mapped, batchSize) {
  * @param {string} tenantId
  * @param {ReturnType<typeof mapFixture>} mapped
  * @param {number} batchSize
+ * @param {{ fxBackfill?: boolean, fetchFn?: typeof fetch }} [opts]
  */
-async function applyAll(sql, tenantId, mapped, batchSize) {
+async function applyAll(sql, tenantId, mapped, batchSize, opts = {}) {
 	const layer1 = await applyLayer1(sql, tenantId, mapped, batchSize);
-	const layer2 = await applyLayer2(sql, tenantId, mapped, batchSize);
+	const layer2 = await applyLayer2(sql, tenantId, mapped, batchSize, opts);
 	return {
 		...layer1,
 		...layer2,
@@ -1319,6 +1581,8 @@ Options:
   --tenant-id <uuid>         Required with --apply (Verimaya tenant)
   --tracker-tenant-id <uuid> With TRACKER_DATABASE_URL: pull live Tracker rows
   --batch-size <n>           Default ${DEFAULT_BATCH}
+  --fx-backfill              (default) ECB fill for foreign rows missing amount_base
+  --no-fx-backfill           Skip ECB; leave amount_base null when Tracker has no snapshot
   --help
 
 Env:
@@ -1352,6 +1616,20 @@ async function main() {
 		source
 	);
 
+	const fxCandidates = mapped.transactions.filter((t) => {
+		const currency = String(t.verimaya.currency ?? 'TRY').toUpperCase();
+		if (currency === 'TRY') return false;
+		const snap = resolveFxSnapshot({
+			currency,
+			amountMajor: t._amount_major ?? NaN,
+			occurredOn: t.verimaya.occurred_on,
+			counterpartyMajor: t._counterparty_major,
+			equivalentCurrency: t._equivalent_currency,
+			tenantBase: 'TRY'
+		});
+		return snap.amount_base == null && t.verimaya.amount != null;
+	});
+
 	const summary = {
 		mode: args.apply ? 'apply' : 'dry-run',
 		source: sourceLabel,
@@ -1367,6 +1645,8 @@ async function main() {
 			files: mapped.files.length,
 			case_notes: mapped.case_notes.length
 		},
+		fx_backfill: args.fxBackfill,
+		fx_backfill_candidates: fxCandidates.length,
 		tenant_id: args.tenantId ?? '<target-tenant-id>',
 		layer: 'Adım 28–29: dictionaries + contacts/patients + appointments/transactions/files/notes',
 		money_note: 'amount_major|amount → minor (*100)'
@@ -1414,7 +1694,9 @@ async function main() {
 			process.exit(1);
 		}
 
-		const stats = await applyAll(sql, args.tenantId, mapped, args.batchSize);
+		const stats = await applyAll(sql, args.tenantId, mapped, args.batchSize, {
+			fxBackfill: args.fxBackfill
+		});
 		console.log('\n=== Apply result ===');
 		console.log(JSON.stringify(stats, null, 2));
 
@@ -1437,6 +1719,10 @@ module.exports = {
 	attachContactLegacy,
 	toMinor,
 	resolveFxSnapshot,
+	snapshotFromEcbRate,
+	normalizeTransactionTitle,
+	enrichMappedFx,
+	createFxRateGetter,
 	normalizeAppointmentStatus,
 	SOURCE,
 	DEFAULT_FIXTURE

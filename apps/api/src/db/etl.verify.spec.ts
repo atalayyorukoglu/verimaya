@@ -17,7 +17,8 @@ const {
 		sql: unknown,
 		tenantId: string,
 		mapped: unknown,
-		batchSize: number
+		batchSize: number,
+		opts?: { fxBackfill?: boolean; fetchFn?: typeof fetch }
 	) => Promise<unknown>;
 	attachContactLegacy: (mapped: unknown, source: unknown) => unknown;
 	loadFixtureFile: (path: string) => unknown;
@@ -41,6 +42,19 @@ const databaseUrl =
 
 const fixturePath = path.resolve(path.dirname(DEFAULT_FIXTURE), 'etl-sample.json');
 
+const mockFetch: typeof fetch = async (input) => {
+	const url = String(input);
+	const from = /from=([A-Z]+)/.exec(url)?.[1] ?? 'EUR';
+	const rates: Record<string, number> = { EUR: 35.5, USD: 32, GBP: 42 };
+	return new Response(
+		JSON.stringify({
+			date: '2026-07-14',
+			rates: { TRY: rates[from] ?? 30 }
+		}),
+		{ status: 200, headers: { 'content-type': 'application/json' } }
+	);
+};
+
 describe('ETL verify (Adım 30)', () => {
 	const tenantId = randomUUID();
 	let sql: ReturnType<typeof getDb>['sql'];
@@ -60,7 +74,7 @@ describe('ETL verify (Adım 30)', () => {
 
 		const source = loadFixtureFile(fixturePath);
 		const mapped = attachContactLegacy(mapFixture(source, tenantId), source);
-		await applyAll(sql, tenantId, mapped, 1000);
+		await applyAll(sql, tenantId, mapped, 1000, { fxBackfill: true, fetchFn: mockFetch });
 	});
 
 	afterAll(async () => {

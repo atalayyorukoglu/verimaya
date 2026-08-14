@@ -24,7 +24,7 @@
 			"subcategories": ["Reklam", "Ajans"]
 		}
 	],
-	"contact_types": ["Otel", "Transfer", "Klinik", "Hasta", "Diğer"],
+	"contact_types": ["Otel", "Transfer", "Klinik", "Hasta", "Personel", "Diğer"],
 	"appointment_types": ["Yeni Hasta", "Devam Hastası", "RPT"],
 	"appointment_statuses": [
 		"Randevu Ayarlanıyor",
@@ -60,6 +60,15 @@
 			"email": null,
 			"notes": null,
 			"is_internal": false
+		},
+		{
+			"id": 105,
+			"type": "Personel",
+			"name": "Ayşe Operasyon",
+			"phone": "+90 532 111 0000",
+			"email": "ayse@example.com",
+			"notes": null,
+			"is_internal": true
 		}
 	],
 	"cases": [
@@ -153,8 +162,11 @@
 			"amount_major": 1500,
 			"currency": "GBP",
 			"paid_amount_major": 1500,
+			"counterparty_amount": 52500,
+			"equivalent_currency": "TRY",
 			"contact_id": null,
-			"description": "Kart ile peşinat"
+			"responsible_contact_id": null,
+			"description": "Kart ile peşinat — Tracker TRY eşdeğeri dolu"
 		},
 		{
 			"id": 902,
@@ -171,7 +183,8 @@
 			"currency": "EUR",
 			"paid_amount_major": 120,
 			"contact_id": 103,
-			"description": null
+			"responsible_contact_id": 105,
+			"description": "Hasta bağlı + sorumlu Personel; EUR, counterparty yok → FX backfill"
 		},
 		{
 			"id": 903,
@@ -188,7 +201,8 @@
 			"currency": "TRY",
 			"paid_amount_major": 450.5,
 			"contact_id": null,
-			"description": "Mayıs kampanya"
+			"responsible_contact_id": 105,
+			"description": "Mayıs kampanya — sorumlu Personel"
 		},
 		{
 			"id": 904,
@@ -205,7 +219,44 @@
 			"currency": "TRY",
 			"paid_amount_major": 100,
 			"contact_id": null,
+			"responsible_contact_id": null,
 			"description": "Para dönüşüm kontrolü: 100 → 10000 minor"
+		},
+		{
+			"id": 905,
+			"case_id": 501,
+			"kind": "expense",
+			"title": "İşlem",
+			"subtitle": "Tedavi Ücreti",
+			"category": "Operasyon Giderleri",
+			"occurred_on": "2026-06-12",
+			"status": "paid",
+			"invoice_status": "none",
+			"payment_method": "transfer",
+			"amount_major": 800,
+			"currency": "TRY",
+			"paid_amount_major": 800,
+			"contact_id": 102,
+			"responsible_contact_id": null,
+			"description": "Eski ETL placeholder başlık → null; case + karşı taraf ayrı"
+		},
+		{
+			"id": 906,
+			"case_id": null,
+			"kind": "expense",
+			"title": null,
+			"subtitle": "Ajans",
+			"category": "Pazarlama ve Reklam",
+			"occurred_on": "2026-04-10",
+			"status": "paid",
+			"invoice_status": "none",
+			"payment_method": "card",
+			"amount_major": 200,
+			"currency": "USD",
+			"paid_amount_major": 200,
+			"contact_id": null,
+			"responsible_contact_id": null,
+			"description": "Boş başlık + yabancı para, counterparty yok → FX backfill adayı"
 		}
 	],
 	"files": [

@@ -150,15 +150,18 @@ Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu 
 | --- | --- | --- | --- |
 | `amount` (numeric major) | `amount` (int minor) | `round(amount * 100)` | zorunlu |
 | `paid_amount` | `paid_amount` | `*100`; null → null | partial kuralları API’de |
-| `counterparty_amount` + `equivalent_currency` | `amount_base` / `base_currency` / `fx_rate` / `fx_dated` | `equivalent_currency === tenants.base_currency` ve tutar doluysa: `amount_base=round(cp*100)`, `base_currency=tenant base`, `fx_rate=cp/amount`, `fx_dated=occurred_on`. Native `currency===base` satırlarda dört alan **null** (resolver `amount` kullanır). Eşleşme yoksa null — **canlı kur yok** | mevcut satırlar için `scripts/backfill-fx.js` |
+| `counterparty_amount` + `equivalent_currency` | `amount_base` / `base_currency` / `fx_rate` / `fx_dated` | `equivalent_currency === tenants.base_currency` ve tutar doluysa: `amount_base=round(cp*100)`, `base_currency=tenant base`, `fx_rate=cp/amount`, `fx_dated=occurred_on`. Native `currency===base` satırlarda dört alan **null** (`resolveBaseAmount` → `amount`). Tracker snapshot **ECB’yi ezer** | eksik yabancı satırlar: `--fx-backfill` (varsayılan açık) |
+| _(yabancı + snapshot yok)_ | `amount_base` / … | `--fx-backfill`: `occurred_on` için Frankfurter v1/ECB kuru (`fx_rates` önbellek); `amount_base=round(amount_minor*rate)`. Kur yoksa null + rapor “kur bulunamadı” — uydurma yok. `--no-fx-backfill` ile kapat | `scripts/backfill-fx.js` yalnız Tracker counterparty yolu |
 | `currency` | `currency` | upper; destek dışı → **TRY** + not | default TRY |
-| `case_id` | `patient_id` + display | map | null OK |
-| `contact_id` | `contact_id` | map | null OK |
+| `case_id` | `case_contact_id` | cases→Hasta contact map | null OK; `contact_id` ile **birleştirilmez** |
+| `contact_id` | `contact_id` | contact map (karşı taraf) | null OK; case ile ayrı |
+| `responsible_contact_id` | `responsible_contact_id` | contact map (tip `Personel`) | null OK; serbest metin `responsible_party` **taşınmaz** (BF-04) |
 | `contact_label` | `contact_label` | — | — |
 | `category` / `subtitle` | `category` / `subtitle` | olduğu gibi (§2.4) | — |
-| `kind` / `status` / `invoice_status` / `occurred_on` / `title` | aynı | §2.5; tarih date | title boş → `"İşlem"` |
+| `kind` / `status` / `invoice_status` / `occurred_on` | aynı | §2.5; tarih date | — |
+| `title` | `title` (nullable) | trim; boş / yalnız `"İşlem"` (eski ETL placeholder) → **null**; diğerleri olduğu gibi | liste etiketi kategori/kişiden |
 | `payment_method` / `description` | aynı | — | — |
-| `payer_*` / `payee_*` / `responsible_*` / `service_tag` | _(yok veya ertele)_ | **cutover 1 dışı** (kisiler.md P2P) | — |
+| `payer_*` / `payee_*` / `service_tag` | _(yok)_ | **cutover 1 dışı** (kisiler.md P2P) | — |
 
 ### 3.5 `case_files` → `files`
 
@@ -194,7 +197,11 @@ Dönüşüm kısaltmaları: `*100` = major→minor; `UTC` = timestamptz olduğu 
 | `appointments.status` | status map / **`scheduled`** |
 | `appointments.starts_at` | Tracker (yoksa skip) |
 | `transactions.tenant_id` | hedef tenant |
-| `transactions.kind` / `title` / `occurred_on` / `status` / `amount` / `currency` / `invoice_status` | Tracker + dönüşümler |
+| `transactions.kind` / `occurred_on` / `status` / `amount` / `currency` / `invoice_status` | Tracker + dönüşümler |
+| `transactions.title` | Tracker; boş/`İşlem` → null |
+| `transactions.case_contact_id` | case → Hasta contact map |
+| `transactions.contact_id` | karşı taraf contact map |
+| `transactions.responsible_contact_id` | Personel contact map |
 | `files.tenant_id` / `patient_id` / `filename` / `mime_type` / `size_bytes` / `status` / `storage_key` | §3.5 |
 
 ---
