@@ -169,7 +169,7 @@
 
 ---
 
-### 4. DOMAIN-02 — kalan: E4 GHL
+### 4. DOMAIN-02 — ✅ kapandı (2026-08-13)
 
 > Adım ayrıntısı: `docs/Arşiv/2026-08-10-KISILER-BIRLESME-PLANI.md`. Faz A–F + E3 ✅.
 > Deploy: `docs/Arşiv/2026-08-10-DOMAIN-02-DEPLOY-RUNBOOK.md`.
@@ -323,8 +323,8 @@
   alt kategorileri tek metin alanında düzenliyordu. Tracker’ın satır modeli hatayı yerelleştiriyor.
 - **Mobil finans UX ✅** (2026-08-14) — işlem formu yatay taşma, iOS zoom, tarih sığdırma,
   kişi combobox, ödeme yöntemi select, liste 44px arama + `from`/`to` filtresi.
-  **Görüş:** kategori CRUD vardı ama yönetim paritesi yoktu; kur snapshot modeli korunarak
-  otomatik dolduruldu. Sığdırma için
+  **Görüş:** kategori CRUD vardı ama yönetim paritesi yoktu (ayrı kalem olarak kapandı);
+  kur o gün hâlâ elleydi, aynı gün otomatiğe çevrildi. Tarih alanını sığdırmak için
   eklenen `-webkit-appearance:none` tarih değerinin dikey ortalamasını da düşürmüştü —
   shadow part'lara `height:100%` + flex ile kutu yüksekliğinden bağımsız düzeltildi. Rapor:
   `docs/2026-08-14-mobil-ux-duzeltmeleri.md`.
