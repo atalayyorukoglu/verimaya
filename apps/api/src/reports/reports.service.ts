@@ -27,6 +27,7 @@ import {
 	type ReportByCategory,
 	type ReportByCategoryDetail,
 	type ReportByCategoryDetailParams,
+	type ReportByResponsible,
 	type ReportConsistency,
 	type ReportConsistencyCode,
 	type ReportConsistencyItem,
@@ -688,6 +689,74 @@ export class ReportsService {
 			return {
 				period: { from: params.from ?? null, to: params.to ?? null },
 				category,
+				items
+			};
+		});
+	}
+
+	async byResponsible(
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<ReportByResponsible> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const tenantBase = await this.getTenantBase(db, tenantId);
+			const conditions = [isNull(transactions.deletedAt), eq(transactions.kind, 'expense')];
+			if (params.from) conditions.push(gte(transactions.occurredOn, params.from));
+			if (params.to) conditions.push(lte(transactions.occurredOn, params.to));
+
+			const rows = await db
+				.select({
+					responsibleContactId: transactions.responsibleContactId,
+					amount: transactions.amount,
+					amountBase: transactions.amountBase,
+					baseCurrency: transactions.baseCurrency,
+					currency: transactions.currency,
+					displayName: contacts.displayName
+				})
+				.from(transactions)
+				.leftJoin(contacts, eq(transactions.responsibleContactId, contacts.id))
+				.where(and(...conditions));
+
+			const map = new Map<
+				string,
+				{
+					responsible_contact_id: string | null;
+					responsible_label: string;
+					expense_base: number;
+					transaction_count: number;
+				}
+			>();
+
+			for (const row of rows) {
+				const key = row.responsibleContactId ?? '';
+				const label =
+					row.responsibleContactId == null
+						? 'Atanmamış'
+						: row.displayName?.trim() || row.responsibleContactId;
+				const cur = map.get(key) ?? {
+					responsible_contact_id: row.responsibleContactId,
+					responsible_label: label,
+					expense_base: 0,
+					transaction_count: 0
+				};
+				cur.transaction_count += 1;
+				const base = resolveBaseAmount(
+					{
+						amount: row.amount,
+						amountBase: row.amountBase,
+						baseCurrency: row.baseCurrency,
+						currency: row.currency
+					},
+					tenantBase
+				);
+				if (base != null) cur.expense_base += base;
+				map.set(key, cur);
+			}
+
+			const items = [...map.values()].sort((a, b) => b.expense_base - a.expense_base);
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
 				items
 			};
 		});

@@ -7,6 +7,7 @@
 		ReportAppointmentMetrics,
 		ReportByCategory,
 		ReportByCategoryDetail,
+		ReportByResponsible,
 		ReportConsistency,
 		ReportMonthly,
 		ReportContactDistribution,
@@ -153,6 +154,15 @@
 		queryFn: () =>
 			apiGet<ReportByCategory>(
 				reportUrl('by-category', { from: dateRange.from, to: dateRange.to })
+			),
+		enabled: !USE_MSW && qs.ready
+	}));
+
+	const byResponsibleQuery = createQuery(() => ({
+		queryKey: qs.keys.reports.byResponsible({ from: dateRange.from, to: dateRange.to }),
+		queryFn: () =>
+			apiGet<ReportByResponsible>(
+				reportUrl('by-responsible', { from: dateRange.from, to: dateRange.to })
 			),
 		enabled: !USE_MSW && qs.ready
 	}));
@@ -747,6 +757,39 @@
 				{/each}
 			</div>
 		</div>
+
+		{#if !USE_MSW}
+			<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
+				<h2 class="text-sm font-semibold text-text">{t('reports.responsible.title')}</h2>
+				{#if byResponsibleQuery.isPending}
+					<p class="mt-3 text-sm text-text-muted">{t('reports.loading')}</p>
+				{:else if byResponsibleQuery.isError}
+					<p class="mt-3 text-sm text-danger">{t('reports.loadError')}</p>
+				{:else if (byResponsibleQuery.data?.items.length ?? 0) === 0}
+					<p class="mt-3 text-sm text-text-muted">{t('reports.responsible.empty')}</p>
+				{:else}
+					<ul class="mt-3 divide-y divide-border">
+						{#each byResponsibleQuery.data?.items ?? [] as row (row.responsible_contact_id ?? '__none__')}
+							<li class="flex items-center justify-between gap-3 py-2.5 text-sm">
+								<span class="min-w-0 truncate text-text">
+									{row.responsible_contact_id == null
+										? t('reports.responsible.unassigned')
+										: row.responsible_label}
+								</span>
+								<span class="shrink-0 text-right">
+									<p class="font-medium text-text tabular-nums">
+										{formatMoney(row.expense_base, baseCurrency)}
+									</p>
+									<p class="text-xs text-text-faint">
+										{t('reports.txCount', { count: row.transaction_count })}
+									</p>
+								</span>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
+		{/if}
 
 		<div class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
 			<h2 class="text-sm font-semibold text-text">{t('reports.statusDist.title')}</h2>

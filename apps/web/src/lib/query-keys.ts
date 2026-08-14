@@ -86,6 +86,7 @@ export function queryKeys(scope: QueryScope) {
 			dashboardSummary: (params: Params) => k('reports', 'summary', 'dashboard', params),
 			byCategory: (params: Params) => k('reports', 'by-category', params),
 			byCategoryDetail: (params: Params) => k('reports', 'by-category-detail', params),
+			byResponsible: (params: Params) => k('reports', 'by-responsible', params),
 			monthly: (params: Params) => k('reports', 'monthly', params),
 			marketing: (params: Params) => k('reports', 'marketing', params),
 			contactDistribution: (params: Params) => k('reports', 'contact-distribution', params),

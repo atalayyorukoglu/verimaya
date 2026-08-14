@@ -52,6 +52,17 @@ export class ReportsController {
 		return this.reportsService.byCategoryDetail(getActiveOrgId(req), params);
 	}
 
+	@Get('by-responsible')
+	@RequireOrgPermission('finance', 'read')
+	byResponsible(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		return this.reportsService.byResponsible(getActiveOrgId(req), params);
+	}
+
 	@Get('monthly')
 	@RequireOrgPermission('finance', 'read')
 	monthly(
