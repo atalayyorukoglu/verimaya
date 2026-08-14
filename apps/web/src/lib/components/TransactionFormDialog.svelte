@@ -133,9 +133,7 @@
 	const fxQuery = createQuery(() => ({
 		queryKey: qs.keys.fx.rate({ from: currency, to: tenantBase, on: occurred_on }),
 		queryFn: () =>
-			apiGet<FxRateResponse>(
-				apiPaths.fxRate({ from: currency, to: tenantBase, on: occurred_on })
-			),
+			apiGet<FxRateResponse>(apiPaths.fxRate({ from: currency, to: tenantBase, on: occurred_on })),
 		enabled: open && qs.ready && needsFx && !!occurred_on && !!tenantQuery.data,
 		retry: 1,
 		staleTime: 60_000
@@ -421,19 +419,19 @@
 							aria-busy={fxFetching}
 						/>
 						{#if fxFetching}
-							<p class="mt-1 min-w-0 break-words text-[11px] text-text-faint">
+							<p class="mt-1 min-w-0 text-[11px] break-words text-text-faint">
 								{t('finance.form.fxLoading')}
 							</p>
 						{:else if fxError}
-							<p class="mt-1 min-w-0 break-words text-[11px] text-warning">
+							<p class="mt-1 min-w-0 text-[11px] break-words text-warning">
 								{t('finance.form.fxError')}
 							</p>
 						{:else if displayFxDated}
-							<p class="mt-1 min-w-0 break-words text-[11px] text-text-faint">
+							<p class="mt-1 min-w-0 text-[11px] break-words text-text-faint">
 								{t('finance.form.fxDated', { date: displayFxDated })}
 							</p>
 						{:else}
-							<p class="mt-1 min-w-0 break-words text-[11px] text-text-faint">
+							<p class="mt-1 min-w-0 text-[11px] break-words text-text-faint">
 								{t('finance.form.fxLocked')}
 							</p>
 						{/if}
