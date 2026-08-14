@@ -18,6 +18,8 @@ Pilot öncesi finans formu / işlem listesi şikayetleri. Kod değişiklikleri A
 
 **Ne yapıldı:** Global `input[type=date]`: `display:block; width:100%; min-width:0; max-width:100%; box-sizing:border-box; -webkit-appearance:none`. WebKit değer hizası: `::-webkit-date-and-time-value { text-align:left; min-width:0 }`. Form hücresi `min-w-0`.
 
+**Ek düzeltme (aynı gün):** `-webkit-appearance:none` sığdırmayı çözerken WebKit'in native **dikey ortalamasını** da iptal ediyordu — mobilde değer kutunun üstüne yapışıyordu. Ortalama shadow part'ların içinde yapıldı: `::-webkit-datetime-edit, ::-webkit-date-and-time-value { display:flex; align-items:center; height:100%; margin:0; line-height:normal }`. `height:100%` zinciri sayesinde hiza kutu yüksekliğine göre çalışır — bu ekranlarda date input `h-9` ve `h-11` olduğu için sabit `padding`/`line-height` sadece birinde doğru olurdu. Input'un kendisi `display:block` bırakıldı: input'a `flex` verilince Chrome'da shadow konteyneri shrink-to-fit flex item olup takvim ikonunu sağ kenardan koparıyor. Boş durumdaki `gg.aa.yyyy` placeholder'ı `-webkit-datetime-edit` alanlarıyla çizildiği için aynı kaymadan etkileniyordu; kural iki part'ı da kapsadığından dolu ve boş durum aynı hizada. Genişlik (`max-width:100%`) ve mobil 16px kuralı değişmedi.
+
 **Dosyalar:** `layout.css`, `TransactionFormDialog.svelte`, `finance/+page.svelte`
 
 ### 3. iOS focus zoom (font-size < 16px)

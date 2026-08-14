@@ -294,7 +294,9 @@
 
 - **Mobil finans UX ✅** (2026-08-14) — işlem formu yatay taşma, iOS zoom, tarih sığdırma,
   kişi combobox, ödeme yöntemi select, liste 44px arama + `from`/`to` filtresi.
-  **Görüş:** kategori CRUD zaten vardı; canlı kur bilinçli yok (snapshot). Rapor:
+  **Görüş:** kategori CRUD zaten vardı; canlı kur bilinçli yok (snapshot); sığdırma için
+  eklenen `-webkit-appearance:none` tarih değerinin dikey ortalamasını da düşürmüştü —
+  shadow part'lara `height:100%` + flex ile kutu yüksekliğinden bağımsız düzeltildi. Rapor:
   `docs/2026-08-14-mobil-ux-duzeltmeleri.md`.
 - **DOMAIN-02 E4 ✅** (2026-08-13) — GHL ↔ panel ad/soyad doğrulaması. **DOMAIN-02 kapandı.**
   **Görüş:** kalemin "çift yönlü" ifadesi yanlıştı — `ghl.field-ownership.ts` (mimari ilke 5)

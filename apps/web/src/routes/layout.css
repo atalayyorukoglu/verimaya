@@ -189,6 +189,16 @@
 	}
 }
 
+/*
+  Native <input type=date>: `appearance: none` is what lets the control shrink
+  below its WebKit intrinsic width, but it also drops the native vertical
+  centering of the value and leaves WebKit's default margin on the value box.
+  Centering is done inside the shadow parts (`height: 100%` + flex) so it
+  follows the control's own height — these inputs run at h-9 and h-11, so a
+  fixed padding/line-height value would only be right on one of them.
+  `-webkit-datetime-edit` covers the empty state (gg.aa.yyyy placeholder
+  fields), `-webkit-date-and-time-value` the filled value on iOS.
+*/
 input[type='date'] {
 	display: block;
 	box-sizing: border-box;
@@ -199,9 +209,18 @@ input[type='date'] {
 	appearance: none;
 }
 
+input[type='date']::-webkit-datetime-edit,
+input[type='date']::-webkit-date-and-time-value {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	min-width: 0;
+	margin: 0;
+	line-height: normal;
+}
+
 input[type='date']::-webkit-date-and-time-value {
 	text-align: left;
-	min-width: 0;
 }
 
 @media (max-width: 767px) {
