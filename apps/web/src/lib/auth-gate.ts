@@ -11,6 +11,7 @@ const PUBLIC_PREFIXES = [
 	'/hub-v1',
 	/** Hub denemesi — herkese açık ama noindex (isIndexablePublic'e eklenmez). */
 	'/hub-v2',
+	'/hub-v3',
 	'/yapay-zeka-karnesi',
 	'/kvkk-aydinlatma',
 	'/app',
