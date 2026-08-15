@@ -290,6 +290,10 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **Pazarlama ana sayfası v2 ✅** (2026-08-15) — reklamdan tahsilata konumlandırılan dokuz
+  bölüm, ilk bulgu raporu CTA/form arayüzü ve noindex `/hub-v1/` arşivi.
+  **Görüş:** Form bu turda brief C uyarınca uçsuz ve devre dışı; marka yazımı web yüzeylerinde
+  “Verimaya” olarak birleştirildi. Araç seçimi: hesaplayıcı, ölçüm, yayın öncesi ve şablonlar.
 - **G-25 / GAP-25 kapsamlı veri silme ✅** (2026-08-14) — `POST /v1/settings/data-delete/preview|execute`;
   kapsam seçimi (transactions/appointments/contacts/files, varsayılan hiçbiri); önizleme
   `plan_token` (CryptoService, 10 dk TTL, jti tek kullanımlık); org adı birebir onay; yalnız
