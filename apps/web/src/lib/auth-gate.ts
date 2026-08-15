@@ -7,6 +7,8 @@ const PUBLIC_PREFIXES = [
 	'/login',
 	'/reset-password',
 	'/vitrin',
+	/** Arşivlenmiş eski ana sayfa — herkese açık ama noindex (isIndexablePublic'e eklenmez). */
+	'/hub-v1',
 	'/yapay-zeka-karnesi',
 	'/kvkk-aydinlatma',
 	'/app',
