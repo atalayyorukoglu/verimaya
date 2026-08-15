@@ -49,7 +49,7 @@ jobs:
             echo "deploy_sha=$GITHUB_SHA_FALLBACK" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.sha.outputs.deploy_sha }}
           # Full history: paths gate vs previous deploy SHA + merge-base for tag_main.
@@ -148,7 +148,7 @@ jobs:
     env:
       DEPLOY_SHA: ${{ needs.gate.outputs.deploy_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # workflow_run default github.sha is default-branch tip — pin to CI's commit.
           ref: ${{ env.DEPLOY_SHA }}
