@@ -191,7 +191,19 @@ jobs:
             echo "COOLIFY_WEB_DEPLOY_WEBHOOK and/or COOLIFY_API_TOKEN not set — skip auto redeploy"
             exit 0
           fi
-          curl -fsS -X GET "$WEBHOOK" \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Accept: application/json"
-          echo "Coolify webhook triggered"
+          # Coolify's API deploy endpoint answers GET; the source/manual webhook
+          # answers POST only and returns 405 to GET. Try both before failing so a
+          # webhook URL swap cannot silently strand a pushed image.
+          for method in GET POST; do
+            status=$(curl -sS -o /tmp/coolify-deploy.out -w '%{http_code}' -X "$method" "$WEBHOOK" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/json")
+            echo "Coolify webhook $method → HTTP $status"
+            if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
+              echo "Coolify webhook triggered"
+              exit 0
+            fi
+            cat /tmp/coolify-deploy.out
+          done
+          echo "Coolify webhook failed for both GET and POST — image is pushed; redeploy from Coolify UI"
+          exit 1
