@@ -9,6 +9,8 @@ const PUBLIC_PREFIXES = [
 	'/vitrin',
 	/** Arşivlenmiş eski ana sayfa — herkese açık ama noindex (isIndexablePublic'e eklenmez). */
 	'/hub-v1',
+	/** Hub denemesi — herkese açık ama noindex (isIndexablePublic'e eklenmez). */
+	'/hub-v2',
 	'/yapay-zeka-karnesi',
 	'/kvkk-aydinlatma',
 	'/app',
