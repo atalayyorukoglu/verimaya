@@ -1957,7 +1957,6 @@ const tr = {
 	'hubHome.closing.eyebrow': 'İlk bulgu',
 	'hubHome.closing.title':
 		'Anlatmayalım, gösterelim. Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.',
-	'hubHome.closing.capacity': 'İlk 3 Kurucu Partner kontenjanı — kapsam görüşmesiyle',
 	'hubHome.form.title': 'İlk bulgu raporu talebi',
 	'hubHome.form.description':
 		'Form gönderimi yakında açılacak. Alanları şimdiden inceleyebilirsiniz.',
@@ -3975,7 +3974,6 @@ const en: Record<MessageKey, string> = {
 	'hubHome.closing.eyebrow': 'First finding',
 	'hubHome.closing.title':
 		'Let us show you, not tell you. If we cannot find a number you did not know, we close the subject.',
-	'hubHome.closing.capacity': 'First 3 Founding Partner places — by scope consultation',
 	'hubHome.form.title': 'First findings report request',
 	'hubHome.form.description': 'Form submission will open soon. You can review the fields now.',
 	'hubHome.form.name': 'Name',

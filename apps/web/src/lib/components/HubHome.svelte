@@ -211,12 +211,6 @@
 				<HubI18nText key="hubHome.nav.login" />
 			</a>
 		</nav>
-
-		<p
-			class="mx-auto mt-3 max-w-6xl text-[11px] font-medium tracking-wide text-text-faint sm:text-xs"
-		>
-			<HubI18nText key="hubHome.category" />
-		</p>
 	</header>
 
 	<main class="relative z-10">
@@ -525,11 +519,6 @@
 					<h2 class="mt-4 text-2xl leading-tight font-semibold tracking-tight sm:text-4xl">
 						<HubI18nText key="hubHome.closing.title" />
 					</h2>
-					<p
-						class="mt-6 rounded-lg border border-white/25 bg-white/10 p-4 text-sm font-medium text-white"
-					>
-						<HubI18nText key="hubHome.closing.capacity" />
-					</p>
 				</div>
 
 				<form
