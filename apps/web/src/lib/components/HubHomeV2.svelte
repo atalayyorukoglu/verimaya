@@ -7,9 +7,33 @@
 	const contactEmail = 'info@verimaya.com';
 
 	const cohorts = [
-		{ ay: 'Ocak', harcama: '100.000', a1: '18.400', a3: '146.200', a6: '288.900', a9: '341.500', durum: 'olgun' },
-		{ ay: 'Şubat', harcama: '120.000', a1: '22.100', a3: '161.800', a6: '309.400', a9: '—', durum: '6. ayında' },
-		{ ay: 'Mart', harcama: '90.000', a1: '14.700', a3: '118.300', a6: '—', a9: '—', durum: '3. ayında' },
+		{
+			ay: 'Ocak',
+			harcama: '100.000',
+			a1: '18.400',
+			a3: '146.200',
+			a6: '288.900',
+			a9: '341.500',
+			durum: 'olgun'
+		},
+		{
+			ay: 'Şubat',
+			harcama: '120.000',
+			a1: '22.100',
+			a3: '161.800',
+			a6: '309.400',
+			a9: '—',
+			durum: '6. ayında'
+		},
+		{
+			ay: 'Mart',
+			harcama: '90.000',
+			a1: '14.700',
+			a3: '118.300',
+			a6: '—',
+			a9: '—',
+			durum: '3. ayında'
+		},
 		{ ay: 'Nisan', harcama: '140.000', a1: '31.200', a3: '—', a6: '—', a9: '—', durum: '1. ayında' }
 	] as const;
 </script>
@@ -69,8 +93,8 @@
 					</div>
 				</dl>
 				<p class="v2-report-note">
-					Üç sayı da mevcut sisteminizdeki veriden çıkar. Kurulum değil, teşhis —
-					bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.
+					Üç sayı da mevcut sisteminizdeki veriden çıkar. Kurulum değil, teşhis — bilmediğiniz bir
+					sayı çıkmazsa konuyu kapatırız.
 				</p>
 			</figure>
 		</section>
@@ -79,9 +103,9 @@
 		<section id="kohort" class="v2-section">
 			<h2>Ocak reklamının hastası Ağustos'ta öder.<br />Aylık tablo bunu göremez.</h2>
 			<p class="v2-prose">
-				Reklamı kestiğiniz ay kâr "artar" — gider durur, eski hastalar ödemeye devam eder.
-				Aylık kâr-zarar tablosu size yanlış sinyal verir. Kohort tablosu her lirayı,
-				lead'in geldiği aya yazar; reklamın gerçekten kazandırıp kazandırmadığı ancak böyle görünür.
+				Reklamı kestiğiniz ay kâr "artar" — gider durur, eski hastalar ödemeye devam eder. Aylık
+				kâr-zarar tablosu size yanlış sinyal verir. Kohort tablosu her lirayı, lead'in geldiği aya
+				yazar; reklamın gerçekten kazandırıp kazandırmadığı ancak böyle görünür.
 			</p>
 			<div class="v2-table-wrap">
 				<table>
@@ -117,28 +141,39 @@
 
 		<!-- ── Nasıl çalışır ────────────────────────────────── -->
 		<section id="nasil" class="v2-section v2-alt">
-			<h2>Tek zincir, dört adım</h2>
+			<h2>Rapor vermiyoruz.<br />Teşhis koyup müdahale ediyoruz.</h2>
 			<ol class="v2-chain">
 				<li>
-					<strong>Reklam</strong>
-					<span>Google ve Meta harcaması otomatik okunur.</span>
+					<strong>Ölç</strong>
+					<span>
+						Reklamdan tahsilata her halka tek hesapta: kampanya, temsilci, hekim, hatırlatma —
+						hepsinin bir sayısı olur.
+					</span>
 				</li>
 				<li>
-					<strong>Lead</strong>
-					<span>Her lead bir sahibe düşer; takipsiz kalan görünür olur.</span>
+					<strong>Teşhis koy</strong>
+					<span>
+						Hasta gelmiyorsa nedeni isim isim çıkar: hangi kampanya boş lead getiriyor, kim geç
+						dönüyor, hangi tedavi planı tutmuyor.
+					</span>
 				</li>
 				<li>
-					<strong>Hasta</strong>
-					<span>Dosya, randevu ve süreç tek yerde — kimsenin hafızasına bağlı değil.</span>
+					<strong>Müdahale et</strong>
+					<span>
+						Her ay birlikte karar veririz: bütçe nereye kayacak, kim aranacak, ne durdurulacak.
+					</span>
 				</li>
 				<li>
-					<strong>Tahsilat</strong>
-					<span>Kasaya giren para ilk adıma geri bağlanır. Zincir burada kapanır.</span>
+					<strong>Tekrar ölç</strong>
+					<span>
+						Ertesi ay aynı sayılara bakılır: müdahale işe yaradı mı? Döngü her ay yeniden kapanır.
+					</span>
 				</li>
 			</ol>
 			<p class="v2-prose">
-				Kurulumu, veri göçünü ve doğrulamayı biz yaparız; her ay raporu yorumuyla birlikte
-				önünüze koyarız. Yazılım satın almazsınız — hesabı tutulan bir büyüme hizmeti alırsınız.
+				Kurulumu, veri göçünü ve doğrulamayı biz yaparız. Sonuç: her halkanın bir sayısı, her
+				sayının bir sorumlusu, her ayın bir müdahale listesi olur. Yazılım satın almazsınız — hesabı
+				tutulan ve yönetilen bir büyüme hizmeti alırsınız.
 			</p>
 		</section>
 
@@ -146,9 +181,9 @@
 		<section class="v2-section">
 			<h2>Veriniz kimseyle komşu değil</h2>
 			<p class="v2-prose">
-				Her acentenin verisi ayrı tutulur; izolasyon sözleşmede yazılıdır ve denetime açıktır.
-				Hasta verisi yalnız sözleşme ve aydınlatma zemini kurulduktan sonra işlenir —
-				rapor önce, veri sonra değil; sözleşme önce, veri sonra.
+				Her acentenin verisi ayrı tutulur; izolasyon sözleşmede yazılıdır ve denetime açıktır. Hasta
+				verisi yalnız sözleşme ve aydınlatma zemini kurulduktan sonra işlenir — rapor önce, veri
+				sonra değil; sözleşme önce, veri sonra.
 				<a href="/kvkk-aydinlatma/">KVKK aydınlatma metni</a>.
 			</p>
 		</section>
@@ -157,8 +192,8 @@
 		<section id="gorusme" class="v2-closing">
 			<h2>Anlatmayalım, gösterelim.</h2>
 			<p>
-				30 dakikalık bir görüşme planlayalım. Uygunsa sözleşmeyle veri alır,
-				ilk bulgu raporunuzu çıkarırız. Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.
+				30 dakikalık bir görüşme planlayalım. Uygunsa sözleşmeyle veri alır, ilk bulgu raporunuzu
+				çıkarırız. Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.
 			</p>
 			<a class="v2-btn v2-btn-lg" href={`mailto:${contactEmail}?subject=İlk bulgu raporu`}>
 				Görüşme isteyin — {contactEmail}
@@ -322,7 +357,9 @@
 		border: 1px solid var(--line);
 		border-radius: 10px;
 		padding: 1.75rem;
-		box-shadow: 0 1px 2px rgba(23, 32, 28, 0.05), 0 12px 32px -16px rgba(23, 32, 28, 0.18);
+		box-shadow:
+			0 1px 2px rgba(23, 32, 28, 0.05),
+			0 12px 32px -16px rgba(23, 32, 28, 0.18);
 	}
 	.v2-report figcaption {
 		display: flex;
