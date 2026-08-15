@@ -26,3 +26,4 @@ coverage/
 _tmp_*
 testsprite_tests/tmp/
 testsprite_tests/tmp/config.json
+.cursor-brief/
