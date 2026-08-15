@@ -289,32 +289,23 @@
 		</section>
 
 		<section class="px-5 py-14 sm:px-10 sm:py-20">
-			<div
-				class="mx-auto grid max-w-6xl gap-8 rounded-[1.5rem] border border-border bg-surface p-6 sm:p-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-center lg:p-12"
-			>
-				<div
-					class="flex size-20 items-center justify-center rounded-2xl bg-brand/15 text-3xl font-semibold text-brand"
+			<div class="mx-auto flex max-w-3xl flex-col items-center text-center">
+				<p class="text-xs font-semibold tracking-wider text-brand uppercase">
+					<HubI18nText key="hubHome.finding.eyebrow" />
+				</p>
+				<h2 class="mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
+					<HubI18nText key="hubHome.finding.title" />
+				</h2>
+				<p class="mt-4 leading-relaxed text-text-muted">
+					<HubI18nText key="hubHome.finding.description" />
+				</p>
+				<a
+					href="#ilk-bulgu"
+					class="mt-6 inline-flex min-h-11 items-center gap-2 rounded-[6px] bg-brand px-5 text-sm font-medium text-primary-foreground hover:bg-brand-hover"
 				>
-					10
-				</div>
-				<div>
-					<p class="text-xs font-semibold tracking-wider text-brand uppercase">
-						<HubI18nText key="hubHome.finding.eyebrow" />
-					</p>
-					<h2 class="mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
-						<HubI18nText key="hubHome.finding.title" />
-					</h2>
-					<p class="mt-4 max-w-3xl leading-relaxed text-text-muted">
-						<HubI18nText key="hubHome.finding.description" />
-					</p>
-					<a
-						href="#ilk-bulgu"
-						class="mt-6 inline-flex min-h-11 items-center gap-2 rounded-[6px] bg-brand px-5 text-sm font-medium text-primary-foreground hover:bg-brand-hover"
-					>
-						<HubI18nText key="hubHome.cta.primary" />
-						<ArrowRight class="size-4" aria-hidden="true" />
-					</a>
-				</div>
+					<HubI18nText key="hubHome.cta.primary" />
+					<ArrowRight class="size-4" aria-hidden="true" />
+				</a>
 			</div>
 		</section>
 
