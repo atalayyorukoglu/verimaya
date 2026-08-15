@@ -21,8 +21,10 @@
 	let appReady = $state(!browser || !USE_MSW || !import.meta.env.DEV);
 	/** Auth gate finished (or skipped). Prevents flashing panel before redirect. */
 	let authReady = $state(!browser || USE_MSW);
+	/** `(public)` group membership from its layout load — no path enumeration here. */
+	const isPublicRoute = $derived(page.data.publicRoute === true);
 	// Public routes + marketing apex `/` — skip AppShell.
-	const isBareRoute = $derived(isPublicPath(page.url.pathname));
+	const isBareRoute = $derived(isPublicPath(page.url.pathname, isPublicRoute));
 	/** Marketing hub + public prerender surfaces — indexable. */
 	const isIndexablePublic = $derived(
 		(page.url.pathname === '/' && isMarketingHost()) ||
@@ -75,9 +77,10 @@
 			return;
 		}
 		const pathname = page.url.pathname;
+		const publicRoute = isPublicRoute;
 		let cancelled = false;
 		authReady = false;
-		void runAuthGate(pathname).finally(() => {
+		void runAuthGate(pathname, publicRoute).finally(() => {
 			if (!cancelled) authReady = true;
 		});
 		return () => {

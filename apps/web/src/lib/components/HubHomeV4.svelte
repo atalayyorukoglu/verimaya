@@ -9,10 +9,22 @@
 
 	const ladder = [
 		{ no: '1', ad: 'Kayıt', soru: 'Ne oldu?', kim: 'CRM · ERP · hastane sistemi', bizde: false },
-		{ no: '2', ad: 'Etkileşim', soru: 'Kiminle konuşuldu?', kim: 'WhatsApp · çağrı merkezi', bizde: false },
+		{
+			no: '2',
+			ad: 'Etkileşim',
+			soru: 'Kiminle konuşuldu?',
+			kim: 'WhatsApp · çağrı merkezi',
+			bizde: false
+		},
 		{ no: '3', ad: 'Rapor', soru: 'Sayılar ne?', kim: 'panel · gösterge ekranı', bizde: false },
 		{ no: '4', ad: 'Teşhis', soru: 'Neden böyle oldu?', kim: 'burada başlıyoruz', bizde: true },
-		{ no: '5', ad: 'Aksiyon', soru: 'Ne yapılmalı? Yapıldı mı? İşe yaradı mı?', kim: 'sattığımız şey bu', bizde: true }
+		{
+			no: '5',
+			ad: 'Aksiyon',
+			soru: 'Ne yapılmalı? Yapıldı mı? İşe yaradı mı?',
+			kim: 'sattığımız şey bu',
+			bizde: true
+		}
 	] as const;
 
 	const reads = [
@@ -141,8 +153,8 @@
 				</ol>
 
 				<p class="v4-note">
-					İlk üç basamak size veriyi verir; kararı yine siz verirsiniz. Dördüncü ve beşinci
-					basamak bizim işimiz.
+					İlk üç basamak size veriyi verir; kararı yine siz verirsiniz. Dördüncü ve beşinci basamak
+					bizim işimiz.
 				</p>
 			</div>
 		</section>
@@ -163,8 +175,8 @@
 				</div>
 
 				<p class="v4-note">
-					Reklamı biz yönetmesek de kalitesini ölçeriz. Kontrol etmediğimiz halkayı da teşhis
-					ederiz — hasta gelmiyorsa nedeni adressiz değil, adreslidir.
+					Reklamı biz yönetmesek de kalitesini ölçeriz. Kontrol etmediğimiz halkayı da teşhis ederiz
+					— hasta gelmiyorsa nedeni adressiz değil, adreslidir.
 				</p>
 			</div>
 		</section>
@@ -176,8 +188,8 @@
 					<span class="v4-label">Çıktı</span>
 					<h2>Ay sonunda rapor değil, liste alırsınız.</h2>
 					<p class="v4-lede">
-						Her satırda üç şey vardır: ne yapılacak, neden, kim ve ne zaman. Ertesi ay ilk
-						bakılan şey bu listenin ne kadarının kapandığıdır.
+						Her satırda üç şey vardır: ne yapılacak, neden, kim ve ne zaman. Ertesi ay ilk bakılan
+						şey bu listenin ne kadarının kapandığıdır.
 					</p>
 					<p class="v4-note">
 						İlk teslimlerde bu listeyi sizinle birlikte biz çıkarıyoruz — bir panel ekranı
@@ -265,18 +277,17 @@
 					<span class="v4-label">Girdi kalitesi</span>
 					<h2>Teşhis, veri doğruysa işe yarar.</h2>
 					<p class="v4-lede">
-						Aksiyon üretmek için zincirin dolu olması gerekir. Bu yüzden veri girişini insana
-						yük olmaktan çıkardık: ekibiniz WhatsApp’ta ne yazıyorsa sistem onu okur,
-						değişikliği hazırlar, siz onaylarsınız. <b>Onaylayana kadar hiçbir kayıt
-						değişmez.</b>
+						Aksiyon üretmek için zincirin dolu olması gerekir. Bu yüzden veri girişini insana yük
+						olmaktan çıkardık: ekibiniz WhatsApp’ta ne yazıyorsa sistem onu okur, değişikliği
+						hazırlar, siz onaylarsınız. <b>Onaylayana kadar hiçbir kayıt değişmez.</b>
 					</p>
 					<p class="v4-lede">
-						Onayladığınız her değişikliğin kaynağı kayıtlıdır: hangi mesaj, kim yazdı, kim
-						onayladı, ne zaman.
+						Onayladığınız her değişikliğin kaynağı kayıtlıdır: hangi mesaj, kim yazdı, kim onayladı,
+						ne zaman.
 					</p>
 					<p class="v4-note">
-						Yapay zekâ hasta adına konuşmaz, kaydı kendi başına değiştirmez. Öneri üretir;
-						kararı insan verir.
+						Yapay zekâ hasta adına konuşmaz, kaydı kendi başına değiştirmez. Öneri üretir; kararı
+						insan verir.
 					</p>
 				</div>
 			</div>
@@ -288,13 +299,12 @@
 				<span class="v4-label">Kanıt</span>
 				<h2>İlk müdahale listesi, ilk görüşmenin sonunda çıkar.</h2>
 				<p>
-					Mevcut sisteminizden veriyi alır, doğrularız. Doğrulama biter bitmez üç şey görünür:
-					kaç çift kayıt var, kaç hastaya 30 günden uzun süredir dokunulmamış, ne kadar bakiye
-					tahsil edilmemiş.
+					Mevcut sisteminizden veriyi alır, doğrularız. Doğrulama biter bitmez üç şey görünür: kaç
+					çift kayıt var, kaç hastaya 30 günden uzun süredir dokunulmamış, ne kadar bakiye tahsil
+					edilmemiş.
 				</p>
 				<p>
-					Üçü de zaten sizin verinizde duruyor. Eksik olan, birinin bakıp “şunu yapalım”
-					demesi.
+					Üçü de zaten sizin verinizde duruyor. Eksik olan, birinin bakıp “şunu yapalım” demesi.
 				</p>
 				<p class="v4-pledge">Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.</p>
 			</div>
@@ -340,8 +350,8 @@
 			<div class="v4-closing-in">
 				<h2>Anlatmayalım, gösterelim.</h2>
 				<p>
-					30 dakikalık bir görüşme yapalım. Uygunsa sözleşmeyle veri alır, ilk bulgu raporunuzu
-					ve ilk müdahale listenizi çıkarırız. Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.
+					30 dakikalık bir görüşme yapalım. Uygunsa sözleşmeyle veri alır, ilk bulgu raporunuzu ve
+					ilk müdahale listenizi çıkarırız. Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.
 				</p>
 				<a class="v4-btn v4-btn-lg" href={mailto}>Görüşme isteyin</a>
 				<p class="v4-closing-mail">{contactEmail}</p>
@@ -388,8 +398,7 @@
 	}
 
 	.v4 h1,
-	.v4 h2,
-	.v4 h3 {
+	.v4 h2 {
 		margin: 0;
 		font-weight: 600;
 		letter-spacing: -0.03em;
@@ -900,8 +909,7 @@
 	.v4-center {
 		padding: 6rem 1.5rem;
 		border-bottom: 1px solid var(--line);
-		background:
-			radial-gradient(ellipse 60% 60% at 50% 0%, rgba(255, 122, 69, 0.07), transparent);
+		background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(255, 122, 69, 0.07), transparent);
 	}
 	.v4-center-in {
 		max-width: 42rem;
@@ -993,8 +1001,7 @@
 	.v4-closing {
 		padding: 6.5rem 1.5rem;
 		text-align: center;
-		background:
-			radial-gradient(ellipse 55% 80% at 50% 100%, rgba(255, 122, 69, 0.15), transparent);
+		background: radial-gradient(ellipse 55% 80% at 50% 100%, rgba(255, 122, 69, 0.15), transparent);
 	}
 	.v4-closing-in {
 		max-width: 40rem;

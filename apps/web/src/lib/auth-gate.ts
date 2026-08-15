@@ -3,28 +3,18 @@ import { authClient } from '$lib/auth';
 import { USE_MSW } from '$lib/env';
 import { isMarketingHost } from '$lib/host';
 
-const PUBLIC_PREFIXES = [
-	'/login',
-	'/reset-password',
-	'/vitrin',
-	/** Arşivlenmiş eski ana sayfa — herkese açık ama noindex (isIndexablePublic'e eklenmez). */
-	'/hub-v1',
-	/** Hub denemesi — herkese açık ama noindex (isIndexablePublic'e eklenmez). */
-	'/hub-v2',
-	'/hub-v3',
-	'/yapay-zeka-karnesi',
-	'/kvkk-aydinlatma',
-	'/app',
-	'/crm',
-	'/tools',
-	'/resources'
-] as const;
+const STANDALONE_PUBLIC_PREFIXES = ['/login', '/reset-password'] as const;
 
-export function isPublicPath(pathname: string): boolean {
+/**
+ * `(public)` route group membership comes from its layout data. Only public
+ * routes outside that group stay in this path list.
+ */
+export function isPublicPath(pathname: string, isPublicRoute = false): boolean {
+	if (isPublicRoute) return true;
 	if (pathname === '/' || pathname === '') {
 		return isMarketingHost();
 	}
-	return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+	return STANDALONE_PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 /**
@@ -32,11 +22,11 @@ export function isPublicPath(pathname: string): boolean {
  * Skipped when MSW demo is on. Marketing host `/` is public.
  * Public paths (except login redirect) skip getSession so apex hub never hangs on API CORS.
  */
-export async function runAuthGate(pathname: string): Promise<void> {
+export async function runAuthGate(pathname: string, isPublicRoute = false): Promise<void> {
 	if (USE_MSW) return;
 
 	const isLogin = pathname === '/login' || pathname.startsWith('/login/');
-	if (!isLogin && isPublicPath(pathname)) return;
+	if (!isLogin && isPublicPath(pathname, isPublicRoute)) return;
 
 	const { data } = await authClient.getSession();
 	const session = data?.session ?? null;
