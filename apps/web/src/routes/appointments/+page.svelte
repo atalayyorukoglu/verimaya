@@ -303,7 +303,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('appointments.title')} · Veri Maya</title>
+	<title>{t('appointments.title')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 
-	/** Horizontal Veri Maya wordmark. currentColor — no CSS filter/invert (keeps vectors sharp). */
+	/** Horizontal Verimaya wordmark. currentColor — no CSS filter/invert (keeps vectors sharp). */
 	let {
 		class: className
 	}: {

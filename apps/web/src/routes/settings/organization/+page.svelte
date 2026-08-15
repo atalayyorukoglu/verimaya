@@ -83,7 +83,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('settings.organization.title')} · {t('nav.settings')} · Veri Maya</title>
+	<title>{t('settings.organization.title')} · {t('nav.settings')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

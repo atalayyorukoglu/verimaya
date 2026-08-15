@@ -105,7 +105,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('settings.audit.title')} · {t('nav.settings')} · Veri Maya</title>
+	<title>{t('settings.audit.title')} · {t('nav.settings')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">

@@ -138,7 +138,7 @@
 </script>
 
 <svelte:head>
-	<title>Panel · Veri Maya</title>
+	<title>Panel · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">

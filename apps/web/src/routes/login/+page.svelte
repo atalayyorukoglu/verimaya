@@ -325,7 +325,7 @@
 				href={PUBLIC_SITE_URL}
 				class="text-text-muted underline-offset-4 transition-colors hover:text-text hover:underline"
 			>
-				Veri Maya nedir?
+				Verimaya nedir?
 			</a>
 		</p>
 	</div>

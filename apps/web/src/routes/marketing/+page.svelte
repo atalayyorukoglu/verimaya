@@ -56,7 +56,7 @@
 </script>
 
 <svelte:head>
-	<title>Pazarlama · Veri Maya</title>
+	<title>Pazarlama · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

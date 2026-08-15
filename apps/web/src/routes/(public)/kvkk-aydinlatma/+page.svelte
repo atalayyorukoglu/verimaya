@@ -2,7 +2,7 @@
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { PUBLIC_SITE_URL } from '$lib/env';
 
-	const title = 'KVKK Aydınlatma Metni — Veri Maya';
+	const title = 'KVKK Aydınlatma Metni — Verimaya';
 	const description =
 		'Ücretsiz yapay zeka karnesi kapsamında toplanan kişisel verilere ilişkin aydınlatma metni.';
 	const canonical = `${PUBLIC_SITE_URL}/kvkk-aydinlatma/`;
@@ -21,7 +21,7 @@
 	<header class="flex items-center justify-between px-6 py-6 sm:px-10">
 		<a href="/" class="flex items-center gap-2 text-text">
 			<BrandMark class="h-6 w-6" title="" />
-			<span class="text-sm font-semibold tracking-tight">Veri Maya</span>
+			<span class="text-sm font-semibold tracking-tight">Verimaya</span>
 		</a>
 		<a
 			href="/yapay-zeka-karnesi/"
@@ -41,7 +41,7 @@
 			<section class="space-y-2">
 				<h2 class="text-base font-semibold tracking-tight">1. Veri sorumlusu</h2>
 				<p class="text-text-muted">
-					Veri Maya (iletişim: destek için paneldeki iletişim kanalları) ücretsiz yapay zeka karnesi
+					Verimaya (iletişim: destek için paneldeki iletişim kanalları) ücretsiz yapay zeka karnesi
 					kapsamında kişisel verilerinizi aşağıda belirtilen amaçlarla işler.
 				</p>
 			</section>
@@ -77,7 +77,7 @@
 			<section class="space-y-2">
 				<h2 class="text-base font-semibold tracking-tight">5. Haklarınız</h2>
 				<p class="text-text-muted">
-					KVKK m.11 kapsamındaki haklarınızı (bilgi talep, düzeltme, silme, itiraz vb.) Veri Maya
+					KVKK m.11 kapsamındaki haklarınızı (bilgi talep, düzeltme, silme, itiraz vb.) Verimaya
 					iletişim kanalları üzerinden kullanabilirsiniz. Rızanızı istediğiniz zaman geri
 					çekebilirsiniz; geri çekme, önceki işlemlerin hukuka uygunluğunu etkilemez.
 				</p>

@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-	<title>Uyumluluk · Pazarlama · Veri Maya</title>
+	<title>Uyumluluk · Pazarlama · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">

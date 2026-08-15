@@ -90,7 +90,7 @@
 	<link rel="icon" href="/favicon.ico" sizes="any" />
 	<link rel="icon" href={favicon} type="image/svg+xml" />
 	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-	<title>Veri Maya</title>
+	<title>Verimaya</title>
 	{#if !isIndexablePublic}
 		<meta name="robots" content="noindex" />
 	{/if}

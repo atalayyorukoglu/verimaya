@@ -145,7 +145,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('settings.ads.title')} · Veri Maya</title>
+	<title>{t('settings.ads.title')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

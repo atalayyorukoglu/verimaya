@@ -20,7 +20,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('settings.aiLearning.title')} · {t('settings.ai.title')} · Veri Maya</title>
+	<title>{t('settings.aiLearning.title')} · {t('settings.ai.title')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

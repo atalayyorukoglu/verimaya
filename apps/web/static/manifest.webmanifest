@@ -1,6 +1,6 @@
 {
-	"name": "Veri Maya",
-	"short_name": "Veri Maya",
+	"name": "Verimaya",
+	"short_name": "Verimaya",
 	"description": "Sağlık turizmi operasyon platformu",
 	"start_url": "/",
 	"display": "standalone",

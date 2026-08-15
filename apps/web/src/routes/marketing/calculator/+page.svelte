@@ -83,7 +83,7 @@
 </script>
 
 <svelte:head>
-	<title>Hesap · Pazarlama · Veri Maya</title>
+	<title>Hesap · Pazarlama · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">

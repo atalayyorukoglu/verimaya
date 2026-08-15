@@ -193,7 +193,7 @@
 </script>
 
 <svelte:head>
-	<title>n8n / API · {t('nav.settings')} · Veri Maya</title>
+	<title>n8n / API · {t('nav.settings')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">

@@ -188,7 +188,7 @@
 </script>
 
 <svelte:head>
-	<title>Yayın Öncesi · Pazarlama · Veri Maya</title>
+	<title>Yayın Öncesi · Pazarlama · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">

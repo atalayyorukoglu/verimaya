@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 
-	/** Veri Maya mark (4-quadrant emblem). Uses currentColor — set text-* on the host. */
+	/** Verimaya mark (4-quadrant emblem). Uses currentColor — set text-* on the host. */
 	let {
 		class: className,
 		/** Empty string = decorative (parent supplies the accessible name). */
-		title = 'Veri Maya'
+		title = 'Verimaya'
 	}: {
 		class?: string;
 		title?: string;

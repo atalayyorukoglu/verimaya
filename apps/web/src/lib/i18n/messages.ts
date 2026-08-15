@@ -42,19 +42,19 @@ const tr = {
 	'nav.reports': 'Raporlar',
 	'nav.scorecard': 'AI Karne',
 	'nav.tools': 'Araçlar',
-	'nav.tools.documentTitle': 'Araçlar · Veri Maya',
+	'nav.tools.documentTitle': 'Araçlar · Verimaya',
 	'nav.tools.title': 'Araçlar',
 	'nav.tools.description': 'Modül yetenekleri, durumları ve Ürünler menüsünde gösterme tercihleri.',
 	'nav.resources': 'Kaynaklar',
-	'nav.resources.documentTitle': 'Kaynaklar · Veri Maya',
+	'nav.resources.documentTitle': 'Kaynaklar · Verimaya',
 	'nav.resources.title': 'Kaynaklar',
 	'nav.resources.description': 'Operasyon ve satış rehberleri.',
 	'nav.aiPrep': 'Ai Hazırlık',
-	'nav.aiPrep.documentTitle': 'Ai Hazırlık · Veri Maya',
+	'nav.aiPrep.documentTitle': 'Ai Hazırlık · Verimaya',
 	'nav.aiPrep.title': 'Ai Hazırlık',
 	'nav.aiPrep.description': 'AI operasyon hazırlığı — içerik yakında.',
 	'nav.docs': 'Dokümantasyon & Rehberler',
-	'nav.docs.documentTitle': 'Dokümantasyon · Veri Maya',
+	'nav.docs.documentTitle': 'Dokümantasyon · Verimaya',
 	'nav.docs.title': 'Dokümantasyon & Rehberler',
 	'nav.docs.description': 'Ürün rehberleri ve dokümantasyon — içerik yakında.',
 	'nav.marketingOverview': 'Kampanyalar',
@@ -74,7 +74,7 @@ const tr = {
 	'dev.title': 'Platform paneli',
 	'dev.description':
 		'Süper admin: tüm organizasyonları ekle, yeniden adlandır, soft-sil; üye ekle/çıkar.',
-	'dev.documentTitle': 'Platform · Veri Maya',
+	'dev.documentTitle': 'Platform · Verimaya',
 	'dev.orgs': 'Organizasyonlar',
 	'dev.newOrgName': 'Yeni organizasyon adı',
 	'dev.grantSelf': 'Beni owner yap',
@@ -110,7 +110,7 @@ const tr = {
 	// Maya AI (mock UI — henüz API yok)
 	'maya.title': 'Maya AI',
 	'maya.subtitle': 'Operasyon asistanı — taslak önerir, sen onaylarsın.',
-	'maya.documentTitle': 'Maya AI · Veri Maya',
+	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
 		'Mock sohbet: randevu, kişi özeti ve veri kalitesi sorularını dene. Gerçek LLM bağlantısı yok.',
 	'maya.mockBadge': 'Mock',
@@ -167,8 +167,8 @@ const tr = {
 	'patients.list.noSource': 'Kaynak yok',
 	'patients.list.noPhone': 'Telefon yok',
 	'patients.list.createError': 'Kayıt başarısız',
-	'patients.list.documentTitle': 'Hastalar · Veri Maya',
-	'patients.duplicates.documentTitle': 'Çift kayıt · Hastalar · Veri Maya',
+	'patients.list.documentTitle': 'Hastalar · Verimaya',
+	'patients.duplicates.documentTitle': 'Çift kayıt · Hastalar · Verimaya',
 	'patients.duplicates.title': 'Hasta çift kayıtları',
 	'patients.duplicates.description': 'Aynı telefon, e-posta veya adla birden fazla hasta dosyası.',
 	'patients.duplicates.hint':
@@ -288,7 +288,7 @@ const tr = {
 	'karne.result.euEffectiveDate': '2 Ağustos 2026',
 	'karne.result.euNoticeSuffix': "'dan itibaren sizi kapsıyor.",
 	'karne.result.productBlurb':
-		"Veri Maya, hasta yolculuğunu tek panelde toplar — lead'den randevuya, finanstan WhatsApp aktarımına.",
+		"Verimaya, hasta yolculuğunu tek panelde toplar — lead'den randevuya, finanstan WhatsApp aktarımına.",
 	'karne.result.backToShowcase': 'Vitrine dön',
 	'karne.result.demoLogin': 'Demo için giriş',
 
@@ -466,7 +466,7 @@ const tr = {
 	'settings.ghl.description': 'Lead ve iletişim senkronu — webhook-first, alan sahipliği kurallı.',
 	'settings.ghl.card.name': 'GHL hesabı',
 	'settings.ghl.card.description':
-		"Contact ve opportunity webhook'ları kuyruğa yazılır, worker'da işlenir; Veri Maya sahibi olduğu alanları GHL'e geri yazar.",
+		"Contact ve opportunity webhook'ları kuyruğa yazılır, worker'da işlenir; Verimaya sahibi olduğu alanları GHL'e geri yazar.",
 	'settings.ghl.connect': "GHL'e bağlan",
 	'settings.ghl.flash': 'GHL bağlantısı tamamlandı.',
 	'settings.ghl.statusLabel': 'Durum',
@@ -489,7 +489,7 @@ const tr = {
 	'settings.ghl.syncError': 'Senkron başarısız.',
 	'settings.ghl.ownership.heading': 'Alan sahipliği',
 	'settings.ghl.ownership.lead': 'Lead durumu ve pipeline aşaması: GHL sahibi',
-	'settings.ghl.ownership.ops': 'Randevu, finans ve operasyon alanları: Veri Maya sahibi',
+	'settings.ghl.ownership.ops': 'Randevu, finans ve operasyon alanları: Verimaya sahibi',
 	'settings.ghl.ownership.conflict': 'Çakışmada kaynak sahibi kazanır, olay denetim kaydına düşer.',
 	'settings.ghl.dev.heading': 'Geliştirme / fixture',
 	'settings.ghl.dev.body':
@@ -825,7 +825,7 @@ const tr = {
 		'Sistemi daha verimli kullanmak, reklam ve satış performansınızı artırmak istiyorsunuz ama nereden başlayacağınızı bilemiyor musunuz?',
 	'hub.resources.title': 'Özellik rehberleri, dökümantasyon ve satış taktikleri tek kütüphanede.',
 	'hub.resources.desc':
-		'Kaynaklar; Veri Maya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
+		'Kaynaklar; Verimaya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
 	'hub.resources.outcome':
 		'Sonuç: “Bu özelliği nasıl kullanırız?” ya da “Satışları nasıl artırırız?” sorularının yanıtı rehberlerimizle anında elinizin altında.',
 	'hub.resources.ctaPrimary': 'Kaynakları gör',
@@ -857,7 +857,7 @@ const tr = {
 		'Reklam bütçenizi yayına almadan önce tahminlerle veya karmaşık Excel tablolarıyla mı riske atıyorsunuz?',
 	'hub.tools.title': 'Reklama paranızı yatırmadan önce simüle edin ve doğrulayın.',
 	'hub.tools.desc':
-		'Veri Maya Araçları; reklam yayınlamadan önceki planlama, bütçe simülasyonu ve denetim adımlarını otomatiğe bağlar. Maya CRM ve Maya App’e tam entegre çalışarak boşa gidecek her tıklamayı engeller.',
+		'Verimaya Araçları; reklam yayınlamadan önceki planlama, bütçe simülasyonu ve denetim adımlarını otomatiğe bağlar. Maya CRM ve Maya App’e tam entegre çalışarak boşa gidecek her tıklamayı engeller.',
 	'hub.tools.outcome': 'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce %100 netlik.',
 	'hub.tools.campaign.title': 'Kampanya Asistanı',
 	'hub.tools.campaign.desc':
@@ -874,7 +874,7 @@ const tr = {
 	'hub.tools.cta': 'Tüm araçları keşfet',
 
 	'hub.scenarios.title': 'Kullanım senaryoları',
-	'hub.scenarios.desc': 'Farklı klinik profillerinde Veri Maya ekosistemi nasıl çalışır.',
+	'hub.scenarios.desc': 'Farklı klinik profillerinde Verimaya ekosistemi nasıl çalışır.',
 	'hub.scenarios.hair.title': 'Saç ekimi kliniği',
 	'hub.scenarios.hair.desc':
 		"Lead WhatsApp'tan gelir → Maya CRM'de pipeline'a düşer → Randevu alınır → İşlem yapılır → Ödeme Maya App'te kaydedilir → Raporlanır.",
@@ -891,7 +891,7 @@ const tr = {
 	'hub.karne.cta': 'Karnemi al',
 
 	'hub.integrations.title': 'Entegrasyonlar',
-	'hub.integrations.desc': 'Veri Maya ekosistemini güçlendiren servisler.',
+	'hub.integrations.desc': 'Verimaya ekosistemini güçlendiren servisler.',
 
 	'hub.footer.tagline': 'Hasta yolculuğunu tek panelde yönetin',
 	'hub.footer.links': 'Kapılar',
@@ -901,7 +901,7 @@ const tr = {
 	'hub.footer.tools': 'Araçlar',
 
 	// Public pillar pages (/app /crm /tools /resources)
-	'pillar.app.metaTitle': 'Maya App (Operasyon) — Veri Maya',
+	'pillar.app.metaTitle': 'Maya App (Operasyon) — Verimaya',
 	'pillar.app.metaDesc':
 		'Hasta, randevu, finans, rapor ve denetim: sağlık turizmi operasyonunu tek panelde yönetin.',
 	'pillar.app.eyebrow': 'Maya App (Operasyon)',
@@ -954,7 +954,7 @@ const tr = {
 	'pillar.app.f.multiTenant.title': 'Çok kiracılı organizasyon',
 	'pillar.app.f.multiTenant.desc': 'Organizasyon, ekip ve rollerle tenant izolasyonunu koruyun.',
 
-	'pillar.crm.metaTitle': 'Maya CRM (Satış & Reklam) — Veri Maya',
+	'pillar.crm.metaTitle': 'Maya CRM (Satış & Reklam) — Verimaya',
 	'pillar.crm.metaDesc':
 		'Lead yakalama, pipeline, otomasyon ve reklam bağlantısı: satış hattını Maya CRM ile yönetin.',
 	'pillar.crm.eyebrow': 'Maya CRM (Satış & Reklam)',
@@ -986,7 +986,7 @@ const tr = {
 	'pillar.crm.f.ads.desc':
 		'Reklam hesaplarını bağlayın; harcama ve metrikler Gerçek ROAS raporunu besler.',
 
-	'pillar.resources.metaTitle': 'Kaynaklar — Veri Maya',
+	'pillar.resources.metaTitle': 'Kaynaklar — Verimaya',
 	'pillar.resources.metaDesc':
 		'Özellik rehberleri, platform dökümantasyonu ve sağlık turizmine özel reklam-satış taktikleri tek kütüphanede.',
 	'pillar.resources.eyebrow': 'Kaynaklar',
@@ -995,7 +995,7 @@ const tr = {
 	'pillar.resources.problem':
 		'Sistemi daha verimli kullanmak, reklam ve satış performansınızı artırmak istiyorsunuz ama nereden başlayacağınızı bilemiyor musunuz?',
 	'pillar.resources.body':
-		'Kaynaklar; Veri Maya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
+		'Kaynaklar; Verimaya’nın tüm yeteneklerini keşfetmeniz, platform dökümantasyonuna ulaşmanız ve sağlık turizmine özel reklam-satış taktikleriyle ekibinizi eğitmeniz için hazırlanmış kapsamlı bir bilgi merkezidir.',
 	'pillar.resources.outcome':
 		'Sonuç: “Bu özelliği nasıl kullanırız?” ya da “Satışları nasıl artırırız?” sorularının yanıtı rehberlerimizle anında elinizin altında.',
 	'pillar.resources.cta': 'Ücretsiz ürün karnesi al',
@@ -1008,7 +1008,7 @@ const tr = {
 	'pillar.resources.f.changelog.title': 'Yenilikler',
 	'pillar.resources.f.changelog.desc': 'Sürüm notlarıyla panele neyin geldiğini takip edin.',
 
-	'pillar.tools.metaTitle': 'Araçlar — Veri Maya',
+	'pillar.tools.metaTitle': 'Araçlar — Verimaya',
 	'pillar.tools.metaDesc':
 		'Reklama yatırmadan önce ROAS hesabı, simülatör, uyumluluk, şablon, ölçüm ve yayın öncesi kontrol.',
 	'pillar.tools.eyebrow': 'Araçlar',
@@ -1037,7 +1037,7 @@ const tr = {
 	'pillar.tools.f.prelaunch.desc':
 		'Uyumluluk, birim ekonomi ve ölçüm eşiklerini tek kapıda doğrulayın.',
 
-	'pillar.tools.calculator.metaTitle': 'Gerçek ROAS hesabı — Veri Maya Araçlar',
+	'pillar.tools.calculator.metaTitle': 'Gerçek ROAS hesabı — Verimaya Araçlar',
 	'pillar.tools.calculator.metaDesc':
 		'Platform ROAS’ı gerçek kâra çevirin; başabaş ve tavan reklam maliyetini hesaplayın.',
 	'pillar.tools.calculator.heading': 'Gerçek ROAS hesabı',
@@ -1048,7 +1048,7 @@ const tr = {
 		'Girdiğiniz maliyet ve gelir varsayımlarıyla başabaş noktası ve güvenli tavan reklam maliyetini görün. Maya App Gerçek ROAS raporuyla aynı matematiğe yaslanır.',
 	'pillar.tools.calculator.cta': 'Hesabı panelde aç',
 
-	'pillar.tools.simulator.metaTitle': 'Reklam simülatörü — Veri Maya Araçlar',
+	'pillar.tools.simulator.metaTitle': 'Reklam simülatörü — Verimaya Araçlar',
 	'pillar.tools.simulator.metaDesc':
 		'CPC, CVR ve satış oranıyla CPL ve satış maliyetini yayından önce simüle edin.',
 	'pillar.tools.simulator.heading': 'Reklam matematiği simülatörü',
@@ -1059,7 +1059,7 @@ const tr = {
 		'Trafik ışığı ve ölçek tavanıyla bütçeyi büyütmenin güvenli olup olmadığını test edin.',
 	'pillar.tools.simulator.cta': 'Simülatörü panelde aç',
 
-	'pillar.tools.compliance.metaTitle': 'Reklam uyumluluk — Veri Maya Araçlar',
+	'pillar.tools.compliance.metaTitle': 'Reklam uyumluluk — Verimaya Araçlar',
 	'pillar.tools.compliance.metaDesc':
 		'Sağlık turizmi reklam metinlerinde yasaklı ve riskli vaatleri tarayın.',
 	'pillar.tools.compliance.heading': 'Reklam uyumluluk taraması',
@@ -1070,7 +1070,7 @@ const tr = {
 		'Yasaklı ve riskli sağlık vaatlerini tarayın; yayın öncesi kontrol kapısında da kullanılır.',
 	'pillar.tools.compliance.cta': 'Taramayı panelde aç',
 
-	'pillar.tools.templates.metaTitle': 'Kampanya asistanı — Veri Maya Araçlar',
+	'pillar.tools.templates.metaTitle': 'Kampanya asistanı — Verimaya Araçlar',
 	'pillar.tools.templates.metaDesc':
 		'UTM builder, 3:2:2 kreatif split ve 60/30/10 bütçe şablonları.',
 	'pillar.tools.templates.heading': 'Kampanya asistanı',
@@ -1081,7 +1081,7 @@ const tr = {
 		'UTM yapıları, 3:2:2 kreatif dağılımı ve 60/30/10 bütçe şablonlarıyla satış hattına hazır kampanya iskeleti kurun.',
 	'pillar.tools.templates.cta': 'Şablonları panelde aç',
 
-	'pillar.tools.measurement.metaTitle': 'Ölçüm olgunluğu — Veri Maya Araçlar',
+	'pillar.tools.measurement.metaTitle': 'Ölçüm olgunluğu — Verimaya Araçlar',
 	'pillar.tools.measurement.metaDesc':
 		'Trust Score: consent, CAPI, SST ve offline conversion kontrolleri.',
 	'pillar.tools.measurement.heading': 'Ölçüm olgunluğu (Trust Score)',
@@ -1091,7 +1091,7 @@ const tr = {
 		'Consent/KVKK, enhanced conversions/CAPI, sunucu tarafı etiket, CRM→Ads offline conversion ve EMQ kontrollerini tarayın.',
 	'pillar.tools.measurement.cta': 'Ölçümü panelde aç',
 
-	'pillar.tools.prelaunch.metaTitle': 'Yayın öncesi kontrol — Veri Maya Araçlar',
+	'pillar.tools.prelaunch.metaTitle': 'Yayın öncesi kontrol — Verimaya Araçlar',
 	'pillar.tools.prelaunch.metaDesc':
 		'Uyumluluk, birim ekonomi ve ölçüm eşiklerini yayından önce doğrulayın.',
 	'pillar.tools.prelaunch.heading': 'Yayın öncesi kontrol',
@@ -1126,18 +1126,18 @@ const tr = {
 	'common.usageCount': 'kullanım {count}',
 	'common.internal': 'İç',
 	'common.loadFailed': 'Yüklenemedi.',
-	'common.documentBrand': 'Veri Maya',
+	'common.documentBrand': 'Verimaya',
 
 	// layout
 	'app.boot.loading': 'Yükleniyor…',
 
 	// login
-	'login.documentTitle': 'Giriş · Veri Maya',
+	'login.documentTitle': 'Giriş · Verimaya',
 	'login.title.signIn': 'Giriş yap',
 	'login.title.twoFactor': 'İki adımlı doğrulama',
 	'login.title.chooseOrg': 'Organizasyon seçin',
 	'login.title.createOrg': 'İlk organizasyonunuz',
-	'login.desc.signIn': 'Veri Maya hesabınızla devam edin.',
+	'login.desc.signIn': 'Verimaya hesabınızla devam edin.',
 	'login.desc.twoFactor': 'Authenticator uygulamanızdaki 6 haneli kodu girin.',
 	'login.desc.chooseOrg': 'Devam etmek için bir çalışma alanı seçin.',
 	'login.desc.createOrg': 'Henüz bir organizasyonunuz yok. İlk tenant kaydını oluşturun.',
@@ -1157,7 +1157,7 @@ const tr = {
 	'login.submit': 'Giriş yap',
 	'login.back': 'Geri dön',
 	'login.forgotPassword': 'Şifremi unuttum',
-	'login.reset.documentTitle': 'Şifre sıfırlama · Veri Maya',
+	'login.reset.documentTitle': 'Şifre sıfırlama · Verimaya',
 	'login.reset.requestTitle': 'Şifremi unuttum',
 	'login.reset.requestDesc': 'E-posta adresinize sıfırlama bağlantısı gönderilir.',
 	'login.reset.sendLink': 'Bağlantı gönder',
@@ -1177,7 +1177,7 @@ const tr = {
 	'login.reset.invalidToken': 'Bağlantı geçersiz veya süresi dolmuş. Yeniden deneyin.',
 
 	// changelog
-	'changelog.documentTitle': 'Yenilikler · Veri Maya',
+	'changelog.documentTitle': 'Yenilikler · Verimaya',
 	'changelog.title': 'Yenilikler',
 	'changelog.description':
 		'Kullanıcıya dönük değişiklikler — packages/shared/src/changelog.ts. Özellik durumu /toolkit ile aynı taksonomi.',
@@ -1224,7 +1224,7 @@ const tr = {
 		'Grup mesajını yapıştırın veya WAHA kuyruğundan seçin; AI işlemleri ayrıştırır, onay sonrası kayıt açılır.',
 	'toolkit.feature.ghl-sync.title': 'GoHighLevel senkronu',
 	'toolkit.feature.ghl-sync.description':
-		'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Veri Maya ile eşleştirin.',
+		'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Verimaya ile eşleştirin.',
 	'toolkit.feature.ads-metrics.title': 'Meta ve Google Ads metrikleri',
 	'toolkit.feature.ads-metrics.description':
 		'Reklam harcaması ve dönüşümleri günlük özet olarak panele çekin.',
@@ -1276,8 +1276,8 @@ const tr = {
 	'knowledge.comingSoon': 'İçerik yakında.',
 	'knowledge.notFound.title': 'Rehber bulunamadı',
 	'knowledge.notFound.description': 'Bu rehber mevcut değil veya taşınmış olabilir.',
-	'knowledge.notFound.documentTitle': 'Rehber bulunamadı · Veri Maya',
-	'knowledge.guide.documentTitle': '{title} · Veri Maya',
+	'knowledge.notFound.documentTitle': 'Rehber bulunamadı · Verimaya',
+	'knowledge.guide.documentTitle': '{title} · Verimaya',
 	'knowledge.guide.aiPrepGuide.title': 'Ai Hazırlık Rehberi',
 	'knowledge.guide.aiPrepGuide.description':
 		'Klinik veya acentenizde AI operasyonuna geçiş için hazırlık adımları.',
@@ -1289,7 +1289,7 @@ const tr = {
 		'İndirim tekliflerini marj ve konumlandırma bozmadan nasıl kurgularsınız.',
 
 	// contacts
-	'contacts.list.documentTitle': 'Kişiler · Veri Maya',
+	'contacts.list.documentTitle': 'Kişiler · Verimaya',
 	'contacts.list.title': 'Kişiler',
 	'contacts.list.description':
 		'Otel, klinik, transfer, hasta ve diğer cariler — hasta iş kaydından ayrı dizin.',
@@ -1332,7 +1332,7 @@ const tr = {
 	'contacts.finance.autoLinkSuccess': '{count} işlem bağlandı.',
 	'contacts.finance.autoLinkNone': 'Bağlanacak işlem bulunamadı.',
 	'contacts.finance.autoLinkFailed': 'İşlemler bağlanamadı.',
-	'contacts.detail.documentTitle': '{name} · Veri Maya',
+	'contacts.detail.documentTitle': '{name} · Verimaya',
 	'contacts.detail.fallbackName': 'Kişi',
 	'contacts.detail.back': '← Kişiler',
 	'contacts.detail.notFound': 'Kişi bulunamadı.',
@@ -1363,7 +1363,7 @@ const tr = {
 	'contacts.detail.roleClinic': 'Klinik',
 	'contacts.detail.roleHotel': 'Otel',
 	'contacts.detail.roleTransfer': 'Transfer',
-	'contacts.duplicates.documentTitle': 'Çift kayıt · Kişiler · Veri Maya',
+	'contacts.duplicates.documentTitle': 'Çift kayıt · Kişiler · Verimaya',
 	'contacts.duplicates.title': 'Kişi çift kayıtları',
 	'contacts.duplicates.description': 'Aynı telefon, e-posta veya adla birden fazla kişi kaydı.',
 	'contacts.form.createTitle': 'Yeni kişi',
@@ -1446,7 +1446,7 @@ const tr = {
 
 	// finance balances
 	'finance.balances.back': '← İşlemler',
-	'finance.balances.documentTitle': 'Bakiyeler · Veri Maya',
+	'finance.balances.documentTitle': 'Bakiyeler · Verimaya',
 	'finance.balances.title': 'Bakiyeler',
 	'finance.balances.description':
 		'Kişi/firma etiketli işlemlerden net borç–alacak. Para birimi bazında; farklı birimler toplanmaz.',
@@ -1473,7 +1473,7 @@ const tr = {
 		'Bakiyeler {contactId} + para birimi bazında sunucudan gelir. Dizindeki kişiler:',
 
 	// reports leftovers
-	'reports.documentTitle': 'Raporlar · Veri Maya',
+	'reports.documentTitle': 'Raporlar · Verimaya',
 	'reports.title': 'Raporlar',
 	'reports.description': 'Dönem özeti, kategori kırılımı ve gerçek ROAS.',
 	'reports.tab.summary': 'Özet',
@@ -1505,7 +1505,7 @@ const tr = {
 		"Özet, hasta dağılımı, kategori ve pazarlama toplamları sunucu aggregate endpoint'lerinden gelir; grafik ve drill-down için işlem listesi ayrıca yüklenir.",
 
 	// settings hub
-	'settings.documentTitle': 'Ayarlar · Veri Maya',
+	'settings.documentTitle': 'Ayarlar · Verimaya',
 	'settings.title': 'Ayarlar',
 	'settings.description': 'Organizasyon, bağlantılar, finans kategorileri ve tercihler.',
 	'settings.nav.org.description': 'Firma adı, baz para birimi ve saat dilimi.',
@@ -1532,7 +1532,7 @@ const tr = {
 		'İşlem özeti, eksik alanlar; kişi/hasta çift kayıt linkleri.',
 
 	// settings access (G-11)
-	'settings.access.documentTitle': 'Erişim · Ayarlar · Veri Maya',
+	'settings.access.documentTitle': 'Erişim · Ayarlar · Verimaya',
 	'settings.access.title': 'Erişim',
 	'settings.access.description':
 		'Tenant izin matrisi. Varsayılan kod matrisi üzerine yalnız kısıtlama (deny) uygulanır; yetki genişletme yok.',
@@ -1562,7 +1562,7 @@ const tr = {
 		'WhatsApp grup mesajından finans işlemi çıkar.\n- Tutarı minor unit (kuruş/cent) olarak düşünme; kullanıcıya major göster.\n- Tür: income veya expense.\n- Varsa hasta adı, kategori, alt kategori, kişi/firma etiketi, tarih.\n- Belirsiz alanları boş bırak; uydurma.',
 
 	// settings appointment types
-	'settings.appointmentTypes.documentTitle': 'Randevu ayarları · Ayarlar · Veri Maya',
+	'settings.appointmentTypes.documentTitle': 'Randevu ayarları · Ayarlar · Verimaya',
 	'settings.appointmentTypes.title': 'Randevu ayarları',
 	'settings.appointmentTypes.description': 'Randevu tipleri. Checklist şablonları Faz 1.',
 	'settings.appointmentTypes.loading': 'Yükleniyor…',
@@ -1570,10 +1570,10 @@ const tr = {
 	'settings.appointmentTypes.newPlaceholder': 'Yeni tip adı',
 	'settings.appointmentTypes.checklistTitle': 'Checklist şablonları',
 	'settings.appointmentTypes.checklistBody':
-		'Tracker’daki “pasaport kopyası, onam formu…” maddeleri. Veri Maya’da dosya yükleme ile birlikte Faz 1’de gelir; şimdilik yok.',
+		'Tracker’daki “pasaport kopyası, onam formu…” maddeleri. Verimaya’da dosya yükleme ile birlikte Faz 1’de gelir; şimdilik yok.',
 
 	// settings categories
-	'settings.categories.documentTitle': 'Kategoriler · Ayarlar · Veri Maya',
+	'settings.categories.documentTitle': 'Kategoriler · Ayarlar · Verimaya',
 	'settings.categories.title': 'Kategoriler',
 	'settings.categories.description':
 		'Gelir ve gider kategorilerini, alt kategorilerini ve rapor sırasını yönetin.',
@@ -1604,7 +1604,7 @@ const tr = {
 	'settings.categories.deleteConfirm': 'Kategoriyi sil',
 	'settings.categories.reorderError': 'Kategori sırası güncellenemedi.',
 	'settings.categories.deleteError': 'Kategori silinemedi.',
-	'settings.categories.detailDocumentTitle': '{name} · Kategoriler · Veri Maya',
+	'settings.categories.detailDocumentTitle': '{name} · Kategoriler · Verimaya',
 	'settings.categories.detailBack': 'Kategoriler',
 	'settings.categories.detailLoading': 'Kategori yükleniyor…',
 	'settings.categories.detailLoadError': 'Kategori yüklenemedi.',
@@ -1676,7 +1676,7 @@ const tr = {
 	'settings.api.addSubscription': 'Abonelik ekle',
 
 	// settings contact types
-	'settings.contactTypes.documentTitle': 'Kişi türleri · Ayarlar · Veri Maya',
+	'settings.contactTypes.documentTitle': 'Kişi türleri · Ayarlar · Verimaya',
 	'settings.contactTypes.title': 'Kişi türleri',
 	'settings.contactTypes.description':
 		'Otel, klinik, transfer, hasta… Kişiler dizini bu türleri kullanır.',
@@ -1686,7 +1686,7 @@ const tr = {
 	'settings.contactTypes.footnote':
 		'Tip adı “Hasta” olan kişi oluşturulunca otomatik hasta kaydı açılır.',
 
-	'settings.organizations.documentTitle': 'Firmalar · Ayarlar · Veri Maya',
+	'settings.organizations.documentTitle': 'Firmalar · Ayarlar · Verimaya',
 	'settings.organizations.title': 'Firmalar',
 	'settings.organizations.description':
 		'Klinik, otel ve transfer firmaları — Kişi formunda Firma alanında seçilir.',
@@ -1705,7 +1705,7 @@ const tr = {
 		'Silmek için firmanın hiçbir kişide kullanılmıyor olması gerekir (soft-delete).',
 
 	// settings import-export
-	'settings.importExport.documentTitle': 'İçe / dışa aktar · Ayarlar · Veri Maya',
+	'settings.importExport.documentTitle': 'İçe / dışa aktar · Ayarlar · Verimaya',
 	'settings.importExport.title': 'İçe / dışa aktar',
 	'settings.importExport.description':
 		'Kişileri Excel ile içe/dışa aktarın — önce önizleme, sonra uygula.',
@@ -1750,7 +1750,7 @@ const tr = {
 	'settings.nav.dataDelete.title': 'Operasyonel veri silme',
 	'settings.nav.dataDelete.description':
 		'Test/deneme verisini kalıcı siler — yalnız sahip; geri alınamaz.',
-	'settings.dataDelete.documentTitle': 'Veri silme · Ayarlar · Veri Maya',
+	'settings.dataDelete.documentTitle': 'Veri silme · Ayarlar · Verimaya',
 	'settings.dataDelete.title': 'Operasyonel veri silme',
 	'settings.dataDelete.warning':
 		'Bu işlem seçtiğiniz operasyonel kayıtları kalıcı olarak siler. Organizasyon, üyeler, roller, kategoriler, kişi/randevu türleri ve denetim kaydı korunur. Geri alınamaz.',
@@ -1791,12 +1791,12 @@ const tr = {
 		'Slug değiştirilemez. Üye ve rol yönetimi {link} sayfasında.',
 
 	// shell / PWA / support
-	'shell.pwa.title': 'Veri Maya’yı ana ekrana ekle',
+	'shell.pwa.title': 'Verimaya’yı ana ekrana ekle',
 	'shell.pwa.body': 'Uygulamayı cihazınıza kurarak daha hızlı açabilirsiniz.',
 	'shell.pwa.install': 'Kur',
 	'shell.pwa.dismiss': 'Şimdi değil',
-	'shell.aria.home': 'Veri Maya',
-	'shell.aria.homeWithTenant': 'Veri Maya — {name}',
+	'shell.aria.home': 'Verimaya',
+	'shell.aria.homeWithTenant': 'Verimaya — {name}',
 	'shell.aria.mainMenu': 'Ana menü',
 	'shell.aria.closeMenu': 'Menüyü kapat',
 	'shell.aria.allMenu': 'Tüm menü',
@@ -1876,8 +1876,109 @@ const tr = {
 	'duplicates.merging': 'Birleştiriliyor…',
 	'duplicates.mergeAction': 'Seçileni tut, diğerlerini birleştir',
 
+	// hub ana sayfa v2
+	'hubHome.meta.title': 'Verimaya — Reklamdan tahsilata büyüme sistemi',
+	'hubHome.meta.description':
+		'Sağlık turizmi acenteleri için reklamdan hasta dosyasına, tahsilata ve hakedişe uzanan yönetilen büyüme sistemi.',
+	'hubHome.category': 'Sağlık turizminde reklamdan tahsilata büyüme sistemi',
+	'hubHome.nav.what': 'Ne yapar',
+	'hubHome.nav.forWhom': 'Kimin için',
+	'hubHome.nav.tools': 'Araçlar',
+	'hubHome.nav.resources': 'Kaynaklar',
+	'hubHome.nav.login': 'Giriş',
+	'hubHome.menu.open': 'Menüyü aç',
+	'hubHome.menu.close': 'Menüyü kapat',
+	'hubHome.hero.title': 'Reklama verdiğiniz paranın kaçı tahsilata döndü?',
+	'hubHome.hero.subtitle':
+		'Lead sayısı değil, kasaya giren para. Reklamdan hasta dosyasına, tahsilata ve hakediş tablosuna kadar tek zincir.',
+	'hubHome.cta.primary': 'Mevcut verinizle ilk bulgu raporunuzu alın',
+	'hubHome.questions.eyebrow': 'Üç soru',
+	'hubHome.questions.title': 'Büyümenin hesabı bu üç cevapta.',
+	'hubHome.questions.revenue': 'Reklama verdiğiniz paranın kaçı tahsilata döndü?',
+	'hubHome.questions.untouched': 'Kaç lead’e hiç dönülmedi?',
+	'hubHome.questions.commission': 'Klinik başına hakedişiniz ne kadar, nerede yazıyor?',
+	'hubHome.finding.eyebrow': 'İlk bulgu raporu',
+	'hubHome.finding.title': 'Kurulumun ilk 10 dakikasında bilmediğiniz bir sayı.',
+	'hubHome.finding.description':
+		'Kendi verinizden çift kayıtları, uzun süredir temas edilmeyen hastaları, açık bakiyeyi ve reklam ayına göre tahsilat görünümünü çıkarırız.',
+	'hubHome.how.eyebrow': 'Nasıl çalışır',
+	'hubHome.how.title': 'Dört adımda para zinciri kapanır.',
+	'hubHome.how.ads': 'Reklam',
+	'hubHome.how.adsDesc': 'Medya harcaması kaynağıyla birlikte izlenir.',
+	'hubHome.how.lead': 'Lead',
+	'hubHome.how.leadDesc': 'Maya Satış [1] takibi ve görüşmeyi görünür kılar.',
+	'hubHome.how.patient': 'Hasta',
+	'hubHome.how.patientDesc': 'Maya Operasyon [2] hasta dosyasını ve süreci devralır.',
+	'hubHome.how.collection': 'Tahsilat',
+	'hubHome.how.collectionDesc': 'Gelir, hakediş ve reklam kaynağı aynı hesapta buluşur.',
+	'hubHome.how.salesBadge': 'Maya Satış [1]',
+	'hubHome.how.opsBadge': 'Maya Operasyon [2]',
+	'hubHome.how.incentive': 'Acente komisyon desteği başvuru dosyanız ve süreleriniz takipte olur.',
+	'hubHome.how.ghlNote':
+		'Maya Satış üçüncü taraf platform (GoHighLevel) üzerinde çalışır; platform kesintileri Verimaya kontrolünde değildir.',
+	'hubHome.audience.eyebrow': 'Kimin için',
+	'hubHome.audience.title': 'Önce sağlık turizmi acenteleri için.',
+	'hubHome.audience.agency':
+		'Yurt dışı reklam bütçesini yöneten, hastayı kliniğe taşıyan ve klinik hakedişlerini izleyen acenteler için para zincirini uçtan uca yönetiriz.',
+	'hubHome.audience.clinic':
+		'Birincil odağımız acenteler. Kliniklerden gelen talebe açığız; uygunluğu kapsam görüşmesinde birlikte değerlendiririz.',
+	'hubHome.why.eyebrow': 'Neden Verimaya',
+	'hubHome.why.title': 'Bir CRM daha satmıyoruz.',
+	'hubHome.why.othersLabel': 'Lead sayan sistemler',
+	'hubHome.why.othersDesc': 'Hacmi gösterir; paranın nereye vardığını açık bırakır.',
+	'hubHome.why.usLabel': 'Parayı sayan sistem',
+	'hubHome.why.usDesc': 'Reklamı, hastayı, tahsilatı ve hakedişi aynı zincirde ölçer.',
+	'hubHome.privacy.eyebrow': 'Veri ve KVKK',
+	'hubHome.privacy.title': 'İzolasyon ve işleme sınırları baştan görünür.',
+	'hubHome.privacy.isolation':
+		'Her firmanın verisi ayrı tutulur; erişim sınırları yetki ve organizasyon kapsamında uygulanır.',
+	'hubHome.privacy.boundaries':
+		'Veri yalnız tanımlı hizmet kapsamı ve açık işleme amacı için kullanılır; insan onayı gerektiren kararlar otomatik kesin kayda dönüşmez.',
+	'hubHome.privacy.transparency':
+		'Kurucunun sağlık turizmi işletmesi var; bu yüzden veri izolasyonu sözleşmede yazılı, denetime açık.',
+	'hubHome.tools.eyebrow': 'Ücretsiz araçlar',
+	'hubHome.tools.title': 'İlk bulguya giden hesabı küçük bir adımla başlatın.',
+	'hubHome.tools.description':
+		'Seçtiğiniz çalışma e-posta karşılığında gönderilir. Ana adım ilk bulgu raporu talebidir.',
+	'hubHome.tools.calculator.title': 'Reklam Geri Dönüş Hesaplayıcı',
+	'hubHome.tools.calculator.desc':
+		'Medya bütçeniz ile tahsilat arasındaki temel dönüşü hesaplayın.',
+	'hubHome.tools.measurement.title': 'Ölçüm Olgunluğu Kontrolü',
+	'hubHome.tools.measurement.desc':
+		'Reklamdan tahsilata hangi verileri bugün ölçebildiğinizi görün.',
+	'hubHome.tools.preLaunch.title': 'Kampanya Öncesi Kontrol',
+	'hubHome.tools.preLaunch.desc':
+		'Reklam açılmadan önce takip ve hasta yolculuğu eksiklerini kontrol edin.',
+	'hubHome.tools.templates.title': 'Acente Rapor Şablonları',
+	'hubHome.tools.templates.desc':
+		'Reklam, tahsilat ve hakediş takibi için hazır çalışma şablonlarını alın.',
+	'hubHome.tools.request': 'E-posta ile iste',
+	'hubHome.tools.open': 'Aracı doğrudan aç',
+	'hubHome.closing.eyebrow': 'İlk bulgu',
+	'hubHome.closing.title':
+		'Anlatmayalım, gösterelim. Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.',
+	'hubHome.closing.capacity': 'İlk 3 Kurucu Partner kontenjanı — kapsam görüşmesiyle',
+	'hubHome.form.title': 'İlk bulgu raporu talebi',
+	'hubHome.form.description':
+		'Form gönderimi yakında açılacak. Alanları şimdiden inceleyebilirsiniz.',
+	'hubHome.form.name': 'İsim',
+	'hubHome.form.company': 'Firma',
+	'hubHome.form.budget': 'Aylık medya bütçesi aralığı',
+	'hubHome.form.budget.choose': 'Bir aralık seçin',
+	'hubHome.form.budget.low': '100.000 TL altı',
+	'hubHome.form.budget.medium': '100.000–300.000 TL',
+	'hubHome.form.budget.high': '300.000–750.000 TL',
+	'hubHome.form.budget.enterprise': '750.000 TL üzeri',
+	'hubHome.form.system': 'Kullanılan sistem',
+	'hubHome.form.consent.before': 'KVKK Aydınlatma Metni’ni',
+	'hubHome.form.consent.after': 'okudum ve talebimin işlenmesini kabul ediyorum.',
+	'hubHome.form.submitSoon': 'Talep formu yakında açılacak',
+	'hubHome.footer.legal': 'Yasal',
+	'hubHome.footer.kvkk': 'KVKK Aydınlatma',
+	'hubHome.footer.copyright': 'Verimaya. Tüm hakları saklıdır.',
+
 	// hub meta
-	'hub.meta.title': 'Veri Maya: Sağlık turizmi operasyon platformu',
+	'hub.meta.title': 'Verimaya: Sağlık turizmi operasyon platformu',
 	'hub.meta.description':
 		'Lead WhatsApp’ta, hasta Excel’de, ödeme grupta. Ay sonunda kim geldi, kim ödedi bilinmiyor. Maya App, Maya CRM, Araçlar ve Kaynaklar ile sağlık turizmi için tek ekosistem.',
 
@@ -2009,20 +2110,20 @@ const en: Record<MessageKey, string> = {
 	'nav.reports': 'Reports',
 	'nav.scorecard': 'AI Scorecard',
 	'nav.tools': 'Tools',
-	'nav.tools.documentTitle': 'Tools · Veri Maya',
+	'nav.tools.documentTitle': 'Tools · Verimaya',
 	'nav.tools.title': 'Tools',
 	'nav.tools.description':
 		'Module capabilities, status, and preferences for showing items under Products.',
 	'nav.resources': 'Resources',
-	'nav.resources.documentTitle': 'Resources · Veri Maya',
+	'nav.resources.documentTitle': 'Resources · Verimaya',
 	'nav.resources.title': 'Resources',
 	'nav.resources.description': 'Operations and sales guides.',
 	'nav.aiPrep': 'AI Prep',
-	'nav.aiPrep.documentTitle': 'AI Prep · Veri Maya',
+	'nav.aiPrep.documentTitle': 'AI Prep · Verimaya',
 	'nav.aiPrep.title': 'AI Prep',
 	'nav.aiPrep.description': 'AI operations prep — content coming soon.',
 	'nav.docs': 'Docs & guides',
-	'nav.docs.documentTitle': 'Documentation · Veri Maya',
+	'nav.docs.documentTitle': 'Documentation · Verimaya',
 	'nav.docs.title': 'Docs & guides',
 	'nav.docs.description': 'Product guides and documentation — content coming soon.',
 	'nav.marketingOverview': 'Campaigns',
@@ -2041,7 +2142,7 @@ const en: Record<MessageKey, string> = {
 	'dev.redirecting': 'Redirecting…',
 	'dev.title': 'Platform panel',
 	'dev.description': 'Super admin: create, rename, soft-delete organizations; add/remove members.',
-	'dev.documentTitle': 'Platform · Veri Maya',
+	'dev.documentTitle': 'Platform · Verimaya',
 	'dev.orgs': 'Organizations',
 	'dev.newOrgName': 'New organization name',
 	'dev.grantSelf': 'Make me owner',
@@ -2076,7 +2177,7 @@ const en: Record<MessageKey, string> = {
 
 	'maya.title': 'Maya AI',
 	'maya.subtitle': 'Operations assistant — suggests drafts, you approve.',
-	'maya.documentTitle': 'Maya AI · Veri Maya',
+	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
 		'Mock chat: try appointments, contact summaries, and data-quality questions. No real LLM yet.',
 	'maya.mockBadge': 'Mock',
@@ -2133,8 +2234,8 @@ const en: Record<MessageKey, string> = {
 	'patients.list.noSource': 'No source',
 	'patients.list.noPhone': 'No phone',
 	'patients.list.createError': 'Could not save',
-	'patients.list.documentTitle': 'Patients · Veri Maya',
-	'patients.duplicates.documentTitle': 'Duplicates · Patients · Veri Maya',
+	'patients.list.documentTitle': 'Patients · Verimaya',
+	'patients.duplicates.documentTitle': 'Duplicates · Patients · Verimaya',
 	'patients.duplicates.title': 'Patient duplicates',
 	'patients.duplicates.description':
 		'More than one patient file with the same phone, email, or name.',
@@ -2256,7 +2357,7 @@ const en: Record<MessageKey, string> = {
 	'karne.result.euEffectiveDate': '2 August 2026',
 	'karne.result.euNoticeSuffix': '.',
 	'karne.result.productBlurb':
-		'Veri Maya brings the patient journey into one panel — from lead to appointment, finance to WhatsApp transfer.',
+		'Verimaya brings the patient journey into one panel — from lead to appointment, finance to WhatsApp transfer.',
 	'karne.result.backToShowcase': 'Back to the website',
 	'karne.result.demoLogin': 'Sign in for demo',
 
@@ -2428,7 +2529,7 @@ const en: Record<MessageKey, string> = {
 	'settings.ghl.description': 'Lead and contact sync — webhook-first, field ownership rules.',
 	'settings.ghl.card.name': 'GHL account',
 	'settings.ghl.card.description':
-		'Contact and opportunity webhooks are queued and processed by workers; Veri Maya writes back fields it owns.',
+		'Contact and opportunity webhooks are queued and processed by workers; Verimaya writes back fields it owns.',
 	'settings.ghl.connect': 'Connect GHL',
 	'settings.ghl.flash': 'GHL connection completed.',
 	'settings.ghl.statusLabel': 'Status',
@@ -2451,7 +2552,7 @@ const en: Record<MessageKey, string> = {
 	'settings.ghl.syncError': 'Sync failed.',
 	'settings.ghl.ownership.heading': 'Field ownership',
 	'settings.ghl.ownership.lead': 'Lead status and pipeline stage: GHL owns',
-	'settings.ghl.ownership.ops': 'Appointments, finance, and ops fields: Veri Maya owns',
+	'settings.ghl.ownership.ops': 'Appointments, finance, and ops fields: Verimaya owns',
 	'settings.ghl.ownership.conflict': 'On conflict the source owner wins; the event is audited.',
 	'settings.ghl.dev.heading': 'Development / fixture',
 	'settings.ghl.dev.body':
@@ -2781,7 +2882,7 @@ const en: Record<MessageKey, string> = {
 		'Want to use the system more efficiently and boost ad and sales performance — but don’t know where to start?',
 	'hub.resources.title': 'Feature guides, documentation, and sales tactics in one library.',
 	'hub.resources.desc':
-		'Resources is a knowledge hub to explore every Veri Maya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
+		'Resources is a knowledge hub to explore every Verimaya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
 	'hub.resources.outcome':
 		'Outcome: answers to “How do we use this feature?” or “How do we grow sales?” are instantly at your fingertips through our guides.',
 	'hub.resources.ctaPrimary': 'See resources',
@@ -2813,7 +2914,7 @@ const en: Record<MessageKey, string> = {
 		'Are you risking ad budget on guesses or messy Excel sheets before you go live?',
 	'hub.tools.title': 'Simulate and validate before you spend on ads.',
 	'hub.tools.desc':
-		'Veri Maya Tools automate pre-launch planning, budget simulation, and checks. Fully integrated with Maya CRM and Maya App, they stop every click that would be wasted.',
+		'Verimaya Tools automate pre-launch planning, budget simulation, and checks. Fully integrated with Maya CRM and Maya App, they stop every click that would be wasted.',
 	'hub.tools.outcome':
 		'Outcome: end burning budget on trial and error — 100% clarity before launch.',
 	'hub.tools.campaign.title': 'Campaign Assistant',
@@ -2831,7 +2932,7 @@ const en: Record<MessageKey, string> = {
 	'hub.tools.cta': 'Discover all tools',
 
 	'hub.scenarios.title': 'Use cases',
-	'hub.scenarios.desc': 'How the Veri Maya ecosystem works across different clinic profiles.',
+	'hub.scenarios.desc': 'How the Verimaya ecosystem works across different clinic profiles.',
 	'hub.scenarios.hair.title': 'Hair transplant clinic',
 	'hub.scenarios.hair.desc':
 		'Lead arrives via WhatsApp → drops into Maya CRM pipeline → Appointment booked → Procedure done → Payment logged in Maya App → Reported.',
@@ -2847,7 +2948,7 @@ const en: Record<MessageKey, string> = {
 	'hub.karne.cta': 'Get my scorecard',
 
 	'hub.integrations.title': 'Integrations',
-	'hub.integrations.desc': 'Services powering the Veri Maya ecosystem.',
+	'hub.integrations.desc': 'Services powering the Verimaya ecosystem.',
 
 	'hub.footer.tagline': 'Manage the patient journey in one panel',
 	'hub.footer.links': 'Doors',
@@ -2856,7 +2957,7 @@ const en: Record<MessageKey, string> = {
 	'hub.footer.resources': 'Resources',
 	'hub.footer.tools': 'Tools',
 
-	'pillar.app.metaTitle': 'Maya App (Operations) — Veri Maya',
+	'pillar.app.metaTitle': 'Maya App (Operations) — Verimaya',
 	'pillar.app.metaDesc':
 		'Patients, appointments, finance, reports, and audit: run health-tourism operations in one panel.',
 	'pillar.app.eyebrow': 'Maya App (Operations)',
@@ -2906,7 +3007,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.app.f.multiTenant.title': 'Multi-tenant organization',
 	'pillar.app.f.multiTenant.desc': 'Keep tenant isolation with orgs, teams, and roles.',
 
-	'pillar.crm.metaTitle': 'Maya CRM (Sales & Ads) — Veri Maya',
+	'pillar.crm.metaTitle': 'Maya CRM (Sales & Ads) — Verimaya',
 	'pillar.crm.metaDesc':
 		'Lead capture, pipeline, automation, and ads connect: run the sales line with Maya CRM.',
 	'pillar.crm.eyebrow': 'Maya CRM (Sales & Ads)',
@@ -2932,7 +3033,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.crm.f.ads.title': 'Meta & Google Ads connect',
 	'pillar.crm.f.ads.desc': 'Connect ad accounts; spend and metrics feed the Real ROAS report.',
 
-	'pillar.resources.metaTitle': 'Resources — Veri Maya',
+	'pillar.resources.metaTitle': 'Resources — Verimaya',
 	'pillar.resources.metaDesc':
 		'Feature guides, platform documentation, and health-tourism ad and sales tactics in one library.',
 	'pillar.resources.eyebrow': 'Resources',
@@ -2940,7 +3041,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.resources.problem':
 		'Want to use the system more efficiently and boost ad and sales performance — but don’t know where to start?',
 	'pillar.resources.body':
-		'Resources is a knowledge hub to explore every Veri Maya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
+		'Resources is a knowledge hub to explore every Verimaya capability, reach platform documentation, and train your team with health-tourism–specific ad and sales tactics.',
 	'pillar.resources.outcome':
 		'Outcome: answers to “How do we use this feature?” or “How do we grow sales?” are instantly at your fingertips through our guides.',
 	'pillar.resources.cta': 'Get free product scorecard',
@@ -2953,7 +3054,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.resources.f.changelog.title': 'What’s new',
 	'pillar.resources.f.changelog.desc': 'Follow release notes for what landed in the panel.',
 
-	'pillar.tools.metaTitle': 'Tools — Veri Maya',
+	'pillar.tools.metaTitle': 'Tools — Verimaya',
 	'pillar.tools.metaDesc':
 		'Before you spend: ROAS calculator, simulator, compliance, templates, measurement, pre-launch.',
 	'pillar.tools.eyebrow': 'Tools',
@@ -2980,7 +3081,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.f.prelaunch.desc':
 		'Validate compliance, unit economics, and measurement gates in one place.',
 
-	'pillar.tools.calculator.metaTitle': 'Real ROAS calculator — Veri Maya Tools',
+	'pillar.tools.calculator.metaTitle': 'Real ROAS calculator — Verimaya Tools',
 	'pillar.tools.calculator.metaDesc':
 		'Convert platform ROAS to real profit; compute break-even and max ad cost.',
 	'pillar.tools.calculator.heading': 'Real ROAS calculator',
@@ -2990,7 +3091,7 @@ const en: Record<MessageKey, string> = {
 		'With your cost and revenue assumptions, see break-even and a safe ad-cost ceiling. Same math family as Maya App Real ROAS.',
 	'pillar.tools.calculator.cta': 'Open calculator in panel',
 
-	'pillar.tools.simulator.metaTitle': 'Ad simulator — Veri Maya Tools',
+	'pillar.tools.simulator.metaTitle': 'Ad simulator — Verimaya Tools',
 	'pillar.tools.simulator.metaDesc':
 		'Simulate CPL and cost per sale from CPC, CVR, and close rate before launch.',
 	'pillar.tools.simulator.heading': 'Ad math simulator',
@@ -3000,7 +3101,7 @@ const en: Record<MessageKey, string> = {
 		'Use traffic lights and scale ceilings to test whether growth is safe.',
 	'pillar.tools.simulator.cta': 'Open simulator in panel',
 
-	'pillar.tools.compliance.metaTitle': 'Ad compliance — Veri Maya Tools',
+	'pillar.tools.compliance.metaTitle': 'Ad compliance — Verimaya Tools',
 	'pillar.tools.compliance.metaDesc':
 		'Scan health-tourism ad and landing copy for banned or risky claims.',
 	'pillar.tools.compliance.heading': 'Ad compliance scan',
@@ -3010,7 +3111,7 @@ const en: Record<MessageKey, string> = {
 		'Scan for banned and risky health claims; also used as a pre-launch gate.',
 	'pillar.tools.compliance.cta': 'Open scan in panel',
 
-	'pillar.tools.templates.metaTitle': 'Campaign assistant — Veri Maya Tools',
+	'pillar.tools.templates.metaTitle': 'Campaign assistant — Verimaya Tools',
 	'pillar.tools.templates.metaDesc':
 		'UTM builder, 3:2:2 creative split, and 60/30/10 budget templates.',
 	'pillar.tools.templates.heading': 'Campaign assistant',
@@ -3021,7 +3122,7 @@ const en: Record<MessageKey, string> = {
 		'Build campaign scaffolding with UTM structures, 3:2:2 creative split, and 60/30/10 budgets.',
 	'pillar.tools.templates.cta': 'Open templates in panel',
 
-	'pillar.tools.measurement.metaTitle': 'Measurement maturity — Veri Maya Tools',
+	'pillar.tools.measurement.metaTitle': 'Measurement maturity — Verimaya Tools',
 	'pillar.tools.measurement.metaDesc':
 		'Trust Score: consent, CAPI, SST, and offline conversion checks.',
 	'pillar.tools.measurement.heading': 'Measurement maturity (Trust Score)',
@@ -3031,7 +3132,7 @@ const en: Record<MessageKey, string> = {
 		'Check consent/KVKK, enhanced conversions/CAPI, server-side tagging, CRM→Ads offline conversion, and EMQ.',
 	'pillar.tools.measurement.cta': 'Open measurement in panel',
 
-	'pillar.tools.prelaunch.metaTitle': 'Pre-launch check — Veri Maya Tools',
+	'pillar.tools.prelaunch.metaTitle': 'Pre-launch check — Verimaya Tools',
 	'pillar.tools.prelaunch.metaDesc':
 		'Validate compliance, unit economics, and measurement gates before go-live.',
 	'pillar.tools.prelaunch.heading': 'Pre-launch check',
@@ -3067,16 +3168,16 @@ const en: Record<MessageKey, string> = {
 	'common.usageCount': 'usage {count}',
 	'common.internal': 'Internal',
 	'common.loadFailed': 'Could not load.',
-	'common.documentBrand': 'Veri Maya',
+	'common.documentBrand': 'Verimaya',
 
 	'app.boot.loading': 'Loading…',
 
-	'login.documentTitle': 'Sign in · Veri Maya',
+	'login.documentTitle': 'Sign in · Verimaya',
 	'login.title.signIn': 'Sign in',
 	'login.title.twoFactor': 'Two-factor authentication',
 	'login.title.chooseOrg': 'Choose organization',
 	'login.title.createOrg': 'Your first organization',
-	'login.desc.signIn': 'Continue with your Veri Maya account.',
+	'login.desc.signIn': 'Continue with your Verimaya account.',
 	'login.desc.twoFactor': 'Enter the 6-digit code from your authenticator app.',
 	'login.desc.chooseOrg': 'Choose a workspace to continue.',
 	'login.desc.createOrg': 'You have no organization yet. Create your first tenant.',
@@ -3096,7 +3197,7 @@ const en: Record<MessageKey, string> = {
 	'login.submit': 'Sign in',
 	'login.back': 'Go back',
 	'login.forgotPassword': 'Forgot password',
-	'login.reset.documentTitle': 'Reset password · Veri Maya',
+	'login.reset.documentTitle': 'Reset password · Verimaya',
 	'login.reset.requestTitle': 'Forgot password',
 	'login.reset.requestDesc': 'We’ll email you a reset link.',
 	'login.reset.sendLink': 'Send link',
@@ -3115,7 +3216,7 @@ const en: Record<MessageKey, string> = {
 	'login.reset.failed': 'Could not reset password',
 	'login.reset.invalidToken': 'Link is invalid or expired. Try again.',
 
-	'changelog.documentTitle': 'Changelog · Veri Maya',
+	'changelog.documentTitle': 'Changelog · Verimaya',
 	'changelog.title': 'Changelog',
 	'changelog.description':
 		'User-facing changes — packages/shared/src/changelog.ts. Same taxonomy as /toolkit.',
@@ -3160,7 +3261,7 @@ const en: Record<MessageKey, string> = {
 		'Paste a group message or pick from the WAHA queue; AI extracts transactions, then you approve.',
 	'toolkit.feature.ghl-sync.title': 'GoHighLevel sync',
 	'toolkit.feature.ghl-sync.description':
-		'Match GHL leads and opportunities to Veri Maya with field-level ownership rules.',
+		'Match GHL leads and opportunities to Verimaya with field-level ownership rules.',
 	'toolkit.feature.ads-metrics.title': 'Meta and Google Ads metrics',
 	'toolkit.feature.ads-metrics.description':
 		'Pull ad spend and conversions into the panel as a daily summary.',
@@ -3211,8 +3312,8 @@ const en: Record<MessageKey, string> = {
 	'knowledge.comingSoon': 'Content coming soon.',
 	'knowledge.notFound.title': 'Guide not found',
 	'knowledge.notFound.description': 'This guide does not exist or may have moved.',
-	'knowledge.notFound.documentTitle': 'Guide not found · Veri Maya',
-	'knowledge.guide.documentTitle': '{title} · Veri Maya',
+	'knowledge.notFound.documentTitle': 'Guide not found · Verimaya',
+	'knowledge.guide.documentTitle': '{title} · Verimaya',
 	'knowledge.guide.aiPrepGuide.title': 'AI Prep Guide',
 	'knowledge.guide.aiPrepGuide.description':
 		'Steps to prepare your clinic or agency for AI operations.',
@@ -3223,7 +3324,7 @@ const en: Record<MessageKey, string> = {
 	'knowledge.guide.salesDiscounts.description':
 		'How to structure discount offers without breaking margin or positioning.',
 
-	'contacts.list.documentTitle': 'Contacts · Veri Maya',
+	'contacts.list.documentTitle': 'Contacts · Verimaya',
 	'contacts.list.title': 'Contacts',
 	'contacts.list.description':
 		'Hotels, clinics, transfers, patients and other parties — separate from patient ops files.',
@@ -3266,7 +3367,7 @@ const en: Record<MessageKey, string> = {
 	'contacts.finance.autoLinkSuccess': '{count} transactions linked.',
 	'contacts.finance.autoLinkNone': 'No transactions to link.',
 	'contacts.finance.autoLinkFailed': 'Could not link transactions.',
-	'contacts.detail.documentTitle': '{name} · Veri Maya',
+	'contacts.detail.documentTitle': '{name} · Verimaya',
 	'contacts.detail.fallbackName': 'Contact',
 	'contacts.detail.back': '← Contacts',
 	'contacts.detail.notFound': 'Contact not found.',
@@ -3297,7 +3398,7 @@ const en: Record<MessageKey, string> = {
 	'contacts.detail.roleClinic': 'Clinic',
 	'contacts.detail.roleHotel': 'Hotel',
 	'contacts.detail.roleTransfer': 'Transfer',
-	'contacts.duplicates.documentTitle': 'Duplicates · Contacts · Veri Maya',
+	'contacts.duplicates.documentTitle': 'Duplicates · Contacts · Verimaya',
 	'contacts.duplicates.title': 'Contact duplicates',
 	'contacts.duplicates.description': 'Multiple contacts with the same phone, email, or name.',
 	'contacts.form.createTitle': 'New contact',
@@ -3378,7 +3479,7 @@ const en: Record<MessageKey, string> = {
 	'patients.detail.viewInFinance': 'View in transactions',
 
 	'finance.balances.back': '← Transactions',
-	'finance.balances.documentTitle': 'Balances · Veri Maya',
+	'finance.balances.documentTitle': 'Balances · Verimaya',
 	'finance.balances.title': 'Balances',
 	'finance.balances.description':
 		'Net payables/receivables from contact-tagged transactions. Per currency; currencies are not summed.',
@@ -3404,7 +3505,7 @@ const en: Record<MessageKey, string> = {
 	'finance.balances.footnote':
 		'Balances come from the server by {contactId} + currency. Directory contacts:',
 
-	'reports.documentTitle': 'Reports · Veri Maya',
+	'reports.documentTitle': 'Reports · Verimaya',
 	'reports.title': 'Reports',
 	'reports.description': 'Period summary, category breakdown, and real ROAS.',
 	'reports.tab.summary': 'Summary',
@@ -3435,7 +3536,7 @@ const en: Record<MessageKey, string> = {
 	'reports.footnote':
 		'Summary, patient distribution, category, and marketing totals come from server aggregate endpoints; the transaction list is loaded separately for charts and drill-down.',
 
-	'settings.documentTitle': 'Settings · Veri Maya',
+	'settings.documentTitle': 'Settings · Verimaya',
 	'settings.title': 'Settings',
 	'settings.description': 'Organization, connections, finance categories, and preferences.',
 	'settings.nav.org.description': 'Company name, base currency, and timezone.',
@@ -3462,7 +3563,7 @@ const en: Record<MessageKey, string> = {
 	'settings.nav.dataQuality.description':
 		'Transaction summary, missing fields; contact/patient duplicate links.',
 
-	'settings.access.documentTitle': 'Access · Settings · Veri Maya',
+	'settings.access.documentTitle': 'Access · Settings · Verimaya',
 	'settings.access.title': 'Access',
 	'settings.access.description':
 		'Tenant permission matrix. Overrides may only restrict the code defaults — no privilege escalation.',
@@ -3490,7 +3591,7 @@ const en: Record<MessageKey, string> = {
 	'settings.ai.prompt.defaultBody':
 		'Extract finance transactions from a WhatsApp group message.\n- Do not treat amounts as minor units (cents); show major units to the user.\n- Kind: income or expense.\n- If present: patient name, category, subcategory, contact/vendor label, date.\n- Leave uncertain fields empty; do not invent.',
 
-	'settings.appointmentTypes.documentTitle': 'Appointment settings · Settings · Veri Maya',
+	'settings.appointmentTypes.documentTitle': 'Appointment settings · Settings · Verimaya',
 	'settings.appointmentTypes.title': 'Appointment settings',
 	'settings.appointmentTypes.description': 'Appointment types. Checklist templates in Phase 1.',
 	'settings.appointmentTypes.loading': 'Loading…',
@@ -3500,7 +3601,7 @@ const en: Record<MessageKey, string> = {
 	'settings.appointmentTypes.checklistBody':
 		'Tracker items like “passport copy, consent form…”. Comes with file upload in Phase 1; not available yet.',
 
-	'settings.categories.documentTitle': 'Categories · Settings · Veri Maya',
+	'settings.categories.documentTitle': 'Categories · Settings · Verimaya',
 	'settings.categories.title': 'Categories',
 	'settings.categories.description':
 		'Manage income and expense categories, subcategories, and report ordering.',
@@ -3531,7 +3632,7 @@ const en: Record<MessageKey, string> = {
 	'settings.categories.deleteConfirm': 'Delete category',
 	'settings.categories.reorderError': 'Could not update category order.',
 	'settings.categories.deleteError': 'Could not delete category.',
-	'settings.categories.detailDocumentTitle': '{name} · Categories · Veri Maya',
+	'settings.categories.detailDocumentTitle': '{name} · Categories · Verimaya',
 	'settings.categories.detailBack': 'Categories',
 	'settings.categories.detailLoading': 'Loading category…',
 	'settings.categories.detailLoadError': 'Could not load category.',
@@ -3599,7 +3700,7 @@ const en: Record<MessageKey, string> = {
 	'settings.api.webhookSecretMin': 'At least 16 characters',
 	'settings.api.addSubscription': 'Add subscription',
 
-	'settings.contactTypes.documentTitle': 'Contact types · Settings · Veri Maya',
+	'settings.contactTypes.documentTitle': 'Contact types · Settings · Verimaya',
 	'settings.contactTypes.title': 'Contact types',
 	'settings.contactTypes.description':
 		'Hotel, clinic, transfer, patient… The contacts directory uses these types.',
@@ -3609,7 +3710,7 @@ const en: Record<MessageKey, string> = {
 	'settings.contactTypes.footnote':
 		'Creating a contact whose type name is “Patient” opens a patient record automatically.',
 
-	'settings.organizations.documentTitle': 'Firms · Settings · Veri Maya',
+	'settings.organizations.documentTitle': 'Firms · Settings · Verimaya',
 	'settings.organizations.title': 'Firms',
 	'settings.organizations.description':
 		'Clinic, hotel, and transfer firms — selectable on the contact form.',
@@ -3627,7 +3728,7 @@ const en: Record<MessageKey, string> = {
 	'settings.organizations.footnote':
 		'A firm can only be deleted when no contacts use it (soft-delete).',
 
-	'settings.importExport.documentTitle': 'Import / export · Settings · Veri Maya',
+	'settings.importExport.documentTitle': 'Import / export · Settings · Verimaya',
 	'settings.importExport.title': 'Import / export',
 	'settings.importExport.description':
 		'Import and export contacts via Excel — preview first, then apply.',
@@ -3671,7 +3772,7 @@ const en: Record<MessageKey, string> = {
 	'settings.nav.dataDelete.title': 'Delete operational data',
 	'settings.nav.dataDelete.description':
 		'Permanently deletes test/demo data — owner only; irreversible.',
-	'settings.dataDelete.documentTitle': 'Delete data · Settings · Veri Maya',
+	'settings.dataDelete.documentTitle': 'Delete data · Settings · Verimaya',
 	'settings.dataDelete.title': 'Delete operational data',
 	'settings.dataDelete.warning':
 		'This permanently deletes the operational records you select. Organization, members, roles, categories, contact/appointment types, and the audit log are kept. This cannot be undone.',
@@ -3709,12 +3810,12 @@ const en: Record<MessageKey, string> = {
 	'settings.organization.slugFootnote':
 		'Slug cannot be changed. Member and role management is on the {link} page.',
 
-	'shell.pwa.title': 'Add Veri Maya to your home screen',
+	'shell.pwa.title': 'Add Verimaya to your home screen',
 	'shell.pwa.body': 'Install the app on your device for faster access.',
 	'shell.pwa.install': 'Install',
 	'shell.pwa.dismiss': 'Not now',
-	'shell.aria.home': 'Veri Maya',
-	'shell.aria.homeWithTenant': 'Veri Maya — {name}',
+	'shell.aria.home': 'Verimaya',
+	'shell.aria.homeWithTenant': 'Verimaya — {name}',
 	'shell.aria.mainMenu': 'Main menu',
 	'shell.aria.closeMenu': 'Close menu',
 	'shell.aria.allMenu': 'Full menu',
@@ -3792,7 +3893,108 @@ const en: Record<MessageKey, string> = {
 	'duplicates.merging': 'Merging…',
 	'duplicates.mergeAction': 'Keep selected, merge the others',
 
-	'hub.meta.title': 'Veri Maya: Health tourism operations platform',
+	'hubHome.meta.title': 'Verimaya — Growth from ads to collections',
+	'hubHome.meta.description':
+		'A managed growth system for health tourism agencies, connecting advertising, patient files, collections, and commissions.',
+	'hubHome.category': 'The health tourism growth system from advertising to collections',
+	'hubHome.nav.what': 'What it does',
+	'hubHome.nav.forWhom': 'Who it is for',
+	'hubHome.nav.tools': 'Tools',
+	'hubHome.nav.resources': 'Resources',
+	'hubHome.nav.login': 'Sign in',
+	'hubHome.menu.open': 'Open menu',
+	'hubHome.menu.close': 'Close menu',
+	'hubHome.hero.title': 'How much of your advertising spend turned into collections?',
+	'hubHome.hero.subtitle':
+		'Not lead volume, but money in the bank. One chain from advertising to patient files, collections, and commission reports.',
+	'hubHome.cta.primary': 'Get your first findings report with your existing data',
+	'hubHome.questions.eyebrow': 'Three questions',
+	'hubHome.questions.title': 'Growth is accounted for in these three answers.',
+	'hubHome.questions.revenue': 'How much of your advertising spend turned into collections?',
+	'hubHome.questions.untouched': 'How many leads received no follow-up?',
+	'hubHome.questions.commission': 'What is your commission per clinic, and where is it recorded?',
+	'hubHome.finding.eyebrow': 'First findings report',
+	'hubHome.finding.title': 'A number you did not know in the first 10 minutes of setup.',
+	'hubHome.finding.description':
+		'Using your own data, we identify duplicate records, long-uncontacted patients, outstanding balances, and collections by advertising month.',
+	'hubHome.how.eyebrow': 'How it works',
+	'hubHome.how.title': 'The money chain closes in four steps.',
+	'hubHome.how.ads': 'Advertising',
+	'hubHome.how.adsDesc': 'Media spend is tracked together with its source.',
+	'hubHome.how.lead': 'Lead',
+	'hubHome.how.leadDesc': 'Maya Sales [1] makes follow-up and conversations visible.',
+	'hubHome.how.patient': 'Patient',
+	'hubHome.how.patientDesc': 'Maya Ops [2] takes over the patient file and journey.',
+	'hubHome.how.collection': 'Collection',
+	'hubHome.how.collectionDesc': 'Revenue, commissions, and advertising source meet in one account.',
+	'hubHome.how.salesBadge': 'Maya Sales [1]',
+	'hubHome.how.opsBadge': 'Maya Ops [2]',
+	'hubHome.how.incentive':
+		'Your agency commission support application file and deadlines stay tracked.',
+	'hubHome.how.ghlNote':
+		'Maya Sales runs on a third-party platform (GoHighLevel); platform outages are outside Verimaya’s control.',
+	'hubHome.audience.eyebrow': 'Who it is for',
+	'hubHome.audience.title': 'Built first for health tourism agencies.',
+	'hubHome.audience.agency':
+		'For agencies that manage international advertising budgets, move patients to clinics, and track clinic commissions, we manage the money chain end to end.',
+	'hubHome.audience.clinic':
+		'Agencies are our primary focus. We are open to inbound requests from clinics and assess fit together in a scope call.',
+	'hubHome.why.eyebrow': 'Why Verimaya',
+	'hubHome.why.title': 'We are not selling another CRM.',
+	'hubHome.why.othersLabel': 'Systems that count leads',
+	'hubHome.why.othersDesc': 'They show volume while leaving where the money ended up unanswered.',
+	'hubHome.why.usLabel': 'A system that counts money',
+	'hubHome.why.usDesc':
+		'It measures advertising, patients, collections, and commissions in one chain.',
+	'hubHome.privacy.eyebrow': 'Data and privacy',
+	'hubHome.privacy.title': 'Isolation and processing boundaries are visible from the start.',
+	'hubHome.privacy.isolation':
+		'Each company’s data is kept separate; access boundaries are enforced by permission and organization.',
+	'hubHome.privacy.boundaries':
+		'Data is used only for the defined service scope and explicit processing purpose; decisions requiring human approval never become final records automatically.',
+	'hubHome.privacy.transparency':
+		'The founder owns a health tourism business; that is why data isolation is written into the contract and open to audit.',
+	'hubHome.tools.eyebrow': 'Free tools',
+	'hubHome.tools.title': 'Start the calculation behind your first finding with one small step.',
+	'hubHome.tools.description':
+		'Your selected resource will be delivered in exchange for your email. The primary next step is requesting a first findings report.',
+	'hubHome.tools.calculator.title': 'Advertising Return Calculator',
+	'hubHome.tools.calculator.desc':
+		'Calculate the basic conversion between your media budget and collections.',
+	'hubHome.tools.measurement.title': 'Measurement Maturity Check',
+	'hubHome.tools.measurement.desc':
+		'See which data points you can measure today from advertising to collections.',
+	'hubHome.tools.preLaunch.title': 'Pre-campaign Check',
+	'hubHome.tools.preLaunch.desc':
+		'Check tracking and patient journey gaps before launching advertising.',
+	'hubHome.tools.templates.title': 'Agency Reporting Templates',
+	'hubHome.tools.templates.desc':
+		'Get ready-to-use templates for advertising, collection, and commission tracking.',
+	'hubHome.tools.request': 'Request by email',
+	'hubHome.tools.open': 'Open the tool directly',
+	'hubHome.closing.eyebrow': 'First finding',
+	'hubHome.closing.title':
+		'Let us show you, not tell you. If we cannot find a number you did not know, we close the subject.',
+	'hubHome.closing.capacity': 'First 3 Founding Partner places — by scope consultation',
+	'hubHome.form.title': 'First findings report request',
+	'hubHome.form.description': 'Form submission will open soon. You can review the fields now.',
+	'hubHome.form.name': 'Name',
+	'hubHome.form.company': 'Company',
+	'hubHome.form.budget': 'Monthly media budget range',
+	'hubHome.form.budget.choose': 'Choose a range',
+	'hubHome.form.budget.low': 'Below TRY 100,000',
+	'hubHome.form.budget.medium': 'TRY 100,000–300,000',
+	'hubHome.form.budget.high': 'TRY 300,000–750,000',
+	'hubHome.form.budget.enterprise': 'Above TRY 750,000',
+	'hubHome.form.system': 'System currently used',
+	'hubHome.form.consent.before': 'I have read the',
+	'hubHome.form.consent.after': 'and consent to processing my request.',
+	'hubHome.form.submitSoon': 'Request form opens soon',
+	'hubHome.footer.legal': 'Legal',
+	'hubHome.footer.kvkk': 'KVKK Disclosure',
+	'hubHome.footer.copyright': 'Verimaya. All rights reserved.',
+
+	'hub.meta.title': 'Verimaya: Health tourism operations platform',
 	'hub.meta.description':
 		'Leads in WhatsApp, patients in Excel, payments in the group chat. At month-end you don’t know who came or who paid. One ecosystem for health tourism with Maya App, Maya CRM, Tools, and Resources.',
 

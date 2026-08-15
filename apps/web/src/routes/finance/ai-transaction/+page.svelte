@@ -326,7 +326,7 @@
 </script>
 
 <svelte:head>
-	<title>{t('finance.ai.title')} · Veri Maya</title>
+	<title>{t('finance.ai.title')} · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">

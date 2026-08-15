@@ -52,7 +52,7 @@
 </script>
 
 <svelte:head>
-	<title>Şablonlar · Pazarlama · Veri Maya</title>
+	<title>Şablonlar · Pazarlama · Verimaya</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl min-w-0">
