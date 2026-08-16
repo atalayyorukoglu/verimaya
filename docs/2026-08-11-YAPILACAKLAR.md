@@ -237,6 +237,38 @@
 
 ---
 
+## AI katmanı (AI-01…AI-07) — pilot sonrası, freeze kapsamında
+
+> Karar metni, gerekçe ve 13 firmalık rakip AI taraması: Obsidian
+> `03-Areas/VeriMaya/09-ai-katmani-yol-haritasi.md` (2026-08-15) + `02-yol-haritasi.md` § Eksen 1b.
+> Buraya **kalem olarak** taşındı ki tek kaynak dosya AI işini görsün; ayrıntı Obsidian'da kalır.
+>
+> **Hiçbiri PILOT-02 içinde yapılmaz** — hepsi yeni yüzey, freeze ⛔ kapsamında. Sıra pilot
+> kapanışından (6 Eylül) sonra açılır. Ana sayfa bugün "sistem okur, siz onaylarsınız" diyor;
+> yani AI-02 er ya da geç satış vaadinin ürün karşılığı olmak zorunda.
+>
+> **"Firmaya özel ajan" = bilgi tabanı + kurallar + düzeltme geçmişi.** Model eğitimi değil.
+
+| Kod | İş | Bağımlı | Büyüklük |
+|---|---|---|---|
+| **AI-01** | Bilgi tabanı v1 — `tenant_settings.knowledge`, yalnız hizmet+fiyat bölümü, finans parse prompt'una bağlanır | yok | S |
+| **AI-02** | Kayıt güncelleme onay kuyruğu — `record_update_suggestions`, tek alan: `appointment.scheduled_at` | yok | M |
+| **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
+| **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | yok | M |
+| **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
+| **AI-06** | Bilgi tabanı versiyonlama (`knowledge_revisions`) — "AI neden 2400 dedi?" sorusunun 3 ay sonraki cevabı | AI-01 | S |
+| **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
+
+**Değişmez kurallar** (bozulursa "insan onaylı" savunması çöker): toplu kabul yok, her kart tek
+tek onaylanır · eşleşme belirsizse öneri **üretilmez** · para alanları, `deleted_at`, rol/izin
+alanları asla kapsamda değil · kritik operasyon kalemleri (uçuş, karşılama, klinik randevusu)
+AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
+
+**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
+(G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.
+
+---
+
 ## Bekleyen (MARKET-02 sonrası / ikinci müşteri eşiği)
 
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Veri Maya"**).
@@ -290,10 +322,18 @@
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
-- **Pazarlama ana sayfası v2 ✅** (2026-08-15) — reklamdan tahsilata konumlandırılan dokuz
-  bölüm, ilk bulgu raporu CTA/form arayüzü ve noindex `/hub-v1/` arşivi.
-  **Görüş:** Form bu turda brief C uyarınca uçsuz ve devre dışı; marka yazımı web yüzeylerinde
-  “Verimaya” olarak birleştirildi. Araç seçimi: hesaplayıcı, ölçüm, yayın öncesi ve şablonlar.
+- **Pazarlama ana sayfası v4 ✅** (2026-08-16) — canlı `/` (ve prerender kaynağı `/vitrin`)
+  artık `HubHomeV4`: **v1 kabuğu + v4 içeriği**. Kabuk v1'den gelir (nav, logo, tema/dil
+  değiştirici, `messages.ts` i18n, footer, KVKK bağlantısı); gövde teşhis-müdahale
+  konumlandırmasının on bölümü — beş basamaklı merdiven (yazılım 3. basamakta durur, 4-5 biz),
+  zincirin sekiz halkası, temsilî aylık müdahale listesi, dört adımlı döngü (örnek sayılarla),
+  WhatsApp onay kuyruğu, ilk bulgu, veri/KVKK, kimin için, kapanış. `v1`–`v3` arşiv rotaları
+  (`/hub-v1` … `/hub-v3`) duruyor; deneme yüzeyleri.
+  **Görüş:** Brief'teki lead formu yerine `mailto` CTA'sı kondu — arka uç zaten yazılmayacaktı,
+  çalışmayan form devre dışı butondan daha kötü sinyal. Onay kuyruğu bölümü AI-02'nin satış
+  vaadi: sayfa "sistem okur, siz onaylarsınız" diyor, ürün karşılığı henüz yok (bkz. AI katmanı).
+  `nginx.conf` CSP hash'i commit'te güncellendi (`03c211f`) — atlanırsa canlı hub kırılırdı.
+  `03c211f` `e5e512d`
 - **G-25 / GAP-25 kapsamlı veri silme ✅** (2026-08-14) — `POST /v1/settings/data-delete/preview|execute`;
   kapsam seçimi (transactions/appointments/contacts/files, varsayılan hiçbiri); önizleme
   `plan_token` (CryptoService, 10 dk TTL, jti tek kullanımlık); org adı birebir onay; yalnız
