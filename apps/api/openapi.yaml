@@ -5069,6 +5069,87 @@ paths:
                   - items
                   - next_cursor
                 additionalProperties: false
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  email:
+                    type: string
+                    format: email
+                    maxLength: 255
+                  display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  created_at:
+                    type: string
+                    format: date-time
+                  user_id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  role:
+                    type: string
+                    enum:
+                      - owner
+                      - admin
+                      - manager
+                      - agent
+                      - finance
+                      - readonly
+                required:
+                  - id
+                  - email
+                  - display_name
+                  - created_at
+                  - user_id
+                  - tenant_id
+                  - role
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+                display_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                role:
+                  type: string
+                  enum:
+                    - owner
+                    - admin
+                    - manager
+                    - agent
+                    - finance
+                    - readonly
+                  default: agent
+              required:
+                - email
+                - password
+                - display_name
+              additionalProperties: false
   /members/{id}:
     patch:
       responses:
@@ -5139,9 +5220,37 @@ paths:
                     - agent
                     - finance
                     - readonly
-              required:
-                - role
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
               additionalProperties: false
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  deleted:
+                    type: boolean
+                    enum:
+                      - true
+                required:
+                  - id
+                  - deleted
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /members/{id}/password-reset:
     post:
       responses:

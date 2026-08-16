@@ -2,11 +2,12 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type { MembershipUser, UserRole } from '@verimaya/shared';
 	import { apiPaths, userRoleLabels, userRoleSchema } from '@verimaya/shared';
-	import { apiGet, apiSend, fieldClass, listUrl } from '$lib/api';
+	import { apiGet, apiSend, fieldClass, labelClass, listUrl } from '$lib/api';
 	import { meQueryOptions } from '$lib/me-query';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -35,8 +36,23 @@
 
 	let savingId = $state<string | null>(null);
 	let resettingId = $state<string | null>(null);
+	let removingId = $state<string | null>(null);
 	let error = $state<string | null>(null);
-	let resetNotice = $state<string | null>(null);
+	let notice = $state<string | null>(null);
+
+	let inviteOpen = $state(false);
+	let inviteEmail = $state('');
+	let inviteName = $state('');
+	let inviteRole = $state<UserRole>('agent');
+	let invitePassword = $state('');
+	let inviteSaving = $state(false);
+	let inviteError = $state<string | null>(null);
+
+	let passwordMember = $state<MembershipUser | null>(null);
+	let passwordOpen = $state(false);
+	let passwordValue = $state('');
+	let passwordSaving = $state(false);
+	let passwordError = $state<string | null>(null);
 
 	function roleTone(role: UserRole): 'brand' | 'info' | 'warning' | 'success' | 'neutral' {
 		switch (role) {
@@ -66,6 +82,29 @@
 		return me != null && member.email === me.email;
 	}
 
+	function openInvite() {
+		inviteEmail = '';
+		inviteName = '';
+		inviteRole = 'agent';
+		invitePassword = '';
+		inviteError = null;
+		inviteOpen = true;
+	}
+
+	function openSetPassword(member: MembershipUser) {
+		passwordMember = member;
+		passwordValue = '';
+		passwordError = null;
+		passwordOpen = true;
+	}
+
+	function closeSetPassword() {
+		passwordOpen = false;
+		passwordMember = null;
+		passwordValue = '';
+		passwordError = null;
+	}
+
 	async function changeRole(member: MembershipUser, role: UserRole) {
 		if (!canManageRoles || isSelf(member) || member.role === role) return;
 		savingId = member.id;
@@ -80,19 +119,75 @@
 		}
 	}
 
+	async function submitInvite(e: Event) {
+		e.preventDefault();
+		if (!canManageRoles || inviteSaving) return;
+		inviteSaving = true;
+		inviteError = null;
+		error = null;
+		try {
+			await apiSend(apiPaths.members, 'POST', {
+				email: inviteEmail.trim(),
+				display_name: inviteName.trim(),
+				role: inviteRole,
+				password: invitePassword
+			});
+			await queryClient.invalidateQueries({ queryKey: qs.keys.members.all() });
+			inviteOpen = false;
+		} catch (err) {
+			inviteError = err instanceof Error ? err.message : t('settings.team.inviteFailed');
+		} finally {
+			inviteSaving = false;
+		}
+	}
+
+	async function submitSetPassword(e: Event) {
+		e.preventDefault();
+		const member = passwordMember;
+		if (!member || !canManageRoles || isSelf(member) || passwordSaving) return;
+		passwordSaving = true;
+		passwordError = null;
+		error = null;
+		notice = null;
+		try {
+			await apiSend(apiPaths.member(member.id), 'PATCH', { password: passwordValue });
+			notice = t('settings.team.setPasswordDone');
+			closeSetPassword();
+		} catch (err) {
+			passwordError = err instanceof Error ? err.message : t('settings.team.setPasswordFailed');
+		} finally {
+			passwordSaving = false;
+		}
+	}
+
 	async function sendReset(member: MembershipUser) {
 		if (!canManageRoles || isSelf(member)) return;
 		if (!confirm(t('settings.team.resetPasswordConfirm', { name: member.display_name }))) return;
 		resettingId = member.id;
 		error = null;
-		resetNotice = null;
+		notice = null;
 		try {
 			await apiSend(apiPaths.memberPasswordReset(member.id), 'POST');
-			resetNotice = t('settings.team.resetPasswordSent');
+			notice = t('settings.team.resetPasswordSent');
 		} catch (err) {
 			error = err instanceof Error ? err.message : t('settings.team.resetPasswordFailed');
 		} finally {
 			resettingId = null;
+		}
+	}
+
+	async function removeMember(member: MembershipUser) {
+		if (!canManageRoles || isSelf(member)) return;
+		if (!confirm(t('settings.team.removeConfirm', { name: member.display_name }))) return;
+		removingId = member.id;
+		error = null;
+		try {
+			await apiSend(apiPaths.member(member.id), 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: qs.keys.members.all() });
+		} catch (err) {
+			error = err instanceof Error ? err.message : t('settings.team.removeFailed');
+		} finally {
+			removingId = null;
 		}
 	}
 </script>
@@ -105,9 +200,9 @@
 	<SettingsBackLink />
 	<PageHeader title={t('settings.team.title')} description={t('settings.team.description')}>
 		{#snippet actions()}
-			<Button type="button" disabled title={t('settings.team.inviteDisabled')}>
-				{t('settings.team.invite')}
-			</Button>
+			{#if canManageRoles}
+				<Button type="button" onclick={openInvite}>{t('settings.team.invite')}</Button>
+			{/if}
 		{/snippet}
 	</PageHeader>
 
@@ -123,14 +218,14 @@
 		{#if error}
 			<p class="mb-3 text-sm text-danger" role="alert">{error}</p>
 		{/if}
-		{#if resetNotice}
-			<p class="mb-3 text-sm text-success" role="status">{resetNotice}</p>
+		{#if notice}
+			<p class="mb-3 text-sm text-success" role="status">{notice}</p>
 		{/if}
 		<ul
 			class="min-w-0 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
 		>
 			{#each members as member (member.id)}
-				<li class="flex min-w-0 items-center gap-3 px-4 py-3">
+				<li class="flex min-w-0 flex-wrap items-center gap-3 px-4 py-3">
 					<span
 						class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-subtle text-xs font-semibold text-brand"
 					>
@@ -148,10 +243,26 @@
 						<button
 							type="button"
 							class="shrink-0 text-xs font-medium text-brand hover:underline disabled:opacity-50"
+							disabled={passwordSaving && passwordMember?.id === member.id}
+							onclick={() => openSetPassword(member)}
+						>
+							{t('settings.team.setPassword')}
+						</button>
+						<button
+							type="button"
+							class="shrink-0 text-xs font-medium text-brand hover:underline disabled:opacity-50"
 							disabled={resettingId === member.id}
 							onclick={() => void sendReset(member)}
 						>
 							{resettingId === member.id ? t('common.wait') : t('settings.team.resetPassword')}
+						</button>
+						<button
+							type="button"
+							class="shrink-0 text-xs font-medium text-danger hover:underline disabled:opacity-50"
+							disabled={removingId === member.id}
+							onclick={() => void removeMember(member)}
+						>
+							{removingId === member.id ? t('common.wait') : t('settings.team.remove')}
 						</button>
 						<label class="sr-only" for={`role-${member.id}`}>{t('settings.team.roleLabel')}</label>
 						<select
@@ -182,3 +293,101 @@
 		</p>
 	{/if}
 </div>
+
+<Dialog
+	bind:open={inviteOpen}
+	title={t('settings.team.inviteTitle')}
+	description={t('settings.team.inviteDescription')}
+>
+	<form class="grid gap-3" onsubmit={submitInvite}>
+		{#if inviteError}
+			<p class="text-sm text-danger" role="alert">{inviteError}</p>
+		{/if}
+		<label class="grid gap-1">
+			<span class={labelClass}>{t('settings.team.emailLabel')}</span>
+			<input
+				class={fieldClass}
+				type="email"
+				bind:value={inviteEmail}
+				required
+				maxlength="255"
+				autocomplete="off"
+			/>
+		</label>
+		<label class="grid gap-1">
+			<span class={labelClass}>{t('settings.team.nameLabel')}</span>
+			<input
+				class={fieldClass}
+				type="text"
+				bind:value={inviteName}
+				required
+				maxlength="255"
+				autocomplete="off"
+			/>
+		</label>
+		<label class="grid gap-1">
+			<span class={labelClass}>{t('settings.team.roleLabel')}</span>
+			<select class={fieldClass} bind:value={inviteRole}>
+				{#each roleOptions as role (role)}
+					<option value={role}>{userRoleLabels[role]}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="grid gap-1">
+			<span class={labelClass}>{t('settings.team.passwordLabel')}</span>
+			<input
+				class={fieldClass}
+				type="password"
+				bind:value={invitePassword}
+				required
+				minlength="8"
+				maxlength="128"
+				autocomplete="new-password"
+			/>
+			<span class="text-xs text-text-faint">{t('settings.team.passwordHint')}</span>
+		</label>
+		<div class="mt-2 flex justify-end gap-2">
+			<Button type="button" variant="outline" onclick={() => (inviteOpen = false)}>
+				{t('common.cancel')}
+			</Button>
+			<Button type="submit" disabled={inviteSaving}>
+				{inviteSaving ? t('common.creating') : t('settings.team.inviteSubmit')}
+			</Button>
+		</div>
+	</form>
+</Dialog>
+
+{#if passwordMember}
+	<Dialog
+		bind:open={passwordOpen}
+		title={t('settings.team.setPasswordTitle')}
+		description={t('settings.team.setPasswordDescription', { name: passwordMember.display_name })}
+	>
+		<form class="grid gap-3" onsubmit={submitSetPassword}>
+			{#if passwordError}
+				<p class="text-sm text-danger" role="alert">{passwordError}</p>
+			{/if}
+			<label class="grid gap-1">
+				<span class={labelClass}>{t('settings.team.passwordLabel')}</span>
+				<input
+					class={fieldClass}
+					type="password"
+					bind:value={passwordValue}
+					required
+					minlength="8"
+					maxlength="128"
+					autocomplete="new-password"
+				/>
+				<span class="text-xs text-text-faint">{t('settings.team.passwordHint')}</span>
+			</label>
+			<div class="mt-2 flex justify-end gap-2">
+				<Button type="button" variant="outline" onclick={closeSetPassword}>
+					{t('common.cancel')}
+				</Button>
+				<Button type="submit" disabled={passwordSaving}>
+					{passwordSaving ? t('common.saving') : t('settings.team.setPasswordSubmit')}
+				</Button>
+			</div>
+		</form>
+	</Dialog>
+{/if}

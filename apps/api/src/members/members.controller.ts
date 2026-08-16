@@ -1,9 +1,21 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { cursorPageParams, memberRoleUpdateSchema } from '@verimaya/shared';
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	HttpCode,
+	Param,
+	Patch,
+	Post,
+	Query,
+	Req,
+	UseGuards
+} from '@nestjs/common';
+import { cursorPageParams, memberCreateSchema, memberUpdateSchema } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { SessionGuard } from '../auth/session.guard';
 import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest } from '../common/active-org.guard';
-import { IdempotencyExempt } from '../common/idempotent.decorator';
+import { Idempotent, IdempotencyExempt } from '../common/idempotent.decorator';
 import { parseBody } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
@@ -25,23 +37,30 @@ export class MembersController {
 		return this.membersService.list(getActiveOrgId(req), params);
 	}
 
+	@Post()
+	@RequireOrgPermission('members', 'create')
+	@Idempotent()
+	create(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(memberCreateSchema, body, req);
+		return this.membersService.create(getActiveOrgId(req), input, getActorFromRequest(req));
+	}
+
 	@Patch(':id')
 	@RequireOrgPermission('members', 'update')
 	@IdempotencyExempt(
-		'Sets absolute role to the caller-supplied value — repeat PATCHes converge to the same membership role. The audit-log row is append-only; a duplicate on a genuine retry is harmless.'
+		'Sets absolute role/password to the caller-supplied value — repeat PATCHes converge. The audit-log row is append-only; a duplicate on a genuine retry is harmless.'
 	)
-	update(
-		@Req() req: FastifyRequest,
-		@Param('id') id: string,
-		@Body() body: unknown
-	) {
-		const input = parseBody(memberRoleUpdateSchema, body, req);
-		return this.membersService.updateRole(
-			getActiveOrgId(req),
-			id,
-			input,
-			getActorFromRequest(req)
-		);
+	update(@Req() req: FastifyRequest, @Param('id') id: string, @Body() body: unknown) {
+		const input = parseBody(memberUpdateSchema, body, req);
+		return this.membersService.update(getActiveOrgId(req), id, input, getActorFromRequest(req));
+	}
+
+	@Delete(':id')
+	@HttpCode(200)
+	@RequireOrgPermission('members', 'delete')
+	@Idempotent()
+	remove(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.membersService.remove(getActiveOrgId(req), id, getActorFromRequest(req));
 	}
 
 	@Post(':id/password-reset')

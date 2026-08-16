@@ -905,17 +905,68 @@ export const handlers = [
 		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
 	}),
 
+	http.post('/v1/members', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as {
+			email?: string;
+			display_name?: string;
+			role?: string;
+			password?: string;
+		};
+		const email = body.email?.trim().toLowerCase() ?? '';
+		const displayName = body.display_name?.trim() ?? '';
+		const role = userRoleSchema.safeParse(body.role ?? 'agent');
+		if (!email || !displayName || !role.success || !body.password || body.password.length < 8) {
+			return badRequest('Geçersiz üye');
+		}
+		const existing = store.members.find(
+			(m) => m.tenant_id === store.tenant.id && m.email === email
+		);
+		if (existing) {
+			const updated: MembershipUser = {
+				...existing,
+				display_name: displayName,
+				role: role.data
+			};
+			const idx = store.members.findIndex((m) => m.id === existing.id);
+			store.members[idx] = updated;
+			return HttpResponse.json(updated);
+		}
+		const userId = crypto.randomUUID();
+		const member: MembershipUser = {
+			id: crypto.randomUUID(),
+			user_id: userId,
+			tenant_id: store.tenant.id,
+			email,
+			display_name: displayName,
+			role: role.data,
+			created_at: new Date().toISOString()
+		};
+		store.members.push(member);
+		return HttpResponse.json(member);
+	}),
+
 	http.patch('/v1/members/:id', async ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
-		const body = (await request.json()) as { role?: string };
-		const parsed = userRoleSchema.safeParse(body.role);
-		if (!parsed.success) return badRequest('Geçersiz rol');
+		const body = (await request.json()) as { role?: string; password?: string };
 		const idx = store.members.findIndex(
 			(m) => m.id === params.id && m.tenant_id === store.tenant.id
 		);
 		if (idx < 0) return notFound('Üye bulunamadı');
 		const current = store.members[idx]!;
-		if (current.id === DEMO_USER_ID) {
+		if (current.id === DEMO_USER_ID || current.user_id === DEMO_USER_ID) {
+			if (body.password !== undefined) {
+				return HttpResponse.json(
+					{
+						error: {
+							code: 'cannot_change_own_password',
+							message: 'Use change-password for your own password'
+						},
+						request_id: 'msw'
+					},
+					{ status: 403 }
+				);
+			}
 			return HttpResponse.json(
 				{
 					error: { code: 'cannot_change_own_role', message: 'You cannot change your own role' },
@@ -924,24 +975,61 @@ export const handlers = [
 				{ status: 403 }
 			);
 		}
-		if (current.role === 'owner' && parsed.data !== 'owner') {
+		let nextRole = current.role;
+		if (body.role !== undefined) {
+			const parsed = userRoleSchema.safeParse(body.role);
+			if (!parsed.success) return badRequest('Geçersiz rol');
+			if (current.role === 'owner' && parsed.data !== 'owner') {
+				const owners = store.members.filter(
+					(m) => m.tenant_id === store.tenant.id && m.role === 'owner'
+				);
+				if (owners.length <= 1) {
+					return badRequest('Cannot demote the last owner');
+				}
+			}
+			nextRole = parsed.data;
+		}
+		if (body.password !== undefined && body.password.length < 8) {
+			return badRequest('Geçersiz şifre');
+		}
+		const updated: MembershipUser = { ...current, role: nextRole };
+		store.members[idx] = updated;
+		return HttpResponse.json(updated);
+	}),
+
+	http.delete('/v1/members/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.members.findIndex(
+			(m) => m.id === params.id && m.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Üye bulunamadı');
+		const current = store.members[idx]!;
+		if (current.id === DEMO_USER_ID || current.user_id === DEMO_USER_ID) {
+			return HttpResponse.json(
+				{
+					error: { code: 'cannot_remove_self', message: 'You cannot remove your own membership' },
+					request_id: 'msw'
+				},
+				{ status: 400 }
+			);
+		}
+		if (current.role === 'owner') {
 			const owners = store.members.filter(
 				(m) => m.tenant_id === store.tenant.id && m.role === 'owner'
 			);
 			if (owners.length <= 1) {
-				return badRequest('Cannot demote the last owner');
+				return badRequest('Cannot remove the last owner');
 			}
 		}
-		const updated: MembershipUser = { ...current, role: parsed.data };
-		store.members[idx] = updated;
-		return HttpResponse.json(updated);
+		store.members.splice(idx, 1);
+		return HttpResponse.json({ id: current.id, deleted: true });
 	}),
 
 	http.post('/v1/members/:id/password-reset', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		const member = store.members.find((m) => m.id === params.id && m.tenant_id === store.tenant.id);
 		if (!member) return notFound('Üye bulunamadı');
-		if (member.id === DEMO_USER_ID) {
+		if (member.id === DEMO_USER_ID || member.user_id === DEMO_USER_ID) {
 			return HttpResponse.json(
 				{
 					error: {

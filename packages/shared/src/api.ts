@@ -234,8 +234,9 @@ import { settingsReorderResultSchema, settingsReorderSchema } from './settings-r
 import { tenantSchema } from './tenant.js';
 import {
 	membershipUserSchema,
+	memberCreateSchema,
 	memberPasswordResetResultSchema,
-	memberRoleUpdateSchema
+	memberUpdateSchema
 } from './user.js';
 import {
 	meOrganizationListSchema,
@@ -512,9 +513,16 @@ export const apiContract = {
 	'GET /v1/members': {
 		response: cursorPageSchema(membershipUserSchema)
 	},
-	'PATCH /v1/members/:id': {
-		body: memberRoleUpdateSchema,
+	'POST /v1/members': {
+		body: memberCreateSchema,
 		response: membershipUserSchema
+	},
+	'PATCH /v1/members/:id': {
+		body: memberUpdateSchema,
+		response: membershipUserSchema
+	},
+	'DELETE /v1/members/:id': {
+		response: softDeleteResultSchema
 	},
 	'POST /v1/members/:id/password-reset': {
 		response: memberPasswordResetResultSchema

@@ -30,7 +30,7 @@ export const organizationPermissionStatements = {
 	finance: ['create', 'read', 'update', 'delete'],
 	settings: ['read', 'update'],
 	audit: ['read'],
-	members: ['read', 'update'],
+	members: ['create', 'read', 'update', 'delete'],
 	api_keys: ['read', 'update'],
 	webhook_subscriptions: ['read', 'update'],
 	scorecard: ['read', 'update']
@@ -42,7 +42,7 @@ export const organizationRolePermissionDefaults = {
 		finance: ['create', 'read', 'update', 'delete'],
 		settings: ['read', 'update'],
 		audit: ['read'],
-		members: ['read', 'update'],
+		members: ['create', 'read', 'update', 'delete'],
 		api_keys: ['read', 'update'],
 		webhook_subscriptions: ['read', 'update'],
 		scorecard: ['read', 'update']
@@ -52,7 +52,7 @@ export const organizationRolePermissionDefaults = {
 		finance: ['create', 'read', 'update', 'delete'],
 		settings: ['read', 'update'],
 		audit: ['read'],
-		members: ['read', 'update'],
+		members: ['create', 'read', 'update', 'delete'],
 		api_keys: ['read', 'update'],
 		webhook_subscriptions: ['read', 'update'],
 		scorecard: ['read', 'update']
@@ -107,8 +107,10 @@ export const organizationRolePermissionDefaults = {
  * member / permission administration from the panel.
  */
 export const OWNER_LOCKED_PERMISSIONS = [
+	{ role: 'owner' as const, resource: 'members' as const, action: 'create' as const },
 	{ role: 'owner' as const, resource: 'members' as const, action: 'read' as const },
 	{ role: 'owner' as const, resource: 'members' as const, action: 'update' as const },
+	{ role: 'owner' as const, resource: 'members' as const, action: 'delete' as const },
 	{ role: 'owner' as const, resource: 'settings' as const, action: 'read' as const },
 	{ role: 'owner' as const, resource: 'settings' as const, action: 'update' as const }
 ] as const;

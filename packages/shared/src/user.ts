@@ -31,7 +31,32 @@ export const membershipUserSchema = userSchema.extend({
 
 export type MembershipUser = z.infer<typeof membershipUserSchema>;
 
-/** PATCH /v1/members/:id — change a member's org role. */
+/** POST /v1/members — add a member to the active tenant (owner/admin). */
+export const memberCreateSchema = z.object({
+	email: z.string().trim().email().max(255),
+	password: z.string().min(8).max(128),
+	display_name: z.string().trim().min(1).max(255),
+	role: userRoleSchema.default('agent')
+});
+
+export type MemberCreate = z.infer<typeof memberCreateSchema>;
+
+/**
+ * PATCH /v1/members/:id — change role and/or set password.
+ * At least one field must be present.
+ */
+export const memberUpdateSchema = z
+	.object({
+		role: userRoleSchema.optional(),
+		password: z.string().min(8).max(128).optional()
+	})
+	.refine((value) => value.role !== undefined || value.password !== undefined, {
+		message: 'At least one of role or password is required'
+	});
+
+export type MemberUpdate = z.infer<typeof memberUpdateSchema>;
+
+/** @deprecated Use memberUpdateSchema — kept for callers that only patch role. */
 export const memberRoleUpdateSchema = z.object({
 	role: userRoleSchema
 });

@@ -22,10 +22,23 @@ describe('G-11 permission resolution (pure)', () => {
 	});
 
 	it('owner locked cells are detected', () => {
+		expect(isOwnerLockedPermission('owner', 'members', 'create')).toBe(true);
 		expect(isOwnerLockedPermission('owner', 'members', 'update')).toBe(true);
+		expect(isOwnerLockedPermission('owner', 'members', 'delete')).toBe(true);
 		expect(isOwnerLockedPermission('owner', 'settings', 'read')).toBe(true);
 		expect(isOwnerLockedPermission('admin', 'members', 'update')).toBe(false);
 		expect(isOwnerLockedPermission('owner', 'finance', 'read')).toBe(false);
+	});
+
+	it('defaults grant owner/admin members create/delete and deny agent/manager', () => {
+		expect(hasOrgPermission('owner', 'members', 'create')).toBe(true);
+		expect(hasOrgPermission('owner', 'members', 'delete')).toBe(true);
+		expect(hasOrgPermission('admin', 'members', 'create')).toBe(true);
+		expect(hasOrgPermission('admin', 'members', 'delete')).toBe(true);
+		expect(hasOrgPermission('manager', 'members', 'create')).toBe(false);
+		expect(hasOrgPermission('manager', 'members', 'delete')).toBe(false);
+		expect(hasOrgPermission('agent', 'members', 'create')).toBe(false);
+		expect(hasOrgPermission('agent', 'members', 'delete')).toBe(false);
 	});
 
 	it('effective matrix subtracts denies from defaults', () => {

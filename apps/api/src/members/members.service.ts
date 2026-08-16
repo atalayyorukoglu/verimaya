@@ -1,12 +1,20 @@
+import { randomUUID } from 'node:crypto';
 import {
 	BadRequestException,
 	ForbiddenException,
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
+import { hashPassword } from 'better-auth/crypto';
 import { and, count, desc, eq } from 'drizzle-orm';
-import type { MemberRoleUpdate, MembershipUser, UserRole } from '@verimaya/shared';
-import { member, user } from '../db/schema';
+import type {
+	MemberCreate,
+	MemberUpdate,
+	MembershipUser,
+	SoftDeleteResult,
+	UserRole
+} from '@verimaya/shared';
+import { account, member, user } from '../db/schema';
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { DbService } from '../db/db.service';
@@ -121,16 +129,139 @@ export class MembersService {
 		};
 	}
 
-	async updateRole(
+	/**
+	 * Add a member to the active tenant. Mirrors platform `upsertMember` for
+	 * user/account/member creation; scoped to the session tenant.
+	 */
+	async create(
+		tenantId: string,
+		input: MemberCreate,
+		actor: AuditActor
+	): Promise<MembershipUser> {
+		const email = input.email.trim().toLowerCase();
+		const displayName = input.display_name.trim();
+		const role = input.role;
+		const now = new Date();
+
+		const [existingUser] = await this.db.client
+			.select()
+			.from(user)
+			.where(eq(user.email, email))
+			.limit(1);
+
+		let userId: string;
+		if (existingUser) {
+			userId = existingUser.id;
+			await this.db.client
+				.update(user)
+				.set({ name: displayName, updatedAt: now })
+				.where(eq(user.id, userId));
+			const passwordHash = await hashPassword(input.password);
+			const [cred] = await this.db.client
+				.select({ id: account.id })
+				.from(account)
+				.where(and(eq(account.userId, userId), eq(account.providerId, 'credential')))
+				.limit(1);
+			if (cred) {
+				await this.db.client
+					.update(account)
+					.set({ password: passwordHash, updatedAt: now })
+					.where(eq(account.id, cred.id));
+			} else {
+				await this.db.client.insert(account).values({
+					id: randomUUID(),
+					accountId: userId,
+					providerId: 'credential',
+					userId,
+					password: passwordHash,
+					createdAt: now,
+					updatedAt: now
+				});
+			}
+		} else {
+			userId = randomUUID();
+			const passwordHash = await hashPassword(input.password);
+			await this.db.client.insert(user).values({
+				id: userId,
+				name: displayName,
+				email,
+				emailVerified: true,
+				createdAt: now,
+				updatedAt: now
+			});
+			await this.db.client.insert(account).values({
+				id: randomUUID(),
+				accountId: userId,
+				providerId: 'credential',
+				userId,
+				password: passwordHash,
+				createdAt: now,
+				updatedAt: now
+			});
+		}
+
+		const [existingMember] = await this.db.client
+			.select()
+			.from(member)
+			.where(and(eq(member.organizationId, tenantId), eq(member.userId, userId)))
+			.limit(1);
+
+		let memberId: string;
+		let memberCreatedAt: Date;
+		if (existingMember) {
+			memberId = existingMember.id;
+			memberCreatedAt = existingMember.createdAt;
+			await this.db.client
+				.update(member)
+				.set({ role })
+				.where(eq(member.id, existingMember.id));
+		} else {
+			memberId = randomUUID();
+			memberCreatedAt = now;
+			await this.db.client.insert(member).values({
+				id: memberId,
+				organizationId: tenantId,
+				userId,
+				role,
+				createdAt: now
+			});
+		}
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await writeAuditLog(db, tenantId, actor, 'create', 'user', email);
+		});
+
+		return toMembershipUser(
+			{
+				id: memberId,
+				userId,
+				role,
+				createdAt: memberCreatedAt,
+				email,
+				displayName
+			},
+			tenantId
+		);
+	}
+
+	async update(
 		tenantId: string,
 		memberId: string,
-		input: MemberRoleUpdate,
+		input: MemberUpdate,
 		actor: AuditActor
 	): Promise<MembershipUser> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const existing = await this.findMemberRow(tenantId, memberId);
 
 			if (actor.actorId && existing.userId === actor.actorId) {
+				if (input.password !== undefined) {
+					throw new ForbiddenException({
+						error: {
+							code: 'cannot_change_own_password',
+							message: 'Use change-password for your own password'
+						}
+					});
+				}
 				throw new ForbiddenException({
 					error: {
 						code: 'cannot_change_own_role',
@@ -139,65 +270,146 @@ export class MembersService {
 				});
 			}
 
-			const nextRole = input.role;
-			if (existing.role === 'owner' && nextRole !== 'owner') {
-				const [{ value: ownerCount }] = await db
-					.select({ value: count() })
-					.from(member)
-					.where(and(eq(member.organizationId, tenantId), eq(member.role, 'owner')));
+			let nextRole = existing.role as UserRole;
+			if (input.role !== undefined) {
+				nextRole = input.role;
+				if (existing.role === 'owner' && nextRole !== 'owner') {
+					const [{ value: ownerCount }] = await db
+						.select({ value: count() })
+						.from(member)
+						.where(and(eq(member.organizationId, tenantId), eq(member.role, 'owner')));
 
-				if (Number(ownerCount) <= 1) {
-					throw new BadRequestException({
-						error: {
-							code: 'last_owner',
-							message: 'Cannot demote the last owner'
-						}
-					});
+					if (Number(ownerCount) <= 1) {
+						throw new BadRequestException({
+							error: {
+								code: 'last_owner',
+								message: 'Cannot demote the last owner'
+							}
+						});
+					}
+				}
+
+				if (existing.role !== nextRole) {
+					const [row] = await db
+						.update(member)
+						.set({ role: nextRole })
+						.where(and(eq(member.id, memberId), eq(member.organizationId, tenantId)))
+						.returning({
+							id: member.id,
+							role: member.role,
+							createdAt: member.createdAt,
+							userId: member.userId
+						});
+
+					if (!row) {
+						throw new NotFoundException({
+							error: { code: 'not_found', message: 'Member not found' }
+						});
+					}
+
+					await writeAuditLog(
+						db,
+						tenantId,
+						actor,
+						'update',
+						'user',
+						`${existing.displayName}: ${existing.role} → ${nextRole}`
+					);
 				}
 			}
 
-			if (existing.role === nextRole) {
-				return toMembershipUser(existing, tenantId);
+			if (input.password !== undefined) {
+				const passwordHash = await hashPassword(input.password);
+				const now = new Date();
+				const [cred] = await this.db.client
+					.select({ id: account.id })
+					.from(account)
+					.where(
+						and(eq(account.userId, existing.userId), eq(account.providerId, 'credential'))
+					)
+					.limit(1);
+				if (cred) {
+					await this.db.client
+						.update(account)
+						.set({ password: passwordHash, updatedAt: now })
+						.where(eq(account.id, cred.id));
+				} else {
+					await this.db.client.insert(account).values({
+						id: randomUUID(),
+						accountId: existing.userId,
+						providerId: 'credential',
+						userId: existing.userId,
+						password: passwordHash,
+						createdAt: now,
+						updatedAt: now
+					});
+				}
+
+				await writeAuditLog(
+					db,
+					tenantId,
+					actor,
+					'update',
+					'user',
+					`${existing.displayName}: password set`
+				);
 			}
-
-			const [row] = await db
-				.update(member)
-				.set({ role: nextRole })
-				.where(and(eq(member.id, memberId), eq(member.organizationId, tenantId)))
-				.returning({
-					id: member.id,
-					role: member.role,
-					createdAt: member.createdAt,
-					userId: member.userId
-				});
-
-			if (!row) {
-				throw new NotFoundException({
-					error: { code: 'not_found', message: 'Member not found' }
-				});
-			}
-
-			await writeAuditLog(
-				db,
-				tenantId,
-				actor,
-				'update',
-				'user',
-				`${existing.displayName}: ${existing.role} → ${nextRole}`
-			);
 
 			return toMembershipUser(
 				{
-					id: row.id,
+					id: existing.id,
 					userId: existing.userId,
-					role: row.role,
-					createdAt: row.createdAt,
+					role: nextRole,
+					createdAt: existing.createdAt,
 					email: existing.email,
 					displayName: existing.displayName
 				},
 				tenantId
 			);
 		});
+	}
+
+	async remove(
+		tenantId: string,
+		memberId: string,
+		actor: AuditActor
+	): Promise<SoftDeleteResult> {
+		const existing = await this.findMemberRow(tenantId, memberId);
+
+		if (actor.actorId && existing.userId === actor.actorId) {
+			throw new BadRequestException({
+				error: {
+					code: 'cannot_remove_self',
+					message: 'You cannot remove your own membership'
+				}
+			});
+		}
+
+		if (existing.role === 'owner') {
+			const [{ value: ownerCount }] = await this.db.client
+				.select({ value: count() })
+				.from(member)
+				.where(and(eq(member.organizationId, tenantId), eq(member.role, 'owner')));
+
+			if (Number(ownerCount) <= 1) {
+				throw new BadRequestException({
+					error: {
+						code: 'last_owner',
+						message: 'Cannot remove the last owner'
+					}
+				});
+			}
+		}
+
+		await this.db.client
+			.delete(member)
+			.where(and(eq(member.id, memberId), eq(member.organizationId, tenantId)));
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await writeAuditLog(db, tenantId, actor, 'delete', 'user', existing.email);
+		});
+
+		return { id: memberId, deleted: true };
 	}
 
 	/**

@@ -21,6 +21,10 @@ class PermissionTarget {
 	updateFinance() {}
 
 	deleteFinance() {}
+
+	createMember() {}
+
+	deleteMember() {}
 }
 
 class UnprotectedTarget {
@@ -41,6 +45,16 @@ Reflect.defineMetadata(
 	ORG_PERMISSION_METADATA_KEY,
 	{ resource: 'finance', action: 'delete' },
 	PermissionTarget.prototype.deleteFinance
+);
+Reflect.defineMetadata(
+	ORG_PERMISSION_METADATA_KEY,
+	{ resource: 'members', action: 'create' },
+	PermissionTarget.prototype.createMember
+);
+Reflect.defineMetadata(
+	ORG_PERMISSION_METADATA_KEY,
+	{ resource: 'members', action: 'delete' },
+	PermissionTarget.prototype.deleteMember
 );
 
 function makeContext(
@@ -187,6 +201,42 @@ describe('OrgPermissionGuard', () => {
 				makeContext(sessionRequest(managerUser, organizationA), PermissionTarget.prototype.deleteFinance)
 			)
 		).rejects.toMatchObject({ response: { error: { code: 'insufficient_permission' } } });
+	});
+
+	it('rejects agent and manager from members create/delete', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest(agentUser, organizationA), PermissionTarget.prototype.createMember)
+			)
+		).rejects.toMatchObject({ response: { error: { code: 'insufficient_permission' } } });
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest(agentUser, organizationA), PermissionTarget.prototype.deleteMember)
+			)
+		).rejects.toMatchObject({ response: { error: { code: 'insufficient_permission' } } });
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest(managerUser, organizationA), PermissionTarget.prototype.createMember)
+			)
+		).rejects.toMatchObject({ response: { error: { code: 'insufficient_permission' } } });
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest(managerUser, organizationA), PermissionTarget.prototype.deleteMember)
+			)
+		).rejects.toMatchObject({ response: { error: { code: 'insufficient_permission' } } });
+	});
+
+	it('allows owner and admin members create/delete', async () => {
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest(ownerUser, organizationA), PermissionTarget.prototype.createMember)
+			)
+		).resolves.toBe(true);
+		await expect(
+			guard.canActivate(
+				makeContext(sessionRequest(adminUser, organizationA), PermissionTarget.prototype.deleteMember)
+			)
+		).resolves.toBe(true);
 	});
 
 	it('does not use membership from another organization', async () => {
