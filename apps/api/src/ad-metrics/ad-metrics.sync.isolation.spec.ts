@@ -21,6 +21,8 @@ describe('AdMetricsSyncService tenant isolation', () => {
 	const tenantA = randomUUID();
 	const tenantB = randomUUID();
 	let syncService: AdMetricsSyncService;
+	let settingsService: SettingsService;
+	let adsRegistry: AdsAdapterRegistry;
 
 	beforeAll(async () => {
 		process.env.DATABASE_URL = databaseUrl;
@@ -42,11 +44,9 @@ describe('AdMetricsSyncService tenant isolation', () => {
 		const { db } = getDb(databaseUrl);
 		const dbService = { client: db, sql } as unknown as DbService;
 		const tenantContext = new TenantContextService(dbService);
-		syncService = new AdMetricsSyncService(
-			tenantContext,
-			new SettingsService(tenantContext, new CryptoService()),
-			new AdsAdapterRegistry()
-		);
+		settingsService = new SettingsService(tenantContext, new CryptoService());
+		adsRegistry = new AdsAdapterRegistry();
+		syncService = new AdMetricsSyncService(tenantContext, settingsService, adsRegistry);
 	});
 
 	afterAll(async () => {
@@ -144,5 +144,85 @@ describe('AdMetricsSyncService tenant isolation', () => {
 		// A row whose money did not move keeps its snapshot — no needless re-backfill.
 		expect(Number(untouchedAfter?.spend_base)).toBe(777);
 		expect(untouchedAfter?.base_currency).toBe('GBP');
+	});
+
+	/**
+	 * OPS-02 hata yüzeyleme: bir sağlayıcının hatası diğerinin başarısını gizlemesin,
+	 * ama iş yine de fail etsin (BullMQ retry'i tetiklesin). B, A'nın durum satırlarını
+	 * göremesin.
+	 */
+	it('records per-provider sync status; one failure does not hide the other success', async () => {
+		await settingsService.storeCredential(tenantA, 'meta', { secret: 'fake-meta-secret' });
+		await settingsService.storeCredential(tenantA, 'google', { secret: 'fake-google-secret' });
+
+		adsRegistry.replace('meta', {
+			provider: 'meta',
+			buildAuthorizeUrl: () => '',
+			exchangeCode: async () => ({ secret: '' }),
+			pullDailyMetrics: async () => [
+				{
+					provider: 'meta',
+					date: '2026-08-01',
+					campaignId: 'camp-ok',
+					spendMinor: 1000,
+					currency: 'TRY',
+					impressions: 10,
+					clicks: 1
+				}
+			]
+		});
+		adsRegistry.replace('google', {
+			provider: 'google',
+			buildAuthorizeUrl: () => '',
+			exchangeCode: async () => ({ secret: '' }),
+			pullDailyMetrics: async () => {
+				throw new Error('google token expired');
+			}
+		});
+
+		await expect(syncService.sync(tenantA)).rejects.toThrow('google token expired');
+
+		const { sql } = getDb(databaseUrl);
+		const rows = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select provider, status, last_error from ad_sync_status
+				where tenant_id = ${tenantA}
+				order by provider
+			`;
+		});
+
+		const google = rows.find((r) => r.provider === 'google');
+		const meta = rows.find((r) => r.provider === 'meta');
+		expect(meta?.status).toBe('success');
+		expect(meta?.last_error).toBeNull();
+		expect(google?.status).toBe('error');
+		expect(google?.last_error).toContain('google token expired');
+
+		const rowsFromB = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			return tx`select id from ad_sync_status where tenant_id = ${tenantA}`;
+		});
+		expect(rowsFromB).toHaveLength(0);
+
+		// Fixing the provider and re-syncing overwrites the stale error, not appends.
+		adsRegistry.replace('google', {
+			provider: 'google',
+			buildAuthorizeUrl: () => '',
+			exchangeCode: async () => ({ secret: '' }),
+			pullDailyMetrics: async () => []
+		});
+		await syncService.sync(tenantA);
+
+		const rowsAfterFix = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select provider, status from ad_sync_status
+				where tenant_id = ${tenantA}
+				order by provider
+			`;
+		});
+		expect(rowsAfterFix).toHaveLength(2);
+		expect(rowsAfterFix.find((r) => r.provider === 'google')?.status).toBe('success');
 	});
 });

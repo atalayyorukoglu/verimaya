@@ -1333,6 +1333,8 @@ export const handlers = [
 				.sort();
 			return dates.at(-1) ?? null;
 		};
+		const syncedAtFor = (provider: 'meta' | 'google') =>
+			mswAdsConnected.has(provider) ? new Date().toISOString() : null;
 		return HttpResponse.json({
 			items: [
 				{
@@ -1340,14 +1342,18 @@ export const handlers = [
 					connected: mswAdsConnected.has('meta'),
 					key_version: mswAdsConnected.has('meta') ? 1 : null,
 					last_sync_date: lastFor('meta'),
-					customer_id: null
+					customer_id: null,
+					last_synced_at: syncedAtFor('meta'),
+					last_sync_status: mswAdsConnected.has('meta') ? 'success' : null
 				},
 				{
 					provider: 'google',
 					connected: mswAdsConnected.has('google'),
 					key_version: mswAdsConnected.has('google') ? 1 : null,
 					last_sync_date: lastFor('google'),
-					customer_id: mswAdsConnected.has('google') ? '5556667777' : null
+					customer_id: mswAdsConnected.has('google') ? '5556667777' : null,
+					last_synced_at: syncedAtFor('google'),
+					last_sync_status: mswAdsConnected.has('google') ? 'success' : null
 				}
 			]
 		});
@@ -1361,7 +1367,9 @@ export const handlers = [
 			connected: true,
 			key_version: 1,
 			last_sync_date: null,
-			customer_id: digits || null
+			customer_id: digits || null,
+			last_synced_at: null,
+			last_sync_status: null
 		});
 	}),
 

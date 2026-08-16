@@ -8451,12 +8451,24 @@ paths:
                         customer_id:
                           type: string
                           nullable: true
+                        last_synced_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        last_sync_status:
+                          type: string
+                          enum:
+                            - success
+                            - error
+                          nullable: true
                       required:
                         - provider
                         - connected
                         - key_version
                         - last_sync_date
                         - customer_id
+                        - last_synced_at
+                        - last_sync_status
                       additionalProperties: false
                 required:
                   - items
@@ -8488,12 +8500,24 @@ paths:
                   customer_id:
                     type: string
                     nullable: true
+                  last_synced_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  last_sync_status:
+                    type: string
+                    enum:
+                      - success
+                      - error
+                    nullable: true
                 required:
                   - provider
                   - connected
                   - key_version
                   - last_sync_date
                   - customer_id
+                  - last_synced_at
+                  - last_sync_status
                 additionalProperties: false
       requestBody:
         required: true

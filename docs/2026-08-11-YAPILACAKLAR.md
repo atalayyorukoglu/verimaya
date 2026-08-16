@@ -162,7 +162,23 @@
   gerekmiyor.
 - [x] **`ENABLE_INTEGRATION_SCHEDULERS=true`** prod'da açıldı (2026-08-13). Bununla
   `ad_metrics.sync` + `ghl.reconcile` 6 saatte bir, `files.sweep_pending` günlük çalışıyor.
-- [ ] Hata yüzeyleme + sync penceresi doğrulaması (7 gün dolunca)
+- [x] **Hata yüzeyleme ✅** (2026-08-16) — Ayarlar → Reklamlar'da sağlayıcı başına "Otomatik
+  senkron: ✅ Başarılı — {tarih/saat}" / "⚠️ Başarısız — {tarih/saat}" rozeti. Yeni tablo
+  `ad_sync_status` (tenant+provider başına tek satır, upsert, RLS izolasyonu); her sağlayıcı
+  artık ayrı try/catch içinde — biri hata verirse diğerinin başarısı gizlenmez, ama iş yine de
+  fail eder (BullMQ retry tetiklenir). Negatif izolasyon testi + iki sağlayıcının birbirini
+  gizlemediğini kanıtlayan test eklendi, 628 API testi yeşil.
+  **Görüş:** Seçenek A (basit rozet) — geçmiş log ekranı yok, yalnız "şu an durum ne".
+  `last_sync_error` bilinçli olarak API sözleşmesine eklenmedi (sağlayıcı hata mesajı token/
+  secret detayı sızdırabilir); panelde yalnız genel ✅/⚠️ + zaman gösteriliyor.
+  **Artık:** drizzle-kit'in `db:generate` komutu bu turdan bağımsız, önceden var olan bir
+  hatayla çöküyor (`tenants` tablosundaki `patients_section_label` kolonunun kaldırılmasıyla
+  snapshot drift'e girmiş — `preparePgAlterColumns` TypeError). Migration `0054` elle yazıldı
+  ve `meta/_journal.json`'a elle eklendi (0009/0053 RLS deseniyle birebir); `db:migrate` ile
+  uygulanıp doğrulandı. Snapshot dosyası düzeltilmedi — bir sonraki `db:generate` çağrısı aynı
+  hatayla karşılaşacak, ayrı kalem gerektirir.
+- [ ] **Sync penceresi doğrulaması** — 7 gün 20 Ağustos'ta doluyor; ilk pilot raporuyla
+  birlikte değerlendirilecek.
 - **Bağımlı:** yok; ROAS attribution kapanmadan dışarıya gösterilmez.
 - **Kabul:** İki provider 7 gün temiz sync + `attribution_missing` guard yeşil (kapsam ≥ %80).
 

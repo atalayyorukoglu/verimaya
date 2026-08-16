@@ -20,13 +20,13 @@ import {
 	type AdProvider
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { max, eq } from 'drizzle-orm';
+import { max, eq, and } from 'drizzle-orm';
 import { ActiveOrgGuard, getActiveOrgId } from '../../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../../common/auth-or-api-key.guard';
 import { IdempotencyExempt } from '../../common/idempotent.decorator';
 import { OrgPermissionGuard } from '../../common/org-permission.guard';
 import { RequireOrgPermission } from '../../common/require-org-permission.decorator';
-import { adMetricsDaily } from '../../db/schema';
+import { adMetricsDaily, adSyncStatus } from '../../db/schema';
 import { SettingsService } from '../../settings/settings.service';
 import { TenantContextService } from '../../tenant/tenant-context.service';
 import { AdsAdapterRegistry } from './ads-adapter.registry';
@@ -166,6 +166,14 @@ export class AdsController {
 				.where(eq(adMetricsDaily.provider, provider));
 			return row?.last ?? null;
 		});
+		const syncStatus = await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select({ status: adSyncStatus.status, syncedAt: adSyncStatus.syncedAt })
+				.from(adSyncStatus)
+				.where(and(eq(adSyncStatus.tenantId, tenantId), eq(adSyncStatus.provider, provider)))
+				.limit(1);
+			return row ?? null;
+		});
 
 		let customer_id: string | null = null;
 		if (cred.configured && provider === 'google') {
@@ -182,7 +190,11 @@ export class AdsController {
 			connected: cred.configured,
 			key_version: cred.configured ? (cred.key_version ?? null) : null,
 			last_sync_date,
-			customer_id
+			customer_id,
+			last_synced_at: syncStatus?.syncedAt.toISOString() ?? null,
+			last_sync_status: syncStatus?.status === 'success' || syncStatus?.status === 'error'
+				? syncStatus.status
+				: null
 		};
 	}
 }

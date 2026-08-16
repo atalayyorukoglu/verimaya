@@ -379,6 +379,13 @@
       "when": 1755605000000,
       "tag": "0053_tenant_permission_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1755606000000,
+      "tag": "0054_ad_sync_status",
+      "breakpoints": true
     }
   ]
 }

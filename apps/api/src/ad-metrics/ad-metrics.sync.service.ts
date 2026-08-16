@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { eq, inArray, sql } from 'drizzle-orm';
+import type { AdProvider } from '@verimaya/shared';
 import { parseAdsCurrency } from '../integrations/ads/ads-currency';
-import { adMetricsDaily, tenantCredentials, tenants } from '../db/schema';
+import { adMetricsDaily, adSyncStatus, tenantCredentials, tenants } from '../db/schema';
 import { AdsAdapterRegistry } from '../integrations/ads/ads-adapter.registry';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -76,54 +77,89 @@ export class AdMetricsSyncService {
 
 		const since = sinceDaysAgo(AD_METRICS_SYNC_LOOKBACK_DAYS);
 		let upserted = 0;
+		const failures: string[] = [];
 
 		for (const providerRaw of providers) {
 			const provider = this.adsRegistry.parseProvider(providerRaw);
-			const secret = await this.settings.loadCredentialSecret(tenantId, provider);
-			const rows = await this.adsRegistry
-				.get(provider)
-				.pullDailyMetrics({ secret, since });
+			try {
+				const secret = await this.settings.loadCredentialSecret(tenantId, provider);
+				const rows = await this.adsRegistry
+					.get(provider)
+					.pullDailyMetrics({ secret, since });
 
-			await this.tenantContext.withTenant(tenantId, async ({ db }) => {
-				for (const row of rows) {
-					const currency = parseAdsCurrency(row.currency, `${provider} sync`);
-					await db
-						.insert(adMetricsDaily)
-						.values({
-							tenantId,
-							provider: row.provider,
-							date: row.date,
-							campaignId: row.campaignId,
-							spendMinor: row.spendMinor,
-							currency,
-							impressions: row.impressions,
-							clicks: row.clicks
-						})
-						.onConflictDoUpdate({
-							target: [
-								adMetricsDaily.tenantId,
-								adMetricsDaily.provider,
-								adMetricsDaily.date,
-								adMetricsDaily.campaignId
-							],
-							set: {
+				await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+					for (const row of rows) {
+						const currency = parseAdsCurrency(row.currency, `${provider} sync`);
+						await db
+							.insert(adMetricsDaily)
+							.values({
+								tenantId,
+								provider: row.provider,
+								date: row.date,
+								campaignId: row.campaignId,
 								spendMinor: row.spendMinor,
 								currency,
 								impressions: row.impressions,
-								clicks: row.clicks,
-								...carryFxSnapshotUnlessChanged(row.spendMinor, currency)
-							}
-						});
-				}
-			});
+								clicks: row.clicks
+							})
+							.onConflictDoUpdate({
+								target: [
+									adMetricsDaily.tenantId,
+									adMetricsDaily.provider,
+									adMetricsDaily.date,
+									adMetricsDaily.campaignId
+								],
+								set: {
+									spendMinor: row.spendMinor,
+									currency,
+									impressions: row.impressions,
+									clicks: row.clicks,
+									...carryFxSnapshotUnlessChanged(row.spendMinor, currency)
+								}
+							});
+					}
+				});
 
-			upserted += rows.length;
-			this.logger.log(
-				`ad_metrics.sync: oauth pull upserted ${rows.length} rows for tenant ${tenantId} provider ${provider}`
-			);
+				upserted += rows.length;
+				this.logger.log(
+					`ad_metrics.sync: oauth pull upserted ${rows.length} rows for tenant ${tenantId} provider ${provider}`
+				);
+				await this.recordSyncStatus(tenantId, provider, 'success', null);
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err);
+				this.logger.error(
+					`ad_metrics.sync: provider ${provider} failed for tenant ${tenantId}: ${message}`
+				);
+				await this.recordSyncStatus(tenantId, provider, 'error', message);
+				failures.push(`${provider}: ${message}`);
+			}
+		}
+
+		// One provider failing must not hide the other's success (each already recorded
+		// above) — but the job still needs to fail so BullMQ retries the whole thing.
+		if (failures.length > 0) {
+			throw new Error(`ad_metrics.sync: ${failures.join('; ')}`);
 		}
 
 		return { mode: 'oauth', upserted };
+	}
+
+	/** Upserts the latest attempt outcome — one row per tenant+provider, no history. */
+	private async recordSyncStatus(
+		tenantId: string,
+		provider: AdProvider,
+		status: 'success' | 'error',
+		lastError: string | null
+	): Promise<void> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.insert(adSyncStatus)
+				.values({ tenantId, provider, status, lastError, syncedAt: new Date() })
+				.onConflictDoUpdate({
+					target: [adSyncStatus.tenantId, adSyncStatus.provider],
+					set: { status, lastError, syncedAt: new Date() }
+				});
+		});
 	}
 
 	private async syncFixture(

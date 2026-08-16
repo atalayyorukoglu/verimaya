@@ -11,7 +11,7 @@
 	import { apiGet, apiSend, fieldClass, labelClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { PUBLIC_API_URL } from '$lib/env';
-	import { formatDate } from '$lib/format';
+	import { formatDate, formatDateTime } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
@@ -46,6 +46,16 @@
 		return item?.connected ? 'connected' : 'disconnected';
 	}
 
+	function syncStatusText(item: AdConnectionStatus | undefined): string {
+		if (!item?.last_sync_status || !item.last_synced_at) {
+			return t('settings.ads.syncStatusUnknown');
+		}
+		const when = formatDateTime(item.last_synced_at);
+		return item.last_sync_status === 'success'
+			? t('settings.ads.syncStatusSuccess', { when })
+			: t('settings.ads.syncStatusError', { when });
+	}
+
 	function cardMeta(item: AdConnectionStatus | undefined): { label: string; value: string }[] {
 		return [
 			{
@@ -57,6 +67,10 @@
 			{
 				label: t('settings.ads.lastSyncLabel'),
 				value: item?.last_sync_date ? formatDate(item.last_sync_date) : '—'
+			},
+			{
+				label: t('settings.ads.syncStatusLabel'),
+				value: syncStatusText(item)
 			},
 			{
 				label: t('settings.ads.keyVersionLabel'),
