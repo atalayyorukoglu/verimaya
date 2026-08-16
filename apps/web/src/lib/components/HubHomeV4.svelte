@@ -480,8 +480,8 @@
 				<h2>İlk müdahale listesi, ilk görüşmenin sonunda çıkar.</h2>
 				<p>
 					Mevcut sisteminizden veriyi alır, doğrularız. Doğrulama biter bitmez üç şey görünür: kaç
-					çift kayıt var, kaç hastaya 30 günden uzun süredir dokunulmamış, ne kadar bakiye tahsil
-					edilmemiş.
+					hasta sisteme birden fazla kez kaydedilmiş, kaç hastaya 30 günden uzun süredir
+					dokunulmamış, ne kadar bakiye tahsil edilmemiş.
 				</p>
 				<p>
 					Üçü de zaten sizin verinizde duruyor. Eksik olan, birinin bakıp “şunu yapalım” demesi.
