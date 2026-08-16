@@ -929,6 +929,12 @@
 			grid-template-columns: 1.05fr 0.95fr;
 		}
 	}
+	/* Tek sütuna inince başlık kartın üstüne geçsin — masaüstünde kart solda kalır. */
+	@media (max-width: 959.98px) {
+		.v4-two-rev > .v4-surface {
+			order: 2;
+		}
+	}
 
 	/* ── Yüzey ── */
 	.v4-surface {
