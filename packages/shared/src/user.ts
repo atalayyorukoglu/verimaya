@@ -56,13 +56,6 @@ export const memberUpdateSchema = z
 
 export type MemberUpdate = z.infer<typeof memberUpdateSchema>;
 
-/** @deprecated Use memberUpdateSchema — kept for callers that only patch role. */
-export const memberRoleUpdateSchema = z.object({
-	role: userRoleSchema
-});
-
-export type MemberRoleUpdate = z.infer<typeof memberRoleUpdateSchema>;
-
 /** POST /v1/members/:id/password-reset — send better-auth reset email (admin/owner). */
 export const memberPasswordResetResultSchema = z.object({
 	sent: z.literal(true)
