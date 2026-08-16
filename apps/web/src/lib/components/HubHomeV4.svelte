@@ -79,12 +79,15 @@
 	] as const;
 
 	const reads = [
-		{ halka: 'Reklam', soru: 'Hangi kampanya boş lead getiriyor, hangisi ödeyen hasta?' },
+		{
+			halka: 'Reklam',
+			soru: 'Hangi kampanya boş lead getiriyor, hangisi ödeme yapacak hastayı getiriyor?'
+		},
 		{ halka: 'Lead', soru: 'Kime kaç saatte dönüldü, kime hiç dönülmedi?' },
-		{ halka: 'Temsilci', soru: 'Kim ne yazıyor, hangi cevap kapanışa götürüyor?' },
-		{ halka: 'Hasta', soru: 'Hangi aşamada duruyor, kime hatırlatma gitmedi?' },
-		{ halka: 'Hekim / klinik', soru: 'Hangi tedavi planı tutuyor, revizyon nerede birikiyor?' },
-		{ halka: 'Tahsilat', soru: 'Kim ödedi, kim ödemedi, bakiye nerede duruyor?' },
+		{ halka: 'Temsilci', soru: 'Kim ne yazıyor, hangi cevaplar satışa götürüyor?' },
+		{ halka: 'Hasta', soru: 'Hasta hangi aşamada bekliyor, kime hatırlatma gitmedi?' },
+		{ halka: 'Hekim / klinik', soru: 'Hangi tedavi planı isabetli, RPT nereden kaynaklanıyor?' },
+		{ halka: 'Tahsilat', soru: 'Kim ödedi, kim ödemedi, ne kadar alacağımız var?' },
 		{ halka: 'Hakediş', soru: 'Klinik başına ne hak edildi, ne ödendi?' },
 		{ halka: 'Teşvik', soru: 'Hangi dosyanın süresi doluyor?' }
 	] as const;
