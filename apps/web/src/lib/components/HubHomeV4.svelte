@@ -1,7 +1,59 @@
 <script lang="ts">
-	import { PUBLIC_APP_URL } from '$lib/env';
+	import SiteLogo from '$lib/components/SiteLogo.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import LocaleToggle from '$lib/components/LocaleToggle.svelte';
+	import HubI18nText from '$lib/components/HubI18nText.svelte';
+	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
+	import { t } from '$lib/i18n/locale.svelte';
+	import type { MessageKey } from '$lib/i18n/messages';
+	import Menu from '@lucide/svelte/icons/menu';
+	import X from '@lucide/svelte/icons/x';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
+	const title = 'Verimaya — Ne yapmanız gerektiğini söyleyen sistem';
+	const description =
+		'Kayıt tutan yazılım çok. Verimaya reklamdan tahsilata bütün zinciri okur, nerede para kaybettiğinizi bulur ve o ay ne yapılacağını önünüze koyar.';
+	const canonical = `${PUBLIC_SITE_URL}/`;
+	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
+
+	let menuOpen = $state(false);
+	let loginOpen = $state(false);
+
+	const organizationLd = {
+		'@context': 'https://schema.org',
+		'@type': 'Organization',
+		name: 'Veri Maya',
+		url: PUBLIC_SITE_URL,
+		logo: `${PUBLIC_SITE_URL}/icon-512.png`,
+		description
+	};
+
+	const navItems = [
+		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },
+		{ href: '/crm/', labelKey: 'hub.nav.crm' as MessageKey },
+		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
+		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
+	] as const;
+
+	function closeMenu() {
+		menuOpen = false;
+		loginOpen = false;
+	}
+
+	function toggleMenu() {
+		menuOpen = !menuOpen;
+		if (!menuOpen) loginOpen = false;
+	}
+
+	function toggleLogin(e: MouseEvent) {
+		e.stopPropagation();
+		loginOpen = !loginOpen;
+	}
+
+	function onWindowClick() {
+		if (loginOpen) loginOpen = false;
+	}
 
 	/** TODO(Atalay): gerçek adresle değiştir */
 	const contactEmail = 'info@verimaya.com';
@@ -92,29 +144,135 @@
 	] as const;
 </script>
 
+<svelte:window onclick={onWindowClick} />
+
 <svelte:head>
-	<title>Verimaya — Ne yapmanız gerektiğini söyleyen sistem</title>
-	<meta
-		name="description"
-		content="Kayıt tutan yazılım çok. Verimaya reklamdan tahsilata bütün zinciri okur, nerede para kaybettiğinizi bulur ve o ay ne yapılacağını önünüze koyar."
-	/>
+	<title>{title}</title>
+	<meta name="description" content={description} />
+	<link rel="canonical" href={canonical} />
+
+	<meta property="og:type" content="website" />
+	<meta property="og:locale" content="tr_TR" />
+	<meta property="og:site_name" content="Veri Maya" />
+	<meta property="og:title" content={title} />
+	<meta property="og:description" content={description} />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="Veri Maya" />
+
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={title} />
+	<meta name="twitter:description" content={description} />
+	<meta name="twitter:image" content={ogImage} />
+
+	<!-- eslint-disable-next-line svelte/no-at-html-tags, no-useless-escape -- statik JSON-LD; `<` u+003c'ye escape edilir ki organizationLd'ye ileride dinamik veri eklenirse "</script>" ile tag'den kaçış mümkün olmasın. </script> kaçışı ayrıca parser'ın string'i erken kapatmasını önlüyor -->
+	{@html `<script type="application/ld+json">${JSON.stringify(organizationLd).replace(/</g, '\\u003c')}<\/script>`}
 </svelte:head>
 
-<div class="v4">
-	<header class="v4-nav">
-		<div class="v4-nav-in">
-			<a href="/" class="v4-brand">Verimaya</a>
-			<nav>
-				<a href="#merdiven">Merdiven</a>
-				<a href="#okuruz">Ne okuruz</a>
-				<a href="#liste">Müdahale listesi</a>
-				<a href="#veri">Veri</a>
-			</nav>
-			<div class="v4-nav-right">
-				<a href={appLoginUrl} class="v4-ghost">Giriş</a>
-				<a href="#gorusme" class="v4-pill">Görüşme</a>
+<div
+	class="hub-page v4 relative overflow-hidden bg-bg text-text"
+	style="--brand: #f43e01; --brand-hover: #d93601; --brand-subtle: rgba(244, 62, 1, 0.14); --brand-text: #b32e01; --gradient-hero: linear-gradient(135deg, #f43e01, #ff6a33); --primary: var(--brand); --ring: var(--brand)"
+>
+	<div class="pointer-events-none absolute inset-0" aria-hidden="true">
+		<div class="v4-wash absolute inset-0"></div>
+		<div class="v4-glow absolute -top-[20%] left-1/2 h-[70vh] w-[120vw] -translate-x-1/2"></div>
+		<div class="v4-grain absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"></div>
+	</div>
+
+	<header class="relative z-20 px-6 py-6 sm:px-10">
+		<div class="mx-auto flex w-full max-w-6xl items-center justify-between">
+			<a href="/" class="text-text" onclick={closeMenu}>
+				<SiteLogo />
+			</a>
+			<div class="flex items-center gap-2 sm:gap-5">
+				<nav class="hidden items-center gap-5 text-sm font-medium text-text-muted sm:flex sm:gap-6">
+					{#each navItems as item (item.href)}
+						<a
+							href={item.href}
+							class="rounded-sm transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
+						>
+							<HubI18nText key={item.labelKey} />
+						</a>
+					{/each}
+				</nav>
+				<LocaleToggle />
+				<ThemeToggle />
+				<div class="relative">
+					<button
+						type="button"
+						data-hub-login-toggle
+						class="inline-flex h-9 items-center gap-1 rounded-[6px] bg-brand px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:px-3.5"
+						aria-expanded={loginOpen}
+						aria-haspopup="menu"
+						onclick={toggleLogin}
+					>
+						<HubI18nText key="hub.login" />
+						<ChevronDown class="size-4 opacity-90" aria-hidden="true" />
+					</button>
+					<div
+						data-hub-login-panel
+						class="absolute right-0 z-40 mt-2 w-52 rounded-[8px] border border-border bg-surface py-1 shadow-lg"
+						class:hidden={!loginOpen}
+						role="menu"
+						tabindex="-1"
+					>
+						<a
+							href={appLoginUrl}
+							class="block px-3 py-2 text-sm text-text hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
+							role="menuitem"
+							onclick={closeMenu}
+						>
+							<HubI18nText key="hub.login.app" />
+						</a>
+						<a
+							href={PUBLIC_CRM_URL}
+							class="block px-3 py-2 text-sm text-text hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
+							role="menuitem"
+							onclick={closeMenu}
+						>
+							<HubI18nText key="hub.login.crm" />
+						</a>
+					</div>
+				</div>
+				<button
+					type="button"
+					data-hub-menu-toggle
+					data-label-open={t('hub.menu.open')}
+					data-label-close={t('hub.menu.close')}
+					class="inline-flex size-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:hidden"
+					aria-expanded={menuOpen}
+					aria-controls="hub-mobile-nav"
+					aria-label={menuOpen ? t('hub.menu.close') : t('hub.menu.open')}
+					onclick={toggleMenu}
+				>
+					<span data-hub-menu-icon-open class:hidden={menuOpen}>
+						<Menu class="size-5" />
+					</span>
+					<span data-hub-menu-icon-close class:hidden={!menuOpen}>
+						<X class="size-5" />
+					</span>
+				</button>
 			</div>
 		</div>
+		<nav
+			id="hub-mobile-nav"
+			data-hub-mobile-nav
+			class="mx-auto mt-4 w-full max-w-6xl flex-col gap-1 border-t border-border/40 pt-4 sm:hidden {menuOpen
+				? 'flex'
+				: 'hidden'}"
+		>
+			{#each navItems as item (item.href)}
+				<a
+					href={item.href}
+					class="rounded-md px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
+					onclick={closeMenu}
+				>
+					<HubI18nText key={item.labelKey} />
+				</a>
+			{/each}
+		</nav>
 	</header>
 
 	<main>
@@ -323,7 +481,9 @@
 						</article>
 					{/each}
 				</div>
-				<p class="v4-note"><a href="/kvkk-aydinlatma/">KVKK aydınlatma metni →</a></p>
+				<p class="v4-note">
+					<a href="/kvkk-aydinlatma/">KVKK aydınlatma metni →</a>
+				</p>
 			</div>
 		</section>
 
@@ -359,27 +519,68 @@
 		</section>
 	</main>
 
-	<footer class="v4-footer">
-		<div class="v4-in v4-footer-in">
-			<span>© {new Date().getFullYear()} Verimaya</span>
-			<a href="/kvkk-aydinlatma/">KVKK</a>
+	<footer class="relative z-10 border-t border-border/40 px-6 py-12 sm:px-10">
+		<div class="mx-auto max-w-6xl">
+			<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+				<div>
+					<a href="/" class="inline-block text-text">
+						<SiteLogo />
+					</a>
+				</div>
+				<div>
+					<p class="text-xs font-semibold tracking-wider text-text-faint uppercase">
+						<HubI18nText key="hub.footer.links" />
+					</p>
+					<ul class="mt-4 space-y-2">
+						<li><a href="/app/"><HubI18nText key="hub.nav.webApp" /></a></li>
+						<li><a href="/crm/"><HubI18nText key="hub.nav.crm" /></a></li>
+						<li><a href="/tools/"><HubI18nText key="hub.nav.tools" /></a></li>
+						<li>
+							<a href="/resources/"><HubI18nText key="hub.nav.resources" /></a>
+						</li>
+					</ul>
+				</div>
+				<div>
+					<p class="text-xs font-semibold tracking-wider text-text-faint uppercase">
+						<HubI18nText key="hub.footer.resources" />
+					</p>
+					<ul class="mt-4 space-y-2">
+						<li><a href="/features/"><HubI18nText key="nav.features" /></a></li>
+						<li><a href="/changelog/"><HubI18nText key="nav.changelog" /></a></li>
+						<li>
+							<a href="/yapay-zeka-karnesi/"><HubI18nText key="hub.karne.title" /></a>
+						</li>
+					</ul>
+				</div>
+				<div>
+					<p class="text-xs font-semibold tracking-wider text-text-faint uppercase">
+						<HubI18nText key="hub.footer.legal" />
+					</p>
+					<ul class="mt-4 space-y-2">
+						<li>
+							<a href="/kvkk-aydinlatma/"><HubI18nText key="hub.footer.kvkk" /></a>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="mt-10 border-t border-border/40 pt-6 text-center text-xs text-text-faint">
+				© {new Date().getFullYear()} Veri Maya
+			</div>
 		</div>
 	</footer>
 </div>
 
 <style>
 	.v4 {
-		--bg: #0c0d0c;
-		--tint: #121412;
-		--panel: #161815;
-		--line: #262a26;
-		--line-2: #1e211e;
-		--ink: #f2f3f0;
-		--ink-2: #a6aca4;
-		--ink-3: #6e756c;
-		--accent: #ff7a45;
-		--accent-2: #ffb08a;
-		--ok: #5fbf8f;
+		--tint: color-mix(in srgb, var(--surface-2) 72%, transparent);
+		--panel: var(--surface);
+		--line: var(--border);
+		--line-2: color-mix(in srgb, var(--border) 72%, transparent);
+		--ink: var(--text);
+		--ink-2: var(--text-muted);
+		--ink-3: var(--text-faint);
+		--accent: var(--brand);
+		--accent-2: var(--brand);
 		--sans:
 			'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 		--mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
@@ -393,8 +594,59 @@
 		font-variant-numeric: tabular-nums;
 	}
 
+	.v4-wash {
+		background:
+			radial-gradient(
+				ellipse 80% 50% at 50% -8%,
+				color-mix(in srgb, var(--brand) 14%, transparent),
+				transparent 72%
+			),
+			linear-gradient(180deg, color-mix(in srgb, var(--bg) 94%, #f0ebe6) 0%, var(--bg) 45%);
+	}
+
+	:global(.dark) .v4-wash {
+		background:
+			radial-gradient(
+				ellipse 80% 50% at 50% -8%,
+				color-mix(in srgb, var(--brand) 18%, transparent),
+				transparent 72%
+			),
+			linear-gradient(180deg, color-mix(in srgb, var(--bg) 90%, #2a2420) 0%, var(--bg) 50%);
+	}
+
+	.v4-glow {
+		background: var(--gradient-hero);
+		opacity: 0.1;
+		filter: blur(64px);
+	}
+
+	:global(.dark) .v4-glow {
+		opacity: 0.14;
+	}
+
+	.v4-grain {
+		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+		background-size: 180px 180px;
+		mix-blend-mode: multiply;
+	}
+
+	:global(.dark) .v4-grain {
+		mix-blend-mode: soft-light;
+	}
+
+	.v4 main {
+		position: relative;
+		z-index: 1;
+	}
+
 	.v4 :global(*) {
 		box-sizing: border-box;
+	}
+
+	.v4 :global(a:focus-visible),
+	.v4 :global(button:focus-visible) {
+		outline: 2px solid var(--brand);
+		outline-offset: 3px;
 	}
 
 	.v4 h1,
@@ -428,74 +680,11 @@
 		color: var(--ink-3);
 	}
 
-	/* ── Nav ── */
-	.v4-nav {
-		position: sticky;
-		top: 0;
-		z-index: 20;
-		background: rgba(12, 13, 12, 0.78);
-		backdrop-filter: saturate(160%) blur(12px);
-		border-bottom: 1px solid var(--line);
-	}
-	.v4-nav-in {
-		max-width: var(--wrap);
-		margin: 0 auto;
-		padding: 0.85rem 1.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1.5rem;
-	}
-	.v4-brand {
-		font-weight: 600;
-		font-size: 0.98rem;
-		letter-spacing: -0.02em;
-		color: var(--ink);
-		text-decoration: none;
-	}
-	.v4-nav nav {
-		display: flex;
-		gap: 1.5rem;
-		font-size: 0.875rem;
-	}
-	.v4-nav nav a {
-		color: var(--ink-2);
-		text-decoration: none;
-	}
-	.v4-nav nav a:hover {
-		color: var(--ink);
-	}
-	.v4-nav-right {
-		display: flex;
-		align-items: center;
-		gap: 0.85rem;
-	}
-	.v4-ghost {
-		font-size: 0.875rem;
-		color: var(--ink-2);
-		text-decoration: none;
-	}
-	.v4-pill {
-		font-size: 0.85rem;
-		font-weight: 500;
-		background: var(--accent);
-		color: #1a0d06;
-		text-decoration: none;
-		padding: 0.45rem 0.95rem;
-		border-radius: 7px;
-	}
-	@media (max-width: 900px) {
-		.v4-nav nav,
-		.v4-ghost {
-			display: none;
-		}
-	}
-
 	/* ── Butonlar ── */
 	.v4-btn {
 		display: inline-block;
 		background: var(--accent);
-		color: #1a0d06;
+		color: var(--primary-foreground);
 		text-decoration: none;
 		font-weight: 600;
 		font-size: 0.93rem;
@@ -522,7 +711,7 @@
 	.v4-hero {
 		position: relative;
 		overflow: hidden;
-		border-bottom: 1px solid var(--line);
+		border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
 	}
 	.v4-hero-glow {
 		position: absolute;
@@ -531,7 +720,11 @@
 		width: 70rem;
 		height: 40rem;
 		transform: translateX(-50%);
-		background: radial-gradient(closest-side, rgba(255, 122, 69, 0.16), transparent);
+		background: radial-gradient(
+			closest-side,
+			color-mix(in srgb, var(--brand) 14%, transparent),
+			transparent
+		);
 		pointer-events: none;
 	}
 	.v4-hero-in {
@@ -600,7 +793,7 @@
 		margin: 2.5rem 0 0;
 		padding: 0;
 		border: 1px solid var(--line);
-		border-radius: 14px;
+		border-radius: 10px;
 		overflow: hidden;
 	}
 	.v4-step {
@@ -611,7 +804,7 @@
 		padding: 1.1rem 1.25rem;
 		border-bottom: 1px solid var(--line-2);
 		background: var(--panel);
-		opacity: 0.55;
+		opacity: 0.68;
 	}
 	.v4-step:last-child {
 		border-bottom: none;
@@ -640,7 +833,11 @@
 	}
 	.v4-step-on {
 		opacity: 1;
-		background: linear-gradient(90deg, rgba(255, 122, 69, 0.12), transparent 60%);
+		background: linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--brand) 12%, var(--panel)),
+			var(--panel) 68%
+		);
 		border-left: 2px solid var(--accent);
 	}
 	.v4-step-on .v4-step-no,
@@ -708,8 +905,9 @@
 	.v4-surface {
 		background: var(--panel);
 		border: 1px solid var(--line);
-		border-radius: 12px;
+		border-radius: 10px;
 		overflow: hidden;
+		box-shadow: 0 12px 34px -28px color-mix(in srgb, var(--text) 40%, transparent);
 	}
 	.v4-surface-bar {
 		display: flex;
@@ -718,7 +916,7 @@
 		gap: 1rem;
 		padding: 0.8rem 1rem;
 		border-bottom: 1px solid var(--line);
-		background: #1b1e1a;
+		background: var(--surface-2);
 		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--ink-2);
@@ -782,8 +980,8 @@
 	.v4-owner {
 		font-size: 0.75rem;
 		color: var(--accent-2);
-		border: 1px solid rgba(255, 122, 69, 0.3);
-		background: rgba(255, 122, 69, 0.08);
+		border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+		background: color-mix(in srgb, var(--brand) 8%, transparent);
 		border-radius: 999px;
 		padding: 0.1rem 0.5rem;
 	}
@@ -815,7 +1013,11 @@
 		padding: 1.35rem;
 	}
 	.v4-cycle li:last-child {
-		background: linear-gradient(180deg, rgba(255, 122, 69, 0.1), transparent);
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--brand) 10%, var(--panel)),
+			var(--panel)
+		);
 	}
 	.v4-cycle strong {
 		display: block;
@@ -842,7 +1044,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		background: #131512;
+		background: var(--surface-2);
 	}
 	.v4-q-who {
 		margin: 0;
@@ -872,7 +1074,7 @@
 		margin: 0;
 		font-size: 0.82rem;
 		color: var(--ink-2);
-		background: #131512;
+		background: var(--surface-2);
 		border: 1px solid var(--line);
 		border-radius: 8px;
 		padding: 0.7rem 0.85rem;
@@ -901,7 +1103,7 @@
 	.v4-fake-primary {
 		background: var(--accent);
 		border-color: var(--accent);
-		color: #1a0d06;
+		color: var(--primary-foreground);
 		font-weight: 600;
 	}
 
@@ -909,7 +1111,11 @@
 	.v4-center {
 		padding: 6rem 1.5rem;
 		border-bottom: 1px solid var(--line);
-		background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(255, 122, 69, 0.07), transparent);
+		background: radial-gradient(
+			ellipse 60% 60% at 50% 0%,
+			color-mix(in srgb, var(--brand) 7%, transparent),
+			transparent
+		);
 	}
 	.v4-center-in {
 		max-width: 42rem;
@@ -953,8 +1159,9 @@
 	.v4-grid4 article {
 		background: var(--panel);
 		border: 1px solid var(--line);
-		border-radius: 12px;
+		border-radius: 10px;
 		padding: 1.35rem;
+		box-shadow: 0 10px 28px -26px color-mix(in srgb, var(--text) 35%, transparent);
 	}
 	.v4-grid4 p {
 		margin: 0.9rem 0 0;
@@ -973,9 +1180,13 @@
 		}
 	}
 	.v4-aud-main {
-		border: 1px solid rgba(255, 122, 69, 0.28);
-		background: linear-gradient(135deg, rgba(255, 122, 69, 0.09), transparent 65%);
-		border-radius: 14px;
+		border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border));
+		background: linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--brand) 9%, var(--surface)),
+			var(--surface) 65%
+		);
+		border-radius: 10px;
 		padding: 2.25rem;
 	}
 	.v4-aud-main p {
@@ -985,7 +1196,8 @@
 	}
 	.v4-aud aside {
 		border: 1px solid var(--line);
-		border-radius: 14px;
+		border-radius: 10px;
+		background: var(--surface);
 		padding: 2.25rem;
 		display: flex;
 		flex-direction: column;
@@ -1001,7 +1213,11 @@
 	.v4-closing {
 		padding: 6.5rem 1.5rem;
 		text-align: center;
-		background: radial-gradient(ellipse 55% 80% at 50% 100%, rgba(255, 122, 69, 0.15), transparent);
+		background: radial-gradient(
+			ellipse 55% 80% at 50% 100%,
+			color-mix(in srgb, var(--brand) 15%, transparent),
+			transparent
+		);
 	}
 	.v4-closing-in {
 		max-width: 40rem;
@@ -1021,18 +1237,51 @@
 		color: var(--ink-3) !important;
 	}
 
-	/* ── Footer ── */
-	.v4-footer {
-		padding: 1.5rem 0;
-		border-top: 1px solid var(--line);
-		font-size: 0.82rem;
-		color: var(--ink-3);
+	.v4 footer ul a {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		text-decoration: none;
+		transition: color 150ms ease;
 	}
-	.v4-footer-in {
-		display: flex;
-		justify-content: space-between;
+
+	.v4 footer ul a:hover {
+		color: var(--text);
 	}
-	.v4-footer a {
-		color: var(--ink-3);
+
+	@media (max-width: 480px) {
+		.v4-hero-in {
+			padding-top: 5rem;
+			padding-bottom: 4.5rem;
+		}
+
+		.v4-band {
+			padding: 4rem 0;
+		}
+
+		.v4-actions li {
+			grid-template-columns: 1.1rem 1fr;
+		}
+
+		.v4-act-meta {
+			grid-column: 2;
+			align-items: flex-start;
+			flex-direction: row;
+		}
+
+		.v4-aud-main,
+		.v4-aud aside {
+			padding: 1.5rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v4 *,
+		.v4 *::before,
+		.v4 *::after {
+			scroll-behavior: auto !important;
+			transition-duration: 0.01ms !important;
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+		}
 	}
 </style>

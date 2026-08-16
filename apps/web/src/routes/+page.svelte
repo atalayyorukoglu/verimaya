@@ -1,5 +1,5 @@
 <script lang="ts">
-	import HubHome from '$lib/components/HubHome.svelte';
+	import HubHomeV4 from '$lib/components/HubHomeV4.svelte';
 	import PanelHome from '$lib/components/PanelHome.svelte';
 	import { isMarketingHost } from '$lib/host';
 
@@ -7,7 +7,7 @@
 </script>
 
 {#if marketing}
-	<HubHome />
+	<HubHomeV4 />
 {:else}
 	<PanelHome />
 {/if}
