@@ -486,7 +486,7 @@
 				<p>
 					Üçü de zaten sizin verinizde duruyor. Eksik olan, birinin bakıp “şunu yapalım” demesi.
 				</p>
-				<p class="v4-pledge">Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.</p>
+				<p class="v4-pledge">Bilmediğiniz bir şey söyleyemezsek, ücret istemiyoruz.</p>
 			</div>
 		</section>
 
@@ -533,7 +533,7 @@
 				<h2>Anlatmayalım, gösterelim.</h2>
 				<p>
 					30 dakikalık bir görüşme yapalım. Uygunsa sözleşmeyle veri alır, ilk bulgu raporunuzu ve
-					ilk müdahale listenizi çıkarırız. Bilmediğiniz bir sayı çıkmazsa konuyu kapatırız.
+					ilk müdahale listenizi çıkarırız. Bilmediğiniz bir şey söyleyemezsek, ücret istemiyoruz.
 				</p>
 				<a class="v4-btn v4-btn-lg" href={mailto}>Görüşme isteyin</a>
 				<p class="v4-closing-mail">{contactEmail}</p>
