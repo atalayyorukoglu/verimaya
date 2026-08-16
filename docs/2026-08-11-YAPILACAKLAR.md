@@ -363,6 +363,19 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   kaydı değiştirmek yanıltıcı olur. **Kalan (kod dışı, kullanıcı yürütür):** prod Coolify'daki
   `KARNE_SUMMARY_FROM` env değeri elle "Veri Maya <karne@verimaya.com>" olarak ayarlanmışsa
   kodun fallback'i güncellendi ama prod env'i override ediyor — orayı da güncellemek gerekir.
+- **Ekip: üye ekleme/silme/şifre belirleme ✅** (2026-08-16) — Ayarlar → Ekip'teki "Üye davet et"
+  butonu bilerek devre dışıydı (`inviteDisabled`). PILOT-02 başlamadan Gülçin ve Sude'ye hesap
+  açmak gerektiği için tenant owner/admin artık panelden gerçek üye ekleyip (`POST /v1/members`
+  — e-posta + isim + rol + şifre, hemen giriş yapılabilir, davet e-postası yok), üye silip
+  (`DELETE /v1/members/:id`, kendini/son owner'ı silemez) ve mevcut üyeye doğrudan şifre
+  belirleyebiliyor (`PATCH /v1/members/:id` genişletildi, kendi şifresini bu yoldan değiştiremez).
+  Var olan "Şifre sıfırla" (e-posta linki) dokunulmadı, ikisi birlikte duruyor.
+  **Görüş:** İş Cursor'a delege edildi, commit'i okuyup testleri bağımsız tekrar çalıştırarak
+  denetlendi (640 API + 72 web testi yeşil, svelte-check 0 hata). Platform-admin uçlarına
+  (`apps/platform/*`) bilinçli dokunulmadı — ayrı, tenant-scoped yeni uç yazıldı. Permission
+  matrix'te `members` kaynağına `create`/`delete` eklendi, yalnız owner/admin; `OWNER_LOCKED_PERMISSIONS`
+  genişletildi ki tenant kendini üye yönetiminden kilitleyemesin. Kullanılmayan eski
+  `memberRoleUpdateSchema` denetim sırasında temizlendi. `f2196da` `ea96faa`
 - **G-25 / GAP-25 kapsamlı veri silme ✅** (2026-08-14) — `POST /v1/settings/data-delete/preview|execute`;
   kapsam seçimi (transactions/appointments/contacts/files, varsayılan hiçbiri); önizleme
   `plan_token` (CryptoService, 10 dk TTL, jti tek kullanımlık); org adı birebir onay; yalnız
