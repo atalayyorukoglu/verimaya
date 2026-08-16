@@ -316,7 +316,7 @@
 		<section id="merdiven" class="v4-band v4-ladder-band">
 			<div class="v4-in">
 				<span class="v4-label">Omurga</span>
-				<h2>Yazılım beş basamakta durur. Çoğu üçüncüde kalır.</h2>
+				<h2>Sayıları görmek kolay. Ne yapılacağını bilmek zor.</h2>
 
 				<ol class="v4-ladder">
 					{#each ladder as s (s.no)}
