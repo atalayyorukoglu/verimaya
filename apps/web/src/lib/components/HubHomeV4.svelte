@@ -316,7 +316,11 @@
 		<section id="merdiven" class="v4-band v4-ladder-band">
 			<div class="v4-in">
 				<span class="v4-label">Omurga</span>
-				<h2>Sayıları görmek kolay. Ne yapılacağını bilmek zor.</h2>
+				<h2>Mevcut sistemler üçüncü basamakta durur.</h2>
+				<p class="v4-lede">
+					Kayıt tutar, konuşmaları toplar, rapor çıkarır. Sonra susar. Oysa asıl iş oradan sonra
+					başlar: neden böyle olduğu ve ne yapılacağı.
+				</p>
 
 				<ol class="v4-ladder">
 					{#each ladder as s (s.no)}
@@ -328,11 +332,6 @@
 						</li>
 					{/each}
 				</ol>
-
-				<p class="v4-note">
-					İlk üç basamak size veriyi verir; kararı yine siz verirsiniz. Dördüncü ve beşinci basamak
-					bizim işimiz.
-				</p>
 			</div>
 		</section>
 
