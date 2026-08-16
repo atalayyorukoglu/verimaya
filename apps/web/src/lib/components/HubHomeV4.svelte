@@ -23,7 +23,7 @@
 	const organizationLd = {
 		'@context': 'https://schema.org',
 		'@type': 'Organization',
-		name: 'Veri Maya',
+		name: 'Verimaya',
 		url: PUBLIC_SITE_URL,
 		logo: `${PUBLIC_SITE_URL}/icon-512.png`,
 		description
@@ -55,8 +55,7 @@
 		if (loginOpen) loginOpen = false;
 	}
 
-	/** TODO(Atalay): gerçek adresle değiştir */
-	const contactEmail = 'info@verimaya.com';
+	const contactEmail = 'destek@verimaya.com';
 	const mailto = `mailto:${contactEmail}?subject=İlk bulgu raporu görüşmesi`;
 
 	const ladder = [
@@ -173,14 +172,14 @@
 
 	<meta property="og:type" content="website" />
 	<meta property="og:locale" content="tr_TR" />
-	<meta property="og:site_name" content="Veri Maya" />
+	<meta property="og:site_name" content="Verimaya" />
 	<meta property="og:title" content={title} />
 	<meta property="og:description" content={description} />
 	<meta property="og:url" content={canonical} />
 	<meta property="og:image" content={ogImage} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
-	<meta property="og:image:alt" content="Veri Maya" />
+	<meta property="og:image:alt" content="Verimaya" />
 
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={title} />
@@ -585,7 +584,7 @@
 				</div>
 			</div>
 			<div class="mt-10 border-t border-border/40 pt-6 text-center text-xs text-text-faint">
-				© {new Date().getFullYear()} Veri Maya
+				© {new Date().getFullYear()} Verimaya
 			</div>
 		</div>
 	</footer>

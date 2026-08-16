@@ -8,7 +8,7 @@ export function buildKarneSummaryEmail(summary: KarneLeadSummary): {
 	text: string;
 	html: string;
 } {
-	const subject = 'Yapay zeka karnesi özetiniz — Veri Maya';
+	const subject = 'Yapay zeka karnesi özetiniz — Verimaya';
 	const headline = `${TOTAL_SCORED} sorudan ${summary.zero_count}'inde kanıtınız yok.`;
 
 	const weakLines =
@@ -39,7 +39,7 @@ export function buildKarneSummaryEmail(summary: KarneLeadSummary): {
 		strongLines,
 		euBlock,
 		`Karneni yeniden doldur: ${SITE}/yapay-zeka-karnesi/`,
-		`Veri Maya: ${SITE}/`,
+		`Verimaya: ${SITE}/`,
 		'',
 		'Bu e-posta, karnede girdiğiniz adres ve açık rızanızla gönderildi.'
 	]
@@ -72,7 +72,7 @@ export function buildKarneSummaryEmail(summary: KarneLeadSummary): {
   ${euHtml}
   <p style="margin-top:1.5rem">
     <a href="${SITE}/yapay-zeka-karnesi/">Karneni yeniden doldur</a>
-    · <a href="${SITE}/">Veri Maya</a>
+    · <a href="${SITE}/">Verimaya</a>
   </p>
   <p style="font-size:0.875rem;color:#6e6e6b">Bu e-posta, karnede girdiğiniz adres ve açık rızanızla gönderildi.</p>
 </body></html>`;

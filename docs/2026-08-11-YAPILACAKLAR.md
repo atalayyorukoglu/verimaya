@@ -271,7 +271,8 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 ## Bekleyen (MARKET-02 sonrası / ikinci müşteri eşiği)
 
-- **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Veri Maya"**).
+- **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Verimaya"**,
+  tek kelime — 2026-08-16 kararı, `README.md`).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse).
 - **CSP/HSTS** canlıda kanıtlı denetim.
@@ -334,6 +335,18 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   vaadi: sayfa "sistem okur, siz onaylarsınız" diyor, ürün karşılığı henüz yok (bkz. AI katmanı).
   `nginx.conf` CSP hash'i commit'te güncellendi (`03c211f`) — atlanırsa canlı hub kırılırdı.
   `03c211f` `e5e512d`
+- **Marka yazımı "Verimaya" + destek e-postası ✅** (2026-08-16) — karar netleşti: **"Verimaya"**
+  tek kelime (2026-08-07'deki "Veri Maya" iki kelimelik yazımını günceller). Tüm canlı yüzeyler
+  taransın: `HubHomeV1-V4.svelte` (JSON-LD, OG meta, footer telifi), `features.ts` (GHL özellik
+  açıklaması), `auth.ts` (şifre sıfırlama e-postası konusu), `karne-summary.email.ts` +
+  `resend.client.ts` (karne özet e-postası konu/gövde/gönderen adı) + ilgili test, `README.md`,
+  `DEPLOY-COOLIFY.md` örnek env değeri. `HubHomeV1-V4.svelte`'teki `info@verimaya.com` yer
+  tutucusu `AppShell.svelte`'teki gerçek adrese hizalandı: **`destek@verimaya.com`**.
+  **Görüş:** `docs/Arşiv/` altındaki geçmiş kayıtlar ve `CHANGELOG.md`/`changelog.ts`'deki 0.7.0
+  sürüm notu **bilinçli dokunulmadı** — o tarihte gerçekten "Veri Maya" duyurulmuştu, tarihi
+  kaydı değiştirmek yanıltıcı olur. **Kalan (kod dışı, kullanıcı yürütür):** prod Coolify'daki
+  `KARNE_SUMMARY_FROM` env değeri elle "Veri Maya <karne@verimaya.com>" olarak ayarlanmışsa
+  kodun fallback'i güncellendi ama prod env'i override ediyor — orayı da güncellemek gerekir.
 - **G-25 / GAP-25 kapsamlı veri silme ✅** (2026-08-14) — `POST /v1/settings/data-delete/preview|execute`;
   kapsam seçimi (transactions/appointments/contacts/files, varsayılan hiçbiri); önizleme
   `plan_token` (CryptoService, 10 dk TTL, jti tek kullanımlık); org adı birebir onay; yalnız

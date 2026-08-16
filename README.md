@@ -1,8 +1,9 @@
-# Veri Maya
+# Verimaya
 
-> Marka görünen adı **Veri Maya**'dır (2026-08-07 karar). Domain (`verimaya.com`), paket/klasör adları
-> ve kod içi tanımlayıcılar teknik kimlik olarak **`verimaya`** kalır — yalnız kullanıcıya görünen
-> marka metni değişti. Detay: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md` § DOC-03b.
+> Marka görünen adı **Verimaya**'dır — tek kelime (2026-08-16 karar; 2026-08-07'deki "Veri Maya"
+> iki kelimelik yazımını günceller). Domain (`verimaya.com`), paket/klasör adları ve kod içi
+> tanımlayıcılar zaten `verimaya` idi, değişmedi. Önceki karar: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`
+> § DOC-03b.
 
 Türkiye'deki sağlık turizmi acenteleri ve klinikleri için çok kiracılı (multi-tenant) B2B SaaS operasyon platformu: lead/hasta takibi, randevu, finans, raporlama, WhatsApp inbox ve GoHighLevel / reklam API'leri / n8n entegrasyonları.
 

@@ -176,7 +176,7 @@ API CORS / auth:
 | `FILES_SWEEP_DRY_RUN` | İlk hafta `true`, sonra kapat |
 | `KARNE_LEADS_ENABLED` | Lead POST; prod `true` (LEG-02). Web `PUBLIC_KARNE_LEADS_ENABLED` ile birlikte |
 | `RESEND_API_KEY` | Karne özet e-postası; yoksa lead kaydolur ama mail gitmez |
-| `KARNE_SUMMARY_FROM` | Örn. `Veri Maya <karne@verimaya.com>` (Resend’de domain verified) |
+| `KARNE_SUMMARY_FROM` | Örn. `Verimaya <karne@verimaya.com>` (Resend’de domain verified) |
 | `KARNE_SUMMARY_REPLY_TO` | Opsiyonel reply-to |
 | `WEBHOOK_IDENTITY_DEFAULT_SECRET` | Pilot WAHA shim. `true` → env paylaşımlı secret kabul; **PILOT-02 sonu `false`** |
 | `WEBHOOK_IDENTITY_DEFAULT_TENANT` | Shim açıkken kabul edilen tek tenant UUID; boşsa shim etkisiz |

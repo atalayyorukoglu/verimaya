@@ -3,8 +3,7 @@
 
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
 
-	/** TODO(Atalay): gerçek adresle değiştir */
-	const contactEmail = 'info@verimaya.com';
+	const contactEmail = 'destek@verimaya.com';
 	const mailto = `mailto:${contactEmail}?subject=İlk bulgu raporu görüşmesi`;
 
 	const questions = [

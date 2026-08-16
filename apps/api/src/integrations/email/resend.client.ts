@@ -64,6 +64,6 @@ export function createEmailSenderFromEnv(
 ): EmailSender {
 	const apiKey = env.RESEND_API_KEY?.trim();
 	if (!apiKey) return new NoopEmailClient();
-	const from = (env.KARNE_SUMMARY_FROM?.trim() || 'Veri Maya <karne@verimaya.com>').trim();
+	const from = (env.KARNE_SUMMARY_FROM?.trim() || 'Verimaya <karne@verimaya.com>').trim();
 	return new ResendEmailClient(apiKey, from);
 }

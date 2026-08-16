@@ -10,7 +10,7 @@ describe('buildKarneSummaryEmail', () => {
 			strong_titles: ['Güçlü alan'],
 			eu_exposure: true
 		});
-		expect(subject).toMatch(/Veri Maya/);
+		expect(subject).toMatch(/Verimaya/);
 		expect(text).toContain("10 sorudan 3'inde");
 		expect(text).toContain('Kanıt yok: ölçüm');
 		expect(text).toContain('EU AI Act');
