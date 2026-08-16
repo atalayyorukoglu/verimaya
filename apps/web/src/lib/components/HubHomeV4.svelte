@@ -118,10 +118,30 @@
 	] as const;
 
 	const cycle = [
-		{ no: '01', ad: 'Ölç', not: 'Her halkanın bir sayısı olur.' },
-		{ no: '02', ad: 'Teşhis koy', not: 'Sayının arkasındaki neden isim isim çıkar.' },
-		{ no: '03', ad: 'Müdahale et', not: 'O ay ne yapılacağına birlikte karar veririz.' },
-		{ no: '04', ad: 'Tekrar ölç', not: 'Ertesi ay tek soru: müdahale işe yaradı mı?' }
+		{
+			no: '01',
+			ad: 'Ölç',
+			not: 'Her halkanın bir sayısı olur.',
+			ornek: 'Örn. Lead dönüşü %18 · ortalama yanıt 6 saat'
+		},
+		{
+			no: '02',
+			ad: 'Teşhis koy',
+			not: 'Sayının arkasındaki neden isim isim çıkar.',
+			ornek: 'Örn. 38 hasta 60 gündür temassız'
+		},
+		{
+			no: '03',
+			ad: 'Müdahale et',
+			not: 'O ay ne yapılacağına birlikte karar veririz.',
+			ornek: 'Örn. Temassız 38’i ara — sahipler atandı'
+		},
+		{
+			no: '04',
+			ad: 'Tekrar ölç',
+			not: 'Ertesi ay tek soru: müdahale işe yaradı mı?',
+			ornek: 'Örn. Temassız 38 → 11 · dönüş %18 → %27'
+		}
 	] as const;
 
 	const privacy = [
@@ -389,7 +409,8 @@
 						<li>
 							<span class="v4-mono">{c.no}</span>
 							<strong>{c.ad}</strong>
-							<span>{c.not}</span>
+							<span class="v4-cycle-not">{c.not}</span>
+							<span class="v4-cycle-ornek">{c.ornek}</span>
 						</li>
 					{/each}
 				</ol>
@@ -798,9 +819,9 @@
 	}
 	.v4-step {
 		display: grid;
-		grid-template-columns: 2.5rem 8rem 1fr;
+		grid-template-columns: 2rem 1fr;
 		align-items: center;
-		gap: 0.5rem 1rem;
+		gap: 0.35rem 1rem;
 		padding: 1.1rem 1.25rem;
 		border-bottom: 1px solid var(--line-2);
 		background: var(--panel);
@@ -820,6 +841,7 @@
 		letter-spacing: -0.01em;
 	}
 	.v4-step-soru {
+		grid-column: 2 / -1;
 		color: var(--ink-2);
 		font-size: 0.95rem;
 	}
@@ -847,13 +869,19 @@
 	.v4-step-on .v4-step-soru {
 		color: var(--ink);
 	}
-	@media (max-width: 720px) {
+	@media (min-width: 880px) {
 		.v4-step {
-			grid-template-columns: 2rem 1fr;
+			grid-template-columns: 2.5rem minmax(8rem, 10rem) minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 0.5rem 1.25rem;
 		}
-		.v4-step-soru,
+		.v4-step-soru {
+			grid-column: auto;
+		}
 		.v4-step-kim {
-			grid-column: 2 / -1;
+			grid-column: auto;
+			justify-self: end;
+			text-align: right;
 		}
 	}
 
@@ -1025,10 +1053,20 @@
 		font-size: 1.05rem;
 		letter-spacing: -0.02em;
 	}
-	.v4-cycle span:last-child {
+	.v4-cycle-not {
+		display: block;
 		font-size: 0.86rem;
 		line-height: 1.5;
 		color: var(--ink-2);
+	}
+	.v4-cycle-ornek {
+		display: block;
+		margin-top: 0.65rem;
+		font-family: var(--mono);
+		font-size: 0.72rem;
+		letter-spacing: 0.02em;
+		line-height: 1.45;
+		color: var(--ink-3);
 	}
 
 	/* ── Onay kuyruğu ── */
