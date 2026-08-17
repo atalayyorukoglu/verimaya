@@ -26,6 +26,7 @@ import type {
 	UserRole,
 	WebhookSubscription,
 	IncentiveFile,
+	KnowledgeRevision,
 	KnowledgeSections,
 	CommissionEntry,
 	TrustScoreSettings,
@@ -422,6 +423,8 @@ export type DemoStore = {
 	incentiveFiles: IncentiveFile[];
 	/** AI-01 bilgi bankası (MSW). */
 	knowledge: KnowledgeSections;
+	/** AI-06 sürüm geçmişi (MSW). */
+	knowledgeRevisions: KnowledgeRevision[];
 	/** Teşvik son başvuru gün sayısı (MSW). */
 	incentiveDeadlineDays: number;
 	/** Hakediş satırları (MSW) — tahakkuk ≠ ödeme; formül yok. */
@@ -1323,6 +1326,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			webhookSubscriptions: [],
 			incentiveFiles: [],
 			knowledge: emptyKnowledgeSections(),
+			knowledgeRevisions: [],
 			incentiveDeadlineDays: 180,
 			commissionEntries: [],
 			aiCorrections: [],
@@ -1622,6 +1626,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		webhookSubscriptions: makeWebhookSubscriptions(),
 		incentiveFiles: makeIncentiveFiles(contacts),
 		knowledge: makeKnowledge(),
+		knowledgeRevisions: [],
 		incentiveDeadlineDays: 180,
 		commissionEntries: makeCommissionEntries(contacts),
 		aiCorrections: makeAiCorrections(),

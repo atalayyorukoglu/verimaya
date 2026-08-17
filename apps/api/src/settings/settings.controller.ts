@@ -348,6 +348,12 @@ export class SettingsController {
 		return this.settingsService.getKnowledge(getActiveOrgId(req));
 	}
 
+	@Get('knowledge/revisions')
+	@RequireOrgPermission('settings', 'read')
+	async getKnowledgeRevisions(@Req() req: FastifyRequest) {
+		return { items: await this.settingsService.listKnowledgeRevisions(getActiveOrgId(req)) };
+	}
+
 	@Put('knowledge')
 	@RequireOrgPermission('settings', 'update')
 	@IdempotencyExempt(

@@ -398,6 +398,9 @@ const tr = {
 	'settings.knowledge.loadError': 'Bilgi bankası yüklenemedi.',
 	'settings.knowledge.footnote':
 		'Bu bilgi yapay zekâya ek bağlam olarak verilir; sistemin çekirdek kurallarının yerine geçmez.',
+	'settings.knowledge.history.title': 'Değişiklik geçmişi',
+	'settings.knowledge.history.hint':
+		'Her kaydetmede bir kayıt bırakılır. "Sistem o tarihte neye göre cevap verdi?" sorusunun cevabı burada.',
 	'settings.knowledge.pii.title': 'Burada hasta bilgisi olabilir',
 	'settings.knowledge.pii.body':
 		'Bilgi bankası firma bilgisi içindir, hasta verisi değil. Kaydınız engellenmedi ama aşağıdaki bölümleri gözden geçirin.',
@@ -2775,6 +2778,9 @@ const en: Record<MessageKey, string> = {
 	'settings.knowledge.loadError': 'Could not load the knowledge base.',
 	'settings.knowledge.footnote':
 		'This is given to the AI as extra context; it never replaces the system core rules.',
+	'settings.knowledge.history.title': 'Change history',
+	'settings.knowledge.history.hint':
+		'Every save leaves a record. This answers "what was the system working from back then?"',
 	'settings.knowledge.pii.title': 'This may contain patient data',
 	'settings.knowledge.pii.body':
 		'The knowledge base is for company information, not patient data. Your save was not blocked, but please review the sections below.',

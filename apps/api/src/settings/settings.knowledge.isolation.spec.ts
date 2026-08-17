@@ -124,6 +124,50 @@ describe('bilgi bankası izolasyonu', () => {
 		);
 	});
 
+	/**
+	 * AI-06 — sürüm geçmişi. Amaç "AI neden 2.400 dedi?" sorusunun sonraki cevabı:
+	 * o tarihte bilgi bankasında ne yazdığı görülebilmeli.
+	 */
+	it('her kaydetme bir sürüm bırakır; geçmiş tenant içinde kalır', async () => {
+		await settings.saveKnowledge(
+			tenantA,
+			{
+				sections: {
+					services: 'Saç ekimi 2.400 EUR',
+					payment: '',
+					faq: '',
+					rejection: '',
+					notes: ''
+				}
+			},
+			actorA
+		);
+		await settings.saveKnowledge(
+			tenantA,
+			{
+				sections: {
+					services: 'Saç ekimi 2.900 EUR',
+					payment: '',
+					faq: '',
+					rejection: '',
+					notes: ''
+				}
+			},
+			actorA
+		);
+
+		const history = await settings.listKnowledgeRevisions(tenantA);
+		expect(history.length).toBeGreaterThanOrEqual(2);
+		// En yeni önce: bugünkü fiyat üstte, eski fiyat altında durur.
+		expect(history[0]!.sections.services).toBe('Saç ekimi 2.900 EUR');
+		expect(history.some((r) => r.sections.services === 'Saç ekimi 2.400 EUR')).toBe(true);
+		expect(history[0]!.changed_by).toBe('Owner A');
+
+		// Tenant B kendi geçmişini görür; A'nınkini asla.
+		const historyB = await settings.listKnowledgeRevisions(tenantB);
+		expect(historyB.every((r) => r.sections.services !== 'Saç ekimi 2.900 EUR')).toBe(true);
+	});
+
 	it('temizleme sonrası is_default true döner', async () => {
 		await settings.deleteKnowledge(tenantA, actorA);
 		const res = await settings.getKnowledge(tenantA);

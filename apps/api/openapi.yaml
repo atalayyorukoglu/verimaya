@@ -6865,6 +6865,63 @@ paths:
                   - updated_by
                   - pii_warnings
                 additionalProperties: false
+  /settings/knowledge/revisions:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        sections:
+                          type: object
+                          properties:
+                            services:
+                              type: string
+                              maxLength: 4000
+                              default: ""
+                            payment:
+                              type: string
+                              maxLength: 4000
+                              default: ""
+                            faq:
+                              type: string
+                              maxLength: 4000
+                              default: ""
+                            rejection:
+                              type: string
+                              maxLength: 4000
+                              default: ""
+                            notes:
+                              type: string
+                              maxLength: 4000
+                              default: ""
+                          additionalProperties: false
+                        changed_by:
+                          type: string
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - sections
+                        - changed_by
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
   /settings/incentive-deadline:
     get:
       responses:

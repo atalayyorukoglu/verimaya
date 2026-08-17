@@ -7,6 +7,7 @@
 		emptyKnowledgeSections,
 		type KnowledgeSection,
 		type KnowledgeSections,
+		type KnowledgeRevisionList,
 		type KnowledgeSettings
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, labelClass, textareaClass } from '$lib/api';
@@ -14,6 +15,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { formatDateTime } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 
@@ -41,6 +43,15 @@
 	});
 
 	const piiWarnings = $derived(query.data?.pii_warnings ?? []);
+
+	// AI-06: geçmiş salt-okunur. Amaç "o tarihte ne yazıyordu" sorusuna cevap vermek;
+	// geri yükleme bilinçli olarak yok — yanlışlıkla eski fiyata dönmek pahalı olur.
+	const revisionsQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.knowledgeRevisions(),
+		queryFn: () => apiGet<KnowledgeRevisionList>(apiPaths.settingsKnowledgeRevisions),
+		enabled: qs.ready
+	}));
+	const revisions = $derived(revisionsQuery.data?.items ?? []);
 
 	function labelKey(section: KnowledgeSection): MessageKey {
 		return `settings.knowledge.section.${section}` as MessageKey;
@@ -160,5 +171,20 @@
 		</div>
 
 		<p class="mt-4 text-xs text-text-faint">{t('settings.knowledge.footnote')}</p>
+
+		{#if revisions.length > 0}
+			<div class="mt-6 rounded-lg border border-border bg-surface p-4 sm:p-5">
+				<h2 class="text-sm font-semibold text-text">{t('settings.knowledge.history.title')}</h2>
+				<p class="mt-1 text-xs text-text-faint">{t('settings.knowledge.history.hint')}</p>
+				<ul class="mt-3 flex flex-col gap-2">
+					{#each revisions.slice(0, 10) as rev (rev.id)}
+						<li class="flex flex-wrap items-baseline gap-x-2 text-sm">
+							<span class="text-text-muted tabular-nums">{formatDateTime(rev.created_at)}</span>
+							<span class="text-text-faint">{rev.changed_by ?? '—'}</span>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
 	{/if}
 </div>

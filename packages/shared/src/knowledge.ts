@@ -136,3 +136,17 @@ export function frameKnowledgeContext(knowledge: string | null | undefined): str
 		'>>>'
 	].join('\n');
 }
+
+/** AI-06 — bilgi bankası sürüm kaydı (değiştirilemez; yalnız eklenir). */
+export const knowledgeRevisionSchema = z.object({
+	id: z.string().uuid(),
+	sections: knowledgeSectionsSchema,
+	changed_by: z.string().nullable(),
+	created_at: isoDateTime
+});
+export type KnowledgeRevision = z.infer<typeof knowledgeRevisionSchema>;
+
+export const knowledgeRevisionListSchema = z.object({
+	items: z.array(knowledgeRevisionSchema)
+});
+export type KnowledgeRevisionList = z.infer<typeof knowledgeRevisionListSchema>;

@@ -2700,12 +2700,26 @@ export const handlers = [
 		});
 	}),
 
+	http.get('/v1/settings/knowledge/revisions', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({ items: store.knowledgeRevisions });
+	}),
+
 	http.put('/v1/settings/knowledge', async ({ request }) => {
 		const store = getStore(scenarioFrom(request));
 		const body = (await request.json()) as { sections?: unknown };
 		const parsed = knowledgeSectionsSchema.safeParse(body.sections);
 		if (!parsed.success) return badRequest('Geçersiz bilgi bankası');
 		store.knowledge = parsed.data;
+		store.knowledgeRevisions = [
+			{
+				id: crypto.randomUUID(),
+				sections: parsed.data,
+				changed_by: 'Demo Kullanıcı',
+				created_at: new Date().toISOString()
+			},
+			...store.knowledgeRevisions
+		];
 		return HttpResponse.json({
 			sections: store.knowledge,
 			is_default: buildKnowledgeContext(store.knowledge) == null,

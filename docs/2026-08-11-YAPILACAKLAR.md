@@ -291,7 +291,7 @@
 | **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | yok | M |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
-| **AI-06** | Bilgi tabanı versiyonlama (`knowledge_revisions`) — "AI neden 2400 dedi?" sorusunun 3 ay sonraki cevabı | AI-01 | S |
+| **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
 
 **Değişmez kurallar** (bozulursa "insan onaylı" savunması çöker): toplu kabul yok, her kart tek
@@ -445,6 +445,15 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Yakalanan kusur:** panelde eşiği 60'a çekince "30 günü geçen" kutusu da düşüyordu;
   sunucu doğruydu, MSW mock'u kovaları eşikten sonra sayıyordu. Tarayıcıda gözle
   bakılmasaydı demo yanlış rakam gösterecekti.
+- **AI-06 Bilgi bankası sürüm geçmişi ✅** (2026-08-17) — `knowledge_revisions` (migration
+  `0057`, RLS + FORCE RLS + policy). Her kaydetmede **aynı transaction içinde** bir sürüm
+  bırakılıyor; `GET /v1/settings/knowledge/revisions` son 20 sürümü en yeni önce döndürüyor,
+  panelde bilgi bankası sayfasının altında tarih + değiştiren kişi listeleniyor.
+  **Görüş:** Tabloya `GRANT` yalnız `SELECT, INSERT` — `UPDATE`/`DELETE` bilinçli verilmedi.
+  Bu bir **kanıt kaydı**: "AI neden 2.400 dedi?" sorusunun üç ay sonraki cevabı. Değiştirilebilir
+  olsaydı kanıt değeri kalmazdı. Panelde **geri yükleme yok** — yanlışlıkla eski fiyata dönmek
+  pahalı olur; geçmiş okunur, uygulanmaz. Sürüm yazımı ayar yazımıyla aynı transaction'da:
+  ayar değiştiyse sürümü de mutlaka vardır.
 - **Maya AI gerçek oldu ✅** (2026-08-17) — Maya artık mock değil: `POST /v1/maya/ask`,
   cevap **yalnız tenant'ın bilgi bankasından** üretiliyor. Sistem prompt'u sunucuda
   (`buildMayaSystemPrompt`), bilgi bankası `frameKnowledgeContext` ile **veri olarak**

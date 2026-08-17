@@ -15,6 +15,7 @@ import type {
 	FinanceCategoryUpdate,
 	IncentiveDeadlineSettings,
 	IncentiveDeadlineSettingsUpdate,
+	KnowledgeSections,
 	KnowledgeSettings,
 	KnowledgeUpdate,
 	OrganizationCreate,
@@ -51,6 +52,7 @@ import {
 	financeCategories,
 	organizations,
 	tenantCredentials,
+	knowledgeRevisions,
 	tenantSettings
 } from '../db/schema';
 import { toAppointmentType, toContactType, toFinanceCategory, toOrganization } from '../common/mappers';
@@ -731,6 +733,14 @@ export class SettingsService {
 					target: [tenantSettings.tenantId, tenantSettings.key],
 					set: { value, updatedAt: new Date() }
 				});
+			// AI-06: her kaydetmede sürüm bırakılır. "AI neden 2.400 dedi?" sorusunun
+			// üç ay sonraki cevabı burada — o tarihte bilgi bankasında ne yazdığı görülür.
+			// Aynı transaction içinde: ayar yazıldıysa sürüm de yazılmış olmalı.
+			await db.insert(knowledgeRevisions).values({
+				tenantId,
+				sections: input.sections,
+				changedBy: actor.actorDisplayName
+			});
 			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', KNOWLEDGE_AUDIT_LABEL);
 		});
 
@@ -741,6 +751,29 @@ export class SettingsService {
 			updated_by: actor.actorDisplayName,
 			pii_warnings: findKnowledgePii(input.sections)
 		};
+	}
+
+	/** AI-06: son sürümler, en yeni önce. Kayıtlar değiştirilemez (GRANT'te UPDATE yok). */
+	async listKnowledgeRevisions(
+		tenantId: string,
+		limit = 20
+	): Promise<Array<{ id: string; sections: KnowledgeSections; changed_by: string | null; created_at: string }>> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const rows = await db
+				.select()
+				.from(knowledgeRevisions)
+				.orderBy(desc(knowledgeRevisions.createdAt))
+				.limit(limit);
+			return rows.map((row) => {
+				const parsed = knowledgeSectionsSchema.safeParse(row.sections);
+				return {
+					id: row.id,
+					sections: parsed.success ? parsed.data : emptyKnowledgeSections(),
+					changed_by: row.changedBy,
+					created_at: row.createdAt.toISOString()
+				};
+			});
+		});
 	}
 
 	async deleteKnowledge(tenantId: string, actor: AuditActor): Promise<KnowledgeSettings> {

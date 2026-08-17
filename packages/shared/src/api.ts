@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { cursorPageSchema, softDeleteResultSchema } from './common.js';
-import { knowledgeSettingsSchema, knowledgeUpdateSchema } from './knowledge.js';
+import {
+	knowledgeRevisionListSchema,
+	knowledgeSettingsSchema,
+	knowledgeUpdateSchema
+} from './knowledge.js';
 import { mayaAnswerSchema, mayaAskSchema } from './maya.js';
 
 /** REST prefix for all Verimaya API routes. */
@@ -78,6 +82,7 @@ export const apiPaths = {
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
 	settingsKnowledge: `${API_V1_PREFIX}/settings/knowledge`,
+	settingsKnowledgeRevisions: `${API_V1_PREFIX}/settings/knowledge/revisions`,
 	mayaAsk: `${API_V1_PREFIX}/maya/ask`,
 	settingsIncentiveDeadline: `${API_V1_PREFIX}/settings/incentive-deadline`,
 	settingsPermissions: `${API_V1_PREFIX}/settings/permissions`,
@@ -633,6 +638,9 @@ export const apiContract = {
 	},
 	'GET /v1/settings/knowledge': {
 		response: knowledgeSettingsSchema
+	},
+	'GET /v1/settings/knowledge/revisions': {
+		response: knowledgeRevisionListSchema
 	},
 	'PUT /v1/settings/knowledge': {
 		body: knowledgeUpdateSchema,
