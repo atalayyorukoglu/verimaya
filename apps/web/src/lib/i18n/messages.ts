@@ -1955,7 +1955,7 @@ const tr = {
 	'hubHome.privacy.boundaries':
 		'Veri yalnız tanımlı hizmet kapsamı ve açık işleme amacı için kullanılır; insan onayı gerektiren kararlar otomatik kesin kayda dönüşmez.',
 	'hubHome.privacy.transparency':
-		'Kurucunun sağlık turizmi işletmesi var; bu yüzden veri izolasyonu sözleşmede yazılı, denetime açık.',
+		'Birden fazla acenteyle çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.',
 	'hubHome.tools.eyebrow': 'Ücretsiz araçlar',
 	'hubHome.tools.title': 'İlk bulguya giden hesabı küçük bir adımla başlatın.',
 	'hubHome.tools.description':
@@ -3992,7 +3992,7 @@ const en: Record<MessageKey, string> = {
 	'hubHome.privacy.boundaries':
 		'Data is used only for the defined service scope and explicit processing purpose; decisions requiring human approval never become final records automatically.',
 	'hubHome.privacy.transparency':
-		'The founder owns a health tourism business; that is why data isolation is written into the contract and open to audit.',
+		'We work with more than one agency — we tell you this before you ask. If we access your data for support, it lands in your own audit log; there is no silent access.',
 	'hubHome.tools.eyebrow': 'Free tools',
 	'hubHome.tools.title': 'Start the calculation behind your first finding with one small step.',
 	'hubHome.tools.description':

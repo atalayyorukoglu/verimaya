@@ -83,7 +83,7 @@
 	const privacy = [
 		'Her acentenin verisi ayrı tutulur. İzolasyon sözleşmede yazılıdır, denetime açıktır.',
 		'Verileriniz yapay zekâ modeli eğitmek için kullanılmaz — ne bizim tarafımızdan, ne kullandığımız sağlayıcılar tarafından. Hangi sağlayıcıları kullandığımız sözleşmede yazılıdır.',
-		'Kurucunun sağlık turizmi işletmesi var. Bu yüzden veri izolasyonu sözleşmede ayrıca yazılıdır ve denetlenebilir.'
+		'Birden fazla acenteyle çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
 	] as const;
 </script>
 

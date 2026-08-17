@@ -110,7 +110,7 @@
 		},
 		{
 			b: 'Şeffaflık',
-			t: 'Kurucunun sağlık turizmi işletmesi var. Bu yüzden veri izolasyonu sözleşmede ayrıca yazılıdır ve denetlenebilir.'
+			t: 'Birden fazla acenteyle çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
 		}
 	] as const;
 
