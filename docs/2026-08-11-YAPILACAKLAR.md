@@ -474,6 +474,12 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   kilit listesine saygı duyacak şekilde düzeltildi.
   **Sonraki adım kullanıcıda:** bilgi bankası boş olduğu sürece Maya hiçbir soruyu
   cevaplayamaz (Bekleyen · bilgi bankasını doldur).
+  **CI'da yakalanan kusur:** `MayaModule` yalnız `LlmModule` + `SettingsModule` alıyordu;
+  controller'ın guard üçlüsü `AuthModule` + `CommonModule` sağlayıcılarına bağlı olduğu için
+  Nest **başlatılırken çöküyordu**. Nest bu hatada `process.abort()` çağırdığı için vitest
+  yalnız "Worker exited unexpectedly" gösteriyor, asıl sebebi yutuyor — modülü AppModule'den
+  çıkarıp bisect ederek bulundu. Tek AppModule başlatan spec `queue-readiness.smoke.spec.ts`;
+  yeni modül eklerken ilk oraya bakılmalı. Desen diğer modüllerle aynı hâle getirildi.
 - **Teşvik belge listesi düzenlenebilir ✅** (2026-08-17) — belgeler sabit listeydi; kullanıcı
   geri bildirimi üzerine ekle/sil/yeniden adlandır geldi (`incentive_files.documents` jsonb,
   yeni tablo yok). Kurallar `packages/shared`'da: benzersiz `key`, boş `label` reddi,
