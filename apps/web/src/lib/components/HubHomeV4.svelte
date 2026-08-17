@@ -343,6 +343,10 @@
 			<div class="v4-in">
 				<span class="v4-label">Teşhisin girdileri</span>
 				<h2>Zincirin her halkasına ayrı bakarız.</h2>
+				<p class="v4-lede">
+					Reklamı biz yönetmesek de kalitesini ölçeriz. Kontrol etmediğimiz halkayı da teşhis ederiz
+					— hasta gelmiyorsa nedeni muğlak değil; hangi halkada olduğu bellidir.
+				</p>
 
 				<div class="v4-reads">
 					{#each reads as r (r.halka)}
@@ -352,11 +356,6 @@
 						</div>
 					{/each}
 				</div>
-
-				<p class="v4-note">
-					Reklamı biz yönetmesek de kalitesini ölçeriz. Kontrol etmediğimiz halkayı da teşhis ederiz
-					— hasta gelmiyorsa nedeni adressiz değil, adreslidir.
-				</p>
 			</div>
 		</section>
 
@@ -405,6 +404,7 @@
 			<div class="v4-in">
 				<span class="v4-label">Döngü</span>
 				<h2>Öneriyi verip çekilmeyiz.</h2>
+				<p class="v4-lede">Dördüncü adım olmadan üçüncüsü tahmindir.</p>
 				<ol class="v4-cycle">
 					{#each cycle as c (c.no)}
 						<li>
@@ -415,7 +415,6 @@
 						</li>
 					{/each}
 				</ol>
-				<p class="v4-note">Dördüncü adım olmadan üçüncüsü tahmindir.</p>
 			</div>
 		</section>
 
@@ -791,7 +790,9 @@
 		max-width: 26ch;
 	}
 	.v4-lede {
-		margin: 1.15rem 0 0;
+		margin: 0.15rem 0 0;
+		font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+		line-height: 1.55;
 		color: var(--ink-2);
 		max-width: 40rem;
 	}
