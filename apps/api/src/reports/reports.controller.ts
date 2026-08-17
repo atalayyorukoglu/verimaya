@@ -12,12 +12,16 @@ import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
+import { CommissionsService } from '../commissions/commissions.service';
 import { ReportsService } from './reports.service';
 
 @Controller('reports')
 @UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class ReportsController {
-	constructor(private readonly reportsService: ReportsService) {}
+	constructor(
+		private readonly reportsService: ReportsService,
+		private readonly commissionsService: CommissionsService
+	) {}
 
 	@Get('summary')
 	@RequireOrgPermission('finance', 'read')
@@ -134,6 +138,12 @@ export class ReportsController {
 	@RequireOrgPermission('finance', 'read')
 	balances(@Req() req: FastifyRequest) {
 		return this.reportsService.balances(getActiveOrgId(req));
+	}
+
+	@Get('commission-summary')
+	@RequireOrgPermission('finance', 'read')
+	commissionSummary(@Req() req: FastifyRequest) {
+		return this.commissionsService.summary(getActiveOrgId(req));
 	}
 
 	/**

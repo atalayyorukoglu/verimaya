@@ -266,7 +266,7 @@
 | # | İş | Neden bu sırada | Durum |
 |---|---|---|---|
 | 1 | **Teşvik dosya + süre takibi** | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| 2 | **Hakediş / komisyon takibi** (PRODUCT-01) | İhtiyaç haritası §8: incelenen 5 rakibin **hiçbirinde yok**; acente segmentinin asıl ayrımı. Altyapı yarı hazır (`P2pNetBalances` net bakiye motoru) | ⬜ |
+| 2 | **Hakediş / komisyon takibi** (PRODUCT-01) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | 3 | **Temassız kişiler listesi** | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | 4 | **Kohort görünümü** — reklam ayı ≠ tahsilat ayı | İhtiyaç haritası §1.2: bu olmadan "hangi kampanya para getirdi" cevabı yanlış çıkıyor. Rapordaki mevcut `cohort` **kaynak bazlı**, tarih bazlı değil — karıştırma | ⬜ |
 
@@ -319,7 +319,6 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Verimaya"**,
   tek kelime — 2026-08-16 kararı, `README.md`).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
-- **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse).
 - **Panel CSP** — `app.verimaya.com` hâlâ CSP'siz (HSTS + nosniff + Referrer + Permissions
   2026-08-17'de kondu, bkz. Son kapananlar). Blocking CSP körlemesine yazılmadı: dosya
   önizleme S3/R2 host'u ve `connect-src` için API host'u ortama göre değişiyor, yanlış
@@ -373,6 +372,15 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **Hakediş / komisyon takibi (PRODUCT-01) ✅** (2026-08-17) — `commission_entries` (migration
+  `0056`, RLS + FORCE RLS + policy + GRANT), CRUD `/v1/commissions`, özet
+  `GET /v1/reports/commission-summary`, panel `/finance/commissions`. Satır elle girilir;
+  tahakkuk (`accrued`) ile ödeme (`paid`) ayrı; özet kazanan başına hak edilen / ödenen /
+  **kalan** (`open_base`), yalnız açık bakiyeler (BAL-OPEN). FX snapshot işlem desenini izler;
+  `missing_fx_count` sessiz atlama yerine uyarı.
+  **Görüş:** Komisyon **formül üretilmez** — klinik başına kural yazılı olmadığı için
+  (ihtiyaç haritası §8.4) yüzde uydurmak mutabakatı bozar. MSW handler + demo veri bu turda
+  yazıldı (teşvik turundaki "Yükleniyor…" tuzağı tekrarlanmasın diye).
 - **Pazarlama ana sayfası v4 ✅** (2026-08-16) — canlı `/` (ve prerender kaynağı `/vitrin`)
   artık `HubHomeV4`: **v1 kabuğu + v4 içeriği**. Kabuk v1'den gelir (nav, logo, tema/dil
   değiştirici, `messages.ts` i18n, footer, KVKK bağlantısı); gövde teşhis-müdahale

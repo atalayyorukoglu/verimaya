@@ -22,6 +22,7 @@ import type {
 	UserRole,
 	WebhookSubscription,
 	IncentiveFile,
+	CommissionEntry,
 	TrustScoreSettings,
 	WhatsappAiPrompt
 } from '@verimaya/shared';
@@ -416,6 +417,8 @@ export type DemoStore = {
 	incentiveFiles: IncentiveFile[];
 	/** Teşvik son başvuru gün sayısı (MSW). */
 	incentiveDeadlineDays: number;
+	/** Hakediş satırları (MSW) — tahakkuk ≠ ödeme; formül yok. */
+	commissionEntries: CommissionEntry[];
 	aiCorrections: AiCorrection[];
 	/** Persisted Trust Score checklist (MSW). */
 	trustScore: TrustScoreSettings;
@@ -765,6 +768,120 @@ function makeIncentiveFiles(contacts: Contact[]): IncentiveFile[] {
 			updated_at: iso(faker.date.recent({ days: 5 }))
 		};
 	});
+}
+
+/** Three beneficiaries: one partially paid, one unpaid, one with a cancelled row ignored in open. */
+function makeCommissionEntries(contacts: Contact[]): CommissionEntry[] {
+	const klinik = contacts.find((c) => c.id === CONTACT_KLINIK_ID);
+	const mujdat = contacts.find((c) => c.id === CONTACT_MUJDAT_ID);
+	const sehmuz = contacts.find((c) => c.id === CONTACT_SEHMUZ_ID);
+	const patient = contacts.find((c) => c.id === ATALAY_CONTACT_ID);
+	if (!klinik || !mujdat || !sehmuz) return [];
+
+	const isoDay = (offsetDays: number) =>
+		new Date(Date.now() + offsetDays * 86_400_000).toISOString().slice(0, 10);
+	const now = iso(faker.date.recent({ days: 5 }));
+
+	const row = (
+		partial: Omit<CommissionEntry, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>
+	): CommissionEntry => ({
+		id: faker.string.uuid(),
+		tenant_id: DEMO_TENANT_ID,
+		created_at: now,
+		updated_at: now,
+		...partial
+	});
+
+	return [
+		// Klinik Ortak — kısmen ödenmiş (open = 10_000)
+		row({
+			beneficiary_contact_id: klinik.id,
+			beneficiary_display_name: klinik.display_name,
+			case_contact_id: patient?.id ?? null,
+			case_display_name: patient?.display_name ?? null,
+			source_transaction_id: null,
+			amount: 15_000_00,
+			currency: 'TRY',
+			amount_base: 15_000_00,
+			base_currency: 'TRY',
+			fx_rate: null,
+			fx_dated: null,
+			status: 'accrued',
+			earned_on: isoDay(-20),
+			paid_on: null,
+			note: null
+		}),
+		row({
+			beneficiary_contact_id: klinik.id,
+			beneficiary_display_name: klinik.display_name,
+			case_contact_id: patient?.id ?? null,
+			case_display_name: patient?.display_name ?? null,
+			source_transaction_id: null,
+			amount: 5_000_00,
+			currency: 'TRY',
+			amount_base: 5_000_00,
+			base_currency: 'TRY',
+			fx_rate: null,
+			fx_dated: null,
+			status: 'paid',
+			earned_on: isoDay(-45),
+			paid_on: isoDay(-10),
+			note: null
+		}),
+		// Müjdat — hiç ödenmemiş
+		row({
+			beneficiary_contact_id: mujdat.id,
+			beneficiary_display_name: mujdat.display_name,
+			case_contact_id: null,
+			case_display_name: null,
+			source_transaction_id: null,
+			amount: 8_000_00,
+			currency: 'TRY',
+			amount_base: 8_000_00,
+			base_currency: 'TRY',
+			fx_rate: null,
+			fx_dated: null,
+			status: 'accrued',
+			earned_on: isoDay(-12),
+			paid_on: null,
+			note: null
+		}),
+		// Sehmuz — açık tahakkuk + iptal (özette iptal yok)
+		row({
+			beneficiary_contact_id: sehmuz.id,
+			beneficiary_display_name: sehmuz.display_name,
+			case_contact_id: null,
+			case_display_name: null,
+			source_transaction_id: null,
+			amount: 12_000_00,
+			currency: 'TRY',
+			amount_base: 12_000_00,
+			base_currency: 'TRY',
+			fx_rate: null,
+			fx_dated: null,
+			status: 'accrued',
+			earned_on: isoDay(-7),
+			paid_on: null,
+			note: null
+		}),
+		row({
+			beneficiary_contact_id: sehmuz.id,
+			beneficiary_display_name: sehmuz.display_name,
+			case_contact_id: null,
+			case_display_name: null,
+			source_transaction_id: null,
+			amount: 2_000_00,
+			currency: 'TRY',
+			amount_base: 2_000_00,
+			base_currency: 'TRY',
+			fx_rate: null,
+			fx_dated: null,
+			status: 'cancelled',
+			earned_on: isoDay(-30),
+			paid_on: null,
+			note: null
+		})
+	];
 }
 
 function makeWebhookSubscriptions(): WebhookSubscription[] {
@@ -1189,6 +1306,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			webhookSubscriptions: [],
 			incentiveFiles: [],
 			incentiveDeadlineDays: 180,
+			commissionEntries: [],
 			aiCorrections: [],
 			trustScore: { checks: [] },
 			aiPrompt: defaultWhatsappAiPrompt(),
@@ -1486,6 +1604,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		webhookSubscriptions: makeWebhookSubscriptions(),
 		incentiveFiles: makeIncentiveFiles(contacts),
 		incentiveDeadlineDays: 180,
+		commissionEntries: makeCommissionEntries(contacts),
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },
 		aiPrompt: defaultWhatsappAiPrompt(),

@@ -66,6 +66,7 @@ import {
 	type Appointment,
 	type AppointmentTypeSetting,
 	type ApproveDraftsResponse,
+	type CommissionEntry,
 	type Contact,
 	type ContactStatus,
 	type ContactType,
@@ -2304,6 +2305,192 @@ export const handlers = [
 		if (idx < 0) return notFound('Teşvik dosyası bulunamadı');
 		store.incentiveFiles.splice(idx, 1);
 		return HttpResponse.json({ id: params.id, deleted: true });
+	}),
+
+	http.get('/v1/commissions', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const status = url.searchParams.get('status');
+		const beneficiary = url.searchParams.get('beneficiary_contact_id');
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+
+		let items = store.commissionEntries.filter((e) => e.tenant_id === store.tenant.id);
+		if (status) items = items.filter((e) => e.status === status);
+		if (beneficiary) items = items.filter((e) => e.beneficiary_contact_id === beneficiary);
+		if (from) items = items.filter((e) => e.earned_on >= from);
+		if (to) items = items.filter((e) => e.earned_on <= to);
+		items.sort((a, b) => b.earned_on.localeCompare(a.earned_on) || b.id.localeCompare(a.id));
+
+		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
+	}),
+
+	http.post('/v1/commissions', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as {
+			beneficiary_contact_id?: string;
+			case_contact_id?: string | null;
+			source_transaction_id?: string | null;
+			amount?: number;
+			currency?: string;
+			amount_base?: number | null;
+			base_currency?: string | null;
+			fx_rate?: number | null;
+			fx_dated?: string | null;
+			status?: 'accrued' | 'paid' | 'cancelled';
+			earned_on?: string;
+			paid_on?: string | null;
+			note?: string | null;
+		};
+		const beneficiary = store.contacts.find((c) => c.id === body.beneficiary_contact_id);
+		if (!beneficiary || !body.earned_on || !body.amount || body.amount <= 0) {
+			return badRequest('Geçersiz hakediş satırı');
+		}
+		const caseContact = body.case_contact_id
+			? store.contacts.find((c) => c.id === body.case_contact_id)
+			: undefined;
+		const currency = (body.currency ?? store.tenant.base_currency) as CommissionEntry['currency'];
+		const tenantBase = store.tenant.base_currency;
+		let amountBase = body.amount_base ?? null;
+		let baseCurrency = (body.base_currency ?? null) as CommissionEntry['base_currency'];
+		if (amountBase === null && currency === tenantBase) {
+			amountBase = body.amount;
+			baseCurrency = tenantBase;
+		}
+		let status = body.status ?? 'accrued';
+		let paidOn = body.paid_on ?? null;
+		if (status === 'paid' && !paidOn) {
+			paidOn = new Date().toISOString().slice(0, 10);
+		}
+		const now = new Date().toISOString();
+		const created: CommissionEntry = {
+			id: crypto.randomUUID(),
+			tenant_id: store.tenant.id,
+			beneficiary_contact_id: beneficiary.id,
+			beneficiary_display_name: beneficiary.display_name,
+			case_contact_id: caseContact?.id ?? null,
+			case_display_name: caseContact?.display_name ?? null,
+			source_transaction_id: body.source_transaction_id ?? null,
+			amount: body.amount,
+			currency,
+			amount_base: amountBase,
+			base_currency: baseCurrency,
+			fx_rate: body.fx_rate ?? null,
+			fx_dated: body.fx_dated ?? null,
+			status,
+			earned_on: body.earned_on,
+			paid_on: paidOn,
+			note: body.note ?? null,
+			created_at: now,
+			updated_at: now
+		};
+		store.commissionEntries.push(created);
+		return HttpResponse.json(created, { status: 201 });
+	}),
+
+	http.patch('/v1/commissions/:id', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.commissionEntries.findIndex(
+			(e) => e.id === params.id && e.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Hakediş satırı bulunamadı');
+		const body = (await request.json()) as {
+			status?: CommissionEntry['status'];
+			paid_on?: string | null;
+			amount?: number;
+			note?: string | null;
+		};
+		const current = store.commissionEntries[idx]!;
+		const nextStatus = body.status ?? current.status;
+		let paidOn = 'paid_on' in body ? (body.paid_on ?? null) : current.paid_on;
+		if (nextStatus === 'paid' && !paidOn) {
+			paidOn = new Date().toISOString().slice(0, 10);
+		}
+		const nextAmount = body.amount ?? current.amount;
+		let amountBase = current.amount_base;
+		if (
+			body.amount !== undefined &&
+			current.currency === store.tenant.base_currency &&
+			(current.amount_base == null || current.base_currency === store.tenant.base_currency)
+		) {
+			amountBase = nextAmount;
+		}
+		const updated: CommissionEntry = {
+			...current,
+			status: nextStatus,
+			paid_on: paidOn,
+			amount: nextAmount,
+			amount_base: amountBase,
+			note: 'note' in body ? (body.note ?? null) : current.note,
+			updated_at: new Date().toISOString()
+		};
+		store.commissionEntries[idx] = updated;
+		return HttpResponse.json(updated);
+	}),
+
+	http.delete('/v1/commissions/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.commissionEntries.findIndex(
+			(e) => e.id === params.id && e.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Hakediş satırı bulunamadı');
+		store.commissionEntries.splice(idx, 1);
+		return HttpResponse.json({ id: params.id, deleted: true });
+	}),
+
+	http.get('/v1/reports/commission-summary', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const tenantBase = store.tenant.base_currency;
+		const map = new Map<
+			string,
+			{
+				beneficiary_contact_id: string;
+				beneficiary_display_name: string;
+				accrued_base: number;
+				paid_base: number;
+				entry_count: number;
+			}
+		>();
+		let missingFxCount = 0;
+
+		for (const entry of store.commissionEntries) {
+			if (entry.tenant_id !== store.tenant.id) continue;
+			if (entry.status === 'cancelled') continue;
+
+			let base: number | null = null;
+			if (entry.currency === tenantBase) {
+				base = entry.amount_base ?? entry.amount;
+			} else if (entry.amount_base != null && entry.base_currency === tenantBase) {
+				base = entry.amount_base;
+			}
+
+			const cur = map.get(entry.beneficiary_contact_id) ?? {
+				beneficiary_contact_id: entry.beneficiary_contact_id,
+				beneficiary_display_name: entry.beneficiary_display_name,
+				accrued_base: 0,
+				paid_base: 0,
+				entry_count: 0
+			};
+			cur.entry_count += 1;
+			if (base == null) {
+				missingFxCount += 1;
+			} else if (entry.status === 'accrued') {
+				cur.accrued_base += base;
+			} else if (entry.status === 'paid') {
+				cur.paid_base += base;
+			}
+			map.set(entry.beneficiary_contact_id, cur);
+		}
+
+		const items = [...map.values()]
+			.map((row) => ({
+				...row,
+				open_base: row.accrued_base - row.paid_base
+			}))
+			.filter((row) => row.open_base !== 0)
+			.sort((a, b) => Math.abs(b.open_base) - Math.abs(a.open_base));
+
+		return HttpResponse.json({ items, missing_fx_count: missingFxCount });
 	}),
 
 	http.get('/v1/settings/ai-prompt', ({ request }) => {

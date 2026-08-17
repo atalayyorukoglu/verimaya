@@ -49,6 +49,10 @@ export function queryKeys(scope: QueryScope) {
 			all: () => k('incentives'),
 			list: (params: Params = {}) => k('incentives', params)
 		},
+		commissions: {
+			all: () => k('commissions'),
+			list: (params: Params = {}) => k('commissions', params)
+		},
 		contacts: {
 			all: () => k('contacts'),
 			list: (params: Params = {}) => k('contacts', params),
@@ -101,7 +105,8 @@ export function queryKeys(scope: QueryScope) {
 			consistency: (params: Params) => k('reports', 'consistency', params),
 			transactionDuplicates: (params: Params) => k('reports', 'transaction-duplicates', params),
 			untouchedContacts: (params: Params) => k('reports', 'untouched-contacts', params),
-			balances: () => k('reports', 'balances')
+			balances: () => k('reports', 'balances'),
+			commissionSummary: () => k('reports', 'commission-summary')
 		},
 		scorecard: {
 			current: () => k('scorecard', 'current'),

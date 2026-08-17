@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { contactListSortKeys } from './contact-list-sort.js';
 import { appointmentStatusSchema } from './appointment.js';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
+import { commissionEntryStatusSchema } from './commission.js';
 import { incentiveFileStatusSchema } from './incentive-file.js';
 import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
 
@@ -68,6 +69,21 @@ export const incentiveFileListQuerySchema = cursorPageParams
 
 export type IncentiveFileListQuery = z.infer<typeof incentiveFileListQuerySchema>;
 
+/**
+ * Commission entries: default order is earned date (`earned_on DESC, id DESC`).
+ * `from`/`to` filter inclusive calendar days on `earned_on`.
+ */
+export const commissionEntryListQuerySchema = cursorPageParams
+	.extend({
+		beneficiary_contact_id: uuid.optional(),
+		status: commissionEntryStatusSchema.optional(),
+		from: isoDate.optional(),
+		to: isoDate.optional()
+	})
+	.strict();
+
+export type CommissionEntryListQuery = z.infer<typeof commissionEntryListQuerySchema>;
+
 export const contactListQuerySchema = searchableListParams
 	.extend({
 		type_id: uuid.optional()
@@ -89,6 +105,8 @@ export type ContactListQuery = z.infer<typeof contactListQuerySchema>;
  *   See `compareByOccurredOnDesc`.
  * - `GET /v1/incentives`: urgency order (`deadline_at` asc, `id` asc).
  *   See `compareByDeadlineAtAsc`.
+ * - `GET /v1/commissions`: earned date order (`earned_on` desc, `id` desc).
+ *   See `compareByEarnedOnDesc`.
  * - `GET /v1/contacts`: phonebook order (`last_name` asc nulls last, `first_name`
  *   asc nulls last, `id` asc). Display stays Ad Soyad (`display_name`); only the
  *   list order is by surname. See `compareByLastNameAsc`.
@@ -122,6 +140,14 @@ export function compareByDeadlineAtAsc<T extends { deadline_at: string; id: stri
 	b: T
 ): number {
 	return a.deadline_at.localeCompare(b.deadline_at) || a.id.localeCompare(b.id);
+}
+
+/** Commission entries list order / MSW parity (`earned_on DESC, id DESC`). */
+export function compareByEarnedOnDesc<T extends { earned_on: string; id: string }>(
+	a: T,
+	b: T
+): number {
+	return b.earned_on.localeCompare(a.earned_on) || b.id.localeCompare(a.id);
 }
 
 /** Nullable text ASC with NULLS LAST (PostgreSQL ASC default is NULLS FIRST — do not rely on it). */

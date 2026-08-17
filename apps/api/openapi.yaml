@@ -3713,6 +3713,484 @@ paths:
           required: true
           schema:
             type: string
+  /commissions:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        beneficiary_contact_id:
+                          type: string
+                          format: uuid
+                        beneficiary_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        case_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        case_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        source_transaction_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        amount:
+                          type: integer
+                          exclusiveMinimum: true
+                          minimum: 0
+                        currency:
+                          type: string
+                          enum:
+                            - TRY
+                            - GBP
+                            - EUR
+                            - USD
+                        amount_base:
+                          type: integer
+                          minimum: 0
+                          nullable: true
+                        base_currency:
+                          type: string
+                          enum:
+                            - TRY
+                            - GBP
+                            - EUR
+                            - USD
+                          nullable: true
+                        fx_rate:
+                          type: number
+                          exclusiveMinimum: true
+                          minimum: 0
+                          nullable: true
+                        fx_dated:
+                          type: string
+                          pattern: ^\d{4}-\d{2}-\d{2}$
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                            - accrued
+                            - paid
+                            - cancelled
+                        earned_on:
+                          type: string
+                          pattern: ^\d{4}-\d{2}-\d{2}$
+                        paid_on:
+                          type: string
+                          pattern: ^\d{4}-\d{2}-\d{2}$
+                          nullable: true
+                        note:
+                          type: string
+                          maxLength: 8000
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - beneficiary_contact_id
+                        - beneficiary_display_name
+                        - case_contact_id
+                        - case_display_name
+                        - source_transaction_id
+                        - amount
+                        - currency
+                        - amount_base
+                        - base_currency
+                        - fx_rate
+                        - fx_dated
+                        - status
+                        - earned_on
+                        - paid_on
+                        - note
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                  next_cursor:
+                    type: string
+                    nullable: true
+                  total_count:
+                    type: integer
+                    minimum: 0
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  beneficiary_contact_id:
+                    type: string
+                    format: uuid
+                  beneficiary_display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  case_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  case_display_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  source_transaction_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  amount:
+                    type: integer
+                    exclusiveMinimum: true
+                    minimum: 0
+                  currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                  amount_base:
+                    type: integer
+                    minimum: 0
+                    nullable: true
+                  base_currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                    nullable: true
+                  fx_rate:
+                    type: number
+                    exclusiveMinimum: true
+                    minimum: 0
+                    nullable: true
+                  fx_dated:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                      - accrued
+                      - paid
+                      - cancelled
+                  earned_on:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  paid_on:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                    nullable: true
+                  note:
+                    type: string
+                    maxLength: 8000
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - beneficiary_contact_id
+                  - beneficiary_display_name
+                  - case_contact_id
+                  - case_display_name
+                  - source_transaction_id
+                  - amount
+                  - currency
+                  - amount_base
+                  - base_currency
+                  - fx_rate
+                  - fx_dated
+                  - status
+                  - earned_on
+                  - paid_on
+                  - note
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                beneficiary_contact_id:
+                  type: string
+                  format: uuid
+                case_contact_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                source_transaction_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                amount:
+                  type: integer
+                  exclusiveMinimum: true
+                  minimum: 0
+                currency:
+                  type: string
+                  enum:
+                    - TRY
+                    - GBP
+                    - EUR
+                    - USD
+                  default: TRY
+                amount_base:
+                  type: integer
+                  minimum: 0
+                  nullable: true
+                base_currency:
+                  type: string
+                  enum:
+                    - TRY
+                    - GBP
+                    - EUR
+                    - USD
+                  nullable: true
+                fx_rate:
+                  type: number
+                  exclusiveMinimum: true
+                  minimum: 0
+                  nullable: true
+                fx_dated:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+                  nullable: true
+                status:
+                  type: string
+                  enum:
+                    - accrued
+                    - paid
+                    - cancelled
+                earned_on:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+                paid_on:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+                  nullable: true
+                note:
+                  type: string
+                  maxLength: 8000
+                  nullable: true
+              required:
+                - beneficiary_contact_id
+                - amount
+                - earned_on
+              additionalProperties: false
+  /commissions/{id}:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  beneficiary_contact_id:
+                    type: string
+                    format: uuid
+                  beneficiary_display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  case_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  case_display_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  source_transaction_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  amount:
+                    type: integer
+                    exclusiveMinimum: true
+                    minimum: 0
+                  currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                  amount_base:
+                    type: integer
+                    minimum: 0
+                    nullable: true
+                  base_currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                    nullable: true
+                  fx_rate:
+                    type: number
+                    exclusiveMinimum: true
+                    minimum: 0
+                    nullable: true
+                  fx_dated:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                      - accrued
+                      - paid
+                      - cancelled
+                  earned_on:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  paid_on:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                    nullable: true
+                  note:
+                    type: string
+                    maxLength: 8000
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - beneficiary_contact_id
+                  - beneficiary_display_name
+                  - case_contact_id
+                  - case_display_name
+                  - source_transaction_id
+                  - amount
+                  - currency
+                  - amount_base
+                  - base_currency
+                  - fx_rate
+                  - fx_dated
+                  - status
+                  - earned_on
+                  - paid_on
+                  - note
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - accrued
+                    - paid
+                    - cancelled
+                paid_on:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+                  nullable: true
+                amount:
+                  type: integer
+                  exclusiveMinimum: true
+                  minimum: 0
+                note:
+                  type: string
+                  maxLength: 8000
+                  nullable: true
+              additionalProperties: false
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  deleted:
+                    type: boolean
+                    enum:
+                      - true
+                required:
+                  - id
+                  - deleted
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /fx/rate:
     get:
       responses:
@@ -10057,6 +10535,52 @@ paths:
                       additionalProperties: false
                 required:
                   - items
+                additionalProperties: false
+  /reports/commission-summary:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        beneficiary_contact_id:
+                          type: string
+                          format: uuid
+                        beneficiary_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        accrued_base:
+                          type: integer
+                        paid_base:
+                          type: integer
+                        open_base:
+                          type: integer
+                        entry_count:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - beneficiary_contact_id
+                        - beneficiary_display_name
+                        - accrued_base
+                        - paid_base
+                        - open_base
+                        - entry_count
+                      additionalProperties: false
+                  missing_fx_count:
+                    type: integer
+                    minimum: 0
+                required:
+                  - items
+                  - missing_fx_count
                 additionalProperties: false
   /reports/appointment-metrics:
     get:

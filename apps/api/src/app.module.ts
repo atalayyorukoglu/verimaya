@@ -11,6 +11,7 @@ import { MembersModule } from "./members/members.module";
 import { TenantsModule } from "./tenants/tenants.module";
 import { TransactionsModule } from "./transactions/transactions.module";
 import { IncentivesModule } from "./incentives/incentives.module";
+import { CommissionsModule } from "./commissions/commissions.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
 import { WhatsappModule } from "./whatsapp/whatsapp.module";
 import { SettingsModule } from "./settings/settings.module";
@@ -47,6 +48,7 @@ import { DataDeleteModule } from "./data-delete/data-delete.module";
     AppointmentsModule,
     TransactionsModule,
     IncentivesModule,
+    CommissionsModule,
     FxModule,
     WebhooksModule,
     WhatsappModule,

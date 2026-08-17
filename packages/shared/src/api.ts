@@ -51,6 +51,8 @@ export const apiPaths = {
 	transactionsAuditDraft: `${API_V1_PREFIX}/transactions/audit-draft`,
 	incentives: `${API_V1_PREFIX}/incentives`,
 	incentive: (id: string) => `${API_V1_PREFIX}/incentives/${id}`,
+	commissions: `${API_V1_PREFIX}/commissions`,
+	commission: (id: string) => `${API_V1_PREFIX}/commissions/${id}`,
 	fxRate: (params: { from: string; to: string; on: string }) => {
 		const url = new URL(`${API_V1_PREFIX}/fx/rate`, 'http://local');
 		url.searchParams.set('from', params.from);
@@ -146,6 +148,7 @@ export const apiPaths = {
 	reportsMonthly: `${API_V1_PREFIX}/reports/monthly`,
 	reportsContactDistribution: `${API_V1_PREFIX}/reports/contact-distribution`,
 	reportsBalances: `${API_V1_PREFIX}/reports/balances`,
+	reportsCommissionSummary: `${API_V1_PREFIX}/reports/commission-summary`,
 	reportsAppointmentMetrics: `${API_V1_PREFIX}/reports/appointment-metrics`,
 	reportsConsistency: `${API_V1_PREFIX}/reports/consistency`,
 	reportsTransactionDuplicates: `${API_V1_PREFIX}/reports/transaction-duplicates`
@@ -161,6 +164,8 @@ export type ListQueryParams = {
 	/** G-05r: appointment role-agnostic contact filter */
 	contact_involves?: string | null;
 	case_contact_id?: string | null;
+	/** Commission entries: filter by beneficiary (clinic / referrer / sub-agency). */
+	beneficiary_contact_id?: string | null;
 	type_id?: string | null;
 	kind?: string;
 	status?: string;
@@ -186,6 +191,9 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
 	if (params?.contact_involves) url.searchParams.set('contact_involves', params.contact_involves);
 	if (params?.case_contact_id) url.searchParams.set('case_contact_id', params.case_contact_id);
+	if (params?.beneficiary_contact_id) {
+		url.searchParams.set('beneficiary_contact_id', params.beneficiary_contact_id);
+	}
 	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
 	if (params?.kind) url.searchParams.set('kind', params.kind);
 	if (params?.status) url.searchParams.set('status', params.status);
@@ -218,6 +226,13 @@ import {
 	incentiveFileSchema,
 	incentiveFileUpdateSchema
 } from './incentive-file.js';
+import {
+	commissionEntryCreateSchema,
+	commissionEntryListPageSchema,
+	commissionEntrySchema,
+	commissionEntryUpdateSchema,
+	commissionSummarySchema
+} from './commission.js';
 import {
 	incentiveDeadlineSettingsSchema,
 	incentiveDeadlineSettingsUpdateSchema
@@ -493,6 +508,20 @@ export const apiContract = {
 	'DELETE /v1/incentives/:id': {
 		response: softDeleteResultSchema
 	},
+	'GET /v1/commissions': {
+		response: commissionEntryListPageSchema
+	},
+	'POST /v1/commissions': {
+		body: commissionEntryCreateSchema,
+		response: commissionEntrySchema
+	},
+	'PATCH /v1/commissions/:id': {
+		body: commissionEntryUpdateSchema,
+		response: commissionEntrySchema
+	},
+	'DELETE /v1/commissions/:id': {
+		response: softDeleteResultSchema
+	},
 	'GET /v1/fx/rate': {
 		query: fxRateQuerySchema,
 		response: fxRateResponseSchema
@@ -704,6 +733,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/balances': {
 		response: reportBalancesSchema
+	},
+	'GET /v1/reports/commission-summary': {
+		response: commissionSummarySchema
 	},
 	'GET /v1/reports/appointment-metrics': {
 		response: reportAppointmentMetricsSchema

@@ -1,8 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, Contact, ContactType, FinanceCategory, IncentiveFile, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactType, FinanceCategory, IncentiveFile, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import {
 	calendarDaysBetween,
+	commissionEntryStatusSchema,
 	incentiveFileStatusSchema,
 	utcTodayIsoDate
 } from '@verimaya/shared';
@@ -13,6 +14,7 @@ import type { AppointmentTypeRow } from '../db/schema/appointment-types';
 import type { AppointmentRow } from '../db/schema/appointments';
 import type { AuditLogRow } from '../db/schema/audit';
 import type { CaseNoteRow } from '../db/schema/case-notes';
+import type { CommissionEntryRow } from '../db/schema/commission-entries';
 import type { ContactTypeRow } from '../db/schema/contact-types';
 import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
@@ -139,6 +141,34 @@ export function toIncentiveFile(row: IncentiveFileRow, today: string = utcTodayI
 		submitted_at: row.submittedAt,
 		note: row.note,
 		documents: row.documents ?? [],
+		created_at: toIsoDateTime(row.createdAt),
+		updated_at: toIsoDateTime(row.updatedAt)
+	};
+}
+
+export function toCommissionEntry(
+	row: CommissionEntryRow,
+	beneficiaryDisplayName: string,
+	caseDisplayName: string | null
+): CommissionEntry {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		beneficiary_contact_id: row.beneficiaryContactId,
+		beneficiary_display_name: beneficiaryDisplayName,
+		case_contact_id: row.caseContactId,
+		case_display_name: caseDisplayName,
+		source_transaction_id: row.sourceTransactionId,
+		amount: row.amount,
+		currency: row.currency as CommissionEntry['currency'],
+		amount_base: row.amountBase,
+		base_currency: row.baseCurrency as CommissionEntry['base_currency'],
+		fx_rate: row.fxRate,
+		fx_dated: row.fxDated,
+		status: commissionEntryStatusSchema.parse(row.status),
+		earned_on: row.earnedOn,
+		paid_on: row.paidOn,
+		note: row.note,
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)
 	};
