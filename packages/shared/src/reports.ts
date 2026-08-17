@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDate, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
+import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
 import { contactStatusSchema } from './contact.js';
 import { transactionKindSchema } from './transaction.js';
 
@@ -280,6 +280,62 @@ export const reportTransactionDuplicatesSchema = z.object({
 });
 export type ReportTransactionDuplicates = z.infer<typeof reportTransactionDuplicatesSchema>;
 
+/**
+ * Temassız kişiler — "kimseye dokunulmamış" listesi (ihtiyaç haritası §2.2 / §3.5).
+ *
+ * Dokunuş = kişiyle ilgili gerçekleşmiş bir iş: randevu, işlem (kendi veya vaka tarafı),
+ * vaka notu. Kişinin kendi `created_at`'i taban kabul edilir — dün açılmış kayıt
+ * "90 gündür temassız" sayılmaz.
+ *
+ * GELECEK TARİHLİ randevu de dokunuş sayılır ve kişiyi listeden düşürür: önümüzdeki
+ * hafta randevusu olan hasta ihmal edilmiş değildir, aktif takiptedir.
+ */
+export const reportUntouchedContactsParams = z
+	.object({
+		/** Eşik: bu kadar gündür dokunulmamışlar listelenir. */
+		days: z.coerce.number().int().min(1).max(3650).default(30),
+		/** Kişi türü filtresi; boşsa tüm türler. Panel varsayılanı "Hasta". */
+		contact_type: z.string().trim().min(1).max(120).optional(),
+		limit: z.coerce.number().int().min(1).max(200).default(50)
+	})
+	.strict();
+export type ReportUntouchedContactsParams = z.infer<typeof reportUntouchedContactsParams>;
+
+/** Son dokunuşun nereden geldiği — listede "neden bu tarih" sorusunu cevaplar. */
+export const untouchedActivitySourceSchema = z.enum([
+	'appointment',
+	'transaction',
+	'case_note',
+	/** Hiç aktivite yok; taban kişinin oluşturulma tarihi. */
+	'created'
+]);
+export type UntouchedActivitySource = z.infer<typeof untouchedActivitySourceSchema>;
+
+export const reportUntouchedContactRowSchema = z.object({
+	contact_id: uuid,
+	display_name: z.string(),
+	contact_type_name: z.string(),
+	phone: z.string().nullable(),
+	email: z.string().nullable(),
+	last_activity_at: isoDateTime,
+	last_activity_source: untouchedActivitySourceSchema,
+	days_since: z.number().int().nonnegative()
+});
+export type ReportUntouchedContactRow = z.infer<typeof reportUntouchedContactRowSchema>;
+
+export const reportUntouchedContactsSchema = z.object({
+	/** Eşikten bağımsız sabit kovalar — "38 temassız, 12'si 60 günü geçti" cümlesi için. */
+	buckets: z.object({
+		d30: z.number().int().nonnegative(),
+		d60: z.number().int().nonnegative(),
+		d90: z.number().int().nonnegative()
+	}),
+	/** Eşiği geçen toplam kişi sayısı (liste `limit` ile kırpılmış olabilir). */
+	total: z.number().int().nonnegative(),
+	items: z.array(reportUntouchedContactRowSchema)
+});
+export type ReportUntouchedContacts = z.infer<typeof reportUntouchedContactsSchema>;
+
 export type ReportUrlPath =
 	| 'summary'
 	| 'by-category'
@@ -290,7 +346,8 @@ export type ReportUrlPath =
 	| 'balances'
 	| 'appointment-metrics'
 	| 'consistency'
-	| 'transaction-duplicates';
+	| 'transaction-duplicates'
+	| 'untouched-contacts';
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(

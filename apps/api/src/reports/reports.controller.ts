@@ -3,7 +3,8 @@ import {
 	marketingReportParams,
 	reportByCategoryDetailParams,
 	reportPeriodParams,
-	reportTransactionDuplicatesParams
+	reportTransactionDuplicatesParams,
+	reportUntouchedContactsParams
 } from '@verimaya/shared';
 import type { FastifyRequest } from 'fastify';
 import { ActiveOrgGuard, getActiveOrgId } from '../common/active-org.guard';
@@ -133,5 +134,16 @@ export class ReportsController {
 	@RequireOrgPermission('finance', 'read')
 	balances(@Req() req: FastifyRequest) {
 		return this.reportsService.balances(getActiveOrgId(req));
+	}
+
+	/**
+	 * Temassız kişiler. İzin `contact:read` — bu bir kişi listesi, finans raporu değil;
+	 * temsilcinin (agent) de görmesi gerekir, finans görmesi gerekmez.
+	 */
+	@Get('untouched-contacts')
+	@RequireOrgPermission('contact', 'read')
+	untouchedContacts(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(reportUntouchedContactsParams, query, req);
+		return this.reportsService.untouchedContacts(getActiveOrgId(req), params);
 	}
 }

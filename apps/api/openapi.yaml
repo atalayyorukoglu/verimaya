@@ -9861,3 +9861,79 @@ paths:
                   - items
                   - total_groups
                 additionalProperties: false
+  /reports/untouched-contacts:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  buckets:
+                    type: object
+                    properties:
+                      d30:
+                        type: integer
+                        minimum: 0
+                      d60:
+                        type: integer
+                        minimum: 0
+                      d90:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - d30
+                      - d60
+                      - d90
+                    additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        contact_id:
+                          type: string
+                          format: uuid
+                        display_name:
+                          type: string
+                        contact_type_name:
+                          type: string
+                        phone:
+                          type: string
+                          nullable: true
+                        email:
+                          type: string
+                          nullable: true
+                        last_activity_at:
+                          type: string
+                          format: date-time
+                        last_activity_source:
+                          type: string
+                          enum:
+                            - appointment
+                            - transaction
+                            - case_note
+                            - created
+                        days_since:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - contact_id
+                        - display_name
+                        - contact_type_name
+                        - phone
+                        - email
+                        - last_activity_at
+                        - last_activity_source
+                        - days_since
+                      additionalProperties: false
+                required:
+                  - buckets
+                  - total
+                  - items
+                additionalProperties: false

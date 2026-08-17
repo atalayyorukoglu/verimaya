@@ -253,6 +253,25 @@
 
 ---
 
+## Acente değer katmanı — sitede vaat edilen, kodda olmayan
+
+> **Neden ayrı blok:** Tracker paritesi kapandı (2026-08-14 listesindeki 7 açık kalemin hepsi
+> kapalı) — yani "eski sistemde vardı bizde yok" işi bitti. Kalan açık artık başka bir cins:
+> **ana sayfanın vaat ettiği ama üründe karşılığı olmayan** yüzeyler. Zincirin sekiz halkası
+> arasında Hakediş ve Teşvik var; temsilî müdahale listesinde ikisi de örnek satır olarak
+> geçiyor. Bunlar kapanmadan "reklamdan tahsilata tek zincir" iddiası eksik kalır.
+>
+> Sıra değer çapasına göre; kod büyüklüğüne göre değil.
+
+| # | İş | Neden bu sırada | Durum |
+|---|---|---|---|
+| 1 | **Teşvik dosya + süre takibi** — ödeme anında sayaç, T-60 alarm, belge kontrol listesi | İhtiyaç haritası §9: **en yüksek değer çapası**; kaçırılan başvuru tartışmasız kayıp para, üst limit yıllık 6M TL. Hiçbir rakipte yok. ⚠️ Verimaya kayıt tutar, **danışmanlık vermez** (sözleşme Madde 3.7) | ⬜ |
+| 2 | **Hakediş / komisyon takibi** (PRODUCT-01) | İhtiyaç haritası §8: incelenen 5 rakibin **hiçbirinde yok**; acente segmentinin asıl ayrımı. Altyapı yarı hazır (`P2pNetBalances` net bakiye motoru) | ⬜ |
+| 3 | **Temassız kişiler listesi** | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
+| 4 | **Kohort görünümü** — reklam ayı ≠ tahsilat ayı | İhtiyaç haritası §1.2: bu olmadan "hangi kampanya para getirdi" cevabı yanlış çıkıyor. Rapordaki mevcut `cohort` **kaynak bazlı**, tarih bazlı değil — karıştırma | ⬜ |
+
+---
+
 ## AI katmanı (AI-01…AI-07) — pilot sonrası, freeze kapsamında
 
 > Karar metni, gerekçe ve 13 firmalık rakip AI taraması: Obsidian
@@ -366,6 +385,21 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   vaadi: sayfa "sistem okur, siz onaylarsınız" diyor, ürün karşılığı henüz yok (bkz. AI katmanı).
   `nginx.conf` CSP hash'i commit'te güncellendi (`03c211f`) — atlanırsa canlı hub kırılırdı.
   `03c211f` `e5e512d`
+- **Temassız kişiler listesi ✅** (2026-08-17) — `GET /v1/reports/untouched-contacts`
+  (`days` eşiği + `contact_type` filtresi) ve panel `/reports/untouched`. "Dokunuş" =
+  randevu · işlem (`contact_id` **veya** `case_contact_id`) · vaka notu; taban kişinin
+  `created_at`'i. Liste en eskisi üstte; her satırda son hareketin **kaynağı** rozetle
+  yazılı ki "neden bu tarih" sorulmasın. 30/60/90 kovaları eşikten bağımsız, tam küme
+  üzerinden sayılıyor — "38 temassız, 12'si 60 günü geçti" cümlesi liste kırpılsa da doğru.
+  **Görüş:** İki bilinçli karar. (1) **Gelecek tarihli randevu dokunuş sayılır** ve kişiyi
+  listeden düşürür — önümüzdeki hafta randevusu olan hasta ihmal edilmiş değil, aktif
+  takiptedir. (2) İzin `contact:read`, `finance:read` değil: bu bir kişi listesi, finans
+  raporu değil; temsilcinin görmesi gerekir, finans görmesi gerekmez.
+  Testte her dokunuş kaynağı ayrı fixture ile sınandı (gelecek randevu, soft-delete
+  aktivite, vaka tarafı işlem, tür filtresi, tenant izolasyonu) — 6/6 yeşil.
+  **Yakalanan kusur:** panelde eşiği 60'a çekince "30 günü geçen" kutusu da düşüyordu;
+  sunucu doğruydu, MSW mock'u kovaları eşikten sonra sayıyordu. Tarayıcıda gözle
+  bakılmasaydı demo yanlış rakam gösterecekti.
 - **Güvenlik başlıkları canlıda denetlendi + eksikler kapandı ✅** (2026-08-17) — canlı
   `curl -I` denetimi: hub'da CSP + nosniff vardı, **HSTS hiç yoktu**; panel
   (`app.verimaya.com`) hiçbir güvenlik başlığı almıyordu. Sebep: `nginx.conf`'ta başlıklar

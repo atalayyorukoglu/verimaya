@@ -79,6 +79,7 @@ import {
 	type Tenant,
 	type Transaction,
 	type TransactionDraft,
+	type UntouchedActivitySource,
 	type WebhookSubscription
 } from '@verimaya/shared';
 import { amountInBase, paidAmountInBase } from '$lib/money-base';
@@ -1355,6 +1356,59 @@ export const handlers = [
 	http.get('/v1/reports/balances', ({ request }) => {
 		const store = getStore(scenarioFrom(request));
 		return HttpResponse.json(buildReportBalances(store));
+	}),
+
+	http.get('/v1/reports/untouched-contacts', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const days = Number(url.searchParams.get('days') ?? 30);
+		const contactType = url.searchParams.get('contact_type');
+		const limit = Number(url.searchParams.get('limit') ?? 50);
+		const now = Date.now();
+
+		// Sunucudaki türetimin sadeleştirilmiş hâli: son randevu / işlem / kayıt tarihi.
+		const rows = store.contacts
+			.filter((c) => c.tenant_id === store.tenant.id)
+			.filter((c) => !contactType || c.contact_type_name === contactType)
+			.map((c) => {
+				// Mock store soft-delete tutmuyor; sunucudaki `deleted_at is null`
+				// koşulunun karşılığı burada yok — demo verisinde silinmiş kayıt olmuyor.
+				const lastAppointment = store.appointments
+					.filter((a) => a.contact_id === c.id)
+					.map((a) => new Date(a.starts_at).getTime())
+					.sort((a, b) => b - a)[0];
+				const lastTransaction = store.transactions
+					.filter((tx) => tx.contact_id === c.id)
+					.map((tx) => new Date(tx.occurred_on).getTime())
+					.sort((a, b) => b - a)[0];
+				const created = new Date(c.created_at).getTime();
+				const candidates: Array<[number, UntouchedActivitySource]> = [[created, 'created']];
+				if (lastAppointment !== undefined) candidates.push([lastAppointment, 'appointment']);
+				if (lastTransaction !== undefined) candidates.push([lastTransaction, 'transaction']);
+				candidates.sort((a, b) => b[0] - a[0]);
+				const [lastAt, source] = candidates[0]!;
+				return {
+					contact_id: c.id,
+					display_name: c.display_name,
+					contact_type_name: c.contact_type_name,
+					phone: c.phone ?? null,
+					email: c.email ?? null,
+					last_activity_at: new Date(lastAt).toISOString(),
+					last_activity_source: source,
+					days_since: Math.floor((now - lastAt) / 86_400_000)
+				};
+			})
+			.sort((a, b) => b.days_since - a.days_since);
+
+		// Kovalar sunucudaki gibi eşikten BAĞIMSIZ: eşik 60'a çekilince
+		// "30 günü geçen" sayısı değişmemeli.
+		const countPast = (d: number) => rows.filter((r) => r.days_since >= d).length;
+		const matching = rows.filter((r) => r.days_since >= days);
+		return HttpResponse.json({
+			buckets: { d30: countPast(30), d60: countPast(60), d90: countPast(90) },
+			total: matching.length,
+			items: matching.slice(0, limit)
+		});
 	}),
 
 	http.get('/v1/reports/by-category', ({ request }) => {

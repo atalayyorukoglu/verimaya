@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		MarketingReport,
@@ -563,6 +564,16 @@
 				</div>
 			{/snippet}
 		</PageHeader>
+	</div>
+
+	<!-- Operasyonel liste: dönemden bağımsız, bu yüzden sekme değil ayrı sayfa. -->
+	<div class="mb-4">
+		<a
+			href={resolve('/reports/untouched')}
+			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+		>
+			{t('reports.untouched.title')} →
+		</a>
 	</div>
 
 	<!-- Dönem seçici -->

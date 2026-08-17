@@ -271,7 +271,8 @@ import {
 	reportMonthlySchema,
 	reportContactDistributionSchema,
 	reportSummarySchema,
-	reportTransactionDuplicatesSchema
+	reportTransactionDuplicatesSchema,
+	reportUntouchedContactsSchema
 } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 import { ghlConnectionStatus, ghlReconcileTriggerResult } from './ghl-connection.js';
@@ -670,6 +671,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/transaction-duplicates': {
 		response: reportTransactionDuplicatesSchema
+	},
+	'GET /v1/reports/untouched-contacts': {
+		response: reportUntouchedContactsSchema
 	}
 } as const;
 

@@ -37,7 +37,11 @@ import {
 	type ReportPeriodParams,
 	type ReportSummary,
 	type ReportTransactionDuplicates,
-	type ReportTransactionDuplicatesParams
+	type ReportTransactionDuplicatesParams,
+	type ReportUntouchedContacts,
+	type ReportUntouchedContactRow,
+	type ReportUntouchedContactsParams,
+	type UntouchedActivitySource
 } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
 import { adMetricsDaily, appointments, contacts, tenants, transactions } from '../db/schema';
@@ -1169,4 +1173,170 @@ export class ReportsService {
 		return { leads_count, treated_count, cohortBySource };
 	}
 
+	/**
+	 * Temassız kişiler — kimseye dokunulmamış listesi.
+	 *
+	 * "Son dokunuş" = kişiye bağlı gerçekleşmiş işlerin en yenisi:
+	 *   · randevu (`appointments.starts_at`, hasta tarafı `contact_id`)
+	 *   · işlem (`transactions.occurred_on`, `contact_id` VEYA `case_contact_id`)
+	 *   · vaka notu (`case_notes.created_at`)
+	 * Taban `contacts.created_at`: dün açılmış kayıt "90 gündür temassız" sayılamaz.
+	 *
+	 * GELECEK tarihli randevu bilinçli olarak dokunuş sayılır — `GREATEST` onu seçer,
+	 * `days_since` negatife düşer ve kişi eşiğin altında kalır. Önümüzdeki hafta randevusu
+	 * olan hasta ihmal edilmiş değil, aktif takiptedir.
+	 *
+	 * Kovalar (30/60/90) `limit`'ten bağımsız, tam küme üzerinden sayılır: liste ilk N kişiyi
+	 * gösterirken "38 temassız, 12'si 60 günü geçti" cümlesi doğru kalsın.
+	 */
+	async untouchedContacts(
+		tenantId: string,
+		params: ReportUntouchedContactsParams
+	): Promise<ReportUntouchedContacts> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const typeFilter = params.contact_type ?? null;
+
+			// Tek geçişte son aktivite: her kaynak için kişi bazlı MAX, sonra GREATEST.
+			// Alt sorgular ilgili tablonun (tenant_id, contact_id) indeksinden yararlanır.
+			const rows = await db.execute<{
+				contact_id: string;
+				display_name: string;
+				contact_type_name: string;
+				phone: string | null;
+				email: string | null;
+				last_activity_at: Date;
+				last_activity_source: UntouchedActivitySource;
+				days_since: number;
+			}>(sql`
+				with activity as (
+					select
+						c.id as contact_id,
+						c.display_name,
+						c.contact_type_name,
+						c.phone,
+						c.email,
+						c.created_at,
+						(
+							select max(a.starts_at) from appointments a
+							where a.contact_id = c.id and a.deleted_at is null
+						) as last_appointment,
+						(
+							select max(t.occurred_on)::timestamptz from transactions t
+							where (t.contact_id = c.id or t.case_contact_id = c.id)
+								and t.deleted_at is null
+						) as last_transaction,
+						(
+							select max(n.created_at) from case_notes n
+							where n.contact_id = c.id
+						) as last_note
+					from contacts c
+					where c.deleted_at is null
+						${typeFilter ? sql`and c.contact_type_name = ${typeFilter}` : sql``}
+				),
+				resolved as (
+					select
+						contact_id,
+						display_name,
+						contact_type_name,
+						phone,
+						email,
+						greatest(
+							created_at,
+							coalesce(last_appointment, created_at),
+							coalesce(last_transaction, created_at),
+							coalesce(last_note, created_at)
+						) as last_activity_at,
+						case
+							when last_appointment is not null and last_appointment >= coalesce(last_transaction, last_appointment)
+								and last_appointment >= coalesce(last_note, last_appointment)
+								and last_appointment >= created_at then 'appointment'
+							when last_transaction is not null and last_transaction >= coalesce(last_note, last_transaction)
+								and last_transaction >= created_at then 'transaction'
+							when last_note is not null and last_note >= created_at then 'case_note'
+							else 'created'
+						end as last_activity_source
+					from activity
+				)
+				select
+					contact_id,
+					display_name,
+					contact_type_name,
+					phone,
+					email,
+					last_activity_at,
+					last_activity_source,
+					floor(extract(epoch from (now() - last_activity_at)) / 86400)::int as days_since
+				from resolved
+				where last_activity_at < now() - make_interval(days => ${params.days})
+				order by last_activity_at asc
+				limit ${params.limit}
+			`);
+
+			// Kovalar ve toplam: aynı türetimin sayım hâli, limit uygulanmadan.
+			const [counts] = await db.execute<{
+				total: number;
+				d30: number;
+				d60: number;
+				d90: number;
+			}>(sql`
+				with activity as (
+					select
+						c.id as contact_id,
+						c.created_at,
+						(
+							select max(a.starts_at) from appointments a
+							where a.contact_id = c.id and a.deleted_at is null
+						) as last_appointment,
+						(
+							select max(t.occurred_on)::timestamptz from transactions t
+							where (t.contact_id = c.id or t.case_contact_id = c.id)
+								and t.deleted_at is null
+						) as last_transaction,
+						(
+							select max(n.created_at) from case_notes n
+							where n.contact_id = c.id
+						) as last_note
+					from contacts c
+					where c.deleted_at is null
+						${typeFilter ? sql`and c.contact_type_name = ${typeFilter}` : sql``}
+				),
+				resolved as (
+					select greatest(
+						created_at,
+						coalesce(last_appointment, created_at),
+						coalesce(last_transaction, created_at),
+						coalesce(last_note, created_at)
+					) as last_activity_at
+					from activity
+				)
+				select
+					count(*) filter (where last_activity_at < now() - make_interval(days => ${params.days}))::int as total,
+					count(*) filter (where last_activity_at < now() - interval '30 days')::int as d30,
+					count(*) filter (where last_activity_at < now() - interval '60 days')::int as d60,
+					count(*) filter (where last_activity_at < now() - interval '90 days')::int as d90
+				from resolved
+			`);
+
+			const items: ReportUntouchedContactRow[] = rows.map((row) => ({
+				contact_id: row.contact_id,
+				display_name: row.display_name,
+				contact_type_name: row.contact_type_name,
+				phone: row.phone,
+				email: row.email,
+				last_activity_at: new Date(row.last_activity_at).toISOString(),
+				last_activity_source: row.last_activity_source,
+				days_since: Number(row.days_since)
+			}));
+
+			return {
+				buckets: {
+					d30: Number(counts?.d30 ?? 0),
+					d60: Number(counts?.d60 ?? 0),
+					d90: Number(counts?.d90 ?? 0)
+				},
+				total: Number(counts?.total ?? 0),
+				items
+			};
+		});
+	}
 }
