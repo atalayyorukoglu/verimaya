@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import type {
-		Contact,
-		IncentiveDocumentItem,
-		IncentiveFile,
-		IncentiveFileCreate,
-		IncentiveFileStatus,
-		IncentiveFileUpdate
+	import {
+		INCENTIVE_DOCUMENT_LABEL_MAX,
+		INCENTIVE_DOCUMENTS_MAX,
+		newIncentiveDocumentKey,
+		type Contact,
+		type IncentiveDocumentItem,
+		type IncentiveFile,
+		type IncentiveFileCreate,
+		type IncentiveFileStatus,
+		type IncentiveFileUpdate
 	} from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import Combobox from '$lib/components/Combobox.svelte';
@@ -16,6 +19,8 @@
 	import { t } from '$lib/i18n/locale.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 
 	let {
 		open = $bindable(false),
@@ -60,6 +65,7 @@
 	let documents = $state<IncentiveDocumentItem[]>([]);
 	let deletePhase = $state<DeleteConfirmPhase>('form');
 	let hydratedFor = $state<string | null>(null);
+	const atDocumentLimit = $derived(documents.length >= INCENTIVE_DOCUMENTS_MAX);
 
 	const contactsQuery = createQuery(() => ({
 		queryKey: qs.keys.contacts.list({ limit: 100 }),
@@ -110,6 +116,15 @@
 		documents = next;
 	}
 
+	function addDoc() {
+		if (documents.length >= INCENTIVE_DOCUMENTS_MAX) return;
+		documents = [...documents, { key: newIncentiveDocumentKey(), label: '', done: false }];
+	}
+
+	function removeDoc(index: number) {
+		documents = documents.filter((_, i) => i !== index);
+	}
+
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (isEdit) {
@@ -117,7 +132,9 @@
 				status,
 				submitted_at: submitted_at.trim() ? submitted_at : null,
 				note: note.trim() ? note.trim() : null,
-				documents
+				documents: documents
+					.map((d) => ({ key: d.key, label: d.label.trim(), done: d.done }))
+					.filter((d) => d.label.length > 0)
 			};
 			await onsubmit(payload);
 			return;
@@ -206,14 +223,48 @@
 				<p class={labelClass}>{t('finance.incentives.form.documents')}</p>
 				<ul class="mt-1 flex flex-col gap-2">
 					{#each documents as doc, i (doc.key)}
-						<li>
-							<label class="flex items-center gap-2 text-sm text-text">
-								<input type="checkbox" checked={doc.done} onchange={() => toggleDoc(i)} />
-								{doc.label}
-							</label>
+						<li class="flex items-center gap-2">
+							<input
+								type="checkbox"
+								class="shrink-0"
+								checked={doc.done}
+								onchange={() => toggleDoc(i)}
+								aria-label={doc.label || t('finance.incentives.form.documentNamePlaceholder')}
+							/>
+							<input
+								type="text"
+								class={fieldClass}
+								bind:value={doc.label}
+								maxlength={INCENTIVE_DOCUMENT_LABEL_MAX}
+								placeholder={t('finance.incentives.form.documentNamePlaceholder')}
+								aria-label={t('finance.incentives.form.documentNamePlaceholder')}
+							/>
+							<button
+								type="button"
+								class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger"
+								aria-label={t('finance.incentives.form.removeDocument')}
+								onclick={() => removeDoc(i)}
+							>
+								<Trash2 class="size-3.5" />
+							</button>
 						</li>
 					{/each}
 				</ul>
+				<div class="mt-2">
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						disabled={atDocumentLimit}
+						onclick={addDoc}
+					>
+						<Plus class="size-3.5" />
+						{t('finance.incentives.form.addDocument')}
+					</Button>
+				</div>
+				{#if atDocumentLimit}
+					<p class="mt-1 text-xs text-text-muted">{t('finance.incentives.form.documentsMax')}</p>
+				{/if}
 			</div>
 		{/if}
 

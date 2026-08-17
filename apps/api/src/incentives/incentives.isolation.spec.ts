@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql as drizzleSql } from 'drizzle-orm';
 import { NotFoundException } from '@nestjs/common';
 import {
+	DEFAULT_INCENTIVE_DOCUMENTS,
 	addCalendarDays,
 	incentiveFileCreateSchema,
 	utcTodayIsoDate
@@ -247,6 +248,29 @@ describe('incentives tenant isolation', () => {
 		const ids = page.items.map((i) => i.id);
 		expect(ids).toContain(near.id);
 		expect(ids).not.toContain(farId);
+	});
+
+	it('PATCH documents persists add, rename, and delete', async () => {
+		const created = await withTenantSession(tenantA, (tdb) =>
+			incentivesService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				payment_date: '2026-06-01',
+				note: 'docs edit'
+			})
+		);
+		expect(created.documents).toEqual(DEFAULT_INCENTIVE_DOCUMENTS.map((d) => ({ ...d })));
+
+		const next = [
+			{ key: 'contract', label: 'Sözleşme (imzalı)', done: true },
+			{ key: 'bank_receipt', label: 'Banka dekontu', done: false }
+		];
+		const updated = await withTenantSession(tenantA, (tdb) =>
+			incentivesService.updateWithDb(tdb, created.id, { documents: next })
+		);
+		expect(updated.documents).toEqual(next);
+
+		const page = await incentivesService.list(tenantA, { limit: 100 });
+		expect(page.items.find((i) => i.id === created.id)?.documents).toEqual(next);
 	});
 
 	it('soft-deleted file disappears from list', async () => {

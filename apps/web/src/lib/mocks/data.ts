@@ -1,5 +1,9 @@
 import { faker } from '@faker-js/faker/locale/en';
-import { defaultWhatsappAiPrompt, emptyKnowledgeSections } from '@verimaya/shared';
+import {
+	DEFAULT_INCENTIVE_DOCUMENTS,
+	defaultWhatsappAiPrompt,
+	emptyKnowledgeSections
+} from '@verimaya/shared';
 import type {
 	AiCorrection,
 	AdMetric,
@@ -745,11 +749,7 @@ function makeIncentiveFiles(contacts: Contact[]): IncentiveFile[] {
 	const isoDay = (offsetDays: number) =>
 		new Date(Date.now() + offsetDays * 86_400_000).toISOString().slice(0, 10);
 	const docs = (doneCount: number) =>
-		['sozlesme', 'pasaport', 'fatura', 'dekont'].map((key, i) => ({
-			key,
-			label: key,
-			done: i < doneCount
-		}));
+		DEFAULT_INCENTIVE_DOCUMENTS.map((d, i) => ({ ...d, done: i < doneCount }));
 
 	return patients.map((c, i) => {
 		// i=0 süresi yaklaşan (bugün+25), i=1 süresi geçmiş, i=2 gönderilmiş

@@ -16,13 +16,41 @@ export const incentiveFileStatusSchema = z.enum([
 
 export type IncentiveFileStatus = z.infer<typeof incentiveFileStatusSchema>;
 
+export const INCENTIVE_DOCUMENT_LABEL_MAX = 120;
+export const INCENTIVE_DOCUMENTS_MAX = 30;
+
 export const incentiveDocumentItemSchema = z.object({
-	key: z.string().min(1).max(64),
-	label: z.string().min(1).max(255),
+	key: z.string().trim().min(1).max(64),
+	label: z.string().trim().min(1).max(INCENTIVE_DOCUMENT_LABEL_MAX),
 	done: z.boolean()
 });
 
 export type IncentiveDocumentItem = z.infer<typeof incentiveDocumentItemSchema>;
+
+export const incentiveDocumentsSchema = z
+	.array(incentiveDocumentItemSchema)
+	.max(INCENTIVE_DOCUMENTS_MAX)
+	.superRefine((docs, ctx) => {
+		const seen = new Set<string>();
+		for (const [index, item] of docs.entries()) {
+			if (seen.has(item.key)) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: 'Duplicate document key',
+					path: [index, 'key']
+				});
+				return;
+			}
+			seen.add(item.key);
+		}
+	});
+
+export type IncentiveDocuments = z.infer<typeof incentiveDocumentsSchema>;
+
+/** Unique per-file document row key (UUID, 36 chars, within key max 64). */
+export function newIncentiveDocumentKey(): string {
+	return crypto.randomUUID();
+}
 
 /** Neutral checklist seed — labels are user-editable records, not legal advice. */
 export const DEFAULT_INCENTIVE_DOCUMENTS: readonly IncentiveDocumentItem[] = [
@@ -48,7 +76,7 @@ export const incentiveFileSchema = z.object({
 	status: incentiveFileStatusSchema,
 	submitted_at: isoDate.nullable(),
 	note: z.string().max(8000).nullable(),
-	documents: z.array(incentiveDocumentItemSchema),
+	documents: incentiveDocumentsSchema,
 	created_at: isoDateTime,
 	updated_at: isoDateTime
 });
@@ -71,7 +99,7 @@ export const incentiveFileUpdateSchema = z
 		status: incentiveFileStatusSchema.optional(),
 		submitted_at: isoDate.nullable().optional(),
 		note: z.string().max(8000).nullable().optional(),
-		documents: z.array(incentiveDocumentItemSchema).optional()
+		documents: incentiveDocumentsSchema.optional()
 	})
 	.strict();
 

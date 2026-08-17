@@ -1,5 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import {
+	DEFAULT_INCENTIVE_DOCUMENTS,
+	incentiveFileUpdateSchema,
 	buildKnowledgeContext,
 	emptyKnowledgeSections,
 	findKnowledgePii,
@@ -2411,7 +2413,7 @@ export const handlers = [
 			status: 'open' as const,
 			submitted_at: null,
 			note: body.note ?? null,
-			documents: [],
+			documents: DEFAULT_INCENTIVE_DOCUMENTS.map((d) => ({ ...d })),
 			created_at: now,
 			updated_at: now
 		};
@@ -2425,16 +2427,19 @@ export const handlers = [
 			(f) => f.id === params.id && f.tenant_id === store.tenant.id
 		);
 		if (idx < 0) return notFound('Teşvik dosyası bulunamadı');
-		const body = (await request.json()) as Record<string, unknown>;
+		const parsed = incentiveFileUpdateSchema.safeParse(await request.json());
+		if (!parsed.success) {
+			return badRequest('Geçersiz teşvik dosyası', parsed.error.flatten());
+		}
+		const body = parsed.data;
 		const current = store.incentiveFiles[idx]!;
 		// deadline_at ve payment_date bilinçli olarak güncellenmez — sunucu da izin vermiyor.
 		const updated = {
 			...current,
-			status: (body.status as typeof current.status) ?? current.status,
-			submitted_at:
-				'submitted_at' in body ? (body.submitted_at as string | null) : current.submitted_at,
-			note: 'note' in body ? (body.note as string | null) : current.note,
-			documents: (body.documents as typeof current.documents) ?? current.documents,
+			status: body.status ?? current.status,
+			submitted_at: body.submitted_at !== undefined ? body.submitted_at : current.submitted_at,
+			note: body.note !== undefined ? body.note : current.note,
+			documents: body.documents !== undefined ? body.documents : current.documents,
 			updated_at: new Date().toISOString()
 		};
 		store.incentiveFiles[idx] = updated;
