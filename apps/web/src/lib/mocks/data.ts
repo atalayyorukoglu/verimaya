@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker/locale/en';
-import { defaultWhatsappAiPrompt } from '@verimaya/shared';
+import { defaultWhatsappAiPrompt, emptyKnowledgeSections } from '@verimaya/shared';
 import type {
 	AiCorrection,
 	AdMetric,
@@ -22,6 +22,7 @@ import type {
 	UserRole,
 	WebhookSubscription,
 	IncentiveFile,
+	KnowledgeSections,
 	CommissionEntry,
 	TrustScoreSettings,
 	WhatsappAiPrompt
@@ -415,6 +416,8 @@ export type DemoStore = {
 	webhookSubscriptions: WebhookSubscription[];
 	/** Teşvik dosyaları (MSW) — kayıt + süre; uygunluk/oran yok. */
 	incentiveFiles: IncentiveFile[];
+	/** AI-01 bilgi bankası (MSW). */
+	knowledge: KnowledgeSections;
 	/** Teşvik son başvuru gün sayısı (MSW). */
 	incentiveDeadlineDays: number;
 	/** Hakediş satırları (MSW) — tahakkuk ≠ ödeme; formül yok. */
@@ -884,6 +887,20 @@ function makeCommissionEntries(contacts: Contact[]): CommissionEntry[] {
 	];
 }
 
+/** Gerçekçi demo bilgi bankası — ⓘ örneğiyle tutarlı olsun diye saç ekimi üzerinden. */
+function makeKnowledge(): KnowledgeSections {
+	return {
+		services:
+			'Saç ekimi (FUE) — 2.500 EUR, 3000 grefte kadar dahil.\nSaç ekimi (DHI) — 3.200 EUR.\nSakal ekimi — 2.000 EUR.\nFiyatlara 2 gece otel, transfer ve tercüman dahildir.',
+		payment:
+			'Kapora %30, rezervasyon anında. Kalan tutar işlem günü, kliniğe girişte.\nBanka havalesi ve kredi kartı kabul edilir; kripto kabul edilmez.\nİşlemden 7 gün önce iptalde kapora iade edilmez.',
+		faq: 'Konaklama dahil mi? — Evet, 2 gece otel dahil.\nKaç gün kalmam gerekiyor? — 3 gün yeterli.\nAğrılı mı? — Lokal anestezi uygulanır.',
+		rejection:
+			'18 yaş altı kabul edilmez.\nKontrolsüz diyabet ve kan sulandırıcı kullanımı varsa doktor onayı olmadan işlem yapılmaz.\nTaksitli ödeme planı talep eden hastalar kabul edilmez.',
+		notes: 'Yoğun sezon Nisan–Haziran; bu dönemde randevu en az 3 hafta önceden alınır.'
+	};
+}
+
 function makeWebhookSubscriptions(): WebhookSubscription[] {
 	return [
 		{
@@ -1305,6 +1322,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			apiKeys: [],
 			webhookSubscriptions: [],
 			incentiveFiles: [],
+			knowledge: emptyKnowledgeSections(),
 			incentiveDeadlineDays: 180,
 			commissionEntries: [],
 			aiCorrections: [],
@@ -1603,6 +1621,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		apiKeys: makeApiKeys(),
 		webhookSubscriptions: makeWebhookSubscriptions(),
 		incentiveFiles: makeIncentiveFiles(contacts),
+		knowledge: makeKnowledge(),
 		incentiveDeadlineDays: 180,
 		commissionEntries: makeCommissionEntries(contacts),
 		aiCorrections: makeAiCorrections(),

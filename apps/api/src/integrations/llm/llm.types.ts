@@ -9,6 +9,12 @@ export type LlmParseContext = {
 	 * as framed non-instructional context; never replaces server output schema rules.
 	 */
 	tenantPromptNote?: string | null;
+	/**
+	 * AI-01 — tenant bilgi bankası (hizmetler/fiyatlar/ödeme kuralları…). `tenantPromptNote`
+	 * gibi çekirdek prompt'a **ek bağlam** olarak eklenir, yerine geçmez. Bilgi bankası
+	 * boşsa null gelir ve prompt'a hiçbir şey eklenmez.
+	 */
+	knowledge?: string | null;
 };
 
 /** Path taken for a single parse call — written to `jobs` ledger (Adım 25). */

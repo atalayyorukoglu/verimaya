@@ -1,3 +1,4 @@
+import { emptyKnowledgeSections } from '@verimaya/shared';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDb, getDb } from '../db/client';
@@ -46,7 +47,22 @@ describe('InboundMessageProcessor (Adım 24a)', () => {
 			contactsService,
 			tenantContext,
 			new TransactionsService(tenantContext),
-			{ getAiPrompt: async () => ({ text: '', is_default: true, updated_by: null, updated_at: null }) } as never,
+			{
+				getAiPrompt: async () => ({
+					text: '',
+					is_default: true,
+					updated_by: null,
+					updated_at: null
+				}),
+				// AI-01: bilgi bankası boş — prompt'a hiçbir şey eklenmemeli.
+				getKnowledge: async () => ({
+					sections: emptyKnowledgeSections(),
+					is_default: true,
+					updated_at: null,
+					updated_by: null,
+					pii_warnings: []
+				})
+			} as never,
 			new HeuristicLlmClient()
 		);
 		processor = new InboundMessageProcessor(tenantContext, whatsappService);

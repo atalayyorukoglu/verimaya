@@ -4,6 +4,7 @@ import {
 	Injectable,
 	NotFoundException
 } from '@nestjs/common';
+import { z } from 'zod';
 import { asc, desc, eq, and, isNull } from 'drizzle-orm';
 import type {
 	AppointmentTypeCreate,
@@ -14,6 +15,8 @@ import type {
 	FinanceCategoryUpdate,
 	IncentiveDeadlineSettings,
 	IncentiveDeadlineSettingsUpdate,
+	KnowledgeSettings,
+	KnowledgeUpdate,
 	OrganizationCreate,
 	OrganizationUpdate,
 	SettingsReorder,
@@ -33,6 +36,10 @@ import {
 	defaultWhatsappAiDisclosure,
 	defaultWhatsappAiPrompt,
 	incentiveDeadlineSettingsSchema,
+	buildKnowledgeContext,
+	emptyKnowledgeSections,
+	findKnowledgePii,
+	knowledgeSectionsSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureSchema,
 	whatsappAiPromptSchema
@@ -57,6 +64,8 @@ const TRUST_SCORE_KEY = 'trust_score';
 const WHATSAPP_AI_DISCLOSURE_KEY = 'whatsapp_ai_disclosure';
 const AI_DISCLOSURE_AUDIT_LABEL = 'whatsapp_ai_disclosure';
 const WHATSAPP_AI_PROMPT_KEY = 'whatsapp_ai_prompt';
+const KNOWLEDGE_KEY = 'knowledge';
+const KNOWLEDGE_AUDIT_LABEL = 'knowledge';
 const AI_PROMPT_AUDIT_LABEL = 'whatsapp_ai_prompt';
 
 /** Presence in tenant_settings ⇒ defaults were applied once; empty list must not re-seed. */
@@ -659,6 +668,93 @@ export class SettingsService {
 					}
 				});
 		});
+	}
+
+	/**
+	 * AI-01 — Bilgi bankası. `tenant_settings.knowledge` altında beş sabit bölüm.
+	 * Kaydı engelleyen PII kontrolü YOK; yalnız uyarı döner (bkz. findKnowledgePii).
+	 */
+	async getKnowledge(tenantId: string): Promise<KnowledgeSettings> {
+		const raw = await this.getTenantSetting(tenantId, KNOWLEDGE_KEY);
+		if (raw == null) {
+			return {
+				sections: emptyKnowledgeSections(),
+				is_default: true,
+				updated_at: null,
+				updated_by: null,
+				pii_warnings: []
+			};
+		}
+		const parsed = z
+			.object({
+				sections: knowledgeSectionsSchema,
+				updated_at: z.string().nullable().optional(),
+				updated_by: z.string().nullable().optional()
+			})
+			.safeParse(raw);
+		if (!parsed.success) {
+			return {
+				sections: emptyKnowledgeSections(),
+				is_default: true,
+				updated_at: null,
+				updated_by: null,
+				pii_warnings: []
+			};
+		}
+		const sections = parsed.data.sections;
+		return {
+			sections,
+			is_default: buildKnowledgeContext(sections) == null,
+			updated_at: parsed.data.updated_at ?? null,
+			updated_by: parsed.data.updated_by ?? null,
+			pii_warnings: findKnowledgePii(sections)
+		};
+	}
+
+	async saveKnowledge(
+		tenantId: string,
+		input: KnowledgeUpdate,
+		actor: AuditActor
+	): Promise<KnowledgeSettings> {
+		const now = new Date().toISOString();
+		const value = {
+			sections: input.sections,
+			updated_at: now,
+			updated_by: actor.actorDisplayName
+		};
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.insert(tenantSettings)
+				.values({ tenantId, key: KNOWLEDGE_KEY, value })
+				.onConflictDoUpdate({
+					target: [tenantSettings.tenantId, tenantSettings.key],
+					set: { value, updatedAt: new Date() }
+				});
+			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', KNOWLEDGE_AUDIT_LABEL);
+		});
+
+		return {
+			sections: input.sections,
+			is_default: buildKnowledgeContext(input.sections) == null,
+			updated_at: now,
+			updated_by: actor.actorDisplayName,
+			pii_warnings: findKnowledgePii(input.sections)
+		};
+	}
+
+	async deleteKnowledge(tenantId: string, actor: AuditActor): Promise<KnowledgeSettings> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db.delete(tenantSettings).where(eq(tenantSettings.key, KNOWLEDGE_KEY));
+			await writeAuditLog(db, tenantId, actor, 'delete', 'tenant', KNOWLEDGE_AUDIT_LABEL);
+		});
+		return {
+			sections: emptyKnowledgeSections(),
+			is_default: true,
+			updated_at: null,
+			updated_by: null,
+			pii_warnings: []
+		};
 	}
 
 	async getTrustScore(tenantId: string): Promise<TrustScoreSettings> {

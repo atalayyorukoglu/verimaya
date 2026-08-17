@@ -6561,6 +6561,257 @@ paths:
                   - updated_by
                   - updated_at
                 additionalProperties: false
+  /settings/knowledge:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: object
+                    properties:
+                      services:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      payment:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      faq:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      rejection:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      notes:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                    additionalProperties: false
+                  is_default:
+                    type: boolean
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  updated_by:
+                    type: string
+                    nullable: true
+                  pii_warnings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        section:
+                          type: string
+                          enum:
+                            - services
+                            - payment
+                            - faq
+                            - rejection
+                            - notes
+                        kind:
+                          type: string
+                          enum:
+                            - national_id
+                            - phone
+                            - email
+                      required:
+                        - section
+                        - kind
+                      additionalProperties: false
+                required:
+                  - sections
+                  - is_default
+                  - updated_at
+                  - updated_by
+                  - pii_warnings
+                additionalProperties: false
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: object
+                    properties:
+                      services:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      payment:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      faq:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      rejection:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      notes:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                    additionalProperties: false
+                  is_default:
+                    type: boolean
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  updated_by:
+                    type: string
+                    nullable: true
+                  pii_warnings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        section:
+                          type: string
+                          enum:
+                            - services
+                            - payment
+                            - faq
+                            - rejection
+                            - notes
+                        kind:
+                          type: string
+                          enum:
+                            - national_id
+                            - phone
+                            - email
+                      required:
+                        - section
+                        - kind
+                      additionalProperties: false
+                required:
+                  - sections
+                  - is_default
+                  - updated_at
+                  - updated_by
+                  - pii_warnings
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sections:
+                  type: object
+                  properties:
+                    services:
+                      type: string
+                      maxLength: 4000
+                      default: ""
+                    payment:
+                      type: string
+                      maxLength: 4000
+                      default: ""
+                    faq:
+                      type: string
+                      maxLength: 4000
+                      default: ""
+                    rejection:
+                      type: string
+                      maxLength: 4000
+                      default: ""
+                    notes:
+                      type: string
+                      maxLength: 4000
+                      default: ""
+                  additionalProperties: false
+              required:
+                - sections
+              additionalProperties: false
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: object
+                    properties:
+                      services:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      payment:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      faq:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      rejection:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                      notes:
+                        type: string
+                        maxLength: 4000
+                        default: ""
+                    additionalProperties: false
+                  is_default:
+                    type: boolean
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  updated_by:
+                    type: string
+                    nullable: true
+                  pii_warnings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        section:
+                          type: string
+                          enum:
+                            - services
+                            - payment
+                            - faq
+                            - rejection
+                            - notes
+                        kind:
+                          type: string
+                          enum:
+                            - national_id
+                            - phone
+                            - email
+                      required:
+                        - section
+                        - kind
+                      additionalProperties: false
+                required:
+                  - sections
+                  - is_default
+                  - updated_at
+                  - updated_by
+                  - pii_warnings
+                additionalProperties: false
   /settings/incentive-deadline:
     get:
       responses:

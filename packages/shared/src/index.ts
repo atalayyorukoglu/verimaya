@@ -32,6 +32,7 @@ export * from './ad-metrics.js';
 export * from './ads-connection.js';
 export * from './ghl-connection.js';
 export * from './api-key.js';
+export * from './knowledge.js';
 export * from './reports.js';
 export * from './marketing-report.js';
 export * from './credentials.js';

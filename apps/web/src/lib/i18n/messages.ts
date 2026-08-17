@@ -368,6 +368,51 @@ const tr = {
 	'settings.organization.tzEuropeLondon': 'Europe/London (İngiltere)',
 	'settings.organization.tzUtc': 'UTC',
 
+	// Ayarlar · Bilgi bankası (AI-01)
+	'settings.knowledge.documentTitle': 'Bilgi bankası · Ayarlar · Verimaya',
+	'settings.knowledge.title': 'Bilgi bankası',
+	'settings.knowledge.description':
+		'Firmanızın ne sattığı, kaça sattığı ve neyi kabul etmediği. Yapay zekâ mesajları okurken bu bilgiyi kullanır.',
+	'settings.knowledge.section.services': 'Hizmetler ve fiyatlar',
+	'settings.knowledge.hint.services':
+		'Paketleriniz ve fiyatları. Örn. "Saç ekimi 2.500 EUR, 3000 greft dahil."',
+	'settings.knowledge.section.payment': 'Ödeme kuralları',
+	'settings.knowledge.hint.payment': 'Kapora, taksit, iade. Örn. "Kapora %30, kalan işlem günü."',
+	'settings.knowledge.section.faq': 'Sık sorulan sorular',
+	'settings.knowledge.hint.faq': 'Müşterilerin en çok sorduğu şeyler ve verdiğiniz cevaplar.',
+	'settings.knowledge.section.rejection': 'Kabul etmedikleriniz',
+	'settings.knowledge.hint.rejection':
+		'Hangi durumda hasta almıyorsunuz. Örn. "18 yaş altı kabul edilmez."',
+	'settings.knowledge.section.notes': 'Diğer notlar',
+	'settings.knowledge.hint.notes':
+		'Yukarıdakilere girmeyen ama sistemin bilmesi işe yarayacak şeyler.',
+	'settings.knowledge.reset': 'Bilgi bankasını temizle',
+	'settings.knowledge.resetConfirm': 'Bilgi bankasındaki tüm bölümler silinecek. Emin misiniz?',
+	'settings.knowledge.saved': 'Bilgi bankası kaydedildi.',
+	'settings.knowledge.saveError': 'Bilgi bankası kaydedilemedi.',
+	'settings.knowledge.loadError': 'Bilgi bankası yüklenemedi.',
+	'settings.knowledge.footnote':
+		'Bu bilgi yapay zekâya ek bağlam olarak verilir; sistemin çekirdek kurallarının yerine geçmez.',
+	'settings.knowledge.pii.title': 'Burada hasta bilgisi olabilir',
+	'settings.knowledge.pii.body':
+		'Bilgi bankası firma bilgisi içindir, hasta verisi değil. Kaydınız engellenmedi ama aşağıdaki bölümleri gözden geçirin.',
+	'settings.knowledge.pii.nationalId': 'kimlik numarasına benzeyen sayı',
+	'settings.knowledge.pii.phone': 'telefon numarası',
+	'settings.knowledge.pii.email': 'e-posta adresi',
+	'settings.nav.knowledge.title': 'Bilgi bankası',
+	'settings.nav.knowledge.description':
+		'Hizmetler, fiyatlar, ödeme kuralları — yapay zekânın kullandığı bilgi.',
+
+	'help.knowledge.title': 'Bilgi bankası',
+	'help.knowledge.b1':
+		'Firmanızın kendi bilgisini sisteme yazdığınız yer: ne satıyorsunuz, kaça satıyorsunuz, neyi kabul etmiyorsunuz.',
+	'help.knowledge.b2':
+		'Yapay zekâ bir WhatsApp mesajını okurken bu bilgiyi kullanır. Boş bırakırsanız tahmin etmek zorunda kalır.',
+	'help.knowledge.example':
+		'"Saç ekimi 2.500 EUR" yazdıysanız, bir mesajda "saç ekimi anlaştık" geçtiğinde sistem tutarı doğru tanır. Yazmazsanız tutarı boş bırakır ya da yanlış tahmin eder.',
+	'help.knowledge.caveat':
+		'Buraya hasta bilgisi (isim, telefon, kimlik) yazmayın — burası firma bilgisi içindir. Yazarsanız uyarı görürsünüz.',
+
 	// Ekran içi yardım (ⓘ) — sade dil, her konuda tek somut örnek
 	'help.open': 'Bu ekran ne işe yarar?',
 	'help.exampleLabel': 'Örnek',
@@ -2682,6 +2727,49 @@ const en: Record<MessageKey, string> = {
 	'settings.organization.tzAsiaRiyadh': 'Asia/Riyadh (Saudi Arabia)',
 	'settings.organization.tzEuropeLondon': 'Europe/London (UK)',
 	'settings.organization.tzUtc': 'UTC',
+
+	'settings.knowledge.documentTitle': 'Knowledge base · Settings · Verimaya',
+	'settings.knowledge.title': 'Knowledge base',
+	'settings.knowledge.description':
+		'What your company sells, at what price, and what it does not accept. The AI uses this when reading messages.',
+	'settings.knowledge.section.services': 'Services and prices',
+	'settings.knowledge.hint.services':
+		'Your packages and their prices. E.g. "Hair transplant 2,500 EUR, 3000 grafts included."',
+	'settings.knowledge.section.payment': 'Payment rules',
+	'settings.knowledge.hint.payment':
+		'Deposit, instalments, refunds. E.g. "30% deposit, balance on the day."',
+	'settings.knowledge.section.faq': 'Frequently asked questions',
+	'settings.knowledge.hint.faq': 'What customers ask most and how you answer.',
+	'settings.knowledge.section.rejection': 'What you do not accept',
+	'settings.knowledge.hint.rejection':
+		'When you turn a patient down. E.g. "Under 18 not accepted."',
+	'settings.knowledge.section.notes': 'Other notes',
+	'settings.knowledge.hint.notes': 'Anything else the system should know.',
+	'settings.knowledge.reset': 'Clear knowledge base',
+	'settings.knowledge.resetConfirm': 'All sections will be cleared. Are you sure?',
+	'settings.knowledge.saved': 'Knowledge base saved.',
+	'settings.knowledge.saveError': 'Could not save the knowledge base.',
+	'settings.knowledge.loadError': 'Could not load the knowledge base.',
+	'settings.knowledge.footnote':
+		'This is given to the AI as extra context; it never replaces the system core rules.',
+	'settings.knowledge.pii.title': 'This may contain patient data',
+	'settings.knowledge.pii.body':
+		'The knowledge base is for company information, not patient data. Your save was not blocked, but please review the sections below.',
+	'settings.knowledge.pii.nationalId': 'number that looks like a national ID',
+	'settings.knowledge.pii.phone': 'phone number',
+	'settings.knowledge.pii.email': 'email address',
+	'settings.nav.knowledge.title': 'Knowledge base',
+	'settings.nav.knowledge.description': 'Services, prices, payment rules — what the AI uses.',
+
+	'help.knowledge.title': 'Knowledge base',
+	'help.knowledge.b1':
+		'Where you write your own company facts: what you sell, for how much, and what you refuse.',
+	'help.knowledge.b2':
+		'The AI uses this when reading a WhatsApp message. Leave it empty and it has to guess.',
+	'help.knowledge.example':
+		'If you wrote "Hair transplant 2,500 EUR", a message saying "we agreed on the hair transplant" is read with the right amount. Without it the amount is left blank or guessed wrong.',
+	'help.knowledge.caveat':
+		'Do not put patient data here (names, phones, IDs) — this is for company information. You will see a warning if you do.',
 
 	'help.open': 'What is this screen for?',
 	'help.exampleLabel': 'Example',

@@ -8,6 +8,7 @@
 	import Lock from '@lucide/svelte/icons/lock';
 	import Users from '@lucide/svelte/icons/users';
 	import ScrollText from '@lucide/svelte/icons/scroll-text';
+	import BookOpen from '@lucide/svelte/icons/book-open';
 	import Bot from '@lucide/svelte/icons/bot';
 	import ChartColumn from '@lucide/svelte/icons/chart-column';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
@@ -127,6 +128,12 @@
 		{
 			label: 'AI & kalite',
 			cards: [
+				{
+					href: '/settings/knowledge',
+					title: t('settings.nav.knowledge.title'),
+					description: t('settings.nav.knowledge.description'),
+					icon: BookOpen
+				},
 				{
 					href: '/settings/ai',
 					title: t('settings.nav.ai.title'),

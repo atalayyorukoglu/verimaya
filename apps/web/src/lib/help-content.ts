@@ -11,7 +11,8 @@ import type { MessageKey } from '$lib/i18n/messages';
  *   2. `example` — TEK somut örnek; soyut açıklamayı yere indirir
  *   3. `caveat` — (opsiyonel) yanlış okumaya açık nokta; yoksa yazılmaz
  */
-export type HelpTopic = 'untouched-contacts' | 'incentives' | 'commissions' | 'cohorts';
+export type HelpTopic =
+	'untouched-contacts' | 'incentives' | 'commissions' | 'cohorts' | 'knowledge';
 
 export type HelpContent = {
 	titleKey: MessageKey;
@@ -38,6 +39,12 @@ export const helpContent: Record<HelpTopic, HelpContent> = {
 		bodyKeys: ['help.commissions.b1', 'help.commissions.b2'],
 		exampleKey: 'help.commissions.example',
 		caveatKey: 'help.commissions.caveat'
+	},
+	knowledge: {
+		titleKey: 'help.knowledge.title',
+		bodyKeys: ['help.knowledge.b1', 'help.knowledge.b2'],
+		exampleKey: 'help.knowledge.example',
+		caveatKey: 'help.knowledge.caveat'
 	},
 	cohorts: {
 		titleKey: 'help.cohorts.title',

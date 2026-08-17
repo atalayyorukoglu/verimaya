@@ -227,7 +227,36 @@ input[type='date']::-webkit-date-and-time-value {
 	input,
 	textarea,
 	select {
+		/* iOS, 16px altındaki alana odaklanınca sayfayı zoomlar. */
 		font-size: 16px;
+	}
+
+	/*
+	  Dokunma hedefi tabanı. 2026-08-17 ölçümü: ⓘ 24px, avatar 32px, filtre
+	  kutuları ve ikon butonları 36px — hepsi parmakla ıskalanacak boyuttaydı.
+	  Taban 44px (Apple HIG / WCAG 2.5.8 önerisi); masaüstünde uygulanmaz,
+	  orada fare hassas ve dikey yer kıymetli.
+
+	  `data-compact` ile tek tek muaf tutulabilir: gerçekten sıkışık bir yerde
+	  (ör. satır içi rozet) bilinçli istisna gerekirse işaretlenir.
+	*/
+	button:not([data-compact]),
+	select,
+	[role='button']:not([data-compact]),
+	summary {
+		min-height: 44px;
+	}
+
+	/* Yalnız ikon taşıyan butonlar kare olmalı; yoksa 44px yükseklik ama 24px genişlik kalır. */
+	button:not([data-compact]):has(> svg:only-child) {
+		min-width: 44px;
+	}
+
+	/* Tablo satırındaki bağlantılar: metin küçük kalsa da dokunma alanı büyüsün. */
+	tbody a {
+		display: inline-block;
+		/* 20px satır yüksekliği + 2×12px = 44px. Tek satırlık isimler de hedefe ulaşsın. */
+		padding-block: 0.75rem;
 	}
 }
 

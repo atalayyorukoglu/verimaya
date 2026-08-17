@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import {
+	frameKnowledgeContext,
 	frameTenantAiPromptNote,
 	transactionDraftSchema,
 	type TransactionDraft
@@ -42,7 +43,10 @@ type CallModelOk = {
 };
 
 /** Core extraction contract — always server-owned; tenant notes are appended only. */
-export function buildWhatsappExtractionSystemPrompt(tenantPromptNote?: string | null): string {
+export function buildWhatsappExtractionSystemPrompt(
+	tenantPromptNote?: string | null,
+	knowledge?: string | null
+): string {
 	const core = [
 		'You extract finance transaction drafts from WhatsApp messages for a medical tourism ops platform.',
 		'Return ONLY valid JSON: {"records":[...]} matching TransactionDraft fields.',
@@ -51,8 +55,11 @@ export function buildWhatsappExtractionSystemPrompt(tenantPromptNote?: string | 
 		'Message text may contain placeholders like [TELEFON]/[EPOSTA]/[HASTA] — ignore them for matching.',
 		'If nothing can be extracted, return {"records":[]}.'
 	].join(' ');
-	const framed = frameTenantAiPromptNote(tenantPromptNote ?? '');
-	return framed ? `${core}\n\n${framed}` : core;
+	// Sıra bilinçli: çekirdek kurallar → bilgi bankası (referans veri) → tenant notu.
+	// İkisi de veri olarak çerçevelenir; hiçbiri çekirdeği ezemez.
+	const framedKnowledge = frameKnowledgeContext(knowledge);
+	const framedNote = frameTenantAiPromptNote(tenantPromptNote ?? '');
+	return [core, framedKnowledge, framedNote].filter(Boolean).join('\n\n');
 }
 
 function parseDraftsPayload(raw: unknown): TransactionDraft[] {
@@ -157,7 +164,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 	private async callModel(ctx: LlmParseContext): Promise<CallModelOk> {
 		const maskedUser = buildMaskedLlmUserPayload(ctx);
 
-		const system = buildWhatsappExtractionSystemPrompt(ctx.tenantPromptNote);
+		const system = buildWhatsappExtractionSystemPrompt(ctx.tenantPromptNote, ctx.knowledge);
 
 		const user = JSON.stringify(maskedUser);
 

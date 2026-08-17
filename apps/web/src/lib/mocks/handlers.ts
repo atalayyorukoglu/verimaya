@@ -1,5 +1,9 @@
 import { http, HttpResponse } from 'msw';
 import {
+	buildKnowledgeContext,
+	emptyKnowledgeSections,
+	findKnowledgePii,
+	knowledgeSectionsSchema,
 	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
 	appointmentCreateSchema,
@@ -2632,6 +2636,45 @@ export const handlers = [
 			.sort((a, b) => Math.abs(b.open_base) - Math.abs(a.open_base));
 
 		return HttpResponse.json({ items, missing_fx_count: missingFxCount });
+	}),
+
+	// ── Bilgi bankası (AI-01) ─────────────────────────────────────────
+	http.get('/v1/settings/knowledge', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({
+			sections: store.knowledge,
+			is_default: buildKnowledgeContext(store.knowledge) == null,
+			updated_at: null,
+			updated_by: null,
+			pii_warnings: findKnowledgePii(store.knowledge)
+		});
+	}),
+
+	http.put('/v1/settings/knowledge', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as { sections?: unknown };
+		const parsed = knowledgeSectionsSchema.safeParse(body.sections);
+		if (!parsed.success) return badRequest('Geçersiz bilgi bankası');
+		store.knowledge = parsed.data;
+		return HttpResponse.json({
+			sections: store.knowledge,
+			is_default: buildKnowledgeContext(store.knowledge) == null,
+			updated_at: new Date().toISOString(),
+			updated_by: 'Demo Kullanıcı',
+			pii_warnings: findKnowledgePii(store.knowledge)
+		});
+	}),
+
+	http.delete('/v1/settings/knowledge', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		store.knowledge = emptyKnowledgeSections();
+		return HttpResponse.json({
+			sections: store.knowledge,
+			is_default: true,
+			updated_at: null,
+			updated_by: null,
+			pii_warnings: []
+		});
 	}),
 
 	http.get('/v1/settings/ai-prompt', ({ request }) => {

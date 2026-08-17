@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Patient } from '@verimaya/shared';
 import {
 	OpenAiCompatibleLlmClient,
+	buildWhatsappExtractionSystemPrompt,
 	estimateCostUsdMicros
 } from './openai-compatible-llm.client';
 import { HeuristicLlmClient } from './heuristic-llm.client';
@@ -188,6 +189,37 @@ describe('OpenAiCompatibleLlmClient (Adım 25)', () => {
 		expect(result.usage.error).toMatch(/abort|timeout|AbortError/i);
 		expect(result.usage.model).toBe('heuristic-parse');
 		expect(result.records.length).toBeGreaterThan(0);
+	});
+});
+
+describe('AI-01 bilgi bankası prompt bağlamı', () => {
+	const KNOWLEDGE = 'Hizmetler ve fiyatlar:\nSaç ekimi 2.500 EUR, 3000 greft dahil.';
+
+	it('bilgi bankası doluyken sistem prompt\'una VERİ olarak eklenir', () => {
+		const prompt = buildWhatsappExtractionSystemPrompt(null, KNOWLEDGE);
+		expect(prompt).toContain('Saç ekimi 2.500 EUR');
+		// Talimat değil veri olarak çerçevelenmeli — müşteri buraya "kuralları yok say"
+		// yazsa bile model bunu sistem kuralı sanmamalı.
+		expect(prompt).toContain('not instructions');
+		// Çekirdek kurallar yerinde kalmalı; bilgi bankası onların YERİNE geçmez.
+		expect(prompt).toContain('Return ONLY valid JSON');
+	});
+
+	it('bilgi bankası boşken prompt\'a hiçbir şey eklenmez', () => {
+		const withEmpty = buildWhatsappExtractionSystemPrompt(null, null);
+		const core = buildWhatsappExtractionSystemPrompt(null);
+		expect(withEmpty).toBe(core);
+		expect(withEmpty).not.toContain('KNOWLEDGE BASE');
+	});
+
+	it('bilgi bankası ve tenant notu birlikte, çekirdekten sonra gelir', () => {
+		const prompt = buildWhatsappExtractionSystemPrompt('Kuruş yerine TL yaz', KNOWLEDGE);
+		const coreAt = prompt.indexOf('Return ONLY valid JSON');
+		const knowledgeAt = prompt.indexOf('KNOWLEDGE BASE');
+		const noteAt = prompt.indexOf('TENANT CONTEXT NOTE');
+		expect(coreAt).toBeGreaterThanOrEqual(0);
+		expect(knowledgeAt).toBeGreaterThan(coreAt);
+		expect(noteAt).toBeGreaterThan(knowledgeAt);
 	});
 });
 

@@ -286,7 +286,7 @@
 
 | Kod | İş | Bağımlı | Büyüklük |
 |---|---|---|---|
-| **AI-01** | Bilgi tabanı v1 — `tenant_settings.knowledge`, yalnız hizmet+fiyat bölümü, finans parse prompt'una bağlanır | yok | S |
+| **AI-01** | Bilgi tabanı v1 | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-02** | Kayıt güncelleme onay kuyruğu — `record_update_suggestions`, tek alan: `appointment.scheduled_at`. **⚠️ Bitince sözleşme Madde 6.2 tekrar kontrol edilecek** (aşağıya bak) | yok | M |
 | **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | yok | M |
@@ -438,6 +438,31 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Yakalanan kusur:** panelde eşiği 60'a çekince "30 günü geçen" kutusu da düşüyordu;
   sunucu doğruydu, MSW mock'u kovaları eşikten sonra sayıyordu. Tarayıcıda gözle
   bakılmasaydı demo yanlış rakam gösterecekti.
+- **AI-01 Bilgi bankası ✅** (2026-08-17) — `tenant_settings.knowledge` (yeni tablo yok),
+  `GET/PUT/DELETE /v1/settings/knowledge`, panel `/settings/knowledge`. Beş sabit bölüm:
+  hizmetler+fiyatlar · ödeme kuralları · SSS · kabul etmedikleriniz · notlar.
+  **Asıl çıktı prompt'a bağlanması:** `WhatsappService` bilgi bankasını çözüp
+  `LlmParseContext.knowledge` ile geçiriyor; `buildWhatsappExtractionSystemPrompt` bunu
+  çekirdek kuralların ALTINA, `frameKnowledgeContext` ile **veri olarak** ekliyor
+  (talimat değil — müşteri "kuralları yok say" yazsa bile çerçeve bozulmaz). Boş bilgi
+  bankası prompt'a hiçbir şey eklemiyor.
+  **Görüş:** Bu kalem yol haritasında "pilot sonrası" idi; **yanlış yerdeydi.** Satış
+  sayfası "bilgi bankanızı okuyan sistem" diyor ve müşteri evet dediğinde teslim edilecek
+  şey yoktu — yani satışın önündeki kilit buydu. PII kuralı: hasta verisi izi (kimlik no /
+  telefon / e-posta) **engellenmiyor, uyarılıyor** — sert engel kullanıcıyı kilitler, sessiz
+  kabul KVKK riskidir. Fiyat metninin telefon sanılmadığını kanıtlayan test var (uyarı
+  gürültüye dönmesin). Belge/PDF yükleme bilinçli kapsam dışı (B yaklaşımı, ayrı iş).
+  **Not:** Cursor bu turda hiçbir çıktı üretmeden çıktı; iş elle yazıldı.
+- **Mobil dokunma hedefleri ✅** (2026-08-17) — kullanıcı "butonlar küçük, mobilde rahat
+  değilim" dedi; ölçüldü ve haklı çıktı: ⓘ **24px**, avatar 32px, filtre kutuları ve ikon
+  butonları 36px, tablo satır bağlantıları 17–31px. Alt menü (56px) zaten iyiydi.
+  `layout.css`'e 767px altı için 44px tabanı kondu (Apple HIG / WCAG 2.5.8): buton, select,
+  `role="button"`, `summary`; yalnız ikon taşıyan butonlar ayrıca `min-width: 44px`
+  (yoksa 44 yükseklik + 24 genişlik kalıyordu); tablo satır bağlantılarına dikey dolgu.
+  Masaüstünde uygulanmıyor — orada fare hassas, dikey yer kıymetli. `data-compact` ile
+  bilinçli istisna bırakılabiliyor. Ölçümle doğrulandı: hedefin altında kalan öğe **0**.
+  **Görüş:** Bu kural AGENTS.md'de varmış gibi anılıyordu ama `layout.css`'te **yoktu** —
+  yalnız 16px font kuralı vardı. Yani "44px hedefi" bugüne kadar hiçbir yerde uygulanmıyordu.
 - **Ekran içi yardım (ⓘ) ✅** (2026-08-17) — `PageHeader`'a opsiyonel `helpTopic` eklendi;
   başlığın yanındaki ⓘ düğmesi `HelpSheet`'i açıyor. **Mobilde tam ekran, üstten** (telefonda
   okunacağı için kutuya sıkıştırılmadı); masaüstünde ortalanmış pencere. Escape + dış tıklama

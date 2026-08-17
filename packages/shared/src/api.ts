@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { cursorPageSchema, softDeleteResultSchema } from './common.js';
+import { knowledgeSettingsSchema, knowledgeUpdateSchema } from './knowledge.js';
 
 /** REST prefix for all Verimaya API routes. */
 export const API_V1_PREFIX = '/v1';
@@ -75,6 +76,7 @@ export const apiPaths = {
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
+	settingsKnowledge: `${API_V1_PREFIX}/settings/knowledge`,
 	settingsIncentiveDeadline: `${API_V1_PREFIX}/settings/incentive-deadline`,
 	settingsPermissions: `${API_V1_PREFIX}/settings/permissions`,
 	settingsImportContactsTemplate: `${API_V1_PREFIX}/settings/import-export/contacts/template.xlsx`,
@@ -622,6 +624,16 @@ export const apiContract = {
 	'PUT /v1/settings/ai-prompt': {
 		body: whatsappAiPromptUpdateSchema,
 		response: whatsappAiPromptSchema
+	},
+	'GET /v1/settings/knowledge': {
+		response: knowledgeSettingsSchema
+	},
+	'PUT /v1/settings/knowledge': {
+		body: knowledgeUpdateSchema,
+		response: knowledgeSettingsSchema
+	},
+	'DELETE /v1/settings/knowledge': {
+		response: knowledgeSettingsSchema
 	},
 	'DELETE /v1/settings/ai-prompt': {
 		response: whatsappAiPromptSchema

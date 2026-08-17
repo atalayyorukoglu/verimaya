@@ -13,6 +13,7 @@ import type {
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
+import { buildKnowledgeContext } from '@verimaya/shared';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
@@ -63,11 +64,13 @@ export class WhatsappService {
 			limit: 100
 		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
+		const knowledge = await this.resolveKnowledge(tenantId);
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const result = await this.llm.parseTransactionDrafts({
 				message,
 				patients,
-				tenantPromptNote
+				tenantPromptNote,
+				knowledge
 			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
 			return result.records;
@@ -107,6 +110,7 @@ export class WhatsappService {
 	async parseInboxItem(tenantId: string, id: string): Promise<{ records: TransactionDraft[] }> {
 		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
+		const knowledge = await this.resolveKnowledge(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, id);
@@ -124,7 +128,8 @@ export class WhatsappService {
 			const result = await this.llm.parseTransactionDrafts({
 				message: display.body,
 				patients,
-				tenantPromptNote
+				tenantPromptNote,
+				knowledge
 			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
 			const records = result.records;
@@ -146,13 +151,14 @@ export class WhatsappService {
 	): Promise<ProcessInboundOutcome> {
 		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
+		const knowledge = await this.resolveKnowledge(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, inboundMessageId);
 			if (row.status !== 'new') {
 				return 'skipped';
 			}
-			return this.processNewInboundRow(db, row, patients, tenantPromptNote);
+			return this.processNewInboundRow(db, row, patients, tenantPromptNote, knowledge);
 		});
 	}
 
@@ -160,6 +166,7 @@ export class WhatsappService {
 	async processInbox(tenantId: string): Promise<InboundMessageProcessResponse> {
 		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
+		const knowledge = await this.resolveKnowledge(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const rows = await db
@@ -178,7 +185,13 @@ export class WhatsappService {
 				if (!display.body?.trim()) continue;
 
 				processed++;
-				const outcome = await this.processNewInboundRow(db, row, patients, tenantPromptNote);
+				const outcome = await this.processNewInboundRow(
+					db,
+					row,
+					patients,
+					tenantPromptNote,
+					knowledge
+				);
 				if (outcome === 'parsed') parsed++;
 				else if (outcome === 'error') error++;
 			}
@@ -275,7 +288,8 @@ export class WhatsappService {
 		db: TenantDb,
 		row: InboundMessageRow,
 		patients: Contact[],
-		tenantPromptNote: string | null
+		tenantPromptNote: string | null,
+		knowledge: string | null
 	): Promise<'parsed' | 'error'> {
 		const payload = asRecord(row.payload) ?? {};
 		const display = extractInboundDisplayFields(payload);
@@ -291,7 +305,8 @@ export class WhatsappService {
 		const result = await this.llm.parseTransactionDrafts({
 			message: display.body,
 			patients,
-			tenantPromptNote
+			tenantPromptNote,
+			knowledge
 		});
 		await writeLlmParseLedger(db, row.tenantId, result.usage);
 		const records = result.records;
@@ -301,6 +316,12 @@ export class WhatsappService {
 			parse_error: isError ? PARSE_ERROR_NO_MATCH : null
 		});
 		return isError ? 'error' : 'parsed';
+	}
+
+	/** AI-01: dolu bölümlerden tek bağlam metni; bilgi bankası boşsa null (prompt'a hiçbir şey eklenmez). */
+	private async resolveKnowledge(tenantId: string): Promise<string | null> {
+		const knowledge = await this.settings.getKnowledge(tenantId);
+		return buildKnowledgeContext(knowledge.sections);
 	}
 
 	private async resolveTenantPromptNote(tenantId: string): Promise<string | null> {

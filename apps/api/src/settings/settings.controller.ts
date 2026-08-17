@@ -26,6 +26,7 @@ import {
 	settingsReorderSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureUpdateSchema,
+	knowledgeUpdateSchema,
 	whatsappAiPromptUpdateSchema,
 	incentiveDeadlineSettingsUpdateSchema
 } from '@verimaya/shared';
@@ -339,6 +340,36 @@ export class SettingsController {
 			input,
 			getActorFromRequest(req)
 		);
+	}
+
+	@Get('knowledge')
+	@RequireOrgPermission('settings', 'read')
+	getKnowledge(@Req() req: FastifyRequest) {
+		return this.settingsService.getKnowledge(getActiveOrgId(req));
+	}
+
+	@Put('knowledge')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'True upsert via onConflictDoUpdate (tenant_id, key) — repeat PUTs converge to the same stored sections. The audit-log row is append-only; a duplicate on a genuine retry is harmless.'
+	)
+	putKnowledge(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(knowledgeUpdateSchema, body, req);
+		return this.settingsService.saveKnowledge(
+			getActiveOrgId(req),
+			input,
+			getActorFromRequest(req)
+		);
+	}
+
+	@Delete('knowledge')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE removes the tenant_settings row (or is a no-op when already empty). Repeat DELETEs converge to the same empty response; audit rows are append-only.'
+	)
+	@HttpCode(200)
+	deleteKnowledge(@Req() req: FastifyRequest) {
+		return this.settingsService.deleteKnowledge(getActiveOrgId(req), getActorFromRequest(req));
 	}
 
 	@Get('ai-prompt')
