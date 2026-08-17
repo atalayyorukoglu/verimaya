@@ -445,6 +445,15 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   son 12 ay (`PeriodSelector` özel). Soft-delete / missing FX / ROAS null / tenant izolasyonu
   test edildi.
   **Görüş:** Mevcut marketing `cohortBySource` kaynak bazlıdır — bu iş tarih bazlı; karıştırma.
+  Denetimde hesap doğrulandı (ROAS = tahsilat ÷ harcama, olgunlaşma yüzdeleri %100'e tamamlanıyor,
+  harcama 0 iken ROAS `null` — sonsuza bölme yok); mobilde tablo kendi içinde kayıyor.
+  **⚠️ Yorumlama tuzağı — kapatılmadı, karar bekliyor:** Harcama verisi **olmayan** ay ile
+  harcaması **sıfır olan** ay panelde aynı görünüyor (ikisi de `₺0,00`). Ads entegrasyonu
+  2026-08-13'te bağlandığı için ondan önceki tüm kohortlar `₺0,00 harcama` + dolu tahsilat
+  gösteriyor; okuyan "o ay bedavaya hasta geldi" sanabilir. ROAS zaten `—` dönüyor, yani oran
+  yanlış değil — yanıltıcı olan **harcama sütunu**. Düzeltmesi: o ay için hiç `ad_metrics_daily`
+  satırı yoksa `spend_base` `null` dönsün ve panelde `—` gösterilsin. Küçük iş ama sözleşme
+  değişikliği; müşteriye gösterilmeden önce kapatılmalı.
 - **Güvenlik başlıkları canlıda denetlendi + eksikler kapandı ✅** (2026-08-17) — canlı
   `curl -I` denetimi: hub'da CSP + nosniff vardı, **HSTS hiç yoktu**; panel
   (`app.verimaya.com`) hiçbir güvenlik başlığı almıyordu. Sebep: `nginx.conf`'ta başlıklar
