@@ -316,6 +316,13 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 ## Bekleyen (MARKET-02 sonrası / ikinci müşteri eşiği)
 
+- **Bilgi bankasını doldur (kullanıcı işi, kod değil)** — ekran canlıda (`/settings/knowledge`),
+  içerik yok. Boş bilgi bankası prompt'a hiçbir şey eklemiyor, yani AI hâlâ tahmin ediyor ve
+  Maya AI'ın söyleyebileceği anlamlı bir şey yok. Kullanıcı "uygun bir zamanda doldururuz" dedi
+  (2026-08-17). Görev notu: Obsidian `Görevler/2026-08-17-bilgi-bankasini-doldur.md`.
+  **Bağlı:** Maya AI'ın gerçek hâle gelmesi buna bağlı; satış vaadi de ("bilgi bankanızı okuyan
+  sistem") buradan besleniyor.
+
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Verimaya"**,
   tek kelime — 2026-08-16 kararı, `README.md`).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
@@ -438,6 +445,15 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Yakalanan kusur:** panelde eşiği 60'a çekince "30 günü geçen" kutusu da düşüyordu;
   sunucu doğruydu, MSW mock'u kovaları eşikten sonra sayıyordu. Tarayıcıda gözle
   bakılmasaydı demo yanlış rakam gösterecekti.
+- **Teşvik belge listesi düzenlenebilir ✅** (2026-08-17) — belgeler sabit listeydi; kullanıcı
+  geri bildirimi üzerine ekle/sil/yeniden adlandır geldi (`incentive_files.documents` jsonb,
+  yeni tablo yok). Kurallar `packages/shared`'da: benzersiz `key`, boş `label` reddi,
+  ad max 120 karakter, satır tavanı 30. Yeni dosya varsayılan listeyle açılmaya devam ediyor
+  ama artık silinebilir/düzenlenebilir.
+  **Görüş:** Cursor'a delege edildi, sekiz CI komutu elle doğrulandı (bu turda `lint` dahil).
+  Cursor bir tutarsızlık bildirdi: brief "dört kalem" diyordu, canlı varsayılan zaten altı
+  kalemdi — altı korundu, MSW'deki ayrı dörtlü liste de ona hizalandı. **Kullanıcı doğrulaması
+  bekliyor:** gerçekte hangi belgeler gerekiyor, liste ona göre kısalabilir.
 - **AI-01 Bilgi bankası ✅** (2026-08-17) — `tenant_settings.knowledge` (yeni tablo yok),
   `GET/PUT/DELETE /v1/settings/knowledge`, panel `/settings/knowledge`. Beş sabit bölüm:
   hizmetler+fiyatlar · ödeme kuralları · SSS · kabul etmedikleriniz · notlar.
