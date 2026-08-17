@@ -2497,7 +2497,7 @@ export const handlers = [
 			amountBase = body.amount;
 			baseCurrency = tenantBase;
 		}
-		let status = body.status ?? 'accrued';
+		const status = body.status ?? 'accrued';
 		let paidOn = body.paid_on ?? null;
 		if (status === 'paid' && !paidOn) {
 			paidOn = new Date().toISOString().slice(0, 10);
