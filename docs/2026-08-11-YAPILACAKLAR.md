@@ -268,7 +268,7 @@
 | Kod | İş | Bağımlı | Büyüklük |
 |---|---|---|---|
 | **AI-01** | Bilgi tabanı v1 — `tenant_settings.knowledge`, yalnız hizmet+fiyat bölümü, finans parse prompt'una bağlanır | yok | S |
-| **AI-02** | Kayıt güncelleme onay kuyruğu — `record_update_suggestions`, tek alan: `appointment.scheduled_at` | yok | M |
+| **AI-02** | Kayıt güncelleme onay kuyruğu — `record_update_suggestions`, tek alan: `appointment.scheduled_at`. **⚠️ Bitince sözleşme Madde 6.2 tekrar kontrol edilecek** (aşağıya bak) | yok | M |
 | **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | yok | M |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
@@ -282,6 +282,16 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 **Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
 (G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.
+
+> **⚠️ AI-02 bitince yapılacak sözleşme kontrolü (2026-08-17 notu).**
+> Hizmet sözleşmesi taslağı **Madde 6.2** şunu taahhüt ediyor: *"Hiçbir öneri, Müşteri'nin
+> yetkilendirdiği bir kullanıcı tarafından onaylanmadan Müşteri kaydına işlenmez."*
+> Bu cümle **bugün doğru ama boşta** — sistem zaten kayıt güncelleme önerisi üretmiyor.
+> AI-02 devreye girdiği anda taahhüdün kodda gerçek karşılığı olmak zorunda:
+> onay kapısı olmadan hiçbir öneri `appointments` (veya başka) tablosuna yazılamamalı,
+> ve bu bir testle kanıtlanmalı (toplu kabul yok, belirsiz eşleşmede öneri üretilmez).
+> Aksi hâlde imzalı sözleşmede yanlış beyan doğar.
+> Sözleşme metni ve teknik eşleştirme: Obsidian `13-hukukcu-paketi.md` §8 (Madde 6) + §9 tablosu.
 
 ---
 
