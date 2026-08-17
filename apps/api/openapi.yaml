@@ -1417,6 +1417,398 @@ paths:
           required: true
           schema:
             type: string
+  /record-suggestions:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        appointment_id:
+                          type: string
+                          format: uuid
+                        contact_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        field:
+                          type: string
+                          enum:
+                            - starts_at
+                        current_value:
+                          type: string
+                          format: date-time
+                        suggested_value:
+                          type: string
+                          format: date-time
+                        source_text:
+                          type: string
+                          minLength: 1
+                          maxLength: 4000
+                        confidence:
+                          type: string
+                          enum:
+                            - high
+                            - medium
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - approved
+                            - rejected
+                        decided_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        decided_by:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        reject_reason:
+                          type: string
+                          maxLength: 500
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - appointment_id
+                        - contact_display_name
+                        - field
+                        - current_value
+                        - suggested_value
+                        - source_text
+                        - confidence
+                        - status
+                        - decided_at
+                        - decided_by
+                        - reject_reason
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                  next_cursor:
+                    type: string
+                    nullable: true
+                  total_count:
+                    type: integer
+                    minimum: 0
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+  /record-suggestions/parse:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        appointment_id:
+                          type: string
+                          format: uuid
+                        contact_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        field:
+                          type: string
+                          enum:
+                            - starts_at
+                        current_value:
+                          type: string
+                          format: date-time
+                        suggested_value:
+                          type: string
+                          format: date-time
+                        source_text:
+                          type: string
+                          minLength: 1
+                          maxLength: 4000
+                        confidence:
+                          type: string
+                          enum:
+                            - high
+                            - medium
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - approved
+                            - rejected
+                        decided_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        decided_by:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        reject_reason:
+                          type: string
+                          maxLength: 500
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - appointment_id
+                        - contact_display_name
+                        - field
+                        - current_value
+                        - suggested_value
+                        - source_text
+                        - confidence
+                        - status
+                        - decided_at
+                        - decided_by
+                        - reject_reason
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 8000
+              required:
+                - message
+              additionalProperties: false
+  /record-suggestions/{id}/approve:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  appointment_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  field:
+                    type: string
+                    enum:
+                      - starts_at
+                  current_value:
+                    type: string
+                    format: date-time
+                  suggested_value:
+                    type: string
+                    format: date-time
+                  source_text:
+                    type: string
+                    minLength: 1
+                    maxLength: 4000
+                  confidence:
+                    type: string
+                    enum:
+                      - high
+                      - medium
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - approved
+                      - rejected
+                  decided_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  decided_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  reject_reason:
+                    type: string
+                    maxLength: 500
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - appointment_id
+                  - contact_display_name
+                  - field
+                  - current_value
+                  - suggested_value
+                  - source_text
+                  - confidence
+                  - status
+                  - decided_at
+                  - decided_by
+                  - reject_reason
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /record-suggestions/{id}/reject:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  appointment_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  field:
+                    type: string
+                    enum:
+                      - starts_at
+                  current_value:
+                    type: string
+                    format: date-time
+                  suggested_value:
+                    type: string
+                    format: date-time
+                  source_text:
+                    type: string
+                    minLength: 1
+                    maxLength: 4000
+                  confidence:
+                    type: string
+                    enum:
+                      - high
+                      - medium
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - approved
+                      - rejected
+                  decided_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  decided_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  reject_reason:
+                    type: string
+                    maxLength: 500
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - appointment_id
+                  - contact_display_name
+                  - field
+                  - current_value
+                  - suggested_value
+                  - source_text
+                  - confidence
+                  - status
+                  - decided_at
+                  - decided_by
+                  - reject_reason
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+              additionalProperties: false
   /contacts:
     get:
       responses:
