@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { appointmentListQuerySchema, transactionListQuerySchema } from './list-query.js';
+import {
+	appointmentListQuerySchema,
+	operationAlertListQuerySchema,
+	transactionListQuerySchema
+} from './list-query.js';
 
 describe('appointmentListQuerySchema (GAP-04)', () => {
 	it('accepts status and q alongside existing filters', () => {
@@ -38,6 +42,33 @@ describe('appointmentListQuerySchema (GAP-04)', () => {
 		const result = appointmentListQuerySchema.safeParse({
 			limit: 10,
 			contact_involves: '1'
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+describe('operationAlertListQuerySchema (AI-04)', () => {
+	it('accepts status and within_hours', () => {
+		const parsed = operationAlertListQuerySchema.parse({
+			limit: 10,
+			status: 'due',
+			within_hours: 48
+		});
+		expect(parsed).toMatchObject({ limit: 10, status: 'due', within_hours: 48 });
+	});
+
+	it('rejects unknown query keys (.strict)', () => {
+		const result = operationAlertListQuerySchema.safeParse({
+			limit: 10,
+			not_a_real_filter: '1'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects unknown status', () => {
+		const result = operationAlertListQuerySchema.safeParse({
+			limit: 10,
+			status: 'open'
 		});
 		expect(result.success).toBe(false);
 	});

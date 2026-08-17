@@ -4,6 +4,7 @@ import { appointmentStatusSchema } from './appointment.js';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
 import { commissionEntryStatusSchema } from './commission.js';
 import { incentiveFileStatusSchema } from './incentive-file.js';
+import { operationAlertStatusSchema } from './operation-alert.js';
 import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
 
 /**
@@ -84,6 +85,19 @@ export const commissionEntryListQuerySchema = cursorPageParams
 
 export type CommissionEntryListQuery = z.infer<typeof commissionEntryListQuerySchema>;
 
+/**
+ * Operation alerts: default order is urgency (`due_at ASC, id ASC`).
+ * `within_hours` keeps rows where `due_at <= now + N` (includes overdue).
+ */
+export const operationAlertListQuerySchema = cursorPageParams
+	.extend({
+		status: operationAlertStatusSchema.optional(),
+		within_hours: z.coerce.number().int().min(0).max(8760).optional()
+	})
+	.strict();
+
+export type OperationAlertListQuery = z.infer<typeof operationAlertListQuerySchema>;
+
 export const contactListQuerySchema = searchableListParams
 	.extend({
 		type_id: uuid.optional()
@@ -107,6 +121,8 @@ export type ContactListQuery = z.infer<typeof contactListQuerySchema>;
  *   See `compareByDeadlineAtAsc`.
  * - `GET /v1/commissions`: earned date order (`earned_on` desc, `id` desc).
  *   See `compareByEarnedOnDesc`.
+ * - `GET /v1/operation-alerts`: urgency order (`due_at` asc, `id` asc).
+ *   See `compareByDueAtAsc`.
  * - `GET /v1/contacts`: phonebook order (`last_name` asc nulls last, `first_name`
  *   asc nulls last, `id` asc). Display stays Ad Soyad (`display_name`); only the
  *   list order is by surname. See `compareByLastNameAsc`.
@@ -148,6 +164,14 @@ export function compareByEarnedOnDesc<T extends { earned_on: string; id: string 
 	b: T
 ): number {
 	return b.earned_on.localeCompare(a.earned_on) || b.id.localeCompare(a.id);
+}
+
+/** Operation alerts list order / MSW parity (`due_at ASC, id ASC`). */
+export function compareByDueAtAsc<T extends { due_at: string; id: string }>(
+	a: T,
+	b: T
+): number {
+	return a.due_at.localeCompare(b.due_at) || a.id.localeCompare(b.id);
 }
 
 /** Nullable text ASC with NULLS LAST (PostgreSQL ASC default is NULLS FIRST — do not rely on it). */

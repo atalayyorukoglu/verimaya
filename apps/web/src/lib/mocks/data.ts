@@ -2,7 +2,9 @@ import { faker } from '@faker-js/faker/locale/en';
 import {
 	DEFAULT_INCENTIVE_DOCUMENTS,
 	defaultWhatsappAiPrompt,
-	emptyKnowledgeSections
+	emptyKnowledgeSections,
+	hoursUntil,
+	deriveOperationAlertStatus
 } from '@verimaya/shared';
 import type {
 	AiCorrection,
@@ -29,6 +31,7 @@ import type {
 	KnowledgeRevision,
 	KnowledgeSections,
 	CommissionEntry,
+	OperationAlert,
 	TrustScoreSettings,
 	WhatsappAiPrompt
 } from '@verimaya/shared';
@@ -429,6 +432,8 @@ export type DemoStore = {
 	incentiveDeadlineDays: number;
 	/** Hakediş satırları (MSW) — tahakkuk ≠ ödeme; formül yok. */
 	commissionEntries: CommissionEntry[];
+	/** AI-04 zaman kilitli operasyon alarmları (MSW) — deterministik. */
+	operationAlerts: OperationAlert[];
 	aiCorrections: AiCorrection[];
 	/** Persisted Trust Score checklist (MSW). */
 	trustScore: TrustScoreSettings;
@@ -774,6 +779,70 @@ function makeIncentiveFiles(contacts: Contact[]): IncentiveFile[] {
 			updated_at: iso(faker.date.recent({ days: 5 }))
 		};
 	});
+}
+
+function makeOperationAlerts(appointments: Appointment[]): OperationAlert[] {
+	const past = appointments.find((a) => a.id === 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4');
+	const upcoming = appointments.find((a) => a.id === 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb5');
+	if (!past || !upcoming) return [];
+
+	const now = new Date();
+	const overdueDue = new Date(now.getTime() - 3 * 3_600_000).toISOString();
+	const soonDue = new Date(now.getTime() + 4 * 3_600_000).toISOString();
+	const confirmedDue = new Date(now.getTime() + 10 * 3_600_000).toISOString();
+	const confirmedAt = new Date(now.getTime() - 24 * 3_600_000).toISOString();
+	const created = iso(faker.date.recent({ days: 5 }));
+
+	const row = (
+		partial: Omit<
+			OperationAlert,
+			'id' | 'tenant_id' | 'hours_left' | 'status' | 'created_at' | 'updated_at'
+		>
+	): OperationAlert => {
+		const hours_left = hoursUntil(partial.due_at, now);
+		return {
+			id: faker.string.uuid(),
+			tenant_id: DEMO_TENANT_ID,
+			hours_left,
+			status: deriveOperationAlertStatus(partial.confirmed_at, partial.due_at, now),
+			created_at: created,
+			updated_at: created,
+			...partial
+		};
+	};
+
+	return [
+		row({
+			appointment_id: past.id,
+			contact_display_name: past.contact_display_name,
+			appointment_starts_at: past.starts_at,
+			kind: 'flight',
+			due_at: overdueDue,
+			threshold_hours: 48,
+			confirmed_at: null,
+			confirmed_by: null
+		}),
+		row({
+			appointment_id: upcoming.id,
+			contact_display_name: upcoming.contact_display_name,
+			appointment_starts_at: upcoming.starts_at,
+			kind: 'transfer',
+			due_at: soonDue,
+			threshold_hours: 24,
+			confirmed_at: null,
+			confirmed_by: null
+		}),
+		row({
+			appointment_id: upcoming.id,
+			contact_display_name: upcoming.contact_display_name,
+			appointment_starts_at: upcoming.starts_at,
+			kind: 'welcome',
+			due_at: confirmedDue,
+			threshold_hours: 12,
+			confirmed_at: confirmedAt,
+			confirmed_by: demoUser.display_name
+		})
+	];
 }
 
 /** Three beneficiaries: one partially paid, one unpaid, one with a cancelled row ignored in open. */
@@ -1329,6 +1398,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			knowledgeRevisions: [],
 			incentiveDeadlineDays: 180,
 			commissionEntries: [],
+			operationAlerts: [],
 			aiCorrections: [],
 			trustScore: { checks: [] },
 			aiPrompt: defaultWhatsappAiPrompt(),
@@ -1629,6 +1699,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		knowledgeRevisions: [],
 		incentiveDeadlineDays: 180,
 		commissionEntries: makeCommissionEntries(contacts),
+		operationAlerts: makeOperationAlerts(appointments),
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },
 		aiPrompt: defaultWhatsappAiPrompt(),

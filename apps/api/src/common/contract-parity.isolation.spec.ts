@@ -5,6 +5,7 @@ import { compareByCreatedAtDesc, compareByLastNameAsc, compareByOccurredOnDesc }
 import { closeDb, getDb } from '../db/client';
 import { appointments } from '../db/schema/appointments';
 import { AppointmentsService } from '../appointments/appointments.service';
+import { OperationAlertsService } from '../operation-alerts/operation-alerts.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TransactionsService } from '../transactions/transactions.service';
@@ -64,7 +65,10 @@ describe('CONTRACT-02: API list endpoints match the shared filter + order contra
 				withTenantSession(id, (tdb) => fn({ db: tdb }))
 		} as TenantContextService;
 
-		appointmentsService = new AppointmentsService(tenantContext);
+		appointmentsService = new AppointmentsService(
+			tenantContext,
+			new OperationAlertsService(tenantContext)
+		);
 		transactionsService = new TransactionsService(tenantContext);
 		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 

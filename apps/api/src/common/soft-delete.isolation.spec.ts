@@ -7,6 +7,7 @@ import { appointments } from '../db/schema/appointments';
 import { contacts } from '../db/schema/contacts';
 import { transactions } from '../db/schema/transactions';
 import { AppointmentsService } from '../appointments/appointments.service';
+import { OperationAlertsService } from '../operation-alerts/operation-alerts.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { ReportsService } from '../reports/reports.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
@@ -98,7 +99,10 @@ describe('GAP-06 soft-delete isolation', () => {
 
 		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 		transactionsService = new TransactionsService(tenantContext);
-		appointmentsService = new AppointmentsService(tenantContext);
+		appointmentsService = new AppointmentsService(
+			tenantContext,
+			new OperationAlertsService(tenantContext)
+		);
 		reportsService = new ReportsService(tenantContext);
 
 		await sql`

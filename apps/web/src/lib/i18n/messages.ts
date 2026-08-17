@@ -454,6 +454,16 @@ const tr = {
 	'help.incentives.caveat':
 		'Burada oran veya tutar hesaplanmaz, uygunluk kararı verilmez. Yalnız kayıt ve süre tutulur; başvuru ve mevzuat sizin tarafınızdadır.',
 
+	'help.operation-alerts.title': 'Operasyon alarmları',
+	'help.operation-alerts.b1':
+		'Uçuş, transfer, karşılama ve klinik teyitlerini saate bağlar. Eşik dolunca hâlâ teyitsizse satır alarm verir — kimse “yaptık sanıyordum” diyemez.',
+	'help.operation-alerts.b2':
+		'Kalan saat eksiye düşünce kırmızı, 6 saatin altına inince turuncu. Teyit düğmesi saati durdurur.',
+	'help.operation-alerts.example':
+		'Hastanın uçuşu pazartesi 10:00. Sistem 48 saat önce, cumartesi 10:00’da, teyit yoksa alarm açar. Teyit etmezseniz hasta havaalanında bekler.',
+	'help.operation-alerts.caveat':
+		'Bu bir kural motorudur, tahmin değildir. Model bir şey yorumlamaz; teyit düğmesine basılmadan kalem kapanmış sayılmaz.',
+
 	'help.commissions.title': 'Hakediş / komisyon',
 	'help.commissions.b1':
 		'Kliniğe, yönlendirene veya alt acenteye olan borcunuzu takip eder. Tutarı siz girersiniz.',
@@ -832,6 +842,35 @@ const tr = {
 	'appointments.ops.heading': 'Operasyon listesi',
 	'appointments.ops.description':
 		'Seçili aralıktaki randevular — hasta notları kart üzerinde (takvim değişmeden).',
+	'appointments.alertsLink': 'Operasyon alarmları',
+	'appointments.alerts.documentTitle': 'Operasyon alarmları · Verimaya',
+	'appointments.alerts.back': '← Randevular',
+	'appointments.alerts.title': 'Operasyon alarmları',
+	'appointments.alerts.description':
+		'Uçuş, transfer, karşılama ve klinik teyitleri. Süre dolunca hâlâ teyitsizse alarm.',
+	'appointments.alerts.loading': 'Yükleniyor…',
+	'appointments.alerts.loadError': 'Alarmlar yüklenemedi.',
+	'appointments.alerts.empty': 'Alarm yok.',
+	'appointments.alerts.emptyFiltered': 'Filtrelere uyan alarm yok.',
+	'appointments.alerts.loadMore': 'Daha fazla yükle',
+	'appointments.alerts.col.contact': 'Hasta',
+	'appointments.alerts.col.appointment': 'Randevu tarihi',
+	'appointments.alerts.col.kind': 'Tür',
+	'appointments.alerts.col.hoursLeft': 'Kalan saat',
+	'appointments.alerts.col.status': 'Durum',
+	'appointments.alerts.confirm': 'Teyit et',
+	'appointments.alerts.confirming': 'Teyit ediliyor…',
+	'appointments.alerts.confirmFailed': 'Teyit başarısız',
+	'appointments.alerts.filter.statusAll': 'Tüm durumlar',
+	'appointments.alerts.filter.dueSoon': 'Yalnız süresi yaklaşanlar',
+	'appointments.alerts.filter.apply': 'Filtrele',
+	'appointments.alerts.status.due': 'Süresi doldu',
+	'appointments.alerts.status.upcoming': 'Yaklaşıyor',
+	'appointments.alerts.status.confirmed': 'Teyitli',
+	'appointments.alerts.kind.flight': 'Uçuş',
+	'appointments.alerts.kind.transfer': 'Transfer',
+	'appointments.alerts.kind.welcome': 'Karşılama',
+	'appointments.alerts.kind.clinic': 'Klinik',
 
 	// Finans · AI ile işlem (MONEY-01)
 	'finance.ai.title': 'AI ile İşlem',
@@ -2831,6 +2870,16 @@ const en: Record<MessageKey, string> = {
 	'help.incentives.caveat':
 		'No rate or amount is calculated here and no eligibility decision is made. Only the record and the deadline are kept; the application and the regulation are on your side.',
 
+	'help.operation-alerts.title': 'Operation alerts',
+	'help.operation-alerts.b1':
+		'Ties flight, transfer, welcome, and clinic confirmations to a clock. When the threshold hits and the item is still unconfirmed, the row alarms — nobody can say “we thought it was done”.',
+	'help.operation-alerts.b2':
+		'Negative hours turn red; under 6 hours turns amber. Confirm stops the clock.',
+	'help.operation-alerts.example':
+		'The patient’s flight is Monday 10:00. The system alarms 48 hours earlier, Saturday 10:00, if still unconfirmed. Skip confirm and the patient waits at the airport.',
+	'help.operation-alerts.caveat':
+		'This is a rule engine, not a prediction. No model interprets anything; an item is not closed until someone presses Confirm.',
+
 	'help.commissions.title': 'Commission',
 	'help.commissions.b1':
 		'Tracks what you owe a clinic, a referrer, or a sub-agency. You enter the amount.',
@@ -3202,6 +3251,35 @@ const en: Record<MessageKey, string> = {
 	'appointments.ops.heading': 'Operations list',
 	'appointments.ops.description':
 		'Appointments in the selected range — patient notes on cards (calendar unchanged).',
+	'appointments.alertsLink': 'Operation alerts',
+	'appointments.alerts.documentTitle': 'Operation alerts · Verimaya',
+	'appointments.alerts.back': '← Appointments',
+	'appointments.alerts.title': 'Operation alerts',
+	'appointments.alerts.description':
+		'Flight, transfer, welcome, and clinic confirmations. If still unconfirmed when the clock hits, it alarms.',
+	'appointments.alerts.loading': 'Loading…',
+	'appointments.alerts.loadError': 'Could not load alerts.',
+	'appointments.alerts.empty': 'No alerts.',
+	'appointments.alerts.emptyFiltered': 'No alerts match these filters.',
+	'appointments.alerts.loadMore': 'Load more',
+	'appointments.alerts.col.contact': 'Patient',
+	'appointments.alerts.col.appointment': 'Appointment time',
+	'appointments.alerts.col.kind': 'Kind',
+	'appointments.alerts.col.hoursLeft': 'Hours left',
+	'appointments.alerts.col.status': 'Status',
+	'appointments.alerts.confirm': 'Confirm',
+	'appointments.alerts.confirming': 'Confirming…',
+	'appointments.alerts.confirmFailed': 'Confirm failed',
+	'appointments.alerts.filter.statusAll': 'All statuses',
+	'appointments.alerts.filter.dueSoon': 'Due soon only',
+	'appointments.alerts.filter.apply': 'Filter',
+	'appointments.alerts.status.due': 'Overdue',
+	'appointments.alerts.status.upcoming': 'Upcoming',
+	'appointments.alerts.status.confirmed': 'Confirmed',
+	'appointments.alerts.kind.flight': 'Flight',
+	'appointments.alerts.kind.transfer': 'Transfer',
+	'appointments.alerts.kind.welcome': 'Welcome',
+	'appointments.alerts.kind.clinic': 'Clinic',
 
 	'finance.ai.title': 'AI Transaction',
 	'finance.ai.description':

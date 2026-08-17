@@ -17,10 +17,14 @@ import { buildCursorPage, createdAtCursorCondition } from '../common/list-query'
 import { toAppointment } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+import { OperationAlertsService } from '../operation-alerts/operation-alerts.service';
 
 @Injectable()
 export class AppointmentsService {
-	constructor(private readonly tenantContext: TenantContextService) {}
+	constructor(
+		private readonly tenantContext: TenantContextService,
+		private readonly operationAlerts: OperationAlertsService
+	) {}
 
 	async list(tenantId: string, params: AppointmentListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
@@ -148,6 +152,7 @@ export class AppointmentsService {
 				notes: input.notes ?? null
 			})
 			.returning();
+		await this.operationAlerts.ensureForAppointmentWithDb(db, tenantId, row!.id, row!.startsAt);
 		return toAppointment(row!, {
 			contact_info_incomplete: isContactInfoIncomplete(contact.phone, contact.email)
 		});
@@ -161,6 +166,7 @@ export class AppointmentsService {
 			});
 		}
 
+		const previousStartsAtMs = existing.startsAt.getTime();
 		const contactId = input.contact_id ?? existing.contactId;
 		const contact = await this.requireContact(db, contactId);
 
@@ -206,6 +212,10 @@ export class AppointmentsService {
 			.where(eq(appointments.id, id))
 			.returning();
 
+		if (row!.startsAt.getTime() !== previousStartsAtMs) {
+			await this.operationAlerts.rescheduleForAppointmentWithDb(db, id, row!.startsAt);
+		}
+
 		return toAppointment(row!, {
 			contact_info_incomplete: isContactInfoIncomplete(contact.phone, contact.email)
 		});
@@ -228,6 +238,8 @@ export class AppointmentsService {
 			.update(appointments)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
 			.where(eq(appointments.id, id));
+
+		await this.operationAlerts.softDeleteForAppointmentWithDb(db, id);
 
 		const label = existing.title ?? existing.contactDisplayName;
 		await writeAuditLog(db, tenantId, actor, 'delete', 'appointment', label);

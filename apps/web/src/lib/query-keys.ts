@@ -41,6 +41,10 @@ export function queryKeys(scope: QueryScope) {
 			all: () => k('appointments'),
 			list: (params: Params = {}) => k('appointments', params)
 		},
+		operationAlerts: {
+			all: () => k('operation-alerts'),
+			list: (params: Params = {}) => k('operation-alerts', params)
+		},
 		transactions: {
 			all: () => k('transactions'),
 			list: (params: Params = {}) => k('transactions', params)

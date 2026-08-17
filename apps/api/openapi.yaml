@@ -1115,6 +1115,308 @@ paths:
           required: true
           schema:
             type: string
+  /operation-alerts:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        appointment_id:
+                          type: string
+                          format: uuid
+                        contact_display_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        appointment_starts_at:
+                          type: string
+                          format: date-time
+                        kind:
+                          type: string
+                          enum:
+                            - flight
+                            - transfer
+                            - welcome
+                            - clinic
+                        due_at:
+                          type: string
+                          format: date-time
+                        threshold_hours:
+                          type: integer
+                          minimum: 1
+                          maximum: 8760
+                        hours_left:
+                          type: integer
+                        status:
+                          type: string
+                          enum:
+                            - due
+                            - upcoming
+                            - confirmed
+                        confirmed_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        confirmed_by:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - appointment_id
+                        - contact_display_name
+                        - appointment_starts_at
+                        - kind
+                        - due_at
+                        - threshold_hours
+                        - hours_left
+                        - status
+                        - confirmed_at
+                        - confirmed_by
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                  next_cursor:
+                    type: string
+                    nullable: true
+                  total_count:
+                    type: integer
+                    minimum: 0
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  appointment_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  appointment_starts_at:
+                    type: string
+                    format: date-time
+                  kind:
+                    type: string
+                    enum:
+                      - flight
+                      - transfer
+                      - welcome
+                      - clinic
+                  due_at:
+                    type: string
+                    format: date-time
+                  threshold_hours:
+                    type: integer
+                    minimum: 1
+                    maximum: 8760
+                  hours_left:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                      - due
+                      - upcoming
+                      - confirmed
+                  confirmed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  confirmed_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - appointment_id
+                  - contact_display_name
+                  - appointment_starts_at
+                  - kind
+                  - due_at
+                  - threshold_hours
+                  - hours_left
+                  - status
+                  - confirmed_at
+                  - confirmed_by
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                appointment_id:
+                  type: string
+                  format: uuid
+                kind:
+                  type: string
+                  enum:
+                    - flight
+                    - transfer
+                    - welcome
+                    - clinic
+              required:
+                - appointment_id
+                - kind
+              additionalProperties: false
+  /operation-alerts/{id}/confirm:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  appointment_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  appointment_starts_at:
+                    type: string
+                    format: date-time
+                  kind:
+                    type: string
+                    enum:
+                      - flight
+                      - transfer
+                      - welcome
+                      - clinic
+                  due_at:
+                    type: string
+                    format: date-time
+                  threshold_hours:
+                    type: integer
+                    minimum: 1
+                    maximum: 8760
+                  hours_left:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                      - due
+                      - upcoming
+                      - confirmed
+                  confirmed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  confirmed_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - appointment_id
+                  - contact_display_name
+                  - appointment_starts_at
+                  - kind
+                  - due_at
+                  - threshold_hours
+                  - hours_left
+                  - status
+                  - confirmed_at
+                  - confirmed_by
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /operation-alerts/{id}:
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  deleted:
+                    type: boolean
+                    enum:
+                      - true
+                required:
+                  - id
+                  - deleted
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /contacts:
     get:
       responses:

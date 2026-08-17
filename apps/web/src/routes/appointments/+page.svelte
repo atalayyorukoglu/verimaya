@@ -310,6 +310,12 @@
 	<PageHeader title={t('appointments.title')} description={t('appointments.description')}>
 		{#snippet actions()}
 			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+				<a
+					href="/appointments/alerts"
+					class="text-sm font-medium text-brand hover:underline sm:mr-2"
+				>
+					{t('appointments.alertsLink')}
+				</a>
 				<div class="flex rounded-[6px] border border-border bg-surface p-0.5">
 					<button
 						type="button"

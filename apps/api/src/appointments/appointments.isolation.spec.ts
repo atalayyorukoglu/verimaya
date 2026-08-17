@@ -7,6 +7,7 @@ import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { AppointmentsService } from './appointments.service';
+import { OperationAlertsService } from '../operation-alerts/operation-alerts.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
@@ -67,7 +68,8 @@ describe('appointments tenant isolation', () => {
 				withTenantSession(id, (tdb) => fn({ db: tdb }))
 		} as TenantContextService;
 
-		appointmentsService = new AppointmentsService(tenantContext);
+		const operationAlertsService = new OperationAlertsService(tenantContext);
+		appointmentsService = new AppointmentsService(tenantContext, operationAlertsService);
 		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
 
 		await sql`

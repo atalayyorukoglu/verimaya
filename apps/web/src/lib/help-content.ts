@@ -12,7 +12,13 @@ import type { MessageKey } from '$lib/i18n/messages';
  *   3. `caveat` — (opsiyonel) yanlış okumaya açık nokta; yoksa yazılmaz
  */
 export type HelpTopic =
-	'untouched-contacts' | 'incentives' | 'commissions' | 'cohorts' | 'knowledge' | 'maya';
+	| 'untouched-contacts'
+	| 'incentives'
+	| 'commissions'
+	| 'cohorts'
+	| 'knowledge'
+	| 'maya'
+	| 'operation-alerts';
 
 export type HelpContent = {
 	titleKey: MessageKey;
@@ -33,6 +39,12 @@ export const helpContent: Record<HelpTopic, HelpContent> = {
 		bodyKeys: ['help.incentives.b1', 'help.incentives.b2'],
 		exampleKey: 'help.incentives.example',
 		caveatKey: 'help.incentives.caveat'
+	},
+	'operation-alerts': {
+		titleKey: 'help.operation-alerts.title',
+		bodyKeys: ['help.operation-alerts.b1', 'help.operation-alerts.b2'],
+		exampleKey: 'help.operation-alerts.example',
+		caveatKey: 'help.operation-alerts.caveat'
 	},
 	commissions: {
 		titleKey: 'help.commissions.title',

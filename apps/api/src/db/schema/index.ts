@@ -6,6 +6,7 @@ export * from './appointment-types';
 export * from './organizations';
 export * from './contacts';
 export * from './appointments';
+export * from './operation-alerts';
 export * from './incentive-files';
 export * from './commission-entries';
 export * from './transactions';

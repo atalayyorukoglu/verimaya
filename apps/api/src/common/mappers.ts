@@ -1,10 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactType, FinanceCategory, IncentiveFile, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactType, FinanceCategory, IncentiveFile, OperationAlert, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import {
 	calendarDaysBetween,
 	commissionEntryStatusSchema,
+	deriveOperationAlertStatus,
+	hoursUntil,
 	incentiveFileStatusSchema,
+	operationAlertKindSchema,
 	utcTodayIsoDate
 } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
@@ -20,6 +23,7 @@ import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
 import type { FinanceCategoryRow } from '../db/schema/finance-categories';
 import type { IncentiveFileRow } from '../db/schema/incentive-files';
+import type { OperationAlertRow } from '../db/schema/operation-alerts';
 import type { OrganizationRow } from '../db/schema/organizations';
 import type { TenantRow } from '../db/schema/tenants';
 import type { TransactionRow } from '../db/schema/transactions';
@@ -141,6 +145,32 @@ export function toIncentiveFile(row: IncentiveFileRow, today: string = utcTodayI
 		submitted_at: row.submittedAt,
 		note: row.note,
 		documents: row.documents ?? [],
+		created_at: toIsoDateTime(row.createdAt),
+		updated_at: toIsoDateTime(row.updatedAt)
+	};
+}
+
+export function toOperationAlert(
+	row: OperationAlertRow,
+	contactDisplayName: string,
+	appointmentStartsAt: Date,
+	now: Date = new Date()
+): OperationAlert {
+	const dueAt = toIsoDateTime(row.dueAt);
+	const confirmedAt = row.confirmedAt ? toIsoDateTime(row.confirmedAt) : null;
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		appointment_id: row.appointmentId,
+		contact_display_name: contactDisplayName,
+		appointment_starts_at: toIsoDateTime(appointmentStartsAt),
+		kind: operationAlertKindSchema.parse(row.kind),
+		due_at: dueAt,
+		threshold_hours: row.thresholdHours,
+		hours_left: hoursUntil(dueAt, now),
+		status: deriveOperationAlertStatus(confirmedAt, dueAt, now),
+		confirmed_at: confirmedAt,
+		confirmed_by: row.confirmedBy,
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)
 	};

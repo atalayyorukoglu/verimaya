@@ -56,6 +56,14 @@ import {
 	compareByCreatedAtAsc,
 	compareByLastNameAsc,
 	compareByOccurredOnDesc,
+	compareByDueAtAsc,
+	DEFAULT_OPERATION_ALERT_THRESHOLDS,
+	OPERATION_ALERT_KINDS,
+	deriveOperationAlertStatus,
+	hoursUntil,
+	operationAlertCreateSchema,
+	operationAlertDueAtIso,
+	operationAlertListQuerySchema,
 	deriveTransactionLabel,
 	evaluateTransactionConsistency,
 	isContactInfoIncomplete,
@@ -79,6 +87,7 @@ import {
 	type FinanceCategory,
 	type MarketingReport,
 	type MembershipUser,
+	type OperationAlert,
 	type Organization,
 	type ContactCaseNote,
 	type ContactFile,
@@ -109,6 +118,65 @@ import {
 
 function nowIso() {
 	return new Date().toISOString();
+}
+
+function hydrateOperationAlert(alert: OperationAlert, now = new Date()): OperationAlert {
+	return {
+		...alert,
+		hours_left: hoursUntil(alert.due_at, now),
+		status: deriveOperationAlertStatus(alert.confirmed_at, alert.due_at, now)
+	};
+}
+
+function ensureAlertsForAppointment(store: ReturnType<typeof getStore>, appointment: Appointment) {
+	const now = nowIso();
+	for (const kind of OPERATION_ALERT_KINDS) {
+		const existing = store.operationAlerts.find(
+			(a) => a.appointment_id === appointment.id && a.kind === kind
+		);
+		const thresholdHours = DEFAULT_OPERATION_ALERT_THRESHOLDS[kind];
+		const dueAt = operationAlertDueAtIso(appointment.starts_at, thresholdHours);
+		if (existing) {
+			existing.due_at = dueAt;
+			existing.threshold_hours = thresholdHours;
+			existing.appointment_starts_at = appointment.starts_at;
+			existing.contact_display_name = appointment.contact_display_name;
+			existing.updated_at = now;
+		} else {
+			store.operationAlerts.push(
+				hydrateOperationAlert({
+					id: crypto.randomUUID(),
+					tenant_id: store.tenant.id,
+					appointment_id: appointment.id,
+					contact_display_name: appointment.contact_display_name,
+					appointment_starts_at: appointment.starts_at,
+					kind,
+					due_at: dueAt,
+					threshold_hours: thresholdHours,
+					hours_left: 0,
+					status: 'upcoming',
+					confirmed_at: null,
+					confirmed_by: null,
+					created_at: now,
+					updated_at: now
+				})
+			);
+		}
+	}
+}
+
+function rescheduleAlertsForAppointment(
+	store: ReturnType<typeof getStore>,
+	appointment: Appointment
+) {
+	const now = nowIso();
+	for (const alert of store.operationAlerts) {
+		if (alert.appointment_id !== appointment.id) continue;
+		alert.due_at = operationAlertDueAtIso(appointment.starts_at, alert.threshold_hours);
+		alert.appointment_starts_at = appointment.starts_at;
+		alert.contact_display_name = appointment.contact_display_name;
+		alert.updated_at = now;
+	}
 }
 
 function deriveDisplayName(firstName: string, lastName: string | null | undefined): string {
@@ -1350,6 +1418,7 @@ export const handlers = [
 			updated_at: now
 		} as Appointment;
 		store.appointments.push(appointment);
+		ensureAlertsForAppointment(store, appointment);
 		refreshUsage(store);
 		return HttpResponse.json(appointment, { status: 201 });
 	}),
@@ -1361,6 +1430,7 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const idx = store.appointments.findIndex((a) => a.id === params.id);
 		if (idx < 0) return notFound('Randevu bulunamadı');
+		const previousStartsAt = store.appointments[idx].starts_at;
 		const nextContactId = parsed.data.contact_id ?? store.appointments[idx].contact_id;
 		const contact = store.contacts.find((c) => c.id === nextContactId);
 		const resolved = resolvePartyNames(store, parsed.data);
@@ -1372,6 +1442,9 @@ export const handlers = [
 			updated_at: nowIso()
 		};
 		store.appointments[idx] = updated;
+		if (updated.starts_at !== previousStartsAt) {
+			rescheduleAlertsForAppointment(store, updated);
+		}
 		refreshUsage(store);
 		return HttpResponse.json(updated);
 	}),
@@ -1382,7 +1455,90 @@ export const handlers = [
 		if (idx < 0) return notFound('Randevu bulunamadı');
 		const id = store.appointments[idx].id;
 		store.appointments.splice(idx, 1);
+		store.operationAlerts = store.operationAlerts.filter((a) => a.appointment_id !== id);
 		refreshUsage(store);
+		return HttpResponse.json({ id, deleted: true as const });
+	}),
+
+	http.get('/v1/operation-alerts', ({ request }) => {
+		const url = new URL(request.url);
+		const parsed = parseListQuery(operationAlertListQuerySchema, url);
+		if (!parsed.success) return parsed.response;
+		const store = getStore(scenarioFrom(request));
+		const now = new Date();
+		let items = store.operationAlerts
+			.filter((a) => a.tenant_id === store.tenant.id)
+			.map((a) => hydrateOperationAlert(a, now));
+		if (parsed.data.status) {
+			items = items.filter((a) => a.status === parsed.data.status);
+		}
+		if (parsed.data.within_hours != null) {
+			const cutoff = now.getTime() + parsed.data.within_hours * 3_600_000;
+			items = items.filter((a) => new Date(a.due_at).getTime() <= cutoff);
+		}
+		items.sort(compareByDueAtAsc);
+		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
+	}),
+
+	http.post('/v1/operation-alerts', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const parsed = operationAlertCreateSchema.safeParse(await request.json());
+		if (!parsed.success) return badRequest('Geçersiz alarm', parsed.error.flatten());
+		const appointment = store.appointments.find((a) => a.id === parsed.data.appointment_id);
+		if (!appointment) return notFound('Randevu bulunamadı');
+		const dup = store.operationAlerts.find(
+			(a) => a.appointment_id === appointment.id && a.kind === parsed.data.kind
+		);
+		if (dup) return conflict('conflict', 'Operation alert already exists for this kind');
+		const thresholdHours = DEFAULT_OPERATION_ALERT_THRESHOLDS[parsed.data.kind];
+		const now = nowIso();
+		const created = hydrateOperationAlert({
+			id: crypto.randomUUID(),
+			tenant_id: store.tenant.id,
+			appointment_id: appointment.id,
+			contact_display_name: appointment.contact_display_name,
+			appointment_starts_at: appointment.starts_at,
+			kind: parsed.data.kind,
+			due_at: operationAlertDueAtIso(appointment.starts_at, thresholdHours),
+			threshold_hours: thresholdHours,
+			hours_left: 0,
+			status: 'upcoming',
+			confirmed_at: null,
+			confirmed_by: null,
+			created_at: now,
+			updated_at: now
+		});
+		store.operationAlerts.push(created);
+		return HttpResponse.json(created, { status: 201 });
+	}),
+
+	http.patch('/v1/operation-alerts/:id/confirm', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.operationAlerts.findIndex(
+			(a) => a.id === params.id && a.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Alarm bulunamadı');
+		const current = store.operationAlerts[idx]!;
+		if (!current.confirmed_at) {
+			const now = nowIso();
+			store.operationAlerts[idx] = {
+				...current,
+				confirmed_at: now,
+				confirmed_by: demoUser.display_name,
+				updated_at: now
+			};
+		}
+		return HttpResponse.json(hydrateOperationAlert(store.operationAlerts[idx]!));
+	}),
+
+	http.delete('/v1/operation-alerts/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.operationAlerts.findIndex(
+			(a) => a.id === params.id && a.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Alarm bulunamadı');
+		const id = store.operationAlerts[idx]!.id;
+		store.operationAlerts.splice(idx, 1);
 		return HttpResponse.json({ id, deleted: true as const });
 	}),
 

@@ -6,6 +6,7 @@ export * from './user.js';
 export * from './platform.js';
 export * from './product-modules.js';
 export * from './appointment.js';
+export * from './operation-alert.js';
 export * from './incentive-file.js';
 export * from './incentive-settings.js';
 export * from './commission.js';

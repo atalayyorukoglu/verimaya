@@ -289,7 +289,7 @@
 | **AI-01** | Bilgi tabanı v1 | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-02** | Kayıt güncelleme onay kuyruğu — `record_update_suggestions`, tek alan: `appointment.scheduled_at`. **⚠️ Bitince sözleşme Madde 6.2 tekrar kontrol edilecek** (aşağıya bak) | yok | M |
 | **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
-| **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | yok | M |
+| **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
@@ -378,6 +378,15 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- **AI-04 zaman kilitli alarm motoru ✅** (2026-08-17) — `operation_alerts` (migration `0058`,
+  RLS + FORCE RLS + policy + GRANT). Deterministik: `due_at = starts_at − threshold_hours`
+  (uçuş 48, transfer 24, karşılama 12, klinik 24). CRUD `/v1/operation-alerts`, teyit
+  `PATCH .../confirm`, panel `/appointments/alerts`. Randevu create/update/soft-delete
+  alarmları üretir/günceller/düşürür; teyitli satır teyitli kalır.
+  **Görüş:** Bu iş AI değil — ihtiyaç haritası §5.4 bekçi köpeği. Ayar ekranı bu turda yok;
+  `tenant_settings.operation_alert_thresholds` anahtarı + shared varsayılan hazır. Mevcut
+  randevulara backfill yok — alarm create/tarih değişince oluşur.
 
 - **Hakediş / komisyon takibi (PRODUCT-01) ✅** (2026-08-17) — `commission_entries` (migration
   `0056`, RLS + FORCE RLS + policy + GRANT), CRUD `/v1/commissions`, özet

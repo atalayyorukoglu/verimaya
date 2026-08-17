@@ -28,6 +28,9 @@ export const apiPaths = {
 	memberPasswordReset: (id: string) => `${API_V1_PREFIX}/members/${id}/password-reset`,
 	appointments: `${API_V1_PREFIX}/appointments`,
 	appointment: (id: string) => `${API_V1_PREFIX}/appointments/${id}`,
+	operationAlerts: `${API_V1_PREFIX}/operation-alerts`,
+	operationAlert: (id: string) => `${API_V1_PREFIX}/operation-alerts/${id}`,
+	operationAlertConfirm: (id: string) => `${API_V1_PREFIX}/operation-alerts/${id}/confirm`,
 	contacts: `${API_V1_PREFIX}/contacts`,
 	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
 	contactFinanceSummary: (id: string) => `${API_V1_PREFIX}/contacts/${id}/finance-summary`,
@@ -183,6 +186,8 @@ export type ListQueryParams = {
 	category?: string;
 	/** Incentive files: keep rows with deadline within N calendar days (incl. overdue). */
 	due_within_days?: number;
+	/** Operation alerts: keep rows with due_at within N hours (incl. overdue). */
+	within_hours?: number;
 	/** GAP-F09-13: audit-logs list filters */
 	actor_id?: string;
 	action?: string;
@@ -212,6 +217,9 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.due_within_days != null) {
 		url.searchParams.set('due_within_days', String(params.due_within_days));
 	}
+	if (params?.within_hours != null) {
+		url.searchParams.set('within_hours', String(params.within_hours));
+	}
 	if (params?.actor_id) url.searchParams.set('actor_id', params.actor_id);
 	if (params?.action) url.searchParams.set('action', params.action);
 	if (params?.entity_type) url.searchParams.set('entity_type', params.entity_type);
@@ -231,6 +239,11 @@ import {
 	organizationUpdateSchema
 } from './contact.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
+import {
+	operationAlertCreateSchema,
+	operationAlertListPageSchema,
+	operationAlertSchema
+} from './operation-alert.js';
 import {
 	incentiveFileCreateSchema,
 	incentiveFileListPageSchema,
@@ -410,6 +423,19 @@ export const apiContract = {
 		response: appointmentSchema
 	},
 	'DELETE /v1/appointments/:id': {
+		response: softDeleteResultSchema
+	},
+	'GET /v1/operation-alerts': {
+		response: operationAlertListPageSchema
+	},
+	'POST /v1/operation-alerts': {
+		body: operationAlertCreateSchema,
+		response: operationAlertSchema
+	},
+	'PATCH /v1/operation-alerts/:id/confirm': {
+		response: operationAlertSchema
+	},
+	'DELETE /v1/operation-alerts/:id': {
 		response: softDeleteResultSchema
 	},
 	'GET /v1/contacts': {
