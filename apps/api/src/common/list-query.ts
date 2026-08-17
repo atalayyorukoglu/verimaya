@@ -1,4 +1,4 @@
-import { and, eq, lt, or, sql, type SQL } from 'drizzle-orm';
+import { and, eq, gt, lt, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import {
 	decodeContactListCursor,
@@ -114,5 +114,35 @@ export function buildContactListCursorPage<
 		hasMore && last
 			? encodeContactListCursor(last.sort_last_name, last.sort_first_name, last.id)
 			: null;
+	return { items, next_cursor };
+}
+
+/**
+ * Incentive files: `deadline_at ASC, id ASC`.
+ * Reuses the YYYY-MM-DD|id cursor encoding from occurred_on.
+ */
+export function deadlineAtCursorCondition(
+	deadlineAtCol: PgColumn,
+	idCol: PgColumn,
+	cursor?: string
+): SQL | undefined {
+	if (!cursor) return undefined;
+	const decoded = decodeOccurredOnCursor(cursor);
+	if (!decoded) return undefined;
+	return or(
+		gt(deadlineAtCol, decoded.occurredOn),
+		and(eq(deadlineAtCol, decoded.occurredOn), gt(idCol, decoded.id))
+	);
+}
+
+export function buildDeadlineAtCursorPage<T extends { id: string; deadlineAt: string }>(
+	rows: T[],
+	limit: number
+): { items: T[]; next_cursor: string | null } {
+	const hasMore = rows.length > limit;
+	const items = hasMore ? rows.slice(0, limit) : rows;
+	const last = items.at(-1);
+	const next_cursor =
+		hasMore && last ? encodeOccurredOnCursor(last.deadlineAt, last.id) : null;
 	return { items, next_cursor };
 }

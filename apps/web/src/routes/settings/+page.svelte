@@ -87,6 +87,12 @@
 					icon: Building2
 				},
 				{
+					href: '/settings/incentives',
+					title: t('settings.nav.incentives.title'),
+					description: t('settings.nav.incentives.description'),
+					icon: FolderTree
+				},
+				{
 					href: '/settings/import-export',
 					title: t('settings.nav.importExport.title'),
 					description: 'Toplu import-export (ETL).',

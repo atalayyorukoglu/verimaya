@@ -1,6 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, Contact, ContactType, FinanceCategory, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, Contact, ContactType, FinanceCategory, IncentiveFile, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import {
+	calendarDaysBetween,
+	incentiveFileStatusSchema,
+	utcTodayIsoDate
+} from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
 import type { AiCorrectionRow } from '../db/schema/ai-corrections';
 import type { ApiKeyRow } from '../db/schema/api-keys';
@@ -12,6 +17,7 @@ import type { ContactTypeRow } from '../db/schema/contact-types';
 import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
 import type { FinanceCategoryRow } from '../db/schema/finance-categories';
+import type { IncentiveFileRow } from '../db/schema/incentive-files';
 import type { OrganizationRow } from '../db/schema/organizations';
 import type { TenantRow } from '../db/schema/tenants';
 import type { TransactionRow } from '../db/schema/transactions';
@@ -113,6 +119,26 @@ export function toAppointment(
 		transfer_contact_id: row.transferContactId,
 		notes: row.notes,
 		contact_info_incomplete: extras?.contact_info_incomplete ?? false,
+		created_at: toIsoDateTime(row.createdAt),
+		updated_at: toIsoDateTime(row.updatedAt)
+	};
+}
+
+export function toIncentiveFile(row: IncentiveFileRow, today: string = utcTodayIsoDate()): IncentiveFile {
+	const status = incentiveFileStatusSchema.parse(row.status);
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		contact_id: row.contactId,
+		contact_display_name: row.contactDisplayName,
+		transaction_id: row.transactionId,
+		payment_date: row.paymentDate,
+		deadline_at: row.deadlineAt,
+		days_left: calendarDaysBetween(today, row.deadlineAt),
+		status,
+		submitted_at: row.submittedAt,
+		note: row.note,
+		documents: row.documents ?? [],
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)
 	};

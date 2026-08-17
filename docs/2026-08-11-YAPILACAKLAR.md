@@ -265,7 +265,7 @@
 
 | # | İş | Neden bu sırada | Durum |
 |---|---|---|---|
-| 1 | **Teşvik dosya + süre takibi** — ödeme anında sayaç, T-60 alarm, belge kontrol listesi | İhtiyaç haritası §9: **en yüksek değer çapası**; kaçırılan başvuru tartışmasız kayıp para, üst limit yıllık 6M TL. Hiçbir rakipte yok. ⚠️ Verimaya kayıt tutar, **danışmanlık vermez** (sözleşme Madde 3.7) | ⬜ |
+| 1 | **Teşvik dosya + süre takibi** | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | 2 | **Hakediş / komisyon takibi** (PRODUCT-01) | İhtiyaç haritası §8: incelenen 5 rakibin **hiçbirinde yok**; acente segmentinin asıl ayrımı. Altyapı yarı hazır (`P2pNetBalances` net bakiye motoru) | ⬜ |
 | 3 | **Temassız kişiler listesi** | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | 4 | **Kohort görünümü** — reklam ayı ≠ tahsilat ayı | İhtiyaç haritası §1.2: bu olmadan "hangi kampanya para getirdi" cevabı yanlış çıkıyor. Rapordaki mevcut `cohort` **kaynak bazlı**, tarih bazlı değil — karıştırma | ⬜ |
@@ -385,6 +385,24 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   vaadi: sayfa "sistem okur, siz onaylarsınız" diyor, ürün karşılığı henüz yok (bkz. AI katmanı).
   `nginx.conf` CSP hash'i commit'te güncellendi (`03c211f`) — atlanırsa canlı hub kırılırdı.
   `03c211f` `e5e512d`
+- **Teşvik dosyası + süre takibi ✅** (2026-08-17) — `incentive_files` tablosu (migration
+  `0055`, RLS + FORCE RLS + policy + GRANT), `GET/POST/PATCH/DELETE /v1/incentives`, panel
+  `/finance/incentives` ve ayar `/settings/incentives`. Dosyada: ödeme tarihi, son başvuru
+  tarihi, kalan gün, durum, belge kontrol listesi. Liste en acil üstte; süresi yaklaşan
+  uyarı, geçmiş tehlike rengiyle.
+  **Görüş — mevzuat sınırı bilinçli çizildi:** Süre **koda gömülmedi**, `tenant_settings`
+  ayarı (varsayılan 180 gün) ve ayar ekranında açıkça yazıyor: *"Varsayılan değer yalnızca
+  başlangıçtır; mevzuat iddiası değildir."* Oran / üst limit / uygunluk hesabı **hiç
+  yapılmıyor** — sözleşme Madde 3.7 (kayıt tutarız, danışmanlık vermeyiz) kodda da geçerli.
+  `deadline_at` sunucuda hesaplanır; şemalar `.strict()` olduğu için istemci göndermeye
+  kalksa istek reddedilir. Ayar sonradan değişse mevcut dosyaların tarihi değişmez.
+  **Denetimde bulunan üç kusur:** (1) `due_within_days` testi "yakın" dosyayı bugünün
+  tarihiyle açıyordu — 180 gün varsayılanla son tarih bugün+180 olduğu için filtreye
+  takılmaması doğruydu; kod haklıydı, test yanlıştı, düzeltildi. (2) `runConfirmedDelete`
+  çağrısı `Promise.resolve` sarmalayıcısı olmadan yapılmış, tip hatası veriyordu — mevcut
+  `TransactionFormDialog` desenine hizalandı. (3) **MSW mock'u hiç yazılmamıştı**: demo
+  modunda sayfa sonsuza kadar "Yükleniyor…" kalıyordu. Store alanları, demo verisi ve beş
+  handler eklendi; tarayıcıda doğrulandı.
 - **Temassız kişiler listesi ✅** (2026-08-17) — `GET /v1/reports/untouched-contacts`
   (`days` eşiği + `contact_type` filtresi) ve panel `/reports/untouched`. "Dokunuş" =
   randevu · işlem (`contact_id` **veya** `case_contact_id`) · vaka notu; taban kişinin

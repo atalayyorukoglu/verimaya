@@ -49,6 +49,8 @@ export const apiPaths = {
 	transactions: `${API_V1_PREFIX}/transactions`,
 	transaction: (id: string) => `${API_V1_PREFIX}/transactions/${id}`,
 	transactionsAuditDraft: `${API_V1_PREFIX}/transactions/audit-draft`,
+	incentives: `${API_V1_PREFIX}/incentives`,
+	incentive: (id: string) => `${API_V1_PREFIX}/incentives/${id}`,
 	fxRate: (params: { from: string; to: string; on: string }) => {
 		const url = new URL(`${API_V1_PREFIX}/fx/rate`, 'http://local');
 		url.searchParams.set('from', params.from);
@@ -71,6 +73,7 @@ export const apiPaths = {
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
+	settingsIncentiveDeadline: `${API_V1_PREFIX}/settings/incentive-deadline`,
 	settingsPermissions: `${API_V1_PREFIX}/settings/permissions`,
 	settingsImportContactsTemplate: `${API_V1_PREFIX}/settings/import-export/contacts/template.xlsx`,
 	settingsImportContactsExport: `${API_V1_PREFIX}/settings/import-export/contacts/export.xlsx`,
@@ -162,6 +165,8 @@ export type ListQueryParams = {
 	kind?: string;
 	status?: string;
 	category?: string;
+	/** Incentive files: keep rows with deadline within N calendar days (incl. overdue). */
+	due_within_days?: number;
 	/** GAP-F09-13: audit-logs list filters */
 	actor_id?: string;
 	action?: string;
@@ -185,6 +190,9 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.kind) url.searchParams.set('kind', params.kind);
 	if (params?.status) url.searchParams.set('status', params.status);
 	if (params?.category) url.searchParams.set('category', params.category);
+	if (params?.due_within_days != null) {
+		url.searchParams.set('due_within_days', String(params.due_within_days));
+	}
 	if (params?.actor_id) url.searchParams.set('actor_id', params.actor_id);
 	if (params?.action) url.searchParams.set('action', params.action);
 	if (params?.entity_type) url.searchParams.set('entity_type', params.entity_type);
@@ -204,6 +212,16 @@ import {
 	organizationUpdateSchema
 } from './contact.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
+import {
+	incentiveFileCreateSchema,
+	incentiveFileListPageSchema,
+	incentiveFileSchema,
+	incentiveFileUpdateSchema
+} from './incentive-file.js';
+import {
+	incentiveDeadlineSettingsSchema,
+	incentiveDeadlineSettingsUpdateSchema
+} from './incentive-settings.js';
 import { transactionSchema } from './transaction.js';
 import {
 	transactionAuditDraftResponseSchema,
@@ -461,6 +479,20 @@ export const apiContract = {
 	'DELETE /v1/transactions/:id': {
 		response: softDeleteResultSchema
 	},
+	'GET /v1/incentives': {
+		response: incentiveFileListPageSchema
+	},
+	'POST /v1/incentives': {
+		body: incentiveFileCreateSchema,
+		response: incentiveFileSchema
+	},
+	'PATCH /v1/incentives/:id': {
+		body: incentiveFileUpdateSchema,
+		response: incentiveFileSchema
+	},
+	'DELETE /v1/incentives/:id': {
+		response: softDeleteResultSchema
+	},
 	'GET /v1/fx/rate': {
 		query: fxRateQuerySchema,
 		response: fxRateResponseSchema
@@ -561,6 +593,16 @@ export const apiContract = {
 	},
 	'DELETE /v1/settings/ai-prompt': {
 		response: whatsappAiPromptSchema
+	},
+	'GET /v1/settings/incentive-deadline': {
+		response: incentiveDeadlineSettingsSchema
+	},
+	'PUT /v1/settings/incentive-deadline': {
+		body: incentiveDeadlineSettingsUpdateSchema,
+		response: incentiveDeadlineSettingsSchema
+	},
+	'DELETE /v1/settings/incentive-deadline': {
+		response: incentiveDeadlineSettingsSchema
 	},
 	'GET /v1/settings/permissions': {
 		response: permissionMatrixSchema

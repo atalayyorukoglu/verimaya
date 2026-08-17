@@ -6,6 +6,8 @@ export * from './user.js';
 export * from './platform.js';
 export * from './product-modules.js';
 export * from './appointment.js';
+export * from './incentive-file.js';
+export * from './incentive-settings.js';
 export * from './transaction.js';
 export * from './transaction-consistency.js';
 export * from './fx.js';

@@ -250,6 +250,12 @@
 						</span>
 					{/if}
 				</a>
+				<a
+					href={resolve('/finance/incentives')}
+					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
+				>
+					{t('finance.incentivesLink')}
+				</a>
 				<Button type="button" class="w-full sm:w-auto" onclick={openCreate}
 					>{t('finance.new')}</Button
 				>

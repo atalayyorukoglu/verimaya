@@ -21,6 +21,7 @@ import type {
 	MembershipUser,
 	UserRole,
 	WebhookSubscription,
+	IncentiveFile,
 	TrustScoreSettings,
 	WhatsappAiPrompt
 } from '@verimaya/shared';
@@ -411,6 +412,10 @@ export type DemoStore = {
 	auditLogs: AuditLog[];
 	apiKeys: ApiKey[];
 	webhookSubscriptions: WebhookSubscription[];
+	/** Teşvik dosyaları (MSW) — kayıt + süre; uygunluk/oran yok. */
+	incentiveFiles: IncentiveFile[];
+	/** Teşvik son başvuru gün sayısı (MSW). */
+	incentiveDeadlineDays: number;
 	aiCorrections: AiCorrection[];
 	/** Persisted Trust Score checklist (MSW). */
 	trustScore: TrustScoreSettings;
@@ -723,6 +728,43 @@ function makeApiKeys(): ApiKey[] {
 			revoked_at: null
 		}
 	];
+}
+
+/**
+ * Teşvik dosyası demo verisi. Son başvuru tarihi = ödeme + 180 gün (varsayılan ayar);
+ * biri süresi yaklaşan, biri geçmiş, biri gönderilmiş olsun ki liste renklerini göstersin.
+ */
+function makeIncentiveFiles(contacts: Contact[]): IncentiveFile[] {
+	const patients = contacts.filter((c) => c.contact_type_name === 'Hasta').slice(0, 3);
+	const isoDay = (offsetDays: number) =>
+		new Date(Date.now() + offsetDays * 86_400_000).toISOString().slice(0, 10);
+	const docs = (doneCount: number) =>
+		['sozlesme', 'pasaport', 'fatura', 'dekont'].map((key, i) => ({
+			key,
+			label: key,
+			done: i < doneCount
+		}));
+
+	return patients.map((c, i) => {
+		// i=0 süresi yaklaşan (bugün+25), i=1 süresi geçmiş, i=2 gönderilmiş
+		const paymentOffset = [-155, -200, -100][i] ?? -100;
+		return {
+			id: faker.string.uuid(),
+			tenant_id: DEMO_TENANT_ID,
+			contact_id: c.id,
+			contact_display_name: c.display_name,
+			transaction_id: null,
+			payment_date: isoDay(paymentOffset),
+			deadline_at: isoDay(paymentOffset + 180),
+			days_left: paymentOffset + 180,
+			status: i === 2 ? 'submitted' : 'open',
+			submitted_at: i === 2 ? isoDay(-10) : null,
+			note: null,
+			documents: docs([2, 1, 4][i] ?? 0),
+			created_at: iso(faker.date.recent({ days: 30 })),
+			updated_at: iso(faker.date.recent({ days: 5 }))
+		};
+	});
 }
 
 function makeWebhookSubscriptions(): WebhookSubscription[] {
@@ -1145,6 +1187,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 			auditLogs: [],
 			apiKeys: [],
 			webhookSubscriptions: [],
+			incentiveFiles: [],
+			incentiveDeadlineDays: 180,
 			aiCorrections: [],
 			trustScore: { checks: [] },
 			aiPrompt: defaultWhatsappAiPrompt(),
@@ -1440,6 +1484,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 		auditLogs,
 		apiKeys: makeApiKeys(),
 		webhookSubscriptions: makeWebhookSubscriptions(),
+		incentiveFiles: makeIncentiveFiles(contacts),
+		incentiveDeadlineDays: 180,
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },
 		aiPrompt: defaultWhatsappAiPrompt(),

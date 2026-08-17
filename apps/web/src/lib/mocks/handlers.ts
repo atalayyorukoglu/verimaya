@@ -2187,6 +2187,125 @@ export const handlers = [
 		return HttpResponse.json(store.trustScore);
 	}),
 
+	// ── Teşvik dosyaları ───────────────────────────────────────────────
+	// Sunucudaki kural aynen: deadline_at sunucuda hesaplanır, istemciden alınmaz;
+	// ayar değişse bile MEVCUT dosyaların deadline'ı değişmez.
+	http.get('/v1/settings/incentive-deadline', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({
+			days: store.incentiveDeadlineDays,
+			is_default: store.incentiveDeadlineDays === 180
+		});
+	}),
+
+	http.put('/v1/settings/incentive-deadline', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as { days?: unknown };
+		const days = Number(body.days);
+		if (!Number.isInteger(days) || days < 1 || days > 3650) {
+			return badRequest('Geçersiz gün sayısı');
+		}
+		store.incentiveDeadlineDays = days;
+		return HttpResponse.json({ days, is_default: days === 180 });
+	}),
+
+	http.delete('/v1/settings/incentive-deadline', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		store.incentiveDeadlineDays = 180;
+		return HttpResponse.json({ days: 180, is_default: true });
+	}),
+
+	http.get('/v1/incentives', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const status = url.searchParams.get('status');
+		const dueWithin = url.searchParams.get('due_within_days');
+		const today = new Date().toISOString().slice(0, 10);
+
+		let items = store.incentiveFiles
+			.filter((f) => f.tenant_id === store.tenant.id)
+			.map((f) => ({
+				...f,
+				days_left: Math.round(
+					(new Date(f.deadline_at).getTime() - new Date(today).getTime()) / 86_400_000
+				)
+			}));
+		if (status) items = items.filter((f) => f.status === status);
+		if (dueWithin) items = items.filter((f) => f.days_left <= Number(dueWithin));
+		items.sort((a, b) => a.deadline_at.localeCompare(b.deadline_at));
+
+		return HttpResponse.json(paginate(items, url.searchParams.get('cursor'), limitFrom(url)));
+	}),
+
+	http.post('/v1/incentives', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as {
+			contact_id?: string;
+			payment_date?: string;
+			transaction_id?: string | null;
+			note?: string | null;
+		};
+		const contact = store.contacts.find((c) => c.id === body.contact_id);
+		if (!contact || !body.payment_date) return badRequest('Geçersiz teşvik dosyası');
+
+		const deadline = new Date(
+			new Date(body.payment_date).getTime() + store.incentiveDeadlineDays * 86_400_000
+		)
+			.toISOString()
+			.slice(0, 10);
+		const now = new Date().toISOString();
+		const created = {
+			id: crypto.randomUUID(),
+			tenant_id: store.tenant.id,
+			contact_id: contact.id,
+			contact_display_name: contact.display_name,
+			transaction_id: body.transaction_id ?? null,
+			payment_date: body.payment_date,
+			deadline_at: deadline,
+			days_left: Math.round((new Date(deadline).getTime() - Date.now()) / 86_400_000),
+			status: 'open' as const,
+			submitted_at: null,
+			note: body.note ?? null,
+			documents: [],
+			created_at: now,
+			updated_at: now
+		};
+		store.incentiveFiles.push(created);
+		return HttpResponse.json(created, { status: 201 });
+	}),
+
+	http.patch('/v1/incentives/:id', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.incentiveFiles.findIndex(
+			(f) => f.id === params.id && f.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Teşvik dosyası bulunamadı');
+		const body = (await request.json()) as Record<string, unknown>;
+		const current = store.incentiveFiles[idx]!;
+		// deadline_at ve payment_date bilinçli olarak güncellenmez — sunucu da izin vermiyor.
+		const updated = {
+			...current,
+			status: (body.status as typeof current.status) ?? current.status,
+			submitted_at:
+				'submitted_at' in body ? (body.submitted_at as string | null) : current.submitted_at,
+			note: 'note' in body ? (body.note as string | null) : current.note,
+			documents: (body.documents as typeof current.documents) ?? current.documents,
+			updated_at: new Date().toISOString()
+		};
+		store.incentiveFiles[idx] = updated;
+		return HttpResponse.json(updated);
+	}),
+
+	http.delete('/v1/incentives/:id', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.incentiveFiles.findIndex(
+			(f) => f.id === params.id && f.tenant_id === store.tenant.id
+		);
+		if (idx < 0) return notFound('Teşvik dosyası bulunamadı');
+		store.incentiveFiles.splice(idx, 1);
+		return HttpResponse.json({ id: params.id, deleted: true });
+	}),
+
 	http.get('/v1/settings/ai-prompt', ({ request }) => {
 		const store = getStore(scenarioFrom(request));
 		return HttpResponse.json(store.aiPrompt ?? defaultWhatsappAiPrompt());

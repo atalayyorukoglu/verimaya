@@ -45,6 +45,10 @@ export function queryKeys(scope: QueryScope) {
 			all: () => k('transactions'),
 			list: (params: Params = {}) => k('transactions', params)
 		},
+		incentives: {
+			all: () => k('incentives'),
+			list: (params: Params = {}) => k('incentives', params)
+		},
 		contacts: {
 			all: () => k('contacts'),
 			list: (params: Params = {}) => k('contacts', params),
@@ -61,6 +65,7 @@ export function queryKeys(scope: QueryScope) {
 			financeCategories: () => k('settings', 'finance-categories'),
 			aiDisclosure: () => k('settings', 'ai-disclosure'),
 			aiPrompt: () => k('settings', 'ai-prompt'),
+			incentiveDeadline: () => k('settings', 'incentive-deadline'),
 			permissions: () => k('settings', 'permissions'),
 			apiKeys: () => k('settings', 'api-keys'),
 			webhookSubscriptions: () => k('settings', 'webhook-subscriptions'),

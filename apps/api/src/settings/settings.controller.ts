@@ -26,7 +26,8 @@ import {
 	settingsReorderSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureUpdateSchema,
-	whatsappAiPromptUpdateSchema
+	whatsappAiPromptUpdateSchema,
+	incentiveDeadlineSettingsUpdateSchema
 } from '@verimaya/shared';
 import { SessionGuard } from '../auth/session.guard';
 import { PermissionOverridesService } from '../auth/permission-overrides.service';
@@ -368,6 +369,39 @@ export class SettingsController {
 	@HttpCode(200)
 	resetAiPrompt(@Req() req: FastifyRequest) {
 		return this.settingsService.resetAiPrompt(getActiveOrgId(req), getActorFromRequest(req));
+	}
+
+	@Get('incentive-deadline')
+	@RequireOrgPermission('settings', 'read')
+	getIncentiveDeadline(@Req() req: FastifyRequest) {
+		return this.settingsService.getIncentiveDeadline(getActiveOrgId(req));
+	}
+
+	@Put('incentive-deadline')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'True upsert via onConflictDoUpdate (tenant_id, key) — repeat PUTs converge to the same stored value. The accompanying audit-log row is append-only by design; a duplicate entry on a genuine retry is harmless.'
+	)
+	putIncentiveDeadline(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(incentiveDeadlineSettingsUpdateSchema, body, req);
+		return this.settingsService.saveIncentiveDeadline(
+			getActiveOrgId(req),
+			input,
+			getActorFromRequest(req)
+		);
+	}
+
+	@Delete('incentive-deadline')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE removes the tenant_settings row (or is a no-op when already default). Repeat DELETEs converge to the same default response; audit rows are append-only.'
+	)
+	@HttpCode(200)
+	resetIncentiveDeadline(@Req() req: FastifyRequest) {
+		return this.settingsService.resetIncentiveDeadline(
+			getActiveOrgId(req),
+			getActorFromRequest(req)
+		);
 	}
 
 	@Get('permissions')

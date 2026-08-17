@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { contactListSortKeys } from './contact-list-sort.js';
 import { appointmentStatusSchema } from './appointment.js';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
+import { incentiveFileStatusSchema } from './incentive-file.js';
 import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
 
 /**
@@ -54,6 +55,19 @@ export const transactionListQuerySchema = cursorPageParams
 
 export type TransactionListQuery = z.infer<typeof transactionListQuerySchema>;
 
+/**
+ * Incentive files: default order is deadline urgency (`deadline_at ASC, id ASC`).
+ * `due_within_days` keeps rows where `deadline_at <= today + N` (includes overdue).
+ */
+export const incentiveFileListQuerySchema = cursorPageParams
+	.extend({
+		status: incentiveFileStatusSchema.optional(),
+		due_within_days: z.coerce.number().int().min(0).max(3650).optional()
+	})
+	.strict();
+
+export type IncentiveFileListQuery = z.infer<typeof incentiveFileListQuerySchema>;
+
 export const contactListQuerySchema = searchableListParams
 	.extend({
 		type_id: uuid.optional()
@@ -73,6 +87,8 @@ export type ContactListQuery = z.infer<typeof contactListQuerySchema>;
  * Exceptions:
  * - `GET /v1/transactions`: business date order (`occurred_on` desc, `id` desc).
  *   See `compareByOccurredOnDesc`.
+ * - `GET /v1/incentives`: urgency order (`deadline_at` asc, `id` asc).
+ *   See `compareByDeadlineAtAsc`.
  * - `GET /v1/contacts`: phonebook order (`last_name` asc nulls last, `first_name`
  *   asc nulls last, `id` asc). Display stays Ad Soyad (`display_name`); only the
  *   list order is by surname. See `compareByLastNameAsc`.
@@ -98,6 +114,14 @@ export function compareByOccurredOnDesc<T extends { occurred_on: string; id: str
 	b: T
 ): number {
 	return b.occurred_on.localeCompare(a.occurred_on) || b.id.localeCompare(a.id);
+}
+
+/** Incentive files list order / MSW parity (`deadline_at ASC, id ASC`). */
+export function compareByDeadlineAtAsc<T extends { deadline_at: string; id: string }>(
+	a: T,
+	b: T
+): number {
+	return a.deadline_at.localeCompare(b.deadline_at) || a.id.localeCompare(b.id);
 }
 
 /** Nullable text ASC with NULLS LAST (PostgreSQL ASC default is NULLS FIRST — do not rely on it). */

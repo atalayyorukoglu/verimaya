@@ -12,6 +12,8 @@ import type {
 	CredentialUpsert,
 	FinanceCategoryCreate,
 	FinanceCategoryUpdate,
+	IncentiveDeadlineSettings,
+	IncentiveDeadlineSettingsUpdate,
 	OrganizationCreate,
 	OrganizationUpdate,
 	SettingsReorder,
@@ -25,8 +27,12 @@ import {
 	DEFAULT_APPOINTMENT_TYPE_NAMES,
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS,
+	DEFAULT_INCENTIVE_DEADLINE_DAYS,
+	INCENTIVE_DEADLINE_DAYS_KEY,
+	defaultIncentiveDeadlineSettings,
 	defaultWhatsappAiDisclosure,
 	defaultWhatsappAiPrompt,
+	incentiveDeadlineSettingsSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureSchema,
 	whatsappAiPromptSchema
@@ -768,6 +774,81 @@ export class SettingsService {
 		});
 
 		return defaultWhatsappAiPrompt();
+	}
+
+	async getIncentiveDeadline(tenantId: string): Promise<IncentiveDeadlineSettings> {
+		const raw = await this.getTenantSetting(tenantId, INCENTIVE_DEADLINE_DAYS_KEY);
+		if (raw == null) return defaultIncentiveDeadlineSettings();
+		if (typeof raw === 'number' && Number.isInteger(raw)) {
+			return {
+				days: raw,
+				is_default: false,
+				updated_by: null,
+				updated_at: null
+			};
+		}
+		const parsed = incentiveDeadlineSettingsSchema.safeParse(raw);
+		return parsed.success ? parsed.data : defaultIncentiveDeadlineSettings();
+	}
+
+	/** Days used when computing `deadline_at` on create — default when unset. */
+	async getIncentiveDeadlineDays(tenantId: string): Promise<number> {
+		const settings = await this.getIncentiveDeadline(tenantId);
+		return settings.days > 0 ? settings.days : DEFAULT_INCENTIVE_DEADLINE_DAYS;
+	}
+
+	async saveIncentiveDeadline(
+		tenantId: string,
+		input: IncentiveDeadlineSettingsUpdate,
+		actor: AuditActor
+	): Promise<IncentiveDeadlineSettings> {
+		const value: IncentiveDeadlineSettings = {
+			days: input.days,
+			is_default: false,
+			updated_by: actor.actorDisplayName,
+			updated_at: new Date().toISOString()
+		};
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.insert(tenantSettings)
+				.values({
+					tenantId,
+					key: INCENTIVE_DEADLINE_DAYS_KEY,
+					value
+				})
+				.onConflictDoUpdate({
+					target: [tenantSettings.tenantId, tenantSettings.key],
+					set: {
+						value,
+						updatedAt: new Date()
+					}
+				});
+
+			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', INCENTIVE_DEADLINE_DAYS_KEY);
+		});
+
+		return value;
+	}
+
+	async resetIncentiveDeadline(
+		tenantId: string,
+		actor: AuditActor
+	): Promise<IncentiveDeadlineSettings> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.delete(tenantSettings)
+				.where(
+					and(
+						eq(tenantSettings.tenantId, tenantId),
+						eq(tenantSettings.key, INCENTIVE_DEADLINE_DAYS_KEY)
+					)
+				);
+
+			await writeAuditLog(db, tenantId, actor, 'delete', 'tenant', INCENTIVE_DEADLINE_DAYS_KEY);
+		});
+
+		return defaultIncentiveDeadlineSettings();
 	}
 
 	private duplicateTypeNameConflict(message: string): ConflictException {
