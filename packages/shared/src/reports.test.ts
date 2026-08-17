@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
+	cohortMonthDiff,
+	maturationBucket,
 	reportAppointmentMetricsSchema,
 	reportBalanceRowSchema,
 	reportBalancesSchema,
+	reportCohortsSchema,
 	reportConsistencySchema,
 	reportContactDistributionSchema,
 	reportSummarySchema,
@@ -148,5 +151,41 @@ describe('reportBalancesSchema', () => {
 				transaction_count: 0
 			})
 		).toThrow();
+	});
+});
+
+describe('cohort maturation helpers', () => {
+	it('maps Jan→Apr collection to m3_plus', () => {
+		expect(cohortMonthDiff('2026-01', '2026-04-15')).toBe(3);
+		expect(maturationBucket(3)).toBe('m3_plus');
+	});
+
+	it('maps same-month and later offsets', () => {
+		expect(maturationBucket(cohortMonthDiff('2026-01', '2026-01-20'))).toBe('m0');
+		expect(maturationBucket(cohortMonthDiff('2026-01', '2026-02-01'))).toBe('m1');
+		expect(maturationBucket(cohortMonthDiff('2026-01', '2026-03-01'))).toBe('m2');
+	});
+});
+
+describe('reportCohortsSchema', () => {
+	it('requires attribution note_key and allows null roas', () => {
+		const parsed = reportCohortsSchema.parse({
+			period: { from: '2025-09-01', to: '2026-08-31' },
+			note_key: 'cohort_attribution_assumption',
+			missing_fx_count: 0,
+			items: [
+				{
+					cohort_month: '2026-01',
+					contacts: 2,
+					treated: 1,
+					spend_base: 0,
+					collected_base: 5000,
+					roas: null,
+					maturation: { m0: 0, m1: 0, m2: 0, m3_plus: 5000 }
+				}
+			]
+		});
+		expect(parsed.note_key).toBe('cohort_attribution_assumption');
+		expect(parsed.items[0]?.roas).toBeNull();
 	});
 });

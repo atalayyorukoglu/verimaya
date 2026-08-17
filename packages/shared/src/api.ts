@@ -151,7 +151,9 @@ export const apiPaths = {
 	reportsCommissionSummary: `${API_V1_PREFIX}/reports/commission-summary`,
 	reportsAppointmentMetrics: `${API_V1_PREFIX}/reports/appointment-metrics`,
 	reportsConsistency: `${API_V1_PREFIX}/reports/consistency`,
-	reportsTransactionDuplicates: `${API_V1_PREFIX}/reports/transaction-duplicates`
+	reportsTransactionDuplicates: `${API_V1_PREFIX}/reports/transaction-duplicates`,
+	reportsUntouchedContacts: `${API_V1_PREFIX}/reports/untouched-contacts`,
+	reportsCohorts: `${API_V1_PREFIX}/reports/cohorts`
 } as const;
 
 export type ListQueryParams = {
@@ -305,7 +307,8 @@ import {
 	reportContactDistributionSchema,
 	reportSummarySchema,
 	reportTransactionDuplicatesSchema,
-	reportUntouchedContactsSchema
+	reportUntouchedContactsSchema,
+	reportCohortsSchema
 } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 import { ghlConnectionStatus, ghlReconcileTriggerResult } from './ghl-connection.js';
@@ -748,6 +751,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/untouched-contacts': {
 		response: reportUntouchedContactsSchema
+	},
+	'GET /v1/reports/cohorts': {
+		response: reportCohortsSchema
 	}
 } as const;
 

@@ -1,7 +1,14 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Query,
+	Req,
+	UseGuards
+} from '@nestjs/common';
 import {
 	marketingReportParams,
 	reportByCategoryDetailParams,
+	reportCohortsParams,
 	reportPeriodParams,
 	reportTransactionDuplicatesParams,
 	reportUntouchedContactsParams
@@ -155,5 +162,16 @@ export class ReportsController {
 	untouchedContacts(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
 		const params = parseQuery(reportUntouchedContactsParams, query, req);
 		return this.reportsService.untouchedContacts(getActiveOrgId(req), params);
+	}
+
+	/**
+	 * Tarih bazlı kohort. İzin `finance:read`.
+	 * Kampanya atıfı değildir — yanıt `note_key: cohort_attribution_assumption` taşır.
+	 */
+	@Get('cohorts')
+	@RequireOrgPermission('finance', 'read')
+	cohorts(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(reportCohortsParams, query, req);
+		return this.reportsService.cohorts(getActiveOrgId(req), params);
 	}
 }

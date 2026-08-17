@@ -1655,6 +1655,31 @@ const tr = {
 	'reports.untouched.capped': 'İlk {shown} kişi gösteriliyor (toplam {total}).',
 	'reports.untouched.futureNote':
 		'Gelecek tarihli randevusu olan kişiler listede yer almaz — onlar aktif takiptedir.',
+
+	// Raporlar · Kohort
+	'reports.cohorts.title': 'Kohort görünümü',
+	'reports.cohorts.description':
+		'Kişi hangi ay geldiyse o aya yazılır; tahsilatı ne zaman gelirse gelsin o aya sayılır.',
+	'reports.cohorts.typeLabel': 'Kişi türü',
+	'reports.cohorts.typeAll': 'Tüm türler',
+	'reports.cohorts.colMonth': 'Ay',
+	'reports.cohorts.colContacts': 'Kişi',
+	'reports.cohorts.colTreated': 'Tedavi edilen',
+	'reports.cohorts.colSpend': 'Harcama',
+	'reports.cohorts.colCollected': 'Tahsilat',
+	'reports.cohorts.colRoas': 'ROAS',
+	'reports.cohorts.colM0': 'm0',
+	'reports.cohorts.colM1': 'm1',
+	'reports.cohorts.colM2': 'm2',
+	'reports.cohorts.colM3': 'm3+',
+	'reports.cohorts.loading': 'Kohort hazırlanıyor…',
+	'reports.cohorts.loadError': 'Kohort yüklenemedi.',
+	'reports.cohorts.empty': 'Bu aralıkta kohort yok.',
+	'reports.cohorts.fxMissing':
+		'{count} işlem kur karşılığı olmadığı için tahsilat toplamına dahil edilmedi.',
+	'reports.cohorts.attributionNote':
+		'Kohort, bir ayki reklam harcamasının o ay gelen kişileri getirdiğini varsayar. Kampanya bazlı atıf değildir.',
+
 	'reports.tab.summary': 'Özet',
 	'reports.period.label': 'Dönem',
 	'reports.period.thisMonth': 'Bu ay',
@@ -3863,6 +3888,30 @@ const en: Record<MessageKey, string> = {
 	'reports.untouched.capped': 'Showing the first {shown} of {total}.',
 	'reports.untouched.futureNote':
 		'Contacts with an upcoming appointment are excluded — they are actively handled.',
+
+	'reports.cohorts.title': 'Cohort view',
+	'reports.cohorts.description':
+		'Contacts are attributed to the month they were created; collections count toward that month whenever they arrive.',
+	'reports.cohorts.typeLabel': 'Contact type',
+	'reports.cohorts.typeAll': 'All types',
+	'reports.cohorts.colMonth': 'Month',
+	'reports.cohorts.colContacts': 'Contacts',
+	'reports.cohorts.colTreated': 'Treated',
+	'reports.cohorts.colSpend': 'Spend',
+	'reports.cohorts.colCollected': 'Collected',
+	'reports.cohorts.colRoas': 'ROAS',
+	'reports.cohorts.colM0': 'm0',
+	'reports.cohorts.colM1': 'm1',
+	'reports.cohorts.colM2': 'm2',
+	'reports.cohorts.colM3': 'm3+',
+	'reports.cohorts.loading': 'Preparing cohorts…',
+	'reports.cohorts.loadError': 'Could not load cohorts.',
+	'reports.cohorts.empty': 'No cohorts in this range.',
+	'reports.cohorts.fxMissing':
+		'{count} transactions were excluded from collected totals because they lack a base-currency equivalent.',
+	'reports.cohorts.attributionNote':
+		'Cohort assumes that a month’s ad spend brought the contacts created that month. This is not campaign-level attribution.',
+
 	'reports.tab.summary': 'Summary',
 	'reports.period.label': 'Period',
 	'reports.period.thisMonth': 'This month',

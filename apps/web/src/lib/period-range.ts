@@ -26,6 +26,16 @@ export function monthRangeInTz(
 	return { from, to };
 }
 
+/** Inclusive last N calendar months ending this month (e.g. 12 → son 12 ay). */
+export function lastMonthsRange(
+	monthCount: number,
+	timeZone: string
+): { from: string; to: string } {
+	const end = monthRangeInTz(0, timeZone);
+	const start = monthRangeInTz(-(monthCount - 1), timeZone);
+	return { from: start.from, to: end.to };
+}
+
 export function resolvePeriodRange(
 	periodKey: PeriodKey,
 	customFrom: string,

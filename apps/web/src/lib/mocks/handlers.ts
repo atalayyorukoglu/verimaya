@@ -76,12 +76,16 @@ import {
 	type Organization,
 	type ContactCaseNote,
 	type ContactFile,
+	type ReportCohorts,
 	type SupportedCurrency,
 	type Tenant,
 	type Transaction,
 	type TransactionDraft,
 	type UntouchedActivitySource,
-	type WebhookSubscription
+	type WebhookSubscription,
+	COHORT_ATTRIBUTION_NOTE_KEY,
+	cohortMonthDiff,
+	maturationBucket
 } from '@verimaya/shared';
 import { amountInBase, paidAmountInBase } from '$lib/money-base';
 import { parseWhatsappMessage } from './whatsapp-parse';
@@ -379,6 +383,124 @@ export function buildMarketingReport(
 		attribution_coverage,
 		attribution_missing: false,
 		by_source
+	};
+}
+
+/** Tarih bazlı kohort — demo store'dan hesaplar (uydurma sabit yok). */
+export function buildReportCohorts(
+	store: ReturnType<typeof getStore>,
+	from: string | null,
+	to: string | null,
+	contactType: string | null
+): ReportCohorts {
+	const tenantBase = store.tenant.base_currency as SupportedCurrency;
+	const tz = store.tenant.timezone ?? 'Europe/Istanbul';
+
+	const contacts = store.contacts
+		.filter((c) => c.tenant_id === store.tenant.id)
+		.filter((c) => !contactType || c.contact_type_name === contactType)
+		.filter((c) => {
+			const day = toTenantDayKey(new Date(c.created_at), tz);
+			if (from && day < from) return false;
+			if (to && day > to) return false;
+			return true;
+		});
+
+	const contactMonth = new Map<string, string>();
+	const idsByMonth = new Map<string, string[]>();
+	for (const c of contacts) {
+		const month = toTenantDayKey(new Date(c.created_at), tz).slice(0, 7);
+		contactMonth.set(c.id, month);
+		const list = idsByMonth.get(month) ?? [];
+		list.push(c.id);
+		idsByMonth.set(month, list);
+	}
+
+	const contactIdSet = new Set(contacts.map((c) => c.id));
+	const treatedIds = new Set(
+		store.appointments
+			.filter((a) => a.status === 'completed' && a.contact_id && contactIdSet.has(a.contact_id))
+			.map((a) => a.contact_id as string)
+	);
+
+	const spendByMonth = new Map<string, number>();
+	for (const r of store.adMetricsDaily) {
+		if (from && r.date < from) continue;
+		if (to && r.date > to) continue;
+		const month = r.date.slice(0, 7);
+		let base: number | null = null;
+		if (r.currency == null) base = null;
+		else if (r.currency === tenantBase) base = r.spend_base ?? r.spend_minor;
+		else if (r.spend_base != null && r.base_currency === tenantBase) base = r.spend_base;
+		if (base == null) continue;
+		spendByMonth.set(month, (spendByMonth.get(month) ?? 0) + base);
+	}
+
+	type Mat = ReportCohorts['items'][number]['maturation'];
+	const emptyMat = (): Mat => ({ m0: 0, m1: 0, m2: 0, m3_plus: 0 });
+	const collectedByMonth = new Map<string, number>();
+	const matByMonth = new Map<string, Mat>();
+	let missing_fx_count = 0;
+
+	for (const tx of store.transactions) {
+		if (tx.kind !== 'income') continue;
+		if (!tx.contact_id || !contactIdSet.has(tx.contact_id)) continue;
+		const month = contactMonth.get(tx.contact_id);
+		if (!month) continue;
+
+		const paidBase = paidAmountInBase(tx, tenantBase);
+		if (paidBase == null) {
+			missing_fx_count += 1;
+			continue;
+		}
+		if (paidBase === 0) continue;
+
+		collectedByMonth.set(month, (collectedByMonth.get(month) ?? 0) + paidBase);
+		const mat = matByMonth.get(month) ?? emptyMat();
+		mat[maturationBucket(cohortMonthDiff(month, tx.occurred_on))] += paidBase;
+		matByMonth.set(month, mat);
+	}
+
+	const monthKeys = new Set<string>([
+		...idsByMonth.keys(),
+		...spendByMonth.keys(),
+		...collectedByMonth.keys()
+	]);
+	if (from && to) {
+		let [y, m] = from.slice(0, 7).split('-').map(Number) as [number, number];
+		const [ey, em] = to.slice(0, 7).split('-').map(Number) as [number, number];
+		while (y < ey || (y === ey && m <= em)) {
+			monthKeys.add(`${y}-${String(m).padStart(2, '0')}`);
+			m += 1;
+			if (m > 12) {
+				m = 1;
+				y += 1;
+			}
+		}
+	}
+
+	const items = [...monthKeys]
+		.sort((a, b) => a.localeCompare(b))
+		.map((cohort_month) => {
+			const ids = idsByMonth.get(cohort_month) ?? [];
+			const spend_base = spendByMonth.get(cohort_month) ?? 0;
+			const collected_base = collectedByMonth.get(cohort_month) ?? 0;
+			return {
+				cohort_month,
+				contacts: ids.length,
+				treated: ids.filter((id) => treatedIds.has(id)).length,
+				spend_base,
+				collected_base,
+				roas: spend_base === 0 ? null : collected_base / spend_base,
+				maturation: matByMonth.get(cohort_month) ?? emptyMat()
+			};
+		});
+
+	return {
+		period: { from, to },
+		note_key: COHORT_ATTRIBUTION_NOTE_KEY,
+		missing_fx_count,
+		items
 	};
 }
 
@@ -1410,6 +1532,15 @@ export const handlers = [
 			total: matching.length,
 			items: matching.slice(0, limit)
 		});
+	}),
+
+	http.get('/v1/reports/cohorts', ({ request }) => {
+		const url = new URL(request.url);
+		const store = getStore(scenarioFrom(request));
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		const contactType = url.searchParams.get('contact_type');
+		return HttpResponse.json(buildReportCohorts(store, from, to, contactType));
 	}),
 
 	http.get('/v1/reports/by-category', ({ request }) => {

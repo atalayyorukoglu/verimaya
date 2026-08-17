@@ -336,6 +336,76 @@ export const reportUntouchedContactsSchema = z.object({
 });
 export type ReportUntouchedContacts = z.infer<typeof reportUntouchedContactsSchema>;
 
+/**
+ * Tarih bazlı kohort — reklam ayı ≠ tahsilat ayı (ihtiyaç haritası §1.2).
+ *
+ * Kişi hangi ay oluşturulduysa o aya yazılır; tahsilatı ne zaman gelirse gelsin o kişinin
+ * ayına sayılır. Kaynak bazlı `cohortBySource` (marketing) ile karıştırılmamalı.
+ *
+ * Dürüstlük: bu, kampanya bazlı atıf değildir — ayki harcamanın o ay gelen kişileri
+ * getirdiğini varsayar (`note_key: cohort_attribution_assumption`).
+ */
+export const reportCohortsParams = z
+	.object({
+		from: isoDate.optional(),
+		to: isoDate.optional(),
+		/** Kişi türü filtresi; boşsa tüm türler. */
+		contact_type: z.string().trim().min(1).max(120).optional()
+	})
+	.strict();
+export type ReportCohortsParams = z.infer<typeof reportCohortsParams>;
+
+/** Tahsilatın kohort ayına göre kaçıncı ayda geldiği (tenant base, minor). */
+export const cohortMaturationSchema = z.object({
+	m0: moneyMinor,
+	m1: moneyMinor,
+	m2: moneyMinor,
+	m3_plus: moneyMinor
+});
+export type CohortMaturation = z.infer<typeof cohortMaturationSchema>;
+
+export const reportCohortRowSchema = z.object({
+	/** Kohort ayı `YYYY-MM` (contacts.created_at, tenant TZ). */
+	cohort_month: z.string().regex(/^\d{4}-\d{2}$/),
+	contacts: z.number().int().nonnegative(),
+	/** En az bir `completed` randevusu olan kişi sayısı. */
+	treated: z.number().int().nonnegative(),
+	/** O ay içindeki reklam harcaması (tenant base). */
+	spend_base: moneyMinor,
+	/** Bu kohortun kişilerinden bugüne kadar tahsilat (tarih sınırı yok). */
+	collected_base: moneyMinor,
+	/** `collected_base / spend_base`; `spend_base === 0` ise null (0 yazılmaz). */
+	roas: z.number().nullable(),
+	maturation: cohortMaturationSchema
+});
+export type ReportCohortRow = z.infer<typeof reportCohortRowSchema>;
+
+export const COHORT_ATTRIBUTION_NOTE_KEY = 'cohort_attribution_assumption' as const;
+
+export const reportCohortsSchema = z.object({
+	period: reportPeriodSchema,
+	/** Panelde görünür dürüstlük notu — kampanya atıfı değildir. */
+	note_key: z.literal(COHORT_ATTRIBUTION_NOTE_KEY),
+	/** `amount_base` çözülemediği için sayılamayan tahsilat işlemi adedi (tüm kohortlar). */
+	missing_fx_count: z.number().int().nonnegative(),
+	items: z.array(reportCohortRowSchema)
+});
+export type ReportCohorts = z.infer<typeof reportCohortsSchema>;
+
+/** Months between cohort `YYYY-MM` and payment `YYYY-MM-DD` (or `YYYY-MM`). */
+export function cohortMonthDiff(cohortMonth: string, occurredOn: string): number {
+	const [cy, cm] = cohortMonth.split('-').map(Number);
+	const [oy, om] = occurredOn.slice(0, 7).split('-').map(Number);
+	return (oy! - cy!) * 12 + (om! - cm!);
+}
+
+export function maturationBucket(diff: number): keyof CohortMaturation {
+	if (diff <= 0) return 'm0';
+	if (diff === 1) return 'm1';
+	if (diff === 2) return 'm2';
+	return 'm3_plus';
+}
+
 export type ReportUrlPath =
 	| 'summary'
 	| 'by-category'
@@ -347,16 +417,23 @@ export type ReportUrlPath =
 	| 'appointment-metrics'
 	| 'consistency'
 	| 'transaction-duplicates'
-	| 'untouched-contacts';
+	| 'untouched-contacts'
+	| 'cohorts';
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(
 	path: ReportUrlPath,
-	params?: { from?: string | null; to?: string | null; category?: string | null }
+	params?: {
+		from?: string | null;
+		to?: string | null;
+		category?: string | null;
+		contact_type?: string | null;
+	}
 ): string {
 	const url = new URL(`/v1/reports/${path}`, 'http://local');
 	if (params?.from) url.searchParams.set('from', params.from);
 	if (params?.to) url.searchParams.set('to', params.to);
 	if (params?.category) url.searchParams.set('category', params.category);
+	if (params?.contact_type) url.searchParams.set('contact_type', params.contact_type);
 	return `${url.pathname}${url.search}`;
 }

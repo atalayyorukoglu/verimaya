@@ -268,7 +268,7 @@
 | 1 | **Teşvik dosya + süre takibi** | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | 2 | **Hakediş / komisyon takibi** (PRODUCT-01) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | 3 | **Temassız kişiler listesi** | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| 4 | **Kohort görünümü** — reklam ayı ≠ tahsilat ayı | İhtiyaç haritası §1.2: bu olmadan "hangi kampanya para getirdi" cevabı yanlış çıkıyor. Rapordaki mevcut `cohort` **kaynak bazlı**, tarih bazlı değil — karıştırma | ⬜ |
+| 4 | **Kohort görünümü** — reklam ayı ≠ tahsilat ayı | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 
 ---
 
@@ -438,6 +438,13 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Yakalanan kusur:** panelde eşiği 60'a çekince "30 günü geçen" kutusu da düşüyordu;
   sunucu doğruydu, MSW mock'u kovaları eşikten sonra sayıyordu. Tarayıcıda gözle
   bakılmasaydı demo yanlış rakam gösterecekti.
+- **Kohort görünümü ✅** (2026-08-17) — `GET /v1/reports/cohorts` + panel `/reports/cohorts`.
+  Kişi `created_at` ayına yazılır; tahsilat (tarih sınırı yok) o aya sayılır; harcama =
+  aynı ayın `ad_metrics_daily`. Olgunlaşma `m0/m1/m2/m3+`. `note_key:
+  cohort_attribution_assumption` + panel notu: kampanya atıfı değildir. Varsayılan dönem
+  son 12 ay (`PeriodSelector` özel). Soft-delete / missing FX / ROAS null / tenant izolasyonu
+  test edildi.
+  **Görüş:** Mevcut marketing `cohortBySource` kaynak bazlıdır — bu iş tarih bazlı; karıştırma.
 - **Güvenlik başlıkları canlıda denetlendi + eksikler kapandı ✅** (2026-08-17) — canlı
   `curl -I` denetimi: hub'da CSP + nosniff vardı, **HSTS hiç yoktu**; panel
   (`app.verimaya.com`) hiçbir güvenlik başlığı almıyordu. Sebep: `nginx.conf`'ta başlıklar

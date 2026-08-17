@@ -4,6 +4,7 @@ import {
 	count,
 	eq,
 	gte,
+	inArray,
 	isNotNull,
 	isNull,
 	lt,
@@ -13,8 +14,12 @@ import {
 } from 'drizzle-orm';
 import {
 	tenantDayRange,
+	toTenantDayKey,
 	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
+	cohortMonthDiff,
+	maturationBucket,
+	COHORT_ATTRIBUTION_NOTE_KEY,
 	deriveTransactionLabel,
 	evaluateTransactionConsistency,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
@@ -30,6 +35,9 @@ import {
 	type ReportByCategoryDetail,
 	type ReportByCategoryDetailParams,
 	type ReportByResponsible,
+	type ReportCohorts,
+	type ReportCohortsParams,
+	type ReportCohortRow,
 	type ReportConsistency,
 	type ReportConsistencyItem,
 	type ReportMonthly,
@@ -105,6 +113,22 @@ function sourceLabel(source: string | null | undefined): string {
 
 function rate(part: number, total: number): number {
 	return total === 0 ? 0 : part / total;
+}
+
+/** Inclusive `YYYY-MM` range. */
+function eachYearMonth(fromMonth: string, toMonth: string): string[] {
+	const out: string[] = [];
+	let [y, m] = fromMonth.split('-').map(Number) as [number, number];
+	const [ey, em] = toMonth.split('-').map(Number) as [number, number];
+	while (y < ey || (y === ey && m <= em)) {
+		out.push(`${y}-${String(m).padStart(2, '0')}`);
+		m += 1;
+		if (m > 12) {
+			m = 1;
+			y += 1;
+		}
+	}
+	return out;
 }
 
 /**
@@ -1171,6 +1195,195 @@ export class ReportsService {
 		}
 
 		return { leads_count, treated_count, cohortBySource };
+	}
+
+	/**
+	 * Tarih bazlı kohort (ihtiyaç haritası §1.2).
+	 *
+	 * Kişi `created_at` ayına yazılır; tahsilatı (income, resolvePaidBaseAmount) tarih sınırı
+	 * olmadan o aya sayılır. Harcama = aynı ayın `ad_metrics_daily` toplamı.
+	 * `treated` = en az bir `completed` randevu (soft-delete hariç).
+	 *
+	 * Kampanya atıfı değildir — `note_key` bunu açıkça taşır.
+	 */
+	async cohorts(tenantId: string, params: ReportCohortsParams): Promise<ReportCohorts> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const tenantBase = await this.getTenantBase(db, tenantId);
+			const tz = await getTenantTz(db, tenantId);
+
+			const contactConditions: SQL[] = [isNull(contacts.deletedAt)];
+			if (params.contact_type) {
+				contactConditions.push(eq(contacts.contactTypeName, params.contact_type));
+			}
+			if (params.from) {
+				const { start } = await dayRange(db, tenantId, params.from);
+				contactConditions.push(gte(contacts.createdAt, start));
+			}
+			if (params.to) {
+				const { endExclusive } = await dayRange(db, tenantId, params.to);
+				contactConditions.push(lt(contacts.createdAt, endExclusive));
+			}
+
+			const contactRows = await db
+				.select({
+					id: contacts.id,
+					createdAt: contacts.createdAt
+				})
+				.from(contacts)
+				.where(and(...contactConditions));
+
+			const contactMonth = new Map<string, string>();
+			const idsByMonth = new Map<string, string[]>();
+			for (const row of contactRows) {
+				const month = toTenantDayKey(new Date(row.createdAt), tz).slice(0, 7);
+				contactMonth.set(row.id, month);
+				const list = idsByMonth.get(month) ?? [];
+				list.push(row.id);
+				idsByMonth.set(month, list);
+			}
+
+			const contactIds = contactRows.map((r) => r.id);
+			const treatedIds = new Set<string>();
+			if (contactIds.length > 0) {
+				const treatedRows = await db
+					.select({ contactId: appointments.contactId })
+					.from(appointments)
+					.where(
+						and(
+							isNull(appointments.deletedAt),
+							eq(appointments.status, 'completed'),
+							inArray(appointments.contactId, contactIds)
+						)
+					);
+				for (const row of treatedRows) {
+					if (row.contactId) treatedIds.add(row.contactId);
+				}
+			}
+
+			const spendByMonth = new Map<string, number>();
+			const spendConditions: SQL[] = [];
+			if (params.from) spendConditions.push(gte(adMetricsDaily.date, params.from));
+			if (params.to) spendConditions.push(lte(adMetricsDaily.date, params.to));
+			const spendRows = await db
+				.select({
+					date: adMetricsDaily.date,
+					spendMinor: adMetricsDaily.spendMinor,
+					spendBase: adMetricsDaily.spendBase,
+					baseCurrency: adMetricsDaily.baseCurrency,
+					currency: adMetricsDaily.currency
+				})
+				.from(adMetricsDaily)
+				.where(spendConditions.length ? and(...spendConditions) : undefined);
+
+			for (const row of spendRows) {
+				const month = row.date.slice(0, 7);
+				const base = resolveBaseAmount(
+					{
+						amount: row.spendMinor,
+						amountBase: row.spendBase,
+						baseCurrency: row.baseCurrency,
+						currency: row.currency
+					},
+					tenantBase
+				);
+				if (base == null) continue;
+				spendByMonth.set(month, (spendByMonth.get(month) ?? 0) + base);
+			}
+
+			type Mat = ReportCohortRow['maturation'];
+			const emptyMat = (): Mat => ({ m0: 0, m1: 0, m2: 0, m3_plus: 0 });
+			const collectedByMonth = new Map<string, number>();
+			const matByMonth = new Map<string, Mat>();
+			let missing_fx_count = 0;
+
+			if (contactIds.length > 0) {
+				const txRows = await db
+					.select({
+						contactId: transactions.contactId,
+						occurredOn: transactions.occurredOn,
+						kind: transactions.kind,
+						status: transactions.status,
+						amount: transactions.amount,
+						amountBase: transactions.amountBase,
+						baseCurrency: transactions.baseCurrency,
+						paidAmount: transactions.paidAmount,
+						currency: transactions.currency
+					})
+					.from(transactions)
+					.where(
+						and(
+							eq(transactions.kind, 'income'),
+							isNull(transactions.deletedAt),
+							inArray(transactions.contactId, contactIds)
+						)
+					);
+
+				for (const row of txRows) {
+					if (!row.contactId) continue;
+					const month = contactMonth.get(row.contactId);
+					if (!month) continue;
+
+					const paidBase = resolvePaidBaseAmount(
+						{
+							kind: row.kind,
+							status: row.status,
+							amount: row.amount,
+							amountBase: row.amountBase,
+							baseCurrency: row.baseCurrency,
+							paidAmount: row.paidAmount,
+							currency: row.currency
+						},
+						tenantBase
+					);
+					if (paidBase == null) {
+						missing_fx_count += 1;
+						continue;
+					}
+					if (paidBase === 0) continue;
+
+					collectedByMonth.set(month, (collectedByMonth.get(month) ?? 0) + paidBase);
+					const mat = matByMonth.get(month) ?? emptyMat();
+					const bucket = maturationBucket(cohortMonthDiff(month, row.occurredOn));
+					mat[bucket] += paidBase;
+					matByMonth.set(month, mat);
+				}
+			}
+
+			const monthKeys = new Set<string>([
+				...idsByMonth.keys(),
+				...spendByMonth.keys(),
+				...collectedByMonth.keys()
+			]);
+			if (params.from && params.to) {
+				for (const m of eachYearMonth(params.from.slice(0, 7), params.to.slice(0, 7))) {
+					monthKeys.add(m);
+				}
+			}
+
+			const items: ReportCohortRow[] = [...monthKeys]
+				.sort((a, b) => a.localeCompare(b))
+				.map((cohort_month) => {
+					const ids = idsByMonth.get(cohort_month) ?? [];
+					const spend_base = spendByMonth.get(cohort_month) ?? 0;
+					const collected_base = collectedByMonth.get(cohort_month) ?? 0;
+					return {
+						cohort_month,
+						contacts: ids.length,
+						treated: ids.filter((id) => treatedIds.has(id)).length,
+						spend_base,
+						collected_base,
+						roas: spend_base === 0 ? null : collected_base / spend_base,
+						maturation: matByMonth.get(cohort_month) ?? emptyMat()
+					};
+				});
+
+			return {
+				period: { from: params.from ?? null, to: params.to ?? null },
+				note_key: COHORT_ATTRIBUTION_NOTE_KEY,
+				missing_fx_count,
+				items
+			};
+		});
 	}
 
 	/**

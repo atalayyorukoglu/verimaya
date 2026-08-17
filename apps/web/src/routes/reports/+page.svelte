@@ -566,13 +566,19 @@
 		</PageHeader>
 	</div>
 
-	<!-- Operasyonel liste: dönemden bağımsız, bu yüzden sekme değil ayrı sayfa. -->
-	<div class="mb-4">
+	<!-- Operasyonel / kohort listeleri: dönemden bağımsız ayrı sayfalar. -->
+	<div class="mb-4 flex flex-wrap gap-x-4 gap-y-1">
 		<a
 			href={resolve('/reports/untouched')}
 			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
 		>
 			{t('reports.untouched.title')} →
+		</a>
+		<a
+			href={resolve('/reports/cohorts')}
+			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+		>
+			{t('reports.cohorts.title')} →
 		</a>
 	</div>
 

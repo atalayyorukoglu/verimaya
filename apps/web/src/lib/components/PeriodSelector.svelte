@@ -23,9 +23,12 @@
 
 	$effect(() => {
 		if (customRangeHydrated || !tenantTimezone) return;
-		const r = monthRangeInTz(0, tenantTimezone);
-		customFrom = r.from;
-		customTo = r.to;
+		// Parent may pre-fill a range (e.g. cohorts → last 12 months); don't overwrite.
+		if (!customFrom || !customTo) {
+			const r = monthRangeInTz(0, tenantTimezone);
+			customFrom = r.from;
+			customTo = r.to;
+		}
 		customRangeHydrated = true;
 	});
 

@@ -10957,3 +10957,88 @@ paths:
                   - total
                   - items
                 additionalProperties: false
+  /reports/cohorts:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                        nullable: true
+                      to:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                        nullable: true
+                    required:
+                      - from
+                      - to
+                    additionalProperties: false
+                  note_key:
+                    type: string
+                    enum:
+                      - cohort_attribution_assumption
+                  missing_fx_count:
+                    type: integer
+                    minimum: 0
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cohort_month:
+                          type: string
+                          pattern: ^\d{4}-\d{2}$
+                        contacts:
+                          type: integer
+                          minimum: 0
+                        treated:
+                          type: integer
+                          minimum: 0
+                        spend_base:
+                          type: integer
+                        collected_base:
+                          type: integer
+                        roas:
+                          type: number
+                          nullable: true
+                        maturation:
+                          type: object
+                          properties:
+                            m0:
+                              type: integer
+                            m1:
+                              type: integer
+                            m2:
+                              type: integer
+                            m3_plus:
+                              type: integer
+                          required:
+                            - m0
+                            - m1
+                            - m2
+                            - m3_plus
+                          additionalProperties: false
+                      required:
+                        - cohort_month
+                        - contacts
+                        - treated
+                        - spend_base
+                        - collected_base
+                        - roas
+                        - maturation
+                      additionalProperties: false
+                required:
+                  - period
+                  - note_key
+                  - missing_fx_count
+                  - items
+                additionalProperties: false
