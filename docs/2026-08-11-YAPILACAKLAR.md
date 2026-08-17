@@ -34,6 +34,11 @@
    `docs/Arşiv/`'e gider; AGENTS.md + README.md referansları güncellenir.
 9. **Panelde “eksik” görünen şey** → buraya kalem aç veya “Bilinçli olarak yapılmayacaklar”a
    yaz. İkinci bir açık-iş dosyası açma.
+10. **Yerel doğrulamadan önce `pnpm --filter @verimaya/shared build`.** `openapi:generate`
+    ve drift testi `@verimaya/shared`'ın **dist**'ini okur. Bayat dist ile yerelde her şey
+    yeşil görünür, CI shared'ı build ettiği için kırmızıya döner — 2026-08-17'de AI-02
+    böyle kırıldı. Sözleşme (`packages/shared`) değiştiyse: **build → openapi:generate →
+    test**, bu sırayla.
 
 **Durum işaretleri:** `- [ ]` yapılmadı · `- [x]` yapıldı · `- [~]` kısmi
 
@@ -287,7 +292,7 @@
 | Kod | İş | Bağımlı | Büyüklük |
 |---|---|---|---|
 | **AI-01** | Bilgi tabanı v1 | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-02** | Kayıt güncelleme onay kuyruğu — `record_update_suggestions`, tek alan: `appointment.scheduled_at`. **⚠️ Bitince sözleşme Madde 6.2 tekrar kontrol edilecek** (aşağıya bak) | yok | M |
+| **AI-02** | Kayıt güncelleme onay kuyruğu | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
@@ -302,14 +307,16 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 **Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
 (G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.
 
-> **⚠️ AI-02 bitince yapılacak sözleşme kontrolü (2026-08-17 notu).**
-> Hizmet sözleşmesi taslağı **Madde 6.2** şunu taahhüt ediyor: *"Hiçbir öneri, Müşteri'nin
-> yetkilendirdiği bir kullanıcı tarafından onaylanmadan Müşteri kaydına işlenmez."*
-> Bu cümle **bugün doğru ama boşta** — sistem zaten kayıt güncelleme önerisi üretmiyor.
-> AI-02 devreye girdiği anda taahhüdün kodda gerçek karşılığı olmak zorunda:
-> onay kapısı olmadan hiçbir öneri `appointments` (veya başka) tablosuna yazılamamalı,
-> ve bu bir testle kanıtlanmalı (toplu kabul yok, belirsiz eşleşmede öneri üretilmez).
-> Aksi hâlde imzalı sözleşmede yanlış beyan doğar.
+> **✅ AI-02 sözleşme kontrolü yapıldı (2026-08-17).**
+> Hizmet sözleşmesi **Madde 6.2**: *"Hiçbir öneri, Müşteri'nin yetkilendirdiği bir kullanıcı
+> tarafından onaylanmadan Müşteri kaydına işlenmez."* Bu cümlenin artık kodda karşılığı var
+> ve `record-suggestions.isolation.spec.ts` içinde **maddeye adıyla atıf yapan testlerle**
+> kanıtlanıyor: bekleyen öneri randevuyu değiştirmiyor · yalnız tek id'li `approve` uyguluyor ·
+> toplu onay yolu yok · belirsiz LLM çıktısı kuyruğa satır yazmıyor · bayat öneri 409 dönüp
+> randevuya dokunmuyor · reddedilen sonradan onaylanamıyor.
+> **Sonraki kontrol AI-07'de:** beyaz liste genişleyince (telefon, randevu durumu, hasta
+> durumu) aynı kanıt her yeni alan için tekrarlanmalı — `field` CHECK'i bugün yalnız
+> `'starts_at'` kabul ediyor, kapıyı dar tutan şey o.
 > Sözleşme metni ve teknik eşleştirme: Obsidian `13-hukukcu-paketi.md` §8 (Madde 6) + §9 tablosu.
 
 ---
@@ -378,6 +385,20 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- **AI-02 kayıt güncelleme onay kuyruğu ✅** (2026-08-17) — `record_update_suggestions`
+  (migration `0059`, RLS + FORCE RLS + policy + GRANT). Tek alan: `appointments.starts_at`.
+  `POST /v1/record-suggestions/parse` metinden öneri üretir, `GET` kuyruğu listeler,
+  `POST /:id/approve` **tek tek** uygular, `POST /:id/reject` sebep alır. Panel
+  `/appointments/suggestions`. `LlmClient.suggestAppointmentReschedule` iki istemcide de var.
+  **Görüş:** Bu, ana sayfadaki "sistem okur, siz onaylarsınız" vaadinin ilk gerçek karşılığı ve
+  sözleşme Madde 6.2'nin kanıtı (yukarıdaki bloğa bakın). Kapı bilerek dar: `field` CHECK'i
+  yalnız `'starts_at'`, `confidence` yalnız `high`/`medium`, toplu onay yolu **yok**.
+  Onay randevuyu `AppointmentsService.updateWithDb` üzerinden değiştirdiği için AI-04
+  alarmlarının `due_at`'i de kayıyor, teyitli alarm teyitli kalıyor.
+  **Kusur ve ders:** Cursor `openapi:generate` çalıştırmadı, CI kırmızı döndü; yerelde
+  görünmedi çünkü script `@verimaya/shared` **dist**'ini okuyor ve yerel dist bayattı
+  (Çalışma kuralları · 10).
 
 - **AI-04 zaman kilitli alarm motoru ✅** (2026-08-17) — `operation_alerts` (migration `0058`,
   RLS + FORCE RLS + policy + GRANT). Deterministik: `due_at = starts_at − threshold_hours`
