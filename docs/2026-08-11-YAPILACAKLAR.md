@@ -301,7 +301,12 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   tek kelime — 2026-08-16 kararı, `README.md`).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
 - **PRODUCT-01:** Komisyon takibi discovery (acente segmenti seçilirse).
-- **CSP/HSTS** canlıda kanıtlı denetim.
+- **Panel CSP** — `app.verimaya.com` hâlâ CSP'siz (HSTS + nosniff + Referrer + Permissions
+  2026-08-17'de kondu, bkz. Son kapananlar). Blocking CSP körlemesine yazılmadı: dosya
+  önizleme S3/R2 host'u ve `connect-src` için API host'u ortama göre değişiyor, yanlış
+  politika paneli kırar. **Önerilen yol:** önce `Content-Security-Policy-Report-Only` ile
+  yayına al, gerçek kullanımda ihlalleri topla, sonra enforcing'e çevir. Pilot ortasında
+  yapılmaz.
 - **Veri işleme envanteri** + **AB veri lokasyonu + DPA şablonları**. **LEG-02'ye bağlı
   (2026-08-12):** satıcı Albion Signature (UK), müşteri Türkiye'de sağlık turizmi acentesi —
   yani sağlık verisinin yurtdışına aktarımı var. KVKK aktarım dayanağı + DPA + aydınlatma
@@ -361,6 +366,36 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   vaadi: sayfa "sistem okur, siz onaylarsınız" diyor, ürün karşılığı henüz yok (bkz. AI katmanı).
   `nginx.conf` CSP hash'i commit'te güncellendi (`03c211f`) — atlanırsa canlı hub kırılırdı.
   `03c211f` `e5e512d`
+- **Güvenlik başlıkları canlıda denetlendi + eksikler kapandı ✅** (2026-08-17) — canlı
+  `curl -I` denetimi: hub'da CSP + nosniff vardı, **HSTS hiç yoktu**; panel
+  (`app.verimaya.com`) hiçbir güvenlik başlığı almıyordu. Sebep: `nginx.conf`'ta başlıklar
+  yalnız `location = /hub.html` içindeydi ve **nginx'te `add_header` miras alınmaz** — kendi
+  `add_header`'ı olan her location üsttekileri düşürür. Belge döndüren üç location'a
+  (`/hub.html`, `= /`, `/`) `Strict-Transport-Security` (1 yıl + includeSubDomains),
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` tek tek eklendi.
+  **Görüş:** Gerçek nginx container'ında build çıktısıyla doğrulandı — panel kabuğu, derin
+  panel rotası ve hub için başlıklar dönüyor. Panel CSP'si bilinçli ertelendi (Bekleyen'e
+  yazıldı): S3/R2 ve API host'ları ortama bağlı, körlemesine blocking politika paneli kırar.
+  `X-Frame-Options` eklenmedi — hub'da CSP `frame-ancestors 'none'` zaten kapsıyor.
+- **`db:generate` engellendi + migration kuralı yazıldı ✅** (2026-08-17) — komut çöküyordu;
+  kök sebep `drizzle/meta/` içinde 55 migration'a karşılık **tek snapshot** (`0000`) olması.
+  Snapshot'ı canlı şemadan üretip denedim: araç, RLS'i modellemediği için **32 izolasyon
+  politikasını DROP, 32 tabloda RLS'i DISABLE, 30 check kısıtını DROP** eden bir migration
+  üretti. Yani "düzeltilmiş" hâli çok kiracılı izolasyonu sessizce silecekti.
+  **Görüş:** Doğru çözüm aracı çalıştırmak değil, **kullanılamaz hâle getirmek**. `db:generate`
+  artık açıklayıcı bir hata verip çıkıyor (`scripts/db-generate-guard.js`); elle migration
+  yazma adımları hem orada hem `AGENTS.md` kod konvansiyonlarında yazılı. Üretilen taslak
+  migration ve sahte snapshot geri alındı, çalışma ağacı temiz.
+- **WEBHOOK-01 sağlama scripti ✅** (2026-08-17) — shim kapatmanın önündeki engel, her
+  tenant'a elle SQL ile kimlik yazmaktı (secret üret → sha256 → AES-GCM şifrele → insert).
+  `pnpm --filter @verimaya/api webhook:identity status|issue` ile iki komuta indi.
+  `status` hangi tenant'ta kimlik eksik olduğunu listeler ve eksik varsa **çıkış kodu 2**
+  döner — shim kapatılmadan önceki kapı kontrolü budur.
+  **Görüş:** Yazılan şifreli değerin gerçekten çözülüp secret'a döndüğü ve `key_hash`'in
+  eşleştiği yerel round-trip testiyle doğrulandı; bozuk ciphertext webhook'ları sessizce
+  401'e düşürürdü. Secret yalnız bir kez ekrana basılır, DB'de düz metin tutulmaz.
+  Mevcut kimlik varken `--rotate` olmadan yazmayı reddediyor. Env'i `false` yapmak hâlâ
+  kullanıcı işi (prod erişimi yok).
 - **Marka yazımı "Verimaya" + destek e-postası ✅** (2026-08-16) — karar netleşti: **"Verimaya"**
   tek kelime (2026-08-07'deki "Veri Maya" iki kelimelik yazımını günceller). Tüm canlı yüzeyler
   taransın: `HubHomeV1-V4.svelte` (JSON-LD, OG meta, footer telifi), `features.ts` (GHL özellik

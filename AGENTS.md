@@ -36,6 +36,14 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 - **Rota ve slug'lar İngilizce** (`/contacts`, `/settings/connections/ads`). Kullanıcıya görünen metin `apps/web/src/lib/i18n/messages.ts` kataloğundan gelir. Detay ve gerekçe: aşağıdaki "Dil ve slug" bölümü.
 - Panel UI varsayılan dil **Türkçe**; hub’da TR/EN dil değiştirici var (URL locale yok). **i18n altyapısı kuruldu** — yeni metin doğrudan dil gömülmez, `messages.ts` anahtarı. Tema: **açık (varsayılan) + koyu**. Renk: **TickPort warm neutrals** (terracotta `#D97757`); layout CF dashboard — `docs/TASARIM.md`. Changelog: `docs/CHANGELOG-KURALLARI.md`.
 - Test: her tenant'lı endpoint için negatif izolasyon testi ("Tenant A, Tenant B verisini göremez") zorunludur.
+- **Migration'lar elle yazılır; `db:generate` kullanılmaz** (komut bilerek engellendi —
+  `apps/api/scripts/db-generate-guard.js`). drizzle-kit RLS politikalarını, `FORCE ROW LEVEL
+  SECURITY`'yi, `verimaya_app` GRANT'lerini ve SQL'de tanımlı kısıtları görmediği için bunları
+  silen migration üretiyor (2026-08-17 ölçümü: 32 izolasyon politikası + 32 tabloda RLS + 30
+  check kısıtı düşüyordu). Yeni migration: `apps/api/drizzle/` altına sıradaki numarayla `.sql`
+  (desen `0054_ad_sync_status.sql`; tenant'lı tabloda RLS + FORCE RLS + policy + GRANT zorunlu),
+  `meta/_journal.json`'a kayıt, `db:migrate` ile uygula, `src/db/schema/` altındaki şemayı da
+  güncelle.
 
 ## Dil ve slug — 2026-07-26 kuralı
 
