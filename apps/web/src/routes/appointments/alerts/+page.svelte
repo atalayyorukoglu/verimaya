@@ -33,9 +33,12 @@
 		clinic: 'appointments.alerts.kind.clinic'
 	};
 
-	let statusFilter = $state('');
+	// Her randevu dört türü birden açtığı için "hepsi" görünümü çok hızlı şişiyor ve
+	// teyit bekleyen gerçek iş kayboluyor. Liste varsayılan olarak yalnız vakti gelmiş ve
+	// hâlâ teyitsiz olanı gösterir; diğerleri filtreden bir tık uzakta.
+	let statusFilter = $state<OperationAlertStatus | ''>('due');
 	let dueSoonOnly = $state(false);
-	let appliedStatus = $state('');
+	let appliedStatus = $state<OperationAlertStatus | ''>('due');
 	let appliedDueSoon = $state(false);
 	let confirmingId = $state<string | null>(null);
 	let confirmError = $state<string | null>(null);
