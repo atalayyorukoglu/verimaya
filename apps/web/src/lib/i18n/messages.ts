@@ -1660,6 +1660,8 @@ const tr = {
 	'reports.cohorts.title': 'Kohort görünümü',
 	'reports.cohorts.description':
 		'Kişi hangi ay geldiyse o aya yazılır; tahsilatı ne zaman gelirse gelsin o aya sayılır.',
+	'reports.cohorts.noSpendData':
+		'Bu ay için reklam verisi yok — harcama sıfır demek değil, bilinmiyor demek.',
 	'reports.cohorts.typeLabel': 'Kişi türü',
 	'reports.cohorts.typeAll': 'Tüm türler',
 	'reports.cohorts.colMonth': 'Ay',
@@ -3892,6 +3894,7 @@ const en: Record<MessageKey, string> = {
 	'reports.cohorts.title': 'Cohort view',
 	'reports.cohorts.description':
 		'Contacts are attributed to the month they were created; collections count toward that month whenever they arrive.',
+	'reports.cohorts.noSpendData': 'No ad data for this month — spend is unknown, not zero.',
 	'reports.cohorts.typeLabel': 'Contact type',
 	'reports.cohorts.typeAll': 'All types',
 	'reports.cohorts.colMonth': 'Month',

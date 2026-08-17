@@ -1290,6 +1290,11 @@ export class ReportsService {
 				spendByMonth.set(month, (spendByMonth.get(month) ?? 0) + base);
 			}
 
+			// "Veri yok" ile "harcama sıfır" ayrı şeyler. Ads entegrasyonu belirli bir tarihte
+			// bağlandığı için ondan önceki aylarda hiç satır yoktur; oraya 0 yazmak "o ay
+			// bedavaya hasta geldi" diye okunur. Satırı olan ay 0 bile olsa 0 kalır.
+			const monthsWithSpendData = new Set(spendRows.map((row) => row.date.slice(0, 7)));
+
 			type Mat = ReportCohortRow['maturation'];
 			const emptyMat = (): Mat => ({ m0: 0, m1: 0, m2: 0, m3_plus: 0 });
 			const collectedByMonth = new Map<string, number>();
@@ -1364,7 +1369,9 @@ export class ReportsService {
 				.sort((a, b) => a.localeCompare(b))
 				.map((cohort_month) => {
 					const ids = idsByMonth.get(cohort_month) ?? [];
-					const spend_base = spendByMonth.get(cohort_month) ?? 0;
+					const spend_base = monthsWithSpendData.has(cohort_month)
+						? (spendByMonth.get(cohort_month) ?? 0)
+						: null;
 					const collected_base = collectedByMonth.get(cohort_month) ?? 0;
 					return {
 						cohort_month,
@@ -1372,7 +1379,8 @@ export class ReportsService {
 						treated: ids.filter((id) => treatedIds.has(id)).length,
 						spend_base,
 						collected_base,
-						roas: spend_base === 0 ? null : collected_base / spend_base,
+						roas:
+							spend_base == null || spend_base === 0 ? null : collected_base / spend_base,
 						maturation: matByMonth.get(cohort_month) ?? emptyMat()
 					};
 				});

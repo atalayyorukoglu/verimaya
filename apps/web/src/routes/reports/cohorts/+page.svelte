@@ -154,7 +154,11 @@
 							<td class="px-3 py-2.5 text-right tabular-nums">{row.contacts}</td>
 							<td class="px-3 py-2.5 text-right tabular-nums">{row.treated}</td>
 							<td class="px-3 py-2.5 text-right tabular-nums">
-								{formatMoney(row.spend_base, baseCurrency)}
+								{#if row.spend_base == null}
+									<span class="text-text-faint" title={t('reports.cohorts.noSpendData')}>—</span>
+								{:else}
+									{formatMoney(row.spend_base, baseCurrency)}
+								{/if}
 							</td>
 							<td class="px-3 py-2.5 text-right tabular-nums">
 								{formatMoney(row.collected_base, baseCurrency)}

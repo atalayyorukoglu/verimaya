@@ -203,7 +203,12 @@ describe('reports cohorts', () => {
 		expect(jan!.maturation).toEqual({ m0: 0, m1: 0, m2: 0, m3_plus: 300000 });
 	});
 
-	it('returns null roas when spend_base is 0', async () => {
+	/**
+	 * Şubat'ta hiç `ad_metrics_daily` satırı yok. "Harcama 0" demek yanlış olur — o ay
+	 * entegrasyon bağlı değildi, harcama BİLİNMİYOR. 0 gösterilen bir ay "bedavaya hasta
+	 * geldi" diye okunur; null gösterilen ay okunmaz. (2026-08-17 denetim bulgusu.)
+	 */
+	it('returns null spend_base when the month has no ad data at all', async () => {
 		const res = await service.cohorts(tenantA, {
 			from: '2026-01-01',
 			to: '2026-02-28'
@@ -211,7 +216,30 @@ describe('reports cohorts', () => {
 		const feb = res.items.find((i) => i.cohort_month === '2026-02');
 		expect(feb).toBeDefined();
 		expect(feb!.contacts).toBe(1);
+		expect(feb!.spend_base).toBeNull();
+		expect(feb!.roas).toBeNull();
+	});
+
+	/** Satırı olan ama toplamı sıfır olan ay: veri VAR, harcama gerçekten 0 → null değil. */
+	it('returns 0 (not null) when ad data exists but sums to zero', async () => {
+		const { sql } = getDb(databaseUrl);
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`
+				insert into ad_metrics_daily (
+					tenant_id, provider, date, campaign_id, spend_minor, currency, impressions, clicks
+				)
+				values (${tenantA}, 'meta', '2026-02-10', 'camp-feb-zero', 0, 'TRY', 0, 0)
+			`;
+		});
+
+		const res = await service.cohorts(tenantA, {
+			from: '2026-01-01',
+			to: '2026-02-28'
+		});
+		const feb = res.items.find((i) => i.cohort_month === '2026-02');
 		expect(feb!.spend_base).toBe(0);
+		// Sıfıra bölme yok — oran yine null, ama harcama "bilinmiyor" değil "sıfır".
 		expect(feb!.roas).toBeNull();
 	});
 

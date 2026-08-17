@@ -370,11 +370,18 @@ export const reportCohortRowSchema = z.object({
 	contacts: z.number().int().nonnegative(),
 	/** En az bir `completed` randevusu olan kişi sayısı. */
 	treated: z.number().int().nonnegative(),
-	/** O ay içindeki reklam harcaması (tenant base). */
-	spend_base: moneyMinor,
+	/**
+	 * O ay içindeki reklam harcaması (tenant base).
+	 *
+	 * **`null` = o ay için hiç reklam verisi YOK** (entegrasyon o tarihte bağlı değildi,
+	 * ya da sağlayıcı o ay hiç satır döndürmedi). `0` ise veri var ve harcama gerçekten sıfır.
+	 * İkisi ayrı: `0` gösterilen bir ay "bedavaya hasta geldi" diye okunur; veri yoksa bunu
+	 * iddia edemeyiz. Panel `null` için `—` gösterir.
+	 */
+	spend_base: moneyMinor.nullable(),
 	/** Bu kohortun kişilerinden bugüne kadar tahsilat (tarih sınırı yok). */
 	collected_base: moneyMinor,
-	/** `collected_base / spend_base`; `spend_base === 0` ise null (0 yazılmaz). */
+	/** `collected_base / spend_base`; `spend_base` null ya da 0 ise null (0'a bölme yok). */
 	roas: z.number().nullable(),
 	maturation: cohortMaturationSchema
 });

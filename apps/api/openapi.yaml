@@ -11005,6 +11005,7 @@ paths:
                           minimum: 0
                         spend_base:
                           type: integer
+                          nullable: true
                         collected_base:
                           type: integer
                         roas:

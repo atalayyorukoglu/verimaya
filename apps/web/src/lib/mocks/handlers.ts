@@ -435,6 +435,13 @@ export function buildReportCohorts(
 		if (base == null) continue;
 		spendByMonth.set(month, (spendByMonth.get(month) ?? 0) + base);
 	}
+	// Sunucuyla aynı kural: satırı olmayan ay "veri yok" (null), satırı olup toplamı
+	// sıfır olan ay gerçekten 0.
+	const monthsWithSpendData = new Set(
+		store.adMetricsDaily
+			.filter((r) => (!from || r.date >= from) && (!to || r.date <= to))
+			.map((r) => r.date.slice(0, 7))
+	);
 
 	type Mat = ReportCohorts['items'][number]['maturation'];
 	const emptyMat = (): Mat => ({ m0: 0, m1: 0, m2: 0, m3_plus: 0 });
@@ -483,7 +490,9 @@ export function buildReportCohorts(
 		.sort((a, b) => a.localeCompare(b))
 		.map((cohort_month) => {
 			const ids = idsByMonth.get(cohort_month) ?? [];
-			const spend_base = spendByMonth.get(cohort_month) ?? 0;
+			const spend_base = monthsWithSpendData.has(cohort_month)
+				? (spendByMonth.get(cohort_month) ?? 0)
+				: null;
 			const collected_base = collectedByMonth.get(cohort_month) ?? 0;
 			return {
 				cohort_month,
@@ -491,7 +500,7 @@ export function buildReportCohorts(
 				treated: ids.filter((id) => treatedIds.has(id)).length,
 				spend_base,
 				collected_base,
-				roas: spend_base === 0 ? null : collected_base / spend_base,
+				roas: spend_base == null || spend_base === 0 ? null : collected_base / spend_base,
 				maturation: matByMonth.get(cohort_month) ?? emptyMat()
 			};
 		});
