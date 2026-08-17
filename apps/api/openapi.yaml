@@ -6565,6 +6565,55 @@ paths:
                   - updated_by
                   - updated_at
                 additionalProperties: false
+  /maya/ask:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                  grounded:
+                    type: boolean
+                  used_sections:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - services
+                        - payment
+                        - faq
+                        - rejection
+                        - notes
+                  knowledge_empty:
+                    type: boolean
+                  heuristic:
+                    type: boolean
+                required:
+                  - answer
+                  - grounded
+                  - used_sections
+                  - knowledge_empty
+                  - heuristic
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              required:
+                - question
+              additionalProperties: false
   /settings/knowledge:
     get:
       responses:

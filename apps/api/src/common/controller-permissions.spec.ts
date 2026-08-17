@@ -94,6 +94,14 @@ const INTENTIONAL_PERMISSION_LOCKS: Array<{
 	reason: string;
 }> = [
 	{
+		key: 'MayaController.ask',
+		permission: { resource: 'settings', action: 'read' },
+		reason:
+			'POST ama salt-okunur: soru gövdede taşınıyor (uzun olabilir ve hassas metin içerebilir; ' +
+			'query string erişim loglarına düşer). Hiçbir şey yazmıyor. Yazma izni istenirse ' +
+			'temsilci rolü Maya\'ya soru soramaz — oysa asıl kullanıcısı o.'
+	},
+	{
 		key: 'AdsController.authorize',
 		permission: { resource: 'settings', action: 'update' },
 		reason: 'GET starts OAuth connect flow — write-class despite verb'
@@ -248,10 +256,16 @@ describe('AUDIT-F09-11: org permission metadata via reflection', () => {
 	});
 
 	it('settings write endpoints use update (resource has no create/delete actions)', () => {
+		// INTENTIONAL_PERMISSION_LOCKS zaten sapmayı gerekçesiyle kayıt altına alıyor ve
+		// bir üstteki test her kilidin birebir eşleştiğini doğruluyor. Salt-okunur bir POST
+		// (ör. MayaController.ask) burada yazma iznine zorlanmamalı — zorlanırsa temsilci
+		// rolü özelliği hiç kullanamaz.
+		const lockedKeys = new Set(INTENTIONAL_PERMISSION_LOCKS.map((l) => l.key));
 		const settingsWrites = routes.filter(
 			(r) =>
 				r.permission?.resource === 'settings' &&
-				r.httpMethod !== RequestMethod.GET
+				r.httpMethod !== RequestMethod.GET &&
+				!lockedKeys.has(r.key)
 		);
 		expect(settingsWrites.length).toBeGreaterThan(0);
 		for (const route of settingsWrites) {

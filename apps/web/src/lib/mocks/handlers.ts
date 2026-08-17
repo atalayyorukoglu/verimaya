@@ -2643,6 +2643,51 @@ export const handlers = [
 		return HttpResponse.json({ items, missing_fx_count: missingFxCount });
 	}),
 
+	// Maya — bilgi bankasından cevap. Sunucudaki kural aynen: uydurma yok.
+	http.post('/v1/maya/ask', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = (await request.json()) as { question?: string };
+		const question = (body.question ?? '').trim();
+		const context = buildKnowledgeContext(store.knowledge);
+
+		if (context == null) {
+			return HttpResponse.json({
+				answer: '',
+				grounded: false,
+				used_sections: [],
+				knowledge_empty: true,
+				heuristic: true
+			});
+		}
+
+		const words = question
+			.toLocaleLowerCase('tr')
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter((w) => w.length >= 4);
+		const lines = context.split('\n').filter((l) => l.trim().length > 0);
+		const hits = lines.filter((l) => {
+			const lower = l.toLocaleLowerCase('tr');
+			return words.some((w) => lower.includes(w));
+		});
+
+		if (hits.length === 0) {
+			return HttpResponse.json({
+				answer: '',
+				grounded: false,
+				used_sections: [],
+				knowledge_empty: false,
+				heuristic: true
+			});
+		}
+		return HttpResponse.json({
+			answer: hits.slice(0, 4).join('\n'),
+			grounded: true,
+			used_sections: ['services'],
+			knowledge_empty: false,
+			heuristic: true
+		});
+	}),
+
 	// ── Bilgi bankası (AI-01) ─────────────────────────────────────────
 	http.get('/v1/settings/knowledge', ({ request }) => {
 		const store = getStore(scenarioFrom(request));

@@ -445,6 +445,26 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Yakalanan kusur:** panelde eşiği 60'a çekince "30 günü geçen" kutusu da düşüyordu;
   sunucu doğruydu, MSW mock'u kovaları eşikten sonra sayıyordu. Tarayıcıda gözle
   bakılmasaydı demo yanlış rakam gösterecekti.
+- **Maya AI gerçek oldu ✅** (2026-08-17) — Maya artık mock değil: `POST /v1/maya/ask`,
+  cevap **yalnız tenant'ın bilgi bankasından** üretiliyor. Sistem prompt'u sunucuda
+  (`buildMayaSystemPrompt`), bilgi bankası `frameKnowledgeContext` ile **veri olarak**
+  ekleniyor. Bilgi bankası boşsa LLM'e hiç gidilmiyor — boş bağlamla model uydurmaya yatkın,
+  ayrıca boşuna maliyet olur; panel "önce bilgi bankanızı doldurun" diyor.
+  `LLM_API_KEY` yoksa `HeuristicLlmClient` bilgi bankasında kelime eşlemesi yapıyor;
+  eşleşme yoksa yine "bilmiyorum". Panelden "Mock" rozeti ve sahte cevap üreten
+  `matchReply` kaldırıldı.
+  **Görüş — tek değişmez kural: Maya uydurmaz.** Model "BILINMIYOR" dediğinde cevap boş
+  bırakılıyor; **cümlenin içinde** geçse bile grounded sayılmıyor (model "BILINMIYOR ama
+  tahminen 3.000 EUR" derse tahmin kullanıcıya gösterilmez). Sağlık turizminde uydurulmuş
+  fiyat, cevapsızlıktan pahalıdır — müşteriye yanlış taahhüt olur. LLM hatasında heuristic'e
+  düşülmüyor, "bilmiyorum" deniyor: sessizce farklı bir cevap üretmek güveni bozar.
+  **İzin kararı:** `settings:read`. POST olmasına rağmen salt-okunur — soru gövdede taşınıyor
+  (uzun olabilir, hassas metin içerebilir; query string erişim loglarına düşer). Yazma izni
+  istenseydi **temsilci rolü Maya'ya soru soramazdı**, oysa asıl kullanıcısı o.
+  `INTENTIONAL_PERMISSION_LOCKS`'a gerekçesiyle eklendi; "settings write → update" kuralı da
+  kilit listesine saygı duyacak şekilde düzeltildi.
+  **Sonraki adım kullanıcıda:** bilgi bankası boş olduğu sürece Maya hiçbir soruyu
+  cevaplayamaz (Bekleyen · bilgi bankasını doldur).
 - **Teşvik belge listesi düzenlenebilir ✅** (2026-08-17) — belgeler sabit listeydi; kullanıcı
   geri bildirimi üzerine ekle/sil/yeniden adlandır geldi (`incentive_files.documents` jsonb,
   yeni tablo yok). Kurallar `packages/shared`'da: benzersiz `key`, boş `label` reddi,

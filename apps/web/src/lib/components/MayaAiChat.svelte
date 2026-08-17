@@ -4,6 +4,8 @@
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
+	import { apiPaths, type MayaAnswer } from '@verimaya/shared';
+	import { apiSend } from '$lib/api';
 	import { cn } from '$lib/utils';
 	import Send from '@lucide/svelte/icons/send';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -65,38 +67,12 @@
 		return `${prefix}-${idSeq}`;
 	}
 
-	function matchReply(prompt: string): Omit<ChatMessage, 'id' | 'role'> {
-		const lower = prompt.toLowerCase();
-		if (/randevu|tomorrow|yarın|yarin/.test(lower)) {
-			return {
-				text: t('maya.response.tomorrow'),
-				citations: [{ labelKey: 'maya.cite.appointments', href: '/appointments' }]
-			};
-		}
-		if (/özet|ozet|summary|ayşe|ayse|kaya/.test(lower)) {
-			return {
-				text: t('maya.response.summary'),
-				citations: [{ labelKey: 'maya.cite.contact', href: '/contacts' }]
-			};
-		}
-		if (/kaynak|source/.test(lower)) {
-			return {
-				text: t('maya.response.missingSource'),
-				citations: [{ labelKey: 'maya.cite.dataQuality', href: '/settings/data-quality' }],
-				showDraftAction: true
-			};
-		}
-		if (/sessiz|stale|takip/.test(lower)) {
-			return {
-				text: t('maya.response.stale'),
-				citations: [{ labelKey: 'maya.cite.contact', href: '/contacts' }],
-				showDraftAction: true
-			};
-		}
-		return { text: t('maya.response.default') };
-	}
-
-	function sendPrompt(prompt: string) {
+	/**
+	 * Gerçek uç: `POST /v1/maya/ask`. Cevap yalnız tenant'ın bilgi bankasından gelir.
+	 * Uydurma yok — sunucu bilmiyorsa `grounded: false` döner, biz de "bilmiyorum"
+	 * metnini gösteririz. Bilgi bankası boşsa kullanıcıyı doldurmaya yönlendiririz.
+	 */
+	async function sendPrompt(prompt: string) {
 		const trimmed = prompt.trim();
 		if (!trimmed || thinking) return;
 
@@ -104,17 +80,25 @@
 		input = '';
 		thinking = true;
 
-		const reply = matchReply(trimmed);
-		window.setTimeout(() => {
-			messages.push({ id: nextId('a'), role: 'assistant', ...reply });
+		try {
+			const res = await apiSend<MayaAnswer>(apiPaths.mayaAsk, 'POST', { question: trimmed });
+			const text = res.knowledge_empty
+				? t('maya.knowledgeEmpty')
+				: res.grounded
+					? res.answer
+					: t('maya.unknown');
+			messages.push({ id: nextId('a'), role: 'assistant', text });
+		} catch {
+			messages.push({ id: nextId('a'), role: 'assistant', text: t('maya.error') });
+		} finally {
 			thinking = false;
-		}, 600);
+		}
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Enter' && !event.shiftKey) {
 			event.preventDefault();
-			sendPrompt(input);
+			void sendPrompt(input);
 		}
 	}
 
@@ -244,7 +228,7 @@
 					type="button"
 					class="rounded-md border border-border bg-bg px-2 py-1 text-xs text-text-muted transition-colors hover:border-brand/40 hover:bg-brand-subtle hover:text-brand-text disabled:opacity-50"
 					disabled={thinking}
-					onclick={() => sendPrompt(t(key))}
+					onclick={() => void sendPrompt(t(key))}
 				>
 					{t(key)}
 				</button>
@@ -263,7 +247,7 @@
 				size={isDrawer ? 'sm' : 'default'}
 				class="shrink-0"
 				disabled={!canSend}
-				onclick={() => sendPrompt(input)}
+				onclick={() => void sendPrompt(input)}
 				aria-label={t('maya.send')}
 			>
 				<Send class="size-4" />

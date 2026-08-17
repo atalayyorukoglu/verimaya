@@ -14,6 +14,7 @@ import { IncentivesModule } from "./incentives/incentives.module";
 import { CommissionsModule } from "./commissions/commissions.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
 import { WhatsappModule } from "./whatsapp/whatsapp.module";
+import { MayaModule } from "./maya/maya.module";
 import { SettingsModule } from "./settings/settings.module";
 import { AuditLogsModule } from "./audit-logs/audit-logs.module";
 import { AdMetricsModule } from "./ad-metrics/ad-metrics.module";
@@ -52,6 +53,7 @@ import { DataDeleteModule } from "./data-delete/data-delete.module";
     FxModule,
     WebhooksModule,
     WhatsappModule,
+    MayaModule,
     SettingsModule,
     ImportExportModule,
     DataDeleteModule,

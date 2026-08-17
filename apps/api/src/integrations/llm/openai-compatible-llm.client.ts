@@ -1,5 +1,7 @@
 import { Logger } from '@nestjs/common';
 import {
+	MAYA_UNKNOWN_TOKEN,
+	buildMayaSystemPrompt,
 	frameKnowledgeContext,
 	frameTenantAiPromptNote,
 	transactionDraftSchema,
@@ -10,7 +12,9 @@ import type {
 	LlmClient,
 	LlmParseContext,
 	LlmParseResult,
-	LlmUsageLedger
+	LlmUsageLedger,
+	MayaAskContext,
+	MayaAskResult
 } from './llm.types';
 import { buildMaskedLlmUserPayload } from './pii-mask';
 
@@ -158,6 +162,58 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 					error: message
 				}
 			};
+		}
+	}
+
+	/**
+	 * Maya soru-cevap. Çekirdek kural: **yalnız bilgi bankasından cevapla, yoksa
+	 * BILINMIYOR de.** Bilgi bankası boşsa LLM'e hiç gidilmez (para ve gecikme boşa gitmesin,
+	 * ayrıca boş bağlamla model uydurmaya daha yatkındır).
+	 *
+	 * Hata hâlinde heuristic'e düşmez — sessizce farklı bir cevap üretmektense
+	 * "bilmiyorum" demek doğrudur; kullanıcı yanlış bilgiye güvenmemeli.
+	 */
+	async answerFromKnowledge(ctx: MayaAskContext): Promise<MayaAskResult> {
+		if (!ctx.knowledge) return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
+
+		const base = this.config.baseUrl.replace(/\/$/, '');
+		const system = `${buildMayaSystemPrompt()}\n\n${frameKnowledgeContext(ctx.knowledge)}`;
+
+		try {
+			const response = await this.fetchFn(`${base}/chat/completions`, {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${this.config.apiKey}`
+				},
+				body: JSON.stringify({
+					model: this.config.model,
+					temperature: 0,
+					messages: [
+						{ role: 'system', content: system },
+						{ role: 'user', content: ctx.question }
+					]
+				}),
+				signal: AbortSignal.timeout(this.timeoutMs)
+			});
+
+			if (!response.ok) {
+				// Gövde loglanmaz (AUDIT-03) — sağlayıcılar isteği geri yansıtabiliyor.
+				this.logger.warn(`Maya LLM HTTP ${response.status}`);
+				return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
+			}
+
+			const json = (await response.json()) as ChatCompletionResponse;
+			const content = json.choices?.[0]?.message?.content;
+			if (!content || typeof content !== 'string') {
+				return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
+			}
+			return { answer: content.trim(), heuristic: false };
+		} catch (err) {
+			this.logger.warn(
+				`Maya LLM call failed: ${err instanceof Error ? err.message : String(err)}`
+			);
+			return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
 		}
 	}
 

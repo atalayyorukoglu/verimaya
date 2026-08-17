@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { cursorPageSchema, softDeleteResultSchema } from './common.js';
 import { knowledgeSettingsSchema, knowledgeUpdateSchema } from './knowledge.js';
+import { mayaAnswerSchema, mayaAskSchema } from './maya.js';
 
 /** REST prefix for all Verimaya API routes. */
 export const API_V1_PREFIX = '/v1';
@@ -77,6 +78,7 @@ export const apiPaths = {
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
 	settingsKnowledge: `${API_V1_PREFIX}/settings/knowledge`,
+	mayaAsk: `${API_V1_PREFIX}/maya/ask`,
 	settingsIncentiveDeadline: `${API_V1_PREFIX}/settings/incentive-deadline`,
 	settingsPermissions: `${API_V1_PREFIX}/settings/permissions`,
 	settingsImportContactsTemplate: `${API_V1_PREFIX}/settings/import-export/contacts/template.xlsx`,
@@ -624,6 +626,10 @@ export const apiContract = {
 	'PUT /v1/settings/ai-prompt': {
 		body: whatsappAiPromptUpdateSchema,
 		response: whatsappAiPromptSchema
+	},
+	'POST /v1/maya/ask': {
+		body: mayaAskSchema,
+		response: mayaAnswerSchema
 	},
 	'GET /v1/settings/knowledge': {
 		response: knowledgeSettingsSchema

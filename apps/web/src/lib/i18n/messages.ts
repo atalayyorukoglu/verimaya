@@ -112,15 +112,20 @@ const tr = {
 	'maya.subtitle': 'Operasyon asistanı — taslak önerir, sen onaylarsın.',
 	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
-		'Mock sohbet: randevu, kişi özeti ve veri kalitesi sorularını dene. Gerçek LLM bağlantısı yok.',
+		'Bilgi bankanıza dayalı soru-cevap. Bilmediğini uydurmaz — bilgi bankanızda yoksa söyler.',
 	'maya.mockBadge': 'Mock',
 	'maya.welcome':
-		'Merhaba — ben Maya. Yarınki randevular, kişi özeti veya eksik kaynak gibi sorular sorabilirsin. Cevaplar örnek veridir; kesin kayıt için onay gerekir.',
+		'Merhaba — ben Maya. Firmanızın bilgi bankasındaki hizmet, fiyat ve kuralları cevaplayabilirim. Bilgi bankasında olmayan bir şeyi uydurmam.',
 	'maya.placeholder': 'Maya’ya sor…',
 	'maya.send': 'Gönder',
 	'maya.thinking': 'Düşünüyor…',
 	'maya.close': 'Kapat',
 	'maya.openFull': 'Tam sayfa',
+	'maya.unknown':
+		'Bunu bilgi bankanızda bulamadım. Ayarlar → Bilgi bankası bölümüne eklerseniz bir dahakine cevaplayabilirim.',
+	'maya.knowledgeEmpty':
+		'Bilgi bankanız henüz boş. Ayarlar → Bilgi bankası bölümüne hizmetlerinizi ve fiyatlarınızı yazarsanız sorularınızı cevaplayabilirim.',
+	'maya.error': 'Şu an cevap veremedim. Birazdan tekrar deneyin.',
 	'maya.fabLabel': 'Maya AI’yi aç',
 	'maya.nav': 'Maya AI',
 	'maya.draftHint': 'Bu bir taslak öneri — onaylamadan kayıt yazılmaz.',
@@ -403,6 +408,15 @@ const tr = {
 	'settings.nav.knowledge.description':
 		'Hizmetler, fiyatlar, ödeme kuralları — yapay zekânın kullandığı bilgi.',
 
+	'help.maya.title': 'Maya AI',
+	'help.maya.b1':
+		'Firmanızın bilgi bankasındaki bilgilere dayanarak soru cevaplar: hizmetler, fiyatlar, ödeme kuralları, kabul etmedikleriniz.',
+	'help.maya.b2':
+		'Bilgi bankasında olmayan bir şeyi uydurmaz — bilmediğini söyler ve nereye eklemeniz gerektiğini gösterir.',
+	'help.maya.example':
+		'"Saç ekimi kaça?" diye sorduğunuzda, bilgi bankanızda "Saç ekimi 2.500 EUR" yazıyorsa onu söyler. Yazmıyorsa "bulamadım" der, tahmin etmez.',
+	'help.maya.caveat':
+		'Bilgi bankanız boşsa Maya hiçbir soruyu cevaplayamaz. Önce Ayarlar → Bilgi bankası bölümünü doldurun.',
 	'help.knowledge.title': 'Bilgi bankası',
 	'help.knowledge.b1':
 		'Firmanızın kendi bilgisini sisteme yazdığınız yer: ne satıyorsunuz, kaça satıyorsunuz, neyi kabul etmiyorsunuz.',
@@ -2477,15 +2491,20 @@ const en: Record<MessageKey, string> = {
 	'maya.subtitle': 'Operations assistant — suggests drafts, you approve.',
 	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
-		'Mock chat: try appointments, contact summaries, and data-quality questions. No real LLM yet.',
+		'Answers grounded in your knowledge base. It never invents — if it is not there, it says so.',
 	'maya.mockBadge': 'Mock',
 	'maya.welcome':
-		'Hi — I’m Maya. Ask about tomorrow’s appointments, a contact summary, or missing sources. Answers are sample data; nothing is saved without approval.',
+		'Hi — I’m Maya. I can answer from your company knowledge base: services, prices and rules. I never make anything up.',
 	'maya.placeholder': 'Ask Maya…',
 	'maya.send': 'Send',
 	'maya.thinking': 'Thinking…',
 	'maya.close': 'Close',
 	'maya.openFull': 'Full page',
+	'maya.unknown':
+		'I could not find this in your knowledge base. Add it under Settings → Knowledge base and I can answer next time.',
+	'maya.knowledgeEmpty':
+		'Your knowledge base is empty. Add your services and prices under Settings → Knowledge base and I can answer your questions.',
+	'maya.error': 'I could not answer right now. Please try again shortly.',
 	'maya.fabLabel': 'Open Maya AI',
 	'maya.nav': 'Maya AI',
 	'maya.draftHint': 'This is a draft suggestion — nothing is written until you approve.',
@@ -2765,6 +2784,15 @@ const en: Record<MessageKey, string> = {
 	'settings.nav.knowledge.title': 'Knowledge base',
 	'settings.nav.knowledge.description': 'Services, prices, payment rules — what the AI uses.',
 
+	'help.maya.title': 'Maya AI',
+	'help.maya.b1':
+		'Answers questions from your company knowledge base: services, prices, payment rules, what you do not accept.',
+	'help.maya.b2':
+		'It never invents anything missing from the knowledge base — it says it does not know and points you where to add it.',
+	'help.maya.example':
+		'Ask "how much is a hair transplant?" and if your knowledge base says "Hair transplant 2,500 EUR", that is the answer. If not, it says it could not find it rather than guessing.',
+	'help.maya.caveat':
+		'If your knowledge base is empty, Maya cannot answer anything. Fill in Settings → Knowledge base first.',
 	'help.knowledge.title': 'Knowledge base',
 	'help.knowledge.b1':
 		'Where you write your own company facts: what you sell, for how much, and what you refuse.',

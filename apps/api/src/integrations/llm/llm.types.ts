@@ -42,9 +42,23 @@ export type LlmParseResult = {
 	usage: LlmUsageLedger;
 };
 
+export type MayaAskContext = {
+	question: string;
+	/** Bilgi bankası bağlamı; boşsa null — o zaman LLM'e hiç gidilmez. */
+	knowledge: string | null;
+};
+
+export type MayaAskResult = {
+	/** Ham cevap; `MAYA_UNKNOWN_TOKEN` ise çağıran taraf "bilmiyorum"a çevirir. */
+	answer: string;
+	heuristic: boolean;
+};
+
 /** Domain-facing LLM adapter — WhatsApp parse goes through this, not raw HTTP. */
 export interface LlmClient {
 	parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult>;
+	/** Maya soru-cevap. Yalnız bilgi bankasından cevaplar; bilmiyorsa unknown token döner. */
+	answerFromKnowledge(ctx: MayaAskContext): Promise<MayaAskResult>;
 }
 
 export const LLM_CLIENT = Symbol('LLM_CLIENT');
