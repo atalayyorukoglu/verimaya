@@ -368,6 +368,50 @@ const tr = {
 	'settings.organization.tzEuropeLondon': 'Europe/London (İngiltere)',
 	'settings.organization.tzUtc': 'UTC',
 
+	// Ekran içi yardım (ⓘ) — sade dil, her konuda tek somut örnek
+	'help.open': 'Bu ekran ne işe yarar?',
+	'help.exampleLabel': 'Örnek',
+
+	'help.untouched.title': 'Temassız kişiler',
+	'help.untouched.b1':
+		'Uzun süredir kimsenin dokunmadığı kişileri gösterir. "Dokunmak" demek: randevu, ödeme ya da not girilmiş olması.',
+	'help.untouched.b2':
+		'En uzun süredir unutulmuş olan en üstte. Listeyi yukarıdan aşağı arayarak ilerlersiniz.',
+	'help.untouched.example':
+		'Ahmet Bey 3 ay önce fiyat sordu, kimse geri dönmedi. Bu listede en üstte çıkar. Bir telefonla tekrar sürece girebilir.',
+	'help.untouched.caveat':
+		'Yakın tarihte randevusu olan kişiler listede yer almaz — onlar zaten takipte sayılır.',
+
+	'help.incentives.title': 'Teşvik dosyaları',
+	'help.incentives.b1':
+		'Teşvik başvurusu için sürenin dolmasını engeller. Ödeme tarihini girersiniz, son başvuru gününü sistem hesaplar.',
+	'help.incentives.b2':
+		'Süresi yaklaşan turuncu, geçmiş kırmızı görünür. Belgeleri tek tek işaretleyebilirsiniz.',
+	'help.incentives.example':
+		"15 Mart'ta tahsilat yaptınız. Sistem son başvuru gününü yazar ve gün saymaya başlar. 60 gün kalınca satır turuncuya döner.",
+	'help.incentives.caveat':
+		'Burada oran veya tutar hesaplanmaz, uygunluk kararı verilmez. Yalnız kayıt ve süre tutulur; başvuru ve mevzuat sizin tarafınızdadır.',
+
+	'help.commissions.title': 'Hakediş / komisyon',
+	'help.commissions.b1':
+		'Kliniğe, yönlendirene veya alt acenteye olan borcunuzu takip eder. Tutarı siz girersiniz.',
+	'help.commissions.b2':
+		'Üstteki özet kazanan başına üç şey gösterir: ne kadar hak edildi, ne kadar ödendi, ne kadar kaldı. Ay sonu mutabakatını "kalan" ile yaparsınız.',
+	'help.commissions.example':
+		'X Kliniği için 10.000 TL hakediş girdiniz, 4.000 TL ödediniz. Özette: hak edilen 10.000, ödenen 4.000, kalan 6.000.',
+	'help.commissions.caveat':
+		'Komisyon otomatik hesaplanmaz — yüzde formülü yoktur. Kural her klinikte farklı olduğu için tutarı siz yazarsınız.',
+
+	'help.cohorts.title': 'Kohort görünümü',
+	'help.cohorts.b1':
+		'Kişi hangi ay geldiyse o aya yazılır. Parası ne zaman gelirse gelsin yine o aya sayılır.',
+	'help.cohorts.b2':
+		'Sağdaki m0/m1/m2/m3+ sütunları paranın kaçıncı ayda geldiğini gösterir. "Reklam ayı kârsız görünüyor" yanılgısı böyle ortadan kalkar.',
+	'help.cohorts.example':
+		"Nisan'da gelen hasta parayı Temmuz'da ödedi. Normal raporda para Temmuz'a yazılır ve Nisan boşa gitmiş görünür. Burada Nisan satırında, \"m3+\" sütununda görünür.",
+	'help.cohorts.caveat':
+		'Harcama sütununda "—" varsa o ay reklam verisi yok demektir; harcama sıfır demek değildir. Ayrıca bir ayki harcamanın o ay gelen kişileri getirdiği varsayılır — kampanya bazlı atıf değildir.',
+
 	// Ayarlar · Ekip (GAP-02)
 	'settings.team.title': 'Ekip',
 	'settings.team.description': 'Tenant üyeleri ve rolleri.',
@@ -2638,6 +2682,48 @@ const en: Record<MessageKey, string> = {
 	'settings.organization.tzAsiaRiyadh': 'Asia/Riyadh (Saudi Arabia)',
 	'settings.organization.tzEuropeLondon': 'Europe/London (UK)',
 	'settings.organization.tzUtc': 'UTC',
+
+	'help.open': 'What is this screen for?',
+	'help.exampleLabel': 'Example',
+
+	'help.untouched.title': 'Untouched contacts',
+	'help.untouched.b1':
+		'Shows contacts nobody has touched for a long time. "Touch" means an appointment, a payment, or a note.',
+	'help.untouched.b2': 'The longest-forgotten sits at the top. You work the list top to bottom.',
+	'help.untouched.example':
+		'Ahmet asked for a price 3 months ago and nobody followed up. He appears at the top of this list. One call can bring him back into the process.',
+	'help.untouched.caveat':
+		'Contacts with an upcoming appointment are excluded — they already count as handled.',
+
+	'help.incentives.title': 'Incentive files',
+	'help.incentives.b1':
+		'Keeps the incentive application deadline from slipping. You enter the payment date; the system computes the deadline.',
+	'help.incentives.b2':
+		'Approaching deadlines turn amber, passed ones red. You can tick documents off one by one.',
+	'help.incentives.example':
+		'You collected payment on 15 March. The system writes the deadline and starts counting. At 60 days left the row turns amber.',
+	'help.incentives.caveat':
+		'No rate or amount is calculated here and no eligibility decision is made. Only the record and the deadline are kept; the application and the regulation are on your side.',
+
+	'help.commissions.title': 'Commission',
+	'help.commissions.b1':
+		'Tracks what you owe a clinic, a referrer, or a sub-agency. You enter the amount.',
+	'help.commissions.b2':
+		'The summary shows three things per beneficiary: earned, paid, and outstanding. Month-end reconciliation runs on "outstanding".',
+	'help.commissions.example':
+		'You recorded 10,000 for Clinic X and paid 4,000. The summary reads: earned 10,000, paid 4,000, outstanding 6,000.',
+	'help.commissions.caveat':
+		'Commission is not calculated automatically — there is no percentage formula. Rules differ per clinic, so you enter the amount.',
+
+	'help.cohorts.title': 'Cohort view',
+	'help.cohorts.b1':
+		'A contact is filed under the month they arrived. Whenever their money comes in, it still counts to that month.',
+	'help.cohorts.b2':
+		'The m0/m1/m2/m3+ columns show which month the money landed in. That removes the "the ad month looks unprofitable" illusion.',
+	'help.cohorts.example':
+		'A patient who arrived in April paid in July. A normal report files the money under July and April looks wasted. Here it shows on the April row, in the "m3+" column.',
+	'help.cohorts.caveat':
+		'A "—" in the spend column means there is no ad data for that month — not that spend was zero. Also, a month\'s spend is assumed to have brought that month\'s contacts; this is not campaign-level attribution.',
 
 	'settings.team.title': 'Team',
 	'settings.team.description': 'Tenant members and roles.',

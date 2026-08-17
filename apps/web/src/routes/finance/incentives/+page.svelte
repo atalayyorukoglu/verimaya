@@ -150,6 +150,7 @@
 	<PageHeader
 		title={t('finance.incentives.title')}
 		description={t('finance.incentives.description')}
+		helpTopic="incentives"
 	>
 		{#snippet actions()}
 			<Button type="button" onclick={openCreate}>{t('finance.incentives.new')}</Button>

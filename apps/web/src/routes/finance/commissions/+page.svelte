@@ -175,6 +175,7 @@
 	<PageHeader
 		title={t('finance.commissions.title')}
 		description={t('finance.commissions.description')}
+		helpTopic="commissions"
 	>
 		{#snippet actions()}
 			<Button type="button" onclick={openCreate}>{t('finance.commissions.new')}</Button>

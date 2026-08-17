@@ -83,6 +83,7 @@
 	<PageHeader
 		title={t('reports.untouched.title')}
 		description={t('reports.untouched.description')}
+		helpTopic="untouched-contacts"
 	/>
 
 	<!-- Kovalar: eşikten bağımsız, tam küme üzerinden sayılır. -->

@@ -438,6 +438,18 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Yakalanan kusur:** panelde eşiği 60'a çekince "30 günü geçen" kutusu da düşüyordu;
   sunucu doğruydu, MSW mock'u kovaları eşikten sonra sayıyordu. Tarayıcıda gözle
   bakılmasaydı demo yanlış rakam gösterecekti.
+- **Ekran içi yardım (ⓘ) ✅** (2026-08-17) — `PageHeader`'a opsiyonel `helpTopic` eklendi;
+  başlığın yanındaki ⓘ düğmesi `HelpSheet`'i açıyor. **Mobilde tam ekran, üstten** (telefonda
+  okunacağı için kutuya sıkıştırılmadı); masaüstünde ortalanmış pencere. Escape + dış tıklama
+  kapatıyor, odak tuzağı mevcut `focusTrap` action'ından geliyor.
+  İçerik kaydı `lib/help-content.ts`'te (hangi ekran hangi anahtarları kullanıyor), metin
+  `messages.ts`'te tr + en. Yapı üç parçalı: **ne işe yarar → tek somut örnek → (varsa) yanlış
+  okuma uyarısı**. İlk dört ekran bağlandı: temassız kişiler, teşvik dosyaları, hakediş, kohort.
+  **Görüş:** Amaç pilot destek yükünü düşürmek — destek süresi PILOT-02 KPI'ı ve haftalık 7
+  saatlik kapasiteyi aşarsa pilot uzuyor. Her ekranda "bu ne işe yarar" sorusunun cevabı
+  ekranın kendisinde durursa o soruların çoğu hiç sorulmaz. Kayıt ile metnin ayrışmasını
+  (panelde boş/anahtar görünmesi) yakalayan test eklendi: her konunun her anahtarı iki dilde
+  dolu olmak zorunda.
 - **Kohort görünümü ✅** (2026-08-17) — `GET /v1/reports/cohorts` + panel `/reports/cohorts`.
   Kişi `created_at` ayına yazılır; tahsilat (tarih sınırı yok) o aya sayılır; harcama =
   aynı ayın `ad_metrics_daily`. Olgunlaşma `m0/m1/m2/m3+`. `note_key:

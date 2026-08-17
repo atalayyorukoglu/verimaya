@@ -82,7 +82,11 @@
 		</a>
 	</div>
 
-	<PageHeader title={t('reports.cohorts.title')} description={t('reports.cohorts.description')} />
+	<PageHeader
+		title={t('reports.cohorts.title')}
+		description={t('reports.cohorts.description')}
+		helpTopic="cohorts"
+	/>
 
 	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone} />
 
