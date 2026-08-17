@@ -174,7 +174,7 @@ describe('commissions tenant isolation + summary', () => {
 		).rejects.toBeInstanceOf(NotFoundException);
 	});
 
-	it('summary: open_base counts accrued only; cancelled ignored', async () => {
+	it('summary: a paid entry stays in accrued_base; cancelled ignored', async () => {
 		const clinic2 = await withTenantSession(tenantA, async (tdb) => {
 			const p = await contactsService.createWithDb(tdb, tenantA, {
 				contact_type_id: contactTypeA,
@@ -211,10 +211,54 @@ describe('commissions tenant isolation + summary', () => {
 		const report = await commissionsService.summary(tenantA);
 		const row = report.items.find((i) => i.beneficiary_contact_id === clinic2);
 		expect(row).toBeDefined();
-		expect(row!.accrued_base).toBe(5_000);
+		// Bir satır KAZANILMIŞ tutarı temsil eder; ödenmiş olması onu "hak edilen"den
+		// düşürmez. 5.000 (ödenmemiş) + 3.000 (ödenmiş) = 8.000 hak edildi, 3.000 ödendi,
+		// 5.000 kaldı. İptal edilen 9.000 hiç sayılmaz.
+		expect(row!.accrued_base).toBe(8_000);
 		expect(row!.paid_base).toBe(3_000);
-		expect(row!.open_base).toBe(2_000);
+		expect(row!.open_base).toBe(5_000);
 		expect(row!.entry_count).toBe(2);
+	});
+
+	/**
+	 * Regresyon (2026-08-17): "Ödendi işaretle" bir tahakkuku `paid`'e çevirince özet
+	 * kalanı EKSİYE düşürüyordu — satır accrued kovasından çıkıp paid kovasına geçtiği
+	 * için aynı tutar iki kez düşülüyordu. Panelde 8.000 TL'lik hakediş ödendi
+	 * işaretlenince "Kalan −8.000" görünüyordu. Doğrusu: kalan 0.
+	 */
+	it('summary: marking an accrual paid brings open_base to zero, never negative', async () => {
+		const clinic3 = await withTenantSession(tenantA, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Clinic Transition'
+			});
+			return p.id;
+		});
+
+		const entry = await withTenantSession(tenantA, (tdb) =>
+			commissionsService.createWithDb(tdb, tenantA, {
+				beneficiary_contact_id: clinic3,
+				amount: 8_000,
+				currency: 'TRY',
+				earned_on: '2026-04-01',
+				status: 'accrued'
+			})
+		);
+
+		const before = await commissionsService.summary(tenantA);
+		expect(before.items.find((i) => i.beneficiary_contact_id === clinic3)?.open_base).toBe(
+			8_000
+		);
+
+		await withTenantSession(tenantA, (tdb) =>
+			commissionsService.updateWithDb(tdb, entry.id, { status: 'paid' })
+		);
+
+		const after = await commissionsService.summary(tenantA);
+		// Kalan sıfırlandığı için satır özetten düşer (yalnız open_base != 0 gösteriliyor).
+		const row = after.items.find((i) => i.beneficiary_contact_id === clinic3);
+		expect(row?.open_base ?? 0).toBe(0);
+		expect(after.items.every((i) => i.open_base >= 0)).toBe(true);
 	});
 
 	it('summary: amount_base null foreign row increments missing_fx_count', async () => {

@@ -2472,12 +2472,13 @@ export const handlers = [
 				entry_count: 0
 			};
 			cur.entry_count += 1;
+			// Sunucuyla aynı kural: ödenen satır da "hak edilen"e girer, yoksa
+			// open_base = accrued - paid aynı tutarı iki kez düşer.
 			if (base == null) {
 				missingFxCount += 1;
-			} else if (entry.status === 'accrued') {
+			} else {
 				cur.accrued_base += base;
-			} else if (entry.status === 'paid') {
-				cur.paid_base += base;
+				if (entry.status === 'paid') cur.paid_base += base;
 			}
 			map.set(entry.beneficiary_contact_id, cur);
 		}

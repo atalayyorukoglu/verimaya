@@ -381,6 +381,18 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Görüş:** Komisyon **formül üretilmez** — klinik başına kural yazılı olmadığı için
   (ihtiyaç haritası §8.4) yüzde uydurmak mutabakatı bozar. MSW handler + demo veri bu turda
   yazıldı (teşvik turundaki "Yükleniyor…" tuzağı tekrarlanmasın diye).
+  **⚠️ Denetimde yakalanan mali hata — testler yeşilken:** Özet, ödenmiş satırı `accrued_base`
+  dışında tutup sonra `open_base = accrued − paid` ile bir daha düşüyordu; yani aynı ödeme iki
+  kez sayılıyordu. Sonuç: klinikle mutabakatta **borç olduğundan az** görünüyordu (20.000 hak
+  edilen / 5.000 ödenen bir kayıtta kalan 15.000 yerine 10.000). "Ödendi işaretle" düğmesine
+  basıldığında ise kalan **eksiye** düşüyordu (−8.000). Kök sebep tek satırlık `else if`.
+  Doğru model: **satır kazanılmış tutarı temsil eder; `status` yalnız ödenip ödenmediğini
+  söyler** — ödenen satır da hak edilene dâhildir.
+  Hata testlerden geçmişti çünkü mevcut spec yanlış modeli **beklenen davranış olarak
+  kodlamıştı** (`accrued_base` 5.000 bekliyordu). Spec düzeltildi + durum geçişini kanıtlayan
+  regresyon testi eklendi (`open_base` asla negatif olamaz). Aynı hata MSW mock'unda da vardı,
+  o da düzeltildi. Tarayıcıda gözle bakılmasaydı bu hata pilota giderdi — PILOT-02 risk
+  tablosundaki "sessiz veri hatası: finans mutabakatı tutmaz" satırının tam örneği.
 - **Pazarlama ana sayfası v4 ✅** (2026-08-16) — canlı `/` (ve prerender kaynağı `/vitrin`)
   artık `HubHomeV4`: **v1 kabuğu + v4 içeriği**. Kabuk v1'den gelir (nav, logo, tema/dil
   değiştirici, `messages.ts` i18n, footer, KVKK bağlantısı); gövde teşhis-müdahale

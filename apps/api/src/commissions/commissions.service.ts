@@ -247,12 +247,15 @@ export class CommissionsService {
 				};
 				cur.entry_count += 1;
 
+				// Bir satır KAZANILMIŞ tutarı temsil eder; `status` yalnız ödenip ödenmediğini
+				// söyler. Bu yüzden ödenen satır da `accrued_base`'e girer — çıkarılırsa
+				// `open_base = accrued - paid` aynı tutarı iki kez düşer ve kalan eksiye iner.
+				// (2026-08-17: 8.000 TL'lik tahakkuk "ödendi" işaretlenince kalan −8.000 çıkıyordu.)
 				if (base == null) {
 					missingFxCount += 1;
-				} else if (status.data === 'accrued') {
-					cur.accrued_base += base;
 				} else {
-					cur.paid_base += base;
+					cur.accrued_base += base;
+					if (status.data === 'paid') cur.paid_base += base;
 				}
 				map.set(row.entry.beneficiaryContactId, cur);
 			}
