@@ -45,6 +45,10 @@ export function queryKeys(scope: QueryScope) {
 			all: () => k('operation-alerts'),
 			list: (params: Params = {}) => k('operation-alerts', params)
 		},
+		recordUpdateSuggestions: {
+			all: () => k('record-suggestions'),
+			list: (params: Params = {}) => k('record-suggestions', params)
+		},
 		transactions: {
 			all: () => k('transactions'),
 			list: (params: Params = {}) => k('transactions', params)

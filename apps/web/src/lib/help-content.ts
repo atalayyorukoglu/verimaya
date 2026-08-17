@@ -18,7 +18,8 @@ export type HelpTopic =
 	| 'cohorts'
 	| 'knowledge'
 	| 'maya'
-	| 'operation-alerts';
+	| 'operation-alerts'
+	| 'record-suggestions';
 
 export type HelpContent = {
 	titleKey: MessageKey;
@@ -45,6 +46,12 @@ export const helpContent: Record<HelpTopic, HelpContent> = {
 		bodyKeys: ['help.operation-alerts.b1', 'help.operation-alerts.b2'],
 		exampleKey: 'help.operation-alerts.example',
 		caveatKey: 'help.operation-alerts.caveat'
+	},
+	'record-suggestions': {
+		titleKey: 'help.record-suggestions.title',
+		bodyKeys: ['help.record-suggestions.b1', 'help.record-suggestions.b2'],
+		exampleKey: 'help.record-suggestions.example',
+		caveatKey: 'help.record-suggestions.caveat'
 	},
 	commissions: {
 		titleKey: 'help.commissions.title',

@@ -464,6 +464,16 @@ const tr = {
 	'help.operation-alerts.caveat':
 		'Bu bir kural motorudur, tahmin değildir. Model bir şey yorumlamaz; teyit düğmesine basılmadan kalem kapanmış sayılmaz.',
 
+	'help.record-suggestions.title': 'Kayıt güncelleme önerileri',
+	'help.record-suggestions.b1':
+		'Operasyon mesajlarından randevu tarihi değişikliği önerileri üretir. Sistem okur, siz tek tek onaylarsınız.',
+	'help.record-suggestions.b2':
+		'Her kart yalnızca bir randevunun başlangıç saatini hedefler. Eşleşme belirsizse öneri hiç oluşmaz.',
+	'help.record-suggestions.example':
+		'"Ayşe Hanım randevusunu 15 Mayıs 14:00\'a alalım" mesajı gelir → kartta mevcut tarih → önerilen tarih görünür → Onayla\'ya basmadan randevu değişmez.',
+	'help.record-suggestions.caveat':
+		'Onaylamadan hiçbir şey değişmez. Toplu kabul yoktur; her öneri ayrı karar ister.',
+
 	'help.commissions.title': 'Hakediş / komisyon',
 	'help.commissions.b1':
 		'Kliniğe, yönlendirene veya alt acenteye olan borcunuzu takip eder. Tutarı siz girersiniz.',
@@ -843,6 +853,7 @@ const tr = {
 	'appointments.ops.description':
 		'Seçili aralıktaki randevular — hasta notları kart üzerinde (takvim değişmeden).',
 	'appointments.alertsLink': 'Operasyon alarmları',
+	'appointments.suggestionsLink': 'Güncelleme önerileri',
 	'appointments.alerts.documentTitle': 'Operasyon alarmları · Verimaya',
 	'appointments.alerts.back': '← Randevular',
 	'appointments.alerts.title': 'Operasyon alarmları',
@@ -871,6 +882,35 @@ const tr = {
 	'appointments.alerts.kind.transfer': 'Transfer',
 	'appointments.alerts.kind.welcome': 'Karşılama',
 	'appointments.alerts.kind.clinic': 'Klinik',
+
+	'appointments.suggestions.documentTitle': 'Güncelleme önerileri · Verimaya',
+	'appointments.suggestions.back': '← Randevular',
+	'appointments.suggestions.title': 'Kayıt güncelleme önerileri',
+	'appointments.suggestions.description':
+		'Operasyon mesajından üretilen randevu tarihi önerileri. Her kartı ayrı onaylayın veya reddedin.',
+	'appointments.suggestions.parseTitle': 'Mesajdan öneri üret',
+	'appointments.suggestions.parseHint':
+		'WhatsApp veya e-posta metnini yapıştırın. Hasta ve yeni tarih net değilse öneri oluşmaz.',
+	'appointments.suggestions.parsePlaceholder':
+		'Örnek: Ayşe Yılmaz randevusunu 2026-05-15 14:00 tarihine alalım.',
+	'appointments.suggestions.parseAction': 'Öneri üret',
+	'appointments.suggestions.parsing': 'Üretiliyor…',
+	'appointments.suggestions.parseFailed': 'Öneri üretilemedi',
+	'appointments.suggestions.loading': 'Yükleniyor…',
+	'appointments.suggestions.loadError': 'Öneriler yüklenemedi.',
+	'appointments.suggestions.empty': 'Bekleyen öneri yok.',
+	'appointments.suggestions.current': 'Mevcut',
+	'appointments.suggestions.approve': 'Onayla',
+	'appointments.suggestions.approving': 'Onaylanıyor…',
+	'appointments.suggestions.approveFailed': 'Onay başarısız',
+	'appointments.suggestions.reject': 'Reddet',
+	'appointments.suggestions.rejectReasonLabel': 'Red sebebi (isteğe bağlı)',
+	'appointments.suggestions.rejectReasonPlaceholder': 'Kısa not…',
+	'appointments.suggestions.rejectConfirm': 'Reddet',
+	'appointments.suggestions.rejectCancel': 'Vazgeç',
+	'appointments.suggestions.rejectFailed': 'Red başarısız',
+	'appointments.suggestions.confidence.high': 'Yüksek güven',
+	'appointments.suggestions.confidence.medium': 'Orta güven',
 
 	// Finans · AI ile işlem (MONEY-01)
 	'finance.ai.title': 'AI ile İşlem',
@@ -2880,6 +2920,16 @@ const en: Record<MessageKey, string> = {
 	'help.operation-alerts.caveat':
 		'This is a rule engine, not a prediction. No model interprets anything; an item is not closed until someone presses Confirm.',
 
+	'help.record-suggestions.title': 'Record update suggestions',
+	'help.record-suggestions.b1':
+		'Produces appointment date change suggestions from operational messages. The system reads; you approve each card individually.',
+	'help.record-suggestions.b2':
+		'Each card targets one appointment start time only. If the match is ambiguous, no suggestion is created.',
+	'help.record-suggestions.example':
+		'Message: "Move Ayşe\'s appointment to 15 May 14:00" → card shows current → suggested time → nothing changes until you press Approve.',
+	'help.record-suggestions.caveat':
+		'Nothing changes without approval. There is no bulk accept; every suggestion needs its own decision.',
+
 	'help.commissions.title': 'Commission',
 	'help.commissions.b1':
 		'Tracks what you owe a clinic, a referrer, or a sub-agency. You enter the amount.',
@@ -3252,6 +3302,7 @@ const en: Record<MessageKey, string> = {
 	'appointments.ops.description':
 		'Appointments in the selected range — patient notes on cards (calendar unchanged).',
 	'appointments.alertsLink': 'Operation alerts',
+	'appointments.suggestionsLink': 'Update suggestions',
 	'appointments.alerts.documentTitle': 'Operation alerts · Verimaya',
 	'appointments.alerts.back': '← Appointments',
 	'appointments.alerts.title': 'Operation alerts',
@@ -3280,6 +3331,35 @@ const en: Record<MessageKey, string> = {
 	'appointments.alerts.kind.transfer': 'Transfer',
 	'appointments.alerts.kind.welcome': 'Welcome',
 	'appointments.alerts.kind.clinic': 'Clinic',
+
+	'appointments.suggestions.documentTitle': 'Update suggestions · Verimaya',
+	'appointments.suggestions.back': '← Appointments',
+	'appointments.suggestions.title': 'Record update suggestions',
+	'appointments.suggestions.description':
+		'Appointment date suggestions from operational messages. Approve or reject each card separately.',
+	'appointments.suggestions.parseTitle': 'Generate from message',
+	'appointments.suggestions.parseHint':
+		'Paste WhatsApp or email text. If patient or new date is unclear, no suggestion is created.',
+	'appointments.suggestions.parsePlaceholder':
+		'Example: Move Ayşe Yilmaz appointment to 2026-05-15 14:00.',
+	'appointments.suggestions.parseAction': 'Generate suggestions',
+	'appointments.suggestions.parsing': 'Generating…',
+	'appointments.suggestions.parseFailed': 'Could not generate suggestions',
+	'appointments.suggestions.loading': 'Loading…',
+	'appointments.suggestions.loadError': 'Could not load suggestions.',
+	'appointments.suggestions.empty': 'No pending suggestions.',
+	'appointments.suggestions.current': 'Current',
+	'appointments.suggestions.approve': 'Approve',
+	'appointments.suggestions.approving': 'Approving…',
+	'appointments.suggestions.approveFailed': 'Approve failed',
+	'appointments.suggestions.reject': 'Reject',
+	'appointments.suggestions.rejectReasonLabel': 'Rejection reason (optional)',
+	'appointments.suggestions.rejectReasonPlaceholder': 'Short note…',
+	'appointments.suggestions.rejectConfirm': 'Reject',
+	'appointments.suggestions.rejectCancel': 'Cancel',
+	'appointments.suggestions.rejectFailed': 'Reject failed',
+	'appointments.suggestions.confidence.high': 'High confidence',
+	'appointments.suggestions.confidence.medium': 'Medium confidence',
 
 	'finance.ai.title': 'AI Transaction',
 	'finance.ai.description':

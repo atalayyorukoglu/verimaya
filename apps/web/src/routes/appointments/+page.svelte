@@ -316,6 +316,12 @@
 				>
 					{t('appointments.alertsLink')}
 				</a>
+				<a
+					href="/appointments/suggestions"
+					class="text-sm font-medium text-brand hover:underline sm:mr-2"
+				>
+					{t('appointments.suggestionsLink')}
+				</a>
 				<div class="flex rounded-[6px] border border-border bg-surface p-0.5">
 					<button
 						type="button"

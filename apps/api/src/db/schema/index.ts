@@ -7,6 +7,7 @@ export * from './organizations';
 export * from './contacts';
 export * from './appointments';
 export * from './operation-alerts';
+export * from './record-update-suggestions';
 export * from './incentive-files';
 export * from './commission-entries';
 export * from './transactions';

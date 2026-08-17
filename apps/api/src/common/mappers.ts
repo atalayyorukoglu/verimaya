@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactType, FinanceCategory, IncentiveFile, OperationAlert, Organization, ContactCaseNote, ContactFile, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactType, FinanceCategory, IncentiveFile, OperationAlert, Organization, ContactCaseNote, ContactFile, RecordUpdateSuggestion, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import {
 	calendarDaysBetween,
 	commissionEntryStatusSchema,
@@ -8,6 +8,9 @@ import {
 	hoursUntil,
 	incentiveFileStatusSchema,
 	operationAlertKindSchema,
+	recordUpdateSuggestionConfidenceSchema,
+	recordUpdateSuggestionFieldSchema,
+	recordUpdateSuggestionStatusSchema,
 	utcTodayIsoDate
 } from '@verimaya/shared';
 import type { AdMetricsDailyRow } from '../db/schema/ad-metrics-daily';
@@ -24,6 +27,7 @@ import type { FileRow } from '../db/schema/files';
 import type { FinanceCategoryRow } from '../db/schema/finance-categories';
 import type { IncentiveFileRow } from '../db/schema/incentive-files';
 import type { OperationAlertRow } from '../db/schema/operation-alerts';
+import type { RecordUpdateSuggestionRow } from '../db/schema/record-update-suggestions';
 import type { OrganizationRow } from '../db/schema/organizations';
 import type { TenantRow } from '../db/schema/tenants';
 import type { TransactionRow } from '../db/schema/transactions';
@@ -171,6 +175,29 @@ export function toOperationAlert(
 		status: deriveOperationAlertStatus(confirmedAt, dueAt, now),
 		confirmed_at: confirmedAt,
 		confirmed_by: row.confirmedBy,
+		created_at: toIsoDateTime(row.createdAt),
+		updated_at: toIsoDateTime(row.updatedAt)
+	};
+}
+
+export function toRecordUpdateSuggestion(
+	row: RecordUpdateSuggestionRow,
+	contactDisplayName: string
+): RecordUpdateSuggestion {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		appointment_id: row.appointmentId,
+		contact_display_name: contactDisplayName,
+		field: recordUpdateSuggestionFieldSchema.parse(row.field),
+		current_value: toIsoDateTime(row.currentValue),
+		suggested_value: toIsoDateTime(row.suggestedValue),
+		source_text: row.sourceText,
+		confidence: recordUpdateSuggestionConfidenceSchema.parse(row.confidence),
+		status: recordUpdateSuggestionStatusSchema.parse(row.status),
+		decided_at: row.decidedAt ? toIsoDateTime(row.decidedAt) : null,
+		decided_by: row.decidedBy,
+		reject_reason: row.rejectReason,
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)
 	};

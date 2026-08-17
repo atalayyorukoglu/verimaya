@@ -32,6 +32,7 @@ import type {
 	KnowledgeSections,
 	CommissionEntry,
 	OperationAlert,
+	RecordUpdateSuggestion,
 	TrustScoreSettings,
 	WhatsappAiPrompt
 } from '@verimaya/shared';
@@ -434,6 +435,8 @@ export type DemoStore = {
 	commissionEntries: CommissionEntry[];
 	/** AI-04 zaman kilitli operasyon alarmları (MSW) — deterministik. */
 	operationAlerts: OperationAlert[];
+	/** AI-02 kayıt güncelleme onay kuyruğu (MSW). */
+	recordUpdateSuggestions: RecordUpdateSuggestion[];
 	aiCorrections: AiCorrection[];
 	/** Persisted Trust Score checklist (MSW). */
 	trustScore: TrustScoreSettings;
@@ -842,6 +845,52 @@ function makeOperationAlerts(appointments: Appointment[]): OperationAlert[] {
 			confirmed_at: confirmedAt,
 			confirmed_by: demoUser.display_name
 		})
+	];
+}
+
+function makeRecordUpdateSuggestions(appointments: Appointment[]): RecordUpdateSuggestion[] {
+	const upcoming = appointments.find((a) => a.id === 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb5');
+	const secondary = appointments.find(
+		(a) =>
+			a.id !== upcoming?.id &&
+			(a.status === 'scheduled' || a.status === 'confirmed') &&
+			new Date(a.starts_at).getTime() > Date.now()
+	);
+	if (!upcoming || !secondary) return [];
+
+	const created = iso(faker.date.recent({ days: 2 }));
+	const suggestOffsetDays = 14;
+
+	const row = (
+		id: string,
+		appointment: Appointment,
+		confidence: RecordUpdateSuggestion['confidence']
+	): RecordUpdateSuggestion => {
+		const suggested = new Date(appointment.starts_at);
+		suggested.setUTCDate(suggested.getUTCDate() + suggestOffsetDays);
+		suggested.setUTCHours(11, 0, 0, 0);
+		return {
+			id,
+			tenant_id: DEMO_TENANT_ID,
+			appointment_id: appointment.id,
+			contact_display_name: appointment.contact_display_name,
+			field: 'starts_at',
+			current_value: appointment.starts_at,
+			suggested_value: suggested.toISOString(),
+			source_text: `${appointment.contact_display_name} randevusunu ${suggested.toISOString().slice(0, 10)} tarihine alalim`,
+			confidence,
+			status: 'pending',
+			decided_at: null,
+			decided_by: null,
+			reject_reason: null,
+			created_at: created,
+			updated_at: created
+		};
+	};
+
+	return [
+		row('cccccccc-cccc-4ccc-8ccc-ccccccccccc1', upcoming, 'high'),
+		row('cccccccc-cccc-4ccc-8ccc-ccccccccccc2', secondary, 'medium')
 	];
 }
 
@@ -1399,6 +1448,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			incentiveDeadlineDays: 180,
 			commissionEntries: [],
 			operationAlerts: [],
+			recordUpdateSuggestions: [],
 			aiCorrections: [],
 			trustScore: { checks: [] },
 			aiPrompt: defaultWhatsappAiPrompt(),
@@ -1700,6 +1750,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		incentiveDeadlineDays: 180,
 		commissionEntries: makeCommissionEntries(contacts),
 		operationAlerts: makeOperationAlerts(appointments),
+		recordUpdateSuggestions: makeRecordUpdateSuggestions(appointments),
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },
 		aiPrompt: defaultWhatsappAiPrompt(),

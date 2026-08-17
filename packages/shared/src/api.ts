@@ -31,6 +31,10 @@ export const apiPaths = {
 	operationAlerts: `${API_V1_PREFIX}/operation-alerts`,
 	operationAlert: (id: string) => `${API_V1_PREFIX}/operation-alerts/${id}`,
 	operationAlertConfirm: (id: string) => `${API_V1_PREFIX}/operation-alerts/${id}/confirm`,
+	recordSuggestions: `${API_V1_PREFIX}/record-suggestions`,
+	recordSuggestionsParse: `${API_V1_PREFIX}/record-suggestions/parse`,
+	recordSuggestionApprove: (id: string) => `${API_V1_PREFIX}/record-suggestions/${id}/approve`,
+	recordSuggestionReject: (id: string) => `${API_V1_PREFIX}/record-suggestions/${id}/reject`,
 	contacts: `${API_V1_PREFIX}/contacts`,
 	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
 	contactFinanceSummary: (id: string) => `${API_V1_PREFIX}/contacts/${id}/finance-summary`,
@@ -245,6 +249,13 @@ import {
 	operationAlertSchema
 } from './operation-alert.js';
 import {
+	recordUpdateSuggestionListPageSchema,
+	recordUpdateSuggestionParseRequestSchema,
+	recordUpdateSuggestionParseResponseSchema,
+	recordUpdateSuggestionRejectRequestSchema,
+	recordUpdateSuggestionSchema
+} from './record-update-suggestion.js';
+import {
 	incentiveFileCreateSchema,
 	incentiveFileListPageSchema,
 	incentiveFileSchema,
@@ -437,6 +448,20 @@ export const apiContract = {
 	},
 	'DELETE /v1/operation-alerts/:id': {
 		response: softDeleteResultSchema
+	},
+	'GET /v1/record-suggestions': {
+		response: recordUpdateSuggestionListPageSchema
+	},
+	'POST /v1/record-suggestions/parse': {
+		body: recordUpdateSuggestionParseRequestSchema,
+		response: recordUpdateSuggestionParseResponseSchema
+	},
+	'POST /v1/record-suggestions/:id/approve': {
+		response: recordUpdateSuggestionSchema
+	},
+	'POST /v1/record-suggestions/:id/reject': {
+		body: recordUpdateSuggestionRejectRequestSchema,
+		response: recordUpdateSuggestionSchema
 	},
 	'GET /v1/contacts': {
 		response: cursorPageSchema(contactSchema)

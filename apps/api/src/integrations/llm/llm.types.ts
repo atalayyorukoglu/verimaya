@@ -1,4 +1,4 @@
-import type { Contact, TransactionDraft } from '@verimaya/shared';
+import type { AppointmentRescheduleDraft, Contact, TransactionDraft } from '@verimaya/shared';
 
 export type LlmParseContext = {
 	message: string;
@@ -42,6 +42,24 @@ export type LlmParseResult = {
 	usage: LlmUsageLedger;
 };
 
+export type LlmRescheduleAppointmentHint = {
+	appointment_id: string;
+	contact_display_name: string;
+	starts_at: string;
+};
+
+export type LlmRescheduleContext = {
+	message: string;
+	appointments: LlmRescheduleAppointmentHint[];
+	tenantPromptNote?: string | null;
+	knowledge?: string | null;
+};
+
+export type LlmRescheduleResult = {
+	suggestions: AppointmentRescheduleDraft[];
+	usage: LlmUsageLedger;
+};
+
 export type MayaAskContext = {
 	question: string;
 	/** Bilgi bankası bağlamı; boşsa null — o zaman LLM'e hiç gidilmez. */
@@ -57,6 +75,8 @@ export type MayaAskResult = {
 /** Domain-facing LLM adapter — WhatsApp parse goes through this, not raw HTTP. */
 export interface LlmClient {
 	parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult>;
+	/** AI-02: appointment.starts_at reschedule drafts — empty when match or date is ambiguous. */
+	suggestAppointmentReschedule(ctx: LlmRescheduleContext): Promise<LlmRescheduleResult>;
 	/** Maya soru-cevap. Yalnız bilgi bankasından cevaplar; bilmiyorsa unknown token döner. */
 	answerFromKnowledge(ctx: MayaAskContext): Promise<MayaAskResult>;
 }

@@ -414,6 +414,13 @@
       "when": 1755610000000,
       "tag": "0058_operation_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1755611000000,
+      "tag": "0059_record_update_suggestions",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import { AppointmentsService } from './appointments.service';
 @Module({
 	imports: [AuthModule, CommonModule, WebhookSubscriptionsModule, OperationAlertsModule],
 	controllers: [AppointmentsController],
-	providers: [AppointmentsService]
+	providers: [AppointmentsService],
+	exports: [AppointmentsService]
 })
 export class AppointmentsModule {}

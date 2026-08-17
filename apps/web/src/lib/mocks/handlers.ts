@@ -64,6 +64,9 @@ import {
 	operationAlertCreateSchema,
 	operationAlertDueAtIso,
 	operationAlertListQuerySchema,
+	recordUpdateSuggestionListQuerySchema,
+	recordUpdateSuggestionParseRequestSchema,
+	recordUpdateSuggestionRejectRequestSchema,
 	deriveTransactionLabel,
 	evaluateTransactionConsistency,
 	isContactInfoIncomplete,
@@ -88,6 +91,7 @@ import {
 	type MarketingReport,
 	type MembershipUser,
 	type OperationAlert,
+	type RecordUpdateSuggestion,
 	type Organization,
 	type ContactCaseNote,
 	type ContactFile,
@@ -1540,6 +1544,120 @@ export const handlers = [
 		const id = store.operationAlerts[idx]!.id;
 		store.operationAlerts.splice(idx, 1);
 		return HttpResponse.json({ id, deleted: true as const });
+	}),
+
+	http.get('/v1/record-suggestions', ({ request }) => {
+		const url = new URL(request.url);
+		const parsed = parseListQuery(recordUpdateSuggestionListQuerySchema, url);
+		if (!parsed.success) return parsed.response;
+		const store = getStore(scenarioFrom(request));
+		let items = store.recordUpdateSuggestions.filter((s) => s.tenant_id === store.tenant.id);
+		if (parsed.data.status) {
+			items = items.filter((s) => s.status === parsed.data.status);
+		}
+		items.sort(compareByCreatedAtDesc);
+		return HttpResponse.json(paginate(items, parsed.data.cursor ?? null, parsed.data.limit));
+	}),
+
+	http.post('/v1/record-suggestions/parse', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const parsed = recordUpdateSuggestionParseRequestSchema.safeParse(await request.json());
+		if (!parsed.success) return badRequest('Geçersiz mesaj', parsed.error.flatten());
+		const message = parsed.data.message.toLocaleLowerCase('tr');
+		const isoMatch = parsed.data.message.match(
+			/\b(20\d{2}-\d{2}-\d{2})(?:[ T](\d{1,2})(?::(\d{2}))?)?/
+		);
+		if (!isoMatch) return HttpResponse.json({ items: [] });
+
+		const target = new Date(
+			isoMatch[1] + 'T' + (isoMatch[2] ?? '10') + ':' + (isoMatch[3] ?? '00') + ':00.000Z'
+		);
+		const candidates = store.appointments.filter((a) => {
+			const name = a.contact_display_name.toLocaleLowerCase('tr');
+			const parts = name.split(/\s+/).filter((p) => p.length > 2);
+			return parts.some((p) => message.includes(p));
+		});
+		if (candidates.length !== 1) return HttpResponse.json({ items: [] });
+
+		const appointment = candidates[0]!;
+		const dup = store.recordUpdateSuggestions.find(
+			(s) =>
+				s.appointment_id === appointment.id &&
+				s.field === 'starts_at' &&
+				s.status === 'pending' &&
+				s.tenant_id === store.tenant.id
+		);
+		if (dup) return HttpResponse.json({ items: [] });
+
+		const now = nowIso();
+		const created: RecordUpdateSuggestion = {
+			id: crypto.randomUUID(),
+			tenant_id: store.tenant.id,
+			appointment_id: appointment.id,
+			contact_display_name: appointment.contact_display_name,
+			field: 'starts_at',
+			current_value: appointment.starts_at,
+			suggested_value: target.toISOString(),
+			source_text: parsed.data.message.slice(0, 4000),
+			confidence: 'medium',
+			status: 'pending',
+			decided_at: null,
+			decided_by: null,
+			reject_reason: null,
+			created_at: now,
+			updated_at: now
+		};
+		store.recordUpdateSuggestions.push(created);
+		return HttpResponse.json({ items: [created] });
+	}),
+
+	http.post('/v1/record-suggestions/:id/approve', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.recordUpdateSuggestions.findIndex(
+			(s) => s.id === params.id && s.tenant_id === store.tenant.id && s.status === 'pending'
+		);
+		if (idx < 0) return notFound('Öneri bulunamadı');
+		const suggestion = store.recordUpdateSuggestions[idx]!;
+		const apptIdx = store.appointments.findIndex((a) => a.id === suggestion.appointment_id);
+		if (apptIdx < 0) return notFound('Randevu bulunamadı');
+		if (store.appointments[apptIdx]!.starts_at !== suggestion.current_value) {
+			return conflict('conflict', 'Appointment was modified since this suggestion was created');
+		}
+		const now = nowIso();
+		store.appointments[apptIdx] = {
+			...store.appointments[apptIdx]!,
+			starts_at: suggestion.suggested_value,
+			updated_at: now
+		};
+		rescheduleAlertsForAppointment(store, store.appointments[apptIdx]!);
+		store.recordUpdateSuggestions[idx] = {
+			...suggestion,
+			status: 'approved',
+			decided_at: now,
+			decided_by: demoUser.display_name,
+			updated_at: now
+		};
+		return HttpResponse.json(store.recordUpdateSuggestions[idx]);
+	}),
+
+	http.post('/v1/record-suggestions/:id/reject', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = recordUpdateSuggestionRejectRequestSchema.safeParse(await request.json());
+		if (!body.success) return badRequest('Geçersiz red', body.error.flatten());
+		const idx = store.recordUpdateSuggestions.findIndex(
+			(s) => s.id === params.id && s.tenant_id === store.tenant.id && s.status === 'pending'
+		);
+		if (idx < 0) return notFound('Öneri bulunamadı');
+		const now = nowIso();
+		store.recordUpdateSuggestions[idx] = {
+			...store.recordUpdateSuggestions[idx]!,
+			status: 'rejected',
+			decided_at: now,
+			decided_by: demoUser.display_name,
+			reject_reason: body.data.reason?.trim() || null,
+			updated_at: now
+		};
+		return HttpResponse.json(store.recordUpdateSuggestions[idx]);
 	}),
 
 	http.post('/v1/transactions/audit-draft', async ({ request }) => {

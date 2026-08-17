@@ -1,5 +1,5 @@
 import type { Contact } from '@verimaya/shared';
-import type { LlmParseContext } from './llm.types';
+import type { LlmParseContext, LlmRescheduleContext } from './llm.types';
 
 /** Placeholders sent to external LLMs instead of raw PII. */
 export const PII_PLACEHOLDERS = {
@@ -19,6 +19,16 @@ export type MaskedLlmPatientHint = {
 export type MaskedLlmUserPayload = {
 	message: string;
 	patients: MaskedLlmPatientHint[];
+};
+
+export type MaskedRescheduleAppointmentHint = {
+	appointment_ref: string;
+	starts_at: string;
+};
+
+export type MaskedReschedulePayload = {
+	message: string;
+	appointments: MaskedRescheduleAppointmentHint[];
 };
 
 function escapeRegExp(value: string): string {
@@ -87,5 +97,25 @@ export function buildMaskedLlmUserPayload(ctx: LlmParseContext): MaskedLlmUserPa
 	return {
 		message: maskMessagePii(withoutNames),
 		patients: toOpaquePatientHints(ctx.patients)
+	};
+}
+
+/** Single choke point for AI-02 reschedule user JSON — no display names to external LLMs. */
+export function buildMaskedReschedulePayload(ctx: LlmRescheduleContext): MaskedReschedulePayload {
+	let message = ctx.message;
+	for (const appt of ctx.appointments) {
+		message = maskPatientNamesInMessage(message, [
+			{
+				id: appt.appointment_id,
+				display_name: appt.contact_display_name
+			} as Contact
+		]);
+	}
+	return {
+		message: maskMessagePii(message),
+		appointments: ctx.appointments.slice(0, 80).map((a) => ({
+			appointment_ref: a.appointment_id,
+			starts_at: a.starts_at
+		}))
 	};
 }

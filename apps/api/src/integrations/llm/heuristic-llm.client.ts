@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import { MAYA_UNKNOWN_TOKEN } from '@verimaya/shared';
+import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
+import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type {
 	LlmClient,
 	LlmParseContext,
 	LlmParseResult,
+	LlmRescheduleContext,
+	LlmRescheduleResult,
 	MayaAskContext,
 	MayaAskResult
 } from './llm.types';
@@ -19,6 +22,24 @@ export class HeuristicLlmClient implements LlmClient {
 			usage: {
 				provider: 'heuristic',
 				model: 'heuristic-parse',
+				requestedModel: null,
+				promptTokens: 0,
+				completionTokens: 0,
+				totalTokens: 0,
+				estimatedCostUsdMicros: 0,
+				path: 'heuristic',
+				error: null
+			}
+		};
+	}
+
+	async suggestAppointmentReschedule(ctx: LlmRescheduleContext): Promise<LlmRescheduleResult> {
+		const suggestions = heuristicSuggestAppointmentReschedule(ctx.message, ctx.appointments);
+		return {
+			suggestions,
+			usage: {
+				provider: 'heuristic',
+				model: 'heuristic-reschedule',
 				requestedModel: null,
 				promptTokens: 0,
 				completionTokens: 0,
