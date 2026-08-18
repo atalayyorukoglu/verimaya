@@ -430,12 +430,10 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   **Görüş:** Bu iş AI değil — ihtiyaç haritası §5.4 bekçi köpeği. Ayar ekranı bu turda yok;
   `tenant_settings.operation_alert_thresholds` anahtarı + shared varsayılan hazır. Mevcut
   randevulara backfill yok — alarm create/tarih değişince oluşur.
-  **⚠️ Karar bekleyen (kullanıcı):** bugün **her randevu dört türü birden** açıyor. Sık klinik
-  randevusu olan bir hastada bu gürültü demek — üçüncü kontrol randevusuna uçuş + transfer +
-  karşılama alarmı çıkar. Liste varsayılanı bu yüzden "teyit bekleyen"e çekildi (gürültüyü
-  saklar, kaynağını çözmez). Doğru cevap operasyona bağlı: (a) böyle kalsın · (b) yalnız
-  hastanın **ilk** randevusu dört tür açsın, sonrakiler yalnız `clinic` · (c) otomatik açma
-  kalksın, alarm elle açılsın. Gerçek randevu deseni görülünce karar verilecek.
+  **✅ Çözüldü (2026-08-18) — AI-04b.** İlk sürümde her randevu dört türü birden açıyordu ve
+  eşik değiştirilemiyordu; gürültü kaçınılmazdı. Ayar ekranı geldi: kullanmadığınız tür
+  kapatılır (yeni randevularda hiç oluşmaz), eşik tür başına değiştirilir. Liste varsayılanının
+  "teyit bekleyen" olması gürültüyü **saklıyordu**; asıl çözüm kaynağı kesmek.
 
 - **Hakediş / komisyon takibi (PRODUCT-01) ✅** (2026-08-17) — `commission_entries` (migration
   `0056`, RLS + FORCE RLS + policy + GRANT), CRUD `/v1/commissions`, özet
