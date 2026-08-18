@@ -203,22 +203,35 @@
 
 ---
 
-### 5. PILOT-02 — 2–4 haftalık feature-freeze dahili pilot
+### 5. PILOT-02 — 2–4 haftalık feature-freeze dahili pilot · ⏸ **ERTELENDİ**
+
+> **⏸ ERTELENDİ (2026-08-18 kararı — kullanıcı).** Pilot **başlamadı**; planlanan 17 Ağustos
+> başlangıcı geçti ve yürürlüğe konmadı. Yeni tarih belirlenmedi.
+> **Sonuçları:**
+> - **Feature freeze YÜRÜRLÜKTE DEĞİL.** Yeni yüzey eklemek ihlal sayılmaz. Freeze, pilot
+>   resmen ilan edildiği gün başlar (MARKET-01 (c) kararının lafzı: "pilot RESMEN başlayınca").
+> - **AI katmanı sırası serbest kaldı.** AI-01…AI-07 için yol haritasındaki "6 Eylül'den sonra"
+>   notu bu erteleme ile düştü; AI-01/02/04/06 zaten 17 Ağustos'ta kapandı.
+> - KPI ölçümü ve haftalık rapor ritmi de ertelendi (20 Ağu · 27 Ağu · 3 Eyl tarihleri geçersiz).
+> - Aşağıdaki "Pilot-02 sonu kapıları" (WEBHOOK-01) hâlâ ikinci müşteri öncesi zorunlu —
+>   pilota değil, ikinci müşteriye bağlı.
 
 > **Bağımlı:** 1 (smoke temiz) + 2(c) (freeze taahhüdü) + 4 (DOMAIN-02 E4 dahil kapanmış).
 > KPI: aktif kullanıcı/gün, Tracker’a dönüş, AI taslak kabul/düzeltme/red, finans mutabakat,
 > randevu kaçırma, webhook/job fail, destek süresi, haftalık yedek + restore.
 
 > **Plan: `docs/2026-08-13-PILOT-02-PLANI.md`** — tarihler, KPI ölçüm kaynakları, haftalık ritim.
+> ⚠️ Plandaki tarihler bu erteleme ile geçersiz; yeni tarih verilince güncellenecek.
 
 - [x] **Pilot planı + KPI tanımları yazıldı** (2026-08-13).
   **Görüş:** 17 Ağustos – 6 Eylül (3 hafta), OrbisMed'den 2–3 kullanıcı. Sekiz KPI'ın her
   birine ölçüm kaynağı bağlandı; beşi sistemden (audit log, ai_corrections, no_show oranı,
   hata logları), üçü elle (Tracker'a dönüş, finans mutabakat, destek süresi). Elle olanlar
   toplanmazsa o KPI boş kalır — planda açıkça yazılı.
-- [ ] **Feature freeze ilan et** — 17 Ağustos'ta yürürlüğe girer; yalnız hata + güvenlik +
-  veri düzeltme migration'ı, yeni yüzey yok
-- [ ] 3 hafta çalıştır + her Perşembe raporla (20 Ağu · 27 Ağu · 3 Eyl)
+- [ ] **Feature freeze ilan et** — ⏸ ertelendi. 17 Ağustos hedefi geçti, ilan edilmedi.
+  İlan edildiği gün yürürlüğe girer: yalnız hata + güvenlik + veri düzeltme migration'ı,
+  yeni yüzey yok. **O güne kadar freeze yok.**
+- [ ] 3 hafta çalıştır + her Perşembe raporla — ⏸ ertelendi (20 Ağu · 27 Ağu · 3 Eyl düştü)
 - **Kabul:** KPI raporu yazılı; freeze ihlali varsa listelenmiş.
 
 #### Pilot-02 sonu kapıları (ikinci müşteri öncesi ZORUNLU)
@@ -277,15 +290,16 @@
 
 ---
 
-## AI katmanı (AI-01…AI-07) — pilot sonrası, freeze kapsamında
+## AI katmanı (AI-01…AI-07) — sıra serbest (pilot ertelendi)
 
 > Karar metni, gerekçe ve 13 firmalık rakip AI taraması: Obsidian
 > `03-Areas/VeriMaya/09-ai-katmani-yol-haritasi.md` (2026-08-15) + `02-yol-haritasi.md` § Eksen 1b.
 > Buraya **kalem olarak** taşındı ki tek kaynak dosya AI işini görsün; ayrıntı Obsidian'da kalır.
 >
-> **Hiçbiri PILOT-02 içinde yapılmaz** — hepsi yeni yüzey, freeze ⛔ kapsamında. Sıra pilot
-> kapanışından (6 Eylül) sonra açılır. Ana sayfa bugün "sistem okur, siz onaylarsınız" diyor;
-> yani AI-02 er ya da geç satış vaadinin ürün karşılığı olmak zorunda.
+> ~~**Hiçbiri PILOT-02 içinde yapılmaz** — freeze ⛔ kapsamında, sıra 6 Eylül'den sonra.~~
+> **Düştü (2026-08-18):** PILOT-02 ertelendi, freeze yürürlüğe girmedi (bkz. kalem 5).
+> AI-01/02/04/06 zaten 17 Ağustos'ta kapandı. Ana sayfa "sistem okur, siz onaylarsınız"
+> diyordu; AI-02 ile o cümlenin ürün karşılığı doğdu.
 >
 > **"Firmaya özel ajan" = bilgi tabanı + kurallar + düzeltme geçmişi.** Model eğitimi değil.
 
