@@ -18,6 +18,8 @@ import type {
 	KnowledgeSections,
 	KnowledgeSettings,
 	KnowledgeUpdate,
+	OperationAlertSettings,
+	OperationAlertSettingsUpdate,
 	OrganizationCreate,
 	OrganizationUpdate,
 	SettingsReorder,
@@ -33,10 +35,16 @@ import {
 	DEFAULT_FINANCE_CATEGORY_SEEDS,
 	DEFAULT_INCENTIVE_DEADLINE_DAYS,
 	INCENTIVE_DEADLINE_DAYS_KEY,
+	OPERATION_ALERT_THRESHOLDS_KEY,
+	DEFAULT_OPERATION_ALERT_THRESHOLDS,
+	cloneOperationAlertThresholds,
 	defaultIncentiveDeadlineSettings,
+	defaultOperationAlertThresholds,
 	defaultWhatsappAiDisclosure,
 	defaultWhatsappAiPrompt,
 	incentiveDeadlineSettingsSchema,
+	operationAlertThresholdsEqual,
+	parseOperationAlertThresholds,
 	buildKnowledgeContext,
 	emptyKnowledgeSections,
 	findKnowledgePii,
@@ -59,6 +67,7 @@ import { toAppointmentType, toContactType, toFinanceCategory, toOrganization } f
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
 import { isUniqueViolation } from '../common/postgres-errors';
+import { OperationAlertsService } from '../operation-alerts/operation-alerts.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { defaultAppointmentTypeId } from './appointment-type-defaults';
 
@@ -68,6 +77,7 @@ const AI_DISCLOSURE_AUDIT_LABEL = 'whatsapp_ai_disclosure';
 const WHATSAPP_AI_PROMPT_KEY = 'whatsapp_ai_prompt';
 const KNOWLEDGE_KEY = 'knowledge';
 const KNOWLEDGE_AUDIT_LABEL = 'knowledge';
+const OPERATION_ALERT_AUDIT_LABEL = 'operation_alert_thresholds';
 const AI_PROMPT_AUDIT_LABEL = 'whatsapp_ai_prompt';
 
 /** Presence in tenant_settings ⇒ defaults were applied once; empty list must not re-seed. */
@@ -84,7 +94,8 @@ const ORGANIZATIONS_NAME_UIDX = 'organizations_tenant_id_name_uidx';
 export class SettingsService {
 	constructor(
 		private readonly tenantContext: TenantContextService,
-		private readonly crypto: CryptoService
+		private readonly crypto: CryptoService,
+		private readonly operationAlerts?: OperationAlertsService
 	) {}
 
 	async listFinanceCategories(tenantId: string) {
@@ -787,6 +798,60 @@ export class SettingsService {
 			updated_at: null,
 			updated_by: null,
 			pii_warnings: []
+		};
+	}
+
+	/**
+	 * AI-04b — per-kind hours + enabled. Stored under the existing
+	 * `operation_alert_thresholds` key (legacy flat numbers still parse).
+	 */
+	async getOperationAlerts(tenantId: string): Promise<OperationAlertSettings> {
+		const raw = await this.getTenantSetting(tenantId, OPERATION_ALERT_THRESHOLDS_KEY);
+		if (raw == null) {
+			return { thresholds: defaultOperationAlertThresholds(), is_default: true };
+		}
+		const thresholds = parseOperationAlertThresholds(raw);
+		return {
+			thresholds,
+			is_default: operationAlertThresholdsEqual(thresholds, DEFAULT_OPERATION_ALERT_THRESHOLDS)
+		};
+	}
+
+	async saveOperationAlerts(
+		tenantId: string,
+		input: OperationAlertSettingsUpdate,
+		actor: AuditActor
+	): Promise<OperationAlertSettings> {
+		if (!this.operationAlerts) {
+			throw new Error('OperationAlertsService is required to save operation alert settings');
+		}
+		const next = cloneOperationAlertThresholds(input.thresholds);
+
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db
+				.select({ value: tenantSettings.value })
+				.from(tenantSettings)
+				.where(eq(tenantSettings.key, OPERATION_ALERT_THRESHOLDS_KEY))
+				.limit(1);
+			const previous = row
+				? parseOperationAlertThresholds(row.value)
+				: defaultOperationAlertThresholds();
+
+			await db
+				.insert(tenantSettings)
+				.values({ tenantId, key: OPERATION_ALERT_THRESHOLDS_KEY, value: next })
+				.onConflictDoUpdate({
+					target: [tenantSettings.tenantId, tenantSettings.key],
+					set: { value: next, updatedAt: new Date() }
+				});
+
+			await this.operationAlerts!.applySettingsChangeWithDb(db, previous, next);
+			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', OPERATION_ALERT_AUDIT_LABEL);
+		});
+
+		return {
+			thresholds: next,
+			is_default: operationAlertThresholdsEqual(next, DEFAULT_OPERATION_ALERT_THRESHOLDS)
 		};
 	}
 

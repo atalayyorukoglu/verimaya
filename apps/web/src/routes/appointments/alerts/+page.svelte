@@ -6,6 +6,7 @@
 	import { apiGet, apiSend } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { type DeleteConfirmPhase, runConfirmedDelete } from '$lib/components/delete-confirm-flow';
 	import { formatDateTime } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
 	import type { MessageKey } from '$lib/i18n/messages';
@@ -42,6 +43,9 @@
 	let appliedDueSoon = $state(false);
 	let confirmingId = $state<string | null>(null);
 	let confirmError = $state<string | null>(null);
+	let pendingDeleteId = $state<string | null>(null);
+	let deletePhase = $state<DeleteConfirmPhase>('form');
+	let deletingId = $state<string | null>(null);
 
 	const listParams = $derived({
 		status: (appliedStatus || undefined) as OperationAlertStatus | undefined,
@@ -84,6 +88,36 @@
 			confirmError = err instanceof Error ? err.message : t('appointments.alerts.confirmFailed');
 		} finally {
 			confirmingId = null;
+		}
+	}
+
+	function requestDelete(alert: OperationAlert) {
+		pendingDeleteId = alert.id;
+		deletePhase = 'confirm';
+		confirmError = null;
+	}
+
+	function cancelDelete() {
+		pendingDeleteId = null;
+		deletePhase = 'form';
+	}
+
+	async function confirmDelete(alert: OperationAlert) {
+		deletingId = alert.id;
+		confirmError = null;
+		try {
+			const result = await runConfirmedDelete(deletePhase, async () => {
+				await apiSend(apiPaths.operationAlert(alert.id), 'DELETE');
+			});
+			if (result === 'deleted') {
+				pendingDeleteId = null;
+				deletePhase = 'form';
+				await queryClient.invalidateQueries({ queryKey: qs.keys.operationAlerts.all() });
+			}
+		} catch (err) {
+			confirmError = err instanceof Error ? err.message : t('appointments.alerts.deleteFailed');
+		} finally {
+			deletingId = null;
 		}
 	}
 </script>
@@ -169,18 +203,58 @@
 								</span>
 							</td>
 							<td class="px-3 py-2">
-								{#if alert.status !== 'confirmed'}
-									<Button
-										type="button"
-										variant="outline"
-										disabled={confirmingId === alert.id}
-										onclick={() => confirmAlert(alert)}
-									>
-										{confirmingId === alert.id
-											? t('appointments.alerts.confirming')
-											: t('appointments.alerts.confirm')}
-									</Button>
-								{/if}
+								<div class="flex flex-wrap items-center gap-2">
+									{#if pendingDeleteId === alert.id && deletePhase === 'confirm'}
+										<div class="flex min-w-0 flex-col gap-2">
+											<p class="text-sm font-medium text-text">
+												{t('appointments.alerts.deleteConfirmTitle')}
+											</p>
+											<p class="text-sm text-text">{t('appointments.alerts.deleteConfirmBody')}</p>
+											<div class="flex flex-wrap gap-2">
+												<Button
+													type="button"
+													variant="outline"
+													disabled={deletingId === alert.id}
+													onclick={cancelDelete}
+												>
+													{t('common.cancel')}
+												</Button>
+												<Button
+													type="button"
+													variant="destructive"
+													disabled={deletingId === alert.id}
+													onclick={() => confirmDelete(alert)}
+												>
+													{deletingId === alert.id
+														? t('appointments.alerts.deleting')
+														: t('appointments.alerts.deleteConfirmAction')}
+												</Button>
+											</div>
+										</div>
+									{:else}
+										{#if alert.status !== 'confirmed'}
+											<Button
+												type="button"
+												variant="outline"
+												disabled={confirmingId === alert.id || deletingId !== null}
+												onclick={() => confirmAlert(alert)}
+											>
+												{confirmingId === alert.id
+													? t('appointments.alerts.confirming')
+													: t('appointments.alerts.confirm')}
+											</Button>
+										{/if}
+										<Button
+											type="button"
+											variant="outline"
+											class="text-danger"
+											disabled={deletingId !== null}
+											onclick={() => requestDelete(alert)}
+										>
+											{t('appointments.alerts.delete')}
+										</Button>
+									{/if}
+								</div>
 							</td>
 						</tr>
 					{/each}

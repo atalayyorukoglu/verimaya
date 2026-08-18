@@ -90,6 +90,7 @@ export const apiPaths = {
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
 	settingsKnowledge: `${API_V1_PREFIX}/settings/knowledge`,
 	settingsKnowledgeRevisions: `${API_V1_PREFIX}/settings/knowledge/revisions`,
+	settingsOperationAlerts: `${API_V1_PREFIX}/settings/operation-alerts`,
 	mayaAsk: `${API_V1_PREFIX}/maya/ask`,
 	settingsIncentiveDeadline: `${API_V1_PREFIX}/settings/incentive-deadline`,
 	settingsPermissions: `${API_V1_PREFIX}/settings/permissions`,
@@ -246,7 +247,9 @@ import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import {
 	operationAlertCreateSchema,
 	operationAlertListPageSchema,
-	operationAlertSchema
+	operationAlertSchema,
+	operationAlertSettingsSchema,
+	operationAlertSettingsUpdateSchema
 } from './operation-alert.js';
 import {
 	recordUpdateSuggestionListPageSchema,
@@ -699,6 +702,13 @@ export const apiContract = {
 	},
 	'DELETE /v1/settings/knowledge': {
 		response: knowledgeSettingsSchema
+	},
+	'GET /v1/settings/operation-alerts': {
+		response: operationAlertSettingsSchema
+	},
+	'PUT /v1/settings/operation-alerts': {
+		body: operationAlertSettingsUpdateSchema,
+		response: operationAlertSettingsSchema
 	},
 	'DELETE /v1/settings/ai-prompt': {
 		response: whatsappAiPromptSchema

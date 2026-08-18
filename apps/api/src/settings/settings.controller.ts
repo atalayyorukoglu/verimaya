@@ -27,6 +27,7 @@ import {
 	trustScoreSettings,
 	whatsappAiDisclosureUpdateSchema,
 	knowledgeUpdateSchema,
+	operationAlertSettingsUpdateSchema,
 	whatsappAiPromptUpdateSchema,
 	incentiveDeadlineSettingsUpdateSchema
 } from '@verimaya/shared';
@@ -376,6 +377,26 @@ export class SettingsController {
 	@HttpCode(200)
 	deleteKnowledge(@Req() req: FastifyRequest) {
 		return this.settingsService.deleteKnowledge(getActiveOrgId(req), getActorFromRequest(req));
+	}
+
+	@Get('operation-alerts')
+	@RequireOrgPermission('settings', 'read')
+	getOperationAlerts(@Req() req: FastifyRequest) {
+		return this.settingsService.getOperationAlerts(getActiveOrgId(req));
+	}
+
+	@Put('operation-alerts')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'True upsert via onConflictDoUpdate (tenant_id, key) — repeat PUTs converge to the same stored thresholds. Alert side-effects (due_at refresh / unconfirmed soft-delete) are likewise convergent; confirmed rows are never rewritten.'
+	)
+	putOperationAlerts(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(operationAlertSettingsUpdateSchema, body, req);
+		return this.settingsService.saveOperationAlerts(
+			getActiveOrgId(req),
+			input,
+			getActorFromRequest(req)
+		);
 	}
 
 	@Get('ai-prompt')

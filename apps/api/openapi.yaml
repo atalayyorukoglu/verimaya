@@ -7616,6 +7616,230 @@ paths:
                 required:
                   - items
                 additionalProperties: false
+  /settings/operation-alerts:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  thresholds:
+                    type: object
+                    properties:
+                      flight:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                      transfer:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                      welcome:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                      clinic:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                    required:
+                      - flight
+                      - transfer
+                      - welcome
+                      - clinic
+                    additionalProperties: false
+                  is_default:
+                    type: boolean
+                required:
+                  - thresholds
+                  - is_default
+                additionalProperties: false
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  thresholds:
+                    type: object
+                    properties:
+                      flight:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                      transfer:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                      welcome:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                      clinic:
+                        type: object
+                        properties:
+                          hours:
+                            type: integer
+                            minimum: 1
+                            maximum: 8760
+                          enabled:
+                            type: boolean
+                        required:
+                          - hours
+                          - enabled
+                        additionalProperties: false
+                    required:
+                      - flight
+                      - transfer
+                      - welcome
+                      - clinic
+                    additionalProperties: false
+                  is_default:
+                    type: boolean
+                required:
+                  - thresholds
+                  - is_default
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                thresholds:
+                  type: object
+                  properties:
+                    flight:
+                      type: object
+                      properties:
+                        hours:
+                          type: integer
+                          minimum: 1
+                          maximum: 8760
+                        enabled:
+                          type: boolean
+                      required:
+                        - hours
+                        - enabled
+                      additionalProperties: false
+                    transfer:
+                      type: object
+                      properties:
+                        hours:
+                          type: integer
+                          minimum: 1
+                          maximum: 8760
+                        enabled:
+                          type: boolean
+                      required:
+                        - hours
+                        - enabled
+                      additionalProperties: false
+                    welcome:
+                      type: object
+                      properties:
+                        hours:
+                          type: integer
+                          minimum: 1
+                          maximum: 8760
+                        enabled:
+                          type: boolean
+                      required:
+                        - hours
+                        - enabled
+                      additionalProperties: false
+                    clinic:
+                      type: object
+                      properties:
+                        hours:
+                          type: integer
+                          minimum: 1
+                          maximum: 8760
+                        enabled:
+                          type: boolean
+                      required:
+                        - hours
+                        - enabled
+                      additionalProperties: false
+                  required:
+                    - flight
+                    - transfer
+                    - welcome
+                    - clinic
+                  additionalProperties: false
+              required:
+                - thresholds
+              additionalProperties: false
   /settings/incentive-deadline:
     get:
       responses:

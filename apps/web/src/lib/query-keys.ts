@@ -79,6 +79,7 @@ export function queryKeys(scope: QueryScope) {
 			aiPrompt: () => k('settings', 'ai-prompt'),
 			knowledge: () => k('settings', 'knowledge'),
 			knowledgeRevisions: () => k('settings', 'knowledge', 'revisions'),
+			operationAlerts: () => k('settings', 'operation-alerts'),
 			incentiveDeadline: () => k('settings', 'incentive-deadline'),
 			permissions: () => k('settings', 'permissions'),
 			apiKeys: () => k('settings', 'api-keys'),

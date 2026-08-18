@@ -459,10 +459,22 @@ const tr = {
 		'Uçuş, transfer, karşılama ve klinik teyitlerini saate bağlar. Eşik dolunca hâlâ teyitsizse satır alarm verir — kimse “yaptık sanıyordum” diyemez.',
 	'help.operation-alerts.b2':
 		'Kalan saat eksiye düşünce kırmızı, 6 saatin altına inince turuncu. Teyit düğmesi saati durdurur.',
+	'help.operation-alerts.b3':
+		'Eşik saatini değiştirmek veya kullanmadığınız bir türü kapatmak için Ayarlar → Operasyon alarmları ekranına gidin.',
 	'help.operation-alerts.example':
 		'Hastanın uçuşu pazartesi 10:00. Sistem 48 saat önce, cumartesi 10:00’da, teyit yoksa alarm açar. Teyit etmezseniz hasta havaalanında bekler.',
 	'help.operation-alerts.caveat':
 		'Bu bir kural motorudur, tahmin değildir. Model bir şey yorumlamaz; teyit düğmesine basılmadan kalem kapanmış sayılmaz.',
+
+	'help.operation-alert-settings.title': 'Operasyon alarmı ayarları',
+	'help.operation-alert-settings.b1':
+		'Her alarm türü için kaç saat önce çalacağını ve o türün açık olup olmadığını buradan belirlersiniz. Kapalı tür yeni randevuda oluşmaz.',
+	'help.operation-alert-settings.b2':
+		'Kaydetmek dört türü birden yazar. Kısmi kayıt yoktur — kullanmadığınız türü kapatın, eşiği olduğu gibi bırakın.',
+	'help.operation-alert-settings.example':
+		'Uçuş alarmını 48 yerine 24 saate çekerseniz, teyit edilmemiş uçuş alarmları yeni saate göre kayar; teyit ettikleriniz olduğu gibi kalır.',
+	'help.operation-alert-settings.caveat':
+		'Kapatılan türün bekleyen (teyitsiz) alarmları listeden düşer. Teyit edilmiş satır bir insan kaydıdır, ayar onu silmez. Türü yeniden açmak geçmiş randevulara alarm üretmez.',
 
 	'help.record-suggestions.title': 'Kayıt güncelleme önerileri',
 	'help.record-suggestions.b1':
@@ -872,6 +884,12 @@ const tr = {
 	'appointments.alerts.confirm': 'Teyit et',
 	'appointments.alerts.confirming': 'Teyit ediliyor…',
 	'appointments.alerts.confirmFailed': 'Teyit başarısız',
+	'appointments.alerts.delete': 'Sil',
+	'appointments.alerts.deleting': 'Siliniyor…',
+	'appointments.alerts.deleteFailed': 'Silme başarısız',
+	'appointments.alerts.deleteConfirmTitle': 'Alarmı sil',
+	'appointments.alerts.deleteConfirmBody': 'Bu alarm listeden kaldırılacak.',
+	'appointments.alerts.deleteConfirmAction': 'Silmeyi onayla',
 	'appointments.alerts.filter.statusAll': 'Tüm durumlar',
 	'appointments.alerts.filter.dueSoon': 'Yalnız süresi yaklaşanlar',
 	'appointments.alerts.filter.apply': 'Filtrele',
@@ -1810,6 +1828,26 @@ const tr = {
 	'settings.incentives.saveFailed': 'Kayıt başarısız',
 	'settings.nav.incentives.title': 'Teşvik süresi',
 	'settings.nav.incentives.description': 'Yeni teşvik dosyaları için son başvuru gün sayısı.',
+	'settings.nav.operationAlerts.title': 'Operasyon alarmları',
+	'settings.nav.operationAlerts.description':
+		'Uçuş, transfer, karşılama ve klinik alarmlarının eşiği ve açma/kapama.',
+	'settings.operationAlerts.documentTitle': 'Operasyon alarmları · Ayarlar · Verimaya',
+	'settings.operationAlerts.title': 'Operasyon alarmları',
+	'settings.operationAlerts.description':
+		'Her tür için alarmın randevudan kaç saat önce çalacağını ve o türün açık olup olmadığını ayarlayın.',
+	'settings.operationAlerts.enabled': 'Açık',
+	'settings.operationAlerts.disabled': 'Kapalı',
+	'settings.operationAlerts.hoursBefore': 'randevudan',
+	'settings.operationAlerts.hoursSuffix': 'saat önce',
+	'settings.operationAlerts.isDefault': 'Şu an varsayılan değerler kullanılıyor.',
+	'settings.operationAlerts.afterSave':
+		'Kapatılan türün bekleyen alarmları listeden düşecek. Teyit edilmişler kayıtta kalır.',
+	'settings.operationAlerts.reset': 'Varsayılana dön',
+	'settings.operationAlerts.resetConfirm':
+		'Varsayılan eşiğe dönülsün mü? (uçuş 48, transfer 24, karşılama 12, klinik 24; hepsi açık)',
+	'settings.operationAlerts.loadError': 'Ayar yüklenemedi.',
+	'settings.operationAlerts.saveError': 'Kayıt başarısız',
+	'settings.operationAlerts.saved': 'Kaydedildi.',
 
 	// reports leftovers
 	'reports.documentTitle': 'Raporlar · Verimaya',
@@ -2915,10 +2953,22 @@ const en: Record<MessageKey, string> = {
 		'Ties flight, transfer, welcome, and clinic confirmations to a clock. When the threshold hits and the item is still unconfirmed, the row alarms — nobody can say “we thought it was done”.',
 	'help.operation-alerts.b2':
 		'Negative hours turn red; under 6 hours turns amber. Confirm stops the clock.',
+	'help.operation-alerts.b3':
+		'To change the threshold hours or turn off a kind you do not use, go to Settings → Operation alerts.',
 	'help.operation-alerts.example':
 		'The patient’s flight is Monday 10:00. The system alarms 48 hours earlier, Saturday 10:00, if still unconfirmed. Skip confirm and the patient waits at the airport.',
 	'help.operation-alerts.caveat':
 		'This is a rule engine, not a prediction. No model interprets anything; an item is not closed until someone presses Confirm.',
+
+	'help.operation-alert-settings.title': 'Operation alert settings',
+	'help.operation-alert-settings.b1':
+		'Set how many hours before the appointment each kind should fire, and whether that kind is on. A disabled kind is not created for new appointments.',
+	'help.operation-alert-settings.b2':
+		'Saving writes all four kinds. There is no partial save — turn off unused kinds and leave their hours as they are.',
+	'help.operation-alert-settings.example':
+		'If you pull the flight alert from 48 hours down to 24, unconfirmed flight alerts shift to the new time; the ones you already confirmed stay as they are.',
+	'help.operation-alert-settings.caveat':
+		'Pending (unconfirmed) alerts of a disabled kind drop off the list. A confirmed row is a human record; settings will not delete it. Turning a kind back on does not create alerts for past appointments.',
 
 	'help.record-suggestions.title': 'Record update suggestions',
 	'help.record-suggestions.b1':
@@ -3321,6 +3371,12 @@ const en: Record<MessageKey, string> = {
 	'appointments.alerts.confirm': 'Confirm',
 	'appointments.alerts.confirming': 'Confirming…',
 	'appointments.alerts.confirmFailed': 'Confirm failed',
+	'appointments.alerts.delete': 'Delete',
+	'appointments.alerts.deleting': 'Deleting…',
+	'appointments.alerts.deleteFailed': 'Delete failed',
+	'appointments.alerts.deleteConfirmTitle': 'Delete alert',
+	'appointments.alerts.deleteConfirmBody': 'This alert will be removed from the list.',
+	'appointments.alerts.deleteConfirmAction': 'Confirm delete',
 	'appointments.alerts.filter.statusAll': 'All statuses',
 	'appointments.alerts.filter.dueSoon': 'Due soon only',
 	'appointments.alerts.filter.apply': 'Filter',
@@ -4232,6 +4288,26 @@ const en: Record<MessageKey, string> = {
 	'settings.incentives.saveFailed': 'Save failed',
 	'settings.nav.incentives.title': 'Incentive deadline',
 	'settings.nav.incentives.description': 'Day count for new incentive file deadlines.',
+	'settings.nav.operationAlerts.title': 'Operation alerts',
+	'settings.nav.operationAlerts.description':
+		'Threshold and on/off for flight, transfer, welcome, and clinic alerts.',
+	'settings.operationAlerts.documentTitle': 'Operation alerts · Settings · Verimaya',
+	'settings.operationAlerts.title': 'Operation alerts',
+	'settings.operationAlerts.description':
+		'Set how many hours before the appointment each kind should fire, and whether that kind is on.',
+	'settings.operationAlerts.enabled': 'On',
+	'settings.operationAlerts.disabled': 'Off',
+	'settings.operationAlerts.hoursBefore': 'before the appointment by',
+	'settings.operationAlerts.hoursSuffix': 'hours',
+	'settings.operationAlerts.isDefault': 'Currently using the default values.',
+	'settings.operationAlerts.afterSave':
+		'Pending alerts of a disabled kind will drop off the list. Confirmed ones stay on record.',
+	'settings.operationAlerts.reset': 'Reset to defaults',
+	'settings.operationAlerts.resetConfirm':
+		'Reset to default thresholds? (flight 48, transfer 24, welcome 12, clinic 24; all on)',
+	'settings.operationAlerts.loadError': 'Could not load settings.',
+	'settings.operationAlerts.saveError': 'Save failed',
+	'settings.operationAlerts.saved': 'Saved.',
 
 	'reports.documentTitle': 'Reports · Verimaya',
 	'reports.title': 'Reports',

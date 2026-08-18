@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	DEFAULT_OPERATION_ALERT_THRESHOLDS,
+	defaultOperationAlertThresholds,
 	deriveOperationAlertStatus,
 	hoursUntil,
 	operationAlertCreateSchema,
@@ -9,29 +10,67 @@ import {
 } from './operation-alert.js';
 
 describe('operation-alert (AI-04, deterministic)', () => {
-	it('defaults are flight 48 / transfer 24 / welcome 12 / clinic 24', () => {
+	it('defaults are flight 48 / transfer 24 / welcome 12 / clinic 24, all enabled', () => {
 		expect(DEFAULT_OPERATION_ALERT_THRESHOLDS).toEqual({
-			flight: 48,
-			transfer: 24,
-			welcome: 12,
-			clinic: 24
+			flight: { hours: 48, enabled: true },
+			transfer: { hours: 24, enabled: true },
+			welcome: { hours: 12, enabled: true },
+			clinic: { hours: 24, enabled: true }
 		});
 	});
 
 	it('parseOperationAlertThresholds falls back to defaults on garbage', () => {
-		expect(parseOperationAlertThresholds(null)).toEqual(DEFAULT_OPERATION_ALERT_THRESHOLDS);
+		expect(parseOperationAlertThresholds(null)).toEqual(defaultOperationAlertThresholds());
 		expect(parseOperationAlertThresholds({ flight: 'nope' })).toEqual(
-			DEFAULT_OPERATION_ALERT_THRESHOLDS
+			defaultOperationAlertThresholds()
 		);
 	});
 
-	it('parseOperationAlertThresholds accepts a full tenant override', () => {
-		expect(parseOperationAlertThresholds({ flight: 72, transfer: 12, welcome: 6, clinic: 36 })).toEqual({
-			flight: 72,
-			transfer: 12,
-			welcome: 6,
-			clinic: 36
+	it('parseOperationAlertThresholds accepts a full tenant override in the modern shape', () => {
+		expect(
+			parseOperationAlertThresholds({
+				flight: { hours: 72, enabled: true },
+				transfer: { hours: 12, enabled: false },
+				welcome: { hours: 6, enabled: true },
+				clinic: { hours: 36, enabled: true }
+			})
+		).toEqual({
+			flight: { hours: 72, enabled: true },
+			transfer: { hours: 12, enabled: false },
+			welcome: { hours: 6, enabled: true },
+			clinic: { hours: 36, enabled: true }
 		});
+	});
+
+	it('parseOperationAlertThresholds lifts the legacy flat-number shape to { hours, enabled: true }', () => {
+		expect(
+			parseOperationAlertThresholds({ flight: 72, transfer: 12, welcome: 6, clinic: 36 })
+		).toEqual({
+			flight: { hours: 72, enabled: true },
+			transfer: { hours: 12, enabled: true },
+			welcome: { hours: 6, enabled: true },
+			clinic: { hours: 36, enabled: true }
+		});
+	});
+
+	it('parseOperationAlertThresholds falls back to defaults on incomplete or mixed data', () => {
+		expect(parseOperationAlertThresholds({ flight: 48 })).toEqual(defaultOperationAlertThresholds());
+		expect(
+			parseOperationAlertThresholds({
+				flight: { hours: 48, enabled: true },
+				transfer: 24,
+				welcome: { hours: 12, enabled: true },
+				clinic: { hours: 24, enabled: true }
+			})
+		).toEqual(defaultOperationAlertThresholds());
+		expect(
+			parseOperationAlertThresholds({
+				flight: { hours: 48 },
+				transfer: { hours: 24, enabled: true },
+				welcome: { hours: 12, enabled: true },
+				clinic: { hours: 24, enabled: true }
+			})
+		).toEqual(defaultOperationAlertThresholds());
 	});
 
 	it('due_at is starts_at minus threshold hours', () => {

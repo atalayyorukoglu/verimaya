@@ -59,11 +59,15 @@ import {
 	compareByDueAtAsc,
 	DEFAULT_OPERATION_ALERT_THRESHOLDS,
 	OPERATION_ALERT_KINDS,
+	cloneOperationAlertThresholds,
+	defaultOperationAlertThresholds,
 	deriveOperationAlertStatus,
 	hoursUntil,
 	operationAlertCreateSchema,
 	operationAlertDueAtIso,
 	operationAlertListQuerySchema,
+	operationAlertSettingsUpdateSchema,
+	operationAlertThresholdsEqual,
 	recordUpdateSuggestionListQuerySchema,
 	recordUpdateSuggestionParseRequestSchema,
 	recordUpdateSuggestionRejectRequestSchema,
@@ -134,11 +138,14 @@ function hydrateOperationAlert(alert: OperationAlert, now = new Date()): Operati
 
 function ensureAlertsForAppointment(store: ReturnType<typeof getStore>, appointment: Appointment) {
 	const now = nowIso();
+	const thresholds = store.operationAlertThresholds;
 	for (const kind of OPERATION_ALERT_KINDS) {
+		const setting = thresholds[kind];
+		if (!setting.enabled) continue;
 		const existing = store.operationAlerts.find(
 			(a) => a.appointment_id === appointment.id && a.kind === kind
 		);
-		const thresholdHours = DEFAULT_OPERATION_ALERT_THRESHOLDS[kind];
+		const thresholdHours = setting.hours;
 		const dueAt = operationAlertDueAtIso(appointment.starts_at, thresholdHours);
 		if (existing) {
 			existing.due_at = dueAt;
@@ -167,6 +174,34 @@ function ensureAlertsForAppointment(store: ReturnType<typeof getStore>, appointm
 			);
 		}
 	}
+}
+
+function applyOperationAlertSettings(
+	store: ReturnType<typeof getStore>,
+	next: ReturnType<typeof defaultOperationAlertThresholds>
+) {
+	const previous = store.operationAlertThresholds;
+	const now = nowIso();
+	for (const kind of OPERATION_ALERT_KINDS) {
+		const prev = previous[kind];
+		const nextSetting = next[kind];
+		if (prev.enabled && !nextSetting.enabled) {
+			store.operationAlerts = store.operationAlerts.filter(
+				(alert) => alert.kind !== kind || alert.confirmed_at
+			);
+			continue;
+		}
+		if (!nextSetting.enabled || prev.hours === nextSetting.hours) continue;
+		for (const alert of store.operationAlerts) {
+			if (alert.kind !== kind || alert.confirmed_at) continue;
+			const appointment = store.appointments.find((a) => a.id === alert.appointment_id);
+			if (!appointment) continue;
+			alert.threshold_hours = nextSetting.hours;
+			alert.due_at = operationAlertDueAtIso(appointment.starts_at, nextSetting.hours);
+			alert.updated_at = now;
+		}
+	}
+	store.operationAlertThresholds = cloneOperationAlertThresholds(next);
 }
 
 function rescheduleAlertsForAppointment(
@@ -1050,6 +1085,16 @@ function conflict(code: string, message: string) {
 	);
 }
 
+function unprocessable(message: string) {
+	return HttpResponse.json(
+		{
+			error: { code: 'unprocessable_entity', message },
+			request_id: crypto.randomUUID()
+		},
+		{ status: 422 }
+	);
+}
+
 /** Demo: Meta connected so disconnect UI is exercisable under MSW. */
 const mswAdsConnected = new Set<string>(['meta']);
 
@@ -1494,7 +1539,9 @@ export const handlers = [
 			(a) => a.appointment_id === appointment.id && a.kind === parsed.data.kind
 		);
 		if (dup) return conflict('conflict', 'Operation alert already exists for this kind');
-		const thresholdHours = DEFAULT_OPERATION_ALERT_THRESHOLDS[parsed.data.kind];
+		const setting = store.operationAlertThresholds[parsed.data.kind];
+		if (!setting.enabled) return unprocessable('Operation alert kind is disabled');
+		const thresholdHours = setting.hours;
 		const now = nowIso();
 		const created = hydrateOperationAlert({
 			id: crypto.randomUUID(),
@@ -3012,6 +3059,32 @@ export const handlers = [
 			updated_at: null,
 			updated_by: null,
 			pii_warnings: []
+		});
+	}),
+
+	http.get('/v1/settings/operation-alerts', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json({
+			thresholds: store.operationAlertThresholds,
+			is_default: operationAlertThresholdsEqual(
+				store.operationAlertThresholds,
+				DEFAULT_OPERATION_ALERT_THRESHOLDS
+			)
+		});
+	}),
+
+	http.put('/v1/settings/operation-alerts', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const parsed = operationAlertSettingsUpdateSchema.safeParse(await request.json());
+		if (!parsed.success)
+			return badRequest('Geçersiz operasyon alarmı ayarı', parsed.error.flatten());
+		applyOperationAlertSettings(store, parsed.data.thresholds);
+		return HttpResponse.json({
+			thresholds: store.operationAlertThresholds,
+			is_default: operationAlertThresholdsEqual(
+				store.operationAlertThresholds,
+				DEFAULT_OPERATION_ALERT_THRESHOLDS
+			)
 		});
 	}),
 

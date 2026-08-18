@@ -4,7 +4,8 @@ import {
 	defaultWhatsappAiPrompt,
 	emptyKnowledgeSections,
 	hoursUntil,
-	deriveOperationAlertStatus
+	deriveOperationAlertStatus,
+	defaultOperationAlertThresholds
 } from '@verimaya/shared';
 import type {
 	AiCorrection,
@@ -32,6 +33,7 @@ import type {
 	KnowledgeSections,
 	CommissionEntry,
 	OperationAlert,
+	OperationAlertThresholds,
 	RecordUpdateSuggestion,
 	TrustScoreSettings,
 	WhatsappAiPrompt
@@ -435,6 +437,8 @@ export type DemoStore = {
 	commissionEntries: CommissionEntry[];
 	/** AI-04 zaman kilitli operasyon alarmları (MSW) — deterministik. */
 	operationAlerts: OperationAlert[];
+	/** AI-04b eşik + açma/kapama (MSW). */
+	operationAlertThresholds: OperationAlertThresholds;
 	/** AI-02 kayıt güncelleme onay kuyruğu (MSW). */
 	recordUpdateSuggestions: RecordUpdateSuggestion[];
 	aiCorrections: AiCorrection[];
@@ -1448,6 +1452,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			incentiveDeadlineDays: 180,
 			commissionEntries: [],
 			operationAlerts: [],
+			operationAlertThresholds: defaultOperationAlertThresholds(),
 			recordUpdateSuggestions: [],
 			aiCorrections: [],
 			trustScore: { checks: [] },
@@ -1750,6 +1755,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		incentiveDeadlineDays: 180,
 		commissionEntries: makeCommissionEntries(contacts),
 		operationAlerts: makeOperationAlerts(appointments),
+		operationAlertThresholds: defaultOperationAlertThresholds(),
 		recordUpdateSuggestions: makeRecordUpdateSuggestions(appointments),
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },

@@ -1,10 +1,20 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, eq, gt, isNotNull, isNull, lte, type SQL } from 'drizzle-orm';
-import type { OperationAlertCreate, OperationAlertKind, OperationAlertListQuery } from '@verimaya/shared';
 import {
-	DEFAULT_OPERATION_ALERT_THRESHOLDS,
+	ConflictException,
+	Injectable,
+	NotFoundException,
+	UnprocessableEntityException
+} from '@nestjs/common';
+import { and, asc, eq, gt, isNotNull, isNull, lte, type SQL } from 'drizzle-orm';
+import type {
+	OperationAlertCreate,
+	OperationAlertKind,
+	OperationAlertListQuery,
+	OperationAlertThresholds
+} from '@verimaya/shared';
+import {
 	OPERATION_ALERT_KINDS,
 	OPERATION_ALERT_THRESHOLDS_KEY,
+	defaultOperationAlertThresholds,
 	operationAlertDueAt,
 	parseOperationAlertThresholds
 } from '@verimaya/shared';
@@ -75,7 +85,16 @@ export class OperationAlertsService {
 		}
 
 		const thresholds = await this.loadThresholds(db);
-		const thresholdHours = thresholds[input.kind];
+		const setting = thresholds[input.kind];
+		if (!setting.enabled) {
+			throw new UnprocessableEntityException({
+				error: {
+					code: 'unprocessable_entity',
+					message: 'Operation alert kind is disabled'
+				}
+			});
+		}
+		const thresholdHours = setting.hours;
 		const dueAt = operationAlertDueAt(appointment.startsAt, thresholdHours);
 
 		const [row] = await db
@@ -153,7 +172,9 @@ export class OperationAlertsService {
 		const byKind = new Map(existingRows.map((row) => [row.kind, row]));
 
 		for (const kind of OPERATION_ALERT_KINDS) {
-			const thresholdHours = thresholds[kind];
+			const setting = thresholds[kind];
+			if (!setting.enabled) continue;
+			const thresholdHours = setting.hours;
 			const dueAt = operationAlertDueAt(startsAt, thresholdHours);
 			const existing = byKind.get(kind);
 			if (existing) {
@@ -169,6 +190,66 @@ export class OperationAlertsService {
 					dueAt,
 					thresholdHours
 				});
+			}
+		}
+	}
+
+	/**
+	 * AI-04b — apply a settings PUT to existing alerts.
+	 * Confirmed rows are a human record: never rewritten or deleted here.
+	 * Re-enabling a kind does not backfill past appointments.
+	 */
+	async applySettingsChangeWithDb(
+		db: TenantDb,
+		previous: OperationAlertThresholds,
+		next: OperationAlertThresholds
+	) {
+		const now = new Date();
+		for (const kind of OPERATION_ALERT_KINDS) {
+			const prev = previous[kind];
+			const nextSetting = next[kind];
+
+			if (prev.enabled && !nextSetting.enabled) {
+				await db
+					.update(operationAlerts)
+					.set({ deletedAt: now, updatedAt: now })
+					.where(
+						and(
+							eq(operationAlerts.kind, kind),
+							isNull(operationAlerts.deletedAt),
+							isNull(operationAlerts.confirmedAt)
+						)
+					);
+				continue;
+			}
+
+			if (!nextSetting.enabled || prev.hours === nextSetting.hours) continue;
+
+			const rows = await db
+				.select({
+					id: operationAlerts.id,
+					startsAt: appointments.startsAt
+				})
+				.from(operationAlerts)
+				.innerJoin(appointments, eq(operationAlerts.appointmentId, appointments.id))
+				.where(
+					and(
+						eq(operationAlerts.kind, kind),
+						isNull(operationAlerts.deletedAt),
+						isNull(operationAlerts.confirmedAt),
+						isNull(appointments.deletedAt)
+					)
+				);
+
+			for (const row of rows) {
+				await db
+					.update(operationAlerts)
+					.set({
+						dueAt: operationAlertDueAt(row.startsAt, nextSetting.hours),
+						thresholdHours: nextSetting.hours,
+						updatedAt: now
+					})
+					.where(eq(operationAlerts.id, row.id));
 			}
 		}
 	}
@@ -209,7 +290,7 @@ export class OperationAlertsService {
 			.from(tenantSettings)
 			.where(eq(tenantSettings.key, OPERATION_ALERT_THRESHOLDS_KEY))
 			.limit(1);
-		if (!row) return { ...DEFAULT_OPERATION_ALERT_THRESHOLDS };
+		if (!row) return defaultOperationAlertThresholds();
 		return parseOperationAlertThresholds(row.value);
 	}
 

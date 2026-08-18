@@ -400,6 +400,14 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **AI-04b operasyon alarmı ayarları ✅** (2026-08-18) — `tenant_settings.operation_alert_thresholds`
+  artık yazılabiliyor: tür başına `{ hours, enabled }`. Eski düz sayı biçimi okunur.
+  `GET/PUT /v1/settings/operation-alerts`, panel `/settings/operation-alerts`, listede silme.
+  Eşik değişince teyitsiz `due_at` kayar; tür kapanınca teyitsiz soft-delete; teyitli satıra
+  dokunulmaz; yeniden açınca backfill yok.
+  **Görüş:** Ayar değişmeyen alarm yanlış saatte çalar — bu tur o boşluğu kapattı. Migration
+  yok (anahtar zaten vardı). Varsayılana dön = PUT defaults, ayrı DELETE yok.
+
 - **AI-02 kayıt güncelleme onay kuyruğu ✅** (2026-08-17) — `record_update_suggestions`
   (migration `0059`, RLS + FORCE RLS + policy + GRANT). Tek alan: `appointments.starts_at`.
   `POST /v1/record-suggestions/parse` metinden öneri üretir, `GET` kuyruğu listeler,

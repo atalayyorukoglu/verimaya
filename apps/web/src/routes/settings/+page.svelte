@@ -14,6 +14,7 @@
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import Bell from '@lucide/svelte/icons/bell';
 	import Contact from '@lucide/svelte/icons/contact';
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import Megaphone from '@lucide/svelte/icons/megaphone';
@@ -92,6 +93,12 @@
 					title: t('settings.nav.incentives.title'),
 					description: t('settings.nav.incentives.description'),
 					icon: FolderTree
+				},
+				{
+					href: '/settings/operation-alerts',
+					title: t('settings.nav.operationAlerts.title'),
+					description: t('settings.nav.operationAlerts.description'),
+					icon: Bell
 				},
 				{
 					href: '/settings/import-export',
