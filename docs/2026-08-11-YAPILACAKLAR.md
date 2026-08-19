@@ -234,6 +234,14 @@
 - [ ] 3 hafta çalıştır + her Perşembe raporla — ⏸ ertelendi (20 Ağu · 27 Ağu · 3 Eyl düştü)
 - **Kabul:** KPI raporu yazılı; freeze ihlali varsa listelenmiş.
 
+#### Pilot-02 ÖNCESİ (kullanıcı kararı, 2026-08-19)
+
+- [ ] **AI-02 öneri onay kuyruğunu anla + kabul et.** Kod canlıda ama ürün sahibi ekranı
+  henüz kullanmadı ("anlamadım, pilot öncesine alalım"). Pilot başlamadan önce gerçek bir
+  mesajla denenip kabul edilmeli — kullanıcıya anlatılamayan bir ekran pilotta destek yükü olur.
+  **Bağlı:** sözleşme Madde 6.2 bu ekranın davranışını taahhüt ediyor; satış konuşmasında da
+  "sistem okur, siz onaylarsınız" olarak geçiyor.
+
 #### Pilot-02 sonu kapıları (ikinci müşteri öncesi ZORUNLU)
 
 - [ ] **WEBHOOK-01 shim kapatma:** `WEBHOOK_IDENTITY_DEFAULT_SECRET=false`; önce tüm
