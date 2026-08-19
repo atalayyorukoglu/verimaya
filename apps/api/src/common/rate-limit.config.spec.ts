@@ -3,11 +3,13 @@ import Fastify from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
 	createRateLimitKeyGenerator,
+	isCspReportRateLimitedPath,
 	isPlausibleClientIp,
 	isStrictAuthRateLimitedPath,
 	parseTrustCfConnectingIpEnv,
 	parseTrustProxyEnv,
 	readCfConnectingIp,
+	skipCspReportRateLimit,
 	skipStrictAuthRateLimit
 } from './rate-limit.config';
 
@@ -35,6 +37,15 @@ describe('isStrictAuthRateLimitedPath', () => {
 	it('skipStrictAuthRateLimit mirrors allowList semantics (true = skip)', () => {
 		expect(skipStrictAuthRateLimit({ url: '/v1/auth/get-session' })).toBe(true);
 		expect(skipStrictAuthRateLimit({ url: '/v1/auth/sign-in/email?x=1' })).toBe(false);
+	});
+});
+
+describe('CSP report ingest rate-limit path', () => {
+	it('only POST /v1/csp-reports hits the dedicated bucket', () => {
+		expect(isCspReportRateLimitedPath('/v1/csp-reports')).toBe(true);
+		expect(skipCspReportRateLimit({ url: '/v1/csp-reports', method: 'POST' })).toBe(false);
+		expect(skipCspReportRateLimit({ url: '/v1/csp-reports', method: 'GET' })).toBe(true);
+		expect(skipCspReportRateLimit({ url: '/v1/contacts', method: 'POST' })).toBe(true);
 	});
 });
 

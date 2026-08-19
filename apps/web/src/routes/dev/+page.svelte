@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { MembershipUser, PlatformTenant, UserRole } from '@verimaya/shared';
+	import type { CspReportList, MembershipUser, PlatformTenant, UserRole } from '@verimaya/shared';
 	import { apiPaths, userRoleLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass } from '$lib/api';
+	import { cspHintKey, cspModeFromHeaders, parseCspHeader } from '$lib/csp-policy';
 	import { canAccessPlatformPanel, resolveDevPanelRoute } from '$lib/dev-panel';
 	import { DEV_PANEL_ENABLED } from '$lib/dev-panel-enabled';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -56,6 +57,28 @@
 
 	const users = $derived(usersQuery.data?.items ?? []);
 
+	const policyQuery = createQuery(() => ({
+		queryKey: ['csp', 'document-policy'],
+		queryFn: async () => {
+			const res = await fetch('/', { method: 'HEAD' });
+			return cspModeFromHeaders(
+				res.headers.get('content-security-policy-report-only'),
+				res.headers.get('content-security-policy')
+			);
+		},
+		enabled: platformEnabled
+	}));
+	const policyLines = $derived(
+		policyQuery.data?.header ? parseCspHeader(policyQuery.data.header) : []
+	);
+
+	const reportsQuery = createQuery(() => ({
+		queryKey: ['csp', 'reports'],
+		queryFn: () => apiGet<CspReportList>(apiPaths.cspReports),
+		enabled: platformEnabled
+	}));
+	const reports = $derived(reportsQuery.data?.items ?? []);
+
 	let newOrgName = $state('');
 	let grantSelf = $state(true);
 	let savingOrg = $state(false);
@@ -67,6 +90,21 @@
 	let savingUser = $state(false);
 
 	let error = $state<string | null>(null);
+	let clearingReports = $state(false);
+
+	async function clearCspReports() {
+		if (!window.confirm(t('dev.csp.clearConfirm'))) return;
+		clearingReports = true;
+		error = null;
+		try {
+			await apiSend(apiPaths.cspReports, 'DELETE');
+			await queryClient.invalidateQueries({ queryKey: ['csp', 'reports'] });
+		} catch (err) {
+			error = err instanceof Error ? err.message : t('dev.csp.error.clear');
+		} finally {
+			clearingReports = false;
+		}
+	}
 
 	async function refreshTenants() {
 		await queryClient.invalidateQueries({ queryKey: ['platform', 'tenants'] });
@@ -188,6 +226,91 @@
 				{error}
 			</p>
 		{/if}
+
+		<section>
+			<h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">
+				{t('dev.csp.policyTitle')}
+			</h2>
+			{#if policyQuery.isPending}
+				<p class="mt-2 text-sm text-text-muted">{t('dev.loading')}</p>
+			{:else if !policyQuery.data || policyQuery.data.mode === 'missing'}
+				<p class="mt-2 text-sm text-text-muted">{t('dev.csp.policyMissing')}</p>
+			{:else}
+				<p class="mt-2 text-sm font-medium text-text">
+					{policyQuery.data.mode === 'report-only'
+						? t('dev.csp.modeReportOnly')
+						: t('dev.csp.modeEnforcing')}
+				</p>
+				<div class="mt-3 overflow-x-auto rounded-lg border border-border bg-surface">
+					<table class="w-full min-w-[36rem] text-left text-sm">
+						<tbody class="divide-y divide-border">
+							{#each policyLines as line (line.name + line.value)}
+								<tr>
+									<td class="px-3 py-2 align-top font-mono text-xs text-text">{line.name}</td>
+									<td class="px-3 py-2 align-top font-mono text-xs text-text-muted">
+										{line.value}
+									</td>
+									<td class="px-3 py-2 align-top text-xs text-text-muted">
+										{t(cspHintKey(line.name))}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</section>
+
+		<section>
+			<div class="flex flex-wrap items-end justify-between gap-3">
+				<div>
+					<h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">
+						{t('dev.csp.violationsTitle')}
+					</h2>
+					<p class="mt-1 text-xs text-text-muted">{t('dev.csp.violationsHint')}</p>
+				</div>
+				<Button
+					type="button"
+					variant="outline"
+					disabled={clearingReports}
+					onclick={clearCspReports}
+				>
+					{clearingReports ? '…' : t('dev.csp.clear')}
+				</Button>
+			</div>
+			<div class="mt-3 overflow-x-auto rounded-lg border border-border bg-surface">
+				{#if reportsQuery.isPending}
+					<p class="p-4 text-sm text-text-muted">{t('dev.loading')}</p>
+				{:else if reports.length === 0}
+					<p class="p-4 text-sm text-text-muted">{t('dev.csp.violationsEmpty')}</p>
+				{:else}
+					<table class="w-full min-w-[40rem] text-left text-sm">
+						<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
+							<tr>
+								<th class="px-3 py-2 font-medium">{t('dev.csp.colCount')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.csp.colBlocked')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.csp.colDirective')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.csp.colLastSeen')}</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-border">
+							{#each reports as row (row.id)}
+								<tr>
+									<td class="px-3 py-2 font-medium text-text">{row.count}</td>
+									<td class="px-3 py-2 font-mono text-xs break-all text-text">{row.blocked_uri}</td>
+									<td class="px-3 py-2 font-mono text-xs text-text-muted">
+										{row.violated_directive}
+									</td>
+									<td class="px-3 py-2 text-xs text-text-muted">
+										{new Date(row.last_seen_at).toLocaleString()}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				{/if}
+			</div>
+		</section>
 
 		<section>
 			<h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">

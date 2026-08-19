@@ -15,12 +15,14 @@ import {
 	createRateLimitKeyGenerator,
 	parseTrustCfConnectingIpEnv,
 	parseTrustProxyEnv,
+	skipCspReportRateLimit,
 	skipStrictAuthRateLimit
 } from './common/rate-limit.config';
 import { initSentry } from './common/sentry';
 import { mountOpenApiDocs } from './docs/openapi.mount';
 import { MAX_UPLOAD_BYTES } from './storage/storage.types';
 import { mountBullBoard } from './queue/bull-board.mount';
+import { registerCspReportParsers } from './csp-reports/csp-reports.http';
 import { mountAdminOutboxRoutes } from './queue/admin-outbox.mount';
 import { OutboxAdminService } from './queue/outbox-admin.service';
 import { QueueService } from './queue/queue.service';
@@ -184,12 +186,14 @@ async function bootstrap() {
 			}
 		);
 	}
+	registerCspReportParsers(fastify);
 	// AUDIT-03 (Faz 8): rate-limit. Two layers:
 	//  1. Global: 600/min/IP for `/v1/*` (excludes the public karne surface, which
 	//     keeps the original 30/min cap and stays unauthenticated).
 	//  2. Tighter: 10/min/IP for credential-bearing better-auth routes only
 	//     (sign-in / sign-up / password-reset / 2FA verify) — not get-session or
 	//     organization/* navigation (those stay on the global bucket).
+	//  3. Unauthenticated CSP ingest: 60/min/IP on POST /v1/csp-reports.
 	// Per-tenant token bucket (Redis-backed) is a follow-up for AUDIT-F09 — for the
 	// pilot a per-IP cap is sufficient and uses no extra infra.
 	// Key: CF-Connecting-IP when TRUST_CF_CONNECTING_IP is on (Cloudflare edge),
@@ -228,6 +232,21 @@ async function bootstrap() {
 			new HttpException(
 				{
 					error: { code: 'rate_limited', message: 'Too many auth attempts' },
+					request_id: String(req.id)
+				},
+				HttpStatus.TOO_MANY_REQUESTS
+			)
+	});
+	await app.register(rateLimit, {
+		global: true,
+		max: 60,
+		timeWindow: '1 minute',
+		keyGenerator: rateLimitKeyGenerator,
+		allowList: skipCspReportRateLimit,
+		errorResponseBuilder: (req: FastifyRequest, context: errorResponseBuilderContext) =>
+			new HttpException(
+				{
+					error: { code: 'rate_limited', message: 'Too many requests' },
 					request_id: String(req.id)
 				},
 				HttpStatus.TOO_MANY_REQUESTS

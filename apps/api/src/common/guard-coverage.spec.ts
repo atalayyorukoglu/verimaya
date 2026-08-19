@@ -83,9 +83,15 @@ const PUBLIC_ROUTE_ALLOWLIST: Record<string, string> = {
     "Platform admin — Session+PlatformAdminGuard; list members of any org",
   "PlatformController.upsertMember":
     "Platform admin — Session+PlatformAdminGuard; upsert member on any org",
-  "PlatformController.removeMember":
-    "Platform admin — Session+PlatformAdminGuard; remove member from any org",
-  "AdsOAuthCallbackController.callback":
+	"PlatformController.removeMember":
+		"Platform admin — Session+PlatformAdminGuard; remove member from any org",
+	"CspReportsController.ingest":
+		"Browser CSP Report-Only ingest — unauthenticated by design; size+rate limited",
+	"CspReportsController.list":
+		"Platform admin — Session+PlatformAdminGuard; CSP violation aggregates (no tenant)",
+	"CspReportsController.clear":
+		"Platform admin — Session+PlatformAdminGuard; clear CSP violation aggregates",
+	"AdsOAuthCallbackController.callback":
     "Ads OAuth provider browser redirect; tenant recovered from signed state",
   "GhlOAuthCallbackController.callback":
     "GHL OAuth provider browser redirect; tenant recovered from signed state",

@@ -29,6 +29,7 @@ import { KarneModule } from "./karne/karne.module";
 import { ScorecardModule } from "./scorecard/scorecard.module";
 import { StorageModule } from "./storage/storage.module";
 import { PlatformModule } from "./platform/platform.module";
+import { CspReportsModule } from "./csp-reports/csp-reports.module";
 import { FxModule } from "./fx/fx.module";
 import { ImportExportModule } from "./import-export/import-export.module";
 import { DataDeleteModule } from "./data-delete/data-delete.module";
@@ -71,6 +72,7 @@ import { DataDeleteModule } from "./data-delete/data-delete.module";
     KarneModule,
     ScorecardModule,
     PlatformModule,
+    CspReportsModule,
   ],
 })
 export class AppModule {}

@@ -17,7 +17,7 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 ## Değişmez mimari ilkeler
 
 1. **Multi-tenant:** her iş tablosunda `tenant_id NOT NULL`; RLS her tenant tablosunda aktif; request başında `SET LOCAL app.current_tenant_id`. Aktif tenant JWT/session'dan çözülür, istemciden gelen tenant_id'ye güvenilmez.
-   **Bilinçli istisnalar (iş/tenant tablosu değil):** `karne_sessions` / `karne_events` / `karne_leads` (anonim marketing hunisi); `fx_rates` (ECB/Frankfurter global kur önbelleği — kur bütün tenant'lar için aynıdır). Bunlarda `tenant_id` yok, RLS yok; domain iş tablolarına emsal değildir.
+   **Bilinçli istisnalar (iş/tenant tablosu değil):** `karne_sessions` / `karne_events` / `karne_leads` (anonim marketing hunisi); `fx_rates` (ECB/Frankfurter global kur önbelleği — kur bütün tenant'lar için aynıdır); `csp_reports` (panel CSP Report-Only ihlal özeti — tarayıcının oturumu/tenant'ı yok, altyapı telemetrisi). Bunlarda `tenant_id` yok, RLS yok; domain iş tablolarına emsal değildir.
 2. **Queue-first webhook:** endpoint yalnız imza doğrular, ham payload'ı `integration_events`e yazar, 202 döner; işleme BullMQ worker'da. İş mantığı asla webhook endpoint'inde olmaz.
 3. **Idempotency:** `UNIQUE (provider, external_event_id)` (yoksa `payload_hash`); tüm public mutasyon endpoint'leri `Idempotency-Key` header'ını destekler.
 4. **Kayıt kaynağı PostgreSQL'dir:** Redis/BullMQ geçicidir; `jobs`, `integration_events`, `outbox_events` tabloları denetlenebilir kaynaktır. Giden webhook'lar outbox üzerinden gider.

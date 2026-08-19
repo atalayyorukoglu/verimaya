@@ -16,7 +16,8 @@ const STATUS_TO_CODE: Partial<Record<HttpStatus, string>> = {
 	[HttpStatus.NOT_FOUND]: 'not_found',
 	[HttpStatus.CONFLICT]: 'conflict',
 	[HttpStatus.UNPROCESSABLE_ENTITY]: 'validation_error',
-	[HttpStatus.TOO_MANY_REQUESTS]: 'rate_limited'
+	[HttpStatus.TOO_MANY_REQUESTS]: 'rate_limited',
+	[HttpStatus.PAYLOAD_TOO_LARGE]: 'payload_too_large'
 };
 
 function isApiErrorBody(body: unknown): body is ApiError {

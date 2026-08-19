@@ -144,6 +144,12 @@ Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /i
 kullanımda doğrulanmazsa eski HTML, artık bulunmayan eski chunk hash’lerine işaret edebilir
 ve deploy edilen düzeltmeler kullanıcıya günlerce ulaşmayabilir.
 
+**CSP raporları (panel):** `app.verimaya.com` Report-Only başlığı gönderir (hub `hub.html`
+enforcing CSP ayrı, ona dokunma). İhlaller `POST /v1/csp-reports` ile toplanır; platform
+admin bunları panel `/dev` ekranında görür (en çok görülen üstte). Temizlik: aynı ekrandaki
+“Listeyi temizle” → `DELETE /v1/csp-reports`. Enforcing’e geçiş: raporlar birkaç gün
+toplanıp `connect-src` / depolama host’u netleşince nginx’ten `-Report-Only` ekini sil.
+
 API CORS / auth:
 
 - `TRUSTED_ORIGINS`: `https://verimaya.com,https://app.verimaya.com` (gerekirse `www`)

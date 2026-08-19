@@ -6,6 +6,11 @@ import {
 	knowledgeUpdateSchema
 } from './knowledge.js';
 import { mayaAnswerSchema, mayaAskSchema } from './maya.js';
+import {
+	cspReportIngestBodySchema,
+	cspReportListSchema,
+	cspReportsClearedSchema
+} from './csp-report.js';
 
 /** REST prefix for all Verimaya API routes. */
 export const API_V1_PREFIX = '/v1';
@@ -23,6 +28,7 @@ export const apiPaths = {
 	platformTenantMembers: (id: string) => `${API_V1_PREFIX}/platform/tenants/${id}/members`,
 	platformTenantMember: (tenantId: string, userId: string) =>
 		`${API_V1_PREFIX}/platform/tenants/${tenantId}/members/${userId}`,
+	cspReports: `${API_V1_PREFIX}/csp-reports`,
 	members: `${API_V1_PREFIX}/members`,
 	member: (id: string) => `${API_V1_PREFIX}/members/${id}`,
 	memberPasswordReset: (id: string) => `${API_V1_PREFIX}/members/${id}/password-reset`,
@@ -429,6 +435,16 @@ export const apiContract = {
 	},
 	'DELETE /v1/platform/tenants/:id/members/:userId': {
 		response: softDeleteResultSchema
+	},
+	'GET /v1/csp-reports': {
+		response: cspReportListSchema
+	},
+	'POST /v1/csp-reports': {
+		body: cspReportIngestBodySchema,
+		response: z.object({}).strict()
+	},
+	'DELETE /v1/csp-reports': {
+		response: cspReportsClearedSchema
 	},
 	'GET /v1/appointments': {
 		response: appointmentListPageSchema

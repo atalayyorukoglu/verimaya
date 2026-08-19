@@ -36,7 +36,8 @@ import type {
 	OperationAlertThresholds,
 	RecordUpdateSuggestion,
 	TrustScoreSettings,
-	WhatsappAiPrompt
+	WhatsappAiPrompt,
+	CspReport
 } from '@verimaya/shared';
 
 export type MockScenario = 'default' | 'empty' | 'large' | 'attribution_missing';
@@ -448,6 +449,7 @@ export type DemoStore = {
 	aiPrompt: WhatsappAiPrompt;
 	/** G-11: deny-only permission overrides (MSW). */
 	permissionOverrides: PermissionOverride[];
+	cspReports: CspReport[];
 };
 
 function makeExtraTenants(): Tenant[] {
@@ -895,6 +897,49 @@ function makeRecordUpdateSuggestions(appointments: Appointment[]): RecordUpdateS
 	return [
 		row('cccccccc-cccc-4ccc-8ccc-ccccccccccc1', upcoming, 'high'),
 		row('cccccccc-cccc-4ccc-8ccc-ccccccccccc2', secondary, 'medium')
+	];
+}
+
+function makeCspReports(): CspReport[] {
+	const now = new Date();
+	const isoAgo = (hours: number) => iso(new Date(now.getTime() - hours * 3600_000));
+	return [
+		{
+			id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1',
+			document_uri: 'https://app.example.test/contacts',
+			blocked_uri: 'https://cdn.example.test/widget.js',
+			violated_directive: 'script-src',
+			effective_directive: 'script-src',
+			disposition: 'report',
+			user_agent_family: 'chrome',
+			count: 42,
+			first_seen_at: isoAgo(72),
+			last_seen_at: isoAgo(1)
+		},
+		{
+			id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2',
+			document_uri: 'https://app.example.test/contacts',
+			blocked_uri: 'https://files.example.test/preview',
+			violated_directive: 'img-src',
+			effective_directive: 'img-src',
+			disposition: 'report',
+			user_agent_family: 'safari',
+			count: 3,
+			first_seen_at: isoAgo(24),
+			last_seen_at: isoAgo(4)
+		},
+		{
+			id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3',
+			document_uri: 'https://app.example.test/login',
+			blocked_uri: 'inline',
+			violated_directive: 'style-src',
+			effective_directive: 'style-src',
+			disposition: 'report',
+			user_agent_family: 'firefox',
+			count: 1,
+			first_seen_at: isoAgo(6),
+			last_seen_at: isoAgo(6)
+		}
 	];
 }
 
@@ -1457,7 +1502,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 			aiCorrections: [],
 			trustScore: { checks: [] },
 			aiPrompt: defaultWhatsappAiPrompt(),
-			permissionOverrides: []
+			permissionOverrides: [],
+			cspReports: []
 		};
 	}
 
@@ -1760,7 +1806,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },
 		aiPrompt: defaultWhatsappAiPrompt(),
-		permissionOverrides: []
+		permissionOverrides: [],
+		cspReports: makeCspReports()
 	};
 }
 

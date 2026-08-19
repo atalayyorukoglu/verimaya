@@ -822,6 +822,95 @@ paths:
           required: true
           schema:
             type: string
+  /csp-reports:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        document_uri:
+                          type: string
+                        blocked_uri:
+                          type: string
+                        violated_directive:
+                          type: string
+                        effective_directive:
+                          type: string
+                          nullable: true
+                        disposition:
+                          type: string
+                          nullable: true
+                        user_agent_family:
+                          type: string
+                          nullable: true
+                        count:
+                          type: integer
+                          exclusiveMinimum: true
+                          minimum: 0
+                        first_seen_at:
+                          type: string
+                          format: date-time
+                        last_seen_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - document_uri
+                        - blocked_uri
+                        - violated_directive
+                        - effective_directive
+                        - disposition
+                        - user_agent_family
+                        - count
+                        - first_seen_at
+                        - last_seen_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                    enum:
+                      - true
+                required:
+                  - deleted
+                additionalProperties: false
   /appointments:
     get:
       responses:

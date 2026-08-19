@@ -40,6 +40,7 @@ Detaylı hali `AGENTS.md` ve `.cursor/rules/` içinde; özet:
    **Bilinçli istisnalar (iş tablosu değil):**
    - `karne_sessions` / `karne_events` / `karne_leads` (2026-07-30) — ücretsiz karne hunisi; ziyaretçi henüz tenant değil.
    - `fx_rates` (2026-08-14) — ECB/Frankfurter global kur önbelleği; kur bütün tenant'lar için aynıdır.
+   - `csp_reports` (2026-08-19) — panel CSP Report-Only ihlal özeti; tarayıcının oturumu yok. Erişim: auth'suz ingest + yalnız platform admin list/clear.
    Bunlarda `tenant_id` yok, RLS yok. Domain/iş tablolarına emsal değildir
    (`apps/api/src/db/schema/karne-events.ts`, `apps/api/src/db/schema/fx-rates.ts`).
 2. Queue-first webhook + idempotency (`UNIQUE (provider, external_event_id)`).

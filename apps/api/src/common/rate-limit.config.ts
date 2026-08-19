@@ -45,6 +45,18 @@ export function skipStrictAuthRateLimit(req: { url: string }): boolean {
 	return !isStrictAuthRateLimitedPath(path);
 }
 
+/** Unauthenticated CSP ingest — tighter bucket than the global 600/min. */
+export function isCspReportRateLimitedPath(pathname: string): boolean {
+	return pathname === '/v1/csp-reports';
+}
+
+/** allowList truthy ⇒ skip this limiter. */
+export function skipCspReportRateLimit(req: { url: string; method?: string }): boolean {
+	const path = req.url.split('?')[0] ?? '';
+	if ((req.method ?? 'GET').toUpperCase() !== 'POST') return true;
+	return !isCspReportRateLimitedPath(path);
+}
+
 export type TrustProxyOption = boolean | number | string | string[];
 
 /**

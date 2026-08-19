@@ -349,12 +349,9 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Verimaya"**,
   tek kelime — 2026-08-16 kararı, `README.md`).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
-- **Panel CSP** — `app.verimaya.com` hâlâ CSP'siz (HSTS + nosniff + Referrer + Permissions
-  2026-08-17'de kondu, bkz. Son kapananlar). Blocking CSP körlemesine yazılmadı: dosya
-  önizleme S3/R2 host'u ve `connect-src` için API host'u ortama göre değişiyor, yanlış
-  politika paneli kırar. **Önerilen yol:** önce `Content-Security-Policy-Report-Only` ile
-  yayına al, gerçek kullanımda ihlalleri topla, sonra enforcing'e çevir. Pilot ortasında
-  yapılmaz.
+- **Panel CSP enforcing** — Report-Only + ihlal toplama SEC-CSP ile geldi (`/dev`,
+  `0060_csp_reports`). **Bu iş yarım kalır** ta ki raporlar birkaç gün toplanıp politika
+  daraltılınca `-Report-Only` eki silinene kadar. Şimdi blocking yazma.
 - **Veri işleme envanteri** + **AB veri lokasyonu + DPA şablonları**. **LEG-02'ye bağlı
   (2026-08-12):** satıcı Albion Signature (UK), müşteri Türkiye'de sağlık turizmi acentesi —
   yani sağlık verisinin yurtdışına aktarımı var. KVKK aktarım dayanağı + DPA + aydınlatma
@@ -401,6 +398,13 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- **SEC-CSP panel Report-Only + ihlal toplama ✅** (2026-08-19) — `app.verimaya.com` nginx
+  `Content-Security-Policy-Report-Only` (`connect-src 'self' https:` çünkü API
+  `api.verimaya.com`); `POST /v1/csp-reports` auth'suz; liste `/dev`. Migration `0060`.
+  **Görüş:** Hub enforcing CSP'ye dokunulmadı. İş yarım: raporlar birkaç gün toplanınca
+  politika daraltılır ve `-Report-Only` silinir — o adım Bekleyen'de. Yerel Vite'de
+  HEAD `/` başlık döndürmez; politika satırı canlı nginx'te görünür.
 
 - **AI-04b operasyon alarmı ayarları ✅** (2026-08-18) — `tenant_settings.operation_alert_thresholds`
   artık yazılabiliyor: tür başına `{ hours, enabled }`. Eski düz sayı biçimi okunur.

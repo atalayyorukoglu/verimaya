@@ -4091,6 +4091,23 @@ export const handlers = [
 		return new HttpResponse(null, { status: 204 });
 	}),
 
+	http.get('/v1/csp-reports', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const items = [...store.cspReports].sort((a, b) => {
+			if (b.count !== a.count) return b.count - a.count;
+			return b.last_seen_at.localeCompare(a.last_seen_at);
+		});
+		return HttpResponse.json({ items });
+	}),
+
+	http.post('/v1/csp-reports', () => new HttpResponse(null, { status: 204 })),
+
+	http.delete('/v1/csp-reports', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		store.cspReports = [];
+		return HttpResponse.json({ deleted: true });
+	}),
+
 	http.delete('/v1/platform/tenants/:tenantId/members/:userId', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		if (params.userId === DEMO_USER_ID) {
