@@ -205,8 +205,8 @@
 
 ### 5. PILOT-02 — 2–4 haftalık feature-freeze dahili pilot · ⏸ **ERTELENDİ**
 
-> **⏸ ERTELENDİ (2026-08-18 kararı — kullanıcı).** Pilot **başlamadı**; planlanan 17 Ağustos
-> başlangıcı geçti ve yürürlüğe konmadı. Yeni tarih belirlenmedi.
+> **⏸ ERTELENDİ → yeni tarih 19 Eylül 2026** (2026-08-19 kararı — kullanıcı). Planlanan
+> 17 Ağustos başlangıcı geçmişti; bir ay ileri alındı. Pilot 19 Eylül – 10 Ekim.
 > **Sonuçları:**
 > - **Feature freeze YÜRÜRLÜKTE DEĞİL.** Yeni yüzey eklemek ihlal sayılmaz. Freeze, pilot
 >   resmen ilan edildiği gün başlar (MARKET-01 (c) kararının lafzı: "pilot RESMEN başlayınca").
@@ -228,19 +228,20 @@
   birine ölçüm kaynağı bağlandı; beşi sistemden (audit log, ai_corrections, no_show oranı,
   hata logları), üçü elle (Tracker'a dönüş, finans mutabakat, destek süresi). Elle olanlar
   toplanmazsa o KPI boş kalır — planda açıkça yazılı.
-- [ ] **Feature freeze ilan et** — ⏸ ertelendi. 17 Ağustos hedefi geçti, ilan edilmedi.
-  İlan edildiği gün yürürlüğe girer: yalnız hata + güvenlik + veri düzeltme migration'ı,
-  yeni yüzey yok. **O güne kadar freeze yok.**
-- [ ] 3 hafta çalıştır + her Perşembe raporla — ⏸ ertelendi (20 Ağu · 27 Ağu · 3 Eyl düştü)
+- [ ] **Feature freeze ilan et** — **hedef 19 Eylül 2026** (2026-08-19 kararı: "bir ay
+  sonrası"). İlan edildiği gün yürürlüğe girer: yalnız hata + güvenlik + veri düzeltme
+  migration'ı, yeni yüzey yok. **O güne kadar freeze yok**, yani AI-03/05/07 ve CSP gibi
+  yeni yüzeyler bu pencerede yapılabilir.
+- [ ] 3 hafta çalıştır + her Perşembe raporla — **19 Eylül – 10 Ekim 2026**
+  (raporlar: 25 Eyl · 2 Eki · 9 Eki). Eski 20 Ağu · 27 Ağu · 3 Eyl tarihleri düştü.
 - **Kabul:** KPI raporu yazılı; freeze ihlali varsa listelenmiş.
 
 #### Pilot-02 ÖNCESİ (kullanıcı kararı, 2026-08-19)
 
-- [ ] **AI-02 öneri onay kuyruğunu anla + kabul et.** Kod canlıda ama ürün sahibi ekranı
-  henüz kullanmadı ("anlamadım, pilot öncesine alalım"). Pilot başlamadan önce gerçek bir
-  mesajla denenip kabul edilmeli — kullanıcıya anlatılamayan bir ekran pilotta destek yükü olur.
-  **Bağlı:** sözleşme Madde 6.2 bu ekranın davranışını taahhüt ediyor; satış konuşmasında da
-  "sistem okur, siz onaylarsınız" olarak geçiyor.
+- [x] **AI-02 öneri onay kuyruğu anlaşıldı + kabul edildi** (2026-08-19).
+  **Görüş:** ekran önce anlaşılmamıştı ("anlamadım"); tek somut örnekle (gelen mesaj → kart →
+  onay) açıklanınca kabul edildi. Ders: bu ekran kendini anlatmıyor — pilotta aynı soru
+  kullanıcılardan da gelecek, yardım metni (`helpTopic`) örnekle güçlendirilmeli.
 
 #### Pilot-02 sonu kapıları (ikinci müşteri öncesi ZORUNLU)
 
@@ -345,13 +346,6 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 ## Bekleyen (MARKET-02 sonrası / ikinci müşteri eşiği)
 
-- **Bilgi bankasını doldur (kullanıcı işi, kod değil)** — ekran canlıda (`/settings/knowledge`),
-  içerik yok. Boş bilgi bankası prompt'a hiçbir şey eklemiyor, yani AI hâlâ tahmin ediyor ve
-  Maya AI'ın söyleyebileceği anlamlı bir şey yok. Kullanıcı "uygun bir zamanda doldururuz" dedi
-  (2026-08-17). Görev notu: Obsidian `Görevler/2026-08-17-bilgi-bankasini-doldur.md`.
-  **Bağlı:** Maya AI'ın gerçek hâle gelmesi buna bağlı; satış vaadi de ("bilgi bankanızı okuyan
-  sistem") buradan besleniyor.
-
 - **Marka tescili:** `verimaya.com` / `.com.tr` + Türk Patent 9/35/42/44 (görünen: **"Verimaya"**,
   tek kelime — 2026-08-16 kararı, `README.md`).
 - **IOS-01:** iOS donmuş; birikmiş drift — çözülürse ilk kalem.
@@ -415,6 +409,13 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   dokunulmaz; yeniden açınca backfill yok.
   **Görüş:** Ayar değişmeyen alarm yanlış saatte çalar — bu tur o boşluğu kapattı. Migration
   yok (anahtar zaten vardı). Varsayılana dön = PUT defaults, ayrı DELETE yok.
+
+- **Canlı doğrulama turu ✅** (2026-08-19) — API redeploy + migration'lar prod'da; bilgi
+  bankası dolduruldu ve **Maya artık gerçekten cevap veriyor**; alarm eşikleri tenant'a göre
+  ayarlandı; öneri onay kuyruğu gerçek örnekle denendi ve kabul edildi.
+  **Görüş:** Satışın önündeki asıl engel buydu — "sizin bilgi bankanızı okuyan yapay zeka"
+  vaadi artık gösterilebilir. Bilgi bankası kalemi Bekleyen'den düştü; içerik büyüdükçe
+  AI-06 sürüm geçmişi (`knowledge_revisions`) geri alma imkânı veriyor.
 
 - **AI-02 kayıt güncelleme onay kuyruğu ✅** (2026-08-17) — `record_update_suggestions`
   (migration `0059`, RLS + FORCE RLS + policy + GRANT). Tek alan: `appointments.starts_at`.
