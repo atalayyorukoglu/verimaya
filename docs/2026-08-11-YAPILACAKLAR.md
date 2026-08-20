@@ -406,8 +406,11 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 4. **Checklist ölü özellik mi?** → GAP-F09-20 skip olabilir.
 6. **AI prompt tenant'a açılmalı mı?** (GAP-26) — **evet, sınırlı:** çekirdek prompt
    sunucuda; tenant metni ek not (max 2000), reset zorunlu, şema sunucu kontrolünde.
-8. **P2P payer/payee geri gelecek mi?** Freeze öncesi karar ucuz, sonra pahalı.
 9. ~~**İçe/dışa aktarım ikinci müşteriden önce mi?** (GAP-08)~~ → **evet, uygulandı** (G-09/G-10).
+10. ~~**P2P payer/payee geri gelecek mi?**~~ → **hayır, kapandı (2026-08-20).** Kullanıcı canlı
+    Tracker'da New Transaction formunu kontrol etti — Contact/Responsible dışında böyle bir
+    alan çifti yok. Eski gap dokümanının "kişisel kategoride zorunlu" notu geçerli değilmiş
+    ya da özellik zaten kaldırılmış. Liste kalıcı olarak düştü.
 
 ---
 
