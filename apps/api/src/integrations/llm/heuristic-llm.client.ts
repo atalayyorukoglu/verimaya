@@ -34,9 +34,10 @@ export class HeuristicLlmClient implements LlmClient {
 	}
 
 	async suggestAppointmentReschedule(ctx: LlmRescheduleContext): Promise<LlmRescheduleResult> {
-		const suggestions = heuristicSuggestAppointmentReschedule(ctx.message, ctx.appointments);
+		const parsed = heuristicSuggestAppointmentReschedule(ctx.message, ctx.appointments);
 		return {
-			suggestions,
+			suggestions: parsed.drafts,
+			skipped_reason: parsed.skipped_reason,
 			usage: {
 				provider: 'heuristic',
 				model: 'heuristic-reschedule',

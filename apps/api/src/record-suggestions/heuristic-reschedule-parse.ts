@@ -1,4 +1,7 @@
-import type { AppointmentRescheduleDraft } from '@verimaya/shared';
+import type {
+	AppointmentRescheduleDraft,
+	RecordUpdateSuggestionSkippedReason
+} from '@verimaya/shared';
 import type { LlmRescheduleAppointmentHint } from '../integrations/llm/llm.types';
 
 const RESCHEDULE_HINTS =
@@ -104,33 +107,56 @@ function matchAppointmentsByContactName(
 	return byId;
 }
 
+export type HeuristicRescheduleParseResult = {
+	drafts: AppointmentRescheduleDraft[];
+	/** Set only when drafts are empty and the skip cause is known; never invent a reason. */
+	skipped_reason: RecordUpdateSuggestionSkippedReason | null;
+};
+
 /**
  * Deterministic appointment reschedule parser (HeuristicLlmClient / LLM fallback).
- * Returns empty when patient or appointment match is ambiguous, or target date is unclear.
+ * Returns empty drafts when patient or appointment match is ambiguous, or target date is unclear
+ * (Madde 6.2 — no guessing). Callers surface `skipped_reason` to the user.
  */
 export function heuristicSuggestAppointmentReschedule(
 	message: string,
 	appointments: LlmRescheduleAppointmentHint[] = []
-): AppointmentRescheduleDraft[] {
+): HeuristicRescheduleParseResult {
 	const text = message.trim();
-	if (!text || appointments.length === 0) return [];
-	if (!RESCHEDULE_HINTS.test(text) && !parseTargetDate(text)) return [];
+	if (!text || appointments.length === 0) {
+		return { drafts: [], skipped_reason: null };
+	}
 
 	const targetIso = parseTargetDate(text);
-	if (!targetIso) return [];
+	if (!RESCHEDULE_HINTS.test(text) && !targetIso) {
+		return { drafts: [], skipped_reason: 'no_date' };
+	}
+	if (!targetIso) {
+		return { drafts: [], skipped_reason: 'no_date' };
+	}
 
 	const matched = matchAppointmentsByContactName(text, appointments);
-	if (matched.length !== 1) return [];
+	if (matched.length !== 1) {
+		return {
+			drafts: [],
+			skipped_reason: matched.length > 1 ? 'ambiguous_contact' : null
+		};
+	}
 
 	const appt = matched[0]!;
-	if (appt.starts_at === targetIso) return [];
+	if (appt.starts_at === targetIso) {
+		return { drafts: [], skipped_reason: 'no_change' };
+	}
 
-	return [
-		{
-			appointment_id: appt.appointment_id,
-			suggested_value: targetIso,
-			confidence: 'medium',
-			reason: text.slice(0, 4000)
-		}
-	];
+	return {
+		drafts: [
+			{
+				appointment_id: appt.appointment_id,
+				suggested_value: targetIso,
+				confidence: 'medium',
+				reason: text.slice(0, 4000)
+			}
+		],
+		skipped_reason: null
+	};
 }

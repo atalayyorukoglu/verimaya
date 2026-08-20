@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { RecordUpdateSuggestion } from '@verimaya/shared';
+	import type {
+		RecordUpdateSuggestion,
+		RecordUpdateSuggestionParseResponse
+	} from '@verimaya/shared';
 	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -17,6 +20,7 @@
 	let message = $state('');
 	let parsing = $state(false);
 	let parseError = $state<string | null>(null);
+	let parseSkipInfo = $state<string | null>(null);
 	let actingId = $state<string | null>(null);
 	let actionError = $state<string | null>(null);
 	let rejectOpenId = $state<string | null>(null);
@@ -25,6 +29,15 @@
 	const confidenceKey: Record<RecordUpdateSuggestion['confidence'], MessageKey> = {
 		high: 'appointments.suggestions.confidence.high',
 		medium: 'appointments.suggestions.confidence.medium'
+	};
+
+	const skippedReasonKey: Record<
+		NonNullable<RecordUpdateSuggestionParseResponse['skipped_reason']>,
+		MessageKey
+	> = {
+		ambiguous_contact: 'appointments.suggestions.skipped.ambiguousContact',
+		no_date: 'appointments.suggestions.skipped.noDate',
+		no_change: 'appointments.suggestions.skipped.noChange'
 	};
 
 	const listQuery = createQuery(() => ({
@@ -43,8 +56,20 @@
 		if (!trimmed) return;
 		parsing = true;
 		parseError = null;
+		parseSkipInfo = null;
 		try {
-			await apiSend(apiPaths.recordSuggestionsParse, 'POST', { message: trimmed });
+			const result = await apiSend<RecordUpdateSuggestionParseResponse>(
+				apiPaths.recordSuggestionsParse,
+				'POST',
+				{ message: trimmed }
+			);
+			if (result.items.length === 0) {
+				const reason = result.skipped_reason;
+				parseSkipInfo = reason
+					? t(skippedReasonKey[reason])
+					: t('appointments.suggestions.skipped.unknown');
+				return;
+			}
 			message = '';
 			await queryClient.invalidateQueries({ queryKey: qs.keys.recordUpdateSuggestions.all() });
 		} catch (err) {
@@ -124,6 +149,13 @@
 			bind:value={message}></textarea>
 		{#if parseError}
 			<p class="mb-2 text-sm text-danger">{parseError}</p>
+		{/if}
+		{#if parseSkipInfo}
+			<p
+				class="bg-surface-muted mb-2 rounded-[6px] border border-border px-3 py-2 text-sm text-text"
+			>
+				{parseSkipInfo}
+			</p>
 		{/if}
 		<Button type="button" disabled={parsing || !message.trim()} onclick={parseMessage}>
 			{parsing ? t('appointments.suggestions.parsing') : t('appointments.suggestions.parseAction')}

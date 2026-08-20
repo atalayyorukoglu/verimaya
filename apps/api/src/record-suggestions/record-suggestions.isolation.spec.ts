@@ -44,6 +44,7 @@ class EmptyRescheduleLlm implements LlmClient {
 	async suggestAppointmentReschedule(_ctx: LlmRescheduleContext): Promise<LlmRescheduleResult> {
 		return {
 			suggestions: [],
+			skipped_reason: null,
 			usage: {
 				provider: 'test',
 				model: 'empty',
@@ -263,6 +264,7 @@ describe('record-suggestions tenant isolation + Madde 6.2 approval gate (AI-02)'
 		);
 		const result = await emptyLlmService.parse(tenantA, 'belki yarin olur');
 		expect(result.items).toEqual([]);
+		expect(result.skipped_reason).toBeNull();
 	});
 
 	it('stale suggestion returns 409 and does not mutate appointment', async () => {
@@ -351,6 +353,285 @@ describe('record-suggestions tenant isolation + Madde 6.2 approval gate (AI-02)'
 		expect(flightAfter.due_at).not.toBe(flightBefore.due_at);
 		expect(welcomeAfter.confirmed_at).not.toBeNull();
 		expect(welcomeAfter.status).toBe('confirmed');
+	});
+});
+
+describe('record-suggestions parse skipped_reason (AI-02 feedback)', () => {
+	const tenantId = randomUUID();
+	let contactTypeId: string;
+	let patientId: string;
+	let recordSuggestionsService: RecordSuggestionsService;
+	let appointmentsService: AppointmentsService;
+	let contactsService: ContactsService;
+
+	beforeAll(async () => {
+		process.env.DATABASE_URL = databaseUrl;
+		const { sql } = getDb(databaseUrl);
+
+		const tenantContext = {
+			withTenant: async <T>(id: string, fn: (ctx: { db: TenantDb }) => Promise<T>) =>
+				withTenantSession(id, (tdb) => fn({ db: tdb }))
+		} as TenantContextService;
+
+		const operationAlertsService = new OperationAlertsService(tenantContext);
+		appointmentsService = new AppointmentsService(tenantContext, operationAlertsService);
+		contactsService = new ContactsService(tenantContext, new LocalFileStorage());
+
+		const settings = {
+			getKnowledge: async () => ({ sections: {} }),
+			getAiPrompt: async () => ({ is_default: true, text: '' })
+		} as unknown as SettingsService;
+
+		recordSuggestionsService = new RecordSuggestionsService(
+			tenantContext,
+			appointmentsService,
+			settings,
+			new HeuristicLlmClient()
+		);
+
+		await sql`
+			insert into organization (id, name, slug, created_at)
+			values (${tenantId}, 'Skip Reason Tenant', ${`skip-${tenantId.slice(0, 8)}`}, now())
+		`;
+		await sql`
+			insert into tenants (id, name, slug)
+			values (${tenantId}, 'Skip Reason Tenant', ${`skip-${tenantId.slice(0, 8)}`})
+		`;
+
+		contactTypeId = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${tenantId}, 'Hasta', 0)
+				returning id
+			`;
+			return row!.id as string;
+		});
+
+		patientId = await withTenantSession(tenantId, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, tenantId, {
+				contact_type_id: contactTypeId,
+				first_name: 'Mehmet',
+				last_name: 'Demir'
+			});
+			return p.id;
+		});
+
+		await withTenantSession(tenantId, async (tdb) => {
+			await appointmentsService.createWithDb(tdb, tenantId, {
+				contact_id: patientId,
+				starts_at: '2026-08-20T10:00:00.000Z',
+				ends_at: null,
+				title: 'Consultation',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+			await appointmentsService.createWithDb(tdb, tenantId, {
+				contact_id: patientId,
+				starts_at: '2026-08-25T14:00:00.000Z',
+				ends_at: null,
+				title: 'Operation',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+		});
+	});
+
+	afterAll(async () => {
+		const { sql } = getDb(databaseUrl);
+		await purgeTenantFixtures(sql, [tenantId]);
+	});
+
+	it('ambiguous_contact when the same patient has 2+ active appointments', async () => {
+		const result = await recordSuggestionsService.parse(
+			tenantId,
+			'Mehmet Demir randevusunu 2026-09-01 11:00 tarihine alalim'
+		);
+		expect(result.items).toEqual([]);
+		expect(result.skipped_reason).toBe('ambiguous_contact');
+	});
+
+	it('no_date when message has no parseable date (single appointment patient)', async () => {
+		const otherTenant = randomUUID();
+		const { sql } = getDb(databaseUrl);
+		await sql`
+			insert into organization (id, name, slug, created_at)
+			values (${otherTenant}, 'No Date Tenant', ${`nodate-${otherTenant.slice(0, 8)}`}, now())
+		`;
+		await sql`
+			insert into tenants (id, name, slug)
+			values (${otherTenant}, 'No Date Tenant', ${`nodate-${otherTenant.slice(0, 8)}`})
+		`;
+		const typeId = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${otherTenant}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${otherTenant}, 'Hasta', 0)
+				returning id
+			`;
+			return row!.id as string;
+		});
+		const pid = await withTenantSession(otherTenant, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, otherTenant, {
+				contact_type_id: typeId,
+				first_name: 'Zeynep',
+				last_name: 'Kaya'
+			});
+			return p.id;
+		});
+		await withTenantSession(otherTenant, async (tdb) => {
+			await appointmentsService.createWithDb(tdb, otherTenant, {
+				contact_id: pid,
+				starts_at: hoursFromNow(48),
+				ends_at: null,
+				title: 'Check',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+		});
+
+		const result = await recordSuggestionsService.parse(
+			otherTenant,
+			'Zeynep Kaya randevusunu ertele'
+		);
+		expect(result.items).toEqual([]);
+		expect(result.skipped_reason).toBe('no_date');
+
+		await purgeTenantFixtures(sql, [otherTenant]);
+	});
+
+	it('no_change when suggested date equals current starts_at', async () => {
+		const otherTenant = randomUUID();
+		const { sql } = getDb(databaseUrl);
+		await sql`
+			insert into organization (id, name, slug, created_at)
+			values (${otherTenant}, 'No Change Tenant', ${`nochg-${otherTenant.slice(0, 8)}`}, now())
+		`;
+		await sql`
+			insert into tenants (id, name, slug)
+			values (${otherTenant}, 'No Change Tenant', ${`nochg-${otherTenant.slice(0, 8)}`})
+		`;
+		const typeId = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${otherTenant}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${otherTenant}, 'Hasta', 0)
+				returning id
+			`;
+			return row!.id as string;
+		});
+		const pid = await withTenantSession(otherTenant, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, otherTenant, {
+				contact_type_id: typeId,
+				first_name: 'Can',
+				last_name: 'Arslan'
+			});
+			return p.id;
+		});
+		await withTenantSession(otherTenant, async (tdb) => {
+			await appointmentsService.createWithDb(tdb, otherTenant, {
+				contact_id: pid,
+				starts_at: '2026-10-05T10:00:00.000Z',
+				ends_at: null,
+				title: 'Op',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+		});
+
+		const result = await recordSuggestionsService.parse(
+			otherTenant,
+			'Can Arslan randevusunu 2026-10-05 10:00 tarihine alalim'
+		);
+		expect(result.items).toEqual([]);
+		expect(result.skipped_reason).toBe('no_change');
+
+		await purgeTenantFixtures(sql, [otherTenant]);
+	});
+
+	it('returns items and null skipped_reason for a clear single match', async () => {
+		const otherTenant = randomUUID();
+		const { sql } = getDb(databaseUrl);
+		await sql`
+			insert into organization (id, name, slug, created_at)
+			values (${otherTenant}, 'Ok Parse Tenant', ${`okparse-${otherTenant.slice(0, 8)}`}, now())
+		`;
+		await sql`
+			insert into tenants (id, name, slug)
+			values (${otherTenant}, 'Ok Parse Tenant', ${`okparse-${otherTenant.slice(0, 8)}`})
+		`;
+		const typeId = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${otherTenant}, true)`;
+			const [row] = await tx`
+				insert into contact_types (tenant_id, name, sort_order)
+				values (${otherTenant}, 'Hasta', 0)
+				returning id
+			`;
+			return row!.id as string;
+		});
+		const pid = await withTenantSession(otherTenant, async (tdb) => {
+			const p = await contactsService.createWithDb(tdb, otherTenant, {
+				contact_type_id: typeId,
+				first_name: 'Elif',
+				last_name: 'Sahin'
+			});
+			return p.id;
+		});
+		await withTenantSession(otherTenant, async (tdb) => {
+			await appointmentsService.createWithDb(tdb, otherTenant, {
+				contact_id: pid,
+				starts_at: '2026-11-01T09:00:00.000Z',
+				ends_at: null,
+				title: 'Op',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+		});
+
+		const result = await recordSuggestionsService.parse(
+			otherTenant,
+			'Elif Sahin randevusunu 2026-11-15 14:00 tarihine alalim'
+		);
+		expect(result.items).toHaveLength(1);
+		expect(result.skipped_reason).toBeNull();
+		expect(result.items[0]?.suggested_value).toBe('2026-11-15T14:00:00.000Z');
+
+		await purgeTenantFixtures(sql, [otherTenant]);
 	});
 });
 

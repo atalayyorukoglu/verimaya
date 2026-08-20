@@ -1614,7 +1614,7 @@ export const handlers = [
 		const isoMatch = parsed.data.message.match(
 			/\b(20\d{2}-\d{2}-\d{2})(?:[ T](\d{1,2})(?::(\d{2}))?)?/
 		);
-		if (!isoMatch) return HttpResponse.json({ items: [] });
+		if (!isoMatch) return HttpResponse.json({ items: [], skipped_reason: 'no_date' });
 
 		const target = new Date(
 			isoMatch[1] + 'T' + (isoMatch[2] ?? '10') + ':' + (isoMatch[3] ?? '00') + ':00.000Z'
@@ -1624,9 +1624,17 @@ export const handlers = [
 			const parts = name.split(/\s+/).filter((p) => p.length > 2);
 			return parts.some((p) => message.includes(p));
 		});
-		if (candidates.length !== 1) return HttpResponse.json({ items: [] });
+		if (candidates.length !== 1) {
+			return HttpResponse.json({
+				items: [],
+				skipped_reason: candidates.length > 1 ? 'ambiguous_contact' : null
+			});
+		}
 
 		const appointment = candidates[0]!;
+		if (appointment.starts_at === target.toISOString()) {
+			return HttpResponse.json({ items: [], skipped_reason: 'no_change' });
+		}
 		const dup = store.recordUpdateSuggestions.find(
 			(s) =>
 				s.appointment_id === appointment.id &&
@@ -1634,7 +1642,7 @@ export const handlers = [
 				s.status === 'pending' &&
 				s.tenant_id === store.tenant.id
 		);
-		if (dup) return HttpResponse.json({ items: [] });
+		if (dup) return HttpResponse.json({ items: [], skipped_reason: null });
 
 		const now = nowIso();
 		const created: RecordUpdateSuggestion = {
@@ -1655,7 +1663,7 @@ export const handlers = [
 			updated_at: now
 		};
 		store.recordUpdateSuggestions.push(created);
-		return HttpResponse.json({ items: [created] });
+		return HttpResponse.json({ items: [created], skipped_reason: null });
 	}),
 
 	http.post('/v1/record-suggestions/:id/approve', ({ params, request }) => {

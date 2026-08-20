@@ -943,6 +943,11 @@ const tr = {
 	'appointments.suggestions.parseAction': 'Öneri üret',
 	'appointments.suggestions.parsing': 'Üretiliyor…',
 	'appointments.suggestions.parseFailed': 'Öneri üretilemedi',
+	'appointments.suggestions.skipped.ambiguousContact':
+		'Bu hastanın birden fazla aktif randevusu var, sistem hangisini kastettiğinizi tahmin etmiyor. Randevuyu doğrudan Randevular ekranından değiştirin.',
+	'appointments.suggestions.skipped.noDate': 'Mesajda net bir tarih bulunamadı.',
+	'appointments.suggestions.skipped.noChange': 'Önerilen tarih zaten mevcut tarihle aynı.',
+	'appointments.suggestions.skipped.unknown': 'Bu mesajdan öneri çıkarılamadı.',
 	'appointments.suggestions.loading': 'Yükleniyor…',
 	'appointments.suggestions.loadError': 'Öneriler yüklenemedi.',
 	'appointments.suggestions.empty': 'Bekleyen öneri yok.',
@@ -3459,6 +3464,12 @@ const en: Record<MessageKey, string> = {
 	'appointments.suggestions.parseAction': 'Generate suggestions',
 	'appointments.suggestions.parsing': 'Generating…',
 	'appointments.suggestions.parseFailed': 'Could not generate suggestions',
+	'appointments.suggestions.skipped.ambiguousContact':
+		'This patient has more than one active appointment, so the system will not guess which one you mean. Change the appointment directly on the Appointments screen.',
+	'appointments.suggestions.skipped.noDate': 'No clear date was found in the message.',
+	'appointments.suggestions.skipped.noChange':
+		'The suggested date is already the same as the current date.',
+	'appointments.suggestions.skipped.unknown': 'No suggestion could be extracted from this message.',
 	'appointments.suggestions.loading': 'Loading…',
 	'appointments.suggestions.loadError': 'Could not load suggestions.',
 	'appointments.suggestions.empty': 'No pending suggestions.',

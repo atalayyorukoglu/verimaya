@@ -94,7 +94,10 @@ export class RecordSuggestionsService {
 				}
 			}
 
-			return { items: created };
+			return {
+				items: created,
+				skipped_reason: created.length > 0 ? null : (result.skipped_reason ?? null)
+			};
 		});
 	}
 

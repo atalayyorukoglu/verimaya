@@ -214,12 +214,15 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 			if (ok.suggestions.length > 0) {
 				return {
 					suggestions: ok.suggestions,
+					skipped_reason: null,
 					usage: { ...ok.usage, path: 'openai_compatible', error: null }
 				};
 			}
-			const suggestions = heuristicSuggestAppointmentReschedule(ctx.message, ctx.appointments);
+			// Empty LLM output — no inventable skip reason from the model; heuristic may diagnose.
+			const parsed = heuristicSuggestAppointmentReschedule(ctx.message, ctx.appointments);
 			return {
-				suggestions,
+				suggestions: parsed.drafts,
+				skipped_reason: parsed.skipped_reason,
 				usage: {
 					...ok.usage,
 					path: 'openai_compatible_fallback',
@@ -229,9 +232,10 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			this.logger.warn(`LLM reschedule failed, falling back to heuristic: ${message}`);
-			const suggestions = heuristicSuggestAppointmentReschedule(ctx.message, ctx.appointments);
+			const parsed = heuristicSuggestAppointmentReschedule(ctx.message, ctx.appointments);
 			return {
-				suggestions,
+				suggestions: parsed.drafts,
+				skipped_reason: parsed.skipped_reason,
 				usage: {
 					provider: providerLabel(this.config.baseUrl),
 					model: 'heuristic-reschedule',

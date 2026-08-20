@@ -48,8 +48,22 @@ export type RecordUpdateSuggestionParseRequest = z.infer<
 	typeof recordUpdateSuggestionParseRequestSchema
 >;
 
+/**
+ * Why parse produced no queue rows (Madde 6.2 — no guessing).
+ * Meaningful only when `items` is empty; always `null` when items are present.
+ */
+export const recordUpdateSuggestionSkippedReasonSchema = z.enum([
+	'ambiguous_contact',
+	'no_date',
+	'no_change'
+]);
+export type RecordUpdateSuggestionSkippedReason = z.infer<
+	typeof recordUpdateSuggestionSkippedReasonSchema
+>;
+
 export const recordUpdateSuggestionParseResponseSchema = z.object({
-	items: z.array(recordUpdateSuggestionSchema)
+	items: z.array(recordUpdateSuggestionSchema),
+	skipped_reason: recordUpdateSuggestionSkippedReasonSchema.nullable()
 });
 
 export type RecordUpdateSuggestionParseResponse = z.infer<

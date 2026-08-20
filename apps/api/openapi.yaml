@@ -1692,8 +1692,16 @@ paths:
                         - created_at
                         - updated_at
                       additionalProperties: false
+                  skipped_reason:
+                    type: string
+                    enum:
+                      - ambiguous_contact
+                      - no_date
+                      - no_change
+                    nullable: true
                 required:
                   - items
+                  - skipped_reason
                 additionalProperties: false
       requestBody:
         required: true

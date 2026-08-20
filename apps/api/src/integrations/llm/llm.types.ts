@@ -1,4 +1,9 @@
-import type { AppointmentRescheduleDraft, Contact, TransactionDraft } from '@verimaya/shared';
+import type {
+	AppointmentRescheduleDraft,
+	Contact,
+	RecordUpdateSuggestionSkippedReason,
+	TransactionDraft
+} from '@verimaya/shared';
 
 export type LlmParseContext = {
 	message: string;
@@ -57,6 +62,11 @@ export type LlmRescheduleContext = {
 
 export type LlmRescheduleResult = {
 	suggestions: AppointmentRescheduleDraft[];
+	/**
+	 * Why suggestions are empty (Madde 6.2). Always null when suggestions are non-empty.
+	 * LLM-only paths that cannot diagnose return null — never invent a reason.
+	 */
+	skipped_reason: RecordUpdateSuggestionSkippedReason | null;
 	usage: LlmUsageLedger;
 };
 

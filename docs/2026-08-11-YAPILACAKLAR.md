@@ -399,6 +399,13 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- **AI-02 Ayrıştır sessiz boş dönüş geri bildirimi ✅** (2026-08-20) — `POST /v1/record-suggestions/parse`
+  yanıtına `skipped_reason` (`ambiguous_contact` | `no_date` | `no_change` | null). Heuristic
+  `{ drafts, skipped_reason }` döner; LLM yolu tanı üretemezse `null` (uydurma yok). Panel nötr
+  bilgi kutusu gösterir; belirsizlikte öneri kuralı değişmedi.
+  **Görüş:** Acentelerde çoklu aktif randevu (danışma+op+kontrol) sık; boş `items` artık "bozuk"
+  sanılmıyor. Madde 6.2 tahmin yasağı aynı, yalnız neden kullanıcıya taşındı.
+
 - **SEC-CSP panel Report-Only + ihlal toplama ✅** (2026-08-19) — `app.verimaya.com` nginx
   `Content-Security-Policy-Report-Only` (`connect-src 'self' https:` çünkü API
   `api.verimaya.com`); `POST /v1/csp-reports` auth'suz; liste `/dev`. Migration `0060`.
