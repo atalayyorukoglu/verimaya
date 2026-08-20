@@ -580,6 +580,15 @@
 		>
 			{t('reports.cohorts.title')} →
 		</a>
+		<span class="inline-flex items-center gap-1.5">
+			<a
+				href={resolve('/reports/interventions')}
+				class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+			>
+				{t('reports.interventions.title')} →
+			</a>
+			<StatusBadge label={t('reports.interventions.soon')} tone="neutral" />
+		</span>
 	</div>
 
 	<!-- Dönem seçici -->

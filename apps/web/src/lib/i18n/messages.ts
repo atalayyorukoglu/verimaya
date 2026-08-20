@@ -1943,6 +1943,19 @@ const tr = {
 	'reports.cohorts.attributionNote':
 		'Kohort, bir ayki reklam harcamasının o ay gelen kişileri getirdiğini varsayar. Kampanya bazlı atıf değildir.',
 
+	// Raporlar · Müdahale listesi (AI-05 yer tutucu)
+	'reports.interventions.title': 'Müdahale Listesi',
+	'reports.interventions.soon': 'Yakında',
+	'reports.interventions.intro':
+		'Bu rapor henüz tanımlanmadı. Kodlanmadan önce ayrı bir oturumda netleştirilecek: hangi soruyu cevaplayacağı.',
+	'reports.interventions.exampleHeading': 'Tartışılacak örnek:',
+	'reports.interventions.exampleScenario':
+		'Bu ay 40 hasta reklamdan geldi, 12’si tahsilata dönüştü.',
+	'reports.interventions.exampleQuestion': 'Sistem ne söylesin?',
+	'reports.interventions.exampleOptionRate': '“Dönüşüm oranı geçen aya göre düştü” mü?',
+	'reports.interventions.exampleOptionChannel': '“Şu kanaldan gelenler daha az dönüşüyor” mü?',
+	'reports.interventions.exampleOptionFollowup': '“Şu temsilcide takip gecikmesi var” mı?',
+
 	'reports.tab.summary': 'Özet',
 	'reports.period.label': 'Dönem',
 	'reports.period.thisMonth': 'Bu ay',
@@ -4433,6 +4446,18 @@ const en: Record<MessageKey, string> = {
 		'{count} transactions were excluded from collected totals because they lack a base-currency equivalent.',
 	'reports.cohorts.attributionNote':
 		'Cohort assumes that a month’s ad spend brought the contacts created that month. This is not campaign-level attribution.',
+
+	'reports.interventions.title': 'Intervention list',
+	'reports.interventions.soon': 'Coming soon',
+	'reports.interventions.intro':
+		'This report is not defined yet. Before any code is written, a dedicated session will clarify which question it should answer.',
+	'reports.interventions.exampleHeading': 'Example to discuss:',
+	'reports.interventions.exampleScenario':
+		'This month 40 patients came from ads, and 12 converted to collections.',
+	'reports.interventions.exampleQuestion': 'What should the system say?',
+	'reports.interventions.exampleOptionRate': '“Conversion rate dropped versus last month”?',
+	'reports.interventions.exampleOptionChannel': '“People from this channel convert less”?',
+	'reports.interventions.exampleOptionFollowup': '“This agent has a follow-up delay”?',
 
 	'reports.tab.summary': 'Summary',
 	'reports.period.label': 'Period',
