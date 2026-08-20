@@ -245,8 +245,15 @@
 
 #### Pilot-02 sonu kapıları (ikinci müşteri öncesi ZORUNLU)
 
-- [ ] **WEBHOOK-01 shim kapatma:** `WEBHOOK_IDENTITY_DEFAULT_SECRET=false`; önce tüm
-  tenant'larda `tenant_provider_identities` satırı. Runbook: `docs/DEPLOY-COOLIFY.md` § WEBHOOK-01.
+- [ ] **WEBHOOK-01 shim kapatma** — **23 Ağustos'a ertelendi (2026-08-20 kararı).**
+  `WEBHOOK_IDENTITY_DEFAULT_SECRET=false`; önce tüm tenant'larda `tenant_provider_identities`
+  satırı. Runbook: `docs/DEPLOY-COOLIFY.md` § WEBHOOK-01.
+  **Durum (2026-08-20):** aktif 2 tenant'ın (Klinik-0, Klinik-1) ikisi de kimlik satırına
+  kavuştu (`webhook:identity issue` çalıştırıldı, `status` artık ikisini de ✅ gösteriyor).
+  **Kalan:** WAHA'nın nerede çalıştığı repoda kayıtlı değil (yalnız içeri gelen webhook
+  kodu var, dışarı giden bir bağlantı yok) — kullanıcı önce WAHA panelini bulacak, oradaki
+  webhook secret'ı yeni değerlerle değiştirecek, bir mesajla doğrulayacak, sonra shim'i
+  Coolify'da kapatıp API'yi redeploy edecek.
 
 ---
 
@@ -375,7 +382,8 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   metni hukukçu görüşü gerektiriyor. Karar dayanağı: MARKET-01 (b).
 - **DOC-03b/d artıkları (kullanıcı):** Obsidian `00-proje-ozeti` + `01-kararlar` marka +
   `04-ilerleme-log` — sıradaki vault oturumu.
-- **İsteğe bağlı ops:** Coolify `verimaya-web-image` → `verimaya-web`; API GHCR path B.
+- **İsteğe bağlı ops:** API'yi de GHCR image path'ine (path B) taşımak — web'de zaten öyle.
+  (Coolify `verimaya-web-image` → `verimaya-web` isim temizliği ✅ yapıldı, 2026-08-20.)
 
 ---
 
