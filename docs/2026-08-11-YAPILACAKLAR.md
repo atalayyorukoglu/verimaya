@@ -327,6 +327,19 @@ tek onaylanır · eşleşme belirsizse öneri **üretilmez** · para alanları, 
 alanları asla kapsamda değil · kritik operasyon kalemleri (uçuş, karşılama, klinik randevusu)
 AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
+> **⏸ AI-05 — ayrı oturum bekliyor (2026-08-20 kararı).** "Aylık rapor üstünde öneri
+> üreticisi" tanımı boş: rapor **hangi soruyu** cevaplayacak, hiçbir yerde yazılı değil.
+> Kod yazmadan önce ayrı bir gün ayrılıp önce Claude ile tartışılacak, oradan ekibe
+> sorulacak sorular çıkarılacak, sonra liste kodlanacak. Bu iş o oturuma kadar başlamaz.
+>
+> **Tartışmayı somutlaştırmak için örnek (2026-08-20, Claude'un verdiği örnek):**
+> Bu ay 40 hasta reklamdan geldi, 12'si tahsilata dönüştü. Sistem ne söylesin?
+> - "Dönüşüm oranı geçen aya göre düştü" mü?
+> - "Şu kanaldan gelenler daha az dönüşüyor" mü?
+> - "Şu temsilcide takip gecikmesi var" mı?
+>
+> Üçü de farklı veri kaynağı ve farklı kod gerektiriyor — asıl karar burada.
+
 **Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
 (G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.
 
