@@ -332,6 +332,10 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > Kod yazmadan önce ayrı bir gün ayrılıp önce Claude ile tartışılacak, oradan ekibe
 > sorulacak sorular çıkarılacak, sonra liste kodlanacak. Bu iş o oturuma kadar başlamaz.
 >
+> **Panelde yeri: Raporlar → Müdahale Listesi.** Bugün orada yalnız "Yakında" rozetli bir
+> yer tutucu var (2026-08-20) — `untouched`/`cohorts` linklerinin yanına eklendi, gerçek
+> işlev yok. Gözden kaçmasın diye görünür tutuluyor.
+>
 > **Tartışmayı somutlaştırmak için örnek (2026-08-20, Claude'un verdiği örnek):**
 > Bu ay 40 hasta reklamdan geldi, 12'si tahsilata dönüştü. Sistem ne söylesin?
 > - "Dönüşüm oranı geçen aya göre düştü" mü?
