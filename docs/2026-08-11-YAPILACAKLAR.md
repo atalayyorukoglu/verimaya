@@ -405,6 +405,8 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
   bilgi kutusu gösterir; belirsizlikte öneri kuralı değişmedi.
   **Görüş:** Acentelerde çoklu aktif randevu (danışma+op+kontrol) sık; boş `items` artık "bozuk"
   sanılmıyor. Madde 6.2 tahmin yasağı aynı, yalnız neden kullanıcıya taşındı.
+  **Canlı doğrulama ✅ (2026-08-20):** kullanıcı gerçek bir mesajla öneri + onay akışını
+  denedi, çalıştı.
 
 - **SEC-CSP panel Report-Only + ihlal toplama ✅** (2026-08-19) — `app.verimaya.com` nginx
   `Content-Security-Policy-Report-Only` (`connect-src 'self' https:` çünkü API
