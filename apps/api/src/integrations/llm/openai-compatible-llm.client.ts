@@ -3,12 +3,16 @@ import {
 	MAYA_UNKNOWN_TOKEN,
 	appointmentRescheduleDraftSchema,
 	buildMayaSystemPrompt,
+	buildMayaToolSelectionSystemPrompt,
 	frameKnowledgeContext,
 	frameTenantAiPromptNote,
+	mayaToolCallSchema,
 	transactionDraftSchema,
 	type AppointmentRescheduleDraft,
+	type MayaToolCall,
 	type TransactionDraft
 } from '@verimaya/shared';
+import { heuristicRouteMayaTool } from '../../maya/heuristic-tool-route';
 import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type {
@@ -19,9 +23,15 @@ import type {
 	LlmRescheduleResult,
 	LlmUsageLedger,
 	MayaAskContext,
-	MayaAskResult
+	MayaAskResult,
+	MayaToolSelectionContext,
+	MayaToolSelectionResult
 } from './llm.types';
-import { buildMaskedLlmUserPayload, buildMaskedReschedulePayload } from './pii-mask';
+import {
+	buildMaskedLlmUserPayload,
+	buildMaskedMayaToolPayload,
+	buildMaskedReschedulePayload
+} from './pii-mask';
 
 export type OpenAiCompatibleLlmConfig = {
 	apiKey: string;
@@ -107,6 +117,33 @@ function parseReschedulePayload(raw: unknown): AppointmentRescheduleDraft[] {
 		out.push(parsed.data);
 	}
 	return out;
+}
+
+/**
+ * AI-11a — model çıktısından **yalnız** `tool` ve `params` okunur.
+ *
+ * Model gövdeye cevap cümlesi, tutar ya da isim eklerse o alanlar hiç okunmaz; ayrıca
+ * `params` `.strict()` olduğu için uydurma bir alan doğrulamayı düşürür ve çağrı
+ * deterministik yönlendiriciye devredilir. Her iki yolda da modelin ürettiği veri
+ * UI'a düşmez.
+ *
+ * `tool: null` **hata değildir**: model "bu bir bilgi bankası sorusu / araç yok" demiştir.
+ */
+function parseMayaToolCallPayload(raw: unknown): MayaToolCall | null {
+	if (!raw || typeof raw !== 'object') {
+		throw new Error('LLM JSON root must be an object');
+	}
+	const tool = (raw as { tool?: unknown }).tool;
+	if (tool == null) return null;
+
+	const parsed = mayaToolCallSchema.safeParse({
+		tool,
+		params: (raw as { params?: unknown }).params ?? {}
+	});
+	if (!parsed.success) {
+		throw new Error(`LLM maya tool validation failed: ${parsed.error.message}`);
+	}
+	return parsed.data;
 }
 
 function parseDraftsPayload(raw: unknown): TransactionDraft[] {
@@ -301,6 +338,107 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 			);
 			return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
 		}
+	}
+
+	/**
+	 * AI-11a — canlı veri araç seçimi.
+	 *
+	 * Modele giden gövde `buildMaskedMayaToolPayload`'dan geçer (isim/telefon yok),
+	 * dönen gövdeden yalnız `{tool, params}` okunur. Model bir rakam üretemez çünkü
+	 * sözleşmede rakam alanı yok; ürettiğini iddia ederse doğrulama düşer.
+	 *
+	 * Hata/geçersiz çıktı hâlinde deterministik yönlendiriciye düşülür — bu bir tahmin
+	 * değil, kelime eşlemesidir; cevap yine Postgres'ten gelir ve izin yine kontrol edilir.
+	 * Modelin **açıkça** `tool: null` demesi hata sayılmaz ve yönlendiriciyle ezilmez.
+	 */
+	async selectMayaTool(ctx: MayaToolSelectionContext): Promise<MayaToolSelectionResult> {
+		try {
+			const ok = await this.callMayaToolModel(ctx);
+			return { call: ok.call, usage: { ...ok.usage, path: 'openai_compatible', error: null } };
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			this.logger.warn(`Maya tool selection failed, falling back to heuristic: ${message}`);
+			return {
+				call: heuristicRouteMayaTool(ctx.question, ctx.contacts),
+				usage: {
+					provider: providerLabel(this.config.baseUrl),
+					model: 'heuristic-maya-tool',
+					requestedModel: this.config.model,
+					promptTokens: null,
+					completionTokens: null,
+					totalTokens: null,
+					estimatedCostUsdMicros: null,
+					path: 'openai_compatible_fallback',
+					error: message
+				}
+			};
+		}
+	}
+
+	private async callMayaToolModel(ctx: MayaToolSelectionContext): Promise<{
+		call: MayaToolCall | null;
+		usage: Omit<LlmUsageLedger, 'path' | 'error'>;
+	}> {
+		const maskedUser = buildMaskedMayaToolPayload(ctx);
+		const base = this.config.baseUrl.replace(/\/$/, '');
+
+		const response = await this.fetchFn(`${base}/chat/completions`, {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				authorization: `Bearer ${this.config.apiKey}`
+			},
+			body: JSON.stringify({
+				model: this.config.model,
+				temperature: 0,
+				response_format: { type: 'json_object' },
+				messages: [
+					{ role: 'system', content: buildMayaToolSelectionSystemPrompt() },
+					{ role: 'user', content: JSON.stringify(maskedUser) }
+				]
+			}),
+			signal: AbortSignal.timeout(this.timeoutMs)
+		});
+
+		if (!response.ok) {
+			// AUDIT-03: gövde loglanmaz — sağlayıcılar isteği geri yansıtabiliyor.
+			const body = await response.text().catch(() => '');
+			const contentType = response.headers.get('content-type') ?? 'unknown';
+			throw new Error(
+				`LLM HTTP ${response.status} (${contentType}, body ${body.length} bytes redacted)`
+			);
+		}
+
+		const json = (await response.json()) as ChatCompletionResponse;
+		const content = json.choices?.[0]?.message?.content;
+		if (!content || typeof content !== 'string') {
+			throw new Error('LLM response missing message content');
+		}
+
+		const call = parseMayaToolCallPayload(JSON.parse(content) as unknown);
+
+		const promptTokens = json.usage?.prompt_tokens ?? null;
+		const completionTokens = json.usage?.completion_tokens ?? null;
+		const totalTokens =
+			json.usage?.total_tokens ??
+			(promptTokens != null && completionTokens != null
+				? promptTokens + completionTokens
+				: null);
+		const actualModel =
+			typeof json.model === 'string' && json.model.trim() ? json.model.trim() : this.config.model;
+
+		return {
+			call,
+			usage: {
+				provider: providerLabel(this.config.baseUrl),
+				model: actualModel,
+				requestedModel: this.config.model,
+				promptTokens,
+				completionTokens,
+				totalTokens,
+				estimatedCostUsdMicros: estimateCostUsdMicros(promptTokens, completionTokens)
+			}
+		};
 	}
 
 	private async callModel(ctx: LlmParseContext): Promise<CallModelOk> {

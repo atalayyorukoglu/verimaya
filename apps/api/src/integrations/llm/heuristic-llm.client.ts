@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MAYA_UNKNOWN_TOKEN } from '@verimaya/shared';
+import { heuristicRouteMayaTool } from '../../maya/heuristic-tool-route';
 import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type {
@@ -9,7 +10,9 @@ import type {
 	LlmRescheduleContext,
 	LlmRescheduleResult,
 	MayaAskContext,
-	MayaAskResult
+	MayaAskResult,
+	MayaToolSelectionContext,
+	MayaToolSelectionResult
 } from './llm.types';
 
 /** Deterministic regex/heuristic parser used when no LLM_API_KEY is set. */
@@ -76,5 +79,27 @@ export class HeuristicLlmClient implements LlmClient {
 
 		if (hits.length === 0) return { answer: MAYA_UNKNOWN_TOKEN, heuristic: true };
 		return { answer: hits.slice(0, 4).join('\n'), heuristic: true };
+	}
+
+	/**
+	 * AI-11a — LLM yokken deterministik kelime eşlemesiyle araç seçilir. Veri
+	 * üretilmez: seçim yalnız "hangi sorgu çalışsın" sorusunu cevaplar, rakam yine
+	 * Postgres'ten gelir. Eşleşme yoksa `null` → çağıran taraf `BILINMIYOR` der.
+	 */
+	async selectMayaTool(ctx: MayaToolSelectionContext): Promise<MayaToolSelectionResult> {
+		return {
+			call: heuristicRouteMayaTool(ctx.question, ctx.contacts),
+			usage: {
+				provider: 'heuristic',
+				model: 'heuristic-maya-tool',
+				requestedModel: null,
+				promptTokens: 0,
+				completionTokens: 0,
+				totalTokens: 0,
+				estimatedCostUsdMicros: 0,
+				path: 'heuristic',
+				error: null
+			}
+		};
 	}
 }

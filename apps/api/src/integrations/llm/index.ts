@@ -3,7 +3,11 @@ export type {
 	LlmParseContext,
 	LlmParsePath,
 	LlmParseResult,
-	LlmUsageLedger
+	LlmUsageLedger,
+	MayaAskContext,
+	MayaAskResult,
+	MayaToolSelectionContext,
+	MayaToolSelectionResult
 } from './llm.types';
 export { LLM_CLIENT, LLM_PARSE_JOB_TYPE } from './llm.types';
 export { HeuristicLlmClient } from './heuristic-llm.client';

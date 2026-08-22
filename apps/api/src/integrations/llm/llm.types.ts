@@ -1,6 +1,8 @@
 import type {
 	AppointmentRescheduleDraft,
 	Contact,
+	MayaContactRef,
+	MayaToolCall,
 	RecordUpdateSuggestionSkippedReason,
 	TransactionDraft
 } from '@verimaya/shared';
@@ -82,6 +84,26 @@ export type MayaAskResult = {
 	heuristic: boolean;
 };
 
+/**
+ * AI-11a — araç seçici bağlamı. Modele **yalnız** maskelenmiş soru ve opak kişi
+ * işaretleri gider; DB satırı, isim, telefon, tutar gitmez.
+ */
+export type MayaToolSelectionContext = {
+	/** Maskelenmiş soru: isimler `KISI_n`, PII `[TELEFON]`/`[EPOSTA]` vb. */
+	question: string;
+	/** Sunucunun çözdüğü kişi adayları — token + opak UUID. Boş olabilir. */
+	contacts: MayaContactRef[];
+};
+
+export type MayaToolSelectionResult = {
+	/**
+	 * Seçilen araç çağrısı ya da `null`. `null` iki anlama gelir: soru bilgi bankası
+	 * sorusudur ya da hiçbir araç eşleşmedi — ikisinde de tahmin üretilmez.
+	 */
+	call: MayaToolCall | null;
+	usage: LlmUsageLedger;
+};
+
 /** Domain-facing LLM adapter — WhatsApp parse goes through this, not raw HTTP. */
 export interface LlmClient {
 	parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult>;
@@ -89,6 +111,11 @@ export interface LlmClient {
 	suggestAppointmentReschedule(ctx: LlmRescheduleContext): Promise<LlmRescheduleResult>;
 	/** Maya soru-cevap. Yalnız bilgi bankasından cevaplar; bilmiyorsa unknown token döner. */
 	answerFromKnowledge(ctx: MayaAskContext): Promise<MayaAskResult>;
+	/**
+	 * AI-11a: canlı veri araç seçimi. Model **yalnız** `{tool, params}` döndürür —
+	 * rakamı Postgres verir, cevap cümlesini kod kurar. Model rakamı ne görür ne üretir.
+	 */
+	selectMayaTool(ctx: MayaToolSelectionContext): Promise<MayaToolSelectionResult>;
 }
 
 export const LLM_CLIENT = Symbol('LLM_CLIENT');

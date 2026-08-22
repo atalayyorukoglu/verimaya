@@ -36,7 +36,10 @@ export class MayaService {
 				grounded: false,
 				used_sections: [],
 				knowledge_empty: true,
-				heuristic: false
+				heuristic: false,
+				source: 'unknown',
+				tool: null,
+				tool_result: null
 			};
 		}
 
@@ -53,7 +56,10 @@ export class MayaService {
 			grounded,
 			used_sections: grounded ? this.matchSections(knowledge.sections, trimmed) : [],
 			knowledge_empty: false,
-			heuristic: result.heuristic
+			heuristic: result.heuristic,
+			source: grounded ? 'knowledge' : 'unknown',
+			tool: null,
+			tool_result: null
 		};
 	}
 

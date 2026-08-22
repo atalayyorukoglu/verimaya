@@ -1,5 +1,9 @@
-import type { Contact } from '@verimaya/shared';
-import type { LlmParseContext, LlmRescheduleContext } from './llm.types';
+import type { Contact, MayaContactRef } from '@verimaya/shared';
+import type {
+	LlmParseContext,
+	LlmRescheduleContext,
+	MayaToolSelectionContext
+} from './llm.types';
 
 /** Placeholders sent to external LLMs instead of raw PII. */
 export const PII_PLACEHOLDERS = {
@@ -29,6 +33,12 @@ export type MaskedRescheduleAppointmentHint = {
 export type MaskedReschedulePayload = {
 	message: string;
 	appointments: MaskedRescheduleAppointmentHint[];
+};
+
+/** AI-11a — Maya araç seçici için modele giden tek gövde. İsim/telefon içermez. */
+export type MaskedMayaToolPayload = {
+	question: string;
+	contacts: MayaContactRef[];
 };
 
 function escapeRegExp(value: string): string {
@@ -97,6 +107,25 @@ export function buildMaskedLlmUserPayload(ctx: LlmParseContext): MaskedLlmUserPa
 	return {
 		message: maskMessagePii(withoutNames),
 		patients: toOpaquePatientHints(ctx.patients)
+	};
+}
+
+/**
+ * AI-11a — Maya araç seçici gövdesinin tek çıkış noktası.
+ *
+ * `ctx.question` sunucuda zaten maskelenmiş gelir (isimler `KISI_n` token'ına
+ * çevrilmiştir); burada `maskMessagePii` ikinci kez uygulanır — idempotenttir ve
+ * sunucu tarafındaki bir kaçağın dışarı çıkmasını engelleyen son kapıdır.
+ * Kişi listesi yalnız token + opak UUID taşır; **isim buradan geçemez.**
+ */
+export function buildMaskedMayaToolPayload(
+	ctx: MayaToolSelectionContext
+): MaskedMayaToolPayload {
+	return {
+		question: maskMessagePii(ctx.question),
+		contacts: ctx.contacts
+			.slice(0, 20)
+			.map((c) => ({ token: c.token, contact_ref: c.contact_ref }))
 	};
 }
 

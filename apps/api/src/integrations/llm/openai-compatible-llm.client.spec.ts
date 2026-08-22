@@ -228,3 +228,107 @@ describe('estimateCostUsdMicros', () => {
 		expect(estimateCostUsdMicros(null, null)).toBeNull();
 	});
 });
+
+/**
+ * AI-11a — araç seçici. Korunan güvence: **model rakam üretemez.** Ürettiğini iddia
+ * ederse doğrulama düşer ve o sayı hiçbir yoldan cevaba karışmaz.
+ */
+describe('OpenAiCompatibleLlmClient.selectMayaTool (AI-11a)', () => {
+	const contactRef = '11111111-1111-4111-8111-111111111111';
+
+	function clientWith(content: string, ok = true) {
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(ok ? JSON.stringify({ model: 'gpt-4o-mini', choices: [{ message: { content } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }) : 'boom', {
+					status: ok ? 200 : 500,
+					headers: { 'content-type': 'application/json' }
+				})
+		);
+		return {
+			fetchFn,
+			client: new OpenAiCompatibleLlmClient({
+				apiKey: 'k',
+				baseUrl: 'https://api.openai.com/v1',
+				model: 'gpt-4o-mini',
+				fetchFn: fetchFn as unknown as typeof fetch
+			})
+		};
+	}
+
+	it('geçerli araç seçimini döndürür ve ledger doldurur', async () => {
+		const { client } = clientWith(
+			JSON.stringify({ tool: 'contactBalance', params: { contact_ref: contactRef } })
+		);
+		const res = await client.selectMayaTool({
+			question: 'KISI_1 ne kadar borçlu?',
+			contacts: [{ token: 'KISI_1', contact_ref: contactRef }]
+		});
+
+		expect(res.call).toEqual({ tool: 'contactBalance', params: { contact_ref: contactRef } });
+		expect(res.usage.path).toBe('openai_compatible');
+		expect(res.usage.totalTokens).toBe(15);
+	});
+
+	it('modele isim/telefon gitmez — gövde yalnız maskelenmiş soru + opak ref taşır', async () => {
+		const { client, fetchFn } = clientWith(JSON.stringify({ tool: null, params: {} }));
+		await client.selectMayaTool({
+			question: 'KISI_1 bey +90 555 111 22 33 ne kadar borçlu?',
+			contacts: [{ token: 'KISI_1', contact_ref: contactRef }]
+		});
+
+		const body = String((fetchFn.mock.calls[0]![1] as RequestInit).body);
+		expect(body).not.toContain('555');
+		expect(body).toContain('[TELEFON]');
+		expect(body).toContain(contactRef);
+	});
+
+	it('model uydurma rakam eklerse çıktı reddedilir — sayı cevaba karışmaz', async () => {
+		const { client } = clientWith(
+			JSON.stringify({
+				tool: 'contactBalance',
+				params: { contact_ref: contactRef, outstanding_base: 999_999 }
+			})
+		);
+		const res = await client.selectMayaTool({
+			question: 'KISI_1 ne kadar borçlu?',
+			contacts: [{ token: 'KISI_1', contact_ref: contactRef }]
+		});
+
+		// Deterministik yönlendiriciye düşer; parametrede uydurma alan taşınmaz.
+		expect(res.call).toEqual({ tool: 'contactBalance', params: { contact_ref: contactRef } });
+		expect(JSON.stringify(res.call)).not.toContain('999999');
+		expect(res.usage.path).toBe('openai_compatible_fallback');
+		expect(res.usage.error).toContain('maya tool validation failed');
+	});
+
+	it('modelin yazdığı cevap cümlesi hiç okunmaz', async () => {
+		const { client } = clientWith(
+			JSON.stringify({
+				tool: 'openBalances',
+				params: {},
+				answer: 'Yılmaz bey 12.500 TL borçlu'
+			})
+		);
+		const res = await client.selectMayaTool({ question: 'Kimlerden alacağımız var?', contacts: [] });
+		expect(res.call).toEqual({ tool: 'openBalances', params: {} });
+		expect(JSON.stringify(res.call)).not.toContain('12.500');
+	});
+
+	it('model açıkça tool:null derse yönlendiriciyle ezilmez (bilgi bankası yolu)', async () => {
+		const { client } = clientWith(JSON.stringify({ tool: null, params: {} }));
+		const res = await client.selectMayaTool({
+			question: 'Bu ay ne kadar tahsilat yaptık?',
+			contacts: []
+		});
+		expect(res.call).toBeNull();
+		expect(res.usage.path).toBe('openai_compatible');
+	});
+
+	it('HTTP hatasında gövde loglanmaz, deterministik yönlendiriciye düşülür', async () => {
+		const { client } = clientWith('', false);
+		const res = await client.selectMayaTool({ question: 'Kime dönülmedi?', contacts: [] });
+		expect(res.call).toEqual({ tool: 'untouchedContacts', params: { days: 30 } });
+		expect(res.usage.path).toBe('openai_compatible_fallback');
+		expect(res.usage.error).toContain('redacted');
+	});
+});
