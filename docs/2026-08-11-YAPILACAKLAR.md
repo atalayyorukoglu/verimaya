@@ -328,7 +328,7 @@
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
-| **AUDIT-04** | `transactions` create/update denetim kaydı — bugün yalnız `delete` yazıyor | — | S |
+| **AUDIT-04** | `transactions` create/update denetim kaydı | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-08** | Randevu ajanını WhatsApp akışına gömme — aynı worker, ikinci ajan | — | S |
 | **AI-09** | Kaynak izi (`evidence`) — taslak + işlem satırı hangi cümleden çıktığını taşır | AUDIT-04 | M |
 | **AI-10** | LLM veri politikası dokümanı — sağlayıcı, eğitim opt-out, saklama, yurtdışı aktarım | LEG-02 | S |
@@ -403,7 +403,7 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > Rillet'in ABD ekosistemine ait (Stripe/Plaid/açık bankacılık); burada karşılığı yok ve
 > "Bilinçli olarak yapılmayacaklar"da. İlk demoda çöker.
 
-**Sıra: AUDIT-04 → AI-08 → AI-11a → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
+**Sıra: ~~AUDIT-04~~ ✅ → AI-08 → AI-11a → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
 
 > **AI-11a neden AI-09'dan önce (2026-08-22 kararı).** AI-11b'nin ("akla gelen her soru")
 > tasarlanabilmesi için **gerçek soru listesi** gerekiyor ve o listenin bekleme süresi var —
@@ -417,18 +417,6 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > AI-11a'nın soru kaydı, bizim eksik kanonumuzun yerine geçen şey. Kaynak: `info.rillet.com`
 > — iç mimarilerini yayınlamıyorlar, ama yaklaşımlarını "constrained / strict set of methods /
 > avoid inventing numbers" diye tanımlıyorlar; yani serbest SQL değil, kısıtlı metot listesi.
-
-- [ ] **AUDIT-04 — `transactions` create/update denetim kaydı. (S)**
-  Bugün `writeAuditLog` yalnız `softDeleteWithDb`'de (`transactions.service.ts`); oluşturma ve
-  güncelleme hiç iz bırakmıyor. "Bu tutarı kim girdi" sorusunun bugün cevabı yok.
-  **Kabul:** `createWithDb` + `updateWithDb` `audit_logs`'a yazar (`action` = `create`/`update`,
-  `entity_type` = `transaction`, `entity_label` = `deriveTransactionLabel`) · WhatsApp onay yolu
-  (`approveDraftsWithDb` → `createWithDb`) da yazar, aynı DB transaction'ında · tenant izolasyon
-  testi · mevcut `delete` davranışı değişmez.
-  **Dosyalar:** `apps/api/src/transactions/transactions.service.ts`, `transactions.controller.ts`
-  (actor geçişi), `apps/api/src/whatsapp/whatsapp.service.ts`, yeni spec.
-  **Ajan:** Cursor (`agent -p`) — desen zaten 12 yerde var, kopyalanacak iş.
-  **Görüş:**
 
 - [ ] **AI-08 — Randevu ajanını WhatsApp akışına gömme. (S)**
   `InboundMessageProcessor.process()` bugün yalnız `WhatsappService.processInboundMessage`
@@ -600,6 +588,16 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- [x] **AUDIT-04 — `transactions` create/update denetim kaydı (2026-08-22).**
+  `createWithDb` + `updateWithDb` artık `audit_logs`'a yazıyor (`entity_label` =
+  `deriveTransactionLabel`), aynı DB transaction'ında; WhatsApp onay yolu
+  (`approveDraftsWithDb`) dahil. Yeni `transactions.audit.isolation.spec.ts` (4 test).
+  **Görüş:** Cursor yazdı, izolasyon testlerini koşturamadı (Postgres kapalıydı) — Docker
+  kaldırılıp 4 test yeşil doğrulandı. Testlerin gerçekten koştuğu, `create` yazımı bilerek
+  kapatılıp 2 testin kırmızıya dönmesiyle kanıtlandı. Tam takım: 730 test / 135 dosya yeşil,
+  `pnpm check` temiz. `ai_corrections.createdBy` imza değişiminde `actor.actorId`'ye
+  taşınmış — bozulmamış.
 
 - **AI-02 Ayrıştır sessiz boş dönüş geri bildirimi ✅** (2026-08-20) — `POST /v1/record-suggestions/parse`
   yanıtına `skipped_reason` (`ambiguous_contact` | `no_date` | `no_change` | null). Heuristic
