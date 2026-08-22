@@ -586,6 +586,21 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- [x] **OPS-04 — `pnpm check` artık lint de koşturuyor (2026-08-23).** Kök `package.json`:
+  `turbo run check` → `turbo run check lint`. **Neden:** 22 Ağustos'ta CI tam bu yüzden
+  kırıldı — yerelde `pnpm check` yeşildi, CI ayrıca `web lint` (prettier+eslint) koşturuyordu.
+  Artık tek komut ikisini de kapsıyor, yerel yeşil = CI yeşil.
+
+- [x] **OPS-05 — Yeni tablolara otomatik `UPDATE` yetkisi durduruldu (2026-08-23).**
+  Migration `0063`: `ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE UPDATE ON TABLES
+  FROM verimaya_app`. **Neden:** `0003_app_role.sql` her yeni public tabloya `UPDATE`
+  veriyordu; `maya_questions` (0061) denetim kaydı olmasına rağmen açık `REVOKE`
+  yazılmasaydı sessizce güncellenebilir kalacaktı. Artık ters yönde hata veriyor:
+  gerekli `UPDATE` unutulursa uygulama "permission denied" atar, testte yakalanır.
+  **Sessiz açık yerine gürültülü hata.** Mevcut 30+ tablo etkilenmedi (doğrulandı:
+  `transactions`/`contacts`/`appointments`/`audit_logs` hâlâ `UPDATE` taşıyor,
+  `maya_questions` taşımıyor). Kural `AGENTS.md` migration bölümüne işlendi.
+
 - [x] **AI-03 — İsabet ölçümü (2026-08-22).** 3 commit. `GET /v1/reports/ai-accuracy`
   (`finance:read`) + Raporlar altında sayfa. Üç kaynak: `ai_corrections` (hangi alan hangi
   AI-09 güven seviyesinde düzeltiliyor), `record_update_suggestions` (kabul oranı + red

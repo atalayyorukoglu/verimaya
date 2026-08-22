@@ -42,6 +42,10 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
   silen migration üretiyor (2026-08-17 ölçümü: 32 izolasyon politikası + 32 tabloda RLS + 30
   check kısıtı düşüyordu). Yeni migration: `apps/api/drizzle/` altına sıradaki numarayla `.sql`
   (desen `0054_ad_sync_status.sql`; tenant'lı tabloda RLS + FORCE RLS + policy + GRANT zorunlu),
+  **GRANT'ı açık yaz (0063'ten sonra):** `ALTER DEFAULT PRIVILEGES` artık yeni tablolara
+  `UPDATE` VERMİYOR. Normal iş tablosu → `GRANT SELECT, INSERT, UPDATE, DELETE`;
+  denetim/log tablosu (yazılır, güncellenmez) → `GRANT SELECT, INSERT, DELETE`.
+  Unutursan uygulama ilk update'te "permission denied" atar — sessiz açık değil, gürültülü hata.
   `meta/_journal.json`'a kayıt, `db:migrate` ile uygula, `src/db/schema/` altındaki şemayı da
   güncelle.
 

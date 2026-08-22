@@ -8,7 +8,7 @@
 		"dev:all": "turbo run dev --filter=@verimaya/web --filter=@verimaya/api --env-mode=loose",
 		"build": "turbo run build",
 		"lint": "turbo run lint",
-		"check": "turbo run check",
+		"check": "turbo run check lint",
 		"format": "turbo run format",
 		"format:check": "pnpm --filter @verimaya/web exec prettier --check .",
 		"db:up": "docker compose up -d",

@@ -442,6 +442,13 @@
       "when": 1755614000000,
       "tag": "0062_transaction_source_evidence",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1755700400000,
+      "tag": "0063_default_privileges_no_update",
+      "breakpoints": true
     }
   ]
 }

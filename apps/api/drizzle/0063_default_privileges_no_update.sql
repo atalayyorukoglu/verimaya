@@ -1,0 +1,34 @@
+-- Yeni public tablolara otomatik UPDATE yetkisi verilmesini durdurur.
+--
+-- SORUN (2026-08-22'de AI-11a sırasında bulundu): `0003_app_role.sql` şunu yazıyor:
+--
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA public
+--     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO verimaya_app;
+--
+-- Bu yüzden public şemasında oluşturulan HER yeni tablo, migration'da ne yazarsa
+-- yazsın `verimaya_app`'e UPDATE veriyordu. `maya_questions` (0061) "yazılır,
+-- güncellenmez" bir denetim kaydı olmasına rağmen sadece
+-- `GRANT SELECT, INSERT, DELETE` yazmak yetmedi; açık bir
+-- `REVOKE UPDATE` gerekti. O REVOKE olmasaydı tablo sessizce güncellenebilir kalırdı.
+--
+-- NEDEN BÖYLE DÜZELTİYORUZ: sessiz açık yerine gürültülü hata.
+--   Bugün : UPDATE grant'ı unutulursa → kimse fark etmez, denetim kaydı silinip
+--           yeniden yazılabilir hâle gelir (sessiz güvenlik açığı).
+--   Sonra : UPDATE grant'ı unutulursa → uygulama ilk update denemesinde
+--           "permission denied" atar, testte anında yakalanır (gürültülü hata).
+-- İkisinden birini seçmek zorundayız; yanlış tarafta patlamayanı seçiyoruz.
+--
+-- ETKİ ALANI: `ALTER DEFAULT PRIVILEGES` yalnız BUNDAN SONRA oluşturulacak tabloları
+-- etkiler. Mevcut 30+ tablonun yetkileri aynen kalır — bu migration hiçbir çalışan
+-- sorguyu bozmaz. `0061`'deki açık REVOKE de yerinde kalsın (o tablo bu satırdan
+-- önce oluşturuldu).
+--
+-- BUNDAN SONRA YENİ TABLO YAZARKEN: ihtiyacın olan yetkiyi AÇIKÇA yaz.
+--   Normal iş tablosu   : GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE <t> TO verimaya_app;
+--   Denetim/log tablosu : GRANT SELECT, INSERT, DELETE ON TABLE <t> TO verimaya_app;
+--
+-- NOT: `ALTER DEFAULT PRIVILEGES` yalnız komutu çalıştıran rolün oluşturduğu nesneler
+-- için geçerlidir. Bu satır 0003 ile aynı rol (migration owner, `DATABASE_URL`)
+-- tarafından koşulduğu sürece doğru hedefi bulur — `db:migrate` hep o rolle koşar.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+	REVOKE UPDATE ON TABLES FROM verimaya_app;
