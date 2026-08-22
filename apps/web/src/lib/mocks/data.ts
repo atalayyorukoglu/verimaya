@@ -263,6 +263,8 @@ function makeTransaction(
 		case_contact_id: null,
 		responsible_contact_id: null,
 		description: null,
+		source_inbound_message_id: null,
+		source_evidence: null,
 		created_at: iso(faker.date.recent({ days: 60 })),
 		updated_at: iso(new Date()),
 		...overrides

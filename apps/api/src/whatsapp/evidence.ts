@@ -1,5 +1,7 @@
 import {
 	transactionEvidenceFieldSchema,
+	transactionEvidenceSchema,
+	type ApproveDraftItem,
 	type TransactionDraft,
 	type TransactionEvidence,
 	type TransactionEvidenceEntry,
@@ -78,6 +80,61 @@ export function verifyDraftEvidence(
 		...record,
 		evidence: verifyEvidence(record.evidence, modelText, rawText)
 	}));
+}
+
+/** Alan değerlerini iz için karşılaştırılabilir hâle getirir (undefined ≡ null). */
+function fieldValue(
+	draft: TransactionDraft | ApproveDraftItem,
+	field: TransactionEvidenceField
+): string | number | null {
+	switch (field) {
+		case 'amount':
+			return draft.amount;
+		case 'currency':
+			return draft.currency;
+		case 'kind':
+			return draft.kind;
+		case 'occurred_on':
+			return draft.occurred_on;
+		case 'contact_id':
+			return draft.contact_id ?? null;
+		case 'payment_method':
+			return draft.payment_method ?? null;
+		case 'category':
+			return draft.category ?? null;
+	}
+}
+
+/**
+ * AI-09 — onaylanan işleme yazılacak iz.
+ *
+ * Kaynak **sunucudaki** taslaktır (`inbound_messages.payload.parsed_records`),
+ * istek gövdesi değil: istemci "şu cümleden aldım" diye uydurma bir atıf
+ * gönderemesin diye. Gövdeden gelen `evidence` zaten şemada yok, zod düşürüyor;
+ * burası o kararın ikinci yarısı — izin nereden geldiği.
+ *
+ * İnsan bir alanı düzelttiyse o alanın izi **düşürülür**: iz "AI bunu şu
+ * cümleden aldı" der; kullanıcı üstüne yazdıysa cümle artık o değerin kaynağı
+ * değildir. (Yan kazanç: geriye kalan iz, AI-03 için "hangi alan hangi
+ * confidence'ta düzeltildi" verisidir.)
+ */
+export function evidenceForApprovedDraft(
+	stored: TransactionDraft | undefined,
+	approved: ApproveDraftItem
+): TransactionEvidence | null {
+	if (!stored) return null;
+	// Payload jsonb; sunucu yazsa da savunma amaçlı yeniden doğrulanır.
+	const parsed = transactionEvidenceSchema.safeParse(stored.evidence ?? {});
+	if (!parsed.success) return null;
+
+	const kept: TransactionEvidence = {};
+	for (const field of EVIDENCE_FIELDS) {
+		const entry = parsed.data[field];
+		if (!entry) continue;
+		if (fieldValue(stored, field) !== fieldValue(approved, field)) continue;
+		kept[field] = entry;
+	}
+	return Object.keys(kept).length > 0 ? kept : null;
 }
 
 /** Ham metinde `quote`'u konumlayıp iz girdisi kurar; heuristic yol için. */

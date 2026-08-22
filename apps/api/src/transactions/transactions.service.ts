@@ -7,6 +7,7 @@ import {
 	type TransactionCreate,
 	type TransactionAuditDraft,
 	type TransactionAuditDraftResponse,
+	type TransactionEvidence,
 	type TransactionListQuery,
 	type TransactionUpdate
 } from '@verimaya/shared';
@@ -19,6 +20,12 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 
 const HASTA_TYPE = DEFAULT_CONTACT_TYPE_NAMES[0];
 const PERSONEL_TYPE = DEFAULT_CONTACT_TYPE_NAMES[4];
+
+/** AI-09 — sunucu tarafından üretilen kaynak izi; istek gövdesinden gelmez. */
+export type TransactionSource = {
+	inboundMessageId: string;
+	evidence: TransactionEvidence | null;
+};
 
 @Injectable()
 export class TransactionsService {
@@ -75,11 +82,19 @@ export class TransactionsService {
 		});
 	}
 
+	/**
+	 * @param source AI-09 kaynak izi. **Ayrı parametre bilinçli:** `input`
+	 * doğrudan istek gövdesinden geliyor; iz oraya karışırsa bir istemci
+	 * "şu cümleden aldım" diye uydurma bir atıf yazabilirdi. Bu argümanı
+	 * yalnız sunucu tarafındaki onay akışı (`WhatsappService`) doldurur;
+	 * HTTP controller hiç geçmez.
+	 */
 	async createWithDb(
 		db: TenantDb,
 		tenantId: string,
 		input: TransactionCreate,
-		actor: AuditActor
+		actor: AuditActor,
+		source?: TransactionSource
 	) {
 		await this.assertTypedContact(db, input.case_contact_id, HASTA_TYPE, 'case_contact_id');
 		await this.assertTypedContact(
@@ -113,7 +128,9 @@ export class TransactionsService {
 				contactLabel: denorm.contactLabel,
 				caseContactId: input.case_contact_id ?? null,
 				responsibleContactId: input.responsible_contact_id ?? null,
-				description: input.description ?? null
+				description: input.description ?? null,
+				sourceInboundMessageId: source?.inboundMessageId ?? null,
+				sourceEvidence: source?.evidence ?? null
 			})
 			.returning();
 

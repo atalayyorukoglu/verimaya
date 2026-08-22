@@ -256,6 +256,8 @@ export function toTransaction(row: TransactionRow): Transaction {
 		case_contact_id: row.caseContactId,
 		responsible_contact_id: row.responsibleContactId,
 		description: row.description,
+		source_inbound_message_id: row.sourceInboundMessageId,
+		source_evidence: row.sourceEvidence ?? null,
 		created_at: toIsoDateTime(row.createdAt),
 		updated_at: toIsoDateTime(row.updatedAt)
 	};

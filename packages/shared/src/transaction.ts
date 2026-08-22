@@ -149,6 +149,13 @@ export const transactionSchema = z.object({
 	 */
 	responsible_contact_id: uuid.nullable().default(null),
 	description: z.string().max(8000).nullable(),
+	/**
+	 * AI-09 — satırın çıktığı WhatsApp mesajı (varsa). **Salt okunur:**
+	 * `transactionCreateSchema` bu alanı dışarıda bırakır, yalnız onay akışı doldurur.
+	 */
+	source_inbound_message_id: uuid.nullable().default(null),
+	/** AI-09 — alan başına doğrulanmış kaynak izi. **Salt okunur** (yukarıdaki gibi). */
+	source_evidence: transactionEvidenceSchema.nullable().default(null),
 	created_at: isoDateTime,
 	updated_at: isoDateTime
 });
@@ -186,10 +193,18 @@ export function deriveTransactionLabel(input: {
 	return '—';
 }
 
+/**
+ * `source_inbound_message_id` / `source_evidence` burada **bilinçli olarak yok**:
+ * kaynak izi yalnız sunucunun onay akışında yazılır. Şemada bulunmadıkları için
+ * zod istek gövdesindeki değerleri sessizce düşürür — `POST /v1/transactions`
+ * ile uydurma bir iz yazılamaz (bkz. `transactions.source-evidence.isolation.spec.ts`).
+ */
 export const transactionCreateSchema = transactionSchema.omit({
 	id: true,
 	tenant_id: true,
 	contact_display_name: true,
+	source_inbound_message_id: true,
+	source_evidence: true,
 	created_at: true,
 	updated_at: true
 });

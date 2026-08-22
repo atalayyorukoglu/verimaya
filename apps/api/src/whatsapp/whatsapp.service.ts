@@ -8,7 +8,8 @@ import type {
 	InboundMessageProcessResponse,
 	InboundMessageStatus,
 	Contact,
-	TransactionDraft
+	TransactionDraft,
+	TransactionDraftSnapshot
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { aiCorrections } from '../db/schema/ai-corrections';
@@ -19,10 +20,15 @@ import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations
 import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
-import { TransactionsService } from '../transactions/transactions.service';
+import {
+	TransactionsService,
+	type TransactionSource
+} from '../transactions/transactions.service';
+import { evidenceForApprovedDraft } from './evidence';
 import {
 	asRecord,
 	extractInboundDisplayFields,
+	extractParsedRecords,
 	mergeParsedPayload,
 	toInboundMessage
 } from './inbound-mapper';
@@ -32,7 +38,12 @@ const PARSE_ERROR_NO_MATCH = 'Ayrıştırılamadı';
 
 export type ProcessInboundOutcome = 'parsed' | 'error' | 'skipped';
 
-function toDraftSnapshot(item: ApproveDraftItem): TransactionDraft {
+/**
+ * `ai_corrections` anlık görüntüsü — iz taşımaz. `original_parsed` de
+ * `transactionDraftSnapshotSchema` ile ayrıştırıldığı için iki taraf aynı
+ * alan kümesini karşılaştırır; evidence yüzünden sahte "düzeltildi" çıkmaz.
+ */
+function toDraftSnapshot(item: ApproveDraftItem): TransactionDraftSnapshot {
 	return {
 		kind: item.kind,
 		amount: item.amount,
@@ -217,10 +228,23 @@ export class WhatsappService {
 		input: ApproveDraftsRequest,
 		actor: AuditActor
 	): Promise<ApproveDraftsResponse> {
-		await this.findRow(db, inboxId);
+		const inboxRow = await this.findRow(db, inboxId);
+
+		// AI-09: iz sunucudaki taslaktan okunur, istek gövdesinden DEĞİL.
+		// Satır sayısı tutmuyorsa (kullanıcı taslak eklemiş/çıkarmışsa) sıra
+		// eşleştirmesi güvenilmez — iz yazılmaz, kaynak mesaj bağı yine kalır.
+		const storedDrafts = extractParsedRecords(asRecord(inboxRow.payload) ?? {});
+		const alignedDrafts =
+			storedDrafts && storedDrafts.length === input.drafts.length ? storedDrafts : null;
 
 		const created = [];
-		for (const draft of input.drafts) {
+		for (const [index, draft] of input.drafts.entries()) {
+			const source: TransactionSource = {
+				inboundMessageId: inboxId,
+				evidence: alignedDrafts
+					? evidenceForApprovedDraft(alignedDrafts[index], draft)
+					: null
+			};
 			const tx = await this.transactionsService.createWithDb(db, tenantId, {
 				kind: draft.kind,
 				title: draft.title.trim(),
@@ -242,7 +266,7 @@ export class WhatsappService {
 				fx_rate: draft.fx_rate,
 				fx_dated: draft.occurred_on,
 				description: draft.description ?? null
-			}, actor);
+			}, actor, source);
 			created.push(tx);
 		}
 
