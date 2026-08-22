@@ -30,6 +30,8 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
+const testActor = { actorId: null, actorDisplayName: 'Transactions Isolation Test' };
+
 async function withTenantSession<T>(
 	tenantId: string,
 	fn: (tdb: TenantDb) => Promise<T>
@@ -162,7 +164,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientA,
 				contact_label: null,
 				description: null
-			});
+			}, testActor);
 			return t.id;});
 		transactionB = await withTenantSession(tenantB, async (tdb) => {
 			const t = await transactionsService.createWithDb(tdb, tenantB, {
@@ -184,7 +186,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientB,
 				contact_label: null,
 				description: null
-			});
+			}, testActor);
 			return t.id;});
 	});
 
@@ -221,7 +223,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientA,
 				contact_label: null,
 				description: null
-			});
+			}, testActor);
 			return t.id;});
 		const newerId = await withTenantSession(tenantA, async (tdb) => {
 			const t = await transactionsService.createWithDb(tdb, tenantA, {
@@ -243,7 +245,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientA,
 				contact_label: null,
 				description: null
-			});
+			}, testActor);
 			return t.id;});
 
 		const page1 = await transactionsService.list(tenantA, { limit: 1 });
@@ -279,7 +281,7 @@ describe('transactions tenant isolation', () => {
 	it('Tenant A cannot update Tenant B transaction', async () => {
 		await withTenantSession(tenantA, async (tdb) => {
 			await expect(
-				transactionsService.updateWithDb(tdb, tenantA, transactionB, { title: 'Hacked by A' })
+				transactionsService.updateWithDb(tdb, tenantA, transactionB, { title: 'Hacked by A' }, testActor)
 			).rejects.toBeInstanceOf(NotFoundException);});
 
 		const stillB = await transactionsService.list(tenantB, { limit: 25 });
@@ -307,7 +309,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientA,
 				contact_label: null,
 				description: 'nightly rate'
-			});
+			}, testActor);
 			return t.id;});
 
 		const byKind = await transactionsService.list(tenantA, { limit: 25, kind: 'expense' });
@@ -356,7 +358,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientA,
 				contact_label: null,
 				description: null
-			});
+			}, testActor);
 			return t.id;
 		});
 		await withTenantSession(tenantA, async (tdb) => {
@@ -379,7 +381,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientA,
 				contact_label: null,
 				description: null
-			});
+			}, testActor);
 		});
 
 		const ranged = await transactionsService.list(tenantA, {
@@ -422,7 +424,7 @@ describe('transactions tenant isolation', () => {
 				contact_id: patientA,
 				contact_label: null,
 				description: null
-			});
+			}, testActor);
 			return t.id;});
 
 		const filtered = await transactionsService.list(tenantA, {

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
+	deriveTransactionLabel,
 	evaluateTransactionConsistency,
 	type TransactionCreate,
 	type TransactionAuditDraft,
@@ -74,7 +75,12 @@ export class TransactionsService {
 		});
 	}
 
-	async createWithDb(db: TenantDb, tenantId: string, input: TransactionCreate) {
+	async createWithDb(
+		db: TenantDb,
+		tenantId: string,
+		input: TransactionCreate,
+		actor: AuditActor
+	) {
 		await this.assertTypedContact(db, input.case_contact_id, HASTA_TYPE, 'case_contact_id');
 		await this.assertTypedContact(
 			db,
@@ -110,10 +116,26 @@ export class TransactionsService {
 				description: input.description ?? null
 			})
 			.returning();
+
+		await writeAuditLog(
+			db,
+			tenantId,
+			actor,
+			'create',
+			'transaction',
+			deriveTransactionAuditLabel(row!)
+		);
+
 		return toTransaction(row!);
 	}
 
-	async updateWithDb(db: TenantDb, tenantId: string, id: string, input: TransactionUpdate) {
+	async updateWithDb(
+		db: TenantDb,
+		tenantId: string,
+		id: string,
+		input: TransactionUpdate,
+		actor: AuditActor
+	) {
 		const existing = await this.findActiveRow(db, id);
 		if (!existing) {
 			throw new NotFoundException({
@@ -192,6 +214,15 @@ export class TransactionsService {
 			})
 			.where(eq(transactions.id, id))
 			.returning();
+
+		await writeAuditLog(
+			db,
+			tenantId,
+			actor,
+			'update',
+			'transaction',
+			deriveTransactionAuditLabel(row!)
+		);
 
 		return toTransaction(row!);
 	}
@@ -345,4 +376,22 @@ export class TransactionsService {
 
 		return { contactDisplayName, contactLabel, amountBase, baseCurrency };
 	}
+}
+
+function deriveTransactionAuditLabel(row: {
+	title: string | null;
+	subtitle: string | null;
+	category: string | null;
+	contactDisplayName: string | null;
+	contactLabel: string | null;
+	description: string | null;
+}): string {
+	return deriveTransactionLabel({
+		title: row.title,
+		subtitle: row.subtitle,
+		category: row.category,
+		contact_display_name: row.contactDisplayName,
+		contact_label: row.contactLabel,
+		description: row.description
+	});
 }

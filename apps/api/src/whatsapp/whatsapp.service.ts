@@ -14,6 +14,7 @@ import { buildCursorPage, createdAtCursorCondition } from '../common/list-query'
 import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
 import { buildKnowledgeContext } from '@verimaya/shared';
+import { type AuditActor } from '../common/audit-helper';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
@@ -214,7 +215,7 @@ export class WhatsappService {
 		tenantId: string,
 		inboxId: string,
 		input: ApproveDraftsRequest,
-		createdBy: string | null
+		actor: AuditActor
 	): Promise<ApproveDraftsResponse> {
 		await this.findRow(db, inboxId);
 
@@ -241,7 +242,7 @@ export class WhatsappService {
 				fx_rate: draft.fx_rate,
 				fx_dated: draft.occurred_on,
 				description: draft.description ?? null
-			});
+			}, actor);
 			created.push(tx);
 		}
 
@@ -257,7 +258,7 @@ export class WhatsappService {
 						inboundMessageId: inboxId,
 						originalParsed: input.original_parsed,
 						corrected,
-						createdBy
+						createdBy: actor.actorId
 					})
 					.returning({ id: aiCorrections.id });
 				correctionId = row?.id ?? null;

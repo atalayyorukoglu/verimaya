@@ -12,6 +12,8 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
+const testActor = { actorId: null, actorDisplayName: 'Case Responsible Test' };
+
 async function withTenantSession<T>(
 	tenantId: string,
 	fn: (tdb: TenantDb) => Promise<T>
@@ -122,7 +124,7 @@ describe('transactions case_contact_id / responsible_contact_id type guards', ()
 					...baseInput,
 					case_contact_id: klinikId,
 					responsible_contact_id: null
-				})
+				}, testActor)
 			)
 		).rejects.toBeInstanceOf(BadRequestException);
 	});
@@ -133,7 +135,7 @@ describe('transactions case_contact_id / responsible_contact_id type guards', ()
 				...baseInput,
 				case_contact_id: hastaId,
 				responsible_contact_id: null
-			})
+			}, testActor)
 		);
 		expect(created.case_contact_id).toBe(hastaId);
 	});
@@ -145,7 +147,7 @@ describe('transactions case_contact_id / responsible_contact_id type guards', ()
 					...baseInput,
 					case_contact_id: null,
 					responsible_contact_id: hastaId
-				})
+				}, testActor)
 			)
 		).rejects.toBeInstanceOf(BadRequestException);
 	});
@@ -156,7 +158,7 @@ describe('transactions case_contact_id / responsible_contact_id type guards', ()
 				...baseInput,
 				case_contact_id: null,
 				responsible_contact_id: personelId
-			})
+			}, testActor)
 		);
 		expect(created.responsible_contact_id).toBe(personelId);
 	});
