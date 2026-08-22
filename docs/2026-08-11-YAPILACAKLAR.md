@@ -350,7 +350,7 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 |---|---|---|---|
 | **AI-01** | Bilgi tabanı v1 | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-02** | Kayıt güncelleme onay kuyruğu | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-03** | İsabet ölçümü — **yalnız ölçüm**; otomatik prompt beslemesi kapsam dışı (aşağı bkz.) | AI-01, AI-02, ✅ AI-09 | S |
+| **AI-03** | İsabet ölçümü | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
@@ -430,7 +430,7 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > Rillet'in ABD ekosistemine ait (Stripe/Plaid/açık bankacılık); burada karşılığı yok ve
 > "Bilinçli olarak yapılmayacaklar"da. İlk demoda çöker.
 
-**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → ~~AI-11a~~ ✅ → ~~AI-09~~ ✅ → AI-03 → AI-11b (≥22 Eyl).** (AI-10 paralel, kod işi değil.)
+**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → ~~AI-11a~~ ✅ → ~~AI-09~~ ✅ → ~~AI-03~~ ✅ → AI-11b (≥22 Eyl).** (AI-10 paralel, kod işi değil.)
 
 > **AI-03 kapsam daraltması (2026-08-22 kararı).** Kalemin özgün metni *"sık red desenleri
 > prompt'a girer"* diyordu. **Bu yarısı kapsam dışı bırakıldı.** Gerekçe ikisi de ürünün kendi
@@ -565,6 +565,19 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- [x] **AI-03 — İsabet ölçümü (2026-08-22).** 3 commit. `GET /v1/reports/ai-accuracy`
+  (`finance:read`) + Raporlar altında sayfa. Üç kaynak: `ai_corrections` (hangi alan hangi
+  AI-09 güven seviyesinde düzeltiliyor), `record_update_suggestions` (kabul oranı + red
+  gerekçeleri), `maya_questions` (cevaplanma oranı + cevaplanamayan soru örnekleri).
+  Kapsam daraltması uygulandı: otomatik prompt beslemesi YOK; cevaplanamayan sorular
+  "bilgi bankana ekle / AI notunu düzenle" yönlendirmesi olarak gösteriliyor.
+  **Görüş:** Sonnet yazdı. **Yan bulgu — gerçek bug düzeltildi:** `AiCorrectionsReport`
+  SQL'i `patient_id`/`patient_display_name` arıyordu, oysa DOMAIN-02'de alanlar
+  `contact_id`/`contact_display_name` olmuştu — o iki alanın düzeltmesi rapora **hiç
+  girmiyordu**. Sessiz veri kaybıydı, AI-03 olmasa görülmezdi.
+  **Not:** ajan "4 test dosyası önceden kırıktı" diye raporladı; kendi koşumda **806/806
+  api + 180 shared + 86 web yeşil**. Geçici DB çakışmasıymış, kalıcı sorun yok.
 
 - [x] **AI-09 — Kaynak izi / `evidence` (2026-08-22).** 3 commit.
   Taslak alan bazında `{quote, start, confidence}` taşıyor; onaylanan `transactions` satırı
