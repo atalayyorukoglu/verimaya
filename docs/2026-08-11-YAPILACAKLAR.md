@@ -64,6 +64,25 @@
 
 ## Öncelik sırası
 
+### 0. OPS-03 — AI temeli dalının prod'a çıkışı (kullanıcı yürütür)
+
+`feat/audit-04-transaction-audit-log` dalı prod'a giderken **iki migration** koşacak:
+
+- `0061_maya_questions.sql` — Maya soru kaydı. İçinde `REVOKE UPDATE ON TABLE maya_questions
+  FROM verimaya_app` satırı var; **atlanırsa** `0003_app_role.sql`'deki `ALTER DEFAULT
+  PRIVILEGES` yüzünden denetim kaydı güncellenebilir kalır. Migration sonrası doğrula:
+  ```sql
+  select privilege_type from information_schema.role_table_grants
+   where table_name='maya_questions' and grantee='verimaya_app';
+  -- beklenen: SELECT, INSERT, DELETE (UPDATE YOK)
+  ```
+- `0062_transaction_source_evidence.sql` — `transactions`'a iki kolon + FK + index. Mevcut
+  tabloya kolon; RLS/policy'ye dokunmuyor. Geri alınabilir (kolon drop).
+
+Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı (2026-08-22).
+
+---
+
 ### 1. PILOT-01 kapanış — prod smoke + artıklar
 
 > Migration 0028–0038 prod'da. Kalan: insan gözüyle ekran kanıtı.
@@ -284,6 +303,14 @@
   notlar saklama süresince kalsın ama erişimi kısıtlansın.
   **Dosyalar:** `apps/api/src/contacts/contact-data-subject.service.ts`. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker 0 satır). **(L)**
+- **GAP-F09-24 — `openapi.yaml`'da `evidence` bloğu yanlış `required` yazıyor (AI-09 artığı,
+  2026-08-22).** `zod-to-json-schema`, enum anahtarlı `z.record`'u eksiksiz nesne sanıp yedi
+  alanın tamamını zorunlu gösteriyor. **Runtime doğru** — hiçbir anahtar zorunlu değil; kusur
+  yalnız üretilen dokümanda. Şemayı `z.object().partial()`'a çevirmek düzeltirdi ama
+  `z.record`'un gerekçesini (AI-07'de beyaz liste migration'sız büyüsün) zayıflatır.
+  **Karar: şimdilik böyle kalsın**, şemanın üstünde yorum var. **Tetikleyici:** OpenAPI'den
+  istemci üreten bir dış tüketici çıkarsa ya da AI-07 beyaz listeyi genişletirse yeniden
+  değerlendirilir — AI-07 zaten şemaya dokunacak, doğal birleşme noktası orası. **(S)**
 
 ---
 
