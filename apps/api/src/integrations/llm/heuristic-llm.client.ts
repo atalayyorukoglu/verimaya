@@ -12,8 +12,24 @@ import type {
 	MayaAskContext,
 	MayaAskResult,
 	MayaToolSelectionContext,
-	MayaToolSelectionResult
+	MayaToolSelectionResult,
+	LlmUsageLedger
 } from './llm.types';
+
+/** LLM'siz Maya cevabı için sabit ledger satırı (maliyet yok, yol `heuristic`). */
+function mayaAnswerUsage(): LlmUsageLedger {
+	return {
+		provider: 'heuristic',
+		model: 'heuristic-maya-answer',
+		requestedModel: null,
+		promptTokens: 0,
+		completionTokens: 0,
+		totalTokens: 0,
+		estimatedCostUsdMicros: 0,
+		path: 'heuristic',
+		error: null
+	};
+}
 
 /** Deterministic regex/heuristic parser used when no LLM_API_KEY is set. */
 @Injectable()
@@ -63,13 +79,17 @@ export class HeuristicLlmClient implements LlmClient {
 	 * kurulumda "akıllı" görünmektense dürüst görünmek yeğdir.
 	 */
 	async answerFromKnowledge(ctx: MayaAskContext): Promise<MayaAskResult> {
-		if (!ctx.knowledge) return { answer: MAYA_UNKNOWN_TOKEN, heuristic: true };
+		if (!ctx.knowledge) {
+			return { answer: MAYA_UNKNOWN_TOKEN, heuristic: true, usage: mayaAnswerUsage() };
+		}
 
 		const words = ctx.question
 			.toLocaleLowerCase('tr')
 			.split(/[^\p{L}\p{N}]+/u)
 			.filter((w) => w.length >= 4);
-		if (words.length === 0) return { answer: MAYA_UNKNOWN_TOKEN, heuristic: true };
+		if (words.length === 0) {
+			return { answer: MAYA_UNKNOWN_TOKEN, heuristic: true, usage: mayaAnswerUsage() };
+		}
 
 		const lines = ctx.knowledge.split('\n').filter((l) => l.trim().length > 0);
 		const hits = lines.filter((line) => {
@@ -77,8 +97,14 @@ export class HeuristicLlmClient implements LlmClient {
 			return words.some((w) => lower.includes(w));
 		});
 
-		if (hits.length === 0) return { answer: MAYA_UNKNOWN_TOKEN, heuristic: true };
-		return { answer: hits.slice(0, 4).join('\n'), heuristic: true };
+		if (hits.length === 0) {
+			return { answer: MAYA_UNKNOWN_TOKEN, heuristic: true, usage: mayaAnswerUsage() };
+		}
+		return {
+			answer: hits.slice(0, 4).join('\n'),
+			heuristic: true,
+			usage: mayaAnswerUsage()
+		};
 	}
 
 	/**

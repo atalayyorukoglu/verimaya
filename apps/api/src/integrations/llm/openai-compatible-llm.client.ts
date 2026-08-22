@@ -297,7 +297,23 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 	 * "bilmiyorum" demek doğrudur; kullanıcı yanlış bilgiye güvenmemeli.
 	 */
 	async answerFromKnowledge(ctx: MayaAskContext): Promise<MayaAskResult> {
-		if (!ctx.knowledge) return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
+		const failed = (error: string | null): MayaAskResult => ({
+			answer: MAYA_UNKNOWN_TOKEN,
+			heuristic: false,
+			usage: {
+				provider: providerLabel(this.config.baseUrl),
+				model: null,
+				requestedModel: this.config.model,
+				promptTokens: null,
+				completionTokens: null,
+				totalTokens: null,
+				estimatedCostUsdMicros: null,
+				path: 'openai_compatible_fallback',
+				error
+			}
+		});
+
+		if (!ctx.knowledge) return failed('empty_knowledge');
 
 		const base = this.config.baseUrl.replace(/\/$/, '');
 		const system = `${buildMayaSystemPrompt()}\n\n${frameKnowledgeContext(ctx.knowledge)}`;
@@ -323,20 +339,43 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 			if (!response.ok) {
 				// Gövde loglanmaz (AUDIT-03) — sağlayıcılar isteği geri yansıtabiliyor.
 				this.logger.warn(`Maya LLM HTTP ${response.status}`);
-				return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
+				return failed(`http_${response.status}`);
 			}
 
 			const json = (await response.json()) as ChatCompletionResponse;
 			const content = json.choices?.[0]?.message?.content;
 			if (!content || typeof content !== 'string') {
-				return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
+				return failed('missing_content');
 			}
-			return { answer: content.trim(), heuristic: false };
+
+			const promptTokens = json.usage?.prompt_tokens ?? null;
+			const completionTokens = json.usage?.completion_tokens ?? null;
+			return {
+				answer: content.trim(),
+				heuristic: false,
+				usage: {
+					provider: providerLabel(this.config.baseUrl),
+					model:
+						typeof json.model === 'string' && json.model.trim()
+							? json.model.trim()
+							: this.config.model,
+					requestedModel: this.config.model,
+					promptTokens,
+					completionTokens,
+					totalTokens:
+						json.usage?.total_tokens ??
+						(promptTokens != null && completionTokens != null
+							? promptTokens + completionTokens
+							: null),
+					estimatedCostUsdMicros: estimateCostUsdMicros(promptTokens, completionTokens),
+					path: 'openai_compatible',
+					error: null
+				}
+			};
 		} catch (err) {
-			this.logger.warn(
-				`Maya LLM call failed: ${err instanceof Error ? err.message : String(err)}`
-			);
-			return { answer: MAYA_UNKNOWN_TOKEN, heuristic: false };
+			const message = err instanceof Error ? err.message : String(err);
+			this.logger.warn(`Maya LLM call failed: ${message}`);
+			return failed(message);
 		}
 	}
 

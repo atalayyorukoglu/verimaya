@@ -82,6 +82,8 @@ export type MayaAskResult = {
 	/** Ham cevap; `MAYA_UNKNOWN_TOKEN` ise çağıran taraf "bilmiyorum"a çevirir. */
 	answer: string;
 	heuristic: boolean;
+	/** AI-11a: bilgi bankası çağrısı da `llm.parse` ledger'ına satır yazar. */
+	usage: LlmUsageLedger;
 };
 
 /**

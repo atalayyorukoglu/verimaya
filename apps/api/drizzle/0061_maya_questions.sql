@@ -16,7 +16,10 @@ CREATE TABLE "maya_questions" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "maya_questions_source_check" CHECK ("source" IN ('knowledge', 'tool', 'unknown')),
 	CONSTRAINT "maya_questions_tool_check" CHECK ("tool" IS NULL OR "tool" IN ('contactBalance', 'openBalances', 'contactAppointments', 'periodSummary', 'untouchedContacts')),
-	CONSTRAINT "maya_questions_tool_source_check" CHECK (("source" = 'tool') = ("tool" IS NOT NULL)),
+	-- Cevaplanmış araç yolunda araç adı zorunlu. Tersi serbest bırakıldı bilinçli:
+	-- izin reddi yüzünden çalışmayan araç da AI-11b için değerli bir kayıt
+	-- (`source='unknown'`, `tool='contactBalance'`, `answered=false`).
+	CONSTRAINT "maya_questions_tool_source_check" CHECK ("source" <> 'tool' OR "tool" IS NOT NULL),
 	CONSTRAINT "maya_questions_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE restrict
 );
 --> statement-breakpoint
