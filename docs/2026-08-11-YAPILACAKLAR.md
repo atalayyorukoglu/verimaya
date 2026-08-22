@@ -350,7 +350,7 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 |---|---|---|---|
 | **AI-01** | Bilgi tabanı v1 | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-02** | Kayıt güncelleme onay kuyruğu | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02, **AI-09** | S |
+| **AI-03** | İsabet ölçümü — **yalnız ölçüm**; otomatik prompt beslemesi kapsam dışı (aşağı bkz.) | AI-01, AI-02, ✅ AI-09 | S |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
@@ -430,7 +430,20 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > Rillet'in ABD ekosistemine ait (Stripe/Plaid/açık bankacılık); burada karşılığı yok ve
 > "Bilinçli olarak yapılmayacaklar"da. İlk demoda çöker.
 
-**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → ~~AI-11a~~ ✅ → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
+**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → ~~AI-11a~~ ✅ → ~~AI-09~~ ✅ → AI-03 → AI-11b (≥22 Eyl).** (AI-10 paralel, kod işi değil.)
+
+> **AI-03 kapsam daraltması (2026-08-22 kararı).** Kalemin özgün metni *"sık red desenleri
+> prompt'a girer"* diyordu. **Bu yarısı kapsam dışı bırakıldı.** Gerekçe ikisi de ürünün kendi
+> disiplininden çıkıyor:
+> 1. **Kendini yazan prompt, insan kapısı olmayan tek yüzey olurdu.** Her yerde kural "onaysız
+>    hiçbir şey kayda geçmez" (Madde 6.2). Sistem prompt'unun red verisinden sessizce yeniden
+>    yazılması bu kuralın istisnası olur — üstelik en görünmez yerde.
+> 2. **Enjeksiyon yüzeyi.** Sürekli reddedilen mesaj deseni, prompt'u şekillendirmenin yolu
+>    hâline gelir. Mesajları dışarıdan gelen bir sistemde kabul edilemez.
+>
+> **Yerine:** AI-03 ölçer ve öneriyi **kullanıcıya gösterir**; tenant isterse kendi AI notunu
+> (G-26 · `settings` → AI prompt notu, max 2000 karakter) **elle** düzenler. Yüzey de insan
+> kapısı da zaten var. Otomatik besleme istenirse ayrı kalem + ayrı sözleşme kontrolü.
 
 > **AI-11a neden AI-09'dan önce (2026-08-22 kararı).** AI-11b'nin ("akla gelen her soru")
 > tasarlanabilmesi için **gerçek soru listesi** gerekiyor ve o listenin bekleme süresi var —
