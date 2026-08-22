@@ -1,5 +1,11 @@
-import type { Contact, SupportedCurrency, TransactionDraft } from '@verimaya/shared';
+import type {
+	Contact,
+	SupportedCurrency,
+	TransactionDraft,
+	TransactionEvidence
+} from '@verimaya/shared';
 import { toTenantDayKey } from '@verimaya/shared';
+import { evidenceEntry } from './evidence';
 
 const CURRENCY_PATTERN = /\b(\d[\d.,]*)\s*(TRY|GBP|EUR|USD|₺|£|€|\$)\b/gi;
 const INCOME_HINTS = /alındı|tahsilat|ödeme alındı|received|deposit|gelir/i;
@@ -24,10 +30,53 @@ function today(): string {
 	return toTenantDayKey(new Date(), 'Europe/Istanbul');
 }
 
-function guessKind(text: string): 'income' | 'expense' {
-	if (EXPENSE_HINTS.test(text)) return 'expense';
-	if (INCOME_HINTS.test(text)) return 'income';
-	return 'expense';
+/**
+ * AI-09: `kind` hem değeri hem izini döndürür. Regex zaten eşleşmenin ofsetini
+ * biliyor — iz burada bedava ve LLM'den güvenilir (uydurulamaz).
+ * Hiçbir ipucu yoksa `expense` **varsayılandır**, okunmuş değildir: quote boş, low.
+ */
+function guessKind(text: string): { kind: 'income' | 'expense'; hint: RegExpMatchArray | null } {
+	const expense = text.match(EXPENSE_HINTS);
+	if (expense) return { kind: 'expense', hint: expense };
+	const income = text.match(INCOME_HINTS);
+	if (income) return { kind: 'income', hint: income };
+	return { kind: 'expense', hint: null };
+}
+
+const PAYMENT_METHOD_HINTS: ReadonlyArray<{ re: RegExp; value: string }> = [
+	{ re: /kart|card/i, value: 'Kart' },
+	{ re: /havale|transfer/i, value: 'Havale' }
+];
+
+function guessPaymentMethod(text: string): { value: string | null; hint: RegExpMatchArray | null } {
+	for (const { re, value } of PAYMENT_METHOD_HINTS) {
+		const m = text.match(re);
+		if (m) return { value, hint: m };
+	}
+	return { value: null, hint: null };
+}
+
+/** Regex eşleşmesinden iz; `index` her zaman vardır ama tip düzeyinde opsiyonel. */
+function hintEvidence(
+	hint: RegExpMatchArray | null,
+	confidence: 'high' | 'medium'
+): ReturnType<typeof evidenceEntry> {
+	if (!hint || hint.index == null) return evidenceEntry('', null, 'low');
+	return evidenceEntry(hint[0], hint.index, confidence);
+}
+
+/** Okunmadan varsayılan atanan alan — dürüst sinyal: iz yok, güven düşük. */
+const INFERRED = () => evidenceEntry('', null, 'low');
+
+function contactEvidence(text: string, contact: Contact | null): ReturnType<typeof evidenceEntry> {
+	const name = contact?.display_name?.trim() ?? '';
+	if (!name) return INFERRED();
+	const idx = text.toLowerCase().indexOf(name.toLowerCase());
+	if (idx === -1) {
+		// Eşleşme ad parçası üzerinden olmuştu; tam ad metinde geçmiyor.
+		return evidenceEntry(name, null, 'low');
+	}
+	return evidenceEntry(text.slice(idx, idx + name.length), idx, 'medium');
 }
 
 function guessTitle(text: string, amount: number, currency: string): string {
@@ -75,8 +124,17 @@ export function heuristicParseWhatsappMessage(
 		const fallback = text.match(/(\d[\d.,]+)/);
 		if (!fallback) return [];
 		const amount = Math.round(parseAmount(fallback[1]) * 100);
-		const kind = guessKind(text);
+		const { kind, hint: kindHint } = guessKind(text);
 		const contact = matchContact(text, contacts);
+		const evidence: TransactionEvidence = {
+			amount: evidenceEntry(fallback[1], fallback.index ?? null, 'high'),
+			// Para birimi metinde yok — TRY varsayıldı.
+			currency: INFERRED(),
+			kind: hintEvidence(kindHint, 'medium'),
+			occurred_on: INFERRED(),
+			category: INFERRED()
+		};
+		if (contact) evidence.contact_id = contactEvidence(text, contact);
 		return [
 			{
 				kind,
@@ -89,19 +147,36 @@ export function heuristicParseWhatsappMessage(
 				contact_label: null,
 				occurred_on: today(),
 				payment_method: null,
-				description: text
+				description: text,
+				evidence
 			}
 		];
 	}
 
 	const records: TransactionDraft[] = [];
-	const kind = guessKind(text);
+	const { kind, hint: kindHint } = guessKind(text);
 	const contact = matchContact(text, contacts);
+	const payment = guessPaymentMethod(text);
 
 	for (const m of matches) {
 		const major = parseAmount(m[1]);
 		if (major <= 0) continue;
 		const currency = normalizeCurrency(m[2]);
+		// `m.index` tam eşleşmenin başı ("2900 GBP"); tutar grubu orada başlar,
+		// para birimi tokeni ise eşleşmenin sonundadır.
+		const matchStart = m.index ?? null;
+		const currencyStart = matchStart == null ? null : matchStart + m[0].lastIndexOf(m[2]);
+		const evidence: TransactionEvidence = {
+			amount: evidenceEntry(m[1], matchStart, 'high'),
+			currency: evidenceEntry(m[2], currencyStart, 'high'),
+			kind: hintEvidence(kindHint, 'medium'),
+			// Tarih mesajdan okunmuyor; bugüne düşülüyor.
+			occurred_on: INFERRED(),
+			category: INFERRED()
+		};
+		if (contact) evidence.contact_id = contactEvidence(text, contact);
+		if (payment.value) evidence.payment_method = hintEvidence(payment.hint, 'medium');
+
 		records.push({
 			kind,
 			amount: Math.round(major * 100),
@@ -113,12 +188,9 @@ export function heuristicParseWhatsappMessage(
 			contact_display_name: contact?.display_name ?? null,
 			contact_label: extractContactLabel(text),
 			occurred_on: today(),
-			payment_method: /kart|card/i.test(text)
-				? 'Kart'
-				: /havale|transfer/i.test(text)
-					? 'Havale'
-					: null,
-			description: text
+			payment_method: payment.value,
+			description: text,
+			evidence
 		});
 	}
 	return records;

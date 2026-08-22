@@ -205,7 +205,7 @@ describe('GAP-06 soft-delete isolation', () => {
 				status: 'paid',
 				amount: 2500,
 				contact_id: patientId
-			});
+			}, actor);
 			txnId = txn.id;});
 
 		await withTenantSession(tenantId, async (tdb) => {
@@ -328,7 +328,7 @@ describe('GAP-06 soft-delete isolation', () => {
 				amount: 4000,
 				contact_id: contactId,
 				contact_label: label
-			});
+			}, actor);
 			txnId = txn.id;});
 
 		const before = await reportsService.balances(tenantId);

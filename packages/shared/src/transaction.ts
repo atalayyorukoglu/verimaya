@@ -52,6 +52,59 @@ export function resolveCollectedAmount(input: {
 export const invoiceStatusSchema = z.enum(['none', 'issued', 'not_issued']);
 export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
 
+/**
+ * AI-09 — kaynak izi beyaz listesi: modelin/heuristiğin atıf verebileceği alanlar.
+ * Para dışı serbest metin (title, description) bilinçli olarak dışarıda: oradaki
+ * "alıntı" mesajın kendisi olur, iz taşımaz.
+ */
+export const transactionEvidenceFieldSchema = z.enum([
+	'amount',
+	'currency',
+	'kind',
+	'occurred_on',
+	'contact_id',
+	'payment_method',
+	'category'
+]);
+
+export type TransactionEvidenceField = z.infer<typeof transactionEvidenceFieldSchema>;
+
+/**
+ * Tek alanın kaynak izi.
+ *
+ * `quote` + `start` **birlikte** taşınır ve rolleri farklıdır:
+ * - `quote` her zaman gösterilebilir; sunucu bunu modele gönderilen metinde
+ *   gerçekten geçtiğine bakarak doğrular (uydurma atıf düşürülür).
+ * - `start` ham mesajdaki karakter ofsetidir ve **yalnız vurgulama** içindir.
+ *   PII maskeleme (`[TELEFON]`, `[HASTA]`) ofseti kaydırdığı için alıntı ham
+ *   metinde yeniden bulunamayabilir; o durumda `null` olur, quote yine kalır.
+ */
+export const transactionEvidenceEntrySchema = z.object({
+	quote: z.string().max(200),
+	start: z.number().int().nonnegative().nullable(),
+	confidence: z.enum(['high', 'medium', 'low'])
+});
+
+export type TransactionEvidenceEntry = z.infer<typeof transactionEvidenceEntrySchema>;
+
+/**
+ * `z.record` bilinçli: beyaz liste genişlediğinde (AI-07) jsonb kolonu ve
+ * migration değişmez, yalnız enum büyür. Her alan bağımsız olarak bulunabilir
+ * ya da bulunmayabilir — zod runtime'ı hiçbir anahtarı zorunlu tutmaz.
+ *
+ * ⚠️ `openapi.yaml` içinde bu blok `required: [amount, currency, …]` ile çıkıyor:
+ * `zod-to-json-schema`, enum anahtarlı `ZodRecord`'u eksiksiz nesne sanıyor ve
+ * ayarla kapatılamıyor. Runtime davranışı doğru (kısmi), yalnız üretilen doküman
+ * fazla katı; şemayı `z.object().partial()`'a çevirmek beyaz liste genişletmesini
+ * gereksiz yere zorlaştıracağı için bilinçli olarak kabul edildi.
+ */
+export const transactionEvidenceSchema = z.record(
+	transactionEvidenceFieldSchema,
+	transactionEvidenceEntrySchema
+);
+
+export type TransactionEvidence = z.infer<typeof transactionEvidenceSchema>;
+
 export const transactionSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
@@ -96,6 +149,13 @@ export const transactionSchema = z.object({
 	 */
 	responsible_contact_id: uuid.nullable().default(null),
 	description: z.string().max(8000).nullable(),
+	/**
+	 * AI-09 — satırın çıktığı WhatsApp mesajı (varsa). **Salt okunur:**
+	 * `transactionCreateSchema` bu alanı dışarıda bırakır, yalnız onay akışı doldurur.
+	 */
+	source_inbound_message_id: uuid.nullable().default(null),
+	/** AI-09 — alan başına doğrulanmış kaynak izi. **Salt okunur** (yukarıdaki gibi). */
+	source_evidence: transactionEvidenceSchema.nullable().default(null),
 	created_at: isoDateTime,
 	updated_at: isoDateTime
 });
@@ -133,10 +193,18 @@ export function deriveTransactionLabel(input: {
 	return '—';
 }
 
+/**
+ * `source_inbound_message_id` / `source_evidence` burada **bilinçli olarak yok**:
+ * kaynak izi yalnız sunucunun onay akışında yazılır. Şemada bulunmadıkları için
+ * zod istek gövdesindeki değerleri sessizce düşürür — `POST /v1/transactions`
+ * ile uydurma bir iz yazılamaz (bkz. `transactions.source-evidence.isolation.spec.ts`).
+ */
 export const transactionCreateSchema = transactionSchema.omit({
 	id: true,
 	tenant_id: true,
 	contact_display_name: true,
+	source_inbound_message_id: true,
+	source_evidence: true,
 	created_at: true,
 	updated_at: true
 });

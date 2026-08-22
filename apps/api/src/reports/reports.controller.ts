@@ -6,6 +6,7 @@ import {
 	UseGuards
 } from '@nestjs/common';
 import {
+	aiAccuracyReportParamsSchema,
 	marketingReportParams,
 	reportByCategoryDetailParams,
 	reportCohortsParams,
@@ -20,6 +21,7 @@ import { parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { CommissionsService } from '../commissions/commissions.service';
+import { AiAccuracyReportService } from './ai-accuracy-report.service';
 import { ReportsService } from './reports.service';
 
 @Controller('reports')
@@ -27,7 +29,8 @@ import { ReportsService } from './reports.service';
 export class ReportsController {
 	constructor(
 		private readonly reportsService: ReportsService,
-		private readonly commissionsService: CommissionsService
+		private readonly commissionsService: CommissionsService,
+		private readonly aiAccuracyReportService: AiAccuracyReportService
 	) {}
 
 	@Get('summary')
@@ -173,5 +176,20 @@ export class ReportsController {
 	cohorts(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
 		const params = parseQuery(reportCohortsParams, query, req);
 		return this.reportsService.cohorts(getActiveOrgId(req), params);
+	}
+
+	/**
+	 * AI-03 — isabet ölçümü. İzin `finance:read`: en ağırlıklı veri kaynağı
+	 * `ai_corrections` finans taslağı düzeltmeleri (WhatsApp onayında `amount`/
+	 * `category`/… diffi) ve rapor bu sayfadaki diğer her rapor gibi zaten
+	 * `finance:read` arkasında. Diğer iki kaynak (öneri kabul oranı, Maya soru
+	 * istatistiği) yalnız agregat sayı döner — ham hasta/kişi kaydı yok, daha dar
+	 * bir izne (`contact:read`) gerek yok. Yeni yetki açılmadı.
+	 */
+	@Get('ai-accuracy')
+	@RequireOrgPermission('finance', 'read')
+	aiAccuracy(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(aiAccuracyReportParamsSchema, query, req);
+		return this.aiAccuracyReportService.get(getActiveOrgId(req), params);
 	}
 }

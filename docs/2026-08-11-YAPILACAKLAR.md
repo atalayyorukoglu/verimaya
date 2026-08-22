@@ -64,6 +64,25 @@
 
 ## Öncelik sırası
 
+### 0. OPS-03 — AI temeli dalının prod'a çıkışı (kullanıcı yürütür)
+
+`feat/audit-04-transaction-audit-log` dalı prod'a giderken **iki migration** koşacak:
+
+- `0061_maya_questions.sql` — Maya soru kaydı. İçinde `REVOKE UPDATE ON TABLE maya_questions
+  FROM verimaya_app` satırı var; **atlanırsa** `0003_app_role.sql`'deki `ALTER DEFAULT
+  PRIVILEGES` yüzünden denetim kaydı güncellenebilir kalır. Migration sonrası doğrula:
+  ```sql
+  select privilege_type from information_schema.role_table_grants
+   where table_name='maya_questions' and grantee='verimaya_app';
+  -- beklenen: SELECT, INSERT, DELETE (UPDATE YOK)
+  ```
+- `0062_transaction_source_evidence.sql` — `transactions`'a iki kolon + FK + index. Mevcut
+  tabloya kolon; RLS/policy'ye dokunmuyor. Geri alınabilir (kolon drop).
+
+Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı (2026-08-22).
+
+---
+
 ### 1. PILOT-01 kapanış — prod smoke + artıklar
 
 > Migration 0028–0038 prod'da. Kalan: insan gözüyle ekran kanıtı.
@@ -284,6 +303,14 @@
   notlar saklama süresince kalsın ama erişimi kısıtlansın.
   **Dosyalar:** `apps/api/src/contacts/contact-data-subject.service.ts`. **(M)**
 - **GAP-F09-20** Randevu checklist şablonları — skip adayı (Tracker 0 satır). **(L)**
+- **GAP-F09-24 — `openapi.yaml`'da `evidence` bloğu yanlış `required` yazıyor (AI-09 artığı,
+  2026-08-22).** `zod-to-json-schema`, enum anahtarlı `z.record`'u eksiksiz nesne sanıp yedi
+  alanın tamamını zorunlu gösteriyor. **Runtime doğru** — hiçbir anahtar zorunlu değil; kusur
+  yalnız üretilen dokümanda. Şemayı `z.object().partial()`'a çevirmek düzeltirdi ama
+  `z.record`'un gerekçesini (AI-07'de beyaz liste migration'sız büyüsün) zayıflatır.
+  **Karar: şimdilik böyle kalsın**, şemanın üstünde yorum var. **Tetikleyici:** OpenAPI'den
+  istemci üreten bir dış tüketici çıkarsa ya da AI-07 beyaz listeyi genişletirse yeniden
+  değerlendirilir — AI-07 zaten şemaya dokunacak, doğal birleşme noktası orası. **(S)**
 
 ---
 
@@ -306,7 +333,7 @@
 
 ---
 
-## AI katmanı (AI-01…AI-07) — sıra serbest (pilot ertelendi)
+## AI katmanı (AI-01…AI-11b) — sıra serbest (pilot ertelendi)
 
 > Karar metni, gerekçe ve 13 firmalık rakip AI taraması: Obsidian
 > `03-Areas/VeriMaya/09-ai-katmani-yol-haritasi.md` (2026-08-15) + `02-yol-haritasi.md` § Eksen 1b.
@@ -323,11 +350,17 @@
 |---|---|---|---|
 | **AI-01** | Bilgi tabanı v1 | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-02** | Kayıt güncelleme onay kuyruğu | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
+| **AI-03** | İsabet ölçümü | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
+| **AUDIT-04** | `transactions` create/update denetim kaydı | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
+| **AI-08** | Randevu ajanını WhatsApp akışına gömme | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
+| **AI-09** | Kaynak izi (`evidence`) | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
+| **AI-10** | LLM veri politikası dokümanı — sağlayıcı, eğitim opt-out, saklama, yurtdışı aktarım | LEG-02 | S |
+| ~~**AI-11a**~~ ✅ | Maya canlı veri v1 — sabit araç listesi (5 araç) + **soru kaydı** | AUDIT-04 | M |
+| **AI-11b** | Maya canlı veri v2 — kısıtlı sorgu katmanı ("akla gelen her soru") | AI-11a soru kaydı | L |
 
 **Değişmez kurallar** (bozulursa "insan onaylı" savunması çöker): toplu kabul yok, her kart tek
 tek onaylanır · eşleşme belirsizse öneri **üretilmez** · para alanları, `deleted_at`, rol/izin
@@ -351,8 +384,12 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 >
 > Üçü de farklı veri kaynağı ve farklı kod gerektiriyor — asıl karar burada.
 
-**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
-(G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.
+~~**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
+(G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.~~
+**Düzeltildi (2026-08-22):** `ai_corrections` **besleniyor** — `WhatsappService.approveDraftsWithDb`
+onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `original_parsed` gönderiyor
+(`ai-transaction/+page.svelte`), `AiCorrectionsReport` endpoint'i de var. AI-03 planlanırken
+"sıfırdan iş" varsayımı geçersiz; veri birikmeye başlamış durumda.
 
 > **✅ AI-02 sözleşme kontrolü yapıldı (2026-08-17).**
 > Hizmet sözleşmesi **Madde 6.2**: *"Hiçbir öneri, Müşteri'nin yetkilendirdiği bir kullanıcı
@@ -365,6 +402,108 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > durumu) aynı kanıt her yeni alan için tekrarlanmalı — `field` CHECK'i bugün yalnız
 > `'starts_at'` kabul ediyor, kapıyı dar tutan şey o.
 > Sözleşme metni ve teknik eşleştirme: Obsidian `13-hukukcu-paketi.md` §8 (Madde 6) + §9 tablosu.
+
+---
+
+### AI temeli — "AI sonradan eklenmedi" iddiasının kod karşılığı (AUDIT-04, AI-08…AI-11b)
+
+> **Neden bu blok (2026-08-22, Rillet analizi).** Hedef, ana sayfada şu cümleyi **dürüstçe**
+> kurabilmek: *"AI sonradan eklenmedi, yazılımın temelinde. İş akışlarına gömülü uzmanlaşmış
+> ajanlar."* Cümlenin iki yarısı var ve bugünkü kod ikisini de yarım karşılıyor.
+>
+> **"Gömülü ajanlar" — bugün:** Finans ajanı **gerçekten gömülü** — WhatsApp webhook'u
+> `inbound_message.process` job'ı yazıyor (`webhooks.controller.ts`), worker parse ediyor,
+> kullanıcı gelen kutusunu açtığında taslak hazır bekliyor. Alarm motoru (AI-04) da olay
+> tetikli. **Ama randevu ajanı gömülü değil:** `POST /v1/record-suggestions/parse` yalnız
+> kullanıcı metni yapıştırınca çalışıyor. Aynı mesaj parayı görüyor, tarihi görmüyor. → **AI-08**
+>
+> **"Sonradan eklenmedi" — bugün:** `record_update_suggestions` (kaynak + güven + karar veren
+> tabloda), `ai_corrections`, `jobs`→`llm.parse` ledger'ı: hepsi AI düşünülerek tasarlanmış.
+> **Ama zincirin son halkası boş:** `transactions` satırı ne kaynağı, ne güveni, ne "kim yazdı"yı
+> taşıyor. Elle girilen satırla AI'dan gelen satır bayt bayt aynı. İddianın en kolay çürütüldüğü
+> nokta burası. → **AUDIT-04 + AI-09**
+>
+> **Ölçüt (tek soru):** *İşlem satırına bakıp "bunu AI mı yazdı, insan mı, nereden aldı,
+> kim onayladı" diyebiliyor muyuz?* Bugün hayır. Bu dört kalem bitince evet.
+>
+> **Cümleye sokulmayacak:** "elle veri girişi yok" / "her şey entegrasyonlardan akar".
+> Rillet'in ABD ekosistemine ait (Stripe/Plaid/açık bankacılık); burada karşılığı yok ve
+> "Bilinçli olarak yapılmayacaklar"da. İlk demoda çöker.
+
+**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → ~~AI-11a~~ ✅ → ~~AI-09~~ ✅ → ~~AI-03~~ ✅ → AI-11b (≥22 Eyl).** (AI-10 paralel, kod işi değil.)
+
+> **AI-03 kapsam daraltması (2026-08-22 kararı).** Kalemin özgün metni *"sık red desenleri
+> prompt'a girer"* diyordu. **Bu yarısı kapsam dışı bırakıldı.** Gerekçe ikisi de ürünün kendi
+> disiplininden çıkıyor:
+> 1. **Kendini yazan prompt, insan kapısı olmayan tek yüzey olurdu.** Her yerde kural "onaysız
+>    hiçbir şey kayda geçmez" (Madde 6.2). Sistem prompt'unun red verisinden sessizce yeniden
+>    yazılması bu kuralın istisnası olur — üstelik en görünmez yerde.
+> 2. **Enjeksiyon yüzeyi.** Sürekli reddedilen mesaj deseni, prompt'u şekillendirmenin yolu
+>    hâline gelir. Mesajları dışarıdan gelen bir sistemde kabul edilemez.
+>
+> **Yerine:** AI-03 ölçer ve öneriyi **kullanıcıya gösterir**; tenant isterse kendi AI notunu
+> (G-26 · `settings` → AI prompt notu, max 2000 karakter) **elle** düzenler. Yüzey de insan
+> kapısı da zaten var. Otomatik besleme istenirse ayrı kalem + ayrı sözleşme kontrolü.
+
+> **AI-11a neden AI-09'dan önce (2026-08-22 kararı).** AI-11b'nin ("akla gelen her soru")
+> tasarlanabilmesi için **gerçek soru listesi** gerekiyor ve o listenin bekleme süresi var —
+> insanlar bir ay soru sormadan hangi filtrelerin gerektiği bilinemez. AI-11a'yı öne almak
+> o sayacı erken başlatır. AUDIT-04 ve AI-08 zaten S; geciktirdiği süre birkaç gün.
+>
+> **Rillet farkı, atlanmasın:** Rillet'in ajan listesi (flux, accruals, reconciliation,
+> revenue recognition) muhasebe literatürünün hazır, sonlu kanonu — onlar listeyi yazmadı,
+> meslek yazdı. Sağlık turizmi acentesinin böyle bir kanonu **yok**. Bu yüzden Rillet'in
+> yaptığı birebir kopyalanamaz: onlar hazır listeyi kodladı, biz listeyi **önce çıkaracağız**.
+> AI-11a'nın soru kaydı, bizim eksik kanonumuzun yerine geçen şey. Kaynak: `info.rillet.com`
+> — iç mimarilerini yayınlamıyorlar, ama yaklaşımlarını "constrained / strict set of methods /
+> avoid inventing numbers" diye tanımlıyorlar; yani serbest SQL değil, kısıtlı metot listesi.
+
+- [ ] **AI-10 — LLM veri politikası dokümanı. (S)** — kod işi değil
+  Bugün hiçbir dokümanda "modeller müşteri verisiyle eğitilmiyor" taahhüdü **yok**
+  (`TEHDIT-MODELI.md` / `MIMARI.md` taraması boş). Satıcı UK (LEG-02), müşteri TR sağlık
+  turizmi → sağlık verisinin yurtdışına aktarımı zaten açık risk. İlk müşteri sözleşmesinde
+  sorulacak.
+  **Kabul:** `docs/TEHDIT-MODELI.md`'ye bölüm — sağlayıcı ve model (`LLM_MODEL` env),
+  eğitim opt-out durumu (sağlayıcı sözleşmesinden **kanıtla**, iddia değil), saklama süresi,
+  yurtdışı aktarım dayanağı, PII maskeleme sınırı (heuristic yol dışarı çıkmıyor — bu bir
+  güvence, yazılmalı) · `MIMARI.md` § Güvenlik çerçevesi'nden link.
+  **Karar notu:** **tenant başına model seçimi yapılmayacak** — `createLlmClientFromEnv` global
+  env kalır. 3 LLM yolunun her birini tenant başına test etme yükü, 5-15 kişilik müşterinin
+  sormadığı bir soruya ödenir. Doğru cevap sözleşmede yazmak.
+  **Ajan:** kullanıcı + Claude (sağlayıcı sözleşmesi okunacak; iddia uydurulamaz).
+  **Görüş:**
+
+> **Maya bugün nerede duruyor (AI-11a/b'nin çıkış noktası).** `MayaService.ask` →
+> `settings.getKnowledge()` → 5 bölüm (`services`, `payment`, `faq`, `rejection`, `notes`;
+> bölüm başına 4000 karakter). **DB'ye hiç erişimi yok**; banka boşsa LLM'e çağrı bile gitmiyor.
+> "Saç ekimi fiyatımız ne?" → cevaplar. "Yılmaz bey'in kalan borcu ne?" → `BILINMIYOR`.
+> **Karar (2026-08-22): ikinci soru tipi kapsama alınıyor** — hedef, içerideki kayıtlarla
+> ilgili soruları cevaplayan Maya. İki adımda, çünkü soru listesi henüz yok.
+>
+> **Değişmez desen (ikisinde de, pazarlığa kapalı):** DB satırları prompt'a **dökülmez** —
+> hem `pii-mask.ts` disiplinini çiğner hem modeli rakam uydurmaya davet eder. Model yalnız
+> **hangi sorgu + hangi parametre** olduğunu seçer; **rakamı Postgres verir, kod basar.**
+> Model rakamı ne görür ne üretir. AI-09 ile aynı ilke: *model işaret eder, sistem doğruyu söyler.*
+> **Her koşulda kapsam dışı:** serbest SQL · hasta listesi dökümü · tıbbi yorum · tahsilat taahhüdü.
+>
+> **Güncel (2026-08-22, AI-11a kapandı):** yukarıdaki "DB'ye hiç erişimi yok" cümlesi artık
+> geçerli değil — beş sabit araçla erişimi var. "Yılmaz bey'in kalan borcu ne?" cevaplanıyor;
+> izin araç başına çalışma anında kontrol ediliyor. Desen aynen uygulandı: DB satırı prompt'a
+> dökülmüyor, model yalnız `{tool, params}` seçiyor.
+
+- [ ] **AI-11b — Maya canlı veri v2: kısıtlı sorgu katmanı. (L)** — *listenin en büyük kalemi*
+  Model tablo + filtre + toplama seçer; serbest SQL **değil**: izinli tablolar
+  (`transactions`, `contacts`, `appointments`), izinli sütunlar, izinli toplamalar.
+  Örnek — 5 araçta olmayan ama bunun cevapladığı soru: *"Geçen ay Ada Klinik'e toplam ne
+  ödedik?"* → `transactions` · `contact=…, kind=expense, occurred_on ∈ [Tem]` · `sum(amount_base)`.
+  **Ön koşul:** AI-11a soru kaydında ≥1 ay gerçek soru. Desteklenecek filtreler o kayıttan
+  çıkar — önceden tasarlanmaz. **Sayaç 2026-08-22'de başladı** (`maya_questions`); bu iş
+  en erken 2026-09-22'de açılabilir.
+  **Kabul:** AI-11a'nın tüm kabul maddeleri aynen geçerli (izin, PII, `BILINMIYOR`, ledger) +
+  üretilen sorgu whitelist dışına çıkamaz (negatif test: yasak tablo/sütun reddedilir) +
+  sonuç satır sayısı üst sınırı.
+  **Ajan:** Opus.
+  **Görüş:**
 
 ---
 
@@ -426,6 +565,113 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- [x] **AI-03 — İsabet ölçümü (2026-08-22).** 3 commit. `GET /v1/reports/ai-accuracy`
+  (`finance:read`) + Raporlar altında sayfa. Üç kaynak: `ai_corrections` (hangi alan hangi
+  AI-09 güven seviyesinde düzeltiliyor), `record_update_suggestions` (kabul oranı + red
+  gerekçeleri), `maya_questions` (cevaplanma oranı + cevaplanamayan soru örnekleri).
+  Kapsam daraltması uygulandı: otomatik prompt beslemesi YOK; cevaplanamayan sorular
+  "bilgi bankana ekle / AI notunu düzenle" yönlendirmesi olarak gösteriliyor.
+  **Görüş:** Sonnet yazdı. **Yan bulgu — gerçek bug düzeltildi:** `AiCorrectionsReport`
+  SQL'i `patient_id`/`patient_display_name` arıyordu, oysa DOMAIN-02'de alanlar
+  `contact_id`/`contact_display_name` olmuştu — o iki alanın düzeltmesi rapora **hiç
+  girmiyordu**. Sessiz veri kaybıydı, AI-03 olmasa görülmezdi.
+  **Not:** ajan "4 test dosyası önceden kırıktı" diye raporladı; kendi koşumda **806/806
+  api + 180 shared + 86 web yeşil**. Geçici DB çakışmasıymış, kalıcı sorun yok.
+
+- [x] **AI-09 — Kaynak izi / `evidence` (2026-08-22).** 3 commit.
+  Taslak alan bazında `{quote, start, confidence}` taşıyor; onaylanan `transactions` satırı
+  `source_inbound_message_id` + `source_evidence` (migration `0062`). Kart ve işlem detayında
+  kaynak rozeti + mesajda vurgulama.
+  **Görüş:** Opus yazdı. **Uydurulmuş atıf koruması mutasyonla doğrulandı** — doğrulama
+  kapatılınca 3 test kırmızı. Atıf **maskeli metne** (modelin gördüğü) karşı doğrulanıyor;
+  doğru seçim, ham metne karşı doğrulamak `[TELEFON]` içeren dürüst alıntıyı uydurma sayardı.
+  Ofset ham metinde yeniden hesaplanıyor, modelin verdiği ofset asla doğrudan kullanılmıyor.
+  Alanlar API'den yazılamıyor (zod `omit` + controller argümanı hiç geçmiyor + `updateWithDb`
+  dokunmuyor + onayda izi payload'dan okuyor). Kullanıcı bir alanı düzeltirse o alanın izi
+  düşüyor — doğru karar, iz "AI şuradan aldı" demek. 800 api / 180 shared / 86 web yeşil.
+  **Açık kusur (bilinçli):** `zod-to-json-schema` enum anahtarlı `z.record`'u eksiksiz nesne
+  sanıp `openapi.yaml`'da `evidence` bloğuna yanlış `required` yazıyor. Runtime doğru.
+  Düzeltme `z.object().partial()`'a çevirmeyi gerektiriyor, o da AI-07 beyaz liste
+  genişletmesinde migration'sız büyüme gerekçesini zayıflatıyor. Doküman tüketen istemci
+  üretilecekse burası düzeltilmeli.
+
+- [x] **AI-11a — Maya canlı veri v1 (2026-08-22).** 7 commit.
+  Beş araç (`contactBalance`, `openBalances`, `contactAppointments`, `periodSummary`,
+  `untouchedContacts`) mevcut servisleri yeniden kullanıyor; soru kaydı `maya_questions`
+  (migration `0061`).
+  **Görüş:** Opus yazdı. **İzin kapısı mutasyonla doğrulandı** — delinince 3 test kırmızı.
+  İzin araç başına, çalışma anında (`MayaToolsService.isToolAllowed`); guard `settings:read`'te
+  bilinçli bırakıldı, ikisi ancak birlikte doğru. Model rakam üretemiyor: sözleşmede rakam
+  alanı yok, çıktıdan yalnız `{tool, params}` okunuyor, `params` `.strict()`; cümleyi web
+  şablonu kuruyor. **Bulgu:** `0003_app_role.sql` her yeni public tabloya `UPDATE` veriyor —
+  `GRANT SELECT, INSERT, DELETE` yetmiyor, açık `REVOKE UPDATE` gerekti. Canlı DB'de
+  doğrulandı. Bundan sonraki her "yazılır, güncellenmez" tabloda aynı tuzak.
+  **AI-11b ön koşulu bugün başladı:** `maya_questions` ≥1 ay soru toplayacak → en erken
+  **2026-09-22**.
+
+- [x] **AI-11a — Maya canlı veri v1: sabit araç listesi (2026-08-22).**
+  Maya artık kendi kayıtlarınızı da cevaplıyor. Beş araç, beşi de mevcut servisi yeniden
+  kullanıyor (yeni sorgu yazılmadı): `contactBalance` → `contacts.financeSummary()` ·
+  `openBalances` → `reports.balances()` · `contactAppointments` → `appointments.list()` ·
+  `periodSummary` → `reports.summary()` · `untouchedContacts` → `reports.untouchedContacts()`.
+  Sözleşme `packages/shared/src/maya-tools.ts`; soru kaydı `0061_maya_questions.sql`.
+  **Görüş:** Opus yazdı, doğrulamayı kendi koşturdu (774 API testi / 138 dosya, shared 180,
+  web 78, `pnpm check` temiz).
+
+  **İzin sınırı nereye kondu.** `POST /v1/maya/ask` hâlâ yalnız `settings:read` istiyor —
+  guard'ı `finance:read`'e yükseltmek yanlış olurdu, o zaman bilgi bankası sorusu soran
+  temsilci kapıda kalırdı. Doğru sınır **araç başına, çalışma anında**:
+  `MayaToolsService.isToolAllowed` guard'la birebir aynı zinciri koşuyor
+  (`resolveOrganizationRole` → `getDeniedKeys` → `hasOrgPermission`). İzin yoksa araç
+  **çalıştırılmıyor**, sorgu bile atılmıyor ve cevap `BILINMIYOR` — "yetkin yok" denmiyor,
+  verinin varlığı sızmıyor.
+  **Not:** varsayılan matriste her rolde `finance:read` var; izinsizlik yalnız tenant deny
+  override'ıyla oluşuyor (G-11). Test o gerçek yolu kullanıyor.
+
+  **Modelin rakam üretmesini ne engelliyor.** Üç kat: (1) sözleşmede rakam alanı yok —
+  model yalnız araç adı + kapalı kümeden parametre seçebiliyor, dönem ve temassızlık eşiği
+  bile enum; (2) istemci model çıktısından **yalnız** `tool` + `params` okuyor, gövdeye
+  eklediği cevap cümlesi hiç okunmuyor; (3) `params` `.strict()` — uydurma bir alan
+  doğrulamayı düşürüyor ve çağrı deterministik yönlendiriciye devrediliyor. Gerçek tarih
+  aralığını `mayaPeriodRange` kodda, tenant saat dilimine göre hesaplıyor.
+
+  **PII.** Kişi eşlemesi sunucuda: isim maskeleniyor, modele `KISI_n` token + opak UUID
+  gidiyor (`maya-contact-match.ts`), gövde `buildMaskedMayaToolPayload` kapısından geçiyor.
+  Aynı isme birden çok kişi uyarsa **token üretilmiyor** — yanlış hastanın bakiyesini
+  göstermektense cevapsızlık. Modelin verdiği `contact_ref` sunucunun çözdüğü listede yoksa
+  araç çalışmıyor; bu, aynı tenant içinde RLS'in yakalayamadığı tek delik.
+
+  **Beklenmeyen bulgu.** `0003_app_role.sql`'deki `ALTER DEFAULT PRIVILEGES` her yeni public
+  tabloya `UPDATE` veriyor — denetim kaydı için yalnız `GRANT SELECT, INSERT, DELETE` yazmak
+  yetmiyordu. 0061'e açık `REVOKE UPDATE` eklendi ve doğrulandı. Yeni "yazılır, güncellenmez"
+  tabloların hepsi için geçerli bir tuzak.
+
+  **Testlerin gerçekten koştuğu mutasyonla kanıtlandı:** izin kontrolü bilerek kapatılınca
+  2 test, kişi izin listesi kapatılınca 1 test kırmızıya döndü.
+
+  **AI-11b için hazır girdi:** `maya_questions` (maskelenmiş soru, seçilen araç, cevaplandı mı,
+  kaynak). İzin reddi yüzünden çalışmayan araç da kaydediliyor — hangi rolün neye ihtiyaç
+  duyduğu ancak böyle görülür. Sayaç bugün başladı.
+
+- [x] **AI-08 — Randevu ajanı WhatsApp akışına gömüldü (2026-08-22).**
+  `InboundMessageProcessor` artık aynı mesaj gövdesini `RecordSuggestionsService.parse`'a da
+  yolluyor. Randevu ajanı ayrı try/catch'te; `outcome === 'skipped'` ise çalışmaz (mükerrer
+  öneri koruması). Manuel `POST /v1/record-suggestions/parse` ve toplu inbox yolu değişmedi.
+  **Görüş:** Sonnet yazdı. Hata izolasyonu mutasyonla doğrulandı — randevu ajanına bilerek
+  `throw` koyuldu, finans taslağı ve `job.status=completed` yine yazıldı, 8 test yeşil kaldı.
+  Tam takım 735 test yeşil, `pnpm check` temiz. Onay kapısına (Madde 6.2) dokunulmadı;
+  değişen yalnız tetikleyici.
+
+- [x] **AUDIT-04 — `transactions` create/update denetim kaydı (2026-08-22).**
+  `createWithDb` + `updateWithDb` artık `audit_logs`'a yazıyor (`entity_label` =
+  `deriveTransactionLabel`), aynı DB transaction'ında; WhatsApp onay yolu
+  (`approveDraftsWithDb`) dahil. Yeni `transactions.audit.isolation.spec.ts` (4 test).
+  **Görüş:** Cursor yazdı, izolasyon testlerini koşturamadı (Postgres kapalıydı) — Docker
+  kaldırılıp 4 test yeşil doğrulandı. Testlerin gerçekten koştuğu, `create` yazımı bilerek
+  kapatılıp 2 testin kırmızıya dönmesiyle kanıtlandı. Tam takım: 730 test / 135 dosya yeşil,
+  `pnpm check` temiz. `ai_corrections.createdBy` imza değişiminde `actor.actorId`'ye
+  taşınmış — bozulmamış.
 
 - **AI-02 Ayrıştır sessiz boş dönüş geri bildirimi ✅** (2026-08-20) — `POST /v1/record-suggestions/parse`
   yanıtına `skipped_reason` (`ambiguous_contact` | `no_date` | `no_change` | null). Heuristic

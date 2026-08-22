@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { isoDate, isoDateTime, uuid } from './common.js';
 import { transactionDraftSchema, type TransactionDraft } from './inbound-message.js';
 import { reportPeriodSchema } from './reports.js';
+import { transactionEvidenceEntrySchema } from './transaction.js';
 
 /**
  * Human correction to an AI-parsed WhatsApp transaction draft (Faz 3 learning signal).
@@ -48,6 +49,18 @@ export const aiCorrectionsReportParamsSchema = z
 	.strict();
 export type AiCorrectionsReportParams = z.infer<typeof aiCorrectionsReportParamsSchema>;
 
+/**
+ * AI-03 — bir alanın hangi AI-09 güven seviyesinde ne sıklıkla düzeltildiği.
+ * `confidence: null` iki durumdan biri: alan AI-09 evidence beyaz listesinde değil
+ * (ör. `title`, `description`) ya da kaynak mesajda iz hiç üretilmemiş (AI-09 öncesi).
+ */
+export const aiCorrectionsConfidenceRowSchema = z.object({
+	confidence: transactionEvidenceEntrySchema.shape.confidence.nullable(),
+	correction_count: z.number().int().nonnegative(),
+	distinct_messages: z.number().int().nonnegative()
+});
+export type AiCorrectionsConfidenceRow = z.infer<typeof aiCorrectionsConfidenceRowSchema>;
+
 export const aiCorrectionsReportRowSchema = z.object({
 	/** TransactionDraft key that differed (e.g. `category`, `amount`). */
 	field: z.string().min(1),
@@ -57,12 +70,19 @@ export const aiCorrectionsReportRowSchema = z.object({
 	 * Distinct source messages with ≥1 mismatch on this field.
 	 * When `inbound_message_id` is null, the correction row id is the proxy.
 	 */
-	distinct_messages: z.number().int().nonnegative()
+	distinct_messages: z.number().int().nonnegative(),
+	/** AI-03 — aynı alanın güven seviyesine göre kırılımı. */
+	by_confidence: z.array(aiCorrectionsConfidenceRowSchema)
 });
 export type AiCorrectionsReportRow = z.infer<typeof aiCorrectionsReportRowSchema>;
 
 export const aiCorrectionsReportSchema = z.object({
 	period: reportPeriodSchema,
+	/**
+	 * AI-03 — dönemde ≥1 alanı düzeltilen onay sayısı (satır değil, mesaj/onay bazında —
+	 * `AiAccuracyReport`'ta "düzeltilmeyen taslak oranı" paydası bu sayıyı kullanır).
+	 */
+	corrected_message_count: z.number().int().nonnegative(),
 	items: z.array(aiCorrectionsReportRowSchema)
 });
 export type AiCorrectionsReport = z.infer<typeof aiCorrectionsReportSchema>;
@@ -137,7 +157,10 @@ export function aggregateAiCorrectionsReport(items: AiCorrection[]): AiCorrectio
 		.map(([field, bucket]) => ({
 			field,
 			correction_count: bucket.correction_count,
-			distinct_messages: bucket.messages.size
+			distinct_messages: bucket.messages.size,
+			// AI-03 confidence kırılımı yalnız sunucuda hesaplanır (inbound_messages.payload
+			// içindeki AI-09 iz verisiyle join gerekir); MSW/client aynası bunu taşımaz.
+			by_confidence: []
 		}))
 		.sort((a, b) => b.correction_count - a.correction_count || a.field.localeCompare(b.field));
 }

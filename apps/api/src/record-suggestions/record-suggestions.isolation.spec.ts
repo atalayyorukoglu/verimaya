@@ -41,6 +41,7 @@ function hoursFromNow(hours: number): string {
 class EmptyRescheduleLlm implements LlmClient {
 	parseTransactionDrafts = vi.fn();
 	answerFromKnowledge = vi.fn();
+	selectMayaTool = vi.fn();
 	async suggestAppointmentReschedule(_ctx: LlmRescheduleContext): Promise<LlmRescheduleResult> {
 		return {
 			suggestions: [],

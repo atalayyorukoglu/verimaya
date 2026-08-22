@@ -10,6 +10,7 @@ import { RecordSuggestionsService } from './record-suggestions.service';
 @Module({
 	imports: [AuthModule, CommonModule, LlmModule, SettingsModule, AppointmentsModule],
 	controllers: [RecordSuggestionsController],
-	providers: [RecordSuggestionsService]
+	providers: [RecordSuggestionsService],
+	exports: [RecordSuggestionsService]
 })
 export class RecordSuggestionsModule {}

@@ -11,6 +11,7 @@
 		TransactionAuditDraftResponse,
 		TransactionAuditIssue,
 		TransactionCreate,
+		TransactionEvidenceField,
 		TransactionKind,
 		TransactionStatus,
 		TransactionUpdate
@@ -34,6 +35,8 @@
 	import type { MessageKey } from '$lib/i18n/messages';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { type DeleteConfirmPhase, runConfirmedDelete } from '$lib/components/delete-confirm-flow';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import { visibleSourceQuotes } from '$lib/finance/evidence-highlight';
 
 	let {
 		open = $bindable(false),
@@ -295,6 +298,21 @@
 				: label;
 		return `${withCat} · ${formatMoney(transaction.amount, transaction.currency)} · ${formatDate(transaction.occurred_on)}`;
 	});
+
+	/** AI-09 — alan başına doğrulanmış alıntılar; boş alıntılı (çıkarım) girdiler gösterilmez. */
+	const EVIDENCE_LABELS: Record<TransactionEvidenceField, MessageKey> = {
+		amount: 'finance.ai.draft.amount',
+		currency: 'finance.ai.draft.currency',
+		kind: 'finance.ai.draft.kind',
+		occurred_on: 'finance.ai.draft.date',
+		contact_id: 'finance.ai.draft.contact',
+		payment_method: 'finance.ai.draft.paymentMethod',
+		category: 'finance.ai.draft.category'
+	};
+
+	const sourceQuotes = $derived(
+		visibleSourceQuotes(transaction?.source_evidence, (field) => t(EVIDENCE_LABELS[field]))
+	);
 
 	const dialogTitle = $derived(
 		confirmingDelete
@@ -663,6 +681,30 @@
 				<textarea id="tx-desc" class={textareaClass} bind:value={description} maxlength={8000}
 				></textarea>
 			</div>
+			{#if transaction?.source_inbound_message_id}
+				<!--
+					AI-09 — bu satır elle mi girildi, WhatsApp'tan mı geldi.
+					Bağ yalnız sunucunun yazdığı `source_inbound_message_id` varsa çıkar.
+				-->
+				<div class="min-w-0 rounded-[6px] border border-border bg-surface-2 px-3 py-2">
+					<a
+						class="inline-flex items-center gap-1 text-xs font-medium text-brand underline-offset-2 hover:underline"
+						href="/finance/ai-transaction?inbox={transaction.source_inbound_message_id}"
+					>
+						{t('finance.ai.source.link')}
+						<ArrowRight class="size-3" />
+					</a>
+					{#if sourceQuotes.length > 0}
+						<ul class="mt-1.5 min-w-0 space-y-0.5">
+							{#each sourceQuotes as q (q.field)}
+								<li class="min-w-0 text-[11px] break-words text-text-faint">
+									{q.label}: „{q.quote}“
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
+			{/if}
 			{#if error}
 				<p class="min-w-0 text-sm break-words text-danger">{error}</p>
 			{/if}

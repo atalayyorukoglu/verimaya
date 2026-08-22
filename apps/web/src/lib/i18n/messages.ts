@@ -136,15 +136,14 @@ const tr = {
 	'dev.csp.hint.report-to': 'İhlal kaydının gittiği adres (yeni tarayıcılar)',
 	'dev.csp.hint.other': 'Bu kural tarayıcıya ek bir sınır söyler',
 
-	// Maya AI (mock UI — henüz API yok)
+	// Maya AI — POST /v1/maya/ask (bilgi bankası + AI-11a canlı veri araçları)
 	'maya.title': 'Maya AI',
 	'maya.subtitle': 'Operasyon asistanı — taslak önerir, sen onaylarsın.',
 	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
-		'Bilgi bankanıza dayalı soru-cevap. Bilmediğini uydurmaz — bilgi bankanızda yoksa söyler.',
-	'maya.mockBadge': 'Mock',
+		'Bilgi bankanız ve kendi kayıtlarınız üzerinden soru-cevap. Rakamlar doğrudan veritabanından gelir; bilmediğini uydurmaz.',
 	'maya.welcome':
-		'Merhaba — ben Maya. Firmanızın bilgi bankasındaki hizmet, fiyat ve kuralları cevaplayabilirim. Bilgi bankasında olmayan bir şeyi uydurmam.',
+		'Merhaba — ben Maya. Bilgi bankanızdaki hizmet, fiyat ve kuralların yanı sıra bakiye, randevu ve dönem özeti gibi kayıt sorularını da cevaplayabilirim. Rakamı uydurmam; doğrudan kayıtlarınızdan okurum.',
 	'maya.placeholder': 'Maya’ya sor…',
 	'maya.send': 'Gönder',
 	'maya.thinking': 'Düşünüyor…',
@@ -160,24 +159,34 @@ const tr = {
 	'maya.draftHint': 'Bu bir taslak öneri — onaylamadan kayıt yazılmaz.',
 	'maya.approveDraft': 'Taslağı onayla',
 	'maya.draftApproved': 'Onaylandı (mock)',
-	'maya.suggestion.tomorrow': 'Yarınki randevular kimler?',
-	'maya.suggestion.summary': 'Ayşe Kaya dosyasını özetle',
-	'maya.suggestion.missingSource': 'Kaynağı boş kişiler',
-	'maya.suggestion.stale': 'Sessiz kalan takipler',
-	'maya.response.tomorrow':
-		'Yarın 3 randevu görünüyor:\n• 10:00 — Ayşe Kaya (konsültasyon)\n• 14:30 — John Smith (operasyon)\n• 16:00 — Mehmet Demir (kontrol)\n\nDetay için Randevular’a gidebilirsin.',
-	'maya.response.summary':
-		'Ayşe Kaya — kısa özet:\n• Son randevu: konsültasyon (geçen salı)\n• Açık bakiye: 12.500 TRY\n• Kaynak: Meta Ads\n• Son not: “Transfer pazartesi.”\n\nBu mock veri; gerçek kart için Kişiler’e bak.',
-	'maya.response.missingSource':
-		'Kaynağı boş 8 kişi buldum (örnek). En yeniler:\n• Zeynep Ak\n• Ali Can\n• Nora Ellis\n\n“Meta / kampanya X” diye önerebilirim — onaylarsan taslak kuyruğuna düşer.',
-	'maya.response.stale':
-		'7 gündür sessiz 4 kişi (örnek):\n• Carlos Ruiz — randevu sonrası takip yok\n• Elif Yılmaz — açık bakiye + mesaj yok\n\nHer biri için kısa WhatsApp taslağı önerebilirim.',
-	'maya.response.default':
-		'Mock moddayım. Şunu dene: yarınki randevular, bir kişiyi özetle, boş kaynaklar veya sessiz takipler.',
-	'maya.cite.appointments': 'Randevular',
-	'maya.cite.contact': 'Kişiler',
-	'maya.cite.dataQuality': 'Veri kalitesi',
-	'maya.cite.finance': 'Finans',
+	'maya.suggestion.openBalances': 'Kimlerden alacağımız var?',
+	'maya.suggestion.periodSummary': 'Bu ay ne kadar tahsilat yaptık?',
+	'maya.suggestion.untouched': 'Kime dönülmedi?',
+
+	// AI-11a — canlı veri araçları. Cümleyi kod kurar; rakam Postgres'ten gelir,
+	// model ne rakam üretir ne cümle yazar.
+	'maya.tool.badge': 'Canlı veri · {tool}',
+	'maya.tool.name.contactBalance': 'Kişi bakiyesi',
+	'maya.tool.name.openBalances': 'Açık bakiyeler',
+	'maya.tool.name.contactAppointments': 'Kişi randevuları',
+	'maya.tool.name.periodSummary': 'Dönem özeti',
+	'maya.tool.name.untouchedContacts': 'Temassız kişiler',
+	'maya.tool.moreItems': '… ve {count} kayıt daha',
+	'maya.tool.contactBalance.answer':
+		'{name} — açık bakiye {outstanding}. Toplam {income} gelirin {paid} kadarı tahsil edilmiş ({count} işlem).',
+	'maya.tool.openBalances.answer': 'Açık bakiyesi olan {count} kişi var:',
+	'maya.tool.openBalances.empty': 'Açık bakiyesi olan kişi görünmüyor.',
+	'maya.tool.openBalances.row': '• {name} — {amount}',
+	'maya.tool.contactAppointments.answer': '{name} — {count} yaklaşan randevu:',
+	'maya.tool.contactAppointments.empty': '{name} için yaklaşan randevu görünmüyor.',
+	'maya.tool.contactAppointments.row': '• {when} — {title}',
+	'maya.tool.contactAppointments.untitled': 'Randevu',
+	'maya.tool.periodSummary.answer':
+		'{from} – {to}: {income} gelir, {expense} gider, net {net}. Tahsil edilmemiş {pending} ({count} işlem).',
+	'maya.tool.untouchedContacts.answer':
+		'{days} gündür temassız {total} kişi var (30 gün: {d30} · 60 gün: {d60} · 90 gün: {d90}):',
+	'maya.tool.untouchedContacts.empty': '{days} gündür temassız kimse görünmüyor.',
+	'maya.tool.untouchedContacts.row': '• {name} — {days} gün',
 
 	'patients.list.title': 'Hastalar',
 	'patients.list.description':
@@ -1016,6 +1025,22 @@ const tr = {
 	'finance.ai.draft.fxRate': 'Kur (1 birim → baz)',
 	'finance.ai.draft.amountBase': 'Baz tutar',
 	'finance.ai.draft.saved': 'Kaydedildi',
+	// AI-09 — kaynak izi
+	'finance.ai.evidence.source': 'kaynak',
+	'finance.ai.evidence.inferred': 'çıkarım',
+	'finance.ai.evidence.inferredHint':
+		'AI bu değeri mesajdan okumadı, çıkarım yaptı. Kontrol etmeniz önerilir.',
+	'finance.ai.evidence.quoteHint': 'Mesajdaki kaynak ({confidence}): "{quote}"',
+	'finance.ai.evidence.confidence.high': 'yüksek güven',
+	'finance.ai.evidence.confidence.medium': 'orta güven',
+	'finance.ai.evidence.confidence.low': 'düşük güven',
+	'finance.ai.evidence.heading': 'Kaynak alıntı',
+	'finance.ai.evidence.close': 'Kapat',
+	'finance.ai.evidence.notFound':
+		'Alıntı mesaj metninde konumlanamadı (maskeleme ofseti kaydırmış olabilir):',
+	'finance.ai.source.link': 'Kaynak: WhatsApp mesajı',
+	'finance.ai.source.approvedNotice':
+		'Bu mesaj onaylanmış. Yalnız kaynak metni gösteriliyor; yeniden onaylanamaz.',
 	'finance.ai.create.displayName': 'Görünen ad',
 	'finance.ai.create.contactType': 'Kişi türü',
 	'finance.ai.create.contactTypeNone': '— Tür seçin —',
@@ -1956,6 +1981,60 @@ const tr = {
 	'reports.interventions.exampleOptionChannel': '“Şu kanaldan gelenler daha az dönüşüyor” mü?',
 	'reports.interventions.exampleOptionFollowup': '“Şu temsilcide takip gecikmesi var” mı?',
 
+	// Raporlar · AI isabet ölçümü (AI-03)
+	'reports.aiAccuracy.title': 'AI isabet ölçümü',
+	'reports.aiAccuracy.description':
+		'AI ne kadar isabetli, nerede yanılıyor, Maya neyi bilmiyor — yalnız ölçüm, otomatik prompt beslemesi yok.',
+	'reports.aiAccuracy.loading': 'Rapor hazırlanıyor…',
+	'reports.aiAccuracy.loadError': 'Rapor yüklenemedi.',
+	'reports.aiAccuracy.drafts.title': 'Finans taslağı isabeti',
+	'reports.aiAccuracy.drafts.description':
+		'WhatsApp’tan onaylanan taslaklardan kaçı hiç dokunulmadan onaylandı.',
+	'reports.aiAccuracy.drafts.approved': 'Onaylanan taslak',
+	'reports.aiAccuracy.drafts.corrected': 'Düzeltilen',
+	'reports.aiAccuracy.drafts.unchangedRate': 'Dokunulmadan onaylanan',
+	'reports.aiAccuracy.drafts.empty': 'Bu dönemde onaylanan taslak yok.',
+	'reports.aiAccuracy.drafts.byFieldTitle': 'En çok düzeltilen alanlar',
+	'reports.aiAccuracy.drafts.colField': 'Alan',
+	'reports.aiAccuracy.drafts.colCount': 'Düzeltme',
+	'reports.aiAccuracy.drafts.colMessages': 'Mesaj',
+	'reports.aiAccuracy.drafts.colConfidence': 'AI güveni (düzeltilen)',
+	'reports.aiAccuracy.drafts.confidence.high': 'Yüksek',
+	'reports.aiAccuracy.drafts.confidence.medium': 'Orta',
+	'reports.aiAccuracy.drafts.confidence.low': 'Düşük',
+	'reports.aiAccuracy.drafts.confidence.unknown': 'İz yok',
+	'reports.aiAccuracy.suggestions.title': 'Kayıt güncelleme önerisi kabul oranı',
+	'reports.aiAccuracy.suggestions.description':
+		'Randevu saati önerilerinin kaçı onaylandı, kaçı reddedildi.',
+	'reports.aiAccuracy.suggestions.approved': 'Onaylanan',
+	'reports.aiAccuracy.suggestions.rejected': 'Reddedilen',
+	'reports.aiAccuracy.suggestions.pending': 'Bekleyen',
+	'reports.aiAccuracy.suggestions.acceptanceRate': 'Kabul oranı',
+	'reports.aiAccuracy.suggestions.empty': 'Bu dönemde öneri yok.',
+	'reports.aiAccuracy.suggestions.reasonsTitle': 'En sık red gerekçeleri',
+	'reports.aiAccuracy.suggestions.reasonsEmpty': 'Bu dönemde red yok.',
+	'reports.aiAccuracy.suggestions.noReason': 'Gerekçe belirtilmedi',
+	'reports.aiAccuracy.maya.title': 'Maya cevap oranı',
+	'reports.aiAccuracy.maya.description': 'Maya’ya sorulan soruların kaçı cevaplandı, kaçı bilinmiyor.',
+	'reports.aiAccuracy.maya.total': 'Soru',
+	'reports.aiAccuracy.maya.answered': 'Cevaplanan',
+	'reports.aiAccuracy.maya.unanswered': 'Cevaplanamayan',
+	'reports.aiAccuracy.maya.answerRate': 'Cevap oranı',
+	'reports.aiAccuracy.maya.empty': 'Bu dönemde Maya’ya soru sorulmadı.',
+	'reports.aiAccuracy.maya.bySourceTitle': 'Kaynağa göre',
+	'reports.aiAccuracy.maya.byToolTitle': 'Araca göre',
+	'reports.aiAccuracy.maya.source.knowledge': 'Bilgi bankası',
+	'reports.aiAccuracy.maya.source.tool': 'Canlı veri aracı',
+	'reports.aiAccuracy.maya.source.unknown': 'Bilinmiyor',
+	'reports.aiAccuracy.maya.unansweredTitle': 'Cevaplanamayan sorular',
+	'reports.aiAccuracy.maya.unansweredHint':
+		'Bunlar bilgi bankasında yok. Sık tekrar edeni bilgi bankana ya da AI notuna elle ekle — Maya otomatik öğrenmez.',
+	'reports.aiAccuracy.maya.unansweredEmpty': 'Cevaplanamayan soru yok.',
+	'reports.aiAccuracy.maya.addToKnowledge': 'Bilgi bankasına git',
+	'reports.aiAccuracy.maya.editPrompt': 'AI notunu düzenle',
+	'reports.aiAccuracy.footnote':
+		'Bu rapor yalnız ölçer; red desenleri sistem prompt’una kendiliğinden eklenmez (Madde 6.2 insan onayı kuralı, enjeksiyon riski). Öneri panelde gösterilir, tenant kendi AI notunu elle düzenler.',
+
 	'reports.tab.summary': 'Özet',
 	'reports.period.label': 'Dönem',
 	'reports.period.thisMonth': 'Bu ay',
@@ -2687,10 +2766,9 @@ const en: Record<MessageKey, string> = {
 	'maya.subtitle': 'Operations assistant — suggests drafts, you approve.',
 	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
-		'Answers grounded in your knowledge base. It never invents — if it is not there, it says so.',
-	'maya.mockBadge': 'Mock',
+		'Answers from your knowledge base and your own records. Figures come straight from the database; it never invents.',
 	'maya.welcome':
-		'Hi — I’m Maya. I can answer from your company knowledge base: services, prices and rules. I never make anything up.',
+		'Hi — I’m Maya. Besides services, prices and rules from your knowledge base, I can answer record questions: balances, appointments, period summaries. I never invent a figure — I read it from your records.',
 	'maya.placeholder': 'Ask Maya…',
 	'maya.send': 'Send',
 	'maya.thinking': 'Thinking…',
@@ -2706,24 +2784,32 @@ const en: Record<MessageKey, string> = {
 	'maya.draftHint': 'This is a draft suggestion — nothing is written until you approve.',
 	'maya.approveDraft': 'Approve draft',
 	'maya.draftApproved': 'Approved (mock)',
-	'maya.suggestion.tomorrow': 'Who has appointments tomorrow?',
-	'maya.suggestion.summary': 'Summarize Ayşe Kaya’s file',
-	'maya.suggestion.missingSource': 'Contacts missing source',
-	'maya.suggestion.stale': 'Quiet follow-ups',
-	'maya.response.tomorrow':
-		'3 appointments tomorrow:\n• 10:00 — Ayşe Kaya (consultation)\n• 14:30 — John Smith (procedure)\n• 16:00 — Mehmet Demir (check-up)\n\nOpen Appointments for details.',
-	'maya.response.summary':
-		'Ayşe Kaya — quick summary:\n• Last appointment: consultation (last Tuesday)\n• Open balance: 12,500 TRY\n• Source: Meta Ads\n• Last note: “Transfer Monday.”\n\nMock data — open Contacts for the real card.',
-	'maya.response.missingSource':
-		'Found 8 contacts with empty source (sample). Newest:\n• Zeynep Ak\n• Ali Can\n• Nora Ellis\n\nI can suggest “Meta / campaign X” — on approve it goes to the draft queue.',
-	'maya.response.stale':
-		'4 quiet contacts for 7+ days (sample):\n• Carlos Ruiz — no follow-up after appointment\n• Elif Yılmaz — open balance + no message\n\nI can draft a short WhatsApp for each.',
-	'maya.response.default':
-		'I’m in mock mode. Try: tomorrow’s appointments, summarize a contact, missing sources, or quiet follow-ups.',
-	'maya.cite.appointments': 'Appointments',
-	'maya.cite.contact': 'Contacts',
-	'maya.cite.dataQuality': 'Data quality',
-	'maya.cite.finance': 'Finance',
+	'maya.suggestion.openBalances': 'Who owes us money?',
+	'maya.suggestion.periodSummary': 'How much did we collect this month?',
+	'maya.suggestion.untouched': 'Who has not been followed up?',
+
+	'maya.tool.badge': 'Live data · {tool}',
+	'maya.tool.name.contactBalance': 'Contact balance',
+	'maya.tool.name.openBalances': 'Open balances',
+	'maya.tool.name.contactAppointments': 'Contact appointments',
+	'maya.tool.name.periodSummary': 'Period summary',
+	'maya.tool.name.untouchedContacts': 'Untouched contacts',
+	'maya.tool.moreItems': '… and {count} more',
+	'maya.tool.contactBalance.answer':
+		'{name} — open balance {outstanding}. {paid} of {income} income collected ({count} transactions).',
+	'maya.tool.openBalances.answer': '{count} contacts have an open balance:',
+	'maya.tool.openBalances.empty': 'No contact has an open balance.',
+	'maya.tool.openBalances.row': '• {name} — {amount}',
+	'maya.tool.contactAppointments.answer': '{name} — {count} upcoming appointments:',
+	'maya.tool.contactAppointments.empty': 'No upcoming appointments for {name}.',
+	'maya.tool.contactAppointments.row': '• {when} — {title}',
+	'maya.tool.contactAppointments.untitled': 'Appointment',
+	'maya.tool.periodSummary.answer':
+		'{from} – {to}: {income} income, {expense} expense, net {net}. Uncollected {pending} ({count} transactions).',
+	'maya.tool.untouchedContacts.answer':
+		'{total} contacts untouched for {days}+ days (30d: {d30} · 60d: {d60} · 90d: {d90}):',
+	'maya.tool.untouchedContacts.empty': 'No contact has been untouched for {days}+ days.',
+	'maya.tool.untouchedContacts.row': '• {name} — {days} days',
 
 	'patients.list.title': 'Patients',
 	'patients.list.description':
@@ -3551,6 +3637,21 @@ const en: Record<MessageKey, string> = {
 	'finance.ai.draft.fxRate': 'FX rate (1 unit → base)',
 	'finance.ai.draft.amountBase': 'Base amount',
 	'finance.ai.draft.saved': 'Saved',
+	'finance.ai.evidence.source': 'source',
+	'finance.ai.evidence.inferred': 'inferred',
+	'finance.ai.evidence.inferredHint':
+		'AI did not read this value from the message, it inferred it. Please double-check.',
+	'finance.ai.evidence.quoteHint': 'Source in message ({confidence}): "{quote}"',
+	'finance.ai.evidence.confidence.high': 'high confidence',
+	'finance.ai.evidence.confidence.medium': 'medium confidence',
+	'finance.ai.evidence.confidence.low': 'low confidence',
+	'finance.ai.evidence.heading': 'Source quote',
+	'finance.ai.evidence.close': 'Close',
+	'finance.ai.evidence.notFound':
+		'The quote could not be located in the message text (masking may have shifted the offset):',
+	'finance.ai.source.link': 'Source: WhatsApp message',
+	'finance.ai.source.approvedNotice':
+		'This message is already approved. Only the source text is shown; it cannot be approved again.',
 	'finance.ai.create.displayName': 'Display name',
 	'finance.ai.create.contactType': 'Contact type',
 	'finance.ai.create.contactTypeNone': '— Select type —',
@@ -4458,6 +4559,60 @@ const en: Record<MessageKey, string> = {
 	'reports.interventions.exampleOptionRate': '“Conversion rate dropped versus last month”?',
 	'reports.interventions.exampleOptionChannel': '“People from this channel convert less”?',
 	'reports.interventions.exampleOptionFollowup': '“This agent has a follow-up delay”?',
+
+	// Reports · AI accuracy measurement (AI-03)
+	'reports.aiAccuracy.title': 'AI accuracy',
+	'reports.aiAccuracy.description':
+		'How accurate the AI is, where it gets it wrong, what Maya doesn’t know — measurement only, no automatic prompt feeding.',
+	'reports.aiAccuracy.loading': 'Preparing report…',
+	'reports.aiAccuracy.loadError': 'Report could not be loaded.',
+	'reports.aiAccuracy.drafts.title': 'Finance draft accuracy',
+	'reports.aiAccuracy.drafts.description':
+		'How many WhatsApp drafts were approved with no edits at all.',
+	'reports.aiAccuracy.drafts.approved': 'Approved drafts',
+	'reports.aiAccuracy.drafts.corrected': 'Corrected',
+	'reports.aiAccuracy.drafts.unchangedRate': 'Approved unchanged',
+	'reports.aiAccuracy.drafts.empty': 'No approved drafts in this period.',
+	'reports.aiAccuracy.drafts.byFieldTitle': 'Most corrected fields',
+	'reports.aiAccuracy.drafts.colField': 'Field',
+	'reports.aiAccuracy.drafts.colCount': 'Corrections',
+	'reports.aiAccuracy.drafts.colMessages': 'Messages',
+	'reports.aiAccuracy.drafts.colConfidence': 'AI confidence (corrected)',
+	'reports.aiAccuracy.drafts.confidence.high': 'High',
+	'reports.aiAccuracy.drafts.confidence.medium': 'Medium',
+	'reports.aiAccuracy.drafts.confidence.low': 'Low',
+	'reports.aiAccuracy.drafts.confidence.unknown': 'No trace',
+	'reports.aiAccuracy.suggestions.title': 'Record update suggestion acceptance',
+	'reports.aiAccuracy.suggestions.description':
+		'How many appointment-time suggestions were approved vs. rejected.',
+	'reports.aiAccuracy.suggestions.approved': 'Approved',
+	'reports.aiAccuracy.suggestions.rejected': 'Rejected',
+	'reports.aiAccuracy.suggestions.pending': 'Pending',
+	'reports.aiAccuracy.suggestions.acceptanceRate': 'Acceptance rate',
+	'reports.aiAccuracy.suggestions.empty': 'No suggestions in this period.',
+	'reports.aiAccuracy.suggestions.reasonsTitle': 'Most common rejection reasons',
+	'reports.aiAccuracy.suggestions.reasonsEmpty': 'No rejections in this period.',
+	'reports.aiAccuracy.suggestions.noReason': 'No reason given',
+	'reports.aiAccuracy.maya.title': 'Maya answer rate',
+	'reports.aiAccuracy.maya.description': 'How many questions to Maya were answered vs. unknown.',
+	'reports.aiAccuracy.maya.total': 'Questions',
+	'reports.aiAccuracy.maya.answered': 'Answered',
+	'reports.aiAccuracy.maya.unanswered': 'Unanswered',
+	'reports.aiAccuracy.maya.answerRate': 'Answer rate',
+	'reports.aiAccuracy.maya.empty': 'No questions were asked to Maya in this period.',
+	'reports.aiAccuracy.maya.bySourceTitle': 'By source',
+	'reports.aiAccuracy.maya.byToolTitle': 'By tool',
+	'reports.aiAccuracy.maya.source.knowledge': 'Knowledge base',
+	'reports.aiAccuracy.maya.source.tool': 'Live data tool',
+	'reports.aiAccuracy.maya.source.unknown': 'Unknown',
+	'reports.aiAccuracy.maya.unansweredTitle': 'Unanswered questions',
+	'reports.aiAccuracy.maya.unansweredHint':
+		'These aren’t in the knowledge base. Add recurring ones to your knowledge base or AI note by hand — Maya doesn’t learn automatically.',
+	'reports.aiAccuracy.maya.unansweredEmpty': 'No unanswered questions.',
+	'reports.aiAccuracy.maya.addToKnowledge': 'Go to knowledge base',
+	'reports.aiAccuracy.maya.editPrompt': 'Edit AI note',
+	'reports.aiAccuracy.footnote':
+		'This report only measures; rejection patterns are never fed back into the system prompt automatically (Clause 6.2 human-approval rule, injection risk). The suggestion is shown in the panel — the tenant edits their own AI note by hand.',
 
 	'reports.tab.summary': 'Summary',
 	'reports.period.label': 'Period',

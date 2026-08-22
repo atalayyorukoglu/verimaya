@@ -9,12 +9,14 @@
 		FinanceCategory,
 		InboundMessage,
 		Tenant,
-		TransactionDraft
+		TransactionDraft,
+		TransactionEvidenceEntry
 	} from '@verimaya/shared';
 	import { apiPaths, approveDraftItemSchema, inboundMessageStatusLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
+	import { locateEvidenceQuote } from '$lib/finance/evidence-highlight';
 	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -41,6 +43,10 @@
 	let showLongWarning = $state(false);
 	/** AI çıktısının orijinali — kullanıcı düzelttiğinde correction kaydı için kıyaslanır. */
 	let originalDrafts = $state<TransactionDraft[]>([]);
+	/** AI-09 — tıklanan kaynak rozetinin alıntısı; mesaj metninde vurgulanır. */
+	let evidenceHighlight = $state<TransactionEvidenceEntry | null>(null);
+	/** İşlem detayından gelen, zaten onaylanmış kaynak mesajı görüntüleniyor. */
+	let viewingApprovedSource = $state(false);
 
 	const inboxQuery = createQuery(() => ({
 		queryKey: qs.keys.whatsapp.inbox(),
@@ -129,11 +135,28 @@
 		Boolean(activeInboxId) && drafts.length > 0 && drafts.every(draftReady) && !approving
 	);
 
+	const highlightParts = $derived(locateEvidenceQuote(message, evidenceHighlight));
+
 	$effect(() => {
 		const inboxId = page.url.searchParams.get('inbox');
 		if (!inboxId || inboxId === activeInboxId) return;
+
+		// İşlem detayından gelen kaynak bağı onaylanmış mesajı da açabilir.
+		// O mesaj yeniden onaylanamaz: `activeInboxId` bilinçli olarak boş
+		// bırakılır — onay butonu ona bağlı, mükerrer kayıt yolu kapalı.
 		const item = pendingMessages.find((m) => m.id === inboxId);
-		if (!item) return;
+		if (!item) {
+			const archived = (inboxQuery.data?.messages ?? []).find((m) => m.id === inboxId);
+			if (!archived || viewingApprovedSource) return;
+			viewingApprovedSource = true;
+			activeInboxId = null;
+			message = archived.body ?? '';
+			originalDrafts = [];
+			drafts = [];
+			return;
+		}
+
+		viewingApprovedSource = false;
 		activeInboxId = inboxId;
 		message = item.body ?? '';
 		if (item.parsed_records && item.parsed_records.length > 0) {
@@ -340,6 +363,37 @@
 			bind:value={message}
 			rows={6}></textarea>
 
+		{#if viewingApprovedSource}
+			<p class="mt-2 text-sm text-text-muted">{t('finance.ai.source.approvedNotice')}</p>
+		{/if}
+
+		{#if evidenceHighlight}
+			<div class="mt-3 rounded-lg border border-brand/30 bg-brand/5 p-3">
+				<div class="mb-1 flex items-center justify-between gap-2">
+					<span class="text-xs font-semibold text-text-muted">
+						{t('finance.ai.evidence.heading')}
+					</span>
+					<button
+						type="button"
+						class="cursor-pointer text-xs text-text-muted underline-offset-2 hover:underline"
+						onclick={() => (evidenceHighlight = null)}
+					>
+						{t('finance.ai.evidence.close')}
+					</button>
+				</div>
+				<p class="text-sm break-words whitespace-pre-wrap text-text">
+					{#if highlightParts}
+						{highlightParts.before}<mark class="rounded bg-warning/40 px-0.5 text-text"
+							>{highlightParts.match}</mark
+						>{highlightParts.after}
+					{:else}
+						<span class="text-text-muted">{t('finance.ai.evidence.notFound')}</span>
+						„{evidenceHighlight.quote}“
+					{/if}
+				</p>
+			</div>
+		{/if}
+
 		{#if parseError && !activeInboxId}
 			<p class="mt-2 text-sm text-danger">{parseError}</p>
 		{/if}
@@ -492,6 +546,7 @@
 					onchange={(patch) => updateDraft(i, patch)}
 					onCreateContact={(input) => createContactInline(i, input)}
 					onCreateCategory={(input) => createCategoryInline(i, input)}
+					onEvidence={(entry) => (evidenceHighlight = entry)}
 				/>
 			{/each}
 

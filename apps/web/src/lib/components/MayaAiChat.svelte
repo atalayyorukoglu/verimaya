@@ -6,6 +6,7 @@
 	import type { MessageKey } from '$lib/i18n/messages';
 	import { apiPaths, type MayaAnswer } from '@verimaya/shared';
 	import { apiSend } from '$lib/api';
+	import { mayaToolAnswerText, mayaToolLabel } from '$lib/maya-tool-answer';
 	import { cn } from '$lib/utils';
 	import Send from '@lucide/svelte/icons/send';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -27,13 +28,15 @@
 		text: string;
 		citations?: Citation[];
 		showDraftAction?: boolean;
+		/** AI-11a: hangi aracın kullanıldığı kullanıcıya görünür. */
+		toolLabel?: string;
 	};
 
+	// AI-11a: örnek sorular artık gerçek araçların cevapladığı sorular.
 	const suggestionKeys = [
-		'maya.suggestion.tomorrow',
-		'maya.suggestion.summary',
-		'maya.suggestion.missingSource',
-		'maya.suggestion.stale'
+		'maya.suggestion.openBalances',
+		'maya.suggestion.periodSummary',
+		'maya.suggestion.untouched'
 	] as const satisfies readonly MessageKey[];
 
 	let messages = $state<ChatMessage[]>([
@@ -68,9 +71,12 @@
 	}
 
 	/**
-	 * Gerçek uç: `POST /v1/maya/ask`. Cevap yalnız tenant'ın bilgi bankasından gelir.
-	 * Uydurma yok — sunucu bilmiyorsa `grounded: false` döner, biz de "bilmiyorum"
-	 * metnini gösteririz. Bilgi bankası boşsa kullanıcıyı doldurmaya yönlendiririz.
+	 * Gerçek uç: `POST /v1/maya/ask`. İki cevap yolu var, ikisinde de uydurma yok:
+	 * - `source: 'tool'` → canlı veri. Rakamlar `tool_result` içinde, Postgres'ten
+	 *   gelir; cümleyi burada `messages.ts` şablonundan kuruyoruz. `answer` boştur —
+	 *   modelin yazdığı bir metin hiçbir zaman ekrana basılmaz.
+	 * - `source: 'knowledge'` → bilgi bankası cevabı (AI-01 davranışı).
+	 * Sunucu bilmiyorsa `grounded: false` döner ve "bilmiyorum" metnini gösteririz.
 	 */
 	async function sendPrompt(prompt: string) {
 		const trimmed = prompt.trim();
@@ -82,17 +88,21 @@
 
 		try {
 			const res = await apiSend<MayaAnswer>(apiPaths.mayaAsk, 'POST', { question: trimmed });
-			const text = res.knowledge_empty
-				? t('maya.knowledgeEmpty')
-				: res.grounded
-					? res.answer
-					: t('maya.unknown');
-			messages.push({ id: nextId('a'), role: 'assistant', text });
+			messages.push({ id: nextId('a'), role: 'assistant', ...renderAnswer(res) });
 		} catch {
 			messages.push({ id: nextId('a'), role: 'assistant', text: t('maya.error') });
 		} finally {
 			thinking = false;
 		}
+	}
+
+	function renderAnswer(res: MayaAnswer): { text: string; toolLabel?: string } {
+		if (res.source === 'tool' && res.tool && res.tool_result) {
+			return { text: mayaToolAnswerText(res.tool_result), toolLabel: mayaToolLabel(res.tool) };
+		}
+		if (res.knowledge_empty) return { text: t('maya.knowledgeEmpty') };
+		if (res.grounded) return { text: res.answer };
+		return { text: t('maya.unknown') };
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -129,11 +139,6 @@
 				<h2 class={cn('font-semibold text-text', isDrawer ? 'text-sm' : 'text-base')}>
 					{t('maya.title')}
 				</h2>
-				<span
-					class="rounded-md bg-brand-subtle px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-brand-text uppercase"
-				>
-					{t('maya.mockBadge')}
-				</span>
 			</div>
 			{#if !isDrawer}
 				<p class="mt-0.5 text-xs text-text-muted">{t('maya.subtitle')}</p>
@@ -173,6 +178,12 @@
 					)}
 				>
 					<p class="break-words whitespace-pre-wrap">{message.text}</p>
+
+					{#if message.toolLabel}
+						<p class="mt-2 border-t border-border/60 pt-2 text-xs text-text-faint">
+							{t('maya.tool.badge', { tool: message.toolLabel })}
+						</p>
+					{/if}
 
 					{#if message.citations?.length}
 						<ul class="mt-2 flex flex-wrap gap-1.5 border-t border-border/60 pt-2">

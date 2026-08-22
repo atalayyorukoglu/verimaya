@@ -3,6 +3,7 @@ import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from 
 import { contactCreateSchema } from './contact.js';
 import { financeCategoryCreateSchema } from './finance-category.js';
 import {
+	transactionEvidenceSchema,
 	transactionKindSchema,
 	transactionSchema,
 	transactionStatusSchema
@@ -30,16 +31,34 @@ export const transactionDraftSchema = z.object({
 	contact_label: z.string().max(255).nullable().optional(),
 	occurred_on: isoDate,
 	payment_method: z.string().max(64).nullable().optional(),
-	description: z.string().max(8000).nullable().optional()
+	description: z.string().max(8000).nullable().optional(),
+	/**
+	 * AI-09 — "bu tutarı şu cümleden aldım" izi. Opsiyonel bilinçli: eski parse
+	 * kayıtları ve iz üretmeyen yollar kartı bozmadan çalışmaya devam eder.
+	 */
+	evidence: transactionEvidenceSchema.nullable().optional()
 });
 
 export type TransactionDraft = z.infer<typeof transactionDraftSchema>;
 
 /**
+ * Taslağın **iz taşımayan** hâli — onay isteği ve `ai_corrections` anlık görüntüsü
+ * bunu kullanır.
+ *
+ * Neden ayrı: onaylanan işleme yazılacak iz sunucudaki `inbound_messages.payload`
+ * satırından okunur, istek gövdesinden değil. `evidence` burada tanımlı olmadığı
+ * için zod istekten gelen değeri sessizce düşürür; ayrıca `original_parsed` ile
+ * `corrected` karşılaştırması iz yüzünden yanlışlıkla "değişti" demez.
+ */
+export const transactionDraftSnapshotSchema = transactionDraftSchema.omit({ evidence: true });
+
+export type TransactionDraftSnapshot = z.infer<typeof transactionDraftSnapshotSchema>;
+
+/**
  * MONEY-01: human approval payload for one AI draft.
  * Payment status, paid_amount, FX, and counterparty are required — no silent defaults.
  */
-export const approveDraftItemSchema = transactionDraftSchema
+export const approveDraftItemSchema = transactionDraftSnapshotSchema
 	.extend({
 		status: transactionStatusSchema,
 		paid_amount: moneyMinor.nonnegative(),
@@ -86,7 +105,7 @@ export type ApproveDraftItem = z.infer<typeof approveDraftItemSchema>;
 export const approveDraftsRequestSchema = z.object({
 	drafts: z.array(approveDraftItemSchema).min(1),
 	/** AI original drafts; when present and different from submitted drafts, an ai_correction is written. */
-	original_parsed: z.array(transactionDraftSchema).optional()
+	original_parsed: z.array(transactionDraftSnapshotSchema).optional()
 });
 
 export type ApproveDraftsRequest = z.infer<typeof approveDraftsRequestSchema>;

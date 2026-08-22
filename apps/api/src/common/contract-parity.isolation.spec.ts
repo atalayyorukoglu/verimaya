@@ -31,6 +31,8 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
+const testActor = { actorId: null, actorDisplayName: 'Contract Parity Test' };
+
 async function withTenantSession<T>(
 	tenantId: string,
 	fn: (tdb: TenantDb) => Promise<T>
@@ -175,7 +177,7 @@ describe('CONTRACT-02: API list endpoints match the shared filter + order contra
 								: contactHotel,
 					contact_label: null,
 					description: null
-				});
+				}, testActor);
 			}
 		});
 	});

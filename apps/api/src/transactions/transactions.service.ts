@@ -2,10 +2,12 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
+	deriveTransactionLabel,
 	evaluateTransactionConsistency,
 	type TransactionCreate,
 	type TransactionAuditDraft,
 	type TransactionAuditDraftResponse,
+	type TransactionEvidence,
 	type TransactionListQuery,
 	type TransactionUpdate
 } from '@verimaya/shared';
@@ -18,6 +20,12 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 
 const HASTA_TYPE = DEFAULT_CONTACT_TYPE_NAMES[0];
 const PERSONEL_TYPE = DEFAULT_CONTACT_TYPE_NAMES[4];
+
+/** AI-09 — sunucu tarafından üretilen kaynak izi; istek gövdesinden gelmez. */
+export type TransactionSource = {
+	inboundMessageId: string;
+	evidence: TransactionEvidence | null;
+};
 
 @Injectable()
 export class TransactionsService {
@@ -74,7 +82,20 @@ export class TransactionsService {
 		});
 	}
 
-	async createWithDb(db: TenantDb, tenantId: string, input: TransactionCreate) {
+	/**
+	 * @param source AI-09 kaynak izi. **Ayrı parametre bilinçli:** `input`
+	 * doğrudan istek gövdesinden geliyor; iz oraya karışırsa bir istemci
+	 * "şu cümleden aldım" diye uydurma bir atıf yazabilirdi. Bu argümanı
+	 * yalnız sunucu tarafındaki onay akışı (`WhatsappService`) doldurur;
+	 * HTTP controller hiç geçmez.
+	 */
+	async createWithDb(
+		db: TenantDb,
+		tenantId: string,
+		input: TransactionCreate,
+		actor: AuditActor,
+		source?: TransactionSource
+	) {
 		await this.assertTypedContact(db, input.case_contact_id, HASTA_TYPE, 'case_contact_id');
 		await this.assertTypedContact(
 			db,
@@ -107,13 +128,31 @@ export class TransactionsService {
 				contactLabel: denorm.contactLabel,
 				caseContactId: input.case_contact_id ?? null,
 				responsibleContactId: input.responsible_contact_id ?? null,
-				description: input.description ?? null
+				description: input.description ?? null,
+				sourceInboundMessageId: source?.inboundMessageId ?? null,
+				sourceEvidence: source?.evidence ?? null
 			})
 			.returning();
+
+		await writeAuditLog(
+			db,
+			tenantId,
+			actor,
+			'create',
+			'transaction',
+			deriveTransactionAuditLabel(row!)
+		);
+
 		return toTransaction(row!);
 	}
 
-	async updateWithDb(db: TenantDb, tenantId: string, id: string, input: TransactionUpdate) {
+	async updateWithDb(
+		db: TenantDb,
+		tenantId: string,
+		id: string,
+		input: TransactionUpdate,
+		actor: AuditActor
+	) {
 		const existing = await this.findActiveRow(db, id);
 		if (!existing) {
 			throw new NotFoundException({
@@ -192,6 +231,15 @@ export class TransactionsService {
 			})
 			.where(eq(transactions.id, id))
 			.returning();
+
+		await writeAuditLog(
+			db,
+			tenantId,
+			actor,
+			'update',
+			'transaction',
+			deriveTransactionAuditLabel(row!)
+		);
 
 		return toTransaction(row!);
 	}
@@ -345,4 +393,22 @@ export class TransactionsService {
 
 		return { contactDisplayName, contactLabel, amountBase, baseCurrency };
 	}
+}
+
+function deriveTransactionAuditLabel(row: {
+	title: string | null;
+	subtitle: string | null;
+	category: string | null;
+	contactDisplayName: string | null;
+	contactLabel: string | null;
+	description: string | null;
+}): string {
+	return deriveTransactionLabel({
+		title: row.title,
+		subtitle: row.subtitle,
+		category: row.category,
+		contact_display_name: row.contactDisplayName,
+		contact_label: row.contactLabel,
+		description: row.description
+	});
 }

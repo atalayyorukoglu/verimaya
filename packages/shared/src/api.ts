@@ -176,7 +176,9 @@ export const apiPaths = {
 	reportsConsistency: `${API_V1_PREFIX}/reports/consistency`,
 	reportsTransactionDuplicates: `${API_V1_PREFIX}/reports/transaction-duplicates`,
 	reportsUntouchedContacts: `${API_V1_PREFIX}/reports/untouched-contacts`,
-	reportsCohorts: `${API_V1_PREFIX}/reports/cohorts`
+	reportsCohorts: `${API_V1_PREFIX}/reports/cohorts`,
+	/** AI-03 — isabet ölçümü (taslak düzeltme + öneri kabul + Maya cevap oranı). */
+	reportsAiAccuracy: `${API_V1_PREFIX}/reports/ai-accuracy`
 } as const;
 
 export type ListQueryParams = {

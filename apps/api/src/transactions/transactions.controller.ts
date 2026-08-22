@@ -69,6 +69,7 @@ export class TransactionsController {
 	) {
 		const input = parseBody(transactionCreateSchema, body, req);
 		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
 		const result = await this.idempotency.run(
 			tenantId,
 			getIdempotencyKey(req),
@@ -76,7 +77,7 @@ export class TransactionsController {
 			'/v1/transactions',
 			async (db) => ({
 				statusCode: 201,
-				body: await this.transactionsService.createWithDb(db, tenantId, input)
+				body: await this.transactionsService.createWithDb(db, tenantId, input, actor)
 			})
 		);
 		if (!result.replayed) {
@@ -102,6 +103,7 @@ export class TransactionsController {
 	) {
 		const input = parseBody(transactionUpdateSchema, body, req);
 		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
 		const result = await this.idempotency.run(
 			tenantId,
 			getIdempotencyKey(req),
@@ -109,7 +111,7 @@ export class TransactionsController {
 			'/v1/transactions/:id',
 			async (db) => ({
 				statusCode: 200,
-				body: await this.transactionsService.updateWithDb(db, tenantId, id, input)
+				body: await this.transactionsService.updateWithDb(db, tenantId, id, input, actor)
 			})
 		);
 		if (!result.replayed) {

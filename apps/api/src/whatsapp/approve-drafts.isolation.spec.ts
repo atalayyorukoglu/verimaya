@@ -23,6 +23,8 @@ const databaseUrl =
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
 
+const testActor = { actorId: null, actorDisplayName: 'Approve Drafts Test' };
+
 function draftPayload(overrides: Partial<ApproveDraftsRequest['drafts'][number]> = {}) {
 	return {
 		kind: 'income' as const,
@@ -123,7 +125,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			'/v1/whatsapp/inbox/:id/approve-drafts',
 			async (db) => ({
 				statusCode: 201,
-				body: await whatsappService.approveDraftsWithDb(db, tenantId, inboxId, input, null)
+				body: await whatsappService.approveDraftsWithDb(db, tenantId, inboxId, input, testActor)
 			})
 		);
 		expect(first.replayed).toBe(false);
@@ -138,7 +140,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			'/v1/whatsapp/inbox/:id/approve-drafts',
 			async (db) => ({
 				statusCode: 201,
-				body: await whatsappService.approveDraftsWithDb(db, tenantId, inboxId, input, null)
+				body: await whatsappService.approveDraftsWithDb(db, tenantId, inboxId, input, testActor)
 			})
 		);
 		expect(second.replayed).toBe(true);
@@ -201,7 +203,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 								draftPayload({ title: 'second should not exist' })
 							]
 						},
-						null
+						testActor
 					)
 				})
 			)

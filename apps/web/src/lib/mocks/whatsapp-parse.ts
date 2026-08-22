@@ -1,4 +1,10 @@
-import type { Contact, SupportedCurrency, TransactionDraft } from '@verimaya/shared';
+import type {
+	Contact,
+	SupportedCurrency,
+	TransactionDraft,
+	TransactionEvidence,
+	TransactionEvidenceEntry
+} from '@verimaya/shared';
 import { toTenantDayKey } from '@verimaya/shared';
 
 const CURRENCY_PATTERN = /\b(\d[\d.,]*)\s*(TRY|GBP|EUR|USD|₺|£|€|\$)\b/gi;
@@ -24,10 +30,29 @@ function today(): string {
 	return toTenantDayKey(new Date(), 'Europe/Istanbul');
 }
 
-function guessKind(text: string): 'income' | 'expense' {
-	if (EXPENSE_HINTS.test(text)) return 'expense';
-	if (INCOME_HINTS.test(text)) return 'income';
-	return 'expense';
+function guessKind(text: string): { kind: 'income' | 'expense'; hint: RegExpMatchArray | null } {
+	const expense = text.match(EXPENSE_HINTS);
+	if (expense) return { kind: 'expense', hint: expense };
+	const income = text.match(INCOME_HINTS);
+	if (income) return { kind: 'income', hint: income };
+	return { kind: 'expense', hint: null };
+}
+
+/** AI-09 demo izi — API'deki heuristic yolun aynısı: ofset regex eşleşmesinden gelir. */
+function entry(
+	quote: string,
+	start: number | null,
+	confidence: TransactionEvidenceEntry['confidence']
+): TransactionEvidenceEntry {
+	return { quote: quote.slice(0, 200), start, confidence };
+}
+
+/** Okunmadan varsayılan atanan alan: iz yok, güven düşük. */
+const inferred = (): TransactionEvidenceEntry => entry('', null, 'low');
+
+function hintEntry(hint: RegExpMatchArray | null): TransactionEvidenceEntry {
+	if (!hint || hint.index == null) return inferred();
+	return entry(hint[0], hint.index, 'medium');
 }
 
 function guessTitle(text: string, amount: number, currency: string): string {
@@ -63,7 +88,7 @@ export function parseWhatsappMessage(
 		const fallback = text.match(/(\d[\d.,]+)/);
 		if (!fallback) return [];
 		const amount = Math.round(parseAmount(fallback[1]) * 100);
-		const kind = guessKind(text);
+		const { kind, hint: kindHint } = guessKind(text);
 		const contact = matchContact(text, contacts);
 		return [
 			{
@@ -77,19 +102,40 @@ export function parseWhatsappMessage(
 				contact_label: null,
 				occurred_on: today(),
 				payment_method: null,
-				description: text
+				description: text,
+				evidence: {
+					amount: entry(fallback[1], fallback.index ?? null, 'high'),
+					currency: inferred(),
+					kind: hintEntry(kindHint),
+					occurred_on: inferred(),
+					category: inferred()
+				}
 			}
 		];
 	}
 
 	const records: TransactionDraft[] = [];
-	const kind = guessKind(text);
+	const { kind, hint: kindHint } = guessKind(text);
 	const contact = matchContact(text, contacts);
+	const methodHint = text.match(/kart|card/i) ?? text.match(/havale|transfer/i);
 
 	for (const m of matches) {
 		const major = parseAmount(m[1]);
 		if (major <= 0) continue;
 		const currency = normalizeCurrency(m[2]);
+		const matchStart = m.index ?? null;
+		const evidence: TransactionEvidence = {
+			amount: entry(m[1], matchStart, 'high'),
+			currency: entry(
+				m[2],
+				matchStart == null ? null : matchStart + m[0].lastIndexOf(m[2]),
+				'high'
+			),
+			kind: hintEntry(kindHint),
+			occurred_on: inferred(),
+			category: inferred()
+		};
+		if (methodHint) evidence.payment_method = hintEntry(methodHint);
 		records.push({
 			kind,
 			amount: Math.round(major * 100),
@@ -106,7 +152,8 @@ export function parseWhatsappMessage(
 				: /havale|transfer/i.test(text)
 					? 'Havale'
 					: null,
-			description: text
+			description: text,
+			evidence
 		});
 	}
 

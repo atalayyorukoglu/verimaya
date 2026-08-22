@@ -1,5 +1,17 @@
-import { date, index, integer, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import type { TransactionEvidence } from '@verimaya/shared';
+import {
+	date,
+	index,
+	integer,
+	jsonb,
+	numeric,
+	pgTable,
+	text,
+	timestamp,
+	uuid
+} from 'drizzle-orm/pg-core';
 import { contacts } from './contacts';
+import { inboundMessages } from './inbound-messages';
 import { tenants } from './tenants';
 
 export const transactions = pgTable(
@@ -34,6 +46,16 @@ export const transactions = pgTable(
 			onDelete: 'set null'
 		}),
 		description: text('description'),
+		/**
+		 * AI-09 — satırın çıktığı WhatsApp mesajı. Yalnız sunucu doldurur
+		 * (onay akışı); `TransactionCreate` şemasında karşılığı yoktur.
+		 */
+		sourceInboundMessageId: uuid('source_inbound_message_id').references(
+			() => inboundMessages.id,
+			{ onDelete: 'set null' }
+		),
+		/** AI-09 — alan başına doğrulanmış kaynak izi (`TransactionEvidence`). */
+		sourceEvidence: jsonb('source_evidence').$type<TransactionEvidence>(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()
@@ -67,6 +89,10 @@ export const transactions = pgTable(
 		index('transactions_tenant_id_responsible_contact_id_idx').on(
 			table.tenantId,
 			table.responsibleContactId
+		),
+		index('transactions_tenant_source_msg_idx').on(
+			table.tenantId,
+			table.sourceInboundMessageId
 		)
 	]
 );

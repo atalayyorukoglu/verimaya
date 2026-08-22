@@ -130,7 +130,7 @@ export class WhatsappController {
 					tenantId,
 					id,
 					input,
-					actor.actorId
+					actor
 				)
 			})
 		);
