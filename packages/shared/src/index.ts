@@ -43,6 +43,7 @@ export * from './marketing-report.js';
 export * from './credentials.js';
 export * from './webhook-subscription.js';
 export * from './ai-correction.js';
+export * from './ai-accuracy-report.js';
 export * from './ai-disclosure.js';
 export * from './ai-prompt.js';
 export * from './permission-matrix.js';

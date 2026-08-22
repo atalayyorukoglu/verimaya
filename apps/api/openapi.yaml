@@ -8448,6 +8448,9 @@ paths:
                       - from
                       - to
                     additionalProperties: false
+                  corrected_message_count:
+                    type: integer
+                    minimum: 0
                   items:
                     type: array
                     items:
@@ -8462,13 +8465,38 @@ paths:
                         distinct_messages:
                           type: integer
                           minimum: 0
+                        by_confidence:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                                nullable: true
+                              correction_count:
+                                type: integer
+                                minimum: 0
+                              distinct_messages:
+                                type: integer
+                                minimum: 0
+                            required:
+                              - confidence
+                              - correction_count
+                              - distinct_messages
+                            additionalProperties: false
                       required:
                         - field
                         - correction_count
                         - distinct_messages
+                        - by_confidence
                       additionalProperties: false
                 required:
                   - period
+                  - corrected_message_count
                   - items
                 additionalProperties: false
   /whatsapp/create-contact:
