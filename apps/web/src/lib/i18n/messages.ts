@@ -1025,6 +1025,22 @@ const tr = {
 	'finance.ai.draft.fxRate': 'Kur (1 birim → baz)',
 	'finance.ai.draft.amountBase': 'Baz tutar',
 	'finance.ai.draft.saved': 'Kaydedildi',
+	// AI-09 — kaynak izi
+	'finance.ai.evidence.source': 'kaynak',
+	'finance.ai.evidence.inferred': 'çıkarım',
+	'finance.ai.evidence.inferredHint':
+		'AI bu değeri mesajdan okumadı, çıkarım yaptı. Kontrol etmeniz önerilir.',
+	'finance.ai.evidence.quoteHint': 'Mesajdaki kaynak ({confidence}): "{quote}"',
+	'finance.ai.evidence.confidence.high': 'yüksek güven',
+	'finance.ai.evidence.confidence.medium': 'orta güven',
+	'finance.ai.evidence.confidence.low': 'düşük güven',
+	'finance.ai.evidence.heading': 'Kaynak alıntı',
+	'finance.ai.evidence.close': 'Kapat',
+	'finance.ai.evidence.notFound':
+		'Alıntı mesaj metninde konumlanamadı (maskeleme ofseti kaydırmış olabilir):',
+	'finance.ai.source.link': 'Kaynak: WhatsApp mesajı',
+	'finance.ai.source.approvedNotice':
+		'Bu mesaj onaylanmış. Yalnız kaynak metni gösteriliyor; yeniden onaylanamaz.',
 	'finance.ai.create.displayName': 'Görünen ad',
 	'finance.ai.create.contactType': 'Kişi türü',
 	'finance.ai.create.contactTypeNone': '— Tür seçin —',
@@ -3567,6 +3583,21 @@ const en: Record<MessageKey, string> = {
 	'finance.ai.draft.fxRate': 'FX rate (1 unit → base)',
 	'finance.ai.draft.amountBase': 'Base amount',
 	'finance.ai.draft.saved': 'Saved',
+	'finance.ai.evidence.source': 'source',
+	'finance.ai.evidence.inferred': 'inferred',
+	'finance.ai.evidence.inferredHint':
+		'AI did not read this value from the message, it inferred it. Please double-check.',
+	'finance.ai.evidence.quoteHint': 'Source in message ({confidence}): "{quote}"',
+	'finance.ai.evidence.confidence.high': 'high confidence',
+	'finance.ai.evidence.confidence.medium': 'medium confidence',
+	'finance.ai.evidence.confidence.low': 'low confidence',
+	'finance.ai.evidence.heading': 'Source quote',
+	'finance.ai.evidence.close': 'Close',
+	'finance.ai.evidence.notFound':
+		'The quote could not be located in the message text (masking may have shifted the offset):',
+	'finance.ai.source.link': 'Source: WhatsApp message',
+	'finance.ai.source.approvedNotice':
+		'This message is already approved. Only the source text is shown; it cannot be approved again.',
 	'finance.ai.create.displayName': 'Display name',
 	'finance.ai.create.contactType': 'Contact type',
 	'finance.ai.create.contactTypeNone': '— Select type —',

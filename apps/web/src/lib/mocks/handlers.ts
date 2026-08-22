@@ -2179,7 +2179,11 @@ export const handlers = [
 
 		const base = store.tenant.base_currency;
 		const created: Transaction[] = [];
-		for (const draft of parsed.data.drafts) {
+		// AI-09: iz sunucudaki taslaktan okunur, istek gövdesinden değil (API ile aynı kural).
+		const storedDrafts = item.parsed_records;
+		const alignedDrafts =
+			storedDrafts && storedDrafts.length === parsed.data.drafts.length ? storedDrafts : null;
+		for (const [draftIndex, draft] of parsed.data.drafts.entries()) {
 			const contact = draft.contact_id
 				? store.contacts.find((c) => c.id === draft.contact_id)
 				: null;
@@ -2212,6 +2216,8 @@ export const handlers = [
 				tenant_id: DEMO_TENANT_ID,
 				contact_display_name: contact?.display_name ?? draft.contact_display_name ?? null,
 				...resolved,
+				source_inbound_message_id: item.id,
+				source_evidence: alignedDrafts?.[draftIndex]?.evidence ?? null,
 				created_at: now,
 				updated_at: now
 			} as Transaction;

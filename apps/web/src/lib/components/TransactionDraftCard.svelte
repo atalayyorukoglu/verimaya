@@ -4,12 +4,14 @@
 		ContactType,
 		FinanceCategory,
 		TransactionDraft,
+		TransactionEvidenceEntry,
 		TransactionStatus
 	} from '@verimaya/shared';
 	import { transactionKindLabels, transactionStatusLabels } from '@verimaya/shared';
 	import { fieldClass, labelClass, textareaClass } from '$lib/api';
 	import { formatMoney } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
+	import EvidenceBadge from '$lib/components/EvidenceBadge.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 
@@ -34,7 +36,8 @@
 		creating = false,
 		onchange,
 		onCreateContact,
-		onCreateCategory
+		onCreateCategory,
+		onEvidence
 	}: {
 		draft: DraftApprovalState;
 		contacts?: Contact[];
@@ -51,6 +54,8 @@
 			email?: string | null;
 		}) => Promise<void>;
 		onCreateCategory: (input: { name: string; kind: TransactionDraft['kind'] }) => Promise<void>;
+		/** AI-09 — kaynak rozetine tıklanınca üstteki mesaj metninde alıntıyı vurgular. */
+		onEvidence?: (entry: TransactionEvidenceEntry) => void;
 	} = $props();
 
 	const kinds = Object.keys(transactionKindLabels) as TransactionDraft['kind'][];
@@ -206,7 +211,10 @@
 
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div>
-			<label class={labelClass} for={fieldId('kind')}>{t('finance.ai.draft.kind')}</label>
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('kind')}>{t('finance.ai.draft.kind')}</label>
+				<EvidenceBadge entry={draft.evidence?.kind} onselect={onEvidence} />
+			</div>
 			<select
 				id={fieldId('kind')}
 				class={fieldClass}
@@ -221,7 +229,10 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for={fieldId('amount')}>{t('finance.ai.draft.amount')}</label>
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('amount')}>{t('finance.ai.draft.amount')}</label>
+				<EvidenceBadge entry={draft.evidence?.amount} onselect={onEvidence} />
+			</div>
 			<input
 				id={fieldId('amount')}
 				class={fieldClass}
@@ -235,7 +246,10 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for={fieldId('currency')}>{t('finance.ai.draft.currency')}</label>
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('currency')}>{t('finance.ai.draft.currency')}</label>
+				<EvidenceBadge entry={draft.evidence?.currency} onselect={onEvidence} />
+			</div>
 			<select
 				id={fieldId('currency')}
 				class={fieldClass}
@@ -250,7 +264,10 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for={fieldId('date')}>{t('finance.ai.draft.date')}</label>
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('date')}>{t('finance.ai.draft.date')}</label>
+				<EvidenceBadge entry={draft.evidence?.occurred_on} onselect={onEvidence} />
+			</div>
 			<input
 				id={fieldId('date')}
 				class={fieldClass}
@@ -273,7 +290,10 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for={fieldId('category')}>{t('finance.ai.draft.category')}</label>
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('category')}>{t('finance.ai.draft.category')}</label>
+				<EvidenceBadge entry={draft.evidence?.category} onselect={onEvidence} />
+			</div>
 			<select
 				id={fieldId('category')}
 				class={fieldClass}
@@ -334,8 +354,12 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for={fieldId('method')}>{t('finance.ai.draft.paymentMethod')}</label
-			>
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('method')}
+					>{t('finance.ai.draft.paymentMethod')}</label
+				>
+				<EvidenceBadge entry={draft.evidence?.payment_method} onselect={onEvidence} />
+			</div>
 			<input
 				id={fieldId('method')}
 				class={fieldClass}
@@ -408,7 +432,10 @@
 		</div>
 
 		<div>
-			<label class={labelClass} for={fieldId('contact')}>{t('finance.ai.draft.contact')}</label>
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('contact')}>{t('finance.ai.draft.contact')}</label>
+				<EvidenceBadge entry={draft.evidence?.contact_id} onselect={onEvidence} />
+			</div>
 			<select
 				id={fieldId('contact')}
 				class={fieldClass}
