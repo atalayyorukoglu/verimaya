@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { KNOWLEDGE_SECTIONS } from './knowledge.js';
+import { mayaToolNameSchema, mayaToolResultSchema } from './maya-tools.js';
 
 /**
  * Maya — bilgi bankasına dayalı soru-cevap.
@@ -30,7 +31,20 @@ export const mayaAnswerSchema = z.object({
 	/** Bilgi bankası hiç doldurulmamış — panelde "önce doldurun" yönlendirmesi için. */
 	knowledge_empty: z.boolean(),
 	/** LLM yapılandırılmamış; cevap basit metin eşlemesiyle üretildi. */
-	heuristic: z.boolean()
+	heuristic: z.boolean(),
+	/**
+	 * AI-11a — cevap nereden geldi. `knowledge` bilgi bankası yolu (eski davranış),
+	 * `tool` canlı veri aracı, `unknown` cevapsızlık. Kullanıcı hangi yolun
+	 * kullanıldığını görebilsin diye yanıtta taşınır.
+	 */
+	source: z.enum(['knowledge', 'tool', 'unknown']),
+	/** Kullanılan araç — `source === 'tool'` iken dolu, aksi hâlde null. */
+	tool: mayaToolNameSchema.nullable(),
+	/**
+	 * Araç sonucu. Rakamların **tek kaynağı** budur ve tamamı Postgres'ten gelir;
+	 * `answer` alanı araç yolunda daima boş kalır (cümleyi istemci şablondan kurar).
+	 */
+	tool_result: mayaToolResultSchema.nullable()
 });
 export type MayaAnswer = z.infer<typeof mayaAnswerSchema>;
 

@@ -37,6 +37,7 @@ export * from './ghl-connection.js';
 export * from './api-key.js';
 export * from './knowledge.js';
 export * from './maya.js';
+export * from './maya-tools.js';
 export * from './reports.js';
 export * from './marketing-report.js';
 export * from './credentials.js';
