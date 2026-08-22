@@ -330,7 +330,7 @@
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
 | **AUDIT-04** | `transactions` create/update denetim kaydı | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-08** | Randevu ajanını WhatsApp akışına gömme | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-09** | Kaynak izi (`evidence`) — taslak + işlem satırı hangi cümleden çıktığını taşır | AUDIT-04 | M |
+| **AI-09** | Kaynak izi (`evidence`) | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-10** | LLM veri politikası dokümanı — sağlayıcı, eğitim opt-out, saklama, yurtdışı aktarım | LEG-02 | S |
 | ~~**AI-11a**~~ ✅ | Maya canlı veri v1 — sabit araç listesi (5 araç) + **soru kaydı** | AUDIT-04 | M |
 | **AI-11b** | Maya canlı veri v2 — kısıtlı sorgu katmanı ("akla gelen her soru") | AI-11a soru kaydı | L |
@@ -417,34 +417,6 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > AI-11a'nın soru kaydı, bizim eksik kanonumuzun yerine geçen şey. Kaynak: `info.rillet.com`
 > — iç mimarilerini yayınlamıyorlar, ama yaklaşımlarını "constrained / strict set of methods /
 > avoid inventing numbers" diye tanımlıyorlar; yani serbest SQL değil, kısıtlı metot listesi.
-
-- [ ] **AI-09 — Kaynak izi (`evidence`). (M)** — *bu bloğun ana yatırımı*
-  Taslak kartında ve onaylanmış işlemde "bu tutarı şu cümleden aldım" izi. Üç adım, üçü ayrı
-  commit:
-  1. **Sözleşme + prompt.** `packages/shared/src/inbound-message.ts` →
-     `transactionDraftSchema`'ya opsiyonel `evidence: Record<alan, {quote, start, confidence}>`
-     (`z.record` — beyaz liste genişleyince migration gerekmesin). `quote` + `start` **birlikte**:
-     PII maskeleme (`[TELEFON]`) ofseti kaydırır, quote her zaman gösterilebilir.
-     `buildWhatsappExtractionSystemPrompt` core'una tek cümle eklenir.
-     **Sunucu doğrulaması zorunlu:** `message.includes(quote)` değilse evidence düşürülür —
-     uydurulmuş atıf, atıfsızlıktan zararlıdır. `heuristic-parse.ts` regex `m.index`'ten
-     evidence'ı bedava üretir (LLM'den güvenilir).
-  2. **Kalıcılık.** Taslak `inbound_messages.payload.parsed_records` içine migration'sız gider.
-     Kopan yer onay: `0061_transaction_source_evidence.sql` →
-     `transactions.source_inbound_message_id uuid REFERENCES inbound_messages(id) ON DELETE SET NULL`
-     + `source_evidence jsonb` + `(tenant_id, source_inbound_message_id)` index. Mevcut tabloya
-     kolon — RLS/policy/GRANT'e dokunmaz. Alanlar **yalnız sunucu** doldurur, API'den yazılamaz.
-  3. **UI.** `TransactionDraftCard.svelte` alan başına kaynak rozeti; tıklayınca üstteki mesaj
-     metninde alıntı vurgulanır (`message` state zaten sayfada). İşlem detayında
-     "Kaynak: WhatsApp mesajı →".
-  **Kabul:** her adım ayrı commit + kabul · evidence'sız taslak (heuristic/eski kayıt) kartı
-  bozmaz (opsiyonel alan) · uydurma quote UI'a düşmez (doğrulama testi) · `source_evidence`
-  API request'inden set edilemez (negatif test) · izolasyon testi · sözleşme değiştiği için
-  **shared build → openapi:generate → test** (çalışma kuralı 10).
-  **Yan kazanç:** `ai_corrections` bugün "değişti mi" diyor; evidence ile *hangi alan hangi
-  confidence'ta* düzeltildi çıkar → AI-03 verisi kendiliğinden birikir.
-  **Ajan:** Opus — sözleşme + migration + prompt + güvenlik sınırı bir arada; hata pahalı.
-  **Görüş:**
 
 - [ ] **AI-10 — LLM veri politikası dokümanı. (S)** — kod işi değil
   Bugün hiçbir dokümanda "modeller müşteri verisiyle eğitilmiyor" taahhüdü **yok**
@@ -553,6 +525,37 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- [x] **AI-09 — Kaynak izi / `evidence` (2026-08-22).** 3 commit.
+  Taslak alan bazında `{quote, start, confidence}` taşıyor; onaylanan `transactions` satırı
+  `source_inbound_message_id` + `source_evidence` (migration `0062`). Kart ve işlem detayında
+  kaynak rozeti + mesajda vurgulama.
+  **Görüş:** Opus yazdı. **Uydurulmuş atıf koruması mutasyonla doğrulandı** — doğrulama
+  kapatılınca 3 test kırmızı. Atıf **maskeli metne** (modelin gördüğü) karşı doğrulanıyor;
+  doğru seçim, ham metne karşı doğrulamak `[TELEFON]` içeren dürüst alıntıyı uydurma sayardı.
+  Ofset ham metinde yeniden hesaplanıyor, modelin verdiği ofset asla doğrudan kullanılmıyor.
+  Alanlar API'den yazılamıyor (zod `omit` + controller argümanı hiç geçmiyor + `updateWithDb`
+  dokunmuyor + onayda izi payload'dan okuyor). Kullanıcı bir alanı düzeltirse o alanın izi
+  düşüyor — doğru karar, iz "AI şuradan aldı" demek. 800 api / 180 shared / 86 web yeşil.
+  **Açık kusur (bilinçli):** `zod-to-json-schema` enum anahtarlı `z.record`'u eksiksiz nesne
+  sanıp `openapi.yaml`'da `evidence` bloğuna yanlış `required` yazıyor. Runtime doğru.
+  Düzeltme `z.object().partial()`'a çevirmeyi gerektiriyor, o da AI-07 beyaz liste
+  genişletmesinde migration'sız büyüme gerekçesini zayıflatıyor. Doküman tüketen istemci
+  üretilecekse burası düzeltilmeli.
+
+- [x] **AI-11a — Maya canlı veri v1 (2026-08-22).** 7 commit.
+  Beş araç (`contactBalance`, `openBalances`, `contactAppointments`, `periodSummary`,
+  `untouchedContacts`) mevcut servisleri yeniden kullanıyor; soru kaydı `maya_questions`
+  (migration `0061`).
+  **Görüş:** Opus yazdı. **İzin kapısı mutasyonla doğrulandı** — delinince 3 test kırmızı.
+  İzin araç başına, çalışma anında (`MayaToolsService.isToolAllowed`); guard `settings:read`'te
+  bilinçli bırakıldı, ikisi ancak birlikte doğru. Model rakam üretemiyor: sözleşmede rakam
+  alanı yok, çıktıdan yalnız `{tool, params}` okunuyor, `params` `.strict()`; cümleyi web
+  şablonu kuruyor. **Bulgu:** `0003_app_role.sql` her yeni public tabloya `UPDATE` veriyor —
+  `GRANT SELECT, INSERT, DELETE` yetmiyor, açık `REVOKE UPDATE` gerekti. Canlı DB'de
+  doğrulandı. Bundan sonraki her "yazılır, güncellenmez" tabloda aynı tuzak.
+  **AI-11b ön koşulu bugün başladı:** `maya_questions` ≥1 ay soru toplayacak → en erken
+  **2026-09-22**.
 
 - [x] **AI-11a — Maya canlı veri v1: sabit araç listesi (2026-08-22).**
   Maya artık kendi kayıtlarınızı da cevaplıyor. Beş araç, beşi de mevcut servisi yeniden
