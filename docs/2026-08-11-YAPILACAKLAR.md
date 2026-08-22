@@ -329,7 +329,7 @@
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
 | **AUDIT-04** | `transactions` create/update denetim kaydı | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-08** | Randevu ajanını WhatsApp akışına gömme — aynı worker, ikinci ajan | — | S |
+| **AI-08** | Randevu ajanını WhatsApp akışına gömme | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-09** | Kaynak izi (`evidence`) — taslak + işlem satırı hangi cümleden çıktığını taşır | AUDIT-04 | M |
 | **AI-10** | LLM veri politikası dokümanı — sağlayıcı, eğitim opt-out, saklama, yurtdışı aktarım | LEG-02 | S |
 | **AI-11a** | Maya canlı veri v1 — sabit araç listesi (5 araç) + **soru kaydı** | AUDIT-04 | M |
@@ -403,7 +403,7 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > Rillet'in ABD ekosistemine ait (Stripe/Plaid/açık bankacılık); burada karşılığı yok ve
 > "Bilinçli olarak yapılmayacaklar"da. İlk demoda çöker.
 
-**Sıra: ~~AUDIT-04~~ ✅ → AI-08 → AI-11a → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
+**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → AI-11a → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
 
 > **AI-11a neden AI-09'dan önce (2026-08-22 kararı).** AI-11b'nin ("akla gelen her soru")
 > tasarlanabilmesi için **gerçek soru listesi** gerekiyor ve o listenin bekleme süresi var —
@@ -417,23 +417,6 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > AI-11a'nın soru kaydı, bizim eksik kanonumuzun yerine geçen şey. Kaynak: `info.rillet.com`
 > — iç mimarilerini yayınlamıyorlar, ama yaklaşımlarını "constrained / strict set of methods /
 > avoid inventing numbers" diye tanımlıyorlar; yani serbest SQL değil, kısıtlı metot listesi.
-
-- [ ] **AI-08 — Randevu ajanını WhatsApp akışına gömme. (S)**
-  `InboundMessageProcessor.process()` bugün yalnız `WhatsappService.processInboundMessage`
-  çağırıyor. Aynı job içinde `RecordSuggestionsService`'in parse yolu da çağrılacak — aynı mesaj,
-  aynı worker, ikinci LLM çağrısı. Yeni tablo / endpoint / kuyruk **yok**.
-  **Kabul:** mesaj geldiğinde hem finans taslağı hem randevu önerisi üretilir (ikisi de
-  `pending`, ikisi de tek tek onaylanır) · randevu ajanının hatası finans yolunu düşürmez
-  (ayrı try/catch, job yine `completed`) · mükerrer `pending` öneri yazılmaz (mevcut unique
-  index korunur) · her iki çağrı `llm.parse` ledger'ına ayrı satır yazar · mevcut manuel
-  `POST /v1/record-suggestions/parse` yolu **aynen kalır** (yeniden parse için) · izolasyon testi.
-  **Değişmez kurallara dokunmaz:** öneri hâlâ taslak, toplu onay yok, belirsizse üretilmez.
-  **Dosyalar:** `apps/api/src/whatsapp/inbound-message.processor.ts`,
-  `apps/api/src/whatsapp/whatsapp.module.ts` (RecordSuggestions modülü import),
-  `apps/api/src/record-suggestions/record-suggestions.service.ts` (mesaj gövdesiyle çağrılabilir
-  giriş), yeni spec.
-  **Ajan:** Sonnet — modül grafiği ve hata izolasyonu kararı var, kopyala-yapıştır değil.
-  **Görüş:**
 
 - [ ] **AI-09 — Kaynak izi (`evidence`). (M)** — *bu bloğun ana yatırımı*
   Taslak kartında ve onaylanmış işlemde "bu tutarı şu cümleden aldım" izi. Üç adım, üçü ayrı
@@ -588,6 +571,15 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- [x] **AI-08 — Randevu ajanı WhatsApp akışına gömüldü (2026-08-22).**
+  `InboundMessageProcessor` artık aynı mesaj gövdesini `RecordSuggestionsService.parse`'a da
+  yolluyor. Randevu ajanı ayrı try/catch'te; `outcome === 'skipped'` ise çalışmaz (mükerrer
+  öneri koruması). Manuel `POST /v1/record-suggestions/parse` ve toplu inbox yolu değişmedi.
+  **Görüş:** Sonnet yazdı. Hata izolasyonu mutasyonla doğrulandı — randevu ajanına bilerek
+  `throw` koyuldu, finans taslağı ve `job.status=completed` yine yazıldı, 8 test yeşil kaldı.
+  Tam takım 735 test yeşil, `pnpm check` temiz. Onay kapısına (Madde 6.2) dokunulmadı;
+  değişen yalnız tetikleyici.
 
 - [x] **AUDIT-04 — `transactions` create/update denetim kaydı (2026-08-22).**
   `createWithDb` + `updateWithDb` artık `audit_logs`'a yazıyor (`entity_label` =
