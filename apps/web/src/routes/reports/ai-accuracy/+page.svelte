@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { createQuery } from '@tanstack/svelte-query';
-	import { apiPaths, type AiAccuracyReport, type MayaToolName, type Tenant } from '@verimaya/shared';
+	import {
+		apiPaths,
+		type AiAccuracyReport,
+		type MayaToolName,
+		type Tenant
+	} from '@verimaya/shared';
 	import { apiGet } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime, formatPercent } from '$lib/format';
@@ -91,7 +96,10 @@
 		</a>
 	</div>
 
-	<PageHeader title={t('reports.aiAccuracy.title')} description={t('reports.aiAccuracy.description')} />
+	<PageHeader
+		title={t('reports.aiAccuracy.title')}
+		description={t('reports.aiAccuracy.description')}
+	/>
 
 	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone} />
 
@@ -144,7 +152,9 @@
 									<th class="px-3 py-2 text-right font-medium"
 										>{t('reports.aiAccuracy.drafts.colMessages')}</th
 									>
-									<th class="px-3 py-2 font-medium">{t('reports.aiAccuracy.drafts.colConfidence')}</th>
+									<th class="px-3 py-2 font-medium"
+										>{t('reports.aiAccuracy.drafts.colConfidence')}</th
+									>
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-border">
@@ -183,7 +193,9 @@
 		<!-- 2) Nerede yanılıyor? -->
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-6">
 			<h2 class="text-sm font-semibold text-text">{t('reports.aiAccuracy.suggestions.title')}</h2>
-			<p class="mt-0.5 text-xs text-text-muted">{t('reports.aiAccuracy.suggestions.description')}</p>
+			<p class="mt-0.5 text-xs text-text-muted">
+				{t('reports.aiAccuracy.suggestions.description')}
+			</p>
 
 			{#if data.suggestions.total === 0}
 				<p class="mt-4 text-sm text-text-muted">{t('reports.aiAccuracy.suggestions.empty')}</p>
@@ -208,7 +220,9 @@
 						</p>
 					</div>
 					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
-						<p class="text-xs text-text-muted">{t('reports.aiAccuracy.suggestions.acceptanceRate')}</p>
+						<p class="text-xs text-text-muted">
+							{t('reports.aiAccuracy.suggestions.acceptanceRate')}
+						</p>
 						<p class="mt-1 text-lg font-semibold text-text tabular-nums">
 							{data.suggestions.acceptance_rate == null
 								? '—'
@@ -307,7 +321,10 @@
 							{t('reports.aiAccuracy.maya.unansweredTitle')}
 						</p>
 						<div class="flex gap-3 text-xs">
-							<a href={resolve('/settings/knowledge')} class="font-medium text-brand hover:underline">
+							<a
+								href={resolve('/settings/knowledge')}
+								class="font-medium text-brand hover:underline"
+							>
 								{t('reports.aiAccuracy.maya.addToKnowledge')}
 							</a>
 							<a href={resolve('/settings/ai')} class="font-medium text-brand hover:underline">
@@ -318,7 +335,9 @@
 					<p class="mt-1 text-xs text-text-muted">{t('reports.aiAccuracy.maya.unansweredHint')}</p>
 
 					{#if data.maya.unanswered_samples.length === 0}
-						<p class="mt-3 text-sm text-text-muted">{t('reports.aiAccuracy.maya.unansweredEmpty')}</p>
+						<p class="mt-3 text-sm text-text-muted">
+							{t('reports.aiAccuracy.maya.unansweredEmpty')}
+						</p>
 					{:else}
 						<ul class="mt-3 space-y-2">
 							{#each data.maya.unanswered_samples as sample (sample.created_at + sample.question_masked)}

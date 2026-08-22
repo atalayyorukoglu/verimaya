@@ -2429,9 +2429,7 @@ export const handlers = [
 		if (to) approvedTx = approvedTx.filter((t) => t.created_at.slice(0, 10) <= to);
 		const approvedIds = new Set(approvedTx.map((t) => t.source_inbound_message_id));
 
-		let suggestions = store.recordUpdateSuggestions.filter(
-			(s) => s.tenant_id === store.tenant.id
-		);
+		let suggestions = store.recordUpdateSuggestions.filter((s) => s.tenant_id === store.tenant.id);
 		if (from) suggestions = suggestions.filter((s) => s.created_at.slice(0, 10) >= from);
 		if (to) suggestions = suggestions.filter((s) => s.created_at.slice(0, 10) <= to);
 		const approved = suggestions.filter((s) => s.status === 'approved').length;
@@ -2450,8 +2448,7 @@ export const handlers = [
 			drafts: {
 				approved_message_count: approvedIds.size,
 				corrected_message_count: correctedIds.size,
-				unchanged_rate:
-					approvedIds.size > 0 ? 1 - correctedIds.size / approvedIds.size : null,
+				unchanged_rate: approvedIds.size > 0 ? 1 - correctedIds.size / approvedIds.size : null,
 				by_field: aggregateAiCorrectionsReport(corrections)
 			},
 			suggestions: {

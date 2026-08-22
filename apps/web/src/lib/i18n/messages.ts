@@ -2015,7 +2015,8 @@ const tr = {
 	'reports.aiAccuracy.suggestions.reasonsEmpty': 'Bu dönemde red yok.',
 	'reports.aiAccuracy.suggestions.noReason': 'Gerekçe belirtilmedi',
 	'reports.aiAccuracy.maya.title': 'Maya cevap oranı',
-	'reports.aiAccuracy.maya.description': 'Maya’ya sorulan soruların kaçı cevaplandı, kaçı bilinmiyor.',
+	'reports.aiAccuracy.maya.description':
+		'Maya’ya sorulan soruların kaçı cevaplandı, kaçı bilinmiyor.',
 	'reports.aiAccuracy.maya.total': 'Soru',
 	'reports.aiAccuracy.maya.answered': 'Cevaplanan',
 	'reports.aiAccuracy.maya.unanswered': 'Cevaplanamayan',
