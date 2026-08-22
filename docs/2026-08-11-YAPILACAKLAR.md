@@ -332,7 +332,7 @@
 | **AI-08** | Randevu ajanını WhatsApp akışına gömme | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-09** | Kaynak izi (`evidence`) — taslak + işlem satırı hangi cümleden çıktığını taşır | AUDIT-04 | M |
 | **AI-10** | LLM veri politikası dokümanı — sağlayıcı, eğitim opt-out, saklama, yurtdışı aktarım | LEG-02 | S |
-| **AI-11a** | Maya canlı veri v1 — sabit araç listesi (5 araç) + **soru kaydı** | AUDIT-04 | M |
+| ~~**AI-11a**~~ ✅ | Maya canlı veri v1 — sabit araç listesi (5 araç) + **soru kaydı** | AUDIT-04 | M |
 | **AI-11b** | Maya canlı veri v2 — kısıtlı sorgu katmanı ("akla gelen her soru") | AI-11a soru kaydı | L |
 
 **Değişmez kurallar** (bozulursa "insan onaylı" savunması çöker): toplu kabul yok, her kart tek
@@ -403,7 +403,7 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > Rillet'in ABD ekosistemine ait (Stripe/Plaid/açık bankacılık); burada karşılığı yok ve
 > "Bilinçli olarak yapılmayacaklar"da. İlk demoda çöker.
 
-**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → AI-11a → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
+**Sıra: ~~AUDIT-04~~ ✅ → ~~AI-08~~ ✅ → ~~AI-11a~~ ✅ → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
 
 > **AI-11a neden AI-09'dan önce (2026-08-22 kararı).** AI-11b'nin ("akla gelen her soru")
 > tasarlanabilmesi için **gerçek soru listesi** gerekiyor ve o listenin bekleme süresi var —
@@ -473,30 +473,11 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > **hangi sorgu + hangi parametre** olduğunu seçer; **rakamı Postgres verir, kod basar.**
 > Model rakamı ne görür ne üretir. AI-09 ile aynı ilke: *model işaret eder, sistem doğruyu söyler.*
 > **Her koşulda kapsam dışı:** serbest SQL · hasta listesi dökümü · tıbbi yorum · tahsilat taahhüdü.
-
-- [ ] **AI-11a — Maya canlı veri v1: sabit araç listesi. (M)**
-  Beş araç; beşinin de servisi **zaten var**, yeni sorgu/tablo yok:
-  | Araç | Mevcut kod | Soru |
-  |---|---|---|
-  | `contactBalance` | `contacts.financeSummary()` | "X ne kadar borçlu?" |
-  | `openBalances` | `reports.balances()` | "Kimlerden alacağımız var?" |
-  | `contactAppointments` | `appointments.list()` | "X'in randevusu ne zaman?" |
-  | `periodSummary` | `reports.summary()` | "Bu ay ne kadar tahsilat?" |
-  | `untouchedContacts` | `reports.untouchedContacts()` | "Kime dönülmedi?" |
-
-  **Kabul:** araç sözleşmeleri `packages/shared`'da zod ile (AGENTS ilke 7) · model çıktısı
-  yalnız `{tool, params}`; rakam/isim üretemez (negatif test: uydurma rakam UI'a düşmez) ·
-  **izin zinciri aynen uygulanır** — `RequireOrgPermission` atlanmaz; finans izni olmayan
-  temsilci `contactBalance` cevabı **alamaz** (izolasyon + izin testi, ikisi ayrı) · modele
-  isim/telefon gitmez, `contact_ref` UUID gider (`pii-mask.ts` deseni), ismi ekrana kod basar ·
-  araç eşleşmezse `BILINMIYOR` — tahmin yok · her çağrı `llm.parse` ledger'ına satır yazar.
-  **Soru kaydı (AI-11b'nin tek girdisi — atlanırsa 11b tasarlanamaz):** sorulan her soru,
-  seçilen araç (veya `BILINMIYOR`) ve cevaplanıp cevaplanmadığı tenant bazında kaydedilir.
-  PII **girmez** — soru metni maskelenerek saklanır.
-  **Dosyalar:** `apps/api/src/maya/*`, `apps/api/src/integrations/llm/*`,
-  `packages/shared/src/maya.ts`, yeni migration (soru kaydı tablosu), web `/maya`, yeni spec'ler.
-  **Ajan:** Opus — izin sınırı + PII sınırı + tool-calling bir arada; hata pahalı ve sessiz.
-  **Görüş:**
+>
+> **Güncel (2026-08-22, AI-11a kapandı):** yukarıdaki "DB'ye hiç erişimi yok" cümlesi artık
+> geçerli değil — beş sabit araçla erişimi var. "Yılmaz bey'in kalan borcu ne?" cevaplanıyor;
+> izin araç başına çalışma anında kontrol ediliyor. Desen aynen uygulandı: DB satırı prompt'a
+> dökülmüyor, model yalnız `{tool, params}` seçiyor.
 
 - [ ] **AI-11b — Maya canlı veri v2: kısıtlı sorgu katmanı. (L)** — *listenin en büyük kalemi*
   Model tablo + filtre + toplama seçer; serbest SQL **değil**: izinli tablolar
@@ -504,7 +485,8 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
   Örnek — 5 araçta olmayan ama bunun cevapladığı soru: *"Geçen ay Ada Klinik'e toplam ne
   ödedik?"* → `transactions` · `contact=…, kind=expense, occurred_on ∈ [Tem]` · `sum(amount_base)`.
   **Ön koşul:** AI-11a soru kaydında ≥1 ay gerçek soru. Desteklenecek filtreler o kayıttan
-  çıkar — önceden tasarlanmaz.
+  çıkar — önceden tasarlanmaz. **Sayaç 2026-08-22'de başladı** (`maya_questions`); bu iş
+  en erken 2026-09-22'de açılabilir.
   **Kabul:** AI-11a'nın tüm kabul maddeleri aynen geçerli (izin, PII, `BILINMIYOR`, ledger) +
   üretilen sorgu whitelist dışına çıkamaz (negatif test: yasak tablo/sütun reddedilir) +
   sonuç satır sayısı üst sınırı.
@@ -571,6 +553,50 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
+
+- [x] **AI-11a — Maya canlı veri v1: sabit araç listesi (2026-08-22).**
+  Maya artık kendi kayıtlarınızı da cevaplıyor. Beş araç, beşi de mevcut servisi yeniden
+  kullanıyor (yeni sorgu yazılmadı): `contactBalance` → `contacts.financeSummary()` ·
+  `openBalances` → `reports.balances()` · `contactAppointments` → `appointments.list()` ·
+  `periodSummary` → `reports.summary()` · `untouchedContacts` → `reports.untouchedContacts()`.
+  Sözleşme `packages/shared/src/maya-tools.ts`; soru kaydı `0061_maya_questions.sql`.
+  **Görüş:** Opus yazdı, doğrulamayı kendi koşturdu (774 API testi / 138 dosya, shared 180,
+  web 78, `pnpm check` temiz).
+
+  **İzin sınırı nereye kondu.** `POST /v1/maya/ask` hâlâ yalnız `settings:read` istiyor —
+  guard'ı `finance:read`'e yükseltmek yanlış olurdu, o zaman bilgi bankası sorusu soran
+  temsilci kapıda kalırdı. Doğru sınır **araç başına, çalışma anında**:
+  `MayaToolsService.isToolAllowed` guard'la birebir aynı zinciri koşuyor
+  (`resolveOrganizationRole` → `getDeniedKeys` → `hasOrgPermission`). İzin yoksa araç
+  **çalıştırılmıyor**, sorgu bile atılmıyor ve cevap `BILINMIYOR` — "yetkin yok" denmiyor,
+  verinin varlığı sızmıyor.
+  **Not:** varsayılan matriste her rolde `finance:read` var; izinsizlik yalnız tenant deny
+  override'ıyla oluşuyor (G-11). Test o gerçek yolu kullanıyor.
+
+  **Modelin rakam üretmesini ne engelliyor.** Üç kat: (1) sözleşmede rakam alanı yok —
+  model yalnız araç adı + kapalı kümeden parametre seçebiliyor, dönem ve temassızlık eşiği
+  bile enum; (2) istemci model çıktısından **yalnız** `tool` + `params` okuyor, gövdeye
+  eklediği cevap cümlesi hiç okunmuyor; (3) `params` `.strict()` — uydurma bir alan
+  doğrulamayı düşürüyor ve çağrı deterministik yönlendiriciye devrediliyor. Gerçek tarih
+  aralığını `mayaPeriodRange` kodda, tenant saat dilimine göre hesaplıyor.
+
+  **PII.** Kişi eşlemesi sunucuda: isim maskeleniyor, modele `KISI_n` token + opak UUID
+  gidiyor (`maya-contact-match.ts`), gövde `buildMaskedMayaToolPayload` kapısından geçiyor.
+  Aynı isme birden çok kişi uyarsa **token üretilmiyor** — yanlış hastanın bakiyesini
+  göstermektense cevapsızlık. Modelin verdiği `contact_ref` sunucunun çözdüğü listede yoksa
+  araç çalışmıyor; bu, aynı tenant içinde RLS'in yakalayamadığı tek delik.
+
+  **Beklenmeyen bulgu.** `0003_app_role.sql`'deki `ALTER DEFAULT PRIVILEGES` her yeni public
+  tabloya `UPDATE` veriyor — denetim kaydı için yalnız `GRANT SELECT, INSERT, DELETE` yazmak
+  yetmiyordu. 0061'e açık `REVOKE UPDATE` eklendi ve doğrulandı. Yeni "yazılır, güncellenmez"
+  tabloların hepsi için geçerli bir tuzak.
+
+  **Testlerin gerçekten koştuğu mutasyonla kanıtlandı:** izin kontrolü bilerek kapatılınca
+  2 test, kişi izin listesi kapatılınca 1 test kırmızıya döndü.
+
+  **AI-11b için hazır girdi:** `maya_questions` (maskelenmiş soru, seçilen araç, cevaplandı mı,
+  kaynak). İzin reddi yüzünden çalışmayan araç da kaydediliyor — hangi rolün neye ihtiyaç
+  duyduğu ancak böyle görülür. Sayaç bugün başladı.
 
 - [x] **AI-08 — Randevu ajanı WhatsApp akışına gömüldü (2026-08-22).**
   `InboundMessageProcessor` artık aynı mesaj gövdesini `RecordSuggestionsService.parse`'a da
