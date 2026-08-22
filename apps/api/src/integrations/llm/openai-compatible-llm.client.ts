@@ -14,6 +14,7 @@ import {
 } from '@verimaya/shared';
 import { heuristicRouteMayaTool } from '../../maya/heuristic-tool-route';
 import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
+import { verifyDraftEvidence } from '../../whatsapp/evidence';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type {
 	LlmClient,
@@ -72,6 +73,7 @@ export function buildWhatsappExtractionSystemPrompt(
 		'amount is integer minor units (kuruş/cents). currency is TRY|GBP|EUR|USD.',
 		'kind is income|expense. Do not invent patients; set patient_id only to a patient_ref UUID from the provided list (or null).',
 		'Message text may contain placeholders like [TELEFON]/[EPOSTA]/[HASTA] — ignore them for matching.',
+		'For every field you fill from the message, add an "evidence" object mapping the field name (amount|currency|kind|occurred_on|contact_id|payment_method|category) to {"quote": exact substring copied verbatim from the message, "start": its character offset, "confidence": "high"|"medium"|"low"}; when you inferred a value without reading it, use confidence "low" and quote "".',
 		'If nothing can be extracted, return {"records":[]}.'
 	].join(' ');
 	// Sıra bilinçli: çekirdek kurallar → bilgi bankası (referans veri) → tenant notu.
@@ -528,7 +530,13 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		}
 
 		const parsedJson: unknown = JSON.parse(content);
-		const records = parseDraftsPayload(parsedJson);
+		// AI-09: atıf doğrulaması maskeli metne karşı — model yalnız onu gördü.
+		// `start` ham metne göre yeniden hesaplanır (vurgulama orada yapılıyor).
+		const records = verifyDraftEvidence(
+			parseDraftsPayload(parsedJson),
+			maskedUser.message,
+			ctx.message
+		);
 
 		const promptTokens = json.usage?.prompt_tokens ?? null;
 		const completionTokens = json.usage?.completion_tokens ?? null;

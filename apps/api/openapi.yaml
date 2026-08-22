@@ -5102,6 +5102,166 @@ paths:
                           type: string
                           maxLength: 8000
                           nullable: true
+                        evidence:
+                          type: object
+                          required: &a1
+                            - amount
+                            - currency
+                            - kind
+                            - occurred_on
+                            - contact_id
+                            - payment_method
+                            - category
+                          properties:
+                            amount:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            currency:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            kind:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            occurred_on:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            payment_method:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            category:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                          additionalProperties: false
+                          nullable: true
                       required:
                         - kind
                         - amount
@@ -5219,6 +5379,159 @@ paths:
                               description:
                                 type: string
                                 maxLength: 8000
+                                nullable: true
+                              evidence:
+                                type: object
+                                required: *a1
+                                properties:
+                                  amount:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  currency:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  kind:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  occurred_on:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  contact_id:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  payment_method:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  category:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                additionalProperties: false
                                 nullable: true
                             required:
                               - kind
@@ -5356,6 +5669,159 @@ paths:
                           type: string
                           maxLength: 8000
                           nullable: true
+                        evidence:
+                          type: object
+                          required: *a1
+                          properties:
+                            amount:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            currency:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            kind:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            occurred_on:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            payment_method:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            category:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                          additionalProperties: false
+                          nullable: true
                       required:
                         - kind
                         - amount
@@ -5481,6 +5947,159 @@ paths:
                         description:
                           type: string
                           maxLength: 8000
+                          nullable: true
+                        evidence:
+                          type: object
+                          required: *a1
+                          properties:
+                            amount:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            currency:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            kind:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            occurred_on:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            payment_method:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            category:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                          additionalProperties: false
                           nullable: true
                       required:
                         - kind
@@ -5987,6 +6606,159 @@ paths:
                           type: string
                           maxLength: 8000
                           nullable: true
+                        evidence:
+                          type: object
+                          required: *a1
+                          properties:
+                            amount:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            currency:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            kind:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            occurred_on:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            payment_method:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            category:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                          additionalProperties: false
+                          nullable: true
                       required:
                         - kind
                         - amount
@@ -6053,6 +6825,159 @@ paths:
                         description:
                           type: string
                           maxLength: 8000
+                          nullable: true
+                        evidence:
+                          type: object
+                          required: *a1
+                          properties:
+                            amount:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            currency:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            kind:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            occurred_on:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            payment_method:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            category:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                          additionalProperties: false
                           nullable: true
                       required:
                         - kind
@@ -6147,6 +7072,159 @@ paths:
                         type: string
                         maxLength: 8000
                         nullable: true
+                      evidence:
+                        type: object
+                        required: *a1
+                        properties:
+                          amount:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          currency:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          kind:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          occurred_on:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          contact_id:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          payment_method:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          category:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                        additionalProperties: false
+                        nullable: true
                     required:
                       - kind
                       - amount
@@ -6214,6 +7292,159 @@ paths:
                       description:
                         type: string
                         maxLength: 8000
+                        nullable: true
+                      evidence:
+                        type: object
+                        required: *a1
+                        properties:
+                          amount:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          currency:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          kind:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          occurred_on:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          contact_id:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          payment_method:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          category:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                        additionalProperties: false
                         nullable: true
                     required:
                       - kind
@@ -6311,6 +7542,159 @@ paths:
                                 type: string
                                 maxLength: 8000
                                 nullable: true
+                              evidence:
+                                type: object
+                                required: *a1
+                                properties:
+                                  amount:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  currency:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  kind:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  occurred_on:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  contact_id:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  payment_method:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  category:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                additionalProperties: false
+                                nullable: true
                             required:
                               - kind
                               - amount
@@ -6377,6 +7761,159 @@ paths:
                               description:
                                 type: string
                                 maxLength: 8000
+                                nullable: true
+                              evidence:
+                                type: object
+                                required: *a1
+                                properties:
+                                  amount:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  currency:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  kind:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  occurred_on:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  contact_id:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  payment_method:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  category:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                additionalProperties: false
                                 nullable: true
                             required:
                               - kind
@@ -6638,7 +8175,7 @@ paths:
                       type: string
                       minLength: 1
                       maxLength: 128
-                    default: &a1 []
+                    default: &a2 []
                   created_at:
                     type: string
                     format: date-time
@@ -7053,7 +8590,7 @@ paths:
                             type: string
                             minLength: 1
                             maxLength: 128
-                          default: *a1
+                          default: *a2
                         created_at:
                           type: string
                           format: date-time
@@ -8366,7 +9903,7 @@ paths:
                         - readonly
                   defaults:
                     type: object
-                    required: &a3
+                    required: &a4
                       - owner
                       - admin
                       - manager
@@ -8376,7 +9913,7 @@ paths:
                     properties:
                       owner:
                         type: object
-                        required: &a2
+                        required: &a3
                           - contact
                           - finance
                           - settings
@@ -8461,7 +9998,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -8538,7 +10075,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -8615,7 +10152,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -8692,7 +10229,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -8769,7 +10306,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -8889,11 +10426,11 @@ paths:
                       additionalProperties: false
                   effective:
                     type: object
-                    required: *a3
+                    required: *a4
                     properties:
                       owner:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -8970,7 +10507,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9047,7 +10584,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9124,7 +10661,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9201,7 +10738,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9278,7 +10815,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9434,11 +10971,11 @@ paths:
                         - readonly
                   defaults:
                     type: object
-                    required: *a3
+                    required: *a4
                     properties:
                       owner:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9515,7 +11052,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9592,7 +11129,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9669,7 +11206,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9746,7 +11283,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9823,7 +11360,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -9943,11 +11480,11 @@ paths:
                       additionalProperties: false
                   effective:
                     type: object
-                    required: *a3
+                    required: *a4
                     properties:
                       owner:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -10024,7 +11561,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -10101,7 +11638,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -10178,7 +11715,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -10255,7 +11792,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -10332,7 +11869,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a2
+                        required: *a3
                         properties:
                           contact:
                             type: array
@@ -10598,7 +12135,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: &a4 []
+                          default: &a5 []
                       required:
                         - row_number
                         - action
@@ -10815,7 +12352,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: *a4
+                          default: *a5
                         sheet:
                           type: string
                           enum:
