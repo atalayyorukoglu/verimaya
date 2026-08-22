@@ -64,7 +64,25 @@
 
 ## Öncelik sırası
 
-### 0. OPS-03 — AI temeli dalının prod'a çıkışı (kullanıcı yürütür)
+### 0. OPS-03 — ✅ **kapandı (2026-08-23)** — AI temeli prod'a çıktı
+
+Doğrulanan: CI yeşil · web deploy başarılı · API deploy başarılı ·
+runtime log `[✓] migrations applied successfully!` · `GET /v1/reports/ai-accuracy` → 401
+(endpoint canlı) · `GET /v1/health` → 200 ·
+`maya_questions` yetkileri **`DELETE,INSERT,SELECT`** — `UPDATE` yok, `REVOKE` tuttu.
+
+**İki öğrenilen (kalıcı not):**
+1. **API elle deploy gerektirmiyor** — Coolify webhook her `main` push'unda kendiliğinden
+   deploy ediyor ve `RUN_MIGRATIONS=true` sayesinde migration'lar deploy anında koşuyor.
+   Bu turda elle tetiklenen deploy fazlalıktı. Sonraki sürümlerde yalnız `git push origin main`
+   yeterli; Coolify'a girmek sadece doğrulama için.
+2. **`pnpm check` lint koşturmuyor.** CI ayrıca `pnpm --filter @verimaya/web lint`
+   (prettier + eslint) koşturuyor; yerelde yeşil görünüp CI'da kırmızıya dönen tek yol bu.
+   Push öncesi `pnpm lint` de koşturulmalı — bu turda CI ilk denemede bu yüzden kırıldı.
+   Web deploy kapısı çalıştı, kırık kod canlıya çıkmadı.
+
+<details><summary>Eski runbook (kapanmadan önceki adımlar)</summary>
+
 
 `feat/audit-04-transaction-audit-log` dalı prod'a giderken **iki migration** koşacak:
 
@@ -80,6 +98,8 @@
   tabloya kolon; RLS/policy'ye dokunmuyor. Geri alınabilir (kolon drop).
 
 Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı (2026-08-22).
+
+</details>
 
 ---
 
