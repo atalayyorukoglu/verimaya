@@ -306,7 +306,7 @@
 
 ---
 
-## AI katmanı (AI-01…AI-07) — sıra serbest (pilot ertelendi)
+## AI katmanı (AI-01…AI-11b) — sıra serbest (pilot ertelendi)
 
 > Karar metni, gerekçe ve 13 firmalık rakip AI taraması: Obsidian
 > `03-Areas/VeriMaya/09-ai-katmani-yol-haritasi.md` (2026-08-15) + `02-yol-haritasi.md` § Eksen 1b.
@@ -323,11 +323,17 @@
 |---|---|---|---|
 | **AI-01** | Bilgi tabanı v1 | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-02** | Kayıt güncelleme onay kuyruğu | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02 | S |
+| **AI-03** | İsabet ölçümü + geri besleme — red edilen öneriler tenant bazında raporlanır, sık red desenleri prompt'a girer | AI-01, AI-02, **AI-09** | S |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
+| **AUDIT-04** | `transactions` create/update denetim kaydı — bugün yalnız `delete` yazıyor | — | S |
+| **AI-08** | Randevu ajanını WhatsApp akışına gömme — aynı worker, ikinci ajan | — | S |
+| **AI-09** | Kaynak izi (`evidence`) — taslak + işlem satırı hangi cümleden çıktığını taşır | AUDIT-04 | M |
+| **AI-10** | LLM veri politikası dokümanı — sağlayıcı, eğitim opt-out, saklama, yurtdışı aktarım | LEG-02 | S |
+| **AI-11a** | Maya canlı veri v1 — sabit araç listesi (5 araç) + **soru kaydı** | AUDIT-04 | M |
+| **AI-11b** | Maya canlı veri v2 — kısıtlı sorgu katmanı ("akla gelen her soru") | AI-11a soru kaydı | L |
 
 **Değişmez kurallar** (bozulursa "insan onaylı" savunması çöker): toplu kabul yok, her kart tek
 tek onaylanır · eşleşme belirsizse öneri **üretilmez** · para alanları, `deleted_at`, rol/izin
@@ -351,8 +357,12 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 >
 > Üçü de farklı veri kaynağı ve farklı kod gerektiriyor — asıl karar burada.
 
-**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
-(G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.
+~~**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
+(G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.~~
+**Düzeltildi (2026-08-22):** `ai_corrections` **besleniyor** — `WhatsappService.approveDraftsWithDb`
+onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `original_parsed` gönderiyor
+(`ai-transaction/+page.svelte`), `AiCorrectionsReport` endpoint'i de var. AI-03 planlanırken
+"sıfırdan iş" varsayımı geçersiz; veri birikmeye başlamış durumda.
 
 > **✅ AI-02 sözleşme kontrolü yapıldı (2026-08-17).**
 > Hizmet sözleşmesi **Madde 6.2**: *"Hiçbir öneri, Müşteri'nin yetkilendirdiği bir kullanıcı
@@ -365,6 +375,170 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > durumu) aynı kanıt her yeni alan için tekrarlanmalı — `field` CHECK'i bugün yalnız
 > `'starts_at'` kabul ediyor, kapıyı dar tutan şey o.
 > Sözleşme metni ve teknik eşleştirme: Obsidian `13-hukukcu-paketi.md` §8 (Madde 6) + §9 tablosu.
+
+---
+
+### AI temeli — "AI sonradan eklenmedi" iddiasının kod karşılığı (AUDIT-04, AI-08…AI-11b)
+
+> **Neden bu blok (2026-08-22, Rillet analizi).** Hedef, ana sayfada şu cümleyi **dürüstçe**
+> kurabilmek: *"AI sonradan eklenmedi, yazılımın temelinde. İş akışlarına gömülü uzmanlaşmış
+> ajanlar."* Cümlenin iki yarısı var ve bugünkü kod ikisini de yarım karşılıyor.
+>
+> **"Gömülü ajanlar" — bugün:** Finans ajanı **gerçekten gömülü** — WhatsApp webhook'u
+> `inbound_message.process` job'ı yazıyor (`webhooks.controller.ts`), worker parse ediyor,
+> kullanıcı gelen kutusunu açtığında taslak hazır bekliyor. Alarm motoru (AI-04) da olay
+> tetikli. **Ama randevu ajanı gömülü değil:** `POST /v1/record-suggestions/parse` yalnız
+> kullanıcı metni yapıştırınca çalışıyor. Aynı mesaj parayı görüyor, tarihi görmüyor. → **AI-08**
+>
+> **"Sonradan eklenmedi" — bugün:** `record_update_suggestions` (kaynak + güven + karar veren
+> tabloda), `ai_corrections`, `jobs`→`llm.parse` ledger'ı: hepsi AI düşünülerek tasarlanmış.
+> **Ama zincirin son halkası boş:** `transactions` satırı ne kaynağı, ne güveni, ne "kim yazdı"yı
+> taşıyor. Elle girilen satırla AI'dan gelen satır bayt bayt aynı. İddianın en kolay çürütüldüğü
+> nokta burası. → **AUDIT-04 + AI-09**
+>
+> **Ölçüt (tek soru):** *İşlem satırına bakıp "bunu AI mı yazdı, insan mı, nereden aldı,
+> kim onayladı" diyebiliyor muyuz?* Bugün hayır. Bu dört kalem bitince evet.
+>
+> **Cümleye sokulmayacak:** "elle veri girişi yok" / "her şey entegrasyonlardan akar".
+> Rillet'in ABD ekosistemine ait (Stripe/Plaid/açık bankacılık); burada karşılığı yok ve
+> "Bilinçli olarak yapılmayacaklar"da. İlk demoda çöker.
+
+**Sıra: AUDIT-04 → AI-08 → AI-11a → AI-09 → AI-11b → AI-03.** (AI-10 paralel, kod işi değil.)
+
+> **AI-11a neden AI-09'dan önce (2026-08-22 kararı).** AI-11b'nin ("akla gelen her soru")
+> tasarlanabilmesi için **gerçek soru listesi** gerekiyor ve o listenin bekleme süresi var —
+> insanlar bir ay soru sormadan hangi filtrelerin gerektiği bilinemez. AI-11a'yı öne almak
+> o sayacı erken başlatır. AUDIT-04 ve AI-08 zaten S; geciktirdiği süre birkaç gün.
+>
+> **Rillet farkı, atlanmasın:** Rillet'in ajan listesi (flux, accruals, reconciliation,
+> revenue recognition) muhasebe literatürünün hazır, sonlu kanonu — onlar listeyi yazmadı,
+> meslek yazdı. Sağlık turizmi acentesinin böyle bir kanonu **yok**. Bu yüzden Rillet'in
+> yaptığı birebir kopyalanamaz: onlar hazır listeyi kodladı, biz listeyi **önce çıkaracağız**.
+> AI-11a'nın soru kaydı, bizim eksik kanonumuzun yerine geçen şey. Kaynak: `info.rillet.com`
+> — iç mimarilerini yayınlamıyorlar, ama yaklaşımlarını "constrained / strict set of methods /
+> avoid inventing numbers" diye tanımlıyorlar; yani serbest SQL değil, kısıtlı metot listesi.
+
+- [ ] **AUDIT-04 — `transactions` create/update denetim kaydı. (S)**
+  Bugün `writeAuditLog` yalnız `softDeleteWithDb`'de (`transactions.service.ts`); oluşturma ve
+  güncelleme hiç iz bırakmıyor. "Bu tutarı kim girdi" sorusunun bugün cevabı yok.
+  **Kabul:** `createWithDb` + `updateWithDb` `audit_logs`'a yazar (`action` = `create`/`update`,
+  `entity_type` = `transaction`, `entity_label` = `deriveTransactionLabel`) · WhatsApp onay yolu
+  (`approveDraftsWithDb` → `createWithDb`) da yazar, aynı DB transaction'ında · tenant izolasyon
+  testi · mevcut `delete` davranışı değişmez.
+  **Dosyalar:** `apps/api/src/transactions/transactions.service.ts`, `transactions.controller.ts`
+  (actor geçişi), `apps/api/src/whatsapp/whatsapp.service.ts`, yeni spec.
+  **Ajan:** Cursor (`agent -p`) — desen zaten 12 yerde var, kopyalanacak iş.
+  **Görüş:**
+
+- [ ] **AI-08 — Randevu ajanını WhatsApp akışına gömme. (S)**
+  `InboundMessageProcessor.process()` bugün yalnız `WhatsappService.processInboundMessage`
+  çağırıyor. Aynı job içinde `RecordSuggestionsService`'in parse yolu da çağrılacak — aynı mesaj,
+  aynı worker, ikinci LLM çağrısı. Yeni tablo / endpoint / kuyruk **yok**.
+  **Kabul:** mesaj geldiğinde hem finans taslağı hem randevu önerisi üretilir (ikisi de
+  `pending`, ikisi de tek tek onaylanır) · randevu ajanının hatası finans yolunu düşürmez
+  (ayrı try/catch, job yine `completed`) · mükerrer `pending` öneri yazılmaz (mevcut unique
+  index korunur) · her iki çağrı `llm.parse` ledger'ına ayrı satır yazar · mevcut manuel
+  `POST /v1/record-suggestions/parse` yolu **aynen kalır** (yeniden parse için) · izolasyon testi.
+  **Değişmez kurallara dokunmaz:** öneri hâlâ taslak, toplu onay yok, belirsizse üretilmez.
+  **Dosyalar:** `apps/api/src/whatsapp/inbound-message.processor.ts`,
+  `apps/api/src/whatsapp/whatsapp.module.ts` (RecordSuggestions modülü import),
+  `apps/api/src/record-suggestions/record-suggestions.service.ts` (mesaj gövdesiyle çağrılabilir
+  giriş), yeni spec.
+  **Ajan:** Sonnet — modül grafiği ve hata izolasyonu kararı var, kopyala-yapıştır değil.
+  **Görüş:**
+
+- [ ] **AI-09 — Kaynak izi (`evidence`). (M)** — *bu bloğun ana yatırımı*
+  Taslak kartında ve onaylanmış işlemde "bu tutarı şu cümleden aldım" izi. Üç adım, üçü ayrı
+  commit:
+  1. **Sözleşme + prompt.** `packages/shared/src/inbound-message.ts` →
+     `transactionDraftSchema`'ya opsiyonel `evidence: Record<alan, {quote, start, confidence}>`
+     (`z.record` — beyaz liste genişleyince migration gerekmesin). `quote` + `start` **birlikte**:
+     PII maskeleme (`[TELEFON]`) ofseti kaydırır, quote her zaman gösterilebilir.
+     `buildWhatsappExtractionSystemPrompt` core'una tek cümle eklenir.
+     **Sunucu doğrulaması zorunlu:** `message.includes(quote)` değilse evidence düşürülür —
+     uydurulmuş atıf, atıfsızlıktan zararlıdır. `heuristic-parse.ts` regex `m.index`'ten
+     evidence'ı bedava üretir (LLM'den güvenilir).
+  2. **Kalıcılık.** Taslak `inbound_messages.payload.parsed_records` içine migration'sız gider.
+     Kopan yer onay: `0061_transaction_source_evidence.sql` →
+     `transactions.source_inbound_message_id uuid REFERENCES inbound_messages(id) ON DELETE SET NULL`
+     + `source_evidence jsonb` + `(tenant_id, source_inbound_message_id)` index. Mevcut tabloya
+     kolon — RLS/policy/GRANT'e dokunmaz. Alanlar **yalnız sunucu** doldurur, API'den yazılamaz.
+  3. **UI.** `TransactionDraftCard.svelte` alan başına kaynak rozeti; tıklayınca üstteki mesaj
+     metninde alıntı vurgulanır (`message` state zaten sayfada). İşlem detayında
+     "Kaynak: WhatsApp mesajı →".
+  **Kabul:** her adım ayrı commit + kabul · evidence'sız taslak (heuristic/eski kayıt) kartı
+  bozmaz (opsiyonel alan) · uydurma quote UI'a düşmez (doğrulama testi) · `source_evidence`
+  API request'inden set edilemez (negatif test) · izolasyon testi · sözleşme değiştiği için
+  **shared build → openapi:generate → test** (çalışma kuralı 10).
+  **Yan kazanç:** `ai_corrections` bugün "değişti mi" diyor; evidence ile *hangi alan hangi
+  confidence'ta* düzeltildi çıkar → AI-03 verisi kendiliğinden birikir.
+  **Ajan:** Opus — sözleşme + migration + prompt + güvenlik sınırı bir arada; hata pahalı.
+  **Görüş:**
+
+- [ ] **AI-10 — LLM veri politikası dokümanı. (S)** — kod işi değil
+  Bugün hiçbir dokümanda "modeller müşteri verisiyle eğitilmiyor" taahhüdü **yok**
+  (`TEHDIT-MODELI.md` / `MIMARI.md` taraması boş). Satıcı UK (LEG-02), müşteri TR sağlık
+  turizmi → sağlık verisinin yurtdışına aktarımı zaten açık risk. İlk müşteri sözleşmesinde
+  sorulacak.
+  **Kabul:** `docs/TEHDIT-MODELI.md`'ye bölüm — sağlayıcı ve model (`LLM_MODEL` env),
+  eğitim opt-out durumu (sağlayıcı sözleşmesinden **kanıtla**, iddia değil), saklama süresi,
+  yurtdışı aktarım dayanağı, PII maskeleme sınırı (heuristic yol dışarı çıkmıyor — bu bir
+  güvence, yazılmalı) · `MIMARI.md` § Güvenlik çerçevesi'nden link.
+  **Karar notu:** **tenant başına model seçimi yapılmayacak** — `createLlmClientFromEnv` global
+  env kalır. 3 LLM yolunun her birini tenant başına test etme yükü, 5-15 kişilik müşterinin
+  sormadığı bir soruya ödenir. Doğru cevap sözleşmede yazmak.
+  **Ajan:** kullanıcı + Claude (sağlayıcı sözleşmesi okunacak; iddia uydurulamaz).
+  **Görüş:**
+
+> **Maya bugün nerede duruyor (AI-11a/b'nin çıkış noktası).** `MayaService.ask` →
+> `settings.getKnowledge()` → 5 bölüm (`services`, `payment`, `faq`, `rejection`, `notes`;
+> bölüm başına 4000 karakter). **DB'ye hiç erişimi yok**; banka boşsa LLM'e çağrı bile gitmiyor.
+> "Saç ekimi fiyatımız ne?" → cevaplar. "Yılmaz bey'in kalan borcu ne?" → `BILINMIYOR`.
+> **Karar (2026-08-22): ikinci soru tipi kapsama alınıyor** — hedef, içerideki kayıtlarla
+> ilgili soruları cevaplayan Maya. İki adımda, çünkü soru listesi henüz yok.
+>
+> **Değişmez desen (ikisinde de, pazarlığa kapalı):** DB satırları prompt'a **dökülmez** —
+> hem `pii-mask.ts` disiplinini çiğner hem modeli rakam uydurmaya davet eder. Model yalnız
+> **hangi sorgu + hangi parametre** olduğunu seçer; **rakamı Postgres verir, kod basar.**
+> Model rakamı ne görür ne üretir. AI-09 ile aynı ilke: *model işaret eder, sistem doğruyu söyler.*
+> **Her koşulda kapsam dışı:** serbest SQL · hasta listesi dökümü · tıbbi yorum · tahsilat taahhüdü.
+
+- [ ] **AI-11a — Maya canlı veri v1: sabit araç listesi. (M)**
+  Beş araç; beşinin de servisi **zaten var**, yeni sorgu/tablo yok:
+  | Araç | Mevcut kod | Soru |
+  |---|---|---|
+  | `contactBalance` | `contacts.financeSummary()` | "X ne kadar borçlu?" |
+  | `openBalances` | `reports.balances()` | "Kimlerden alacağımız var?" |
+  | `contactAppointments` | `appointments.list()` | "X'in randevusu ne zaman?" |
+  | `periodSummary` | `reports.summary()` | "Bu ay ne kadar tahsilat?" |
+  | `untouchedContacts` | `reports.untouchedContacts()` | "Kime dönülmedi?" |
+
+  **Kabul:** araç sözleşmeleri `packages/shared`'da zod ile (AGENTS ilke 7) · model çıktısı
+  yalnız `{tool, params}`; rakam/isim üretemez (negatif test: uydurma rakam UI'a düşmez) ·
+  **izin zinciri aynen uygulanır** — `RequireOrgPermission` atlanmaz; finans izni olmayan
+  temsilci `contactBalance` cevabı **alamaz** (izolasyon + izin testi, ikisi ayrı) · modele
+  isim/telefon gitmez, `contact_ref` UUID gider (`pii-mask.ts` deseni), ismi ekrana kod basar ·
+  araç eşleşmezse `BILINMIYOR` — tahmin yok · her çağrı `llm.parse` ledger'ına satır yazar.
+  **Soru kaydı (AI-11b'nin tek girdisi — atlanırsa 11b tasarlanamaz):** sorulan her soru,
+  seçilen araç (veya `BILINMIYOR`) ve cevaplanıp cevaplanmadığı tenant bazında kaydedilir.
+  PII **girmez** — soru metni maskelenerek saklanır.
+  **Dosyalar:** `apps/api/src/maya/*`, `apps/api/src/integrations/llm/*`,
+  `packages/shared/src/maya.ts`, yeni migration (soru kaydı tablosu), web `/maya`, yeni spec'ler.
+  **Ajan:** Opus — izin sınırı + PII sınırı + tool-calling bir arada; hata pahalı ve sessiz.
+  **Görüş:**
+
+- [ ] **AI-11b — Maya canlı veri v2: kısıtlı sorgu katmanı. (L)** — *listenin en büyük kalemi*
+  Model tablo + filtre + toplama seçer; serbest SQL **değil**: izinli tablolar
+  (`transactions`, `contacts`, `appointments`), izinli sütunlar, izinli toplamalar.
+  Örnek — 5 araçta olmayan ama bunun cevapladığı soru: *"Geçen ay Ada Klinik'e toplam ne
+  ödedik?"* → `transactions` · `contact=…, kind=expense, occurred_on ∈ [Tem]` · `sum(amount_base)`.
+  **Ön koşul:** AI-11a soru kaydında ≥1 ay gerçek soru. Desteklenecek filtreler o kayıttan
+  çıkar — önceden tasarlanmaz.
+  **Kabul:** AI-11a'nın tüm kabul maddeleri aynen geçerli (izin, PII, `BILINMIYOR`, ledger) +
+  üretilen sorgu whitelist dışına çıkamaz (negatif test: yasak tablo/sütun reddedilir) +
+  sonuç satır sayısı üst sınırı.
+  **Ajan:** Opus.
+  **Görüş:**
 
 ---
 
