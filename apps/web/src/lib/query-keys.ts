@@ -118,7 +118,8 @@ export function queryKeys(scope: QueryScope) {
 			untouchedContacts: (params: Params) => k('reports', 'untouched-contacts', params),
 			cohorts: (params: Params) => k('reports', 'cohorts', params),
 			balances: () => k('reports', 'balances'),
-			commissionSummary: () => k('reports', 'commission-summary')
+			commissionSummary: () => k('reports', 'commission-summary'),
+			aiAccuracy: (params: Params) => k('reports', 'ai-accuracy', params)
 		},
 		scorecard: {
 			current: () => k('scorecard', 'current'),

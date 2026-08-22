@@ -38,6 +38,7 @@ import {
 	aiCorrectionCreateSchema,
 	aiCorrectionsReportParamsSchema,
 	aggregateAiCorrectionsReport,
+	aiAccuracyReportParamsSchema,
 	approveDraftsRequestSchema,
 	trustScoreSettings,
 	userUiPreferencesUpdateSchema,
@@ -2398,9 +2399,81 @@ export const handlers = [
 		if (to) {
 			items = items.filter((c) => c.created_at.slice(0, 10) <= to);
 		}
+		const correctedMessageIds = new Set(items.map((c) => c.inbound_message_id ?? c.id));
 		return HttpResponse.json({
 			period: { from: from ?? null, to: to ?? null },
+			corrected_message_count: correctedMessageIds.size,
 			items: aggregateAiCorrectionsReport(items)
+		});
+	}),
+
+	/**
+	 * AI-03 — isabet ölçümü. Mock dünyasında `maya_questions` karşılığı bir store
+	 * yok (Maya mock'u soru kaydı tutmuyor) — o bölüm dürüstçe boş döner, uydurma
+	 * veri eklenmez. Taslak + öneri bölümleri gerçek store'lardan hesaplanır.
+	 */
+	http.get('/v1/reports/ai-accuracy', ({ request }) => {
+		const url = new URL(request.url);
+		const parsed = parseListQuery(aiAccuracyReportParamsSchema, url);
+		if (!parsed.success) return parsed.response;
+		const store = getStore(scenarioFrom(request));
+		const { from, to } = parsed.data;
+
+		let corrections = store.aiCorrections;
+		if (from) corrections = corrections.filter((c) => c.created_at.slice(0, 10) >= from);
+		if (to) corrections = corrections.filter((c) => c.created_at.slice(0, 10) <= to);
+		const correctedIds = new Set(corrections.map((c) => c.inbound_message_id ?? c.id));
+
+		let approvedTx = store.transactions.filter((t) => t.source_inbound_message_id != null);
+		if (from) approvedTx = approvedTx.filter((t) => t.created_at.slice(0, 10) >= from);
+		if (to) approvedTx = approvedTx.filter((t) => t.created_at.slice(0, 10) <= to);
+		const approvedIds = new Set(approvedTx.map((t) => t.source_inbound_message_id));
+
+		let suggestions = store.recordUpdateSuggestions.filter(
+			(s) => s.tenant_id === store.tenant.id
+		);
+		if (from) suggestions = suggestions.filter((s) => s.created_at.slice(0, 10) >= from);
+		if (to) suggestions = suggestions.filter((s) => s.created_at.slice(0, 10) <= to);
+		const approved = suggestions.filter((s) => s.status === 'approved').length;
+		const rejected = suggestions.filter((s) => s.status === 'rejected').length;
+		const pending = suggestions.filter((s) => s.status === 'pending').length;
+		const decided = approved + rejected;
+		const reasonCounts = new Map<string | null, number>();
+		for (const s of suggestions) {
+			if (s.status !== 'rejected') continue;
+			const key = s.reject_reason ?? null;
+			reasonCounts.set(key, (reasonCounts.get(key) ?? 0) + 1);
+		}
+
+		return HttpResponse.json({
+			period: { from: from ?? null, to: to ?? null },
+			drafts: {
+				approved_message_count: approvedIds.size,
+				corrected_message_count: correctedIds.size,
+				unchanged_rate:
+					approvedIds.size > 0 ? 1 - correctedIds.size / approvedIds.size : null,
+				by_field: aggregateAiCorrectionsReport(corrections)
+			},
+			suggestions: {
+				total: suggestions.length,
+				approved,
+				rejected,
+				pending,
+				acceptance_rate: decided > 0 ? approved / decided : null,
+				by_field: [{ field: 'starts_at' as const, approved, rejected }],
+				reject_reasons: [...reasonCounts.entries()]
+					.map(([reason, count]) => ({ reason, count }))
+					.sort((a, b) => b.count - a.count)
+			},
+			maya: {
+				total: 0,
+				answered: 0,
+				unanswered: 0,
+				answer_rate: null,
+				by_source: [],
+				by_tool: [],
+				unanswered_samples: []
+			}
 		});
 	}),
 
