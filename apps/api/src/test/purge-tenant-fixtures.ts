@@ -48,6 +48,7 @@ export async function purgeTenantFixtures(sql: Sql, tenantIds: string[]): Promis
 			await tx`delete from demo_notes where tenant_id = ${tenantId}`;
 			await tx`delete from user_ui_preferences where organization_id = ${tenantId}`;
 			await tx`delete from tenant_permission_overrides where tenant_id = ${tenantId}`;
+			await tx`delete from maya_questions where tenant_id = ${tenantId}`;
 		});
 	}
 

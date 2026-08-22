@@ -35,3 +35,4 @@ export * from './user-ui-preferences';
 export * from './tenant-permission-overrides';
 export * from './fx-rates';
 export * from './csp-reports';
+export * from './maya-questions';
