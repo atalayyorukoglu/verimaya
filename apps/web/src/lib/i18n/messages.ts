@@ -136,15 +136,14 @@ const tr = {
 	'dev.csp.hint.report-to': 'İhlal kaydının gittiği adres (yeni tarayıcılar)',
 	'dev.csp.hint.other': 'Bu kural tarayıcıya ek bir sınır söyler',
 
-	// Maya AI (mock UI — henüz API yok)
+	// Maya AI — POST /v1/maya/ask (bilgi bankası + AI-11a canlı veri araçları)
 	'maya.title': 'Maya AI',
 	'maya.subtitle': 'Operasyon asistanı — taslak önerir, sen onaylarsın.',
 	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
-		'Bilgi bankanıza dayalı soru-cevap. Bilmediğini uydurmaz — bilgi bankanızda yoksa söyler.',
-	'maya.mockBadge': 'Mock',
+		'Bilgi bankanız ve kendi kayıtlarınız üzerinden soru-cevap. Rakamlar doğrudan veritabanından gelir; bilmediğini uydurmaz.',
 	'maya.welcome':
-		'Merhaba — ben Maya. Firmanızın bilgi bankasındaki hizmet, fiyat ve kuralları cevaplayabilirim. Bilgi bankasında olmayan bir şeyi uydurmam.',
+		'Merhaba — ben Maya. Bilgi bankanızdaki hizmet, fiyat ve kuralların yanı sıra bakiye, randevu ve dönem özeti gibi kayıt sorularını da cevaplayabilirim. Rakamı uydurmam; doğrudan kayıtlarınızdan okurum.',
 	'maya.placeholder': 'Maya’ya sor…',
 	'maya.send': 'Gönder',
 	'maya.thinking': 'Düşünüyor…',
@@ -160,24 +159,34 @@ const tr = {
 	'maya.draftHint': 'Bu bir taslak öneri — onaylamadan kayıt yazılmaz.',
 	'maya.approveDraft': 'Taslağı onayla',
 	'maya.draftApproved': 'Onaylandı (mock)',
-	'maya.suggestion.tomorrow': 'Yarınki randevular kimler?',
-	'maya.suggestion.summary': 'Ayşe Kaya dosyasını özetle',
-	'maya.suggestion.missingSource': 'Kaynağı boş kişiler',
-	'maya.suggestion.stale': 'Sessiz kalan takipler',
-	'maya.response.tomorrow':
-		'Yarın 3 randevu görünüyor:\n• 10:00 — Ayşe Kaya (konsültasyon)\n• 14:30 — John Smith (operasyon)\n• 16:00 — Mehmet Demir (kontrol)\n\nDetay için Randevular’a gidebilirsin.',
-	'maya.response.summary':
-		'Ayşe Kaya — kısa özet:\n• Son randevu: konsültasyon (geçen salı)\n• Açık bakiye: 12.500 TRY\n• Kaynak: Meta Ads\n• Son not: “Transfer pazartesi.”\n\nBu mock veri; gerçek kart için Kişiler’e bak.',
-	'maya.response.missingSource':
-		'Kaynağı boş 8 kişi buldum (örnek). En yeniler:\n• Zeynep Ak\n• Ali Can\n• Nora Ellis\n\n“Meta / kampanya X” diye önerebilirim — onaylarsan taslak kuyruğuna düşer.',
-	'maya.response.stale':
-		'7 gündür sessiz 4 kişi (örnek):\n• Carlos Ruiz — randevu sonrası takip yok\n• Elif Yılmaz — açık bakiye + mesaj yok\n\nHer biri için kısa WhatsApp taslağı önerebilirim.',
-	'maya.response.default':
-		'Mock moddayım. Şunu dene: yarınki randevular, bir kişiyi özetle, boş kaynaklar veya sessiz takipler.',
-	'maya.cite.appointments': 'Randevular',
-	'maya.cite.contact': 'Kişiler',
-	'maya.cite.dataQuality': 'Veri kalitesi',
-	'maya.cite.finance': 'Finans',
+	'maya.suggestion.openBalances': 'Kimlerden alacağımız var?',
+	'maya.suggestion.periodSummary': 'Bu ay ne kadar tahsilat yaptık?',
+	'maya.suggestion.untouched': 'Kime dönülmedi?',
+
+	// AI-11a — canlı veri araçları. Cümleyi kod kurar; rakam Postgres'ten gelir,
+	// model ne rakam üretir ne cümle yazar.
+	'maya.tool.badge': 'Canlı veri · {tool}',
+	'maya.tool.name.contactBalance': 'Kişi bakiyesi',
+	'maya.tool.name.openBalances': 'Açık bakiyeler',
+	'maya.tool.name.contactAppointments': 'Kişi randevuları',
+	'maya.tool.name.periodSummary': 'Dönem özeti',
+	'maya.tool.name.untouchedContacts': 'Temassız kişiler',
+	'maya.tool.moreItems': '… ve {count} kayıt daha',
+	'maya.tool.contactBalance.answer':
+		'{name} — açık bakiye {outstanding}. Toplam {income} gelirin {paid} kadarı tahsil edilmiş ({count} işlem).',
+	'maya.tool.openBalances.answer': 'Açık bakiyesi olan {count} kişi var:',
+	'maya.tool.openBalances.empty': 'Açık bakiyesi olan kişi görünmüyor.',
+	'maya.tool.openBalances.row': '• {name} — {amount}',
+	'maya.tool.contactAppointments.answer': '{name} — {count} yaklaşan randevu:',
+	'maya.tool.contactAppointments.empty': '{name} için yaklaşan randevu görünmüyor.',
+	'maya.tool.contactAppointments.row': '• {when} — {title}',
+	'maya.tool.contactAppointments.untitled': 'Randevu',
+	'maya.tool.periodSummary.answer':
+		'{from} – {to}: {income} gelir, {expense} gider, net {net}. Tahsil edilmemiş {pending} ({count} işlem).',
+	'maya.tool.untouchedContacts.answer':
+		'{days} gündür temassız {total} kişi var (30 gün: {d30} · 60 gün: {d60} · 90 gün: {d90}):',
+	'maya.tool.untouchedContacts.empty': '{days} gündür temassız kimse görünmüyor.',
+	'maya.tool.untouchedContacts.row': '• {name} — {days} gün',
 
 	'patients.list.title': 'Hastalar',
 	'patients.list.description':
@@ -2687,10 +2696,9 @@ const en: Record<MessageKey, string> = {
 	'maya.subtitle': 'Operations assistant — suggests drafts, you approve.',
 	'maya.documentTitle': 'Maya AI · Verimaya',
 	'maya.pageDescription':
-		'Answers grounded in your knowledge base. It never invents — if it is not there, it says so.',
-	'maya.mockBadge': 'Mock',
+		'Answers from your knowledge base and your own records. Figures come straight from the database; it never invents.',
 	'maya.welcome':
-		'Hi — I’m Maya. I can answer from your company knowledge base: services, prices and rules. I never make anything up.',
+		'Hi — I’m Maya. Besides services, prices and rules from your knowledge base, I can answer record questions: balances, appointments, period summaries. I never invent a figure — I read it from your records.',
 	'maya.placeholder': 'Ask Maya…',
 	'maya.send': 'Send',
 	'maya.thinking': 'Thinking…',
@@ -2706,24 +2714,32 @@ const en: Record<MessageKey, string> = {
 	'maya.draftHint': 'This is a draft suggestion — nothing is written until you approve.',
 	'maya.approveDraft': 'Approve draft',
 	'maya.draftApproved': 'Approved (mock)',
-	'maya.suggestion.tomorrow': 'Who has appointments tomorrow?',
-	'maya.suggestion.summary': 'Summarize Ayşe Kaya’s file',
-	'maya.suggestion.missingSource': 'Contacts missing source',
-	'maya.suggestion.stale': 'Quiet follow-ups',
-	'maya.response.tomorrow':
-		'3 appointments tomorrow:\n• 10:00 — Ayşe Kaya (consultation)\n• 14:30 — John Smith (procedure)\n• 16:00 — Mehmet Demir (check-up)\n\nOpen Appointments for details.',
-	'maya.response.summary':
-		'Ayşe Kaya — quick summary:\n• Last appointment: consultation (last Tuesday)\n• Open balance: 12,500 TRY\n• Source: Meta Ads\n• Last note: “Transfer Monday.”\n\nMock data — open Contacts for the real card.',
-	'maya.response.missingSource':
-		'Found 8 contacts with empty source (sample). Newest:\n• Zeynep Ak\n• Ali Can\n• Nora Ellis\n\nI can suggest “Meta / campaign X” — on approve it goes to the draft queue.',
-	'maya.response.stale':
-		'4 quiet contacts for 7+ days (sample):\n• Carlos Ruiz — no follow-up after appointment\n• Elif Yılmaz — open balance + no message\n\nI can draft a short WhatsApp for each.',
-	'maya.response.default':
-		'I’m in mock mode. Try: tomorrow’s appointments, summarize a contact, missing sources, or quiet follow-ups.',
-	'maya.cite.appointments': 'Appointments',
-	'maya.cite.contact': 'Contacts',
-	'maya.cite.dataQuality': 'Data quality',
-	'maya.cite.finance': 'Finance',
+	'maya.suggestion.openBalances': 'Who owes us money?',
+	'maya.suggestion.periodSummary': 'How much did we collect this month?',
+	'maya.suggestion.untouched': 'Who has not been followed up?',
+
+	'maya.tool.badge': 'Live data · {tool}',
+	'maya.tool.name.contactBalance': 'Contact balance',
+	'maya.tool.name.openBalances': 'Open balances',
+	'maya.tool.name.contactAppointments': 'Contact appointments',
+	'maya.tool.name.periodSummary': 'Period summary',
+	'maya.tool.name.untouchedContacts': 'Untouched contacts',
+	'maya.tool.moreItems': '… and {count} more',
+	'maya.tool.contactBalance.answer':
+		'{name} — open balance {outstanding}. {paid} of {income} income collected ({count} transactions).',
+	'maya.tool.openBalances.answer': '{count} contacts have an open balance:',
+	'maya.tool.openBalances.empty': 'No contact has an open balance.',
+	'maya.tool.openBalances.row': '• {name} — {amount}',
+	'maya.tool.contactAppointments.answer': '{name} — {count} upcoming appointments:',
+	'maya.tool.contactAppointments.empty': 'No upcoming appointments for {name}.',
+	'maya.tool.contactAppointments.row': '• {when} — {title}',
+	'maya.tool.contactAppointments.untitled': 'Appointment',
+	'maya.tool.periodSummary.answer':
+		'{from} – {to}: {income} income, {expense} expense, net {net}. Uncollected {pending} ({count} transactions).',
+	'maya.tool.untouchedContacts.answer':
+		'{total} contacts untouched for {days}+ days (30d: {d30} · 60d: {d60} · 90d: {d90}):',
+	'maya.tool.untouchedContacts.empty': 'No contact has been untouched for {days}+ days.',
+	'maya.tool.untouchedContacts.row': '• {name} — {days} days',
 
 	'patients.list.title': 'Patients',
 	'patients.list.description':
