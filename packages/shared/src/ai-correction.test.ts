@@ -88,8 +88,8 @@ describe('differingDraftFields / aggregateAiCorrectionsReport', () => {
 		];
 
 		expect(aggregateAiCorrectionsReport(items)).toEqual([
-			{ field: 'category', correction_count: 3, distinct_messages: 2 },
-			{ field: 'amount', correction_count: 1, distinct_messages: 1 }
+			{ field: 'category', correction_count: 3, distinct_messages: 2, by_confidence: [] },
+			{ field: 'amount', correction_count: 1, distinct_messages: 1, by_confidence: [] }
 		]);
 	});
 
@@ -109,7 +109,7 @@ describe('differingDraftFields / aggregateAiCorrectionsReport', () => {
 			})
 		];
 		expect(aggregateAiCorrectionsReport(items)).toEqual([
-			{ field: 'kind', correction_count: 2, distinct_messages: 2 }
+			{ field: 'kind', correction_count: 2, distinct_messages: 2, by_confidence: [] }
 		]);
 	});
 });

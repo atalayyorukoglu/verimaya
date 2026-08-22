@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException } from '@nestjs/common';
+import { sql as drizzleSql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { aiCorrectionsReportParamsSchema } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { parseQuery } from '../common/mappers';
-import type { TenantContextService } from '../tenant/tenant-context.service';
+import type { TenantContextService, TenantDb } from '../tenant/tenant-context.service';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
@@ -223,23 +224,52 @@ describe('GAP-F09-15: ai_corrections report aggregation', () => {
 	it('aggregates field counts with repeats across 2+ fields', async () => {
 		const report = await service.report(tenantA, {});
 		expect(report.period).toEqual({ from: null, to: null });
+		// msgA (2 correction rows) + msgB (1 row) = 2 distinct corrected messages.
+		expect(report.corrected_message_count).toBe(2);
 		expect(report.items).toEqual([
-			{ field: 'category', correction_count: 3, distinct_messages: 2 },
-			{ field: 'amount', correction_count: 1, distinct_messages: 1 }
+			{
+				field: 'category',
+				correction_count: 3,
+				distinct_messages: 2,
+				by_confidence: [{ confidence: null, correction_count: 3, distinct_messages: 2 }]
+			},
+			{
+				field: 'amount',
+				correction_count: 1,
+				distinct_messages: 1,
+				by_confidence: [{ confidence: null, correction_count: 1, distinct_messages: 1 }]
+			}
 		]);
 	});
 
 	it('narrows by from/to inclusive calendar days on created_at', async () => {
 		const febOnly = await service.report(tenantA, { from: '2026-02-01', to: '2026-02-28' });
 		expect(febOnly.period).toEqual({ from: '2026-02-01', to: '2026-02-28' });
+		expect(febOnly.corrected_message_count).toBe(1);
 		expect(febOnly.items).toEqual([
-			{ field: 'category', correction_count: 2, distinct_messages: 1 },
-			{ field: 'amount', correction_count: 1, distinct_messages: 1 }
+			{
+				field: 'category',
+				correction_count: 2,
+				distinct_messages: 1,
+				by_confidence: [{ confidence: null, correction_count: 2, distinct_messages: 1 }]
+			},
+			{
+				field: 'amount',
+				correction_count: 1,
+				distinct_messages: 1,
+				by_confidence: [{ confidence: null, correction_count: 1, distinct_messages: 1 }]
+			}
 		]);
 
 		const marchOnly = await service.report(tenantA, { from: '2026-03-01', to: '2026-03-01' });
+		expect(marchOnly.corrected_message_count).toBe(1);
 		expect(marchOnly.items).toEqual([
-			{ field: 'category', correction_count: 1, distinct_messages: 1 }
+			{
+				field: 'category',
+				correction_count: 1,
+				distinct_messages: 1,
+				by_confidence: [{ confidence: null, correction_count: 1, distinct_messages: 1 }]
+			}
 		]);
 	});
 
@@ -248,8 +278,14 @@ describe('GAP-F09-15: ai_corrections report aggregation', () => {
 		expect(reportA.items.some((r) => r.field === 'kind')).toBe(false);
 
 		const reportB = await service.report(tenantB, {});
+		expect(reportB.corrected_message_count).toBe(1);
 		expect(reportB.items).toEqual([
-			{ field: 'kind', correction_count: 1, distinct_messages: 1 }
+			{
+				field: 'kind',
+				correction_count: 1,
+				distinct_messages: 1,
+				by_confidence: [{ confidence: null, correction_count: 1, distinct_messages: 1 }]
+			}
 		]);
 	});
 
@@ -258,5 +294,92 @@ describe('GAP-F09-15: ai_corrections report aggregation', () => {
 		expect(() =>
 			parseQuery(aiCorrectionsReportParamsSchema, { not_a_real_filter: '1' }, req)
 		).toThrow(BadRequestException);
+	});
+});
+
+describe('AI-03: field × AI-09 confidence breakdown', () => {
+	const tenantA = randomUUID();
+	let service: AiCorrectionsService;
+
+	beforeAll(async () => {
+		process.env.DATABASE_URL = databaseUrl;
+		const { db, sql } = getDb(databaseUrl);
+
+		await sql`
+			insert into organization (id, name, slug, created_at)
+			values (${tenantA}, 'Confidence A', ${`conf-a-${tenantA.slice(0, 8)}`}, now())
+		`;
+		await sql`
+			insert into tenants (id, name, slug)
+			values (${tenantA}, 'Confidence A', ${`conf-a-${tenantA.slice(0, 8)}`})
+		`;
+
+		// AI-09 taslağı: category=high, amount=low iz taşıyor. Aynı sıradaki
+		// original_parsed/corrected ile eşleşsin diye tek elemanlı dizi.
+		const parsedRecordWithEvidence = {
+			...draft,
+			evidence: {
+				category: { quote: 'vizit kategorisi', start: null, confidence: 'high' },
+				amount: { quote: '2900 GBP', start: null, confidence: 'low' }
+			}
+		};
+
+		const msg = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			const [row] = await tx`
+				insert into inbound_messages (tenant_id, provider, external_id, payload, status)
+				values (
+					${tenantA},
+					'waha',
+					${`conf-a-${tenantA.slice(0, 8)}`},
+					${JSON.stringify({ body: 'confidence msg', parsed_records: [parsedRecordWithEvidence] })}::jsonb,
+					'parsed'
+				)
+				returning id
+			`;
+			return row!.id as string;
+		});
+
+		const original = JSON.stringify([draft]);
+		// category (high) AND amount (low) both corrected; currency untouched (no evidence anyway).
+		const corrected = JSON.stringify([{ ...draft, amount: 300000, category: 'Vizit' }]);
+
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`
+				insert into ai_corrections (tenant_id, inbound_message_id, original_parsed, corrected)
+				values (${tenantA}, ${msg}, ${original}::jsonb, ${corrected}::jsonb)
+			`;
+		});
+
+		const tenantContext = {
+			withTenant: async <T>(id: string, fn: (ctx: { db: TenantDb }) => Promise<T>) =>
+				db.transaction(async (tx) => {
+					await tx.execute(drizzleSql`select set_config('app.current_tenant_id', ${id}, true)`);
+					return fn({ db: tx as TenantDb });
+				})
+		} as TenantContextService;
+		service = new AiCorrectionsService(tenantContext);
+	});
+
+	afterAll(async () => {
+		const { sql } = getDb(databaseUrl);
+		await purgeTenantFixtures(sql, [tenantA]);
+		await closeDb();
+	});
+
+	it('attributes the pre-correction AI-09 confidence to each corrected field', async () => {
+		const report = await service.report(tenantA, {});
+		expect(report.corrected_message_count).toBe(1);
+
+		const category = report.items.find((r) => r.field === 'category');
+		expect(category?.by_confidence).toEqual([
+			{ confidence: 'high', correction_count: 1, distinct_messages: 1 }
+		]);
+
+		const amount = report.items.find((r) => r.field === 'amount');
+		expect(amount?.by_confidence).toEqual([
+			{ confidence: 'low', correction_count: 1, distinct_messages: 1 }
+		]);
 	});
 });
