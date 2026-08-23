@@ -2,6 +2,7 @@ export * from './auth';
 export * from './queue';
 export * from './tenants';
 export * from './contact-types';
+export * from './contact-titles';
 export * from './appointment-types';
 export * from './organizations';
 export * from './contacts';

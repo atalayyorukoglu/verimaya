@@ -1,5 +1,6 @@
 import { type AnyPgColumn, boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { user } from './auth';
+import { contactTitles } from './contact-titles';
 import { contactTypes } from './contact-types';
 import { organizations } from './organizations';
 import { tenants } from './tenants';
@@ -15,6 +16,10 @@ export const contacts = pgTable(
 			.notNull()
 			.references(() => contactTypes.id, { onDelete: 'restrict' }),
 		contactTypeName: text('contact_type_name').notNull(),
+		/** Görev / ünvan — opsiyonel, kişi başına tek ünvan. Yalnız tanımlayıcı; izne girmez. */
+		titleId: uuid('title_id').references(() => contactTitles.id, { onDelete: 'set null' }),
+		/** Denormalized title name for list views (rename senkronize edilir) */
+		titleName: text('title_name'),
 		firstName: text('first_name'),
 		lastName: text('last_name'),
 		displayName: text('display_name').notNull(),
@@ -48,6 +53,7 @@ export const contacts = pgTable(
 	(table) => [
 		index('contacts_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
 		index('contacts_tenant_id_contact_type_id_idx').on(table.tenantId, table.contactTypeId),
+		index('contacts_tenant_id_title_id_idx').on(table.tenantId, table.titleId),
 		index('contacts_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt),
 		index('contacts_tenant_referred_by_idx').on(table.tenantId, table.referredByContactId),
 		index('contacts_tenant_status_updated_at_idx').on(

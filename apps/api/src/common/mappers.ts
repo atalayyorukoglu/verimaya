@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactType, FinanceCategory, IncentiveFile, OperationAlert, Organization, ContactCaseNote, ContactFile, RecordUpdateSuggestion, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactTitle, ContactType, FinanceCategory, IncentiveFile, OperationAlert, Organization, ContactCaseNote, ContactFile, RecordUpdateSuggestion, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import {
 	calendarDaysBetween,
 	commissionEntryStatusSchema,
@@ -21,6 +21,7 @@ import type { AppointmentRow } from '../db/schema/appointments';
 import type { AuditLogRow } from '../db/schema/audit';
 import type { CaseNoteRow } from '../db/schema/case-notes';
 import type { CommissionEntryRow } from '../db/schema/commission-entries';
+import type { ContactTitleRow } from '../db/schema/contact-titles';
 import type { ContactTypeRow } from '../db/schema/contact-types';
 import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
@@ -87,6 +88,8 @@ export function toContact(row: ContactRow): Contact {
 		tenant_id: row.tenantId,
 		contact_type_id: row.contactTypeId,
 		contact_type_name: row.contactTypeName,
+		title_id: row.titleId ?? null,
+		title_name: row.titleName ?? null,
 		first_name: row.firstName ?? row.displayName,
 		last_name: row.lastName,
 		display_name: row.displayName,
@@ -277,6 +280,16 @@ export function toFinanceCategory(row: FinanceCategoryRow): FinanceCategory {
 }
 
 export function toContactType(row: ContactTypeRow): ContactType {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		name: row.name,
+		sort_order: row.sortOrder,
+		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toContactTitle(row: ContactTitleRow): ContactTitle {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
