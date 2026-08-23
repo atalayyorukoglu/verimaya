@@ -4,7 +4,7 @@
 > Bir sağlık turizmi paneli 17 Temmuz 2026'da boş bir klasördü. Bu belge, o klasörün nasıl
 > çalışan bir ürüne dönüştüğünü anlatıyor — kararlarıyla, gerekçeleriyle ve hatalarıyla.
 
-**465** commit · **63** migration · **1.072** test · **37** gün · Hazırlanma: **23 Ağustos 2026**
+**524** commit · **67** migration · **1.153** test · **37** gün · Hazırlanma: **23 Ağustos 2026**
 
 Web sürümü (okuması daha rahat): <https://claude.ai/code/artifact/82c548a9-d3e6-4a91-8843-9661a53a379f>
 
@@ -28,7 +28,8 @@ Web sürümü (okuması daha rahat): <https://claude.ai/code/artifact/82c548a9-d
 | 11 | [Test felsefesi](#11--test-felsefesi) |
 | 12 | [Koddan canlıya giden yol](#12--koddan-canlıya-giden-yol) |
 | 13 | [Gerçek hatalar ve dersleri](#13--gerçek-hatalar-ve-dersleri) |
-| 14 | [Bu projeyi bugün nasıl okursun](#14--bu-projeyi-bugün-nasıl-okursun) |
+| 14 | [Tekrar eden kararlar](#14--tekrar-eden-kararlar) |
+| 15 | [Bu projeyi bugün nasıl okursun](#15--bu-projeyi-bugün-nasıl-okursun) |
 
 ---
 
@@ -686,7 +687,127 @@ bir veritabanı çakışması olmuş, o da bunu kalıcı bir sorun sanmıştı.
 
 ---
 
-## 14 — Bu projeyi bugün nasıl okursun
+## 14 — Tekrar eden kararlar
+
+Bu bölüm 13'ün devamı gibi ama farklı: orada **hatalar** vardı, burada **kurallar**. Hepsi bu
+projede birden çok kez karşımıza çıktı; ikinci kez çıktığında kural olduklarını anladık.
+
+Her biri bir cümle, ardından bu projedeki gerçek vakası.
+
+### 1. Model işaret eder, sistem söyler
+
+Dil modeli "hangi soru soruldu"yu anlamakta iyidir, "rakam kaç"ı hatırlamakta değil.
+
+**Vaka:** Maya'ya *"Yılmaz bey ne kadar borçlu"* sorulduğunda model rakamı söylemiyor; yalnız
+`contactBalance(contact_ref)` diye bir araç seçiyor. Rakamı PostgreSQL veriyor, cümleyi ekran
+kuruyor. Modelin gördüğü rakam **yok**.
+
+Aynı ilke müdahale listesinde de geçerli: cümleler şablon, rakamlar SQL, hiçbir LLM çağrısı yok.
+Yanlış bir çıkarım cümlesi kullanıcıyı yanlış işe koşturur — ve bunu fark etmek, yanlış bir
+bakiye rakamını fark etmekten çok daha zordur.
+
+### 2. Kullanıcının değiştirebildiği bir ada kod bağlama
+
+**Vaka (iki kez).** Randevu formundaki hekim seçicisinin "ünvanı Hekim olanları göster" diye
+filtrelemesi doğal görünüyordu. Ama ünvan listesi tenant'ın yönettiği bir sözlük — biri "Hekim"i
+"Doktor" yaparsa filtre **sessizce boşalır**. Hata mesajı yok, sadece boş bir açılır menü.
+
+Aynı tuzak `'RPT'` için de vardı: sunucu koduna gömülseydi, tenant tipi "Revizyon" diye
+adlandırdığı gün oran sessizce sıfır görünürdü.
+
+**Çözüm ikisinde de aynı:** sunucu ham veriyi verir (tüm kişiler / ham çapraz sayım), ad bilgisi
+etiket ve seçim olarak kullanılır, filtre olarak değil.
+
+### 3. Sessiz açık yerine gürültülü hata
+
+İki tür hatadan birini seçmek zorundaysan, **yanlış tarafta patlamayanı** seç.
+
+**Vaka:** Projenin başında "yeni tablolara okuma/yazma/güncelleme/silme yetkisi ver" diye makul
+bir varsayılan konmuştu. Aylar sonra eklenen bir denetim kaydı tablosu — yazılır, güncellenmez
+olması gereken bir tablo — bu yüzden sessizce güncellenebilir kaldı.
+
+Varsayılan tersine çevrildi. Artık yetki unutulursa uygulama ilk denemede "permission denied"
+der ve test kırılır. Eskisinde unutmanın bedeli görünmez bir açıktı, yenisinde gürültülü bir hata.
+
+### 4. Aynı şey için iki hesap yazma
+
+**Vaka:** Referans değeri raporu "bu hastadan ne kazandık" hesabını kendi yazsaydı, aynı hasta
+için **kişi kartında bir rakam, raporda başka rakam** çıkardı. Rapor kendi hesabını yazmadı;
+mevcut yardımcıları paylaştı ve eşitlik somut rakamlarla teste bağlandı.
+
+Bu, 13. bölümdeki `patient_id` vakasının önlenmiş hâli. Aynı hastalık, bu sefer erken yakalandı.
+
+### 5. Yeşil test kanıt değildir
+
+Bir test yeşil yanıyorsa, bu testin **bir şey ölçtüğü** anlamına gelmez.
+
+**Vaka:** Bu oturumda eklenen her koruma — izin kapısı, atıf doğrulaması, hata izolasyonu, eşik,
+gelir eşitliği — özelliği bilerek bozup testin kırmızıya döndüğü görülerek doğrulandı. Biri
+kırmızıya dönmeseydi, o testin işe yaramadığı anlaşılacaktı.
+
+### 6. Elmayla armut aynı listede sıralanmaz
+
+**Vaka:** Müdahale listesi hem *"RPT %30 arttı"* hem *"X 42.000 GBP getirdi"* gösteriyor. İkisine
+ortak bir "önem puanı" verip tek listede sıralamak matematiksel olarak mümkün ama anlamsız —
+ortak ölçek yok. Bulgular tipe göre gruplandı, sıralama grup içinde yapıldı.
+
+Ölçek uydurmak, ölçmemekten kötüdür: uydurulmuş sıra doğru görünür ve sorgulanmaz.
+
+### 7. Susmak, uydurmaktan iyidir
+
+**Vaka:** Maya bilmediğinde `BILINMIYOR` diyor. Müdahale listesi eşiğin altındaki değişimi
+raporlamıyor ve bulgu yoksa boş dönüyor — ekran bunu **iyi haber** olarak gösteriyor.
+
+Sağlık turizminde uydurulmuş bir fiyat, cevapsızlıktan çok daha pahalıdır: müşteriye verilmiş
+yanlış bir taahhüt olur.
+
+### 8. Eşiksiz bir uyarı sistemi iki yönden ölür
+
+Ya her dalgalanmayı raporlar (gürültü — kullanıcı kapatır ve bir daha açmaz), ya hiçbir şey
+söylemez.
+
+**Vaka:** 4 ameliyatın 1'i RPT ise oran %25'tir. Bu bilgi değil gürültüdür; sonraki hastada
+%20'ye düşer. Eşik tablosu oran metriklerinde en az 10 kayıt istiyor, ve RPT'nin eşiği en
+yüksek — çünkü **bir hekimi haksız yere işaret etmek ilişkiyi bozar** ve geri alınmaz.
+
+### 9. Veri girilmeyen sistem ölür
+
+**Vaka:** Olay kaydı, bu tip sistemlerin klasik ölüm sebebine karşı tasarlandı: kimse ekstra iş
+yapmak istemez, özellikle "hata kaydı" gibi kendini suçlar gibi hissettiren bir iş.
+
+Üç şart kondu: sorunun fark edildiği yerden (hasta dosyasından) tek tıkla girilecek, bağlam
+önceden dolu gelecek, ve girilen kayıt görünür bir rapora dönüşecek. Kimsenin bakmadığı bir kayda
+kimse veri girmez.
+
+Ayrıca tek departmanla başlandı. Çalışmayan bir döngüyü altı kat büyütmek altı kat çöp üretir.
+
+### 10. Doldurulmayan alan, olmayan alandan kötüdür
+
+**Vaka:** Hekim alanı eklenmeden önce sorulan soru "yazabilir miyiz" değil, *"acente hangi
+hekimin ameliyat ettiğini gerçekten biliyor ve kaydediyor mu"* oldu. Klinik atıyorsa ve hekim son
+anda değişiyorsa alan boş kalır — ve boş alana dayanan rapor, olmayan rapordan daha zararlıdır,
+çünkü doğru görünür.
+
+### 11. Kendi kuralına kendi işinde uy
+
+**Vaka:** Bir günde biten dokuz özelliği changelog'a "Yayında" yazmak cazipti — çalışıyorlardı,
+testleri geçiyordu, prod'daydılar. Ama projenin kendi kuralı net: "eklendi + çalışır" iddiası
+ancak pilot veya yayın durumunda yazılır. Pilot başlamamıştı, kimse kullanmamıştı.
+
+Hepsi "Kod hazır" yazıldı. Kuralı yazmak kolay; kendi işinde uygulamak zor olan kısım.
+
+### 12. Ünvan yetkiye dönüşmesin — iki sistem olmasın
+
+**Vaka:** Kişilere ünvan eklenirken en ciddi risk, ünvanın ikinci bir yetki sistemi hâline
+gelmesiydi. Sistemde zaten bir yetki modeli var. İki cevap olsaydı zamanla ayrışırlardı.
+
+Kural yazıldı (*ünvan hiçbir izin kontrolünde okunmaz*) ve **testle sabitlendi** — ünvanı değişen
+kullanıcının izni değişmiyor, ayrıca izin fonksiyonuna parametre eklenmeye çalışılırsa test
+kırılıyor. Kuralı yazmak yetmez; kodun onu hatırlaması gerekir.
+
+---
+
+## 15 — Bu projeyi bugün nasıl okursun
 
 Yeni bir yazılımcı bu depoya bakacak olsa, doğru okuma sırası şu. Kodun içine dalmadan önce üç
 dosya:
