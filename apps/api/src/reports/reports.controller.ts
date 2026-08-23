@@ -10,6 +10,7 @@ import {
 	marketingReportParams,
 	reportByCategoryDetailParams,
 	reportCohortsParams,
+	reportPeriodCompareParams,
 	reportPeriodParams,
 	reportTransactionDuplicatesParams,
 	reportUntouchedContactsParams
@@ -33,14 +34,20 @@ export class ReportsController {
 		private readonly aiAccuracyReportService: AiAccuracyReportService
 	) {}
 
+	/**
+	 * `compare=previous` — dönem karşılaştırması (docs/2026-08-23-maya-icgoru-sorulari.md § 6).
+	 * Verilmezse cevap bugünkü şekliyle birebir aynı kalır; `from`/`to` eksikken sessizce
+	 * yok sayılır.
+	 */
 	@Get('summary')
 	@RequireOrgPermission('finance', 'read')
 	summary(
 		@Req() req: FastifyRequest,
 		@Query('from') from?: string,
-		@Query('to') to?: string
+		@Query('to') to?: string,
+		@Query('compare') compare?: string
 	) {
-		const params = reportPeriodParams.parse({ from, to });
+		const params = reportPeriodCompareParams.parse({ from, to, compare });
 		return this.reportsService.summary(getActiveOrgId(req), params);
 	}
 
@@ -112,14 +119,20 @@ export class ReportsController {
 		return this.reportsService.contactDistribution(getActiveOrgId(req), params);
 	}
 
+	/**
+	 * `compare=previous` — dönem karşılaştırması (docs/2026-08-23-maya-icgoru-sorulari.md § 6).
+	 * Verilmezse cevap bugünkü şekliyle birebir aynı kalır; `from`/`to` eksikken sessizce
+	 * yok sayılır.
+	 */
 	@Get('appointment-metrics')
 	@RequireOrgPermission('finance', 'read')
 	appointmentMetrics(
 		@Req() req: FastifyRequest,
 		@Query('from') from?: string,
-		@Query('to') to?: string
+		@Query('to') to?: string,
+		@Query('compare') compare?: string
 	) {
-		const params = reportPeriodParams.parse({ from, to });
+		const params = reportPeriodCompareParams.parse({ from, to, compare });
 		return this.reportsService.appointmentMetrics(getActiveOrgId(req), params);
 	}
 

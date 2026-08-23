@@ -14119,6 +14119,71 @@ paths:
                     type: number
                     minimum: 0
                     maximum: 1
+                  previous:
+                    type: object
+                    properties:
+                      period:
+                        type: object
+                        properties:
+                          from:
+                            type: string
+                            pattern: ^\d{4}-\d{2}-\d{2}$
+                            nullable: true
+                          to:
+                            type: string
+                            pattern: ^\d{4}-\d{2}-\d{2}$
+                            nullable: true
+                        required:
+                          - from
+                          - to
+                        additionalProperties: false
+                      income_base:
+                        type: integer
+                      expense_base:
+                        type: integer
+                      net_base:
+                        type: integer
+                      pending_base:
+                        type: integer
+                      transaction_count:
+                        type: integer
+                        minimum: 0
+                      fx_missing_count:
+                        type: integer
+                        minimum: 0
+                      fx_missing_amount_by_currency:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            currency:
+                              type: string
+                              enum:
+                                - TRY
+                                - GBP
+                                - EUR
+                                - USD
+                            amount_minor:
+                              type: integer
+                          required:
+                            - currency
+                            - amount_minor
+                          additionalProperties: false
+                      coverage_ratio:
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                    required:
+                      - period
+                      - income_base
+                      - expense_base
+                      - net_base
+                      - pending_base
+                      - transaction_count
+                      - fx_missing_count
+                      - fx_missing_amount_by_currency
+                      - coverage_ratio
+                    additionalProperties: false
                 required:
                   - period
                   - income_base
@@ -14678,6 +14743,172 @@ paths:
                         - month
                         - count
                       additionalProperties: false
+                  previous:
+                    type: object
+                    properties:
+                      period:
+                        type: object
+                        properties:
+                          from:
+                            type: string
+                            pattern: ^\d{4}-\d{2}-\d{2}$
+                            nullable: true
+                          to:
+                            type: string
+                            pattern: ^\d{4}-\d{2}-\d{2}$
+                            nullable: true
+                        required:
+                          - from
+                          - to
+                        additionalProperties: false
+                      total:
+                        type: integer
+                        minimum: 0
+                      completion_rate:
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                      no_show_rate:
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                      cancellation_rate:
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                      by_clinic:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            clinic_contact_id:
+                              type: string
+                              format: uuid
+                              nullable: true
+                            clinic_name:
+                              type: string
+                              minLength: 1
+                              maxLength: 255
+                            count:
+                              type: integer
+                              minimum: 0
+                            completion_rate:
+                              type: number
+                              minimum: 0
+                              maximum: 1
+                          required:
+                            - clinic_contact_id
+                            - clinic_name
+                            - count
+                            - completion_rate
+                          additionalProperties: false
+                      by_appointment_type:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            appointment_type:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            count:
+                              type: integer
+                              minimum: 0
+                            ratio:
+                              type: number
+                              minimum: 0
+                              maximum: 1
+                          required:
+                            - appointment_type
+                            - count
+                            - ratio
+                          additionalProperties: false
+                      by_doctor:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            doctor_contact_id:
+                              type: string
+                              format: uuid
+                              nullable: true
+                            doctor_name:
+                              type: string
+                              minLength: 1
+                              maxLength: 255
+                            total:
+                              type: integer
+                              minimum: 0
+                            completed:
+                              type: integer
+                              minimum: 0
+                            no_show:
+                              type: integer
+                              minimum: 0
+                            cancelled:
+                              type: integer
+                              minimum: 0
+                          required:
+                            - doctor_contact_id
+                            - doctor_name
+                            - total
+                            - completed
+                            - no_show
+                            - cancelled
+                          additionalProperties: false
+                      by_doctor_type:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            doctor_contact_id:
+                              type: string
+                              format: uuid
+                              nullable: true
+                            doctor_name:
+                              type: string
+                              minLength: 1
+                              maxLength: 255
+                            appointment_type:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            count:
+                              type: integer
+                              minimum: 0
+                          required:
+                            - doctor_contact_id
+                            - doctor_name
+                            - appointment_type
+                            - count
+                          additionalProperties: false
+                      monthly:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            month:
+                              type: string
+                              pattern: ^\d{4}-\d{2}$
+                            count:
+                              type: integer
+                              minimum: 0
+                          required:
+                            - month
+                            - count
+                          additionalProperties: false
+                    required:
+                      - period
+                      - total
+                      - completion_rate
+                      - no_show_rate
+                      - cancellation_rate
+                      - by_clinic
+                      - by_appointment_type
+                      - by_doctor
+                      - by_doctor_type
+                      - monthly
+                    additionalProperties: false
                 required:
                   - period
                   - total

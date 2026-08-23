@@ -24,6 +24,7 @@ import {
 	COHORT_ATTRIBUTION_NOTE_KEY,
 	deriveTransactionLabel,
 	evaluateTransactionConsistency,
+	previousReportPeriod,
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	resolveCollectedAmount,
@@ -31,6 +32,7 @@ import {
 	type MarketingReportParams,
 	type MarketingSourceRow,
 	type ReportAppointmentMetrics,
+	type ReportAppointmentMetricsData,
 	type ReportBalances,
 	type ReportBalanceRow,
 	type ReportByCategory,
@@ -44,8 +46,10 @@ import {
 	type ReportConsistencyItem,
 	type ReportMonthly,
 	type ReportContactDistribution,
+	type ReportPeriodCompareParams,
 	type ReportPeriodParams,
 	type ReportSummary,
+	type ReportSummaryData,
 	type ReportTransactionDuplicates,
 	type ReportTransactionDuplicatesParams,
 	type ReportUntouchedContacts,
@@ -165,57 +169,75 @@ async function getTenantTz(db: TenantDb, tenantId: string): Promise<string> {
 export class ReportsService {
 	constructor(private readonly tenantContext: TenantContextService) {}
 
-	async summary(tenantId: string, params: ReportPeriodParams): Promise<ReportSummary> {
+	/**
+	 * `compare=previous` — iki dönemi ayrı sorgularla çeker, sonuçları birleştirir (aynı
+	 * transaction içinde, tek tenant bağlamı). `from`/`to` eksikse `compare` sessizce yok
+	 * sayılır (`previousReportPeriod` null döner) — sınırsız dönemin "öncesi" tanımsız.
+	 */
+	async summary(tenantId: string, params: ReportPeriodCompareParams): Promise<ReportSummary> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const tenantBase = await this.getTenantBase(db, tenantId);
-			const rows = await this.fetchTransactions(db, params);
-
-			let incomeBase = 0;
-			let expenseBase = 0;
-			let pendingBase = 0;
-			let fxMissingCount = 0;
-			const fxMissingByCurrency = new Map<string, number>();
-
-			for (const row of rows) {
-				const base = resolveBaseAmount(row, tenantBase);
-				if (base == null) {
-					fxMissingCount += 1;
-					fxMissingByCurrency.set(
-						row.currency,
-						(fxMissingByCurrency.get(row.currency) ?? 0) + row.amount
-					);
-					continue;
-				}
-				if (row.kind === 'income') {
-					incomeBase += base;
-					const paidBase = resolvePaidBaseAmount(row, tenantBase) ?? 0;
-					pendingBase += Math.max(0, base - paidBase);
-				} else {
-					expenseBase += base;
-				}
-			}
-
-			const transactionCount = rows.length;
-			const coverageRatio =
-				transactionCount === 0 ? 1 : (transactionCount - fxMissingCount) / transactionCount;
-
-			return {
-				period: { from: params.from ?? null, to: params.to ?? null },
-				income_base: incomeBase,
-				expense_base: expenseBase,
-				net_base: incomeBase - expenseBase,
-				pending_base: pendingBase,
-				transaction_count: transactionCount,
-				fx_missing_count: fxMissingCount,
-				fx_missing_amount_by_currency: [...fxMissingByCurrency.entries()]
-					.map(([currency, amount_minor]) => ({
-						currency: currency as ReportSummary['fx_missing_amount_by_currency'][number]['currency'],
-						amount_minor
-					}))
-					.sort((a, b) => a.currency.localeCompare(b.currency)),
-				coverage_ratio: coverageRatio
-			};
+			const current = await this.buildSummary(db, tenantId, params);
+			if (params.compare !== 'previous') return current;
+			const previousWindow = previousReportPeriod(params.from, params.to);
+			if (!previousWindow) return current;
+			const previous = await this.buildSummary(db, tenantId, previousWindow);
+			return { ...current, previous };
 		});
+	}
+
+	private async buildSummary(
+		db: TenantDb,
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<ReportSummaryData> {
+		const tenantBase = await this.getTenantBase(db, tenantId);
+		const rows = await this.fetchTransactions(db, params);
+
+		let incomeBase = 0;
+		let expenseBase = 0;
+		let pendingBase = 0;
+		let fxMissingCount = 0;
+		const fxMissingByCurrency = new Map<string, number>();
+
+		for (const row of rows) {
+			const base = resolveBaseAmount(row, tenantBase);
+			if (base == null) {
+				fxMissingCount += 1;
+				fxMissingByCurrency.set(
+					row.currency,
+					(fxMissingByCurrency.get(row.currency) ?? 0) + row.amount
+				);
+				continue;
+			}
+			if (row.kind === 'income') {
+				incomeBase += base;
+				const paidBase = resolvePaidBaseAmount(row, tenantBase) ?? 0;
+				pendingBase += Math.max(0, base - paidBase);
+			} else {
+				expenseBase += base;
+			}
+		}
+
+		const transactionCount = rows.length;
+		const coverageRatio =
+			transactionCount === 0 ? 1 : (transactionCount - fxMissingCount) / transactionCount;
+
+		return {
+			period: { from: params.from ?? null, to: params.to ?? null },
+			income_base: incomeBase,
+			expense_base: expenseBase,
+			net_base: incomeBase - expenseBase,
+			pending_base: pendingBase,
+			transaction_count: transactionCount,
+			fx_missing_count: fxMissingCount,
+			fx_missing_amount_by_currency: [...fxMissingByCurrency.entries()]
+				.map(([currency, amount_minor]) => ({
+					currency: currency as ReportSummaryData['fx_missing_amount_by_currency'][number]['currency'],
+					amount_minor
+				}))
+				.sort((a, b) => a.currency.localeCompare(b.currency)),
+			coverage_ratio: coverageRatio
+		};
 	}
 
 	async contactDistribution(
@@ -268,153 +290,169 @@ export class ReportsService {
 	 * GAP-07: appointment ops metrics. Aggregation is SQL GROUP BY / FILTER only —
 	 * never pull raw appointment rows for client-side counting (legacy raporlar.md).
 	 * Day/month buckets honor tenant timezone via tenantDayRange + AT TIME ZONE.
+	 *
+	 * `compare=previous` — iki dönemi ayrı sorgularla çeker (aynı tenant transaction'ı
+	 * içinde), sonuçları birleştirir. `from`/`to` eksikse sessizce yok sayılır.
 	 */
 	async appointmentMetrics(
 		tenantId: string,
-		params: ReportPeriodParams
+		params: ReportPeriodCompareParams
 	): Promise<ReportAppointmentMetrics> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const conditions: SQL[] = [isNull(appointments.deletedAt)];
-			if (params.from) {
-				const { start } = await dayRange(db, tenantId, params.from);
-				conditions.push(gte(appointments.startsAt, start));
-			}
-			if (params.to) {
-				const { endExclusive } = await dayRange(db, tenantId, params.to);
-				conditions.push(lt(appointments.startsAt, endExclusive));
-			}
-			const where = and(...conditions);
-			const timezone = await getTenantTz(db, tenantId);
-
-			const [statusRow] = await db
-				.select({
-					total: count(),
-					completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`,
-					noShow: sql<number>`count(*) filter (where ${appointments.status} = 'no_show')`,
-					cancelled: sql<number>`count(*) filter (where ${appointments.status} = 'cancelled')`
-				})
-				.from(appointments)
-				.where(where);
-
-			const total = Number(statusRow?.total ?? 0);
-			const completed = Number(statusRow?.completed ?? 0);
-			const noShow = Number(statusRow?.noShow ?? 0);
-			const cancelled = Number(statusRow?.cancelled ?? 0);
-
-			const clinicNameExpr = sql<string>`coalesce(nullif(trim("appointments"."clinic_name"), ''), 'Atanmamış')`;
-			const clinicRows = await db
-				.select({
-					clinicContactId: appointments.clinicContactId,
-					clinicName: clinicNameExpr,
-					count: count(),
-					completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`
-				})
-				.from(appointments)
-				.where(where)
-				.groupBy(appointments.clinicContactId, clinicNameExpr)
-				.orderBy(sql`count(*) desc`);
-
-			const typeExpr = sql<string>`coalesce(nullif(trim("appointments"."appointment_type"), ''), 'Belirtilmemiş')`;
-			const typeRows = await db
-				.select({
-					appointmentType: typeExpr,
-					count: count()
-				})
-				.from(appointments)
-				.where(where)
-				.groupBy(typeExpr)
-				.orderBy(sql`count(*) desc`);
-
-			// Hekim kırılımı (Karar 1(b)): appointments.doctor_contact_id has no denormalized
-			// name (unlike clinic_name) — the label always comes from the joined contact.
-			const doctorNameExpr = sql<string>`coalesce(nullif(trim("contacts"."display_name"), ''), 'Atanmamış')`;
-			const doctorRows = await db
-				.select({
-					doctorContactId: appointments.doctorContactId,
-					doctorName: doctorNameExpr,
-					total: count(),
-					completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`,
-					noShow: sql<number>`count(*) filter (where ${appointments.status} = 'no_show')`,
-					cancelled: sql<number>`count(*) filter (where ${appointments.status} = 'cancelled')`
-				})
-				.from(appointments)
-				.leftJoin(contacts, eq(appointments.doctorContactId, contacts.id))
-				.where(where)
-				.groupBy(appointments.doctorContactId, doctorNameExpr)
-				.orderBy(sql`count(*) desc`);
-
-			// Hekim × randevu tipi çapraz sayımı — 'RPT' sunucuya gömülmez, ham sayım döner
-			// (bkz. docs/2026-08-23-maya-icgoru-sorulari.md § Karar 2). Oran istemcide hesaplanır.
-			const doctorTypeRows = await db
-				.select({
-					doctorContactId: appointments.doctorContactId,
-					doctorName: doctorNameExpr,
-					appointmentType: typeExpr,
-					count: count()
-				})
-				.from(appointments)
-				.leftJoin(contacts, eq(appointments.doctorContactId, contacts.id))
-				.where(where)
-				.groupBy(appointments.doctorContactId, doctorNameExpr, typeExpr)
-				.orderBy(sql`count(*) desc`);
-
-			// Embed timezone as a literal so SELECT/GROUP BY SQL text matches (drizzle
-			// otherwise binds the column differently across clauses → PG 42803).
-			const tzLiteral = timezone.replace(/'/g, "''");
-			const monthExpr = sql<string>`to_char("appointments"."starts_at" AT TIME ZONE '${sql.raw(tzLiteral)}', 'YYYY-MM')`;
-			const monthRows = await db
-				.select({
-					month: monthExpr,
-					count: count()
-				})
-				.from(appointments)
-				.where(where)
-				.groupBy(monthExpr)
-				.orderBy(monthExpr);
-
-			return {
-				period: { from: params.from ?? null, to: params.to ?? null },
-				total,
-				completion_rate: rate(completed, total),
-				no_show_rate: rate(noShow, total),
-				cancellation_rate: rate(cancelled, total),
-				by_clinic: clinicRows.map((row) => {
-					const n = Number(row.count);
-					return {
-						clinic_contact_id: row.clinicContactId,
-						clinic_name: row.clinicName,
-						count: n,
-						completion_rate: rate(Number(row.completed), n)
-					};
-				}),
-				by_appointment_type: typeRows.map((row) => {
-					const n = Number(row.count);
-					return {
-						appointment_type: row.appointmentType,
-						count: n,
-						ratio: rate(n, total)
-					};
-				}),
-				by_doctor: doctorRows.map((row) => ({
-					doctor_contact_id: row.doctorContactId,
-					doctor_name: row.doctorName,
-					total: Number(row.total),
-					completed: Number(row.completed),
-					no_show: Number(row.noShow),
-					cancelled: Number(row.cancelled)
-				})),
-				by_doctor_type: doctorTypeRows.map((row) => ({
-					doctor_contact_id: row.doctorContactId,
-					doctor_name: row.doctorName,
-					appointment_type: row.appointmentType,
-					count: Number(row.count)
-				})),
-				monthly: monthRows.map((row) => ({
-					month: row.month,
-					count: Number(row.count)
-				}))
-			};
+			const current = await this.buildAppointmentMetrics(db, tenantId, params);
+			if (params.compare !== 'previous') return current;
+			const previousWindow = previousReportPeriod(params.from, params.to);
+			if (!previousWindow) return current;
+			const previous = await this.buildAppointmentMetrics(db, tenantId, previousWindow);
+			return { ...current, previous };
 		});
+	}
+
+	private async buildAppointmentMetrics(
+		db: TenantDb,
+		tenantId: string,
+		params: ReportPeriodParams
+	): Promise<ReportAppointmentMetricsData> {
+		const conditions: SQL[] = [isNull(appointments.deletedAt)];
+		if (params.from) {
+			const { start } = await dayRange(db, tenantId, params.from);
+			conditions.push(gte(appointments.startsAt, start));
+		}
+		if (params.to) {
+			const { endExclusive } = await dayRange(db, tenantId, params.to);
+			conditions.push(lt(appointments.startsAt, endExclusive));
+		}
+		const where = and(...conditions);
+		const timezone = await getTenantTz(db, tenantId);
+
+		const [statusRow] = await db
+			.select({
+				total: count(),
+				completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`,
+				noShow: sql<number>`count(*) filter (where ${appointments.status} = 'no_show')`,
+				cancelled: sql<number>`count(*) filter (where ${appointments.status} = 'cancelled')`
+			})
+			.from(appointments)
+			.where(where);
+
+		const total = Number(statusRow?.total ?? 0);
+		const completed = Number(statusRow?.completed ?? 0);
+		const noShow = Number(statusRow?.noShow ?? 0);
+		const cancelled = Number(statusRow?.cancelled ?? 0);
+
+		const clinicNameExpr = sql<string>`coalesce(nullif(trim("appointments"."clinic_name"), ''), 'Atanmamış')`;
+		const clinicRows = await db
+			.select({
+				clinicContactId: appointments.clinicContactId,
+				clinicName: clinicNameExpr,
+				count: count(),
+				completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`
+			})
+			.from(appointments)
+			.where(where)
+			.groupBy(appointments.clinicContactId, clinicNameExpr)
+			.orderBy(sql`count(*) desc`);
+
+		const typeExpr = sql<string>`coalesce(nullif(trim("appointments"."appointment_type"), ''), 'Belirtilmemiş')`;
+		const typeRows = await db
+			.select({
+				appointmentType: typeExpr,
+				count: count()
+			})
+			.from(appointments)
+			.where(where)
+			.groupBy(typeExpr)
+			.orderBy(sql`count(*) desc`);
+
+		// Hekim kırılımı (Karar 1(b)): appointments.doctor_contact_id has no denormalized
+		// name (unlike clinic_name) — the label always comes from the joined contact.
+		const doctorNameExpr = sql<string>`coalesce(nullif(trim("contacts"."display_name"), ''), 'Atanmamış')`;
+		const doctorRows = await db
+			.select({
+				doctorContactId: appointments.doctorContactId,
+				doctorName: doctorNameExpr,
+				total: count(),
+				completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`,
+				noShow: sql<number>`count(*) filter (where ${appointments.status} = 'no_show')`,
+				cancelled: sql<number>`count(*) filter (where ${appointments.status} = 'cancelled')`
+			})
+			.from(appointments)
+			.leftJoin(contacts, eq(appointments.doctorContactId, contacts.id))
+			.where(where)
+			.groupBy(appointments.doctorContactId, doctorNameExpr)
+			.orderBy(sql`count(*) desc`);
+
+		// Hekim × randevu tipi çapraz sayımı — 'RPT' sunucuya gömülmez, ham sayım döner
+		// (bkz. docs/2026-08-23-maya-icgoru-sorulari.md § Karar 2). Oran istemcide hesaplanır.
+		const doctorTypeRows = await db
+			.select({
+				doctorContactId: appointments.doctorContactId,
+				doctorName: doctorNameExpr,
+				appointmentType: typeExpr,
+				count: count()
+			})
+			.from(appointments)
+			.leftJoin(contacts, eq(appointments.doctorContactId, contacts.id))
+			.where(where)
+			.groupBy(appointments.doctorContactId, doctorNameExpr, typeExpr)
+			.orderBy(sql`count(*) desc`);
+
+		// Embed timezone as a literal so SELECT/GROUP BY SQL text matches (drizzle
+		// otherwise binds the column differently across clauses → PG 42803).
+		const tzLiteral = timezone.replace(/'/g, "''");
+		const monthExpr = sql<string>`to_char("appointments"."starts_at" AT TIME ZONE '${sql.raw(tzLiteral)}', 'YYYY-MM')`;
+		const monthRows = await db
+			.select({
+				month: monthExpr,
+				count: count()
+			})
+			.from(appointments)
+			.where(where)
+			.groupBy(monthExpr)
+			.orderBy(monthExpr);
+
+		return {
+			period: { from: params.from ?? null, to: params.to ?? null },
+			total,
+			completion_rate: rate(completed, total),
+			no_show_rate: rate(noShow, total),
+			cancellation_rate: rate(cancelled, total),
+			by_clinic: clinicRows.map((row) => {
+				const n = Number(row.count);
+				return {
+					clinic_contact_id: row.clinicContactId,
+					clinic_name: row.clinicName,
+					count: n,
+					completion_rate: rate(Number(row.completed), n)
+				};
+			}),
+			by_appointment_type: typeRows.map((row) => {
+				const n = Number(row.count);
+				return {
+					appointment_type: row.appointmentType,
+					count: n,
+					ratio: rate(n, total)
+				};
+			}),
+			by_doctor: doctorRows.map((row) => ({
+				doctor_contact_id: row.doctorContactId,
+				doctor_name: row.doctorName,
+				total: Number(row.total),
+				completed: Number(row.completed),
+				no_show: Number(row.noShow),
+				cancelled: Number(row.cancelled)
+			})),
+			by_doctor_type: doctorTypeRows.map((row) => ({
+				doctor_contact_id: row.doctorContactId,
+				doctor_name: row.doctorName,
+				appointment_type: row.appointmentType,
+				count: Number(row.count)
+			})),
+			monthly: monthRows.map((row) => ({
+				month: row.month,
+				count: Number(row.count)
+			}))
+		};
 	}
 
 	/** G-04: full-period audit using the same shared rules as unsaved transaction drafts. */
