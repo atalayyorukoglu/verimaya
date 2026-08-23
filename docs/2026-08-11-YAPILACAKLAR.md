@@ -437,7 +437,7 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 | **AI-02** | Kayıt güncelleme onay kuyruğu | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-03** | İsabet ölçümü | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-04** | Zaman kilitli alarm motoru — **deterministik kod, AI değil** (uçuş T-48, transfer T-24) | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
-| **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | kohort + ilk bulgu raporu | M–L |
+| **AI-05** | Müdahale listesi v1 — aylık rapor üstünde öneri üreticisi; ilk sürüm elle sabit format | ✅ **2026-08-23'te kapandı** — bkz. aşağıdaki not | M–L |
 | **AI-06** | Bilgi tabanı versiyonlama | ✅ **2026-08-17'de kapandı** — bkz. Son kapananlar | ✅ |
 | **AI-07** | Öneri beyaz listesi genişletme (telefon, randevu durumu, hasta durumu) | AI-03 ölçümü | S |
 | **AUDIT-04** | `transactions` create/update denetim kaydı | ✅ **2026-08-22'de kapandı** — bkz. Son kapananlar | ✅ |
@@ -489,8 +489,21 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 >
 > **İlerleme (2026-08-23) — önerilen sıranın 1–4. adımları bitti:** referans değeri raporu,
 > ünvan sözlüğü, randevuya hekim alanı, ve `summary`/`appointment-metrics`'e `compare=previous`
-> (dönem karşılaştırması, geriye dönük kırıcı değişiklik yok). Sırada 5. adım (eşik tablosu —
-> hangi değişim söylenmeye değer). Detay: `docs/2026-08-23-maya-icgoru-sorulari.md` § 7.
+> (dönem karşılaştırması, geriye dönük kırıcı değişiklik yok). Detay: `docs/2026-08-23-maya-icgoru-sorulari.md` § 7.
+>
+> **✅ AI-05 tamamlandı (2026-08-23) — 5., 6. ve 7. adımlar da bitti.** Eşik tablosu
+> (`packages/shared/src/report-thresholds.ts`), olay kaydı v1 (`incidents`) ve müdahale
+> listesi v1 (`GET /v1/reports/interventions`, Raporlar → Müdahale Listesi) canlıda.
+> Zincirin son halkası: dört bulgu tipi — `quality_drop` (hekim bazında RPT/no-show/iptal
+> oranı, `appointment-metrics` + eşik), `revenue_drop` (dönem geliri/neti, `summary` + eşik),
+> `open_incident` (çözülmemiş olay, delta değil mevcut durum, en eskiden yeniye), `referral_value`
+> (en çok kazandıran referans, delta değil ilk-N). **Liste dil modeliyle üretilmedi** — sunucu
+> yapılandırılmış bulgu döner, cümleyi web `messages.ts` şablonundan kurar. Tip başına en fazla
+> 5 satır, tip içi sıralama var ama tipler arası global sıralama yok (elmayla armut). Finans
+> türevli bulgular (`revenue_drop`, `referral_value`) yalnız çağıranın `finance:read`'i varsa
+> cevaba girer — `incidents`'teki `canReadFinance` deseni aynen kullanıldı. Testler:
+> `apps/api/src/reports/reports.interventions.isolation.spec.ts` (eşik altı, iyileşme, az kayıt,
+> finans gizleme, boş dönem, tenant izolasyonu).
 
 ~~**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
 (G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.~~

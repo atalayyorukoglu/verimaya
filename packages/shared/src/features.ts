@@ -116,6 +116,14 @@ export const features: Feature[] = [
 		status: 'kod-hazir'
 	},
 	{
+		id: 'interventions',
+		module: 'Raporlama',
+		title: 'Müdahale listesi',
+		description:
+			'Kötüleşen hekim oranları, düşen dönem geliri, çözülmemiş olaylar ve en değerli referanslar tek listede — sistem kimse sormadan işaretler. Cümleler şablon, rakamlar SQL; dil modeli hiçbir bulgu üretmez.',
+		status: 'kod-hazir'
+	},
+	{
 		id: 'campaign-assistant',
 		module: 'Pazarlama',
 		title: 'Kampanya Asistanı',

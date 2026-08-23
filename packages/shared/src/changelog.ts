@@ -79,6 +79,12 @@ export const changelog: ChangelogEntry[] = [
 				featureId: 'ai-accuracy'
 			},
 			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'Müdahale listesi: hekim bazında kötüleşen RPT/gelmeme/iptal oranı, düşen dönem geliri/neti, çözülmemiş olaylar ve en değerli referanslar tek yerde, kimse sormadan işaretleniyor. Cümleler sabit şablon, rakamlar veritabanından — hiçbir bulgu dil modeliyle üretilmiyor; gürültüyü elemek için sabit eşik tablosu kullanılıyor.',
+				featureId: 'interventions'
+			},
+			{
 				type: 'guvenlik',
 				module: 'Finans',
 				text: 'İşlem oluşturma ve güncelleme artık denetim kaydına yazılıyor (önceden yalnız silme yazılıyordu); WhatsApp onay yolu dahil.'
