@@ -2025,18 +2025,34 @@ const tr = {
 	'reports.referrals.footnote':
 		'Yalnız doğrudan referans gösterilir — "getirdiğinin getirdiği" (zincir) v1\'de yok. Dönem filtresi getirdiklerinden gelen tahsilata uygulanır; referans ilişkisinin kendisi zamansızdır — getirdiği kişi sayısı dönemden etkilenmez.',
 
-	// Raporlar · Müdahale listesi (AI-05 yer tutucu)
+	// Raporlar · Müdahale listesi (AI-05 v1)
 	'reports.interventions.title': 'Müdahale Listesi',
-	'reports.interventions.soon': 'Yakında',
-	'reports.interventions.intro':
-		'Bu rapor henüz tanımlanmadı. Kodlanmadan önce ayrı bir oturumda netleştirilecek: hangi soruyu cevaplayacağı.',
-	'reports.interventions.exampleHeading': 'Tartışılacak örnek:',
-	'reports.interventions.exampleScenario':
-		'Bu ay 40 hasta reklamdan geldi, 12’si tahsilata dönüştü.',
-	'reports.interventions.exampleQuestion': 'Sistem ne söylesin?',
-	'reports.interventions.exampleOptionRate': '“Dönüşüm oranı geçen aya göre düştü” mü?',
-	'reports.interventions.exampleOptionChannel': '“Şu kanaldan gelenler daha az dönüşüyor” mü?',
-	'reports.interventions.exampleOptionFollowup': '“Şu temsilcide takip gecikmesi var” mı?',
+	'reports.interventions.description':
+		'Sistemin kimse sormadan “şuna bak” dediği yer. Cümleler şablon, rakamlar veritabanından — model hiçbir bulgu üretmez.',
+	'reports.interventions.loading': 'Liste hazırlanıyor…',
+	'reports.interventions.loadError': 'Liste yüklenemedi.',
+	'reports.interventions.empty': 'Bu dönemde müdahale gerektiren bir şey görünmüyor.',
+	'reports.interventions.viewLink': 'Bak →',
+	'reports.interventions.group.quality_drop': 'Kalite düşüşü',
+	'reports.interventions.group.revenue_drop': 'Gelir düşüşü',
+	'reports.interventions.group.open_incident': 'Çözülmemiş olaylar',
+	'reports.interventions.group.referral_value': 'En değerli referanslar',
+	'reports.interventions.sentence.quality_drop.rpt_rate':
+		'{doctor} hekiminde RPT oranı {previous} → {current} yükseldi ({sampleSize} randevu)',
+	'reports.interventions.sentence.quality_drop.no_show_rate':
+		'{doctor} hekiminde gelmeme oranı {previous} → {current} yükseldi ({sampleSize} randevu)',
+	'reports.interventions.sentence.quality_drop.cancel_rate':
+		'{doctor} hekiminde iptal oranı {previous} → {current} yükseldi ({sampleSize} randevu)',
+	'reports.interventions.sentence.revenue_drop.income': 'Dönem geliri {previous} → {current} düştü',
+	'reports.interventions.sentence.revenue_drop.net': 'Dönem neti {previous} → {current} düştü',
+	'reports.interventions.sentence.openIncident':
+		'{contact} dosyasında “{incidentType}” {daysOpen} gündür çözülmedi',
+	'reports.interventions.sentence.referralValue':
+		'{referrer} {count} referans hasta getirdi, net kazanç {amount}',
+	'reports.interventions.referralCoordinator': 'Koordinatör: {coordinator}',
+	'reports.interventions.referralCoordinatorUnassigned': 'Koordinatör atanmamış',
+	'reports.interventions.financeHidden':
+		'Gelir düşüşü ve referans değeri bulguları yalnız finans görme yetkisi olan kullanıcılara gösterilir.',
 
 	// Raporlar · AI isabet ölçümü (AI-03)
 	'reports.aiAccuracy.title': 'AI isabet ölçümü',
@@ -4708,16 +4724,34 @@ const en: Record<MessageKey, string> = {
 		'Only direct referrals are shown — chains ("who they referred, referred") are not in v1. The period filter applies to collections from referred contacts; the referral link itself is timeless — the referred count is not affected by the period.',
 
 	'reports.interventions.title': 'Intervention list',
-	'reports.interventions.soon': 'Coming soon',
-	'reports.interventions.intro':
-		'This report is not defined yet. Before any code is written, a dedicated session will clarify which question it should answer.',
-	'reports.interventions.exampleHeading': 'Example to discuss:',
-	'reports.interventions.exampleScenario':
-		'This month 40 patients came from ads, and 12 converted to collections.',
-	'reports.interventions.exampleQuestion': 'What should the system say?',
-	'reports.interventions.exampleOptionRate': '“Conversion rate dropped versus last month”?',
-	'reports.interventions.exampleOptionChannel': '“People from this channel convert less”?',
-	'reports.interventions.exampleOptionFollowup': '“This agent has a follow-up delay”?',
+	'reports.interventions.description':
+		'Where the system says “look at this” without being asked. Sentences are templates, numbers come from the database — the model never produces a finding.',
+	'reports.interventions.loading': 'Preparing the list…',
+	'reports.interventions.loadError': 'Could not load the list.',
+	'reports.interventions.empty': 'Nothing needs attention this period.',
+	'reports.interventions.viewLink': 'View →',
+	'reports.interventions.group.quality_drop': 'Quality drop',
+	'reports.interventions.group.revenue_drop': 'Revenue drop',
+	'reports.interventions.group.open_incident': 'Unresolved incidents',
+	'reports.interventions.group.referral_value': 'Most valuable referrers',
+	'reports.interventions.sentence.quality_drop.rpt_rate':
+		'{doctor}’s RPT rate rose from {previous} to {current} ({sampleSize} appointments)',
+	'reports.interventions.sentence.quality_drop.no_show_rate':
+		'{doctor}’s no-show rate rose from {previous} to {current} ({sampleSize} appointments)',
+	'reports.interventions.sentence.quality_drop.cancel_rate':
+		'{doctor}’s cancellation rate rose from {previous} to {current} ({sampleSize} appointments)',
+	'reports.interventions.sentence.revenue_drop.income':
+		'Period income dropped from {previous} to {current}',
+	'reports.interventions.sentence.revenue_drop.net':
+		'Period net dropped from {previous} to {current}',
+	'reports.interventions.sentence.openIncident':
+		'{contact}’s file has an unresolved “{incidentType}” open for {daysOpen} days',
+	'reports.interventions.sentence.referralValue':
+		'{referrer} referred {count} patients, net earnings {amount}',
+	'reports.interventions.referralCoordinator': 'Coordinator: {coordinator}',
+	'reports.interventions.referralCoordinatorUnassigned': 'No coordinator assigned',
+	'reports.interventions.financeHidden':
+		'Revenue drop and referral value findings are shown only to users with finance access.',
 
 	// Reports · AI accuracy measurement (AI-03)
 	'reports.aiAccuracy.title': 'AI accuracy',
