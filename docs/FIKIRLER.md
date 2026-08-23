@@ -93,6 +93,20 @@ testler; dayanağın kendisi kuralı çiğniyorsa er geç bakılmalı.
 **Ön koşul:** yok, kapasiteye bağlı. Yeni yazılan spec'ler zaten doğru desende (drizzle
 transaction + `SET LOCAL`). **Boyut: M** (16 dosya, mekanik ama dikkat ister).
 
+### Yerinde kurulum (on-prem) — egemenlik bir SKU olarak
+Sağlık verisiyle çalışan bir klinik "verim hiçbir yere gitmesin" diyebilir. Bugün böyle bir
+müşteriye satılacak bir şey yok.
+
+Tek kutu, müşterinin kendi mekânında, model ve veritabanı içeride, internete çıkışsız. Apple
+Silicon donanımı bunun **tam olarak doğru** donanımı olur: sessiz, düşük güç, veri merkezi
+gerektirmeyen, birleşik bellekle büyük model taşıyabilen.
+
+**Ön koşullar (ikisi de bugün yok):** tek-kiracılı kurulum yolu (her şey çok kiracılı
+varsayımıyla yazılı — RLS, `tenant_id`) ve yerinde güncelleme/destek modeli.
+
+**Yatırım şartı:** gerçek bir müşteri "verim çıkmasın" demeden başlanmaz. Ayrıntılı analiz:
+`docs/2026-08-23-llm-altyapi-secenekleri.md` § 5. **Boyut: L**
+
 ### Ürün içi "Yenilikler" yüzeyi
 Panele giren kullanıcıya son eklenen özellikleri gösteren küçük bir bileşen (changelog'un
 ürün içi yüzü). `changelog.ts` tek kaynak zaten var, veri hazır.

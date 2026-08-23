@@ -606,6 +606,13 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
   >
   > **Karar dayanağı olacak veri:** AI-03 isabet raporu + `maya_questions` cevaplanamama
   > oranı. Heuristic yeterliyse LLM'e para ve hukuk yükü ödemeye gerek yok.
+  >
+  > **Altyapı seçenekleri (barındırılan / AB bölgesi / kendi sunucu / Apple Silicon / hibrit),
+  > maliyet mertebeleri ve önerilen sıra:** `docs/2026-08-23-llm-altyapi-secenekleri.md`.
+  > Özet: maliyet kendi sunucuda çalıştırmanın gerekçesi değil (10 tenantta API aylık ~$20),
+  > gerekçe **veri egemenliği**. Ve karar bugün verilmemeli — `LlmClient` arayüzü sayesinde
+  > sağlayıcı değişimi tek sınıflık iş, ölçüm verisi ise birkaç hafta içinde kendiliğinden
+  > birikiyor.
   Bugün hiçbir dokümanda "modeller müşteri verisiyle eğitilmiyor" taahhüdü **yok**
   (`TEHDIT-MODELI.md` / `MIMARI.md` taraması boş). Satıcı UK (LEG-02), müşteri TR sağlık
   turizmi → sağlık verisinin yurtdışına aktarımı zaten açık risk. İlk müşteri sözleşmesinde
