@@ -1516,6 +1516,392 @@ paths:
           required: true
           schema:
             type: string
+  /incidents:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        contact_display_name:
+                          type: string
+                        incident_type_id:
+                          type: string
+                          format: uuid
+                        incident_type_name:
+                          type: string
+                        area:
+                          type: string
+                          enum:
+                            - clinic
+                            - hotel
+                            - transfer
+                            - sales
+                            - marketing
+                            - coordination
+                        appointment_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        responsible_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        responsible_display_name:
+                          type: string
+                          nullable: true
+                        cost_amount:
+                          type: integer
+                          nullable: true
+                        cost_currency:
+                          type: string
+                          enum:
+                            - TRY
+                            - GBP
+                            - EUR
+                            - USD
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                            - open
+                            - resolved
+                        description:
+                          type: string
+                          nullable: true
+                        occurred_on:
+                          type: string
+                          pattern: ^\d{4}-\d{2}-\d{2}$
+                        resolved_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - contact_display_name
+                        - incident_type_id
+                        - incident_type_name
+                        - area
+                        - appointment_id
+                        - responsible_contact_id
+                        - responsible_display_name
+                        - cost_amount
+                        - cost_currency
+                        - status
+                        - description
+                        - occurred_on
+                        - resolved_at
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                  next_cursor:
+                    type: string
+                    nullable: true
+                  total_count:
+                    type: integer
+                    minimum: 0
+                required:
+                  - items
+                  - next_cursor
+                additionalProperties: false
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                  incident_type_id:
+                    type: string
+                    format: uuid
+                  incident_type_name:
+                    type: string
+                  area:
+                    type: string
+                    enum:
+                      - clinic
+                      - hotel
+                      - transfer
+                      - sales
+                      - marketing
+                      - coordination
+                  appointment_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  responsible_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  responsible_display_name:
+                    type: string
+                    nullable: true
+                  cost_amount:
+                    type: integer
+                    nullable: true
+                  cost_currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                      - open
+                      - resolved
+                  description:
+                    type: string
+                    nullable: true
+                  occurred_on:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  resolved_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - contact_display_name
+                  - incident_type_id
+                  - incident_type_name
+                  - area
+                  - appointment_id
+                  - responsible_contact_id
+                  - responsible_display_name
+                  - cost_amount
+                  - cost_currency
+                  - status
+                  - description
+                  - occurred_on
+                  - resolved_at
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact_id:
+                  type: string
+                  format: uuid
+                incident_type_id:
+                  type: string
+                  format: uuid
+                appointment_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                responsible_contact_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                cost_amount:
+                  type: integer
+                  minimum: 0
+                  nullable: true
+                cost_currency:
+                  type: string
+                  enum:
+                    - TRY
+                    - GBP
+                    - EUR
+                    - USD
+                  nullable: true
+                description:
+                  type: string
+                  maxLength: 4000
+                  nullable: true
+                occurred_on:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+              required:
+                - contact_id
+                - incident_type_id
+                - occurred_on
+              additionalProperties: false
+  /incidents/{id}/resolve:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                  incident_type_id:
+                    type: string
+                    format: uuid
+                  incident_type_name:
+                    type: string
+                  area:
+                    type: string
+                    enum:
+                      - clinic
+                      - hotel
+                      - transfer
+                      - sales
+                      - marketing
+                      - coordination
+                  appointment_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  responsible_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  responsible_display_name:
+                    type: string
+                    nullable: true
+                  cost_amount:
+                    type: integer
+                    nullable: true
+                  cost_currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                      - open
+                      - resolved
+                  description:
+                    type: string
+                    nullable: true
+                  occurred_on:
+                    type: string
+                    pattern: ^\d{4}-\d{2}-\d{2}$
+                  resolved_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - contact_display_name
+                  - incident_type_id
+                  - incident_type_name
+                  - area
+                  - appointment_id
+                  - responsible_contact_id
+                  - responsible_display_name
+                  - cost_amount
+                  - cost_currency
+                  - status
+                  - description
+                  - occurred_on
+                  - resolved_at
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /incidents/{id}:
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  deleted:
+                    type: boolean
+                    enum:
+                      - true
+                required:
+                  - id
+                  - deleted
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /record-suggestions:
     get:
       responses:
@@ -3691,6 +4077,171 @@ paths:
                 required:
                   - id
                   - tenant_id
+                  - name
+                  - created_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+                - name
+              additionalProperties: false
+  /settings/incident-types:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        area:
+                          type: string
+                          enum:
+                            - clinic
+                            - hotel
+                            - transfer
+                            - sales
+                            - marketing
+                            - coordination
+                        name:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                        sort_order:
+                          type: integer
+                          minimum: 0
+                          default: 0
+                        usage_count:
+                          type: integer
+                          minimum: 0
+                          default: 0
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - area
+                        - name
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+  /settings/incident-types/reorder:
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                required:
+                  - updated
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sort_order:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - id
+                      - sort_order
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 500
+              required:
+                - items
+              additionalProperties: false
+  /settings/incident-types/{id}:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  area:
+                    type: string
+                    enum:
+                      - clinic
+                      - hotel
+                      - transfer
+                      - sales
+                      - marketing
+                      - coordination
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                  sort_order:
+                    type: integer
+                    minimum: 0
+                    default: 0
+                  usage_count:
+                    type: integer
+                    minimum: 0
+                    default: 0
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - area
                   - name
                   - created_at
                 additionalProperties: false
@@ -15337,4 +15888,204 @@ paths:
                 required:
                   - period
                   - items
+                additionalProperties: false
+  /reports/incidents:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                        nullable: true
+                      to:
+                        type: string
+                        pattern: ^\d{4}-\d{2}-\d{2}$
+                        nullable: true
+                    required:
+                      - from
+                      - to
+                    additionalProperties: false
+                  total:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        minimum: 0
+                      open_count:
+                        type: integer
+                        minimum: 0
+                      resolved_count:
+                        type: integer
+                        minimum: 0
+                      cost_totals:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            currency:
+                              type: string
+                              enum:
+                                - TRY
+                                - GBP
+                                - EUR
+                                - USD
+                            amount:
+                              type: integer
+                          required:
+                            - currency
+                            - amount
+                          additionalProperties: false
+                    required:
+                      - count
+                      - open_count
+                      - resolved_count
+                    additionalProperties: false
+                  by_area:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        count:
+                          type: integer
+                          minimum: 0
+                        open_count:
+                          type: integer
+                          minimum: 0
+                        resolved_count:
+                          type: integer
+                          minimum: 0
+                        area:
+                          type: string
+                        cost_totals:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              currency:
+                                type: string
+                                enum:
+                                  - TRY
+                                  - GBP
+                                  - EUR
+                                  - USD
+                              amount:
+                                type: integer
+                            required:
+                              - currency
+                              - amount
+                            additionalProperties: false
+                      required:
+                        - count
+                        - open_count
+                        - resolved_count
+                        - area
+                      additionalProperties: false
+                  by_type:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        count:
+                          type: integer
+                          minimum: 0
+                        open_count:
+                          type: integer
+                          minimum: 0
+                        resolved_count:
+                          type: integer
+                          minimum: 0
+                        incident_type_id:
+                          type: string
+                          format: uuid
+                        incident_type_name:
+                          type: string
+                        area:
+                          type: string
+                        cost_totals:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              currency:
+                                type: string
+                                enum:
+                                  - TRY
+                                  - GBP
+                                  - EUR
+                                  - USD
+                              amount:
+                                type: integer
+                            required:
+                              - currency
+                              - amount
+                            additionalProperties: false
+                      required:
+                        - count
+                        - open_count
+                        - resolved_count
+                        - incident_type_id
+                        - incident_type_name
+                        - area
+                      additionalProperties: false
+                  by_responsible:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        count:
+                          type: integer
+                          minimum: 0
+                        open_count:
+                          type: integer
+                          minimum: 0
+                        resolved_count:
+                          type: integer
+                          minimum: 0
+                        responsible_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        responsible_display_name:
+                          type: string
+                          nullable: true
+                        cost_totals:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              currency:
+                                type: string
+                                enum:
+                                  - TRY
+                                  - GBP
+                                  - EUR
+                                  - USD
+                              amount:
+                                type: integer
+                            required:
+                              - currency
+                              - amount
+                            additionalProperties: false
+                      required:
+                        - count
+                        - open_count
+                        - resolved_count
+                        - responsible_contact_id
+                        - responsible_display_name
+                      additionalProperties: false
+                required:
+                  - period
+                  - total
+                  - by_area
+                  - by_type
+                  - by_responsible
                 additionalProperties: false

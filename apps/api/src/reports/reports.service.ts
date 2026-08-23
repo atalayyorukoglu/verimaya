@@ -57,10 +57,21 @@ import {
 	type ReportUntouchedContactsParams,
 	type ReportReferrals,
 	type ReportReferralRow,
+	type ReportIncidents,
+	type IncidentReportCostTotal,
 	type UntouchedActivitySource
 } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
-import { adMetricsDaily, appointments, contacts, tenants, transactions, user } from '../db/schema';
+import {
+	adMetricsDaily,
+	appointments,
+	contacts,
+	incidents,
+	incidentTypes,
+	tenants,
+	transactions,
+	user
+} from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 
 /** Referans veren tarafı — kendine referans veren `contacts` satırıyla ayrı alias gerekir. */
@@ -1821,4 +1832,164 @@ export class ReportsService {
 			return { period, items };
 		});
 	}
+
+	/**
+	 * Olay kaydı raporu — AI-05'in beslendiği asıl kaynak
+	 * (docs/2026-08-23-maya-icgoru-sorulari.md § 5/6). Agregasyon SQL'de (GROUP BY);
+	 * bu metod yalnız birkaç grup sorgusunun sonucunu tek şekle indiriyor.
+	 *
+	 * `includeCost` false ise para sorguları hiç çalışmaz — `cost_totals` cevaptan
+	 * tamamen çıkar (izin kararı `ReportsController.canReadFinance`'te, gerekçe orada).
+	 */
+	async incidents(
+		tenantId: string,
+		params: ReportPeriodParams,
+		includeCost: boolean
+	): Promise<ReportIncidents> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const period = { from: params.from ?? null, to: params.to ?? null };
+			const periodConditions: SQL[] = [isNull(incidents.deletedAt)];
+			if (params.from) periodConditions.push(gte(incidents.occurredOn, params.from));
+			if (params.to) periodConditions.push(lte(incidents.occurredOn, params.to));
+			const where = and(...periodConditions)!;
+
+			const counts = {
+				count: sql<number>`count(*)::int`,
+				openCount: sql<number>`count(*) filter (where ${incidents.status} = 'open')::int`,
+				resolvedCount: sql<number>`count(*) filter (where ${incidents.status} = 'resolved')::int`
+			};
+
+			const [totalsRow] = await db.select(counts).from(incidents).where(where);
+
+			const areaRows = await db
+				.select({ area: incidents.area, ...counts })
+				.from(incidents)
+				.where(where)
+				.groupBy(incidents.area);
+
+			const typeRows = await db
+				.select({
+					incidentTypeId: incidents.incidentTypeId,
+					incidentTypeName: incidentTypes.name,
+					area: incidents.area,
+					...counts
+				})
+				.from(incidents)
+				.innerJoin(incidentTypes, eq(incidents.incidentTypeId, incidentTypes.id))
+				.where(where)
+				.groupBy(incidents.incidentTypeId, incidentTypes.name, incidents.area);
+
+			const incidentsResponsible = alias(contacts, 'reports_incidents_responsible');
+			const responsibleRows = await db
+				.select({
+					responsibleContactId: incidents.responsibleContactId,
+					responsibleDisplayName: incidentsResponsible.displayName,
+					...counts
+				})
+				.from(incidents)
+				.leftJoin(incidentsResponsible, eq(incidents.responsibleContactId, incidentsResponsible.id))
+				.where(where)
+				.groupBy(incidents.responsibleContactId, incidentsResponsible.displayName);
+
+			let costTotal: IncidentReportCostTotal[] | undefined;
+			let costByArea: Map<string, IncidentReportCostTotal[]> | undefined;
+			let costByType: Map<string, IncidentReportCostTotal[]> | undefined;
+			let costByResponsible: Map<string | null, IncidentReportCostTotal[]> | undefined;
+
+			if (includeCost) {
+				const costWhere = and(where, isNotNull(incidents.costCurrency))!;
+				const amountSum = sql<number>`coalesce(sum(${incidents.costAmount}), 0)::int`;
+
+				const totalCostRows = await db
+					.select({ currency: incidents.costCurrency, amount: amountSum })
+					.from(incidents)
+					.where(costWhere)
+					.groupBy(incidents.costCurrency);
+				costTotal = totalCostRows.map((r) => ({
+					currency: r.currency as IncidentReportCostTotal['currency'],
+					amount: r.amount
+				}));
+
+				const areaCostRows = await db
+					.select({ area: incidents.area, currency: incidents.costCurrency, amount: amountSum })
+					.from(incidents)
+					.where(costWhere)
+					.groupBy(incidents.area, incidents.costCurrency);
+				costByArea = groupCostRows(areaCostRows, (r) => r.area);
+
+				const typeCostRows = await db
+					.select({
+						incidentTypeId: incidents.incidentTypeId,
+						currency: incidents.costCurrency,
+						amount: amountSum
+					})
+					.from(incidents)
+					.where(costWhere)
+					.groupBy(incidents.incidentTypeId, incidents.costCurrency);
+				costByType = groupCostRows(typeCostRows, (r) => r.incidentTypeId);
+
+				const responsibleCostRows = await db
+					.select({
+						responsibleContactId: incidents.responsibleContactId,
+						currency: incidents.costCurrency,
+						amount: amountSum
+					})
+					.from(incidents)
+					.where(costWhere)
+					.groupBy(incidents.responsibleContactId, incidents.costCurrency);
+				costByResponsible = groupCostRows(responsibleCostRows, (r) => r.responsibleContactId);
+			}
+
+			return {
+				period,
+				total: {
+					count: totalsRow?.count ?? 0,
+					open_count: totalsRow?.openCount ?? 0,
+					resolved_count: totalsRow?.resolvedCount ?? 0,
+					...(costTotal ? { cost_totals: costTotal } : {})
+				},
+				by_area: areaRows.map((row) => ({
+					area: row.area,
+					count: row.count,
+					open_count: row.openCount,
+					resolved_count: row.resolvedCount,
+					...(costByArea ? { cost_totals: costByArea.get(row.area) ?? [] } : {})
+				})),
+				by_type: typeRows.map((row) => ({
+					incident_type_id: row.incidentTypeId,
+					incident_type_name: row.incidentTypeName,
+					area: row.area,
+					count: row.count,
+					open_count: row.openCount,
+					resolved_count: row.resolvedCount,
+					...(costByType ? { cost_totals: costByType.get(row.incidentTypeId) ?? [] } : {})
+				})),
+				by_responsible: responsibleRows.map((row) => ({
+					responsible_contact_id: row.responsibleContactId,
+					responsible_display_name: row.responsibleDisplayName,
+					count: row.count,
+					open_count: row.openCount,
+					resolved_count: row.resolvedCount,
+					...(costByResponsible
+						? { cost_totals: costByResponsible.get(row.responsibleContactId) ?? [] }
+						: {})
+				}))
+			};
+		});
+	}
+}
+
+/** Para toplamlarını (dimension → para birimi başına dizi) tek geçişte gruplar. */
+function groupCostRows<Row extends { currency: string | null; amount: number }, K extends string | null>(
+	rows: Row[],
+	keyOf: (row: Row) => K
+): Map<K, IncidentReportCostTotal[]> {
+	const map = new Map<K, IncidentReportCostTotal[]>();
+	for (const row of rows) {
+		const key = keyOf(row);
+		const list = map.get(key) ?? [];
+		list.push({ currency: row.currency as IncidentReportCostTotal['currency'], amount: row.amount });
+		map.set(key, list);
+	}
+	return map;
 }

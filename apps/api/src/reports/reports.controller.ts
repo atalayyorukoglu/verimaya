@@ -226,4 +226,41 @@ export class ReportsController {
 		const params = reportPeriodParams.parse({ from, to });
 		return this.reportsService.referrals(getActiveOrgId(req), params);
 	}
+
+	/**
+	 * Olay kaydı raporu (AI-05 girdisi). İzin `contact:read` — bu bir operasyon
+	 * raporu (dosya/tür/sorumlu bazında sayı), diğer para raporları gibi `finance:read`
+	 * istemiyor: bir temsilci "kaç RPT var" sorusunu görebilmeli, ciro görmeden.
+	 *
+	 * `cost_totals` yalnız çağıranın ayrıca `finance:read` izni varsa cevaba girer —
+	 * bu tek alan para tutarı taşıyor. İzin yoksa alan tümüyle çıkarılır (403 değil,
+	 * sessiz omisyon): rapor yine de sayım kısmıyla kullanılabilir kalsın diye.
+	 */
+	@Get('incidents')
+	@RequireOrgPermission('contact', 'read')
+	async incidents(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		const tenantId = getActiveOrgId(req);
+		const includeCost = await this.canReadFinance(req, tenantId);
+		return this.reportsService.incidents(tenantId, params, includeCost);
+	}
+
+	private async canReadFinance(req: FastifyRequest, tenantId: string): Promise<boolean> {
+		if (req.apiKeyAuth) {
+			return apiKeyHasScope(req.apiKeyAuth.scopes, 'finance', 'read');
+		}
+		const session = req.authSession;
+		if (!session) return false;
+		const role = await this.meService.resolveOrganizationRole({
+			userId: session.user.id,
+			activeOrganizationId: tenantId,
+			requestId: String(req.id)
+		});
+		const deniedKeys = await this.permissionOverrides.getDeniedKeys(tenantId);
+		return hasOrgPermission(role, 'finance', 'read', deniedKeys);
+	}
 }
