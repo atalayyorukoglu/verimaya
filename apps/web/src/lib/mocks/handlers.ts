@@ -78,6 +78,7 @@ import {
 	REPORT_CONSISTENCY_ITEMS_LIMIT,
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	DUPLICATE_SCAN_ROW_CAP,
+	previousReportPeriod,
 	tenantDayRange,
 	toTenantDayKey,
 	resolveCollectedAmount,
@@ -1843,7 +1844,17 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
-		return HttpResponse.json(buildReportSummary(store, from, to));
+		const result = buildReportSummary(store, from, to);
+		if (url.searchParams.get('compare') === 'previous') {
+			const previousWindow = previousReportPeriod(from ?? undefined, to ?? undefined);
+			if (previousWindow) {
+				return HttpResponse.json({
+					...result,
+					previous: buildReportSummary(store, previousWindow.from, previousWindow.to)
+				});
+			}
+		}
+		return HttpResponse.json(result);
 	}),
 
 	http.get('/v1/reports/contact-distribution', ({ request }) => {
@@ -1859,7 +1870,17 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
-		return HttpResponse.json(buildReportAppointmentMetrics(store, from, to));
+		const result = buildReportAppointmentMetrics(store, from, to);
+		if (url.searchParams.get('compare') === 'previous') {
+			const previousWindow = previousReportPeriod(from ?? undefined, to ?? undefined);
+			if (previousWindow) {
+				return HttpResponse.json({
+					...result,
+					previous: buildReportAppointmentMetrics(store, previousWindow.from, previousWindow.to)
+				});
+			}
+		}
+		return HttpResponse.json(result);
 	}),
 
 	http.get('/v1/reports/consistency', ({ request }) => {

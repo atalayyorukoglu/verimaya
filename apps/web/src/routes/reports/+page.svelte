@@ -35,6 +35,7 @@
 	import { amountInBase, paidAmountInBase } from '$lib/money-base';
 	import { transactionStatusTone } from '$lib/status-tone';
 	import { resolvePeriodRange, type PeriodKey } from '$lib/period-range';
+	import { computeReportDelta, type ReportDelta } from '$lib/report-compare';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import PeriodSelector from '$lib/components/PeriodSelector.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -91,6 +92,13 @@
 	let kindFilter = $state<'all' | 'income' | 'expense'>('all');
 	let drill = $state<Drill>(null);
 	/**
+	 * Dönem karşılaştırması (compare=previous). `from`/`to` sınırsızsa (periodKey='tum')
+	 * sunucu zaten sessizce yok sayar (docs/2026-08-23-maya-icgoru-sorulari.md § 6) —
+	 * burada ayrıca UI'da devre dışı bırakıyoruz ki kullanıcı işe yaramayan bir anahtarla
+	 * karşılaşmasın.
+	 */
+	let compareEnabled = $state(false);
+	/**
 	 * Hekim kırılımında oran sütunu hangi randevu tipine göre hesaplansın.
 	 * 'RPT' sunucuya gömülmüyor (tenant sözlüğü) — liste `ops.by_appointment_type`'tan
 	 * gelir, kullanıcı seçer. Varsayılan olarak listede 'RPT' varsa o seçilir.
@@ -108,6 +116,12 @@
 	let txFormError = $state<string | null>(null);
 
 	const dateRange = $derived(resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone));
+	const canCompare = $derived(dateRange.from != null && dateRange.to != null);
+	const comparePeriod = $derived(canCompare && compareEnabled ? ('previous' as const) : undefined);
+
+	$effect(() => {
+		if (!canCompare) compareEnabled = false;
+	});
 
 	const txQuery = createQuery(() => ({
 		queryKey: qs.keys.transactions.list({ for: 'reports', from: dateRange.from, to: dateRange.to }),
@@ -123,9 +137,15 @@
 	}));
 
 	const summaryQuery = createQuery(() => ({
-		queryKey: qs.keys.reports.summary({ from: dateRange.from, to: dateRange.to }),
+		queryKey: qs.keys.reports.summary({
+			from: dateRange.from,
+			to: dateRange.to,
+			compare: comparePeriod
+		}),
 		queryFn: () =>
-			apiGet<ReportSummary>(reportUrl('summary', { from: dateRange.from, to: dateRange.to })),
+			apiGet<ReportSummary>(
+				reportUrl('summary', { from: dateRange.from, to: dateRange.to, compare: comparePeriod })
+			),
 		enabled: qs.ready
 	}));
 
@@ -139,10 +159,18 @@
 	}));
 
 	const appointmentMetricsQuery = createQuery(() => ({
-		queryKey: qs.keys.reports.appointmentMetrics({ from: dateRange.from, to: dateRange.to }),
+		queryKey: qs.keys.reports.appointmentMetrics({
+			from: dateRange.from,
+			to: dateRange.to,
+			compare: comparePeriod
+		}),
 		queryFn: () =>
 			apiGet<ReportAppointmentMetrics>(
-				reportUrl('appointment-metrics', { from: dateRange.from, to: dateRange.to })
+				reportUrl('appointment-metrics', {
+					from: dateRange.from,
+					to: dateRange.to,
+					compare: comparePeriod
+				})
 			),
 		enabled: qs.ready
 	}));
@@ -563,6 +591,53 @@
 		if (tone === 'neg') return 'bg-danger/15 text-danger';
 		return 'bg-surface-2 text-text-muted';
 	}
+
+	/**
+	 * Dönem karşılaştırması gösterimi. Renk anlam taşır (yeşil = iyi yön, kırmızı = kötü
+	 * yön), tema aksanı değil — `goodDirection` alanın "yukarısı iyi mi kötü mü" olduğunu
+	 * söyler (ör. gelir yukarı iyi, gider yukarı kötü). `'neutral'` sayı büyümesi/küçülmesinin
+	 * iyi/kötü diye yorumlanmayacağı alanlar için (ör. toplam randevu adedi).
+	 */
+	type GoodDirection = 'up' | 'down' | 'neutral';
+
+	function deltaTone(delta: ReportDelta, goodDirection: GoodDirection): 'pos' | 'neg' | 'neu' {
+		if (delta.kind === 'none' || goodDirection === 'neutral') return 'neu';
+		if (delta.kind === 'new') return goodDirection === 'up' ? 'pos' : 'neu';
+		if (delta.diff === 0) return 'neu';
+		const isUp = delta.diff > 0;
+		const isGood = goodDirection === 'up' ? isUp : !isUp;
+		return isGood ? 'pos' : 'neg';
+	}
+
+	/**
+	 * `format`: 'money' → fark tutar olarak; 'count' → fark tam sayı olarak; 'ratePoints' →
+	 * fark yüzde puanı olarak (oranlar zaten 0–1 aralığında, göreli yüzde yanıltıcı olurdu —
+	 * "%10 → %20" için "+100%" değil "+10 puan" doğru okunuş).
+	 */
+	function deltaLabel(delta: ReportDelta, format: 'money' | 'count' | 'ratePoints'): string {
+		if (delta.kind === 'none') return '—';
+		if (delta.kind === 'new') return t('reports.compare.new');
+		const sign = delta.diff > 0 ? '+' : delta.diff < 0 ? '−' : '±';
+		const abs = Math.abs(delta.diff);
+		if (format === 'ratePoints') return `${sign}${formatPercent(abs, 1)}`;
+		const amountText = format === 'money' ? formatMoney(abs, baseCurrency) : String(abs);
+		if (delta.kind === 'raw') return `${sign}${amountText}`;
+		return `${sign}${amountText} (${sign}${formatPercent(Math.abs(delta.pct), 0)})`;
+	}
+
+	const summaryPrevious = $derived(kindFilter === 'all' ? summaryQuery.data?.previous : undefined);
+
+	function findPreviousClinic(id: string | null, name: string) {
+		return appointmentMetricsQuery.data?.previous?.by_clinic.find(
+			(r) => r.clinic_contact_id === id && r.clinic_name === name
+		);
+	}
+
+	function findPreviousDoctor(id: string | null, name: string) {
+		return appointmentMetricsQuery.data?.previous?.by_doctor.find(
+			(r) => r.doctor_contact_id === id && r.doctor_name === name
+		);
+	}
 </script>
 
 <svelte:head>
@@ -646,6 +721,21 @@
 	<!-- Dönem seçici -->
 	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone} />
 
+	<label
+		class="mb-4 flex items-center gap-2 text-xs font-medium text-text-muted {canCompare
+			? ''
+			: 'opacity-50'}"
+		title={canCompare ? undefined : t('reports.compare.disabledHint')}
+	>
+		<input
+			type="checkbox"
+			class="size-3.5 rounded-[4px] border-border accent-brand"
+			bind:checked={compareEnabled}
+			disabled={!canCompare}
+		/>
+		{t('reports.compare.label')}
+	</label>
+
 	{#if loading}
 		<p class="text-sm text-text-muted">{t('reports.loading')}</p>
 	{:else if failed}
@@ -660,28 +750,61 @@
 			{#if !ops || ops.total === 0}
 				<p class="text-sm text-text-muted">{t('reports.ops.empty')}</p>
 			{:else}
+				{@const opsPrev = ops.previous}
 				<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
 					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
 						<p class="text-xs text-text-muted">{t('reports.ops.total')}</p>
 						<p class="mt-1 text-lg font-semibold text-text tabular-nums">{ops.total}</p>
+						{#if opsPrev}
+							{@const d = computeReportDelta(ops.total, opsPrev.total, opsPrev.total)}
+							<p class="mt-0.5 text-[11px] {toneClass(deltaTone(d, 'neutral'))} tabular-nums">
+								{deltaLabel(d, 'count')}
+							</p>
+						{/if}
 					</div>
 					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
 						<p class="text-xs text-text-muted">{t('reports.ops.completion')}</p>
 						<p class="mt-1 text-lg font-semibold text-success tabular-nums">
 							{formatPercent(ops.completion_rate)}
 						</p>
+						{#if opsPrev}
+							{@const d = computeReportDelta(
+								ops.completion_rate,
+								opsPrev.completion_rate,
+								opsPrev.total
+							)}
+							<p class="mt-0.5 text-[11px] {toneClass(deltaTone(d, 'up'))} tabular-nums">
+								{deltaLabel(d, 'ratePoints')}
+							</p>
+						{/if}
 					</div>
 					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
 						<p class="text-xs text-text-muted">{t('reports.ops.noShow')}</p>
 						<p class="mt-1 text-lg font-semibold text-warning tabular-nums">
 							{formatPercent(ops.no_show_rate)}
 						</p>
+						{#if opsPrev}
+							{@const d = computeReportDelta(ops.no_show_rate, opsPrev.no_show_rate, opsPrev.total)}
+							<p class="mt-0.5 text-[11px] {toneClass(deltaTone(d, 'down'))} tabular-nums">
+								{deltaLabel(d, 'ratePoints')}
+							</p>
+						{/if}
 					</div>
 					<div class="rounded-lg border border-border bg-surface-2/40 p-3">
 						<p class="text-xs text-text-muted">{t('reports.ops.cancellation')}</p>
 						<p class="mt-1 text-lg font-semibold text-danger tabular-nums">
 							{formatPercent(ops.cancellation_rate)}
 						</p>
+						{#if opsPrev}
+							{@const d = computeReportDelta(
+								ops.cancellation_rate,
+								opsPrev.cancellation_rate,
+								opsPrev.total
+							)}
+							<p class="mt-0.5 text-[11px] {toneClass(deltaTone(d, 'down'))} tabular-nums">
+								{deltaLabel(d, 'ratePoints')}
+							</p>
+						{/if}
 					</div>
 				</div>
 
@@ -692,13 +815,26 @@
 						</h3>
 						<ul class="mt-2 divide-y divide-border">
 							{#each ops.by_clinic as row (`${row.clinic_contact_id ?? ''}:${row.clinic_name}`)}
+								{@const prevRow = findPreviousClinic(row.clinic_contact_id, row.clinic_name)}
 								<li class="flex items-center justify-between gap-2 py-2 text-sm">
 									<span class="min-w-0 truncate text-text">{row.clinic_name}</span>
-									<span class="shrink-0 text-xs text-text-muted tabular-nums">
-										{t('reports.ops.clinicStats', {
-											count: row.count,
-											pct: formatPercent(row.completion_rate, 0)
-										})}
+									<span class="shrink-0 text-right text-xs text-text-muted tabular-nums">
+										<span class="block">
+											{t('reports.ops.clinicStats', {
+												count: row.count,
+												pct: formatPercent(row.completion_rate, 0)
+											})}
+										</span>
+										{#if opsPrev}
+											{@const d = computeReportDelta(
+												row.count,
+												prevRow?.count ?? 0,
+												prevRow?.count ?? 0
+											)}
+											<span class="block {toneClass(deltaTone(d, 'neutral'))}">
+												{deltaLabel(d, 'count')}
+											</span>
+										{/if}
 									</span>
 								</li>
 							{/each}
@@ -753,6 +889,9 @@
 												{t('reports.ops.doctorTypeRatioCol', { type: doctorRatioType })}
 											</th>
 										{/if}
+										{#if opsPrev}
+											<th class="py-1.5 text-right font-medium">{t('reports.ops.col.previous')}</th>
+										{/if}
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-border">
@@ -768,6 +907,22 @@
 													{row.ratio_of_selected_type === null
 														? '—'
 														: formatPercent(row.ratio_of_selected_type, 0)}
+												</td>
+											{/if}
+											{#if opsPrev}
+												{@const prevRow = findPreviousDoctor(
+													row.doctor_contact_id,
+													row.doctor_name
+												)}
+												{@const d = computeReportDelta(
+													row.total,
+													prevRow?.total ?? 0,
+													prevRow?.total ?? 0
+												)}
+												<td
+													class="py-2 text-right tabular-nums {toneClass(deltaTone(d, 'neutral'))}"
+												>
+													{deltaLabel(d, 'count')}
 												</td>
 											{/if}
 										</tr>
@@ -817,6 +972,16 @@
 				{#if fxHint && totals.income === 0 && totals.count > 0}
 					<p class="mt-1 text-[11px] text-warning">{fxHint}</p>
 				{/if}
+				{#if summaryPrevious}
+					{@const d = computeReportDelta(
+						totals.income,
+						summaryPrevious.income_base,
+						summaryPrevious.transaction_count
+					)}
+					<p class="mt-1 text-[11px] {toneClass(deltaTone(d, 'up'))} tabular-nums">
+						{deltaLabel(d, 'money')}
+					</p>
+				{/if}
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-4">
 				<p class="text-xs text-text-muted">
@@ -830,6 +995,16 @@
 				</p>
 				{#if fxHint && totals.expense === 0 && totals.count > 0}
 					<p class="mt-1 text-[11px] text-warning">{fxHint}</p>
+				{/if}
+				{#if summaryPrevious}
+					{@const d = computeReportDelta(
+						totals.expense,
+						summaryPrevious.expense_base,
+						summaryPrevious.transaction_count
+					)}
+					<p class="mt-1 text-[11px] {toneClass(deltaTone(d, 'down'))} tabular-nums">
+						{deltaLabel(d, 'money')}
+					</p>
 				{/if}
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-4">
@@ -846,6 +1021,16 @@
 				>
 					{formatMoney(totals.net, baseCurrency)}
 				</p>
+				{#if summaryPrevious}
+					{@const d = computeReportDelta(
+						totals.net,
+						summaryPrevious.net_base,
+						summaryPrevious.transaction_count
+					)}
+					<p class="mt-1 text-[11px] {toneClass(deltaTone(d, 'up'))} tabular-nums">
+						{deltaLabel(d, 'money')}
+					</p>
+				{/if}
 			</div>
 			<div class="rounded-lg border border-border bg-surface p-4">
 				<p class="text-xs text-text-muted">
@@ -857,6 +1042,16 @@
 				<p class="mt-1 truncate text-lg font-semibold text-warning tabular-nums">
 					{formatMoney(totals.pending, baseCurrency)}
 				</p>
+				{#if summaryPrevious}
+					{@const d = computeReportDelta(
+						totals.pending,
+						summaryPrevious.pending_base,
+						summaryPrevious.transaction_count
+					)}
+					<p class="mt-1 text-[11px] {toneClass(deltaTone(d, 'down'))} tabular-nums">
+						{deltaLabel(d, 'money')}
+					</p>
+				{/if}
 			</div>
 		</div>
 
