@@ -17,7 +17,9 @@ export type ReportDelta =
 	| { kind: 'raw'; diff: number }
 	| { kind: 'pct'; diff: number; pct: number };
 
-export const REPORT_DELTA_MIN_SAMPLE = 5;
+// Eşik tek kaynakta: packages/shared/src/report-thresholds.ts (iki yerde durursa ayrışır).
+import { REPORT_DELTA_MIN_SAMPLE } from '@verimaya/shared';
+export { REPORT_DELTA_MIN_SAMPLE };
 
 export function computeReportDelta(
 	current: number,

@@ -378,7 +378,7 @@ Kapsaması da yanlış olur — Maya *sorulana* cevap veren yüzey. Bu sorular *
 | 2 | **Ünvan sözlüğü** — `contact_titles` + `contacts.title_id` | **S–M** | ✅ **2026-08-23'te bitti** (migration `0064`) |
 | 3 | **Randevuya hekim alanı** — `appointments.doctor_contact_id` + raporda `by_doctor` / `by_doctor_type` | **M** | ✅ **2026-08-23'te bitti** (migration `0065`) |
 | 4 | **Karşılaştırma katmanı** — her metrik için "önceki dönem" ve "tenant ortalaması" | **M** | ✅ **2026-08-23'te bitti** (`summary` + `appointment-metrics`) |
-| 5 | **Eşik tablosu** — hangi değişim söylenmeye değer, minimum kayıt sayısı | **S** | 4'e bağlı |
+| 5 | **Eşik tablosu** — `packages/shared/src/report-thresholds.ts` | **S** | ✅ **2026-08-23'te bitti** |
 | 6 | **Olay kaydı v1** — tek tablo, yalnız klinik departmanı ile başla | **M** | 5. bölüm |
 | 7 | **Müdahale listesi v1** — şablon cümleler, önem sırasına dizili | **M** | 4+5+6 üstüne |
 
@@ -388,6 +388,30 @@ olmadan da işe yarar. Oradan başlamak, AI-05'in tamamını beklemekten iyi.
 **2 ve 3 birlikte gider** — ünvan olmadan hekim alanı anlamsız, hekim olmadan ünvanın en net
 kullanım yeri eksik.
 
+> **Eşik tablosu bitti (2026-08-23).** `packages/shared/src/report-thresholds.ts` —
+> `evaluateFinding(metrik, {current, previous, sampleSize, periodTotal})` bir değişimin
+> müdahale listesine girip girmeyeceğine karar veriyor, `severity` ile de sırasını veriyor.
+>
+> Verilen kararlar ve gerekçeleri:
+> - **Oran metriklerinde `minSample: 10`.** 4 ameliyatın 1'i RPT ise oran %25'tir ama bu bilgi
+>   değil gürültüdür. 10 olayın altında oran ay ay savrulur.
+> - **`rpt_rate` eşiği en yüksek (%25).** En gürültülü metrik ve yanlış alarmın bedeli en
+>   yüksek olanı — bir hekimi haksız yere işaret etmek ilişkiyi bozar.
+> - **Para eşiği mutlak sayı değil, dönem toplamının oranı (%5).** "500" eşiği TRY'de anlamsız
+>   küçük, GBP'de anlamlı büyük olurdu; küçük acenteyle büyük acentede de aynı şeyi ifade
+>   etmezdi. Toplama oranlamak ikisini birden çözüyor.
+> - **İyileşme listeye girmiyor** (`skip_reason: 'improved'`). Müdahale listesi "neye
+>   bakılmalı" listesidir; iyi haber müdahale gerektirmez.
+> - **Önceki dönem 0 ise bulgu üretilmiyor.** "Sonsuz artış" demek yerine susuluyor.
+> - **Eşikler koda gömülü, tenant ayarı değil.** 5-15 kişilik acente bu sayıları ayarlamak
+>   istemez; ayar ekranı kullanılmayan bir yüzey üretir. Talep gelirse override eklenir,
+>   yapı hazır (tek `Record`).
+>
+> **Ekran eşiği ile liste eşiği ayrı ve bu bilinçli:** ekran %5 kayıtla yüzde gösteriyor
+> (`REPORT_DELTA_MIN_SAMPLE`), müdahale listesi oranlarda 10 istiyor. Ekran **bilgi verir**
+> (kullanıcı bağlamı görüyor), liste **iddia eder** — iddianın eşiği daha yüksektir.
+> Sabit tek kaynakta (`report-thresholds.ts`); web oradan import ediyor.
+>
 > **Örnek 1 karşılandı (2026-08-23).** `GET /v1/reports/referrals` + Raporlar → Referanslar.
 > Kullanıcının cümlesi — *"X 4 referans hasta gönderdi, koordinatörü Y, daha yüksek kazanç"* —
 > artık ekranda: kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve
