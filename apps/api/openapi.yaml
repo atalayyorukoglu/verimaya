@@ -992,6 +992,11 @@ paths:
                           format: uuid
                           nullable: true
                           default: null
+                        doctor_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         notes:
                           type: string
                           maxLength: 8000
@@ -1139,6 +1144,11 @@ paths:
                     nullable: true
                     default: null
                   transfer_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  doctor_contact_id:
                     type: string
                     format: uuid
                     nullable: true
@@ -2481,6 +2491,11 @@ paths:
                           nullable: true
                           default: null
                         transfer_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        doctor_contact_id:
                           type: string
                           format: uuid
                           nullable: true
@@ -14589,6 +14604,65 @@ paths:
                         - count
                         - ratio
                       additionalProperties: false
+                  by_doctor:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        doctor_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        doctor_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        total:
+                          type: integer
+                          minimum: 0
+                        completed:
+                          type: integer
+                          minimum: 0
+                        no_show:
+                          type: integer
+                          minimum: 0
+                        cancelled:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - doctor_contact_id
+                        - doctor_name
+                        - total
+                        - completed
+                        - no_show
+                        - cancelled
+                      additionalProperties: false
+                  by_doctor_type:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        doctor_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        doctor_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        appointment_type:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                        count:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - doctor_contact_id
+                        - doctor_name
+                        - appointment_type
+                        - count
+                      additionalProperties: false
                   monthly:
                     type: array
                     items:
@@ -14612,6 +14686,8 @@ paths:
                   - cancellation_rate
                   - by_clinic
                   - by_appointment_type
+                  - by_doctor
+                  - by_doctor_type
                   - monthly
                 additionalProperties: false
   /reports/consistency:

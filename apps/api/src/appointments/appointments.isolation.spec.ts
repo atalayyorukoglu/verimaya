@@ -293,6 +293,111 @@ describe('appointments tenant isolation', () => {
 		expect(result.items).toHaveLength(0);
 	});
 
+	it('hekim alanı: doctor_contact_id nullable — eski/hekimsiz randevu bozulmadan çalışır', async () => {
+		const noDoctorId = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Doctorless visit',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				notes: null
+			});
+			return a.id;
+		});
+		const found = (await appointmentsService.list(tenantA, { limit: 100 })).items.find(
+			(a) => a.id === noDoctorId
+		);
+		expect(found?.doctor_contact_id ?? null).toBeNull();
+	});
+
+	it('hekim alanı: contact_involves hekim rolündeki FK ile de eşleşir', async () => {
+		const doctorId = await withTenantSession(tenantA, async (tdb) => {
+			const c = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Doctor Involves'
+			});
+			return c.id;
+		});
+		const asDoctor = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Doctor role visit',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				doctor_contact_id: doctorId,
+				notes: null
+			});
+			return a.id;
+		});
+
+		const byDoctor = await appointmentsService.list(tenantA, {
+			limit: 25,
+			contact_involves: doctorId
+		});
+		expect(byDoctor.items.map((a) => a.id)).toEqual([asDoctor]);
+
+		const crossTenant = await appointmentsService.list(tenantB, {
+			limit: 25,
+			contact_involves: doctorId
+		});
+		expect(crossTenant.items).toHaveLength(0);
+	});
+
+	it('hekim alanı: hekim kişisi silinince (hard delete) randevu düşmez, doctor_contact_id null olur (ON DELETE SET NULL)', async () => {
+		const doctorId = await withTenantSession(tenantA, async (tdb) => {
+			const c = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Doctor To Delete'
+			});
+			return c.id;
+		});
+		const apptId = await withTenantSession(tenantA, async (tdb) => {
+			const a = await appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Visit with doctor to be deleted',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: null,
+				hotel_contact_id: null,
+				transfer_contact_id: null,
+				doctor_contact_id: doctorId,
+				notes: null
+			});
+			return a.id;
+		});
+
+		await withTenantSession(tenantA, async (tdb) => {
+			await tdb.execute(drizzleSql`delete from contacts where id = ${doctorId}`);
+		});
+
+		const found = (await appointmentsService.list(tenantA, { limit: 100 })).items.find(
+			(a) => a.id === apptId
+		);
+		expect(found).toBeDefined();
+		expect(found?.doctor_contact_id ?? null).toBeNull();
+	});
+
 	it('Tenant A cannot update Tenant B appointment', async () => {
 		await withTenantSession(tenantA, async (tdb) => {
 			await expect(

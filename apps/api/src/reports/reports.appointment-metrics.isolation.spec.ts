@@ -33,6 +33,7 @@ describe('GAP-07: appointment-metrics report', () => {
 	const patientB = randomUUID();
 	const patientLondon = randomUUID();
 	const patientIstanbul = randomUUID();
+	const doctorAlfa = randomUUID();
 
 	let serviceA: ReportsService;
 	let serviceB: ReportsService;
@@ -94,46 +95,58 @@ describe('GAP-07: appointment-metrics report', () => {
 					${patientA}, ${tenantA},
 					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
 					'Hasta', 'Gap07 Patient A', 'Gap07 Patient A', 'scheduled', now(), now())`;
+			// Hekim kırılımı için: 2 tamamlanmış "Saç ekimi" Dr. Alfa'ya atanmış, kalan iki
+			// randevu hekimsiz (by_doctor 'Atanmamış' bucket'ına düşmeli).
+			await sql`insert into contacts (id, tenant_id, contact_type_id, contact_type_name, first_name, display_name, status, created_at, updated_at)
+				values (
+					${doctorAlfa}, ${tenantA},
+					(select id from contact_types where tenant_id = ${tenantA} and name = 'Hasta' limit 1),
+					'Hasta', 'Dr. Alfa', 'Dr. Alfa', 'scheduled', now(), now())`;
 			// 4 appointments: 2 completed, 1 no_show, 1 cancelled → rates 0.5 / 0.25 / 0.25
 			const seeds: Array<{
 				status: string;
 				clinic: string | null;
 				type: string | null;
 				at: string;
+				doctor: string | null;
 			}> = [
 				{
 					status: 'completed',
 					clinic: 'Klinik Alfa',
 					type: 'Saç ekimi',
-					at: '2026-03-10T10:00:00Z'
+					at: '2026-03-10T10:00:00Z',
+					doctor: doctorAlfa
 				},
 				{
 					status: 'completed',
 					clinic: 'Klinik Alfa',
 					type: 'Saç ekimi',
-					at: '2026-03-11T10:00:00Z'
+					at: '2026-03-11T10:00:00Z',
+					doctor: doctorAlfa
 				},
 				{
 					status: 'no_show',
 					clinic: null,
 					type: null,
-					at: '2026-03-12T10:00:00Z'
+					at: '2026-03-12T10:00:00Z',
+					doctor: null
 				},
 				{
 					status: 'cancelled',
 					clinic: 'Klinik Beta',
 					type: 'Kontrol',
-					at: '2026-04-01T10:00:00Z'
+					at: '2026-04-01T10:00:00Z',
+					doctor: null
 				}
 			];
 			for (const s of seeds) {
 				await sql`
 					insert into appointments (
 						tenant_id, contact_id, contact_display_name, title, appointment_type,
-						status, starts_at, clinic_name, created_at, updated_at
+						status, starts_at, clinic_name, doctor_contact_id, created_at, updated_at
 					) values (
 						${tenantA}, ${patientA}, 'Gap07 Patient A', 'visit', ${s.type},
-						${s.status}, ${s.at}, ${s.clinic}, now(), now()
+						${s.status}, ${s.at}, ${s.clinic}, ${s.doctor}, now(), now()
 					)
 				`;
 			}
@@ -250,6 +263,40 @@ describe('GAP-07: appointment-metrics report', () => {
 		expect(metrics.monthly.map((m) => m.month)).toEqual(['2026-03', '2026-04']);
 	});
 
+	it('hekim alanı: by_doctor + by_doctor_type kırılımı', async () => {
+		const metrics = await serviceA.appointmentMetrics(tenantA, {
+			from: '2026-03-01',
+			to: '2026-04-30'
+		});
+
+		const drAlfa = metrics.by_doctor.find((d) => d.doctor_name === 'Dr. Alfa');
+		expect(drAlfa).toMatchObject({
+			doctor_contact_id: doctorAlfa,
+			total: 2,
+			completed: 2,
+			no_show: 0,
+			cancelled: 0
+		});
+		const unassigned = metrics.by_doctor.find((d) => d.doctor_name === 'Atanmamış');
+		expect(unassigned).toMatchObject({
+			doctor_contact_id: null,
+			total: 2,
+			completed: 0,
+			no_show: 1,
+			cancelled: 1
+		});
+
+		// RPT gibi bir dizgi sunucuya gömülmez — ham çapraz sayım döner.
+		const drAlfaSac = metrics.by_doctor_type.find(
+			(r) => r.doctor_name === 'Dr. Alfa' && r.appointment_type === 'Saç ekimi'
+		);
+		expect(drAlfaSac).toMatchObject({ doctor_contact_id: doctorAlfa, count: 2 });
+		const unassignedKontrol = metrics.by_doctor_type.find(
+			(r) => r.doctor_name === 'Atanmamış' && r.appointment_type === 'Kontrol'
+		);
+		expect(unassignedKontrol).toMatchObject({ doctor_contact_id: null, count: 1 });
+	});
+
 	it("Tenant A does not see Tenant B's appointments", async () => {
 		const metrics = await serviceA.appointmentMetrics(tenantA, {
 			from: '2026-03-01',
@@ -257,6 +304,15 @@ describe('GAP-07: appointment-metrics report', () => {
 		});
 		expect(metrics.by_clinic.some((c) => c.clinic_name === 'Klinik B')).toBe(false);
 		expect(metrics.total).toBe(4);
+	});
+
+	it("Tenant B's by_doctor/by_doctor_type never see Tenant A's Dr. Alfa", async () => {
+		const metrics = await serviceB.appointmentMetrics(tenantB, {
+			from: '2026-03-01',
+			to: '2026-04-30'
+		});
+		expect(metrics.by_doctor.some((d) => d.doctor_contact_id === doctorAlfa)).toBe(false);
+		expect(metrics.by_doctor_type.some((d) => d.doctor_contact_id === doctorAlfa)).toBe(false);
 	});
 
 	it('Tenant B lists only its own appointment', async () => {
