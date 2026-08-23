@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
 	aiAccuracyReportParamsSchema,
+	apiKeyHasScope,
 	marketingReportParams,
 	reportByCategoryDetailParams,
 	reportCohortsParams,
@@ -22,6 +23,9 @@ import { parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { CommissionsService } from '../commissions/commissions.service';
+import { MeService } from '../auth/me.service';
+import { PermissionOverridesService } from '../auth/permission-overrides.service';
+import { hasOrgPermission } from '../auth/permissions';
 import { AiAccuracyReportService } from './ai-accuracy-report.service';
 import { ReportsService } from './reports.service';
 
@@ -31,7 +35,9 @@ export class ReportsController {
 	constructor(
 		private readonly reportsService: ReportsService,
 		private readonly commissionsService: CommissionsService,
-		private readonly aiAccuracyReportService: AiAccuracyReportService
+		private readonly aiAccuracyReportService: AiAccuracyReportService,
+		private readonly meService: MeService,
+		private readonly permissionOverrides: PermissionOverridesService
 	) {}
 
 	/**

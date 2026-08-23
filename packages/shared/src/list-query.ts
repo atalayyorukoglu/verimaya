@@ -4,6 +4,7 @@ import { appointmentStatusSchema } from './appointment.js';
 import { cursorPageParams, isoDate, searchableListParams, uuid } from './common.js';
 import { commissionEntryStatusSchema } from './commission.js';
 import { incentiveFileStatusSchema } from './incentive-file.js';
+import { incidentAreaSchema, incidentStatusSchema } from './incident.js';
 import { operationAlertStatusSchema } from './operation-alert.js';
 import { transactionKindSchema, transactionStatusSchema } from './transaction.js';
 
@@ -97,6 +98,21 @@ export const operationAlertListQuerySchema = cursorPageParams
 	.strict();
 
 export type OperationAlertListQuery = z.infer<typeof operationAlertListQuerySchema>;
+
+/**
+ * Incidents: default order is newest first (`created_at DESC, id DESC`, CONTRACT-02).
+ * `contact_id` is how the contact detail page loads "bu dosyanın olayları" — the
+ * v1 entry point (docs/2026-08-23-maya-icgoru-sorulari.md § 5, "üç şart").
+ */
+export const incidentListQuerySchema = cursorPageParams
+	.extend({
+		contact_id: uuid.optional(),
+		area: incidentAreaSchema.optional(),
+		status: incidentStatusSchema.optional()
+	})
+	.strict();
+
+export type IncidentListQuery = z.infer<typeof incidentListQuerySchema>;
 
 export const contactListQuerySchema = searchableListParams
 	.extend({

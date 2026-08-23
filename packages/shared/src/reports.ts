@@ -532,6 +532,61 @@ export const reportReferralsSchema = z.object({
 });
 export type ReportReferrals = z.infer<typeof reportReferralsSchema>;
 
+/**
+ * Olay kaydı raporu — AI-05'in beslendiği asıl kaynak
+ * (docs/2026-08-23-maya-icgoru-sorulari.md § 5/6). Agregasyon SQL'de (GROUP BY);
+ * bu şema yalnız şekli tanımlar.
+ *
+ * İzin `contact:read` (operasyon verisi). `cost_totals` yalnız çağıranın ayrıca
+ * `finance:read` izni varsa dolar — yoksa alan tümüyle yok sayılır (bkz.
+ * ReportsController.incidents gerekçesi). Para birimi karışabileceği için tek sayı
+ * yerine para birimi bazında dizi döner (transactions'ta amount_base yok — kur çevrimi
+ * incident'a eklenmedi, bkz. olay kaydı tasarım kararı).
+ */
+export const incidentReportCostTotalSchema = z.object({
+	currency: supportedCurrencySchema,
+	amount: moneyMinor
+});
+export type IncidentReportCostTotal = z.infer<typeof incidentReportCostTotalSchema>;
+
+const incidentReportCountsSchema = z.object({
+	count: z.number().int().nonnegative(),
+	open_count: z.number().int().nonnegative(),
+	resolved_count: z.number().int().nonnegative()
+});
+
+export const reportIncidentsAreaRowSchema = incidentReportCountsSchema.extend({
+	area: z.string(),
+	cost_totals: z.array(incidentReportCostTotalSchema).optional()
+});
+export type ReportIncidentsAreaRow = z.infer<typeof reportIncidentsAreaRowSchema>;
+
+export const reportIncidentsTypeRowSchema = incidentReportCountsSchema.extend({
+	incident_type_id: uuid,
+	incident_type_name: z.string(),
+	area: z.string(),
+	cost_totals: z.array(incidentReportCostTotalSchema).optional()
+});
+export type ReportIncidentsTypeRow = z.infer<typeof reportIncidentsTypeRowSchema>;
+
+export const reportIncidentsResponsibleRowSchema = incidentReportCountsSchema.extend({
+	responsible_contact_id: uuid.nullable(),
+	responsible_display_name: z.string().nullable(),
+	cost_totals: z.array(incidentReportCostTotalSchema).optional()
+});
+export type ReportIncidentsResponsibleRow = z.infer<typeof reportIncidentsResponsibleRowSchema>;
+
+export const reportIncidentsSchema = z.object({
+	period: reportPeriodSchema,
+	total: incidentReportCountsSchema.extend({
+		cost_totals: z.array(incidentReportCostTotalSchema).optional()
+	}),
+	by_area: z.array(reportIncidentsAreaRowSchema),
+	by_type: z.array(reportIncidentsTypeRowSchema),
+	by_responsible: z.array(reportIncidentsResponsibleRowSchema)
+});
+export type ReportIncidents = z.infer<typeof reportIncidentsSchema>;
+
 /** Months between cohort `YYYY-MM` and payment `YYYY-MM-DD` (or `YYYY-MM`). */
 export function cohortMonthDiff(cohortMonth: string, occurredOn: string): number {
 	const [cy, cm] = cohortMonth.split('-').map(Number);

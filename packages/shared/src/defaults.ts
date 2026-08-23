@@ -26,6 +26,18 @@ export const DEFAULT_APPOINTMENT_TYPE_NAMES = [
 	'Transfer'
 ] as const;
 
+/**
+ * Default incident type names seeded per tenant — `clinic` alanı ile SINIRLI (v1).
+ * docs/2026-08-23-maya-icgoru-sorulari.md § 5: klinik döngüsünün çalıştığı kanıtlanmadan
+ * diğer beş alanın (hotel/transfer/sales/marketing/coordination) tür listesi yazılmaz.
+ */
+export const DEFAULT_INCIDENT_TYPE_NAMES_CLINIC = [
+	'Revizyon gerekti',
+	'Sonuç beklentinin altında',
+	'Komplikasyon',
+	'Süreç gecikmesi'
+] as const;
+
 export type DefaultFinanceCategorySeed = {
 	kind: 'income' | 'expense';
 	name: string;

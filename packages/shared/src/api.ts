@@ -37,6 +37,9 @@ export const apiPaths = {
 	operationAlerts: `${API_V1_PREFIX}/operation-alerts`,
 	operationAlert: (id: string) => `${API_V1_PREFIX}/operation-alerts/${id}`,
 	operationAlertConfirm: (id: string) => `${API_V1_PREFIX}/operation-alerts/${id}/confirm`,
+	incidents: `${API_V1_PREFIX}/incidents`,
+	incident: (id: string) => `${API_V1_PREFIX}/incidents/${id}`,
+	incidentResolve: (id: string) => `${API_V1_PREFIX}/incidents/${id}/resolve`,
 	recordSuggestions: `${API_V1_PREFIX}/record-suggestions`,
 	recordSuggestionsParse: `${API_V1_PREFIX}/record-suggestions/parse`,
 	recordSuggestionApprove: (id: string) => `${API_V1_PREFIX}/record-suggestions/${id}/approve`,
@@ -89,6 +92,9 @@ export const apiPaths = {
 	settingsContactTitles: `${API_V1_PREFIX}/settings/contact-titles`,
 	settingsContactTitlesReorder: `${API_V1_PREFIX}/settings/contact-titles/reorder`,
 	settingsContactTitle: (id: string) => `${API_V1_PREFIX}/settings/contact-titles/${id}`,
+	settingsIncidentTypes: `${API_V1_PREFIX}/settings/incident-types`,
+	settingsIncidentTypesReorder: `${API_V1_PREFIX}/settings/incident-types/reorder`,
+	settingsIncidentType: (id: string) => `${API_V1_PREFIX}/settings/incident-types/${id}`,
 	settingsOrganizations: `${API_V1_PREFIX}/settings/organizations`,
 	settingsOrganization: (id: string) => `${API_V1_PREFIX}/settings/organizations/${id}`,
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
@@ -183,7 +189,8 @@ export const apiPaths = {
 	/** AI-03 — isabet ölçümü (taslak düzeltme + öneri kabul + Maya cevap oranı). */
 	reportsAiAccuracy: `${API_V1_PREFIX}/reports/ai-accuracy`,
 	/** İhtiyaç haritası §A — referans değeri raporu (doğrudan referans, v1). */
-	reportsReferrals: `${API_V1_PREFIX}/reports/referrals`
+	reportsReferrals: `${API_V1_PREFIX}/reports/referrals`,
+	reportsIncidents: `${API_V1_PREFIX}/reports/incidents`
 } as const;
 
 export type ListQueryParams = {
@@ -268,6 +275,13 @@ import {
 	operationAlertSettingsSchema,
 	operationAlertSettingsUpdateSchema
 } from './operation-alert.js';
+import {
+	incidentCreateSchema,
+	incidentListPageSchema,
+	incidentSchema,
+	incidentTypeSchema,
+	incidentTypeUpdateSchema
+} from './incident.js';
 import {
 	recordUpdateSuggestionListPageSchema,
 	recordUpdateSuggestionParseRequestSchema,
@@ -362,7 +376,8 @@ import {
 	reportTransactionDuplicatesSchema,
 	reportUntouchedContactsSchema,
 	reportCohortsSchema,
-	reportReferralsSchema
+	reportReferralsSchema,
+	reportIncidentsSchema
 } from './reports.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 import { ghlConnectionStatus, ghlReconcileTriggerResult } from './ghl-connection.js';
@@ -480,6 +495,19 @@ export const apiContract = {
 	'DELETE /v1/operation-alerts/:id': {
 		response: softDeleteResultSchema
 	},
+	'GET /v1/incidents': {
+		response: incidentListPageSchema
+	},
+	'POST /v1/incidents': {
+		body: incidentCreateSchema,
+		response: incidentSchema
+	},
+	'PATCH /v1/incidents/:id/resolve': {
+		response: incidentSchema
+	},
+	'DELETE /v1/incidents/:id': {
+		response: softDeleteResultSchema
+	},
 	'GET /v1/record-suggestions': {
 		response: recordUpdateSuggestionListPageSchema
 	},
@@ -575,6 +603,17 @@ export const apiContract = {
 	'PATCH /v1/settings/contact-titles/:id': {
 		body: contactTitleUpdateSchema,
 		response: contactTitleSchema
+	},
+	'GET /v1/settings/incident-types': {
+		response: z.object({ items: z.array(incidentTypeSchema) })
+	},
+	'PUT /v1/settings/incident-types/reorder': {
+		body: settingsReorderSchema,
+		response: settingsReorderResultSchema
+	},
+	'PATCH /v1/settings/incident-types/:id': {
+		body: incidentTypeUpdateSchema,
+		response: incidentTypeSchema
 	},
 	'GET /v1/settings/organizations': {
 		response: z.object({ items: z.array(organizationSchema) })
@@ -883,6 +922,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/referrals': {
 		response: reportReferralsSchema
+	},
+	'GET /v1/reports/incidents': {
+		response: reportIncidentsSchema
 	}
 } as const;
 

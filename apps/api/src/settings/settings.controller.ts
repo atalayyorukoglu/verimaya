@@ -8,6 +8,7 @@ import {
 	Patch,
 	Post,
 	Put,
+	Query,
 	Req,
 	Res,
 	UseGuards
@@ -22,6 +23,9 @@ import {
 	credentialUpsertSchema,
 	financeCategoryCreateSchema,
 	financeCategoryUpdateSchema,
+	incidentTypeCreateSchema,
+	incidentTypeListQuerySchema,
+	incidentTypeUpdateSchema,
 	organizationCreateSchema,
 	organizationUpdateSchema,
 	permissionMatrixPatchSchema,
@@ -43,7 +47,7 @@ import {
 } from '../common/active-org.guard';
 import { Idempotent, IdempotencyExempt } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
-import { parseBody } from '../common/mappers';
+import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { SettingsService } from './settings.service';
@@ -247,6 +251,71 @@ export class SettingsController {
 	)
 	async removeContactTitle(@Req() req: FastifyRequest, @Param('id') id: string) {
 		await this.settingsService.deleteContactTitle(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * Olay türü sözlüğü — `contact-titles` ile birebir aynı desen + `?area=` filtresi.
+	 * v1 web UI yalnız `area=clinic` gönderir (bkz. IncidentTypesPage).
+	 */
+	@Get('incident-types')
+	@RequireOrgPermission('settings', 'read')
+	listIncidentTypes(@Req() req: FastifyRequest, @Query() query: Record<string, unknown>) {
+		const params = parseQuery(incidentTypeListQuerySchema, query, req);
+		return this.settingsService.listIncidentTypes(getActiveOrgId(req), params);
+	}
+
+	@Post('incident-types')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async createIncidentType(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(incidentTypeCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/settings/incident-types',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.settingsService.createIncidentTypeWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Put('incident-types/reorder')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'GAP-27 absolute-set reorder (id→sort_order pairs); foreign ids skipped — repeat calls converge to the same order.'
+	)
+	reorderIncidentTypes(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(settingsReorderSchema, body, req);
+		return this.settingsService.reorderIncidentTypes(getActiveOrgId(req), input);
+	}
+
+	@Patch('incident-types/:id')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'Sets absolute name to the caller-supplied value — repeat calls converge to the same state.'
+	)
+	updateIncidentType(@Req() req: FastifyRequest, @Param('id') id: string, @Body() body: unknown) {
+		const input = parseBody(incidentTypeUpdateSchema, body, req);
+		return this.settingsService.updateIncidentType(getActiveOrgId(req), id, input);
+	}
+
+	@Delete('incident-types/:id')
+	@HttpCode(204)
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE-by-id; RESTRICT — used types are rejected before this runs. Repeat calls after a successful delete 404 (row already gone) rather than silently duplicating.'
+	)
+	async removeIncidentType(@Req() req: FastifyRequest, @Param('id') id: string) {
+		await this.settingsService.deleteIncidentType(getActiveOrgId(req), id);
 	}
 
 	@Get('organizations')

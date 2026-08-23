@@ -7,6 +7,7 @@ import { QueueModule } from "./queue/queue.module";
 import { TenantModule } from "./tenant/tenant.module";
 import { AppointmentsModule } from "./appointments/appointments.module";
 import { OperationAlertsModule } from "./operation-alerts/operation-alerts.module";
+import { IncidentsModule } from "./incidents/incidents.module";
 import { RecordSuggestionsModule } from "./record-suggestions/record-suggestions.module";
 import { ContactsModule } from "./contacts/contacts.module";
 import { MembersModule } from "./members/members.module";
@@ -51,6 +52,7 @@ import { DataDeleteModule } from "./data-delete/data-delete.module";
     ContactsModule,
     AppointmentsModule,
     OperationAlertsModule,
+    IncidentsModule,
     RecordSuggestionsModule,
     TransactionsModule,
     IncentivesModule,

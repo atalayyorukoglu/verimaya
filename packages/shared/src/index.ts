@@ -20,6 +20,7 @@ export * from './file.js';
 export * from './case-note.js';
 export * from './contact-list-sort.js';
 export * from './contact.js';
+export * from './incident.js';
 export * from './duplicate.js';
 export * from './finance-category.js';
 export * from './settings-reorder.js';

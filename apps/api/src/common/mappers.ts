@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactTitle, ContactType, FinanceCategory, IncentiveFile, OperationAlert, Organization, ContactCaseNote, ContactFile, RecordUpdateSuggestion, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
+import type { AdMetric, AiCorrection, ApiKey, Appointment, AppointmentTypeSetting, AuditLog, CommissionEntry, Contact, ContactTitle, ContactType, FinanceCategory, Incident, IncidentType, IncentiveFile, OperationAlert, Organization, ContactCaseNote, ContactFile, RecordUpdateSuggestion, Tenant, Transaction, WebhookSubscription } from '@verimaya/shared';
 import {
 	calendarDaysBetween,
 	commissionEntryStatusSchema,
@@ -27,6 +27,8 @@ import type { ContactRow } from '../db/schema/contacts';
 import type { FileRow } from '../db/schema/files';
 import type { FinanceCategoryRow } from '../db/schema/finance-categories';
 import type { IncentiveFileRow } from '../db/schema/incentive-files';
+import type { IncidentRow } from '../db/schema/incidents';
+import type { IncidentTypeRow } from '../db/schema/incident-types';
 import type { OperationAlertRow } from '../db/schema/operation-alerts';
 import type { RecordUpdateSuggestionRow } from '../db/schema/record-update-suggestions';
 import type { OrganizationRow } from '../db/schema/organizations';
@@ -298,6 +300,48 @@ export function toContactTitle(row: ContactTitleRow, usageCount = 0): ContactTit
 		sort_order: row.sortOrder,
 		usage_count: usageCount,
 		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toIncidentType(row: IncidentTypeRow, usageCount = 0): IncidentType {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		area: row.area as IncidentType['area'],
+		name: row.name,
+		sort_order: row.sortOrder,
+		usage_count: usageCount,
+		created_at: toIsoDateTime(row.createdAt)
+	};
+}
+
+export function toIncident(
+	row: IncidentRow,
+	joined: {
+		contactDisplayName: string;
+		incidentTypeName: string;
+		responsibleDisplayName: string | null;
+	}
+): Incident {
+	return {
+		id: row.id,
+		tenant_id: row.tenantId,
+		contact_id: row.contactId,
+		contact_display_name: joined.contactDisplayName,
+		incident_type_id: row.incidentTypeId,
+		incident_type_name: joined.incidentTypeName,
+		area: row.area as Incident['area'],
+		appointment_id: row.appointmentId,
+		responsible_contact_id: row.responsibleContactId,
+		responsible_display_name: joined.responsibleDisplayName,
+		cost_amount: row.costAmount,
+		cost_currency: row.costCurrency as Incident['cost_currency'],
+		status: row.status as Incident['status'],
+		description: row.description,
+		occurred_on: row.occurredOn,
+		resolved_at: row.resolvedAt ? toIsoDateTime(row.resolvedAt) : null,
+		created_at: toIsoDateTime(row.createdAt),
+		updated_at: toIsoDateTime(row.updatedAt)
 	};
 }
 

@@ -17,6 +17,9 @@ import type {
 	FinanceCategoryUpdate,
 	IncentiveDeadlineSettings,
 	IncentiveDeadlineSettingsUpdate,
+	IncidentTypeCreate,
+	IncidentTypeListQuery,
+	IncidentTypeUpdate,
 	KnowledgeSections,
 	KnowledgeSettings,
 	KnowledgeUpdate,
@@ -37,6 +40,7 @@ import {
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS,
 	DEFAULT_INCENTIVE_DEADLINE_DAYS,
+	DEFAULT_INCIDENT_TYPE_NAMES_CLINIC,
 	INCENTIVE_DEADLINE_DAYS_KEY,
 	OPERATION_ALERT_THRESHOLDS_KEY,
 	DEFAULT_OPERATION_ALERT_THRESHOLDS,
@@ -62,6 +66,8 @@ import {
 	contactTypes,
 	contacts,
 	financeCategories,
+	incidents,
+	incidentTypes,
 	organizations,
 	tenantCredentials,
 	knowledgeRevisions,
@@ -72,6 +78,7 @@ import {
 	toContactTitle,
 	toContactType,
 	toFinanceCategory,
+	toIncidentType,
 	toOrganization
 } from '../common/mappers';
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
@@ -95,12 +102,15 @@ const APPOINTMENT_TYPES_SEEDED_KEY = 'appointment_types_defaults_seeded';
 const CONTACT_TYPES_SEEDED_KEY = 'contact_types_defaults_seeded';
 const CONTACT_TITLES_SEEDED_KEY = 'contact_titles_defaults_seeded';
 const FINANCE_CATEGORIES_SEEDED_KEY = 'finance_categories_defaults_seeded';
+/** `clinic` alanına özel — diğer beş alan v1'de hiç seed edilmez (bkz. incident.ts). */
+const INCIDENT_TYPES_CLINIC_SEEDED_KEY = 'incident_types_clinic_defaults_seeded';
 
 const APPOINTMENT_TYPES_NAME_UIDX = 'appointment_types_tenant_id_name_uidx';
 const CONTACT_TYPES_NAME_UIDX = 'contact_types_tenant_id_name_uidx';
 const CONTACT_TITLES_NAME_UIDX = 'contact_titles_tenant_id_name_uidx';
 const FINANCE_CATEGORIES_KIND_NAME_UIDX = 'finance_categories_tenant_kind_name_uidx';
 const ORGANIZATIONS_NAME_UIDX = 'organizations_tenant_id_name_uidx';
+const INCIDENT_TYPES_AREA_NAME_UIDX = 'incident_types_tenant_id_area_name_uidx';
 
 @Injectable()
 export class SettingsService {
@@ -532,6 +542,188 @@ export class SettingsService {
 				.where(eq(contacts.titleId, id));
 
 			await db.delete(contactTitles).where(eq(contactTitles.id, id));
+		});
+	}
+
+	/**
+	 * Olay türü sözlüğü — `contact_titles` ile birebir aynı desen + `area` filtresi.
+	 * `area` verilmezse tüm alanlardaki türler döner (ileride yönetim ekranı için);
+	 * v1 web UI yalnız `area=clinic` ile çağırır ve yalnız o durumda seed çalışır —
+	 * docs/2026-08-23-maya-icgoru-sorulari.md § 5: klinik döngüsü kanıtlanmadan
+	 * diğer beş alanın tür listesi yazılmaz.
+	 */
+	async listIncidentTypes(tenantId: string, query: IncidentTypeListQuery) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const areaFilter = query.area ? eq(incidentTypes.area, query.area) : undefined;
+			let rows = await db
+				.select()
+				.from(incidentTypes)
+				.where(areaFilter)
+				.orderBy(asc(incidentTypes.sortOrder), asc(incidentTypes.name));
+
+			if (
+				query.area === 'clinic' &&
+				rows.length === 0 &&
+				!(await this.hasDefaultsSeeded(db, INCIDENT_TYPES_CLINIC_SEEDED_KEY))
+			) {
+				await db
+					.insert(incidentTypes)
+					.values(
+						DEFAULT_INCIDENT_TYPE_NAMES_CLINIC.map((name, i) => ({
+							tenantId,
+							area: 'clinic',
+							name,
+							sortOrder: i
+						}))
+					)
+					.onConflictDoNothing({
+						target: [incidentTypes.tenantId, incidentTypes.area, incidentTypes.name]
+					});
+				await this.markDefaultsSeeded(db, tenantId, INCIDENT_TYPES_CLINIC_SEEDED_KEY);
+				rows = await db
+					.select()
+					.from(incidentTypes)
+					.where(areaFilter)
+					.orderBy(asc(incidentTypes.sortOrder), asc(incidentTypes.name));
+			}
+
+			// Kullanım sayısı SQL'de sayılır (GROUP BY) — silme onayında "kaç olayda
+			// kullanılıyor" göstermek için (kullanımdaki tür RESTRICT ile silinemez zaten,
+			// ama sayı kullanıcıya önceden neden reddedileceğini söyler).
+			const usageRows = await db
+				.select({
+					incidentTypeId: incidents.incidentTypeId,
+					count: sql<number>`count(*)::int`
+				})
+				.from(incidents)
+				.where(isNull(incidents.deletedAt))
+				.groupBy(incidents.incidentTypeId);
+			const usage = new Map(usageRows.map((r) => [r.incidentTypeId, Number(r.count)]));
+
+			return { items: rows.map((row) => toIncidentType(row, usage.get(row.id) ?? 0)) };
+		});
+	}
+
+	async createIncidentType(tenantId: string, input: IncidentTypeCreate) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.createIncidentTypeWithDb(db, tenantId, input)
+		);
+	}
+
+	async createIncidentTypeWithDb(db: TenantDb, tenantId: string, input: IncidentTypeCreate) {
+		const name = input.name.trim();
+
+		const existingRows = await db
+			.select({ name: incidentTypes.name })
+			.from(incidentTypes)
+			.where(eq(incidentTypes.area, input.area));
+		if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+			throw this.duplicateTypeNameConflict('An incident type with this name already exists');
+		}
+
+		const [maxRow] = await db
+			.select({ sortOrder: incidentTypes.sortOrder })
+			.from(incidentTypes)
+			.where(eq(incidentTypes.area, input.area))
+			.orderBy(desc(incidentTypes.sortOrder))
+			.limit(1);
+
+		try {
+			const [row] = await db
+				.insert(incidentTypes)
+				.values({
+					tenantId,
+					area: input.area,
+					name,
+					sortOrder: (maxRow?.sortOrder ?? -1) + 1
+				})
+				.returning();
+
+			return toIncidentType(row!);
+		} catch (err) {
+			if (isUniqueViolation(err, INCIDENT_TYPES_AREA_NAME_UIDX)) {
+				throw this.duplicateTypeNameConflict('An incident type with this name already exists');
+			}
+			throw err;
+		}
+	}
+
+	/** Rename only — `area` sabit kalır (bkz. IncidentTypeUpdate). */
+	async updateIncidentType(tenantId: string, id: string, input: IncidentTypeUpdate) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [existing] = await db
+				.select()
+				.from(incidentTypes)
+				.where(eq(incidentTypes.id, id))
+				.limit(1);
+			if (!existing) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Incident type not found' }
+				});
+			}
+
+			const name = input.name.trim();
+			const siblings = await db
+				.select({ id: incidentTypes.id, name: incidentTypes.name })
+				.from(incidentTypes)
+				.where(eq(incidentTypes.area, existing.area));
+			if (siblings.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())) {
+				throw this.duplicateTypeNameConflict('An incident type with this name already exists');
+			}
+
+			try {
+				const [row] = await db
+					.update(incidentTypes)
+					.set({ name })
+					.where(eq(incidentTypes.id, id))
+					.returning();
+
+				return toIncidentType(row!);
+			} catch (err) {
+				if (isUniqueViolation(err, INCIDENT_TYPES_AREA_NAME_UIDX)) {
+					throw this.duplicateTypeNameConflict('An incident type with this name already exists');
+				}
+				throw err;
+			}
+		});
+	}
+
+	/** GAP-27: absolute-set bulk reorder — foreign/other-tenant ids are skipped. */
+	async reorderIncidentTypes(tenantId: string, input: SettingsReorder) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.reorderRowsWithDb(db, 'incident_types', input)
+		);
+	}
+
+	/**
+	 * Kullanımdaki tür silinemez (RESTRICT) — `contact_titles`'ın bilinçli aksine:
+	 * burada tür olayın ne olduğunu tanımlıyor, boşalırsa kayıt anlamsızlaşır.
+	 * DB CHECK/FK son savunma hattı; burada önceden okunabilir bir hata veriyoruz.
+	 */
+	async deleteIncidentType(tenantId: string, id: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db.select().from(incidentTypes).where(eq(incidentTypes.id, id)).limit(1);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Incident type not found' }
+				});
+			}
+
+			const [inUse] = await db
+				.select({ id: incidents.id })
+				.from(incidents)
+				.where(and(eq(incidents.incidentTypeId, id), isNull(incidents.deletedAt)))
+				.limit(1);
+			if (inUse) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: 'Tür kullanımda — önce olayları başka türe taşıyın'
+					}
+				});
+			}
+
+			await db.delete(incidentTypes).where(eq(incidentTypes.id, id));
 		});
 	}
 
@@ -1265,7 +1457,12 @@ export class SettingsService {
 	 */
 	private async reorderRowsWithDb(
 		db: TenantDb,
-		kind: 'contact_types' | 'contact_titles' | 'appointment_types' | 'finance_categories',
+		kind:
+			| 'contact_types'
+			| 'contact_titles'
+			| 'appointment_types'
+			| 'finance_categories'
+			| 'incident_types',
 		input: SettingsReorder
 	): Promise<{ updated: number }> {
 		let updated = 0;
@@ -1291,12 +1488,19 @@ export class SettingsService {
 					.where(eq(contactTitles.id, item.id))
 					.returning({ id: contactTitles.id });
 				updated += rows.length;
-			} else {
+			} else if (kind === 'appointment_types') {
 				const rows = await db
 					.update(appointmentTypes)
 					.set({ sortOrder: item.sort_order })
 					.where(eq(appointmentTypes.id, item.id))
 					.returning({ id: appointmentTypes.id });
+				updated += rows.length;
+			} else {
+				const rows = await db
+					.update(incidentTypes)
+					.set({ sortOrder: item.sort_order })
+					.where(eq(incidentTypes.id, item.id))
+					.returning({ id: incidentTypes.id });
 				updated += rows.length;
 			}
 		}
