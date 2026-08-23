@@ -421,6 +421,11 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > **Müdahale listesi dil modeliyle üretilmeyecek:** cümleler şablon, rakamlar SQL. AI-11a
 > ilkesi burada da geçerli — *model işaret eder, sistem söyler.* Yanlış bir çıkarım cümlesi
 > kullanıcıyı yanlış işe koşturur ve fark edilmesi yanlış bir bakiyeden çok daha zordur.
+>
+> **İlerleme (2026-08-23) — önerilen sıranın 1–4. adımları bitti:** referans değeri raporu,
+> ünvan sözlüğü, randevuya hekim alanı, ve `summary`/`appointment-metrics`'e `compare=previous`
+> (dönem karşılaştırması, geriye dönük kırıcı değişiklik yok). Sırada 5. adım (eşik tablosu —
+> hangi değişim söylenmeye değer). Detay: `docs/2026-08-23-maya-icgoru-sorulari.md` § 7.
 
 ~~**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
 (G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.~~

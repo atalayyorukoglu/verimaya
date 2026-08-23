@@ -377,7 +377,7 @@ Kapsaması da yanlış olur — Maya *sorulana* cevap veren yüzey. Bu sorular *
 | 1 | **Referans değeri raporu** — `GET /v1/reports/referrals` | **M** | ✅ **2026-08-23'te bitti** — migration gerekmedi |
 | 2 | **Ünvan sözlüğü** — `contact_titles` + `contacts.title_id` | **S–M** | ✅ **2026-08-23'te bitti** (migration `0064`) |
 | 3 | **Randevuya hekim alanı** — `appointments.doctor_contact_id` + raporda `by_doctor` / `by_doctor_type` | **M** | ✅ **2026-08-23'te bitti** (migration `0065`) |
-| 4 | **Karşılaştırma katmanı** — her metrik için "önceki dönem" ve "tenant ortalaması" | **M** | AI-05'in çekirdeği |
+| 4 | **Karşılaştırma katmanı** — her metrik için "önceki dönem" ve "tenant ortalaması" | **M** | ✅ **2026-08-23'te bitti** (`summary` + `appointment-metrics`) |
 | 5 | **Eşik tablosu** — hangi değişim söylenmeye değer, minimum kayıt sayısı | **S** | 4'e bağlı |
 | 6 | **Olay kaydı v1** — tek tablo, yalnız klinik departmanı ile başla | **M** | 5. bölüm |
 | 7 | **Müdahale listesi v1** — şablon cümleler, önem sırasına dizili | **M** | 4+5+6 üstüne |
@@ -400,6 +400,19 @@ kullanım yeri eksik.
 > Mutasyonla doğrulandı — `case_contact_id` yolu kapatılınca test kırmızıya dönüyor.
 > Gerekçe: iki ekranın aynı hasta için farklı rakam vermesi, güveni yok eden hata sınıfıdır
 > (`docs/YAPIM-GUNLUGU.md` § 13, `patient_id` vakası).
+>
+> **4. adım karşılandı (2026-08-23).** `GET /v1/reports/summary` ve
+> `GET /v1/reports/appointment-metrics` opsiyonel `compare=previous` alıyor; cevaba **aynı
+> şekilde** bir `previous` bloğu ekleniyor (önceki dönemin ham rakamları — yüzde/fark
+> istemcide hesaplanır, sunucu üretmez). Önceki dönem = `from`/`to` arasındaki gün sayısı
+> kadar, `from`'un bir gün öncesinde biten pencere (ay adına göre değil, pencere uzunluğuna
+> göre — Şubat/Mart eşitlenmez, bilinçli tercih). `from`/`to` eksikse `compare` sessizce yok
+> sayılır. `compare` verilmeyince cevap **bugünkü şekliyle birebir aynı** — regresyon testiyle
+> kanıtlı. "Tenant ortalaması" için ayrı alan **eklenmedi**: `by_doctor`/`by_clinic` zaten tam
+> agregat (sayfalanmış kısmi liste değil), istemci bu tam kümeden kendi hesaplıyor. Web
+> tarafında `/reports` özet kartları ve randevu metrikleri artık "Önceki döneme göre" anahtarı
+> ile farkı gösteriyor; önceki dönem 0 ise "yeni"/"—", referans kayıt sayısı 5'ten azsa ham
+> sayı (yüzde yanıltıcı). Diğer raporlara dokunulmadı — desen oturunca genişletilir (§ 6/7).
 >
 > **v1 sınırı:** yalnız doğrudan referans. Zincir ("X'in getirdiğinin getirdiği") özyinelemeli
 > sorgu + döngü koruması + derinlik sınırı ister; ayrı iş olarak duruyor.
