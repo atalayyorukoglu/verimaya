@@ -98,6 +98,8 @@ function fieldValue(
 			return draft.occurred_on;
 		case 'contact_id':
 			return draft.contact_id ?? null;
+		case 'contact_label':
+			return draft.contact_label ?? null;
 		case 'payment_method':
 			return draft.payment_method ?? null;
 		case 'category':

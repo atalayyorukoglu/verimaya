@@ -8,6 +8,7 @@ import {
 	frameTenantAiPromptNote,
 	mayaToolCallSchema,
 	transactionDraftSchema,
+	toTenantDayKey,
 	type AppointmentRescheduleDraft,
 	type MayaToolCall,
 	type TransactionDraft
@@ -65,17 +66,56 @@ type CallModelOk = {
 /** Core extraction contract — always server-owned; tenant notes are appended only. */
 export function buildWhatsappExtractionSystemPrompt(
 	tenantPromptNote?: string | null,
-	knowledge?: string | null
+	knowledge?: string | null,
+	/**
+	 * Bugünün tarihi (YYYY-MM-DD). Mesajda tarih yoksa model bunu kullanır.
+	 * Varsayılan `Europe/Istanbul` — heuristic yolun (`heuristic-parse.ts`) kullandığı
+	 * saat dilimiyle aynı, iki yol farklı gün yazmasın diye. Tenant saat dilimi
+	 * desteklenirse ikisi birlikte değişmeli.
+	 */
+	today: string = toTenantDayKey(new Date(), 'Europe/Istanbul')
 ): string {
+	// Alan sözleşmesi AÇIK yazılır. Eksik yazıldığında model zorunlu alanları atlıyor ve
+	// bütün çıktı zod doğrulamasında düşüyor — 2026-08-23'te `llm:compare` ile ölçüldü:
+	// `title` hiç gelmiyordu, `occurred_on` null geliyordu, üstelik prompt DOMAIN-02
+	// öncesinden kalma `patient_id` diyordu (şema `contact_id` bekliyor).
 	const core = [
 		'You extract finance transaction drafts from WhatsApp messages for a medical tourism ops platform.',
-		'Return ONLY valid JSON: {"records":[...]} matching TransactionDraft fields.',
-		'amount is integer minor units (kuruş/cents). currency is TRY|GBP|EUR|USD.',
-		'kind is income|expense. Do not invent patients; set patient_id only to a patient_ref UUID from the provided list (or null).',
+		'Return ONLY valid JSON: {"records":[...]}. Each record MUST contain every required field below.',
+		'',
+		'REQUIRED fields (a record missing any of these is invalid and will be discarded):',
+		'- kind: "income" (money received by us) or "expense" (money paid by us).',
+		'- amount: positive integer in MINOR units (kuruş/cents). "2.900 GBP" → 290000. "1500 euro" → 150000.',
+		'- currency: one of TRY|GBP|EUR|USD. Turkish words map as: lira/TL→TRY, euro/avro→EUR, dolar→USD, sterlin/pound→GBP.',
+		'- title: a SHORT human label for the row, max 80 chars, in the message language. Example: "Ada Klinik ödemesi".',
+		`- occurred_on: date in YYYY-MM-DD. If the message states no date, use TODAY = ${today}. NEVER null.`,
+		'',
+		'OPTIONAL fields: category, subcategory, payment_method, description, contact_id, contact_display_name, contact_label.',
+		'- contact_id: ONLY a contact_ref UUID copied from the provided list, or null. Never invent one.',
+		'- contact_label: name of the COUNTERPARTY — who received or paid the money.',
+		'  It MUST be a name that literally appears in this message. If the message only says',
+		'  "kliniğe"/"otele" without naming which one, set contact_label to null. NEVER copy a name',
+		'  from the example below or from anywhere other than the message itself.',
+		'  Careful: the patient mentioned in a message is often NOT the counterparty.',
+		'- payment_method: e.g. "Havale", "Kart", "Nakit" when stated.',
+		'',
+		'One message may contain SEVERAL transactions — return one record each.',
 		'Message text may contain placeholders like [TELEFON]/[EPOSTA]/[HASTA] — ignore them for matching.',
-		'For every field you fill from the message, add an "evidence" object mapping the field name (amount|currency|kind|occurred_on|contact_id|payment_method|category) to {"quote": exact substring copied verbatim from the message, "start": its character offset, "confidence": "high"|"medium"|"low"}; when you inferred a value without reading it, use confidence "low" and quote "".',
-		'If nothing can be extracted, return {"records":[]}.'
-	].join(' ');
+		'For every field you fill FROM THE MESSAGE, add an "evidence" object mapping the field name (amount|currency|kind|occurred_on|contact_id|contact_label|payment_method|category) to {"quote": exact substring copied verbatim from the message, "start": its character offset, "confidence": "high"|"medium"|"low"}; when you inferred a value without reading it, use confidence "low" and quote "".',
+		'',
+		'IMPORTANT — do not suppress a record because you are unsure about an OPTIONAL field.',
+		'If the message describes money moving, ALWAYS emit a record. kind, amount, currency, title and occurred_on are enough.',
+		'When the counterparty is unclear, set contact_label to null (or your best literal reading) and keep the record.',
+		'Return {"records":[]} ONLY when the message describes no money movement at all.',
+		'',
+		'Worked example — message: "Yılmaz bey için Ada Klinik\'e 2.900 GBP ödendi"',
+		'{"records":[{"kind":"expense","amount":290000,"currency":"GBP","title":"Ada Klinik ödemesi",' +
+			`"occurred_on":"${today}",` + '"contact_id":null,"contact_label":"Ada Klinik","category":null,' +
+			'"payment_method":null,"description":"Yılmaz bey için Ada Klinik\'e 2.900 GBP ödendi",' +
+			'"evidence":{"amount":{"quote":"2.900","start":24,"confidence":"high"},' +
+			'"currency":{"quote":"GBP","start":30,"confidence":"high"},' +
+			'"kind":{"quote":"ödendi","start":34,"confidence":"high"}}}]}'
+	].join('\n');
 	// Sıra bilinçli: çekirdek kurallar → bilgi bankası (referans veri) → tenant notu.
 	// İkisi de veri olarak çerçevelenir; hiçbiri çekirdeği ezemez.
 	const framedKnowledge = frameKnowledgeContext(knowledge);

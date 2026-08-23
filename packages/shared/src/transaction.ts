@@ -63,6 +63,13 @@ export const transactionEvidenceFieldSchema = z.enum([
 	'kind',
 	'occurred_on',
 	'contact_id',
+	/**
+	 * Karşı taraf adı. 2026-08-23'te eklendi: `llm:compare` ölçümünde bu alanın
+	 * **en çok uydurulan** alan olduğu görüldü — model prompt'taki örnek klinik adını
+	 * mesajda geçmediği hâlde kopyalıyordu. İz zorunlu olunca sunucu doğrulaması
+	 * (alıntı mesajda geçiyor mu) uydurmayı yakalayabiliyor.
+	 */
+	'contact_label',
 	'payment_method',
 	'category'
 ]);

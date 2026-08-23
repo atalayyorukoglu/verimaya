@@ -306,6 +306,7 @@
 		kind: 'finance.ai.draft.kind',
 		occurred_on: 'finance.ai.draft.date',
 		contact_id: 'finance.ai.draft.contact',
+		contact_label: 'finance.ai.draft.contactLabel',
 		payment_method: 'finance.ai.draft.paymentMethod',
 		category: 'finance.ai.draft.category'
 	};

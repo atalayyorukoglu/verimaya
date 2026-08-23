@@ -102,7 +102,50 @@ function fmtEvidence(d) {
 	return parts.length ? '\n' + parts.join('\n') : '';
 }
 
+/**
+ * Ham mod: modelin döndürdüğü JSON'u olduğu gibi basar. Zod doğrulamasında düşen ya da
+ * boş dönen çıktının SEBEBİNİ görmek için — "empty_llm_records" tek başına neden boş
+ * döndüğünü söylemiyor.
+ *
+ *   pnpm --filter @verimaya/api llm:compare -- --raw
+ */
+async function rawProbe(message) {
+	const base = (process.env.LLM_BASE_URL || '').replace(/\/$/, '');
+	const { buildWhatsappExtractionSystemPrompt } = require(
+		path.join(DIST, 'integrations/llm/openai-compatible-llm.client.js')
+	);
+	const { buildMaskedLlmUserPayload } = require(path.join(DIST, 'integrations/llm/pii-mask.js'));
+
+	const masked = buildMaskedLlmUserPayload({ message, patients: [] });
+	const res = await fetch(`${base}/chat/completions`, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			authorization: `Bearer ${process.env.LLM_API_KEY}`
+		},
+		body: JSON.stringify({
+			model: process.env.LLM_MODEL,
+			temperature: 0,
+			response_format: { type: 'json_object' },
+			messages: [
+				{ role: 'system', content: buildWhatsappExtractionSystemPrompt(null, null) },
+				{ role: 'user', content: JSON.stringify(masked) }
+			]
+		})
+	});
+	const json = await res.json();
+	console.log(`\n── ${message}`);
+	console.log(`   modele giden: ${masked.message}`);
+	console.log(`   HTTP ${res.status}`);
+	console.log('   ham cevap:', json.choices?.[0]?.message?.content ?? JSON.stringify(json));
+}
+
 async function main() {
+	if (process.argv.includes('--raw')) {
+		for (const c of CASES) await rawProbe(c.message);
+		return;
+	}
+
 	const hasLlm = Boolean(process.env.LLM_API_KEY && process.env.LLM_API_KEY.trim());
 	const client = createLlmClientFromEnv();
 

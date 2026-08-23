@@ -4572,6 +4572,7 @@ paths:
                             - kind
                             - occurred_on
                             - contact_id
+                            - contact_label
                             - payment_method
                             - category
                           properties:
@@ -4660,6 +4661,27 @@ paths:
                                 - confidence
                               additionalProperties: false
                             contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_label:
                               type: object
                               properties:
                                 quote:
@@ -4974,6 +4996,27 @@ paths:
                           - confidence
                         additionalProperties: false
                       contact_id:
+                        type: object
+                        properties:
+                          quote:
+                            type: string
+                            maxLength: 200
+                          start:
+                            type: integer
+                            minimum: 0
+                            nullable: true
+                          confidence:
+                            type: string
+                            enum:
+                              - high
+                              - medium
+                              - low
+                        required:
+                          - quote
+                          - start
+                          - confidence
+                        additionalProperties: false
+                      contact_label:
                         type: object
                         properties:
                           quote:
@@ -6302,6 +6345,27 @@ paths:
                                 - start
                                 - confidence
                               additionalProperties: false
+                            contact_label:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
                             payment_method:
                               type: object
                               properties:
@@ -6553,6 +6617,27 @@ paths:
                                       - confidence
                                     additionalProperties: false
                                   contact_id:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  contact_label:
                                     type: object
                                     properties:
                                       quote:
@@ -6862,6 +6947,27 @@ paths:
                                 - start
                                 - confidence
                               additionalProperties: false
+                            contact_label:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
                             payment_method:
                               type: object
                               properties:
@@ -7121,6 +7227,27 @@ paths:
                                 - confidence
                               additionalProperties: false
                             contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_label:
                               type: object
                               properties:
                                 quote:
@@ -7462,6 +7589,27 @@ paths:
                                 - confidence
                               additionalProperties: false
                             contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_label:
                               type: object
                               properties:
                                 quote:
@@ -7958,6 +8106,27 @@ paths:
                                 - start
                                 - confidence
                               additionalProperties: false
+                            contact_label:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
                             payment_method:
                               type: object
                               properties:
@@ -8158,6 +8327,27 @@ paths:
                                 - confidence
                               additionalProperties: false
                             contact_id:
+                              type: object
+                              properties:
+                                quote:
+                                  type: string
+                                  maxLength: 200
+                                start:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
+                                confidence:
+                                  type: string
+                                  enum:
+                                    - high
+                                    - medium
+                                    - low
+                              required:
+                                - quote
+                                - start
+                                - confidence
+                              additionalProperties: false
+                            contact_label:
                               type: object
                               properties:
                                 quote:
@@ -8424,6 +8614,27 @@ paths:
                               - start
                               - confidence
                             additionalProperties: false
+                          contact_label:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
                           payment_method:
                             type: object
                             properties:
@@ -8625,6 +8836,27 @@ paths:
                               - confidence
                             additionalProperties: false
                           contact_id:
+                            type: object
+                            properties:
+                              quote:
+                                type: string
+                                maxLength: 200
+                              start:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              confidence:
+                                type: string
+                                enum:
+                                  - high
+                                  - medium
+                                  - low
+                            required:
+                              - quote
+                              - start
+                              - confidence
+                            additionalProperties: false
+                          contact_label:
                             type: object
                             properties:
                               quote:
@@ -8894,6 +9126,27 @@ paths:
                                       - start
                                       - confidence
                                     additionalProperties: false
+                                  contact_label:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
                                   payment_method:
                                     type: object
                                     properties:
@@ -9094,6 +9347,27 @@ paths:
                                       - confidence
                                     additionalProperties: false
                                   contact_id:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  contact_label:
                                     type: object
                                     properties:
                                       quote:
