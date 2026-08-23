@@ -1792,6 +1792,8 @@ const tr = {
 	'finance.balances.creditor': ' → alacaklı ',
 	'finance.balances.self': 'Biz',
 	'finance.balances.collected': 'Tahsil edilmiş: {amount}',
+	'finance.balances.oldestOpen': 'En eski açık: {days} gün',
+	'finance.balances.agingOver90': 'Bunun {amount} kadarı 90+ gündür açık',
 	'finance.balances.footnote':
 		'Bakiyeler {contactId} + para birimi bazında sunucudan gelir. Dizindeki kişiler:',
 
@@ -4496,6 +4498,8 @@ const en: Record<MessageKey, string> = {
 	'finance.balances.creditor': ' → creditor ',
 	'finance.balances.self': 'Us',
 	'finance.balances.collected': 'Collected: {amount}',
+	'finance.balances.oldestOpen': 'Oldest open: {days} days',
+	'finance.balances.agingOver90': '{amount} of it has been open 90+ days',
 	'finance.balances.footnote':
 		'Balances come from the server by {contactId} + currency. Directory contacts:',
 

@@ -131,9 +131,31 @@ export const reportBalanceRowSchema = z.object({
 	open_amount: moneyMinor,
 	/** Signed collected amount: income positive, expense negative. */
 	collected_amount: moneyMinor,
-	transaction_count: z.number().int().nonnegative()
+	transaction_count: z.number().int().nonnegative(),
+	/**
+	 * Açık tutarın **yaşlandırması** — işlem tarihinden (`occurred_on`) bugüne geçen güne
+	 * göre kovalara ayrılmış hâli. Tutarlar `open_amount` ile aynı işaret kuralını taşır
+	 * (gelir +, gider −), dolayısıyla **dört kovanın toplamı `open_amount`'a eşittir.**
+	 *
+	 * Neden gerekli: "ne kadar açık" tek başına eyleme dönük değil. "1.450 GBP açık" ile
+	 * "1.450 GBP'si 41 gündür açık" farklı iki cümledir; ikincisi bugün aranacak kişiyi söyler.
+	 */
+	aging: z.object({
+		d0_30: moneyMinor,
+		d31_60: moneyMinor,
+		d61_90: moneyMinor,
+		d90_plus: moneyMinor
+	}),
+	/**
+	 * En eski açık işlemin yaşı (gün). Açık tutar yoksa `null`.
+	 * Bugün, tenant saat dilimindeki güne göre hesaplanır.
+	 */
+	oldest_open_days: z.number().int().nonnegative().nullable()
 });
 export type ReportBalanceRow = z.infer<typeof reportBalanceRowSchema>;
+
+/** Yaşlandırma kova sınırları (gün). Tek kaynak — sunucu ve ekran aynı sınırı kullanır. */
+export const BALANCE_AGING_BUCKETS = [30, 60, 90] as const;
 
 export const reportBalancesSchema = z.object({
 	items: z.array(reportBalanceRowSchema)

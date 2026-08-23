@@ -235,11 +235,42 @@ describe('reportBalancesSchema', () => {
 					currency: 'TRY',
 					open_amount: 5000,
 					collected_amount: 10000,
-					transaction_count: 2
+					transaction_count: 2,
+					aging: { d0_30: 2000, d31_60: 0, d61_90: 0, d90_plus: 3000 },
+					oldest_open_days: 118
 				}
 			]
 		});
 		expect(parsed.items[0]?.open_amount).toBe(5000);
+	});
+
+	it('yaşlandırma kovalarının toplamı open_amount ile tutarlı olmalı (sözleşme yorumu)', () => {
+		const row = reportBalanceRowSchema.parse({
+			contact_id: '550e8400-e29b-41d4-a716-446655440000',
+			contact_label: 'Klinik A',
+			currency: 'TRY',
+			open_amount: 5000,
+			collected_amount: 0,
+			transaction_count: 2,
+			aging: { d0_30: 2000, d31_60: 0, d61_90: 0, d90_plus: 3000 },
+			oldest_open_days: 118
+		});
+		const sum = row.aging.d0_30 + row.aging.d31_60 + row.aging.d61_90 + row.aging.d90_plus;
+		expect(sum).toBe(row.open_amount);
+	});
+
+	it('açık tutarı olmayan satırda oldest_open_days null olabilir', () => {
+		const row = reportBalanceRowSchema.parse({
+			contact_id: '550e8400-e29b-41d4-a716-446655440000',
+			contact_label: 'Klinik A',
+			currency: 'TRY',
+			open_amount: 0,
+			collected_amount: 10000,
+			transaction_count: 1,
+			aging: { d0_30: 0, d31_60: 0, d61_90: 0, d90_plus: 0 },
+			oldest_open_days: null
+		});
+		expect(row.oldest_open_days).toBeNull();
 	});
 
 	it('rejects invalid balance row', () => {

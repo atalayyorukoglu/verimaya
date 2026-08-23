@@ -10293,6 +10293,27 @@ paths:
                                 transaction_count:
                                   type: integer
                                   minimum: 0
+                                aging:
+                                  type: object
+                                  properties:
+                                    d0_30:
+                                      type: integer
+                                    d31_60:
+                                      type: integer
+                                    d61_90:
+                                      type: integer
+                                    d90_plus:
+                                      type: integer
+                                  required:
+                                    - d0_30
+                                    - d31_60
+                                    - d61_90
+                                    - d90_plus
+                                  additionalProperties: false
+                                oldest_open_days:
+                                  type: integer
+                                  minimum: 0
+                                  nullable: true
                               required:
                                 - contact_id
                                 - contact_label
@@ -10300,6 +10321,8 @@ paths:
                                 - open_amount
                                 - collected_amount
                                 - transaction_count
+                                - aging
+                                - oldest_open_days
                               additionalProperties: false
                             maxItems: 10
                           total_count:
@@ -15076,6 +15099,27 @@ paths:
                         transaction_count:
                           type: integer
                           minimum: 0
+                        aging:
+                          type: object
+                          properties:
+                            d0_30:
+                              type: integer
+                            d31_60:
+                              type: integer
+                            d61_90:
+                              type: integer
+                            d90_plus:
+                              type: integer
+                          required:
+                            - d0_30
+                            - d31_60
+                            - d61_90
+                            - d90_plus
+                          additionalProperties: false
+                        oldest_open_days:
+                          type: integer
+                          minimum: 0
+                          nullable: true
                       required:
                         - contact_id
                         - contact_label
@@ -15083,6 +15127,8 @@ paths:
                         - open_amount
                         - collected_amount
                         - transaction_count
+                        - aging
+                        - oldest_open_days
                       additionalProperties: false
                 required:
                   - items

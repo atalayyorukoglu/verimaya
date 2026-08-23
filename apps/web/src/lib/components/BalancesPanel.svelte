@@ -241,6 +241,28 @@
 							<p class="mt-1 text-base font-semibold text-text tabular-nums">
 								{formatMoney(Math.abs(row.open_amount), row.currency)}
 							</p>
+							{#if row.oldest_open_days !== null}
+								<!--
+									Yaşlandırma: "ne kadar açık" tek başına eyleme dönük değil.
+									90+ gün kırmızı — anlam rengi, tema aksanı değil.
+								-->
+								<p
+									class="mt-1 text-xs font-medium tabular-nums {row.oldest_open_days > 90
+										? 'text-danger'
+										: row.oldest_open_days > 60
+											? 'text-warning'
+											: 'text-text-muted'}"
+								>
+									{t('finance.balances.oldestOpen', { days: row.oldest_open_days })}
+								</p>
+								{#if row.aging.d90_plus !== 0 && row.aging.d90_plus !== row.open_amount}
+									<p class="mt-0.5 text-xs text-text-muted tabular-nums">
+										{t('finance.balances.agingOver90', {
+											amount: formatMoney(Math.abs(row.aging.d90_plus), row.currency)
+										})}
+									</p>
+								{/if}
+							{/if}
 							{#if row.collected_amount !== 0}
 								<p class="mt-0.5 text-xs text-text-muted tabular-nums">
 									{t('finance.balances.collected', {

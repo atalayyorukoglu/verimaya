@@ -17,6 +17,8 @@ import { alias } from 'drizzle-orm/pg-core';
 import {
 	tenantDayRange,
 	toTenantDayKey,
+	calendarDaysBetween,
+	BALANCE_AGING_BUCKETS,
 	ATTRIBUTION_COVERAGE_THRESHOLD,
 	calculateRealRoas,
 	cohortMonthDiff,
@@ -632,7 +634,8 @@ export class ReportsService {
 					status: transactions.status,
 					amount: transactions.amount,
 					paidAmount: transactions.paidAmount,
-					currency: transactions.currency
+					currency: transactions.currency,
+					occurredOn: transactions.occurredOn
 				})
 				.from(transactions)
 				.leftJoin(contacts, eq(transactions.contactId, contacts.id))
@@ -645,6 +648,12 @@ export class ReportsService {
 					)
 				);
 
+			// Yaşlandırma "bugün"e göre hesaplanır; bugün tenant saat dilimindeki gündür.
+			// Sunucunun UTC günü kullanılırsa Istanbul'da gece yarısından sonra bir gün
+			// kayar ve "41 gündür açık" cümlesi yanlış çıkar.
+			const timezone = await getTenantTz(db, tenantId);
+			const today = toTenantDayKey(new Date(), timezone);
+
 			const map = new Map<
 				string,
 				{
@@ -654,6 +663,8 @@ export class ReportsService {
 					open_amount: number;
 					collected_amount: number;
 					transaction_count: number;
+					aging: { d0_30: number; d31_60: number; d61_90: number; d90_plus: number };
+					oldest_open_days: number | null;
 				}
 			>();
 
@@ -681,11 +692,29 @@ export class ReportsService {
 					currency,
 					open_amount: 0,
 					collected_amount: 0,
-					transaction_count: 0
+					transaction_count: 0,
+					aging: { d0_30: 0, d31_60: 0, d61_90: 0, d90_plus: 0 },
+					oldest_open_days: null
 				};
 				cur.open_amount += openDelta;
 				cur.collected_amount += collectedDelta;
 				cur.transaction_count += 1;
+
+				// Yalnız AÇIK kısım yaşlanır — tahsil edilen tutarın yaşı anlamsız.
+				// İşaret korunuyor ki dört kovanın toplamı open_amount'a eşit kalsın.
+				if (openDelta !== 0) {
+					const occurredOn = String(row.occurredOn).slice(0, 10);
+					const age = Math.max(0, calendarDaysBetween(occurredOn, today));
+					const [b1, b2, b3] = BALANCE_AGING_BUCKETS;
+					if (age <= b1) cur.aging.d0_30 += openDelta;
+					else if (age <= b2) cur.aging.d31_60 += openDelta;
+					else if (age <= b3) cur.aging.d61_90 += openDelta;
+					else cur.aging.d90_plus += openDelta;
+
+					if (cur.oldest_open_days === null || age > cur.oldest_open_days) {
+						cur.oldest_open_days = age;
+					}
+				}
 				if (!cur.contact_label && label) cur.contact_label = label;
 				map.set(key, cur);
 			}
