@@ -320,6 +320,12 @@ const tr = {
 	'settings.contactTitles.renameCancel': 'Vazgeç',
 	'settings.contactTitles.renameFailed': 'Yeniden adlandırma başarısız',
 	'settings.contactTitles.delete': 'Sil',
+	'settings.contactTitles.deleteConfirmUnused': 'Bu ünvan silinsin mi?',
+	'settings.contactTitles.deleteConfirmUsed':
+		'"{name}" ünvanı {count} kişide kullanılıyor. Silersen bu kişilerin ünvanı boşalır — kişiler silinmez.',
+	'settings.contactTitles.deleteConfirmYes': 'Sil',
+	'settings.contactTitles.deleteConfirmNo': 'Vazgeç',
+	'settings.contactTitles.usageCount': '{count} kişi',
 
 	// Ücretsiz karne — sonuç ve lead kapısı (LEG-01)
 	'karne.result.gate.eyebrow': 'Sonuç hazır',
@@ -2970,6 +2976,12 @@ const en: Record<MessageKey, string> = {
 	'settings.contactTitles.renameCancel': 'Cancel',
 	'settings.contactTitles.renameFailed': 'Rename failed',
 	'settings.contactTitles.delete': 'Delete',
+	'settings.contactTitles.deleteConfirmUnused': 'Delete this title?',
+	'settings.contactTitles.deleteConfirmUsed':
+		'"{name}" is used by {count} people. Deleting it clears their title — the people are not deleted.',
+	'settings.contactTitles.deleteConfirmYes': 'Delete',
+	'settings.contactTitles.deleteConfirmNo': 'Cancel',
+	'settings.contactTitles.usageCount': '{count} people',
 
 	'karne.result.gate.eyebrow': 'Result ready',
 	'karne.result.gate.title': 'Get the detailed summary by email',

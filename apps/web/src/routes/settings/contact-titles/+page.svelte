@@ -26,6 +26,8 @@
 	let busy = $state(false);
 	let editingId = $state<string | null>(null);
 	let editName = $state('');
+	/** Silme onayı bekleyen satır. Ünvan silinince kişiler silinmez, yalnız ünvanları boşalır. */
+	let confirmingId = $state<string | null>(null);
 
 	const titles = $derived(
 		[...(titlesQuery.data?.items ?? [])].sort((a, b) => a.sort_order - b.sort_order)
@@ -54,6 +56,7 @@
 	}
 
 	function startRename(row: ContactTitle) {
+		confirmingId = null;
 		editingId = row.id;
 		editName = row.name;
 		error = null;
@@ -87,6 +90,16 @@
 		}
 	}
 
+	function askRemove(id: string) {
+		cancelRename();
+		confirmingId = id;
+		error = null;
+	}
+
+	function cancelRemove() {
+		confirmingId = null;
+	}
+
 	async function remove(id: string) {
 		busy = true;
 		error = null;
@@ -95,6 +108,7 @@
 			if (editingId === id) cancelRename();
 			await queryClient.invalidateQueries({ queryKey: qs.keys.settings.contactTitles() });
 			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+			confirmingId = null;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Silinemedi';
 		} finally {
@@ -150,8 +164,44 @@
 									{t('settings.contactTitles.renameCancel')}
 								</Button>
 							</form>
+						{:else if confirmingId === row.id}
+							<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+								<span class="min-w-0 flex-1 text-sm text-text-muted">
+									{row.usage_count > 0
+										? t('settings.contactTitles.deleteConfirmUsed', {
+												name: row.name,
+												count: row.usage_count
+											})
+										: t('settings.contactTitles.deleteConfirmUnused')}
+								</span>
+								<div class="flex shrink-0 gap-2">
+									<Button
+										type="button"
+										variant="destructive"
+										size="sm"
+										disabled={busy}
+										onclick={() => void remove(row.id)}
+									>
+										{t('settings.contactTitles.deleteConfirmYes')}
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										disabled={busy}
+										onclick={cancelRemove}
+									>
+										{t('settings.contactTitles.deleteConfirmNo')}
+									</Button>
+								</div>
+							</div>
 						{:else}
 							<span class="min-w-0 flex-1 truncate text-sm text-text">{row.name}</span>
+							{#if row.usage_count > 0}
+								<span class="shrink-0 text-xs text-text-muted tabular-nums">
+									{t('settings.contactTitles.usageCount', { count: row.usage_count })}
+								</span>
+							{/if}
 							<div class="flex shrink-0 items-center gap-0.5">
 								<button
 									type="button"
@@ -167,7 +217,7 @@
 									class="cursor-pointer rounded-[6px] p-1.5 text-text-muted hover:bg-surface-2 hover:text-danger disabled:opacity-40"
 									aria-label={t('settings.contactTitles.delete')}
 									disabled={busy}
-									onclick={() => void remove(row.id)}
+									onclick={() => askRemove(row.id)}
 								>
 									<Trash2 class="size-3.5" />
 								</button>

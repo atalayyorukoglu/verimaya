@@ -5,7 +5,7 @@ import {
 	NotFoundException
 } from '@nestjs/common';
 import { z } from 'zod';
-import { asc, desc, eq, and, isNull } from 'drizzle-orm';
+import { asc, desc, eq, and, isNull, sql } from 'drizzle-orm';
 import type {
 	AppointmentTypeCreate,
 	ContactTitleCreate,
@@ -405,7 +405,21 @@ export class SettingsService {
 					.orderBy(asc(contactTitles.sortOrder), asc(contactTitles.name));
 			}
 
-			return { items: rows.map(toContactTitle) };
+			// Kullanım sayısı SQL'de sayılır (GROUP BY); istemci kısmi listeden toplamaz.
+			// Silme onayında "bu ünvan kaç kişide" göstermek için — kişiler silinmez,
+			// yalnız title_id boşalır.
+			const usageRows = await db
+				.select({
+					titleId: contacts.titleId,
+					count: sql<number>`count(*)::int`
+				})
+				.from(contacts)
+				.where(and(isNull(contacts.deletedAt), sql`${contacts.titleId} is not null`))
+				.groupBy(contacts.titleId);
+
+			const usage = new Map(usageRows.map((r) => [r.titleId, Number(r.count)]));
+
+			return { items: rows.map((row) => toContactTitle(row, usage.get(row.id) ?? 0)) };
 		});
 	}
 

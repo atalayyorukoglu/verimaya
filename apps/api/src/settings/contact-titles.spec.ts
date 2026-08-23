@@ -189,6 +189,71 @@ describe('contact_titles settings CRUD', () => {
 		expect(survivor.display_name).toBe('Survivor');
 	});
 
+	it('reports usage_count per title — silme onayında "kaç kişide" bunu gösterir', async () => {
+		const { sql } = getDb(databaseUrl);
+		const used = await settingsService.createContactTitle(tenantA, {
+			name: `Sayilan-${randomUUID().slice(0, 8)}`
+		});
+		const unused = await settingsService.createContactTitle(tenantA, {
+			name: `Bos-${randomUUID().slice(0, 8)}`
+		});
+
+		const contactIds = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			const [ct] = await tx`
+				insert into contact_types (tenant_id, name, sort_order) values (${tenantA}, 'Personel', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name
+				returning id
+			`;
+			const ids: string[] = [];
+			for (const name of ['Sayim-1', 'Sayim-2', 'Sayim-3']) {
+				const [row] = await tx`
+					insert into contacts (tenant_id, contact_type_id, contact_type_name, title_id, title_name, display_name)
+					values (${tenantA}, ${ct!.id}, 'Personel', ${used.id}, ${used.name}, ${name})
+					returning id
+				`;
+				ids.push(row!.id as string);
+			}
+			return ids;
+		});
+
+		const listed = await settingsService.listContactTitles(tenantA);
+		expect(listed.items.find((i) => i.id === used.id)?.usage_count).toBe(3);
+		expect(listed.items.find((i) => i.id === unused.id)?.usage_count).toBe(0);
+
+		// Soft-delete edilen kişi sayıma girmez — silme onayında yanıltıcı sayı çıkmasın.
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`update contacts set deleted_at = now() where id = ${contactIds[0]!}`;
+		});
+
+		const afterSoftDelete = await settingsService.listContactTitles(tenantA);
+		expect(afterSoftDelete.items.find((i) => i.id === used.id)?.usage_count).toBe(2);
+	});
+
+	it('usage_count tenant sınırını aşmaz — B tenant kullanımı A sayımına girmez', async () => {
+		const { sql } = getDb(databaseUrl);
+		const titleA = await settingsService.createContactTitle(tenantA, {
+			name: `Izole-${randomUUID().slice(0, 8)}`
+		});
+
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantB}, true)`;
+			const [ct] = await tx`
+				insert into contact_types (tenant_id, name, sort_order) values (${tenantB}, 'Personel', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name
+				returning id
+			`;
+			await tx`
+				insert into contacts (tenant_id, contact_type_id, contact_type_name, display_name)
+				values (${tenantB}, ${ct!.id}, 'Personel', 'B tenant kisisi')
+			`;
+		});
+
+		const listed = await settingsService.listContactTitles(tenantA);
+		expect(listed.items.find((i) => i.id === titleA.id)?.usage_count).toBe(0);
+	});
+
 	it('throws not_found when deleting or renaming an unknown contact title', async () => {
 		await expect(settingsService.deleteContactTitle(tenantA, randomUUID())).rejects.toThrow(
 			NotFoundException

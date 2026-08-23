@@ -289,12 +289,13 @@ export function toContactType(row: ContactTypeRow): ContactType {
 	};
 }
 
-export function toContactTitle(row: ContactTitleRow): ContactTitle {
+export function toContactTitle(row: ContactTitleRow, usageCount = 0): ContactTitle {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
 		name: row.name,
 		sort_order: row.sortOrder,
+		usage_count: usageCount,
 		created_at: toIsoDateTime(row.createdAt)
 	};
 }

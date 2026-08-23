@@ -38,6 +38,13 @@ export const contactTitleSchema = z.object({
 	tenant_id: uuid,
 	name: z.string().min(1).max(128),
 	sort_order: z.number().int().nonnegative().default(0),
+	/**
+	 * Bu ünvanı taşıyan kişi sayısı. Silme onayında gösterilir — ünvan silinince
+	 * kişiler silinmez, yalnız `title_id` boşalır (FK `ON DELETE SET NULL`).
+	 * Sunucu aggregate'i; istemci kısmi listeden saymaz (MIMARI § Finans ve bakiye semantiği
+	 * ile aynı ilke).
+	 */
+	usage_count: z.number().int().nonnegative().default(0),
 	created_at: isoDateTime
 });
 
