@@ -190,7 +190,9 @@ export const apiPaths = {
 	reportsAiAccuracy: `${API_V1_PREFIX}/reports/ai-accuracy`,
 	/** İhtiyaç haritası §A — referans değeri raporu (doğrudan referans, v1). */
 	reportsReferrals: `${API_V1_PREFIX}/reports/referrals`,
-	reportsIncidents: `${API_V1_PREFIX}/reports/incidents`
+	reportsIncidents: `${API_V1_PREFIX}/reports/incidents`,
+	/** AI-05 — müdahale listesi v1 (docs/2026-08-23-maya-icgoru-sorulari.md § 7 adım 7). */
+	reportsInterventions: `${API_V1_PREFIX}/reports/interventions`
 } as const;
 
 export type ListQueryParams = {
@@ -382,6 +384,7 @@ import {
 	reportReferralsSchema,
 	reportIncidentsSchema
 } from './reports.js';
+import { interventionsReportSchema } from './report-interventions.js';
 import { credentialStatusSchema, credentialUpsertSchema } from './credentials.js';
 import { ghlConnectionStatus, ghlReconcileTriggerResult } from './ghl-connection.js';
 import {
@@ -928,6 +931,9 @@ export const apiContract = {
 	},
 	'GET /v1/reports/incidents': {
 		response: reportIncidentsSchema
+	},
+	'GET /v1/reports/interventions': {
+		response: interventionsReportSchema
 	}
 } as const;
 

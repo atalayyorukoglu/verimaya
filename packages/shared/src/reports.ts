@@ -614,7 +614,8 @@ export type ReportUrlPath =
 	| 'transaction-duplicates'
 	| 'untouched-contacts'
 	| 'cohorts'
-	| 'referrals';
+	| 'referrals'
+	| 'interventions';
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(
