@@ -1934,6 +1934,17 @@ paths:
                           type: string
                           minLength: 1
                           maxLength: 128
+                        title_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        title_name:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                          nullable: true
+                          default: null
                         first_name:
                           type: string
                           minLength: 1
@@ -2059,6 +2070,17 @@ paths:
                     type: string
                     minLength: 1
                     maxLength: 128
+                  title_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  title_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                    nullable: true
+                    default: null
                   first_name:
                     type: string
                     minLength: 1
@@ -2256,6 +2278,17 @@ paths:
                         type: string
                         minLength: 1
                         maxLength: 128
+                      title_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      title_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 128
+                        nullable: true
+                        default: null
                       first_name:
                         type: string
                         minLength: 1
@@ -3119,6 +3152,17 @@ paths:
                                 type: string
                                 minLength: 1
                                 maxLength: 128
+                              title_id:
+                                type: string
+                                format: uuid
+                                nullable: true
+                                default: null
+                              title_name:
+                                type: string
+                                minLength: 1
+                                maxLength: 128
+                                nullable: true
+                                default: null
                               first_name:
                                 type: string
                                 minLength: 1
@@ -3250,6 +3294,17 @@ paths:
                     type: string
                     minLength: 1
                     maxLength: 128
+                  title_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  title_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                    nullable: true
+                    default: null
                   first_name:
                     type: string
                     minLength: 1
@@ -3447,6 +3502,143 @@ paths:
                 - items
               additionalProperties: false
   /settings/contact-types/{id}:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                  sort_order:
+                    type: integer
+                    minimum: 0
+                    default: 0
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - name
+                  - created_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+                - name
+              additionalProperties: false
+  /settings/contact-titles:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                        sort_order:
+                          type: integer
+                          minimum: 0
+                          default: 0
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - name
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+  /settings/contact-titles/reorder:
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                required:
+                  - updated
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      sort_order:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - id
+                      - sort_order
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 500
+              required:
+                - items
+              additionalProperties: false
+  /settings/contact-titles/{id}:
     patch:
       responses:
         "200":
@@ -8522,6 +8714,17 @@ paths:
                     type: string
                     minLength: 1
                     maxLength: 128
+                  title_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  title_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                    nullable: true
+                    default: null
                   first_name:
                     type: string
                     minLength: 1

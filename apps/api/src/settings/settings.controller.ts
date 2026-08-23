@@ -15,6 +15,8 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
 	appointmentTypeCreateSchema,
+	contactTitleCreateSchema,
+	contactTitleUpdateSchema,
 	contactTypeCreateSchema,
 	contactTypeUpdateSchema,
 	credentialUpsertSchema,
@@ -181,6 +183,70 @@ export class SettingsController {
 	)
 	async removeContactType(@Req() req: FastifyRequest, @Param('id') id: string) {
 		await this.settingsService.deleteContactType(getActiveOrgId(req), id);
+	}
+
+	@Get('contact-titles')
+	@RequireOrgPermission('settings', 'read')
+	listContactTitles(@Req() req: FastifyRequest) {
+		return this.settingsService.listContactTitles(getActiveOrgId(req));
+	}
+
+	@Post('contact-titles')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async createContactTitle(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(contactTitleCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/settings/contact-titles',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.settingsService.createContactTitleWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Put('contact-titles/reorder')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'GAP-27 absolute-set reorder (id→sort_order pairs); foreign ids skipped — repeat calls converge to the same order.'
+	)
+	reorderContactTitles(@Req() req: FastifyRequest, @Body() body: unknown) {
+		const input = parseBody(settingsReorderSchema, body, req);
+		return this.settingsService.reorderContactTitles(getActiveOrgId(req), input);
+	}
+
+	@Patch('contact-titles/:id')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'Sets absolute name to the caller-supplied value — repeat calls converge to the same state.'
+	)
+	updateContactTitle(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown
+	) {
+		const input = parseBody(contactTitleUpdateSchema, body, req);
+		return this.settingsService.updateContactTitle(getActiveOrgId(req), id, input);
+	}
+
+	@Delete('contact-titles/:id')
+	@HttpCode(204)
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt(
+		'DELETE-by-id; contacts using the title fall back to null (ON DELETE SET NULL) — repeat calls after a successful delete 404 (row already gone) rather than silently duplicating. Low-stakes settings config, not financial/domain data.'
+	)
+	async removeContactTitle(@Req() req: FastifyRequest, @Param('id') id: string) {
+		await this.settingsService.deleteContactTitle(getActiveOrgId(req), id);
 	}
 
 	@Get('organizations')

@@ -8,6 +8,8 @@ import { z } from 'zod';
 import { asc, desc, eq, and, isNull } from 'drizzle-orm';
 import type {
 	AppointmentTypeCreate,
+	ContactTitleCreate,
+	ContactTitleUpdate,
 	ContactTypeCreate,
 	ContactTypeUpdate,
 	CredentialUpsert,
@@ -31,6 +33,7 @@ import type {
 } from '@verimaya/shared';
 import {
 	DEFAULT_APPOINTMENT_TYPE_NAMES,
+	DEFAULT_CONTACT_TITLE_NAMES,
 	DEFAULT_CONTACT_TYPE_NAMES,
 	DEFAULT_FINANCE_CATEGORY_SEEDS,
 	DEFAULT_INCENTIVE_DEADLINE_DAYS,
@@ -55,6 +58,7 @@ import {
 } from '@verimaya/shared';
 import {
 	appointmentTypes,
+	contactTitles,
 	contactTypes,
 	contacts,
 	financeCategories,
@@ -63,7 +67,13 @@ import {
 	knowledgeRevisions,
 	tenantSettings
 } from '../db/schema';
-import { toAppointmentType, toContactType, toFinanceCategory, toOrganization } from '../common/mappers';
+import {
+	toAppointmentType,
+	toContactTitle,
+	toContactType,
+	toFinanceCategory,
+	toOrganization
+} from '../common/mappers';
 import { type AuditActor, writeAuditLog } from '../common/audit-helper';
 import { CREDENTIAL_KEY_VERSION, CryptoService } from '../common/crypto.service';
 import { isUniqueViolation } from '../common/postgres-errors';
@@ -83,10 +93,12 @@ const AI_PROMPT_AUDIT_LABEL = 'whatsapp_ai_prompt';
 /** Presence in tenant_settings ⇒ defaults were applied once; empty list must not re-seed. */
 const APPOINTMENT_TYPES_SEEDED_KEY = 'appointment_types_defaults_seeded';
 const CONTACT_TYPES_SEEDED_KEY = 'contact_types_defaults_seeded';
+const CONTACT_TITLES_SEEDED_KEY = 'contact_titles_defaults_seeded';
 const FINANCE_CATEGORIES_SEEDED_KEY = 'finance_categories_defaults_seeded';
 
 const APPOINTMENT_TYPES_NAME_UIDX = 'appointment_types_tenant_id_name_uidx';
 const CONTACT_TYPES_NAME_UIDX = 'contact_types_tenant_id_name_uidx';
+const CONTACT_TITLES_NAME_UIDX = 'contact_titles_tenant_id_name_uidx';
 const FINANCE_CATEGORIES_KIND_NAME_UIDX = 'finance_categories_tenant_kind_name_uidx';
 const ORGANIZATIONS_NAME_UIDX = 'organizations_tenant_id_name_uidx';
 
@@ -363,6 +375,149 @@ export class SettingsService {
 			}
 
 			await db.delete(contactTypes).where(eq(contactTypes.id, id));
+		});
+	}
+
+	async listContactTitles(tenantId: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			let rows = await db
+				.select()
+				.from(contactTitles)
+				.orderBy(asc(contactTitles.sortOrder), asc(contactTitles.name));
+
+			if (rows.length === 0 && !(await this.hasDefaultsSeeded(db, CONTACT_TITLES_SEEDED_KEY))) {
+				await db
+					.insert(contactTitles)
+					.values(
+						DEFAULT_CONTACT_TITLE_NAMES.map((name, i) => ({
+							tenantId,
+							name,
+							sortOrder: i
+						}))
+					)
+					.onConflictDoNothing({
+						target: [contactTitles.tenantId, contactTitles.name]
+					});
+				await this.markDefaultsSeeded(db, tenantId, CONTACT_TITLES_SEEDED_KEY);
+				rows = await db
+					.select()
+					.from(contactTitles)
+					.orderBy(asc(contactTitles.sortOrder), asc(contactTitles.name));
+			}
+
+			return { items: rows.map(toContactTitle) };
+		});
+	}
+
+	async createContactTitle(tenantId: string, input: ContactTitleCreate) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.createContactTitleWithDb(db, tenantId, input)
+		);
+	}
+
+	/** IDEM-01 (Faz 4.1): see createFinanceCategoryWithDb — same split, same reason. */
+	async createContactTitleWithDb(db: TenantDb, tenantId: string, input: ContactTitleCreate) {
+		const name = input.name.trim();
+
+		const existingRows = await db.select({ name: contactTitles.name }).from(contactTitles);
+		if (existingRows.some((r) => r.name.toLowerCase() === name.toLowerCase())) {
+			throw this.duplicateTypeNameConflict('A contact title with this name already exists');
+		}
+
+		const [maxRow] = await db
+			.select({ sortOrder: contactTitles.sortOrder })
+			.from(contactTitles)
+			.orderBy(desc(contactTitles.sortOrder))
+			.limit(1);
+
+		try {
+			const [row] = await db
+				.insert(contactTitles)
+				.values({ tenantId, name, sortOrder: (maxRow?.sortOrder ?? -1) + 1 })
+				.returning();
+
+			return toContactTitle(row!);
+		} catch (err) {
+			if (isUniqueViolation(err, CONTACT_TITLES_NAME_UIDX)) {
+				throw this.duplicateTypeNameConflict('A contact title with this name already exists');
+			}
+			throw err;
+		}
+	}
+
+	async updateContactTitle(tenantId: string, id: string, input: ContactTitleUpdate) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [existing] = await db
+				.select()
+				.from(contactTitles)
+				.where(eq(contactTitles.id, id))
+				.limit(1);
+			if (!existing) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact title not found' }
+				});
+			}
+
+			const name = input.name.trim();
+			const siblings = await db
+				.select({ id: contactTitles.id, name: contactTitles.name })
+				.from(contactTitles);
+			if (siblings.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())) {
+				throw this.duplicateTypeNameConflict('A contact title with this name already exists');
+			}
+
+			try {
+				const [row] = await db
+					.update(contactTitles)
+					.set({ name })
+					.where(eq(contactTitles.id, id))
+					.returning();
+
+				// Keep denormalized title_name in sync (FK stays; lists stay correct).
+				if (name !== existing.name) {
+					await db
+						.update(contacts)
+						.set({ titleName: name, updatedAt: new Date() })
+						.where(eq(contacts.titleId, id));
+				}
+
+				return toContactTitle(row!);
+			} catch (err) {
+				if (isUniqueViolation(err, CONTACT_TITLES_NAME_UIDX)) {
+					throw this.duplicateTypeNameConflict('A contact title with this name already exists');
+				}
+				throw err;
+			}
+		});
+	}
+
+	/** GAP-27: absolute-set bulk reorder — foreign/other-tenant ids are skipped. */
+	async reorderContactTitles(tenantId: string, input: SettingsReorder) {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.reorderRowsWithDb(db, 'contact_titles', input)
+		);
+	}
+
+	/**
+	 * Ünvan silmek kişileri bozmaz (bilinçli fark: `deleteContactType`'ın aksine
+	 * kullanımda diye reddetmez). `contacts.title_id` FK'si ON DELETE SET NULL;
+	 * denormalized `title_name` de aynı transaction'da temizlenir.
+	 */
+	async deleteContactTitle(tenantId: string, id: string) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [row] = await db.select().from(contactTitles).where(eq(contactTitles.id, id)).limit(1);
+			if (!row) {
+				throw new NotFoundException({
+					error: { code: 'not_found', message: 'Contact title not found' }
+				});
+			}
+
+			await db
+				.update(contacts)
+				.set({ titleId: null, titleName: null, updatedAt: new Date() })
+				.where(eq(contacts.titleId, id));
+
+			await db.delete(contactTitles).where(eq(contactTitles.id, id));
 		});
 	}
 
@@ -1096,7 +1251,7 @@ export class SettingsService {
 	 */
 	private async reorderRowsWithDb(
 		db: TenantDb,
-		kind: 'contact_types' | 'appointment_types' | 'finance_categories',
+		kind: 'contact_types' | 'contact_titles' | 'appointment_types' | 'finance_categories',
 		input: SettingsReorder
 	): Promise<{ updated: number }> {
 		let updated = 0;
@@ -1114,6 +1269,13 @@ export class SettingsService {
 					.set({ sortOrder: item.sort_order })
 					.where(eq(contactTypes.id, item.id))
 					.returning({ id: contactTypes.id });
+				updated += rows.length;
+			} else if (kind === 'contact_titles') {
+				const rows = await db
+					.update(contactTitles)
+					.set({ sortOrder: item.sort_order })
+					.where(eq(contactTitles.id, item.id))
+					.returning({ id: contactTitles.id });
 				updated += rows.length;
 			} else {
 				const rows = await db
