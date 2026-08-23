@@ -403,6 +403,24 @@ AI tarafından otomatik kapatılmaz · bilgi tabanına **PII girmez**.
 > - "Şu temsilcide takip gecikmesi var" mı?
 >
 > Üçü de farklı veri kaynağı ve farklı kod gerektiriyor — asıl karar burada.
+>
+> **✅ Tanım geldi (2026-08-23).** Kullanıcı iki örnek cümle verdi ve AI-05'in eksik olan
+> "hangi soruyu cevaplayacak" tanımı böylece doldu:
+> *"X kişisi 4 referans hasta gönderdi, koordinatörü Y — bu dosyaya öncelik"* ve
+> *"Z hekimin tedavilerinde RPT oranı arttı."*
+> Katalog, veri hazırlık durumu ve önerilen sıra: **`docs/2026-08-23-maya-icgoru-sorulari.md`**.
+>
+> Özet bulgu: altı soru kümesinin **beşi bugünkü şemayla yazılabilir** (referans zinciri,
+> koordinatör, dosya bazlı kâr, randevu durumu, klinik kırılımı hepsi mevcut ve indeksli).
+> Eksik olan tek tek raporlar değil, **aralarındaki karşılaştırma** ("geçen döneme göre",
+> "ortalamanın üstünde") ve **eşikler** (hangi değişim söylenmeye değer).
+> **İki açık ürün kararı var** (hekim ayrı varlık olacak mı · RPT iyi/kötü ayrılacak mı) —
+> ikisi cevaplanmadan kodlanmaz. **İlk sevk edilebilir parça:** referans değeri raporu (M),
+> yeni alan gerektirmiyor, örnek 1'i tek başına karşılıyor.
+>
+> **Müdahale listesi dil modeliyle üretilmeyecek:** cümleler şablon, rakamlar SQL. AI-11a
+> ilkesi burada da geçerli — *model işaret eder, sistem söyler.* Yanlış bir çıkarım cümlesi
+> kullanıcıyı yanlış işe koşturur ve fark edilmesi yanlış bir bakiyeden çok daha zordur.
 
 ~~**Bugünkü kod durumu:** `ai_corrections` tablosu var ama beslenmiyor; prompt kodda gömülü
 (G-26 ile tenant ek notu eklendi, bilgi tabanı değil). Yani AI-01 ve AI-02 sıfırdan iş.~~
