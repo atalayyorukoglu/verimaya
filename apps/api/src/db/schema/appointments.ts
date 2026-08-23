@@ -30,6 +30,14 @@ export const appointments = pgTable(
 		transferContactId: uuid('transfer_contact_id').references(() => contacts.id, {
 			onDelete: 'set null'
 		}),
+		/**
+		 * Hekim — `contacts` içinde ünvanı "Hekim" olan bir kişi (ayrı varlık değil).
+		 * Bkz. docs/2026-08-23-maya-icgoru-sorulari.md § Karar 1. Denormalized isim
+		 * kolonu yok (clinic/hotel'in aksine) — rapor `contacts.display_name`'e join eder.
+		 */
+		doctorContactId: uuid('doctor_contact_id').references(() => contacts.id, {
+			onDelete: 'set null'
+		}),
 		notes: text('notes'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
@@ -48,6 +56,10 @@ export const appointments = pgTable(
 			table.tenantId,
 			table.contactId,
 			table.createdAt
+		),
+		index('appointments_tenant_id_doctor_contact_id_idx').on(
+			table.tenantId,
+			table.doctorContactId
 		)
 	]
 );

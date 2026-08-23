@@ -64,10 +64,30 @@ describe('reportAppointmentMetricsSchema (GAP-07)', () => {
 				}
 			],
 			by_appointment_type: [{ appointment_type: 'Belirtilmemiş', count: 4, ratio: 1 }],
+			by_doctor: [
+				{
+					doctor_contact_id: null,
+					doctor_name: 'Atanmamış',
+					total: 2,
+					completed: 1,
+					no_show: 1,
+					cancelled: 0
+				}
+			],
+			by_doctor_type: [
+				{
+					doctor_contact_id: null,
+					doctor_name: 'Atanmamış',
+					appointment_type: 'RPT',
+					count: 1
+				}
+			],
 			monthly: [{ month: '2026-01', count: 4 }]
 		});
 		expect(parsed.completion_rate).toBe(0.5);
 		expect(parsed.by_clinic[0]?.clinic_name).toBe('Atanmamış');
+		expect(parsed.by_doctor[0]?.doctor_name).toBe('Atanmamış');
+		expect(parsed.by_doctor_type[0]?.appointment_type).toBe('RPT');
 	});
 });
 

@@ -1094,6 +1094,13 @@ export class ContactsService {
 				)
 			);
 
+		await db
+			.update(appointments)
+			.set({ doctorContactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(inArray(appointments.doctorContactId, dropIds), isNull(appointments.deletedAt))
+			);
+
 		await db.update(files).set({ contactId: keep_id }).where(inArray(files.contactId, dropIds));
 
 		await db

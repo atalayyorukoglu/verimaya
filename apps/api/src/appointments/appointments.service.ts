@@ -43,7 +43,8 @@ export class AppointmentsService {
 						eq(appointments.contactId, id),
 						eq(appointments.clinicContactId, id),
 						eq(appointments.hotelContactId, id),
-						eq(appointments.transferContactId, id)
+						eq(appointments.transferContactId, id),
+						eq(appointments.doctorContactId, id)
 					)!
 				);
 			}
@@ -149,6 +150,7 @@ export class AppointmentsService {
 				clinicContactId: input.clinic_contact_id ?? null,
 				hotelContactId: input.hotel_contact_id ?? null,
 				transferContactId: input.transfer_contact_id ?? null,
+				doctorContactId: input.doctor_contact_id ?? null,
 				notes: input.notes ?? null
 			})
 			.returning();
@@ -206,6 +208,10 @@ export class AppointmentsService {
 					input.transfer_contact_id !== undefined
 						? input.transfer_contact_id
 						: existing.transferContactId,
+				doctorContactId:
+					input.doctor_contact_id !== undefined
+						? input.doctor_contact_id
+						: existing.doctorContactId,
 				notes: input.notes !== undefined ? input.notes : existing.notes,
 				updatedAt: new Date()
 			})

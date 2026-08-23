@@ -166,6 +166,34 @@ export const reportClinicMetricsRowSchema = z.object({
 });
 export type ReportClinicMetricsRow = z.infer<typeof reportClinicMetricsRowSchema>;
 
+/**
+ * Hekim kırılımı — klinik kırılımıyla aynı fikir (Karar 1(b)), ama ham durum sayılarıyla:
+ * "RPT oranı" gibi bir kırılım oranı istemcide `by_doctor_type`'tan hesaplanır, burada
+ * sadece completed/no_show/cancelled/total taşınır (rate hesabı yok).
+ */
+export const reportDoctorMetricsRowSchema = z.object({
+	doctor_contact_id: uuid.nullable(),
+	doctor_name: z.string().min(1).max(255),
+	total: z.number().int().nonnegative(),
+	completed: z.number().int().nonnegative(),
+	no_show: z.number().int().nonnegative(),
+	cancelled: z.number().int().nonnegative()
+});
+export type ReportDoctorMetricsRow = z.infer<typeof reportDoctorMetricsRowSchema>;
+
+/**
+ * Hekim × randevu tipi çapraz sayımı. `'RPT'` sunucuya gömülmez — appointment_type
+ * tenant'ın yönettiği bir sözlük; ham çapraz sayım döner, oran istemcide seçilen
+ * tipe göre hesaplanır (bkz. docs/2026-08-23-maya-icgoru-sorulari.md § Karar 2).
+ */
+export const reportDoctorTypeCrossRowSchema = z.object({
+	doctor_contact_id: uuid.nullable(),
+	doctor_name: z.string().min(1).max(255),
+	appointment_type: z.string().min(1).max(128),
+	count: z.number().int().nonnegative()
+});
+export type ReportDoctorTypeCrossRow = z.infer<typeof reportDoctorTypeCrossRowSchema>;
+
 export const reportAppointmentTypeMetricsRowSchema = z.object({
 	appointment_type: z.string().min(1).max(128),
 	count: z.number().int().nonnegative(),
@@ -192,6 +220,8 @@ export const reportAppointmentMetricsSchema = z.object({
 	cancellation_rate: z.number().min(0).max(1),
 	by_clinic: z.array(reportClinicMetricsRowSchema),
 	by_appointment_type: z.array(reportAppointmentTypeMetricsRowSchema),
+	by_doctor: z.array(reportDoctorMetricsRowSchema),
+	by_doctor_type: z.array(reportDoctorTypeCrossRowSchema),
 	monthly: z.array(reportAppointmentMonthRowSchema)
 });
 export type ReportAppointmentMetrics = z.infer<typeof reportAppointmentMetricsSchema>;

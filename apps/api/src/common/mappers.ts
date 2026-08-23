@@ -130,6 +130,7 @@ export function toAppointment(
 		clinic_contact_id: row.clinicContactId,
 		hotel_contact_id: row.hotelContactId,
 		transfer_contact_id: row.transferContactId,
+		doctor_contact_id: row.doctorContactId,
 		notes: row.notes,
 		contact_info_incomplete: extras?.contact_info_incomplete ?? false,
 		created_at: toIsoDateTime(row.createdAt),

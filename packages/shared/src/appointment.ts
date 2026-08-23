@@ -30,6 +30,11 @@ export const appointmentSchema = z.object({
 	clinic_contact_id: uuid.nullable().default(null),
 	hotel_contact_id: uuid.nullable().default(null),
 	transfer_contact_id: uuid.nullable().default(null),
+	/**
+	 * Hekim — `contacts` içinde ünvanı "Hekim" olan bir kişi (ayrı varlık değil, Karar 1(b)).
+	 * Denormalized isim yok; görünen ad her zaman ilgili `contacts.display_name`'den okunur.
+	 */
+	doctor_contact_id: uuid.nullable().default(null),
 	notes: z.string().max(8000).nullable(),
 	/**
 	 * Server-derived: linked contact has neither phone nor email (both blank).

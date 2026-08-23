@@ -318,6 +318,39 @@ export class ReportsService {
 				.groupBy(typeExpr)
 				.orderBy(sql`count(*) desc`);
 
+			// Hekim kırılımı (Karar 1(b)): appointments.doctor_contact_id has no denormalized
+			// name (unlike clinic_name) — the label always comes from the joined contact.
+			const doctorNameExpr = sql<string>`coalesce(nullif(trim("contacts"."display_name"), ''), 'Atanmamış')`;
+			const doctorRows = await db
+				.select({
+					doctorContactId: appointments.doctorContactId,
+					doctorName: doctorNameExpr,
+					total: count(),
+					completed: sql<number>`count(*) filter (where ${appointments.status} = 'completed')`,
+					noShow: sql<number>`count(*) filter (where ${appointments.status} = 'no_show')`,
+					cancelled: sql<number>`count(*) filter (where ${appointments.status} = 'cancelled')`
+				})
+				.from(appointments)
+				.leftJoin(contacts, eq(appointments.doctorContactId, contacts.id))
+				.where(where)
+				.groupBy(appointments.doctorContactId, doctorNameExpr)
+				.orderBy(sql`count(*) desc`);
+
+			// Hekim × randevu tipi çapraz sayımı — 'RPT' sunucuya gömülmez, ham sayım döner
+			// (bkz. docs/2026-08-23-maya-icgoru-sorulari.md § Karar 2). Oran istemcide hesaplanır.
+			const doctorTypeRows = await db
+				.select({
+					doctorContactId: appointments.doctorContactId,
+					doctorName: doctorNameExpr,
+					appointmentType: typeExpr,
+					count: count()
+				})
+				.from(appointments)
+				.leftJoin(contacts, eq(appointments.doctorContactId, contacts.id))
+				.where(where)
+				.groupBy(appointments.doctorContactId, doctorNameExpr, typeExpr)
+				.orderBy(sql`count(*) desc`);
+
 			// Embed timezone as a literal so SELECT/GROUP BY SQL text matches (drizzle
 			// otherwise binds the column differently across clauses → PG 42803).
 			const tzLiteral = timezone.replace(/'/g, "''");
@@ -355,6 +388,20 @@ export class ReportsService {
 						ratio: rate(n, total)
 					};
 				}),
+				by_doctor: doctorRows.map((row) => ({
+					doctor_contact_id: row.doctorContactId,
+					doctor_name: row.doctorName,
+					total: Number(row.total),
+					completed: Number(row.completed),
+					no_show: Number(row.noShow),
+					cancelled: Number(row.cancelled)
+				})),
+				by_doctor_type: doctorTypeRows.map((row) => ({
+					doctor_contact_id: row.doctorContactId,
+					doctor_name: row.doctorName,
+					appointment_type: row.appointmentType,
+					count: Number(row.count)
+				})),
 				monthly: monthRows.map((row) => ({
 					month: row.month,
 					count: Number(row.count)
