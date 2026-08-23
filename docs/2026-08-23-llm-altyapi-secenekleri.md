@@ -161,6 +161,55 @@ oturmadan girilmemeli.
 
 ---
 
+## 3b. İlk gerçek ölçüm (2026-08-23, Mistral small)
+
+Gerçek muhasebe WhatsApp grubu (4.695 mesaj, 1.224'ü para içeriyor) üzerinden rastgele
+örneklem. **İkisinin de çalıştığı 10 vaka** — kalanlar sağlayıcı hız sınırına (HTTP 429)
+takıldı, bu yüzden örneklem küçük ve sonuç yön gösterir, kesin değildir.
+
+| | REGEX | LLM |
+|---|---|---|
+| Taslak üretti | 10/10 | 10/10 |
+| **Para birimi doğru** | 6/10 | **9/10** |
+| Karşı taraf buldu | 2/10 | **4/10** |
+
+Somut örnekler:
+
+```
+"Dg ye olan 1617 euro borcumuzu mylab bize fatura etti"
+  REGEX  gider · 1.617 TRY · —          ✗ para birimi
+  LLM    gider · 1.617 EUR · mylab      ✓
+
+"Kart ile 50 pound alındı."
+  REGEX  gelir · 50 TRY · —             ✗
+  LLM    gelir · 50 GBP · —             ✓
+
+"Yani bugun ANKA LAB ICIN TNC YE toplamda 1.390 EURO odenmis oldu."
+  REGEX  gider · 1.390 TRY · —          ✗
+  LLM    gider · 1.390 EUR · TNC        ✓
+
+Çok satırlı tedavi dökümü (karmaşık)
+  REGEX  gider · 7.900 GBP · —          ✓ tutar
+  LLM    gelir · 3.950 TRY · —          ✗ LLM burada yanıldı
+```
+
+**Okunuş:** LLM yazılı para birimini ("euro", "pound") ve yönü ("alındı"/"ödendi") belirgin
+biçimde daha iyi çözüyor. Ama **her vakada üstün değil** — çok satırlı, birden çok tutar
+içeren dökümlerde yanılabiliyor. Yani LLM regex'i "bitirmiyor"; yedek yol değerini koruyor.
+
+### Ölçüm sırasında bulunan iki kusur
+
+1. **`[HASTA]` yer tutucusu çıktıya sızıyordu.** Modele maskelenmiş metin gidiyor
+   ("Dexy Murphy" → `[HASTA]`), model de karşı taraf adı olarak yer tutucuyu geri veriyordu.
+   Temizlenmeseydi kayda `contact_label: "[HASTA]"` yazılacaktı. `stripPlaceholders` eklendi,
+   testli, mutasyonla doğrulandı.
+2. **Sağlayıcı hız sınırı gerçek bir kısıt.** 40 mesajlık bir denemede çağrıların çoğu 429
+   döndü. Üretimde kuyruk çağrıları doğal olarak seyreltiyor ama **toplu gelen kutusu
+   işleme** (`processInbox`) patlama yaratabilir. Ücretli katman ve/veya çağrı seyreltme
+   gerekecek — açmadan önce bakılmalı.
+
+---
+
 ## 4. Uzun vadeli doğru hamle: önce ölçü aleti
 
 Bu sorunun cazip ama yanlış cevabı, bugün nihai altyapıyı seçmek. Doğru cevap şu:

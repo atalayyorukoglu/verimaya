@@ -188,6 +188,33 @@ function parseMayaToolCallPayload(raw: unknown): MayaToolCall | null {
 	return parsed.data;
 }
 
+/**
+ * PII yer tutucularını taslak metin alanlarından temizler.
+ *
+ * Neden gerekli (2026-08-23, gerçek muhasebe konuşmasıyla ölçüldü): modele maskelenmiş
+ * metin gidiyor ("Dexy Murphy" → "[HASTA]"), model de karşı taraf adı olarak yer tutucuyu
+ * geri veriyor. Temizlenmezse kayda `contact_label: "[HASTA]"` yazılır — kullanıcı için
+ * anlamsız, rapor için gürültü.
+ *
+ * Kimlik `contact_id` (opak `patient_ref` UUID) üzerinden zaten doğru çözülüyor; burada
+ * yalnız serbest metin alanları temizlenir. Alan tamamen yer tutucudan ibaretse null olur.
+ */
+function stripPlaceholders(records: TransactionDraft[]): TransactionDraft[] {
+	const placeholder = /\[(TELEFON|EPOSTA|TCKN|IBAN|KART|HASTA)\]/g;
+	const clean = (value: string | null | undefined): string | null => {
+		if (!value) return null;
+		const stripped = value.replace(placeholder, '').replace(/\s{2,}/g, ' ').trim();
+		return stripped.length > 0 ? stripped : null;
+	};
+	return records.map((record) => ({
+		...record,
+		contact_label: clean(record.contact_label),
+		contact_display_name: clean(record.contact_display_name),
+		title: clean(record.title) ?? record.title,
+		description: record.description ?? null
+	}));
+}
+
 function parseDraftsPayload(raw: unknown): TransactionDraft[] {
 	if (!raw || typeof raw !== 'object') {
 		throw new Error('LLM JSON root must be an object');
@@ -572,10 +599,8 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		const parsedJson: unknown = JSON.parse(content);
 		// AI-09: atıf doğrulaması maskeli metne karşı — model yalnız onu gördü.
 		// `start` ham metne göre yeniden hesaplanır (vurgulama orada yapılıyor).
-		const records = verifyDraftEvidence(
-			parseDraftsPayload(parsedJson),
-			maskedUser.message,
-			ctx.message
+		const records = stripPlaceholders(
+			verifyDraftEvidence(parseDraftsPayload(parsedJson), maskedUser.message, ctx.message)
 		);
 
 		const promptTokens = json.usage?.prompt_tokens ?? null;

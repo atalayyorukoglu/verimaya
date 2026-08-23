@@ -332,3 +332,51 @@ describe('OpenAiCompatibleLlmClient.selectMayaTool (AI-11a)', () => {
 		expect(res.usage.error).toContain('redacted');
 	});
 });
+
+describe('stripPlaceholders (2026-08-23, gerçek muhasebe konuşmasıyla bulundu)', () => {
+	it('modelin geri verdiği PII yer tutucusu taslağa yazılmaz', async () => {
+		const fetchFn = (async () =>
+			new Response(
+				JSON.stringify({
+					model: 'test',
+					choices: [
+						{
+							message: {
+								content: JSON.stringify({
+									records: [
+										{
+											kind: 'income',
+											amount: 360000,
+											currency: 'GBP',
+											title: '[HASTA] tahsilatı',
+											occurred_on: '2026-08-23',
+											contact_label: '[HASTA]',
+											contact_id: null
+										}
+									]
+								})
+							}
+						}
+					]
+				})
+			)) as unknown as typeof fetch;
+
+		const client = new OpenAiCompatibleLlmClient({
+			apiKey: 'k',
+			baseUrl: 'https://example.test/v1',
+			model: 'm',
+			fetchFn
+		});
+
+		const result = await client.parseTransactionDrafts({
+			message: 'Dexy Murphy 3600 £ alındı',
+			patients: []
+		});
+
+		const draft = result.records[0]!;
+		// Yer tutucu tek başınaysa alan null olur — "[HASTA]" diye bir karşı taraf kaydedilmez.
+		expect(draft.contact_label).toBeNull();
+		// Metin içinde geçiyorsa yalnız yer tutucu silinir, kalan metin durur.
+		expect(draft.title).toBe('tahsilatı');
+	});
+});
