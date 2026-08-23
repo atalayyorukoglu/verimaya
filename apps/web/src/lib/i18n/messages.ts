@@ -1990,6 +1990,24 @@ const tr = {
 	'reports.cohorts.attributionNote':
 		'Kohort, bir ayki reklam harcamasının o ay gelen kişileri getirdiğini varsayar. Kampanya bazlı atıf değildir.',
 
+	// Raporlar · Referanslar
+	'reports.referrals.title': 'Referanslar',
+	'reports.referrals.description':
+		'Kim kaç kişi getirdi, koordinatörü kim, getirdiklerinden ne kadar kazanç var. En değerli referans veren üstte.',
+	'reports.referrals.colReferrer': 'Referans veren',
+	'reports.referrals.colCoordinator': 'Koordinatör',
+	'reports.referrals.colReferredCount': 'Getirdiği kişi',
+	'reports.referrals.colWithRevenue': 'Gelir getiren',
+	'reports.referrals.colIncome': 'Gelir',
+	'reports.referrals.colExpense': 'Gider',
+	'reports.referrals.colNet': 'Net kazanç',
+	'reports.referrals.unassignedCoordinator': 'Atanmamış',
+	'reports.referrals.loading': 'Rapor hazırlanıyor…',
+	'reports.referrals.loadError': 'Rapor yüklenemedi.',
+	'reports.referrals.empty': 'Bu dönemde referans getiren kimse yok.',
+	'reports.referrals.footnote':
+		'Yalnız doğrudan referans gösterilir — "getirdiğinin getirdiği" (zincir) v1\'de yok. Dönem filtresi getirdiklerinden gelen tahsilata uygulanır; referans ilişkisinin kendisi zamansızdır — getirdiği kişi sayısı dönemden etkilenmez.',
+
 	// Raporlar · Müdahale listesi (AI-05 yer tutucu)
 	'reports.interventions.title': 'Müdahale Listesi',
 	'reports.interventions.soon': 'Yakında',
@@ -4609,6 +4627,23 @@ const en: Record<MessageKey, string> = {
 		'{count} transactions were excluded from collected totals because they lack a base-currency equivalent.',
 	'reports.cohorts.attributionNote':
 		'Cohort assumes that a month’s ad spend brought the contacts created that month. This is not campaign-level attribution.',
+
+	'reports.referrals.title': 'Referrals',
+	'reports.referrals.description':
+		'Who brought how many people, who coordinates them, how much they earned. Most valuable referrer on top.',
+	'reports.referrals.colReferrer': 'Referrer',
+	'reports.referrals.colCoordinator': 'Coordinator',
+	'reports.referrals.colReferredCount': 'Referred',
+	'reports.referrals.colWithRevenue': 'With revenue',
+	'reports.referrals.colIncome': 'Income',
+	'reports.referrals.colExpense': 'Expense',
+	'reports.referrals.colNet': 'Net',
+	'reports.referrals.unassignedCoordinator': 'Unassigned',
+	'reports.referrals.loading': 'Preparing the report…',
+	'reports.referrals.loadError': 'Could not load the report.',
+	'reports.referrals.empty': 'Nobody referred anyone in this period.',
+	'reports.referrals.footnote':
+		'Only direct referrals are shown — chains ("who they referred, referred") are not in v1. The period filter applies to collections from referred contacts; the referral link itself is timeless — the referred count is not affected by the period.',
 
 	'reports.interventions.title': 'Intervention list',
 	'reports.interventions.soon': 'Coming soon',

@@ -620,6 +620,12 @@
 		>
 			{t('reports.cohorts.title')} →
 		</a>
+		<a
+			href={resolve('/reports/referrals')}
+			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+		>
+			{t('reports.referrals.title')} →
+		</a>
 		<span class="inline-flex items-center gap-1.5">
 			<a
 				href={resolve('/reports/interventions')}
