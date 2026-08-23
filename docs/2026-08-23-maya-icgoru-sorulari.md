@@ -374,7 +374,7 @@ Kapsaması da yanlış olur — Maya *sorulana* cevap veren yüzey. Bu sorular *
 
 | Adım | İş | Boyut | Durum |
 |---|---|---|---|
-| 1 | **Referans değeri raporu** — "X kaç hasta getirdi, toplam ne kazandırdı, koordinatörü kim". Örnek 1'in tam karşılığı, yeni alan gerektirmiyor | **M** | hazır |
+| 1 | **Referans değeri raporu** — `GET /v1/reports/referrals` | **M** | ✅ **2026-08-23'te bitti** — migration gerekmedi |
 | 2 | **Ünvan sözlüğü** — `contact_titles` + `contacts.title_id` | **S–M** | ✅ **2026-08-23'te bitti** (migration `0064`) |
 | 3 | **Randevuya hekim alanı** — `appointments.doctor_contact_id` + raporda `by_doctor` / `by_doctor_type` | **M** | ✅ **2026-08-23'te bitti** (migration `0065`) |
 | 4 | **Karşılaştırma katmanı** — her metrik için "önceki dönem" ve "tenant ortalaması" | **M** | AI-05'in çekirdeği |
@@ -388,6 +388,22 @@ olmadan da işe yarar. Oradan başlamak, AI-05'in tamamını beklemekten iyi.
 **2 ve 3 birlikte gider** — ünvan olmadan hekim alanı anlamsız, hekim olmadan ünvanın en net
 kullanım yeri eksik.
 
+> **Örnek 1 karşılandı (2026-08-23).** `GET /v1/reports/referrals` + Raporlar → Referanslar.
+> Kullanıcının cümlesi — *"X 4 referans hasta gönderdi, koordinatörü Y, daha yüksek kazanç"* —
+> artık ekranda: kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve
+> koordinatörü kim. **Hiçbir yeni alan gerekmedi**, veri baştan beri oradaydı ama okunmuyordu.
+>
+> **Gelir tanımı çatallanmadı:** rapor kendi hesabını yazmadı, `resolveBaseAmount` /
+> `resolvePaidBaseAmount` yardımcılarını `financeSummary` ile paylaşıyor. Aynı hasta için kişi
+> kartı ve bu rapor **birebir aynı rakamı** veriyor ve bu bir testle sabitlendi
+> (`'matches ContactsService.financeSummary exactly…'`, somut rakamlarla: 9500/500/9000).
+> Mutasyonla doğrulandı — `case_contact_id` yolu kapatılınca test kırmızıya dönüyor.
+> Gerekçe: iki ekranın aynı hasta için farklı rakam vermesi, güveni yok eden hata sınıfıdır
+> (`docs/YAPIM-GUNLUGU.md` § 13, `patient_id` vakası).
+>
+> **v1 sınırı:** yalnız doğrudan referans. Zincir ("X'in getirdiğinin getirdiği") özyinelemeli
+> sorgu + döngü koruması + derinlik sınırı ister; ayrı iş olarak duruyor.
+>
 > **Kapananların notu (2026-08-23).** Ünvan ve hekim alanı canlıda. İki tuzağa bilinçli
 > olarak düşülmedi ve ikisi de aynı cinsten — **tenant'ın yeniden adlandırabildiği bir ada
 > kod bağlamak:**
