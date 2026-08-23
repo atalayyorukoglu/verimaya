@@ -27,6 +27,7 @@ import { MeService } from '../auth/me.service';
 import { PermissionOverridesService } from '../auth/permission-overrides.service';
 import { hasOrgPermission } from '../auth/permissions';
 import { AiAccuracyReportService } from './ai-accuracy-report.service';
+import { InterventionsService } from './interventions.service';
 import { ReportsService } from './reports.service';
 
 @Controller('reports')
@@ -36,6 +37,7 @@ export class ReportsController {
 		private readonly reportsService: ReportsService,
 		private readonly commissionsService: CommissionsService,
 		private readonly aiAccuracyReportService: AiAccuracyReportService,
+		private readonly interventionsService: InterventionsService,
 		private readonly meService: MeService,
 		private readonly permissionOverrides: PermissionOverridesService
 	) {}
@@ -247,6 +249,28 @@ export class ReportsController {
 		const tenantId = getActiveOrgId(req);
 		const includeCost = await this.canReadFinance(req, tenantId);
 		return this.reportsService.incidents(tenantId, params, includeCost);
+	}
+
+	/**
+	 * AI-05 — müdahale listesi v1 (docs/2026-08-23-maya-icgoru-sorulari.md § 7 adım 7).
+	 * İzin taban `contact:read`. `revenue_drop` ve `referral_value` bulguları (para
+	 * rakamı taşıyanlar) yalnız çağıranın ayrıca `finance:read`'i varsa cevaba girer —
+	 * `incidents` ile aynı desen: 403 değil sessiz omisyon, `canReadFinance` aynen kullanılır.
+	 *
+	 * Cümleler burada üretilmez — sunucu yapılandırılmış bulgu döner, web `messages.ts`
+	 * şablonundan cümleyi kurar.
+	 */
+	@Get('interventions')
+	@RequireOrgPermission('contact', 'read')
+	async interventions(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		const tenantId = getActiveOrgId(req);
+		const includeFinance = await this.canReadFinance(req, tenantId);
+		return this.interventionsService.get(tenantId, params, includeFinance);
 	}
 
 	private async canReadFinance(req: FastifyRequest, tenantId: string): Promise<boolean> {

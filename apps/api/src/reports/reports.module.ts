@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { CommissionsModule } from '../commissions/commissions.module';
 import { AiAccuracyReportService } from './ai-accuracy-report.service';
+import { InterventionsService } from './interventions.service';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 
@@ -12,7 +13,9 @@ import { ReportsService } from './reports.service';
 	// AI-03: AiAccuracyReportService only needs TenantContextService (global,
 	// TenantModule) — no WhatsappModule/RecordSuggestionsModule/MayaModule import;
 	// it queries their tables directly, same convention as ReportsService itself.
-	providers: [ReportsService, AiAccuracyReportService],
+	// AI-05: InterventionsService reuses ReportsService methods (summary/appointment-metrics/
+	// referrals) instead of forking their aggregation — see interventions.service.ts.
+	providers: [ReportsService, AiAccuracyReportService, InterventionsService],
 	// AI-11a: Maya'nın `openBalances` / `periodSummary` / `untouchedContacts` araçları
 	// bu servisi yeniden kullanıyor (yeni sorgu yazılmadı).
 	exports: [ReportsService]
