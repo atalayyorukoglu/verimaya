@@ -192,4 +192,19 @@ export class ReportsController {
 		const params = parseQuery(aiAccuracyReportParamsSchema, query, req);
 		return this.aiAccuracyReportService.get(getActiveOrgId(req), params);
 	}
+
+	/**
+	 * İhtiyaç haritası §A — referans değeri raporu. İzin `finance:read`: ciro rakamı
+	 * döndürüyor (`untouched-contacts` gibi salt kişi listesi değil).
+	 */
+	@Get('referrals')
+	@RequireOrgPermission('finance', 'read')
+	referrals(
+		@Req() req: FastifyRequest,
+		@Query('from') from?: string,
+		@Query('to') to?: string
+	) {
+		const params = reportPeriodParams.parse({ from, to });
+		return this.reportsService.referrals(getActiveOrgId(req), params);
+	}
 }

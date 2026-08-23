@@ -9,9 +9,11 @@ import {
 	isNull,
 	lt,
 	lte,
+	or,
 	sql,
 	type SQL
 } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import {
 	tenantDayRange,
 	toTenantDayKey,
@@ -49,11 +51,16 @@ import {
 	type ReportUntouchedContacts,
 	type ReportUntouchedContactRow,
 	type ReportUntouchedContactsParams,
+	type ReportReferrals,
+	type ReportReferralRow,
 	type UntouchedActivitySource
 } from '@verimaya/shared';
 import { resolveBaseAmount, resolvePaidBaseAmount } from '../common/finance-base';
-import { adMetricsDaily, appointments, contacts, tenants, transactions } from '../db/schema';
+import { adMetricsDaily, appointments, contacts, tenants, transactions, user } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
+
+/** Referans veren tarafı — kendine referans veren `contacts` satırıyla ayrı alias gerekir. */
+const referrerContacts = alias(contacts, 'reports_referrer');
 
 type TenantDb = Parameters<Parameters<TenantContextService['withTenant']>[1]>[0]['db'];
 
@@ -1605,6 +1612,175 @@ export class ReportsService {
 				total: Number(counts?.total ?? 0),
 				items
 			};
+		});
+	}
+
+	/**
+	 * Referans değeri raporu (ihtiyaç haritası §A — "X 4 referans hasta gönderdi,
+	 * koordinatörü Y, bu dosyaya öncelik").
+	 *
+	 * Yalnız DOĞRUDAN referans (`contacts.referred_by_contact_id`, tek seviye). "X'in
+	 * getirdiğinin getirdiği" zinciri v1'de YOK — özyinelemeli sorgu döngü koruması ve
+	 * derinlik sınırı ister, ayrı iş (bkz. docs/2026-08-23-maya-icgoru-sorulari.md § A).
+	 *
+	 * Gelir tanımı `ContactsService.financeSummary` ile BİREBİR AYNI — ayrı bir hesap
+	 * icat edilmedi: her getirilen kişi için aynı satır kümesi (`contact_id = X OR
+	 * case_contact_id = X`, soft-delete hariç) ve aynı `resolveBaseAmount` yardımcısı
+	 * kullanılır. Toplama burada bir Map ile yapılır — tıpkı `summary`/`byCategory`/
+	 * `monthly`'nin yaptığı gibi — çünkü `resolveBaseAmount` satır başına çalışan bir TS
+	 * fonksiyonu; FX çözümünü SQL'de yeniden yazmak tanımı çatallandırır. Sonuç yine de
+	 * tam sunucu-agregesi olarak döner; istemci kısmi listeden toplamaz.
+	 *
+	 * Dönem filtresi yalnız işlem tarihine (`occurred_on`) uygulanır — referans ilişkisinin
+	 * kendisi zamansızdır (`referred_count` dönemden etkilenmez). Yani bu "bu dönemde
+	 * getirdiği" değil, "getirdiklerinden bu dönemde gelen para"dır.
+	 */
+	async referrals(tenantId: string, params: ReportPeriodParams): Promise<ReportReferrals> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const period = { from: params.from ?? null, to: params.to ?? null };
+			const tenantBase = await this.getTenantBase(db, tenantId);
+
+			// Referans kenarları: getirilen kişi (soft-delete hariç) → referans veren
+			// (soft-delete hariç). Kimseyi getirmemiş kişiler burada hiç görünmez.
+			const edges = await db
+				.select({
+					referrerId: referrerContacts.id,
+					referrerDisplayName: referrerContacts.displayName,
+					referrerTitleName: referrerContacts.titleName,
+					referrerAssignedUserId: referrerContacts.assignedUserId,
+					referredId: contacts.id
+				})
+				.from(contacts)
+				.innerJoin(referrerContacts, eq(contacts.referredByContactId, referrerContacts.id))
+				.where(and(isNull(contacts.deletedAt), isNull(referrerContacts.deletedAt)));
+
+			if (edges.length === 0) {
+				return { period, items: [] };
+			}
+
+			type ReferrerAcc = {
+				referrer_contact_id: string;
+				referrer_display_name: string;
+				referrer_title_name: string | null;
+				assignedUserId: string | null;
+				referredIds: Set<string>;
+			};
+			const referrerMap = new Map<string, ReferrerAcc>();
+			const referredIds = new Set<string>();
+			for (const edge of edges) {
+				referredIds.add(edge.referredId);
+				const cur = referrerMap.get(edge.referrerId) ?? {
+					referrer_contact_id: edge.referrerId,
+					referrer_display_name: edge.referrerDisplayName,
+					referrer_title_name: edge.referrerTitleName,
+					assignedUserId: edge.referrerAssignedUserId,
+					referredIds: new Set<string>()
+				};
+				cur.referredIds.add(edge.referredId);
+				referrerMap.set(edge.referrerId, cur);
+			}
+
+			// Getirilenlerin geliri/gideri: financeSummary ile aynı satır kümesi, yalnız
+			// dönem filtresi eklenmiş (financeSummary tek kişi için dönemsiz çalışır).
+			const referredIdList = [...referredIds];
+			const periodConditions = [
+				isNull(transactions.deletedAt),
+				or(
+					inArray(transactions.contactId, referredIdList),
+					inArray(transactions.caseContactId, referredIdList)
+				)
+			];
+			if (params.from) periodConditions.push(gte(transactions.occurredOn, params.from));
+			if (params.to) periodConditions.push(lte(transactions.occurredOn, params.to));
+
+			const txRows = await db
+				.select({
+					contactId: transactions.contactId,
+					caseContactId: transactions.caseContactId,
+					kind: transactions.kind,
+					status: transactions.status,
+					amount: transactions.amount,
+					amountBase: transactions.amountBase,
+					baseCurrency: transactions.baseCurrency,
+					currency: transactions.currency,
+					paidAmount: transactions.paidAmount
+				})
+				.from(transactions)
+				.where(and(...periodConditions));
+
+			type ReferredTotals = { incomeBase: number; expenseBase: number };
+			const totalsByReferred = new Map<string, ReferredTotals>();
+
+			for (const row of txRows) {
+				const base = resolveBaseAmount(row, tenantBase);
+				if (base == null) continue;
+
+				// financeSummary'deki `contact_id = X OR case_contact_id = X` eşdeğeri: bu
+				// satır hangi getirilen kişi(ler)in kümesine giriyorsa oraya eklenir. Bir
+				// Set kullanmak, contact_id === case_contact_id olduğu (aynı kişi iki
+				// alanda) satırı tek kez sayar — financeSummary'nin OR'u da böyle davranır.
+				const matches = new Set<string>();
+				if (row.contactId && referredIds.has(row.contactId)) matches.add(row.contactId);
+				if (row.caseContactId && referredIds.has(row.caseContactId)) {
+					matches.add(row.caseContactId);
+				}
+
+				for (const referredId of matches) {
+					const cur = totalsByReferred.get(referredId) ?? { incomeBase: 0, expenseBase: 0 };
+					if (row.kind === 'income') cur.incomeBase += base;
+					else cur.expenseBase += base;
+					totalsByReferred.set(referredId, cur);
+				}
+			}
+
+			// Koordinatör adı: referans verenin assigned_user_id'sinden çözülür.
+			const coordinatorIds = [
+				...new Set(
+					[...referrerMap.values()]
+						.map((r) => r.assignedUserId)
+						.filter((id): id is string => id != null)
+				)
+			];
+			const coordinatorNameById = new Map<string, string>();
+			if (coordinatorIds.length > 0) {
+				const coordinatorRows = await db
+					.select({ id: user.id, name: user.name })
+					.from(user)
+					.where(inArray(user.id, coordinatorIds));
+				for (const row of coordinatorRows) {
+					coordinatorNameById.set(row.id, row.name);
+				}
+			}
+
+			const items: ReportReferralRow[] = [...referrerMap.values()]
+				.map((referrer) => {
+					let incomeBase = 0;
+					let expenseBase = 0;
+					let withRevenue = 0;
+					for (const referredId of referrer.referredIds) {
+						const t = totalsByReferred.get(referredId);
+						if (!t) continue;
+						incomeBase += t.incomeBase;
+						expenseBase += t.expenseBase;
+						if (t.incomeBase > 0) withRevenue += 1;
+					}
+					return {
+						referrer_contact_id: referrer.referrer_contact_id,
+						referrer_display_name: referrer.referrer_display_name,
+						referrer_title_name: referrer.referrer_title_name,
+						coordinator_name: referrer.assignedUserId
+							? (coordinatorNameById.get(referrer.assignedUserId) ?? null)
+							: null,
+						referred_count: referrer.referredIds.size,
+						referred_with_revenue_count: withRevenue,
+						total_income_base: incomeBase,
+						total_expense_base: expenseBase,
+						total_net_base: incomeBase - expenseBase
+					};
+				})
+				.sort((a, b) => b.total_net_base - a.total_net_base);
+
+			return { period, items };
 		});
 	}
 }
