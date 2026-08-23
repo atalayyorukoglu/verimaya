@@ -41,15 +41,6 @@ kadar" sorusunun cevabı. Doğrudan sürüm çalışıp kullanılmadan buna girm
 **Ön koşul:** doğrudan rapor birkaç hafta kullanılsın; "zinciri de görsek" talebi gerçekten
 gelsin. **Boyut: M**
 
-### Bakiye yaşlandırma (aging)
-`GET /v1/reports/balances` "ne kadar açık" diyor, "**kaç gündür** açık" demiyor.
-"X'in 1.450 GBP'si 41 gündür duruyor" cümlesi bugün kurulamıyor.
-
-Veri var (`transactions.occurred_on`), hesap basit: 0–30 / 31–60 / 61–90 / 90+ kovaları.
-Tahsilat takibinde en çok işe yarayan tek görünüm bu olabilir.
-
-**Boyut: S** — muhtemelen en yüksek fayda/maliyet oranına sahip açık fikir.
-
 ### Çok ünvanlı kişi
 Bugün kişi başına **tek** ünvan (`contacts.title_id`). 5-15 kişilik bir acentede insanlar birden
 çok şapka takıyor — aynı kişi hem satışçı hem koordinatör olabilir.
@@ -88,6 +79,19 @@ sorabilse operasyonel olarak anlamlı olurdu.
 **Neden fikir seviyesinde:** tarayıcı ses tanıma Türkçede değişken kalitede; yanlış anlaşılan bir
 soru yanlış araca gider. AI-11a'nın araç seçimi zaten `BILINMIYOR` diyebiliyor, yani güvenlik
 tarafı hazır — sorun yalnız tanıma kalitesi. **Boyut: M**
+
+### Spec'lerde session-level `set_config` temizliği
+16 test dosyası tenant bağlamını `set_config('app.current_tenant_id', ..., false)` ile kuruyor —
+session düzeyi. `AGENTS.md` kural 7 bunu **yasaklıyor** ve gerekçesi ciddi: session ayarı testler
+arasında sızar, bir testin bıraktığı tenant sonraki testte geçerli kalabilir. Bu, **izolasyon
+testini yalancı yeşile çevirebilir** — yani tam da güvendiğimiz testleri.
+
+Bugüne kadar bir soruna yol açtığına dair kanıt yok (test dosyaları ayrı süreçlerde koşuyor
+olabilir), o yüzden acil değil. Ama "tenant izolasyonu kanıtlanmıştır" cümlesinin dayanağı bu
+testler; dayanağın kendisi kuralı çiğniyorsa er geç bakılmalı.
+
+**Ön koşul:** yok, kapasiteye bağlı. Yeni yazılan spec'ler zaten doğru desende (drizzle
+transaction + `SET LOCAL`). **Boyut: M** (16 dosya, mekanik ama dikkat ister).
 
 ### Ürün içi "Yenilikler" yüzeyi
 Panele giren kullanıcıya son eklenen özellikleri gösteren küçük bir bileşen (changelog'un
