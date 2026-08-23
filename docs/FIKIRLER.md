@@ -18,6 +18,11 @@
 
 Son güncelleme: 2026-08-23
 
+> **Bugün eklenen not:** karşılaştırma katmanı `summary` ve `appointment-metrics` ile sınırlı
+> (v1). Diğer raporlara (`balances`, `cohorts`, `marketing`, `referrals`…) genişletmek bir
+> fikirdir — desen oturdu, ama her raporun kendi kenar durumu var ve hepsini birden açmak
+> AI-05'i geciktirir. Talep geldikçe tek tek eklenir. **Boyut: rapor başına S.**
+
 ---
 
 ## Veri ve raporlama
