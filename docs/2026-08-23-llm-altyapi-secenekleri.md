@@ -92,6 +92,25 @@ girdi 1M token başına ~$0,15 · çıktı ~$0,60):
 
 ### D — Apple Silicon (Mac Studio / Mac mini) — kantan yaklaşımı
 
+> **Referans işi netleşti (2026-08-23, video transkripti).** Kantan News **Mac Studio'da
+> değil**, bir **M4 Pro Mac mini / 48 GB** üzerinde servis ediliyor. Mac Studio sonradan
+> alındı ve video prodüksiyonu + aynı anda birden çok model içindir.
+>
+> **O 48 GB'lık Mac mini'nin yaptığı iş bizimkinden ağır:** haber görseli seçimi, telif
+> kontrolü, yorum kontrolü, **üç dilde TTS** (Türkçe/İngilizce/İspanyolca, açık kaynak motor,
+> 30 saniyelik örnekten klonlanmış ses) ve otomatik podcast yayını. Bir haberin üç dile
+> çevrilmesi 10–15 dakika sürüyor ve bu kabul edilebilir bulunuyor.
+>
+> **Bizim için çıkarım:** VeriMaya'nın dil modelinden istediği iş — kısa Türkçe mesajdan beş
+> alan çıkarmak ve beş araçtan birini seçmek — bu işin **yanında çok küçük.** Yani "yerel
+> donanımda çalışır mı" sorusunun cevabı teknik olarak **evet**. Kısıt donanım değil,
+> §1'de yazdığımız gibi modelin Türkçe başarımı.
+>
+> **İki farkı da not etmek gerekiyor:** Kantan tek kiracılı, toplu (batch) çalışan ve
+> **hassas veri taşımayan** bir servis. 10–15 dakikalık gecikme orada sorun değil, kimse
+> beklemiyor. Bizde de WhatsApp yolu kuyruklu, yani gecikme toleransı var — ama sağlık
+> verisi ve çok kiracılı SaaS yükümlülüğü var.
+
 Apple Silicon'ın **birleşik belleği** çıkarım için gerçekten güçlü: CPU ve GPU aynı bellek
 havuzunu paylaştığı için, ayrık GPU'da aynı VRAM'i almak çok daha pahalıya geliyor. MLX ile
 Apple donanımında llama.cpp'ye göre belirgin hız kazancı raporlanıyor.
@@ -107,7 +126,30 @@ Gerekçe: ofisteki bir Mac veri merkezi değil. Yedeklilik yok, tek nokta arıza
 ağına ve elektriğine bağlı, fiziksel risk taşıyor. Bugün Hetzner'de duran bir sistemi ofise
 bağlamak, kazanılan tüm altyapı olgunluğunu geri veriyor.
 
-> **Ama D'nin gerçek yeri var — arka uç olarak değil, ÜRÜN olarak.** Aşağıda §5.
+#### Asıl mesele donanım değil, kutunun NEREDE durduğu
+
+Yukarıdaki itiraz ("ofisteki Mac veri merkezi değil") Apple Silicon'a değil, **ofise**
+yönelikti. Apple donanımı veri merkezinde de kiralanabiliyor:
+
+| Yol | Mertebe |
+|---|---|
+| Mac mini kolokasyon (kendi cihazın, veri merkezinde) | ~$30–60/ay |
+| Yönetilen özel Mac (MacStadium vb.) | ~$79–199/ay |
+| AWS EC2 Mac (M4) | ~$500/ay |
+
+Yani Apple Silicon ile **veri merkezi disiplinini birlikte** almak mümkün. Bu, D'yi ciddi bir
+seçenek hâline getiriyor — ofis makinesi olmaktan çıkardığın anda.
+
+> **Güvenlik notu — atlanmaması gereken.** Kantan'ın geliştiricisi süreç içinde
+> **hacklendiğini** anlatıyor: içerideki tüm verilere ulaşılmış, bilgisayarın kontrolü ele
+> geçirilmiş (bir arkadaşı tarafından, kontrollü biçimde). Bu bizim için teorik bir risk
+> değil: VeriMaya **sağlık verisi** tutuyor. Modeli ofisteki bir makineye taşımak, saldırı
+> yüzeyini ofis ağına taşımak demektir. Hetzner + Cloudflare + firewall disiplini
+> (`MIMARI.md` § Güvenlik çerçevesi) bir sebeple kuruldu.
+>
+> Kısacası: **Apple Silicon'a itiraz yok, ofise itiraz var.**
+
+> **Ve D'nin bir yeri daha var — arka uç olarak değil, ÜRÜN olarak.** Aşağıda §5.
 
 ### E — Hibrit
 
@@ -144,6 +186,8 @@ olur. O kümeyle A, B, C, D birbirine karşı **ölçülerek** kıyaslanabilir �
 
 1. **B'yi aç** (AB bölgesi barındırılan API). Kalite tavanını gör, ölçümü başlat.
    Kurulum 3 env değişkeni; kod hazır.
+   *Neden önce barındırılan:* yerel modelin Türkçesini ölçmek için önce bir **tavan**
+   gerekiyor. "Yeterli mi" sorusu ancak "neye göre" cevabıyla anlamlı.
 2. **Değerlendirme kümesini biriktir** — 4–6 hafta gerçek kullanım. AI-03 raporu zaten
    sayıyor.
 3. **O kümeyle yerel modelleri test et.** Türkçe başarımı yeterliyse C ekonomik ve
@@ -204,6 +248,11 @@ Apple Silicon / MLX çıkarım başarımı ve birleşik bellek avantajı için:
 - <https://dev.to/bspann/running-llms-locally-on-macos-the-complete-2026-comparison-48fc>
 - <https://news.ycombinator.com/item?id=46907001>
 
-kantan.news'in hangi altyapıda çalıştığı **doğrulanamadı** — sitesinde ve aramada teknik
-altyapı bilgisi yok. Mac Studio üzerinde çalıştığı bilgisi kullanıcıdan geldi, bağımsız
-kaynakla teyit edilmedi.
+Apple donanımı veri merkezi/kolokasyon fiyat mertebeleri:
+- <https://macstadium.com/bare-metal-mac>
+- <https://www.macminivault.com/mac-mini-colocation/>
+- <https://macly.io/alternatives/aws-ec2-mac>
+
+kantan.news altyapısı: geliştiricinin kendi video transkriptinden (2026-08-23, kullanıcı
+paylaştı). Servis **M4 Pro Mac mini 48 GB** üzerinde; Mac Studio (512 GB'a kadar birleşik
+bellek) video prodüksiyonu ve çoklu model çalıştırma için sonradan alınmış.
