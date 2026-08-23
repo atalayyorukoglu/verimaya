@@ -27,6 +27,34 @@ export const contactTypeUpdateSchema = contactTypeCreateSchema.strict();
 export type ContactTypeUpdate = z.infer<typeof contactTypeUpdateSchema>;
 
 /**
+ * Contact title (Tracker: n/a — new) — Hekim / Koordinatör / Reklam Uzmanı / Satış, …
+ * Tenant sözlüğü, `contact_types` ile birebir aynı desen. Kişi başına tek ünvan.
+ *
+ * BAĞLAYICI (bkz. AGENTS.md): ünvan yalnız tanımlayıcı veridir; hiçbir izin
+ * kontrolünde okunmaz ve yalnız `contacts` üzerinde yaşar (`user` tablosuna eklenmez).
+ */
+export const contactTitleSchema = z.object({
+	id: uuid,
+	tenant_id: uuid,
+	name: z.string().min(1).max(128),
+	sort_order: z.number().int().nonnegative().default(0),
+	created_at: isoDateTime
+});
+
+export type ContactTitle = z.infer<typeof contactTitleSchema>;
+
+export const contactTitleCreateSchema = z.object({
+	name: z.string().min(1).max(128)
+});
+
+export type ContactTitleCreate = z.infer<typeof contactTitleCreateSchema>;
+
+/** Rename — same fields as create, reject unknown keys (mirrors contactTypeUpdateSchema). */
+export const contactTitleUpdateSchema = contactTitleCreateSchema.strict();
+
+export type ContactTitleUpdate = z.infer<typeof contactTitleUpdateSchema>;
+
+/**
  * Firm dictionary (§0-A / DOMAIN-02): Klinik / Otel / Transfer seçilince
  * hangi kurum — tenant-editable via settings (same pattern as contact types).
  */
@@ -125,6 +153,10 @@ export const contactSchema = z.object({
 	contact_type_id: uuid,
 	/** Denormalized type name for list views */
 	contact_type_name: z.string().min(1).max(128),
+	/** Görev / ünvan (Hekim, Koordinatör, …) — opsiyonel, kişi başına tek ünvan */
+	title_id: uuid.nullable().default(null),
+	/** Denormalized title name for list views */
+	title_name: z.string().min(1).max(128).nullable().default(null),
 	first_name: z.string().min(1).max(255),
 	last_name: z.string().max(255).nullable(),
 	/** Derived: trim(first_name || ' ' || last_name) — read-only on wire */
@@ -156,6 +188,7 @@ export type Contact = z.infer<typeof contactSchema>;
  */
 export const contactCreateSchema = z.object({
 	contact_type_id: uuid,
+	title_id: uuid.nullable().optional(),
 	first_name: z.string().min(1).max(255),
 	last_name: z.string().max(255).nullable().optional(),
 	phone: z.string().max(64).nullable().optional(),

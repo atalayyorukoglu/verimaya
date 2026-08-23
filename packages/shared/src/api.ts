@@ -86,6 +86,9 @@ export const apiPaths = {
 	settingsContactTypes: `${API_V1_PREFIX}/settings/contact-types`,
 	settingsContactTypesReorder: `${API_V1_PREFIX}/settings/contact-types/reorder`,
 	settingsContactType: (id: string) => `${API_V1_PREFIX}/settings/contact-types/${id}`,
+	settingsContactTitles: `${API_V1_PREFIX}/settings/contact-titles`,
+	settingsContactTitlesReorder: `${API_V1_PREFIX}/settings/contact-titles/reorder`,
+	settingsContactTitle: (id: string) => `${API_V1_PREFIX}/settings/contact-titles/${id}`,
 	settingsOrganizations: `${API_V1_PREFIX}/settings/organizations`,
 	settingsOrganization: (id: string) => `${API_V1_PREFIX}/settings/organizations/${id}`,
 	settingsAppointmentTypes: `${API_V1_PREFIX}/settings/appointment-types`,
@@ -194,6 +197,7 @@ export type ListQueryParams = {
 	/** Commission entries: filter by beneficiary (clinic / referrer / sub-agency). */
 	beneficiary_contact_id?: string | null;
 	type_id?: string | null;
+	title_id?: string | null;
 	kind?: string;
 	status?: string;
 	category?: string;
@@ -224,6 +228,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 		url.searchParams.set('beneficiary_contact_id', params.beneficiary_contact_id);
 	}
 	if (params?.type_id) url.searchParams.set('type_id', params.type_id);
+	if (params?.title_id) url.searchParams.set('title_id', params.title_id);
 	if (params?.kind) url.searchParams.set('kind', params.kind);
 	if (params?.status) url.searchParams.set('status', params.status);
 	if (params?.category) url.searchParams.set('category', params.category);
@@ -248,6 +253,8 @@ import {
 	contactsBulkTypeSchema,
 	contactTypeSchema,
 	contactTypeUpdateSchema,
+	contactTitleSchema,
+	contactTitleUpdateSchema,
 	organizationSchema,
 	organizationUpdateSchema
 } from './contact.js';
@@ -554,6 +561,17 @@ export const apiContract = {
 	'PATCH /v1/settings/contact-types/:id': {
 		body: contactTypeUpdateSchema,
 		response: contactTypeSchema
+	},
+	'GET /v1/settings/contact-titles': {
+		response: z.object({ items: z.array(contactTitleSchema) })
+	},
+	'PUT /v1/settings/contact-titles/reorder': {
+		body: settingsReorderSchema,
+		response: settingsReorderResultSchema
+	},
+	'PATCH /v1/settings/contact-titles/:id': {
+		body: contactTitleUpdateSchema,
+		response: contactTitleSchema
 	},
 	'GET /v1/settings/organizations': {
 		response: z.object({ items: z.array(organizationSchema) })

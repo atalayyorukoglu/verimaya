@@ -8,6 +8,16 @@ export const DEFAULT_CONTACT_TYPE_NAMES = [
 	'Diğer'
 ] as const;
 
+/** Default contact title (görev) names seeded for new tenants. */
+export const DEFAULT_CONTACT_TITLE_NAMES = [
+	'Hekim',
+	'Koordinatör',
+	'Satış',
+	'Reklam Uzmanı',
+	'Asistan',
+	'Diğer'
+] as const;
+
 /** Default appointment type names seeded per tenant (deterministic IDs via defaultAppointmentTypeId). */
 export const DEFAULT_APPOINTMENT_TYPE_NAMES = [
 	'Konsültasyon',

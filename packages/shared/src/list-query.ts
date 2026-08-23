@@ -100,7 +100,8 @@ export type OperationAlertListQuery = z.infer<typeof operationAlertListQuerySche
 
 export const contactListQuerySchema = searchableListParams
 	.extend({
-		type_id: uuid.optional()
+		type_id: uuid.optional(),
+		title_id: uuid.optional()
 	})
 	.strict();
 
