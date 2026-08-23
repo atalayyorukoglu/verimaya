@@ -320,8 +320,9 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 > paneli yapmak erken optimizasyondur — kimsenin benimsemediği şeyin benimsenmesini ölçen panel.
 > Bu yüzden yalnız DOC-04 şimdi; diğerleri pilota bağlı.
 
-- [ ] **DOC-04 — changelog + `features.ts` borcu. (S)** *şimdi*
-  **Son changelog kaydı 2026-07-22.** 23 Ağustos itibarıyla bir aylık boşluk var; 17–23 Ağustos
+- [x] **DOC-04 — changelog + `features.ts` borcu (2026-08-23). (S)**
+  **Son changelog kaydı 2026-08-14 (v0.9.0)** — ilk yazımdaki "22 Temmuz" yanlıştı (dosya
+  yeniden eskiye sıralı, `grep` kuyruğuna bakılmış). Boşluk bir ay değil 9 gündü; 17–23 Ağustos
   arasında eklenen dokuz şeyin hiçbiri ne changelog'da ne `features.ts`'de:
   AI-01/02/04/06 · AUDIT-04 · AI-08 (randevu ajanı akışta) · AI-11a (Maya canlı veri) ·
   AI-09 (kaynak izi) · AI-03 (isabet ölçümü) · ünvanlar (`0064`) · hekim alanı (`0065`) ·
@@ -336,7 +337,13 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
   changelog kaydını **aynı commit'te** taşır. Borç yeniden birikirse kural değil süreç
   bozuktur — o zaman kontrol otomatikleştirilir (CI'da "yeni feature id var ama changelog
   kaydı yok" kontrolü).
-  **Görüş:**
+  **Görüş:** `v0.10.0` (17 Ağu, AI katmanı temeli) + `v0.11.0` (23 Ağu, AI temeli ve operasyon
+  derinliği) yazıldı; `features.ts`'e 11 yeni kalem eklendi. **Hepsi `kod-hazir`** —
+  `CHANGELOG-KURALLARI.md` madde 1 gereği: pilot başlamadı, prod'da canlı veri yok, hiçbiri
+  gerçek kullanımda doğrulanmadı. Dokuz özelliği "Yayında" yazmak changelog'u yalancı yapardı;
+  madde 1 tam bunun için var. Durumlar PILOT-02 ile birlikte yükseltilecek.
+  AUDIT-04 ve `0063` yetki düzeltmesi `features.ts`'e girmedi (kullanıcıya görünen özellik
+  değil) — changelog'a `guvenlik` tipiyle yazıldı.
 
 - [ ] **DOC-05 — kullanıcı için "ne yapabilirsin" rehberi. (M)** *pilot başlamadan*
   Geliştirici için `docs/YAPIM-GUNLUGU.md` var; **kullanıcı için karşılığı yok.** Pilot ekibi

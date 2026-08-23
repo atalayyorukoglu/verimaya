@@ -28,6 +28,94 @@ export type Feature = {
  */
 export const features: Feature[] = [
 	{
+		id: 'ai-knowledge-base',
+		module: 'WhatsApp',
+		title: 'Bilgi bankası',
+		description:
+			'Hizmetler, fiyatlar, ödeme kuralları ve red gerekçeleri Ayarlar’dan giriliyor; WhatsApp ayrıştırması ve Maya bu bilgiden besleniyor. Değişiklikler sürümleniyor.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'ai-record-suggestions',
+		module: 'Randevu',
+		title: 'Randevu güncelleme onay kuyruğu',
+		description:
+			'WhatsApp mesajından çıkan randevu tarihi değişikliği öneri olarak kuyruğa düşer; her kart tek tek onaylanır, toplu onay yoktur. Eşleşme belirsizse öneri üretilmez.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'ai-operation-alerts',
+		module: 'Randevu',
+		title: 'Operasyon alarmları',
+		description:
+			'Uçuş ve transfer gibi zaman kilitli kalemler için eşiğe gelindiğinde uyarı üretilir. Deterministik kod — yapay zekâ değil.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'ai-evidence',
+		module: 'WhatsApp',
+		title: 'Taslakta kaynak izi',
+		description:
+			'Taslaktaki her alan hangi cümleden çıktığını taşır; kaynak rozetine tıklayınca mesajda alıntı vurgulanır. Uydurma alıntı sunucuda düşürülür.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'ai-accuracy',
+		module: 'Raporlama',
+		title: 'AI isabet ölçümü',
+		description:
+			'Taslakların ne kadarı dokunulmadan onaylandı, hangi alan en çok düzeltiliyor, Maya neyi cevaplayamıyor. Cevaplanamayan sorular bilgi bankası yönlendirmesiyle gösterilir.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'maya-live-data',
+		module: 'Platform',
+		title: 'Maya canlı veri',
+		description:
+			'Maya bakiye, açık alacak, randevu, dönem özeti ve temassız kişiler sorularını canlı veriden cevaplar. Rakamı veritabanı verir, model yalnız hangi sorgunun çalışacağını seçer; izin araç başına kontrol edilir.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'contact-titles',
+		module: 'Hasta Takibi',
+		title: 'Kişi ünvanları',
+		description:
+			'Hekim, koordinatör, satış, reklam uzmanı gibi görev etiketleri; liste Ayarlar’dan yönetilir. Ünvan tanımlayıcıdır, yetkiyi değiştirmez.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'appointment-doctor',
+		module: 'Randevu',
+		title: 'Randevuda hekim',
+		description:
+			'Randevuya hekim atanır; randevu metrikleri hekim kırılımı ve hekim × randevu tipi çapraz sayımı döndürür (RPT oranı buradan hesaplanır).',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'incidents',
+		module: 'Hasta Takibi',
+		title: 'Olay kaydı',
+		description:
+			'Hasta dosyasından tek tıkla açılan sorun kaydı: revizyon gerekti, komplikasyon, süreç gecikmesi. Opsiyonel maliyet ve randevu bağı taşır, çözüldü olarak kapatılır. v1 yalnız klinik departmanı.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'referral-value',
+		module: 'Raporlama',
+		title: 'Referans değeri',
+		description:
+			'Kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve koordinatörü kim. Rakamlar kişi kartındaki finans özetiyle aynı kaynaktan gelir.',
+		status: 'kod-hazir'
+	},
+	{
+		id: 'report-compare',
+		module: 'Raporlama',
+		title: 'Dönem karşılaştırması',
+		description:
+			'Özet ve randevu metrikleri önceki dönemle karşılaştırılır. Önceki dönem aynı gün sayısında ve hemen öncesinde biten penceredir; az kayda dayanan değişimde yüzde gösterilmez.',
+		status: 'kod-hazir'
+	},
+	{
 		id: 'campaign-assistant',
 		module: 'Pazarlama',
 		title: 'Kampanya Asistanı',

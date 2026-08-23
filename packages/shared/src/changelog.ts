@@ -20,6 +20,96 @@ export type ChangelogEntry = {
  */
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.11.0',
+		date: '2026-08-23',
+		title: 'AI temeli ve operasyon derinliği',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'WhatsApp',
+				text: 'WhatsApp taslağındaki her alan artık hangi cümleden çıktığını taşıyor; kartta kaynak rozetine tıklayınca mesajda o alıntı vurgulanıyor ve onaylanan işlem kaydı kaynak bağını koruyor. Model uydurma bir alıntı verirse sunucu onu düşürüyor.',
+				featureId: 'ai-evidence'
+			},
+			{
+				type: 'eklendi',
+				module: 'Randevu',
+				text: 'WhatsApp mesajı geldiğinde finans taslağıyla birlikte randevu güncelleme önerisi de üretiliyor; ikisi de ayrı ayrı onay bekliyor. Randevu tarafındaki bir hata finans taslağını düşürmüyor.',
+				featureId: 'ai-record-suggestions'
+			},
+			{
+				type: 'eklendi',
+				module: 'Platform',
+				text: 'Maya artık bilgi bankasının yanı sıra canlı veriye de bakabiliyor: bakiye, açık alacaklar, randevu, dönem özeti ve temassız kişiler. Rakamı veritabanı veriyor, model yalnız hangi sorgunun çalışacağını seçiyor; izin her araç için ayrı kontrol ediliyor.',
+				featureId: 'maya-live-data'
+			},
+			{
+				type: 'eklendi',
+				module: 'Hasta Takibi',
+				text: 'Kişilere ünvan (hekim, koordinatör, satış, reklam uzmanı…) atanabiliyor; ünvan listesi Ayarlar’dan yönetiliyor. Ünvan yalnız tanımlayıcı bilgidir — yetkiyi değiştirmez.',
+				featureId: 'contact-titles'
+			},
+			{
+				type: 'eklendi',
+				module: 'Randevu',
+				text: 'Randevuya hekim atanabiliyor; randevu metrikleri raporu hekim kırılımı ve hekim × randevu tipi çapraz sayımı döndürüyor (RPT oranı buradan hesaplanıyor).',
+				featureId: 'appointment-doctor'
+			},
+			{
+				type: 'eklendi',
+				module: 'Hasta Takibi',
+				text: 'Hasta dosyasından tek tıkla olay kaydı açılabiliyor (revizyon gerekti, komplikasyon, süreç gecikmesi…); dosya, tarih ve randevu önceden dolu gelir, maliyeti opsiyonel olarak yazılır ve olay çözüldü olarak kapatılır.',
+				featureId: 'incidents'
+			},
+			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'Referans değeri raporu: kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve koordinatörü kim. Rakamlar kişi kartındaki finans özetiyle aynı kaynaktan gelir.',
+				featureId: 'referral-value'
+			},
+			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'Özet ve randevu metrikleri raporları önceki dönemle karşılaştırılabiliyor. Önceki dönem, aynı gün sayısında ve hemen öncesinde biten penceredir; az kayda dayanan değişimde yüzde gösterilmez.',
+				featureId: 'report-compare'
+			},
+			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'AI isabet ölçümü: taslakların ne kadarı dokunulmadan onaylanıyor, hangi alan en çok düzeltiliyor, Maya hangi soruları cevaplayamıyor. Cevaplanamayan sorular “bilgi bankasına ekle” yönlendirmesiyle gösteriliyor.',
+				featureId: 'ai-accuracy'
+			},
+			{
+				type: 'guvenlik',
+				module: 'Finans',
+				text: 'İşlem oluşturma ve güncelleme artık denetim kaydına yazılıyor (önceden yalnız silme yazılıyordu); WhatsApp onay yolu dahil.'
+			},
+			{
+				type: 'guvenlik',
+				module: 'Platform',
+				text: 'Yeni veritabanı tablolarına otomatik güncelleme yetkisi verilmesi durduruldu — denetim amaçlı tablolar artık yanlışlıkla güncellenebilir kalmıyor.'
+			}
+		]
+	},
+	{
+		version: '0.10.0',
+		date: '2026-08-17',
+		title: 'AI katmanı temeli',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'WhatsApp',
+				text: 'Firma bilgi bankası: hizmetler, fiyatlar, ödeme kuralları, sık sorulanlar ve red gerekçeleri Ayarlar’dan giriliyor; WhatsApp ayrıştırması ve Maya bu bilgiden besleniyor. Değişiklikler sürümlenerek saklanıyor.',
+				featureId: 'ai-knowledge-base'
+			},
+			{
+				type: 'eklendi',
+				module: 'Randevu',
+				text: 'Zaman kilitli operasyon alarmları: uçuş ve transfer gibi kalemler için eşiğe gelindiğinde uyarı üretiliyor. Deterministik kod — yapay zekâ değil.',
+				featureId: 'ai-operation-alerts'
+			}
+		]
+	},
+	{
 		version: '0.9.0',
 		date: '2026-08-14',
 		title: 'Tehlikeli bölge: operasyonel veri silme',
