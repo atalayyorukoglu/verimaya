@@ -345,15 +345,23 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
   AUDIT-04 ve `0063` yetki düzeltmesi `features.ts`'e girmedi (kullanıcıya görünen özellik
   değil) — changelog'a `guvenlik` tipiyle yazıldı.
 
-- [ ] **DOC-05 — kullanıcı için "ne yapabilirsin" rehberi. (M)** *pilot başlamadan*
+- [x] **DOC-05 — kullanıcı için "ne yapabilirsin" rehberi (2026-08-23). (M)**
   Geliştirici için `docs/YAPIM-GUNLUGU.md` var; **kullanıcı için karşılığı yok.** Pilot ekibi
   panele girdiğinde ünvanların, hekim alanının, Maya'nın canlı veriye bağlandığının veya
   taslaktaki kaynak rozetinin ne işe yaradığını nereden bilecek?
   **Kabul:** ekran ekran değil, **iş akışı akışı** anlatan bir doküman — "WhatsApp'tan mesaj
   geldi, ne oluyor", "bir hastadan kâr ettim mi nasıl bakarım", "Maya'ya ne sorabilirim".
   Panelden erişilebilir (Kaynaklar/Yardım altına link).
-  **Bağımlı:** DOC-04 (rehber, changelog ile aynı gerçeği anlatmalı).
-  **Görüş:**
+  **Bağımlı:** DOC-04 (rehber, changelog ile aynı gerçeği anlatmalı) — DOC-04 önce kapandı.
+  **Görüş:** `docs/KULLANIM-REHBERI.md` + web sürümü
+  (`claude.ai/code/artifact/89d13e13-f3ec-4457-a158-9c1117f1d9a6`). Ekran ekran değil **iş iş**:
+  hasta akışı, WhatsApp onayı, dosya kârı, Maya, olay kaydı, ay sonu, yetki, beş uyarı.
+  Menü adları `messages.ts`'ten birebir alındı; uydurma ekran yok.
+  **En çok değer taşıyan kısım "Dikkat edilecek beş şey":** hepsi **sessiz** hatalar — "Vaka"
+  alanı boş kalırsa dosya kârı eksik çıkar ama hata vermez, "Referans veren" boş kalırsa altı ay
+  sonra referans raporu boş olur. Kullanıcının kendiliğinden fark edemeyeceği şeyler bunlar.
+  **Panel içi link (`Kaynaklar` / `Dokümantasyon & Rehberler`, bugün "içerik yakında")
+  bağlanmadı** — ayrı ve küçük bir iş; rehberin kendisi hazır ve link paylaşılabilir durumda.
 
 - [ ] **ADOPT-01 — benimseme takibi. (M)** *pilot başlayınca*
   "Kim hangi özelliği kullanıyor" bugün ölçülmüyor. **Ham veri kısmen zaten var:**

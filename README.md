@@ -14,6 +14,8 @@ Kod kapsamı pilot seviyesine yakın; güvenlik, veri doğruluğu ve canlı kabu
 **Aktif yapılacaklar listesi (tek kaynak):** [`docs/2026-08-11-YAPILACAKLAR.md`](./docs/2026-08-11-YAPILACAKLAR.md) — öncelik sıralı, kabul kriterli. Tüm eski plan/rapor/durum belgeleri [`docs/Arşiv/`](./docs/Arşiv/) altında (2026-08-03 ve 2026-08-09 listeleri dahil); aktif iş yalnız bu YAPILACAKLAR dosyasındadır.
 Gerçek durum ve açık riskler (arşiv, tarihli kanıt): [`docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md`](./docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md).
 
+Panel kullanım rehberi (pilot ekibi için, iş iş): [`docs/KULLANIM-REHBERI.md`](./docs/KULLANIM-REHBERI.md).
+
 Projenin sıfırdan bugüne nasıl yapıldığı (yazılıma yeni başlayanlar için, kararlar ve gerekçeleriyle): [`docs/YAPIM-GUNLUGU.md`](./docs/YAPIM-GUNLUGU.md).
 
 Kararı verilmemiş fikirler (açık-iş listesi değil): [`docs/FIKIRLER.md`](./docs/FIKIRLER.md).
