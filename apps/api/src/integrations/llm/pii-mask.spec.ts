@@ -5,8 +5,7 @@ import {
 	buildMaskedLlmUserPayload,
 	maskMessagePii,
 	maskPatientNamesInMessage,
-	PII_PLACEHOLDERS
-} from './pii-mask';
+	PII_PLACEHOLDERS, tokenizePatientNames } from './pii-mask';
 
 function patient(id: string, display_name: string): Contact {
 	return {
@@ -69,9 +68,11 @@ describe('buildMaskedLlmUserPayload', () => {
 			message: 'Sandra Yılmaz 2900 GBP ödeme alındı',
 			patients: [sandra]
 		});
-		expect(payload.patients).toEqual([{ patient_ref: sandra.id }]);
+		// 2026-08-23: liste artık token ↔ UUID eşi taşıyor. Eskiden yalnız UUID gidiyordu
+		// ve model onu mesajdaki `[HASTA]` ile eşleştiremiyordu.
+		expect(payload.patients).toEqual([{ token: 'KISI_1', patient_ref: sandra.id }]);
 		expect(JSON.stringify(payload)).not.toMatch(/Sandra|Yılmaz|display_name/i);
-		expect(payload.message).toContain(PII_PLACEHOLDERS.patient);
+		expect(payload.message).toContain('KISI_1');
 		expect(payload.message).toContain('2900');
 		expect(payload.message).toContain('GBP');
 	});
@@ -87,7 +88,9 @@ describe('buildMaskedLlmUserPayload', () => {
 		expect(payload.message).toContain('2900 GBP');
 		expect(payload.message).toContain(PII_PLACEHOLDERS.phone);
 		expect(payload.message).toContain(PII_PLACEHOLDERS.email);
-		expect(payload.message).toContain(PII_PLACEHOLDERS.patient);
+		// Ad artık token'a çevriliyor; değişmeyen kural gövdede gerçek adın GEÇMEMESİ
+		// (yukarıda `not.toContain('Sandra')` ile zaten kanıtlanıyor).
+		expect(payload.message).toContain('KISI_1');
 	});
 });
 
@@ -123,5 +126,47 @@ describe('masking does not break heuristic amount/date extraction', () => {
 		expect(drafts[0]?.amount).toBe(80000);
 		expect(drafts[0]?.currency).toBe('EUR');
 		expect(drafts[0]?.kind).toBe('expense');
+	});
+});
+
+describe('tokenizePatientNames (2026-08-23 — KISI_n eşleştirmesi)', () => {
+	const c = (id: string, name: string) =>
+		({ id, display_name: name }) as unknown as Parameters<typeof tokenizePatientNames>[1][number];
+
+	it('mesajda geçen kişiyi token ile eşler, geçmeyeni GÖNDERMEZ', () => {
+		const { message, hints } = tokenizePatientNames('Jack Hogsden 3530 gbp ödeme aldı', [
+			c('11111111-1111-4111-8111-111111111111', 'Jack Hogsden'),
+			c('22222222-2222-4222-8222-222222222222', 'Sharon Foxworthy')
+		]);
+		expect(message).toBe('KISI_1 3530 gbp ödeme aldı');
+		// Mesajda adı geçmeyen kişi listeye girmez — eskiden ilk 40 körlemesine gidiyordu
+		// ve model için saf gürültüydü.
+		expect(hints).toEqual([{ token: 'KISI_1', patient_ref: '11111111-1111-4111-8111-111111111111' }]);
+	});
+
+	it('aynı ada sahip iki kişi varsa token ÜRETMEZ — tahmin edilen kişi pahalıdır', () => {
+		const { message, hints } = tokenizePatientNames('Ali Yılmaz 500 gbp ödedi', [
+			c('11111111-1111-4111-8111-111111111111', 'Ali Yılmaz'),
+			c('22222222-2222-4222-8222-222222222222', 'Ali Yılmaz')
+		]);
+		expect(message).toBe('[HASTA] 500 gbp ödedi');
+		expect(hints).toHaveLength(0);
+	});
+
+	it('uzun ad önce değiştirilir — kısa ad uzunun içini bozmaz', () => {
+		const { message } = tokenizePatientNames('Ali Veli ve Ali geldi', [
+			c('11111111-1111-4111-8111-111111111111', 'Ali'),
+			c('22222222-2222-4222-8222-222222222222', 'Ali Veli')
+		]);
+		expect(message).toContain('KISI_1');
+		expect(message).not.toContain('Ali Veli');
+	});
+
+	it('gerçek isim hiçbir koşulda çıktıya girmez', () => {
+		const { message, hints } = tokenizePatientNames('Sharon Foxworthy 3.907 Gbp alındı', [
+			c('33333333-3333-4333-8333-333333333333', 'Sharon Foxworthy')
+		]);
+		expect(message).not.toMatch(/Sharon|Foxworthy/i);
+		expect(JSON.stringify(hints)).not.toMatch(/Sharon|Foxworthy/i);
 	});
 });

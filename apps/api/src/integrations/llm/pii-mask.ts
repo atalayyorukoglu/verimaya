@@ -16,6 +16,16 @@ export const PII_PLACEHOLDERS = {
 } as const;
 
 export type MaskedLlmPatientHint = {
+	/**
+	 * Mesajdaki `KISI_1`, `KISI_2`… token'ı. **Bu alan olmadan liste işe yaramaz:**
+	 * eskiden yalnız `patient_ref` gönderiliyordu ve mesajdaki isimler tek tip `[HASTA]`
+	 * ile maskeleniyordu — model hangi UUID'nin hangi `[HASTA]` olduğunu bilemiyordu,
+	 * dolayısıyla `contact_id` hiçbir zaman doğru dolamıyordu. (2026-08-23 ölçümü:
+	 * liste büyüdükçe çıktı kalitesi de düşüyordu, çünkü liste saf gürültüydü.)
+	 *
+	 * Desen AI-11a'daki `maya-contact-match.ts`'ten alındı; isim yine dışarı çıkmıyor.
+	 */
+	token: string;
 	/** Opaque UUID — same as Patient.id; never a display name. */
 	patient_ref: string;
 };
@@ -81,6 +91,64 @@ export function maskMessagePii(message: string): string {
 }
 
 /** Replace known patient display names in the message with [HASTA]. */
+/**
+ * Mesajdaki kişi adlarını `KISI_n` token'ına çevirir ve yalnız **mesajda geçen**
+ * kişiler için token ↔ UUID eşlemesi üretir.
+ *
+ * Üç kural:
+ * 1. **Yalnız geçenler gönderilir.** Eskiden ilk 40 kişi körlemesine gönderiliyordu;
+ *    mesajda adı geçmeyen kişi modele hiçbir şey katmıyor, sadece bağlamı şişiriyor.
+ * 2. **Belirsizse token üretilmez.** Aynı ad birden çok kişiye uyuyorsa o ad düz
+ *    `[HASTA]` olur — AI-02/AI-11a ile aynı ilke: tahmin edilen kişi, cevapsızlıktan
+ *    pahalıdır (yanlış hastanın dosyasına para yazılır).
+ * 3. **İsim dışarı çıkmaz.** Model yalnız token görür.
+ *
+ * Uzun adlar önce değiştirilir ki "Ali" kısa adı "Ali Veli"nin içini bozmasın.
+ */
+export function tokenizePatientNames(
+	message: string,
+	patients: Contact[]
+): { message: string; hints: MaskedLlmPatientHint[] } {
+	const named = patients
+		.map((p) => ({ id: p.id, name: (p.display_name ?? '').trim() }))
+		.filter((p) => p.name.length >= 3)
+		.sort((a, b) => b.name.length - a.name.length);
+
+	// Aynı görünen ada sahip kişi sayısı — belirsizlik kontrolü.
+	const countByName = new Map<string, number>();
+	for (const p of named) {
+		const key = p.name.toLocaleLowerCase('tr');
+		countByName.set(key, (countByName.get(key) ?? 0) + 1);
+	}
+
+	let out = message;
+	const hints: MaskedLlmPatientHint[] = [];
+	const seen = new Set<string>();
+
+	for (const p of named) {
+		const key = p.name.toLocaleLowerCase('tr');
+		const pattern = new RegExp(escapeRegExp(p.name), 'gi');
+		if (!pattern.test(out)) continue;
+		pattern.lastIndex = 0;
+
+		if ((countByName.get(key) ?? 0) > 1) {
+			// Belirsiz: token yok, düz yer tutucu.
+			out = out.replace(pattern, PII_PLACEHOLDERS.patient);
+			continue;
+		}
+		if (seen.has(key)) continue;
+		seen.add(key);
+
+		const token = `KISI_${hints.length + 1}`;
+		out = out.replace(pattern, token);
+		hints.push({ token, patient_ref: p.id });
+		if (hints.length >= 20) break;
+	}
+
+	return { message: out, hints };
+}
+
+/** Geriye dönük ad: yalnız maskeler, token üretmez (eski çağıranlar ve testler için). */
 export function maskPatientNamesInMessage(message: string, patients: Contact[]): string {
 	let out = message;
 	const names = patients
@@ -94,19 +162,15 @@ export function maskPatientNamesInMessage(message: string, patients: Contact[]):
 	return out;
 }
 
-export function toOpaquePatientHints(patients: Contact[]): MaskedLlmPatientHint[] {
-	return patients.slice(0, 40).map((p) => ({ patient_ref: p.id }));
-}
-
 /**
  * Single choke point: build the user JSON for chat/completions.
  * Call only from the OpenAI-compatible HTTP path — never from the heuristic client.
  */
 export function buildMaskedLlmUserPayload(ctx: LlmParseContext): MaskedLlmUserPayload {
-	const withoutNames = maskPatientNamesInMessage(ctx.message, ctx.patients);
+	const { message, hints } = tokenizePatientNames(ctx.message, ctx.patients);
 	return {
-		message: maskMessagePii(withoutNames),
-		patients: toOpaquePatientHints(ctx.patients)
+		message: maskMessagePii(message),
+		patients: hints
 	};
 }
 

@@ -228,6 +228,37 @@ yine bir taslak görüyor.
 > **eşleştirilmiş** olarak gönderiliyor. WhatsApp çıkarım yolu bu desene geçirilmeli — o
 > zaman `contact_id` de doğru dolabilir. **Boyut: S–M.**
 
+### KISI_n eşleştirmesi + model boyutu — kontrollü ölçüm
+
+`contact_id` doldurulabilsin diye maskeleme `KISI_n` token eşleşmesine çevrildi
+(AI-11a deseni). **Ama önce kötüleştirdi** — aynı liste ve aynı 40 mesajla A/B:
+
+| Maskeleme | `mistral-small` | `mistral-medium` |
+|---|---|---|
+| `[HASTA]` (eski) | 36/40 | 39/40 |
+| `KISI_n` (yeni) | **30/40** | **39/40** |
+
+**Okunuş:** token eşleştirmesi küçük modele ek bilişsel yük bindiriyor ve model taslak
+üretmeyi bırakıyor. Büyük modelde bu yük **tamamen kayboluyor.** Yani tasarım doğru,
+kısıt modelin boyutuydu — ölçmeden karar verilseydi doğru tasarım yanlış sebeple geri
+alınacaktı.
+
+### Nihai ölçüm — `mistral-medium-latest`, 40 gerçek mesaj
+
+| | REGEX | LLM |
+|---|---|---|
+| Taslak üretti | 40/40 | 38/40 (%95) |
+| Para birimi doğru | 25/40 (%63) | **38/40 (%95)** |
+| Karşı taraf buldu | 3/40 (%8) | **24/40 (%60)** |
+
+40 mesaj **0,0124 USD**. Mesaj başına ~0,0003 USD — günde 200 mesajlık bir acente için
+**aylık ~2 USD**.
+
+> **Model seçimi kararı:** `mistral-small` yetmiyor (para birimi %55–78 arası savruluyor,
+> token eşleştirmesini kaldıramıyor). `mistral-medium` %95'e çıkıyor ve maliyet yine
+> önemsiz. Küçük modelle "idare etmek" burada yanlış ekonomi — kazanılan kuruş, düzeltme
+> emeğiyle geri ödeniyor.
+
 **Okunuş:** LLM yazılı para birimini ("euro", "pound") ve yönü ("alındı"/"ödendi") belirgin
 biçimde daha iyi çözüyor. Ama **her vakada üstün değil** — çok satırlı, birden çok tutar
 içeren dökümlerde yanılabiliyor. Yani LLM regex'i "bitirmiyor"; yedek yol değerini koruyor.

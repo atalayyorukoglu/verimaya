@@ -91,7 +91,12 @@ export function buildWhatsappExtractionSystemPrompt(
 		`- occurred_on: date in YYYY-MM-DD. If the message states no date, use TODAY = ${today}. NEVER null.`,
 		'',
 		'OPTIONAL fields: category, subcategory, payment_method, description, contact_id, contact_display_name, contact_label.',
-		'- contact_id: ONLY a contact_ref UUID copied from the provided list, or null. Never invent one.',
+		'- contact_id: the patient_ref UUID whose token appears in the message, or null.',
+		'  The message uses tokens like KISI_1, KISI_2 in place of real names, and "patients"',
+		'  pairs each token with its patient_ref. If the message contains KISI_2 and that person',
+		'  is the counterparty, set contact_id to the patient_ref paired with KISI_2.',
+		'  If no token appears, or the counterparty is not one of them, set contact_id to null.',
+		'  Never invent a UUID and never put a token into a text field.',
 		'- contact_label: name of the COUNTERPARTY — who received or paid the money.',
 		'  It MUST be a name that literally appears in this message. If the message only says',
 		'  "kliniğe"/"otele" without naming which one, set contact_label to null. NEVER copy a name',
@@ -200,7 +205,9 @@ function parseMayaToolCallPayload(raw: unknown): MayaToolCall | null {
  * yalnız serbest metin alanları temizlenir. Alan tamamen yer tutucudan ibaretse null olur.
  */
 function stripPlaceholders(records: TransactionDraft[]): TransactionDraft[] {
-	const placeholder = /\[(TELEFON|EPOSTA|TCKN|IBAN|KART|HASTA)\]/g;
+	// `[HASTA]` gibi yer tutucular ve `KISI_n` token'ları serbest metne sızmamalı;
+	// kişinin adı ekrana `contact_id`'den çözülerek basılır.
+	const placeholder = /\[(TELEFON|EPOSTA|TCKN|IBAN|KART|HASTA)\]|\bKISI_\d+\b/g;
 	const clean = (value: string | null | undefined): string | null => {
 		if (!value) return null;
 		const stripped = value.replace(placeholder, '').replace(/\s{2,}/g, ' ').trim();
