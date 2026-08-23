@@ -72,7 +72,7 @@ describe('IDEM-01: every mutating endpoint declares an idempotency policy', () =
 	});
 
 	it('the reflection walk actually finds handlers (guards the other assertions against passing vacuously)', () => {
-		expect(handlers.length).toBe(115);
+		expect(handlers.length).toBe(122);
 	});
 
 	it('every mutating handler has a policy — enforced, or exempt with a non-empty reason', () => {
@@ -114,6 +114,9 @@ describe('IDEM-01: every mutating endpoint declares an idempotency policy', () =
 				'OperationAlertsController.create',
 				'OperationAlertsController.confirm',
 				'OperationAlertsController.remove',
+				'IncidentsController.create',
+				'IncidentsController.resolve',
+				'IncidentsController.remove',
 				'RecordSuggestionsController.approve',
 				'RecordSuggestionsController.reject',
 				'IncentivesController.create',
@@ -132,6 +135,7 @@ describe('IDEM-01: every mutating endpoint declares an idempotency policy', () =
 				'SettingsController.createFinanceCategory',
 				'SettingsController.createContactType',
 				'SettingsController.createContactTitle',
+				'SettingsController.createIncidentType',
 				'SettingsController.createOrganization',
 				'SettingsController.createAppointmentType',
 				'ImportExportController.contactsCommit',
