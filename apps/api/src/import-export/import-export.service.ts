@@ -48,6 +48,7 @@ import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { CryptoService } from '../common/crypto.service';
 import {
 	appointments,
+	contactTitles,
 	contactTypes,
 	contacts,
 	externalIds,
@@ -202,6 +203,7 @@ export class ImportExportService {
 				.select({
 					id: contacts.id,
 					contactTypeName: contacts.contactTypeName,
+					titleName: contacts.titleName,
 					firstName: contacts.firstName,
 					lastName: contacts.lastName,
 					phone: contacts.phone,
@@ -247,6 +249,7 @@ export class ImportExportService {
 						extByInternal.get(r.id) ?? '',
 						r.id,
 						r.contactTypeName,
+						r.titleName ?? '',
 						r.firstName ?? '',
 						r.lastName ?? '',
 						r.phone ?? '',
@@ -331,12 +334,15 @@ export class ImportExportService {
 			}
 
 			const typeName = await this.requireContactTypeName(db, row.fields.contact_type_id);
+			const titleName = await this.resolveTitleName(db, row.fields.title_id ?? null);
 			const firstName = row.fields.first_name.trim();
 			const lastName = row.fields.last_name?.trim() || null;
 			const displayName = deriveDisplayName(firstName, lastName);
 			const values = {
 				contactTypeId: row.fields.contact_type_id,
 				contactTypeName: typeName,
+				titleId: row.fields.title_id ?? null,
+				titleName,
 				firstName,
 				lastName,
 				displayName,
@@ -530,6 +536,12 @@ export class ImportExportService {
 			.where(eq(contactTypes.tenantId, tenantId));
 		const typeByName = new Map(types.map((t) => [t.name.trim().toLowerCase(), t]));
 
+		const titles = await db
+			.select({ id: contactTitles.id, name: contactTitles.name })
+			.from(contactTitles)
+			.where(eq(contactTitles.tenantId, tenantId));
+		const titleByName = new Map(titles.map((t) => [t.name.trim().toLowerCase(), t]));
+
 		const orgs = await db
 			.select({ id: organizations.id, name: organizations.name })
 			.from(organizations)
@@ -544,6 +556,7 @@ export class ImportExportService {
 				firstName: contacts.firstName,
 				lastName: contacts.lastName,
 				contactTypeId: contacts.contactTypeId,
+				titleId: contacts.titleId,
 				organizationId: contacts.organizationId,
 				status: contacts.status,
 				source: contacts.source,
@@ -600,6 +613,11 @@ export class ImportExportService {
 			if (!typeRaw) errors.push('contact_type is required');
 			else if (!type) errors.push(`unknown contact_type: ${typeRaw}`);
 
+			/** Ünvan opsiyonel — boş bırakılabilir, verilmişse tenant sözlüğünde bulunmalı. */
+			const titleRaw = (cells.title ?? '').trim();
+			const title = titleRaw ? titleByName.get(titleRaw.toLowerCase()) : undefined;
+			if (titleRaw && !title) errors.push(`unknown title: ${titleRaw}`);
+
 			let organizationId: string | null = null;
 			const orgRaw = (cells.organization ?? '').trim();
 			if (orgRaw) {
@@ -642,6 +660,7 @@ export class ImportExportService {
 
 			const fieldsCandidate = {
 				contact_type_id: type?.id ?? '00000000-0000-0000-0000-000000000000',
+				title_id: title?.id ?? null,
 				first_name: firstName || 'x',
 				last_name: lastName,
 				phone: phoneRaw,
@@ -691,6 +710,7 @@ export class ImportExportService {
 					match.firstName === fields.first_name &&
 					(match.lastName ?? null) === (fields.last_name ?? null) &&
 					match.contactTypeId === fields.contact_type_id &&
+					(match.titleId ?? null) === (fields.title_id ?? null) &&
 					(match.phone ?? null) === (fields.phone ?? null) &&
 					(match.email ?? null) === (fields.email ?? null) &&
 					(match.notes ?? null) === (fields.notes ?? null) &&
@@ -747,6 +767,25 @@ export class ImportExportService {
 				error: {
 					code: 'invalid_contact_type',
 					message: 'Contact type not found'
+				}
+			});
+		}
+		return row.name;
+	}
+
+	/** Ünvan opsiyonel — `null` girildiyse ünvansız kalır; girildiyse tenant sözlüğünde bulunmalı. */
+	private async resolveTitleName(db: TenantDb, titleId: string | null): Promise<string | null> {
+		if (!titleId) return null;
+		const [row] = await db
+			.select({ name: contactTitles.name })
+			.from(contactTitles)
+			.where(eq(contactTitles.id, titleId))
+			.limit(1);
+		if (!row) {
+			throw new BadRequestException({
+				error: {
+					code: 'invalid_contact_title',
+					message: 'Contact title not found'
 				}
 			});
 		}

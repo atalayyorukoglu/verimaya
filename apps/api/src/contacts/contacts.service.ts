@@ -28,6 +28,7 @@ import { assertUploadMimeMatchesBytes } from './file-mime';
 import {
 	appointments,
 	caseNotes,
+	contactTitles,
 	contactTypes,
 	contacts,
 	files,
@@ -95,6 +96,7 @@ export class ContactsService {
 			const baseFilters = [isNull(contacts.deletedAt)];
 			if (searchCond) baseFilters.push(searchCond);
 			if (params.type_id) baseFilters.push(eq(contacts.contactTypeId, params.type_id));
+			if (params.title_id) baseFilters.push(eq(contacts.titleId, params.title_id));
 
 			const [totalRow] = await db
 				.select({ n: count() })
@@ -767,6 +769,7 @@ export class ContactsService {
 
 	async createWithDb(db: TenantDb, tenantId: string, input: ContactCreate) {
 		const typeName = await this.requireContactTypeName(db, input.contact_type_id);
+		const titleName = await this.resolveTitleName(db, input.title_id ?? null);
 		const firstName = input.first_name.trim();
 		const lastName = input.last_name?.trim() || null;
 		const displayName = deriveDisplayName(firstName, lastName);
@@ -783,6 +786,8 @@ export class ContactsService {
 					tenantId,
 					contactTypeId: input.contact_type_id,
 					contactTypeName: typeName,
+					titleId: input.title_id ?? null,
+					titleName,
 					firstName,
 					lastName,
 					displayName,
@@ -827,6 +832,12 @@ export class ContactsService {
 				? await this.requireContactTypeName(db, contactTypeId)
 				: existing.contactTypeName;
 
+		const titleId = input.title_id !== undefined ? input.title_id : existing.titleId;
+		const titleName =
+			input.title_id !== undefined
+				? await this.resolveTitleName(db, input.title_id)
+				: existing.titleName;
+
 		const firstName =
 			input.first_name !== undefined
 				? input.first_name.trim()
@@ -848,6 +859,8 @@ export class ContactsService {
 				.set({
 					contactTypeId,
 					contactTypeName,
+					titleId,
+					titleName,
 					firstName,
 					lastName,
 					displayName,
@@ -992,6 +1005,8 @@ export class ContactsService {
 		let organizationId = keep.organizationId;
 		let referredByContactId = keep.referredByContactId;
 		let isInternal = keep.isInternal;
+		let titleId = keep.titleId;
+		let titleName = keep.titleName;
 		for (const src of sources) {
 			if (!phone && src.phone) phone = src.phone;
 			if (!email && src.email) email = src.email;
@@ -1002,6 +1017,10 @@ export class ContactsService {
 			if (!status && src.status) status = src.status;
 			if (!assignedUserId && src.assignedUserId) assignedUserId = src.assignedUserId;
 			if (!organizationId && src.organizationId) organizationId = src.organizationId;
+			if (!titleId && src.titleId) {
+				titleId = src.titleId;
+				titleName = src.titleName;
+			}
 			if (!referredByContactId && src.referredByContactId) {
 				referredByContactId = src.referredByContactId;
 			}
@@ -1022,6 +1041,8 @@ export class ContactsService {
 				organizationId,
 				referredByContactId,
 				isInternal,
+				titleId,
+				titleName,
 				updatedAt: new Date()
 			})
 			.where(eq(contacts.id, keep_id))
@@ -1148,5 +1169,27 @@ export class ContactsService {
 			});
 		}
 		return type.name;
+	}
+
+	/**
+	 * Ünvan opsiyonel — `null`/`undefined` girildiyse ünvansız kalır. Verilmişse
+	 * kimliği tenant sözlüğünde bulunmalı (RLS zaten tenant'a kısıtlar).
+	 */
+	private async resolveTitleName(
+		db: TenantDb,
+		titleId: string | null | undefined
+	): Promise<string | null> {
+		if (!titleId) return null;
+		const [title] = await db
+			.select({ name: contactTitles.name })
+			.from(contactTitles)
+			.where(eq(contactTitles.id, titleId))
+			.limit(1);
+		if (!title) {
+			throw new NotFoundException({
+				error: { code: 'not_found', message: 'Contact title not found' }
+			});
+		}
+		return title.name;
 	}
 }
