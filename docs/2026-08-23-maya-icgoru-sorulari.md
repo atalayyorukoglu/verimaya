@@ -375,8 +375,8 @@ Kapsaması da yanlış olur — Maya *sorulana* cevap veren yüzey. Bu sorular *
 | Adım | İş | Boyut | Durum |
 |---|---|---|---|
 | 1 | **Referans değeri raporu** — "X kaç hasta getirdi, toplam ne kazandırdı, koordinatörü kim". Örnek 1'in tam karşılığı, yeni alan gerektirmiyor | **M** | hazır |
-| 2 | **Ünvan sözlüğü** — `contact_titles` + `contacts.title_id`. Hekim sorusunu da çözer | **S–M** | ✅ karar verildi |
-| 3 | **Randevuya hekim alanı** — `appointments.doctor_contact_id` (2'ye bağlı) | **M** | ✅ karar verildi |
+| 2 | **Ünvan sözlüğü** — `contact_titles` + `contacts.title_id` | **S–M** | ✅ **2026-08-23'te bitti** (migration `0064`) |
+| 3 | **Randevuya hekim alanı** — `appointments.doctor_contact_id` + raporda `by_doctor` / `by_doctor_type` | **M** | ✅ **2026-08-23'te bitti** (migration `0065`) |
 | 4 | **Karşılaştırma katmanı** — her metrik için "önceki dönem" ve "tenant ortalaması" | **M** | AI-05'in çekirdeği |
 | 5 | **Eşik tablosu** — hangi değişim söylenmeye değer, minimum kayıt sayısı | **S** | 4'e bağlı |
 | 6 | **Olay kaydı v1** — tek tablo, yalnız klinik departmanı ile başla | **M** | 5. bölüm |
@@ -388,6 +388,19 @@ olmadan da işe yarar. Oradan başlamak, AI-05'in tamamını beklemekten iyi.
 **2 ve 3 birlikte gider** — ünvan olmadan hekim alanı anlamsız, hekim olmadan ünvanın en net
 kullanım yeri eksik.
 
+> **Kapananların notu (2026-08-23).** Ünvan ve hekim alanı canlıda. İki tuzağa bilinçli
+> olarak düşülmedi ve ikisi de aynı cinsten — **tenant'ın yeniden adlandırabildiği bir ada
+> kod bağlamak:**
+> 1. Hekim seçici, ünvanı "Hekim" olanları **filtrelemiyor**. Tenant "Hekim"i "Doktor" yaparsa
+>    filtre sessizce boşalırdı. Bunun yerine tüm kişiler listeleniyor, ünvan satırda etiket
+>    olarak yazıyor ve ünvanlılar üste sıralanıyor.
+> 2. `'RPT'` dizgisi **sunucuya gömülmedi**. RPT de tenant'ın yönettiği bir `appointment_type`
+>    adı. Sunucu ham hekim × tip çapraz sayımı (`by_doctor_type`) döndürüyor; oran istemcide
+>    seçilen tipe göre hesaplanıyor.
+>
+> Aynı desen ileride de geçerli: `contact_types`/`appointment_types`/`contact_titles`
+> adlarından herhangi biri koda gömülürse, o tenant adı değiştirdiği gün özellik sessizce ölür.
+>
 > **Bağlayıcı iki kural (ünvan kararının şartı, AGENTS.md'ye işlenecek):**
 > 1. Ünvan hiçbir izin kontrolünde okunmaz — yetki modeli `user` + `member` rolüdür, tektir.
 > 2. Ünvan yalnız `contacts`'te yaşar; `user` tablosuna ünvan alanı eklenmez.
