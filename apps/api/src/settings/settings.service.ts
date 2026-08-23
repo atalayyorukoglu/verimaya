@@ -93,6 +93,16 @@ const WHATSAPP_AI_DISCLOSURE_KEY = 'whatsapp_ai_disclosure';
 const AI_DISCLOSURE_AUDIT_LABEL = 'whatsapp_ai_disclosure';
 const WHATSAPP_AI_PROMPT_KEY = 'whatsapp_ai_prompt';
 const KNOWLEDGE_KEY = 'knowledge';
+/**
+ * Hangi randevu tipi "operasyon tutmadı, revizyon gerekti" anlamına gelir.
+ * Değer bir **ad**dır çünkü `appointments.appointment_type` denormalize metindir —
+ * sözlükte id olsa da randevu satırı adı taşır.
+ *
+ * **Neden ayar, neden koda gömülü değil:** 'RPT' tenant'ın yeniden adlandırabildiği bir
+ * sözlük değeri. Koda gömülürse tenant tipi "Revizyon" yaptığı gün kalite bulguları
+ * **sessizce** üretilmez olur ve kimse sebebini bilmez.
+ */
+const REVISION_APPOINTMENT_TYPE_KEY = 'revision_appointment_type';
 const KNOWLEDGE_AUDIT_LABEL = 'knowledge';
 const OPERATION_ALERT_AUDIT_LABEL = 'operation_alert_thresholds';
 const AI_PROMPT_AUDIT_LABEL = 'whatsapp_ai_prompt';
@@ -1329,6 +1339,39 @@ export class SettingsService {
 		});
 
 		return defaultWhatsappAiPrompt();
+	}
+
+	/**
+	 * Revizyon sayılan randevu tipinin adı. Ayarlanmamışsa `null` döner — çağıran taraf
+	 * 'RPT' varsayılanına düşebilir ama **bulamazsa susmak yerine bildirmelidir**.
+	 */
+	async getRevisionAppointmentType(tenantId: string): Promise<string | null> {
+		const raw = await this.getTenantSetting(tenantId, REVISION_APPOINTMENT_TYPE_KEY);
+		return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null;
+	}
+
+	async setRevisionAppointmentType(
+		tenantId: string,
+		value: string | null,
+		actor: AuditActor
+	): Promise<{ appointment_type: string | null }> {
+		const next = value?.trim() ?? '';
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			if (next.length === 0) {
+				await db
+					.delete(tenantSettings)
+					.where(
+						and(
+							eq(tenantSettings.tenantId, tenantId),
+							eq(tenantSettings.key, REVISION_APPOINTMENT_TYPE_KEY)
+						)
+					);
+			} else {
+				await this.setTenantSetting(tenantId, REVISION_APPOINTMENT_TYPE_KEY, next);
+			}
+			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', REVISION_APPOINTMENT_TYPE_KEY);
+		});
+		return { appointment_type: next.length > 0 ? next : null };
 	}
 
 	async getIncentiveDeadline(tenantId: string): Promise<IncentiveDeadlineSettings> {

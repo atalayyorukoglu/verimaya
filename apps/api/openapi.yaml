@@ -16373,8 +16373,35 @@ paths:
                         - kind
                         - items
                       additionalProperties: false
+                  notices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          enum:
+                            - revision_type_unset
+                        link:
+                          type: object
+                          properties:
+                            route:
+                              type: string
+                              minLength: 1
+                            params:
+                              type: object
+                              additionalProperties:
+                                type: string
+                          required:
+                            - route
+                          additionalProperties: false
+                      required:
+                        - code
+                        - link
+                      additionalProperties: false
                 required:
                   - period
                   - previous_period
                   - groups
+                  - notices
                 additionalProperties: false

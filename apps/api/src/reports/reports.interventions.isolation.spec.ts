@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { InterventionsService } from './interventions.service';
+import { SettingsService } from '../settings/settings.service';
 import { ReportsService } from './reports.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
@@ -30,16 +31,6 @@ const databaseUrl =
 	process.env.DATABASE_URL_APP ??
 	process.env.DATABASE_URL ??
 	'postgresql://verimaya_app:verimaya@localhost:5433/verimaya';
-
-async function withTenantSession<T>(tenantId: string, fn: () => Promise<T>): Promise<T> {
-	const { sql } = getDb(databaseUrl);
-	await sql`select set_config('app.current_tenant_id', ${tenantId}, false)`;
-	try {
-		return await fn();
-	} finally {
-		await sql`select set_config('app.current_tenant_id', '', false)`;
-	}
-}
 
 const PERIOD = { from: '2026-08-01', to: '2026-08-10' };
 const CURRENT_AT = '2026-08-05T10:00:00Z';
@@ -76,7 +67,22 @@ describe('reports interventions (AI-05 v1)', () => {
 		const makeInterventions = () => {
 			const tenantContext = new TenantContextService({ client: db, sql } as unknown as never);
 			const reportsService = new ReportsService(tenantContext);
-			return new InterventionsService(tenantContext, reportsService);
+			// InterventionsService yalnız `getRevisionAppointmentType`'ı çağırıyor; o da
+			// tenant_settings okumasından ibaret (CryptoService'e dokunmuyor). Tam
+			// SettingsService kurmak yerine ihtiyaç duyulan tek yüzeyi veriyoruz —
+			// imza genişlerse bu satır derlemede kırılır, sessizce yanlış çalışmaz.
+			const settings: Pick<SettingsService, 'getRevisionAppointmentType'> = {
+				getRevisionAppointmentType: async (id: string) =>
+					new SettingsService(
+						tenantContext,
+						null as never
+					).getRevisionAppointmentType(id)
+			};
+			return new InterventionsService(
+				tenantContext,
+				reportsService,
+				settings as SettingsService
+			);
 		};
 
 		interventionsA = makeInterventions();

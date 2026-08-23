@@ -21,6 +21,7 @@ import {
 import { contacts, incidents, incidentTypes } from '../db/schema';
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
+import { SettingsService } from '../settings/settings.service';
 
 /** `part/total`; `total === 0` → `0` (aynı tanım `reports.service.ts`'teki `rate` ile). */
 function rate(part: number, total: number): number {
@@ -44,7 +45,8 @@ function rate(part: number, total: number): number {
 export class InterventionsService {
 	constructor(
 		private readonly tenantContext: TenantContextService,
-		private readonly reportsService: ReportsService
+		private readonly reportsService: ReportsService,
+		private readonly settings: SettingsService
 	) {}
 
 	async get(
@@ -55,8 +57,13 @@ export class InterventionsService {
 		const period = { from: params.from ?? null, to: params.to ?? null };
 		const previousWindow = previousReportPeriod(params.from, params.to);
 
+		// Revizyon sayılan randevu tipi tenant ayarından gelir; ayarlanmamışsa eski
+		// varsayılan 'RPT' denenir (geriye dönük uyum). İkisi de tutmazsa kalite bulguları
+		// üretilmez — ama bu SESSİZ olmaz, aşağıda `notices` ile bildirilir.
+		const revisionType = await this.settings.getRevisionAppointmentType(tenantId);
+
 		const [qualityDrop, revenueDrop, openIncident, referralValue] = await Promise.all([
-			this.buildQualityDrop(tenantId, params, previousWindow),
+			this.buildQualityDrop(tenantId, params, previousWindow, revisionType),
 			includeFinance ? this.buildRevenueDrop(tenantId, params, previousWindow) : [],
 			this.buildOpenIncidents(tenantId, params),
 			includeFinance ? this.buildReferralValue(tenantId, params) : []
@@ -71,7 +78,17 @@ export class InterventionsService {
 			] satisfies InterventionGroup[]
 		).filter((group) => group.items.length > 0);
 
-		return { period, previous_period: previousWindow, groups };
+		const notices: InterventionsReport['notices'] = [];
+		if (!revisionType && !qualityDrop.some((i) => i.metric === 'rpt_rate')) {
+			// Ayar boş ve 'RPT' varsayılanından da bulgu çıkmadıysa, kullanıcı eksik listeyi
+			// tam sanmasın: hangi tipin revizyon sayılacağı ayarlanmamış olabilir.
+			notices.push({
+				code: 'revision_type_unset',
+				link: { route: '/settings/appointment-types' }
+			});
+		}
+
+		return { period, previous_period: previousWindow, groups, notices };
 	}
 
 	/**
@@ -82,7 +99,8 @@ export class InterventionsService {
 	private async buildQualityDrop(
 		tenantId: string,
 		params: ReportPeriodParams,
-		previousWindow: { from: string; to: string } | null
+		previousWindow: { from: string; to: string } | null,
+		revisionType: string | null
 	): Promise<InterventionQualityDropItem[]> {
 		if (!previousWindow) return [];
 		const ops = await this.reportsService.appointmentMetrics(tenantId, {
@@ -102,7 +120,14 @@ export class InterventionsService {
 
 		// 'RPT' sunucuya gömülmez — tenant sözlüğünde bu ad yoksa (yeniden adlandırılmış/
 		// silinmişse) rpt_rate metriği bu dönem için hiç üretilmez, sessizce atlanır.
-		const hasRptType = ops.by_appointment_type.some((t) => t.appointment_type === 'RPT');
+		// Revizyon tipinin adı AYARDAN gelir; ayar boşsa eski varsayılan 'RPT' denenir.
+		// Ad koda gömülü değil — tenant tipini "Revizyon" diye adlandırdıysa ayara yazar ve
+		// bulgular çalışmaya devam eder. Bulunamazsa metrik üretilmez ve çağıran taraf
+		// bunu `notices` ile bildirir (sessiz eksilme yok).
+		const revisionName =
+			revisionType ??
+			(ops.by_appointment_type.some((t) => t.appointment_type === 'RPT') ? 'RPT' : null);
+		const hasRptType = revisionName !== null;
 
 		const prevDoctorById = new Map<string, ReportDoctorMetricsRow>();
 		for (const row of ops.previous.by_doctor) {
@@ -111,7 +136,7 @@ export class InterventionsService {
 		const rptCountByDoctor = (data: ReportAppointmentMetricsData) => {
 			const map = new Map<string, number>();
 			for (const row of data.by_doctor_type) {
-				if (row.doctor_contact_id && row.appointment_type === 'RPT') {
+				if (row.doctor_contact_id && row.appointment_type === revisionName) {
 					map.set(row.doctor_contact_id, (map.get(row.doctor_contact_id) ?? 0) + row.count);
 				}
 			}

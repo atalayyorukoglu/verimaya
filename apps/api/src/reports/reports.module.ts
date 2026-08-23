@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
+import { SettingsModule } from '../settings/settings.module';
 import { CommissionsModule } from '../commissions/commissions.module';
 import { AiAccuracyReportService } from './ai-accuracy-report.service';
 import { InterventionsService } from './interventions.service';
@@ -8,7 +9,7 @@ import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 
 @Module({
-	imports: [AuthModule, CommonModule, CommissionsModule],
+	imports: [AuthModule, CommonModule, CommissionsModule, SettingsModule],
 	controllers: [ReportsController],
 	// AI-03: AiAccuracyReportService only needs TenantContextService (global,
 	// TenantModule) — no WhatsappModule/RecordSuggestionsModule/MayaModule import;

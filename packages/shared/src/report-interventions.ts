@@ -152,6 +152,19 @@ export const interventionsReportSchema = z.object({
 	period: reportPeriodSchema,
 	/** `from`/`to` eksikse veya pencere hesaplanamıyorsa `null` — delta bulguları üretilmez. */
 	previous_period: reportPeriodSchema.nullable(),
-	groups: z.array(interventionGroupSchema)
+	groups: z.array(interventionGroupSchema),
+	/**
+	 * Üretilemeyen bulgu tipleri ve sebebi. **Sessiz eksilme yerine görünür eksilme:**
+	 * "revizyon sayılan randevu tipi ayarlanmamış" durumunda kalite bulguları hiç
+	 * üretilmez — bunu söylemeden atlamak, kullanıcının eksik listeyi tam sanmasına
+	 * yol açar (YAPIM-GUNLUGU § 14.3, sessiz açık yerine gürültülü hata).
+	 */
+	notices: z.array(
+		z.object({
+			code: z.enum(['revision_type_unset']),
+			/** Kullanıcının gidip düzeltebileceği yer. */
+			link: interventionLinkSchema
+		})
+	)
 });
 export type InterventionsReport = z.infer<typeof interventionsReportSchema>;
