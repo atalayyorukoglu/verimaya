@@ -20,6 +20,7 @@
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import Megaphone from '@lucide/svelte/icons/megaphone';
 	import Webhook from '@lucide/svelte/icons/webhook';
+	import ClipboardList from '@lucide/svelte/icons/clipboard-list';
 
 	type Card = {
 		href: string;
@@ -88,6 +89,12 @@
 					title: t('settings.nav.contactTitles.title'),
 					description: t('settings.nav.contactTitles.description'),
 					icon: IdCard
+				},
+				{
+					href: '/settings/incident-types',
+					title: t('settings.nav.incidentTypes.title'),
+					description: t('settings.nav.incidentTypes.description'),
+					icon: ClipboardList
 				},
 				{
 					href: '/settings/organizations',

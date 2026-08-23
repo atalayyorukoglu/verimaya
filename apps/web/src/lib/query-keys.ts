@@ -45,6 +45,10 @@ export function queryKeys(scope: QueryScope) {
 			all: () => k('operation-alerts'),
 			list: (params: Params = {}) => k('operation-alerts', params)
 		},
+		incidents: {
+			all: () => k('incidents'),
+			list: (params: Params = {}) => k('incidents', params)
+		},
 		recordUpdateSuggestions: {
 			all: () => k('record-suggestions'),
 			list: (params: Params = {}) => k('record-suggestions', params)
@@ -74,6 +78,7 @@ export function queryKeys(scope: QueryScope) {
 			appointmentTypes: () => k('settings', 'appointment-types'),
 			contactTypes: () => k('settings', 'contact-types'),
 			contactTitles: () => k('settings', 'contact-titles'),
+			incidentTypes: (params: Params = {}) => k('settings', 'incident-types', params),
 			organizations: () => k('settings', 'organizations'),
 			financeCategories: () => k('settings', 'finance-categories'),
 			aiDisclosure: () => k('settings', 'ai-disclosure'),

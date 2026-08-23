@@ -5,6 +5,7 @@ import type { InboundMessageStatus } from './inbound-message.js';
 import type { FeatureStatus } from './features.js';
 import type { AuditAction, AuditEntity } from './audit.js';
 import type { UserRole } from './user.js';
+import type { IncidentStatus } from './incident.js';
 
 export const contactStatusLabels: Record<ContactStatus, string> = {
 	scheduled: 'Randevu alındı',
@@ -21,6 +22,11 @@ export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
 	completed: 'Tamamlandı',
 	cancelled: 'İptal',
 	no_show: 'Gelmedi'
+};
+
+export const incidentStatusLabels: Record<IncidentStatus, string> = {
+	open: 'Açık',
+	resolved: 'Çözüldü'
 };
 
 export const transactionKindLabels: Record<TransactionKind, string> = {

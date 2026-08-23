@@ -2,7 +2,8 @@ import type {
 	ContactStatus,
 	AppointmentStatus,
 	TransactionStatus,
-	FeatureStatus
+	FeatureStatus,
+	IncidentStatus
 } from '@verimaya/shared';
 
 type Tone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger' | 'info';
@@ -46,6 +47,15 @@ export function transactionStatusTone(status: TransactionStatus): Tone {
 			return 'warning';
 		case 'unpaid':
 			return 'danger';
+	}
+}
+
+export function incidentStatusTone(status: IncidentStatus): Tone {
+	switch (status) {
+		case 'resolved':
+			return 'success';
+		case 'open':
+			return 'warning';
 	}
 }
 
