@@ -65,6 +65,11 @@ describe('import-export contacts (G-10)', () => {
 				returning id
 			`;
 			await tx`
+				insert into contact_titles (tenant_id, name, sort_order)
+				values (${tenantA}, 'Hekim', 0)
+				on conflict (tenant_id, name) do update set name = excluded.name
+			`;
+			await tx`
 				insert into contacts (
 					tenant_id, contact_type_id, contact_type_name, first_name, display_name, email
 				) values (
@@ -370,5 +375,76 @@ describe('import-export contacts (G-10)', () => {
 			`;
 		});
 		expect(rows.length).toBe(0);
+	});
+
+	it('imports a title by name, denormalizes it, and round-trips it on export', async () => {
+		const buf = await buildContactsXlsx([
+			{
+				external_id: 'ext-titled-1',
+				contact_type: 'Hasta',
+				title: 'Hekim',
+				first_name: 'Titled',
+				last_name: 'Contact',
+				email: 'titled@example.com'
+			}
+		]);
+
+		const dry = await service.contactsDryRun(tenantA, buf);
+		expect(dry.summary.error).toBe(0);
+		expect(dry.summary.create).toBe(1);
+
+		await service.contactsCommit(tenantA, dry.plan_token!, {
+			actorId: null,
+			actorDisplayName: 'Importer A'
+		});
+
+		const { sql } = getDb(databaseUrl);
+		const rows = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			return tx`
+				select title_name from contacts
+				where tenant_id = ${tenantA} and email = 'titled@example.com'
+			`;
+		});
+		expect(rows[0]?.title_name).toBe('Hekim');
+
+		const file = await service.contactsExport(tenantA);
+		const wb = new ExcelJS.Workbook();
+		await wb.xlsx.load(file.buffer);
+		const ws = wb.getWorksheet('Contacts')!;
+		const texts: string[] = [];
+		ws.eachRow((row) => {
+			row.eachCell((cell) => {
+				if (cell.value != null) texts.push(String(cell.value));
+			});
+		});
+		expect(texts.some((t) => t === 'Hekim')).toBe(true);
+	});
+
+	it('leaves title blank when omitted, and errors on an unknown title name', async () => {
+		const blank = await buildContactsXlsx([
+			{
+				external_id: 'ext-no-title',
+				contact_type: 'Hasta',
+				first_name: 'NoTitle',
+				email: 'no-title@example.com'
+			}
+		]);
+		const dryBlank = await service.contactsDryRun(tenantA, blank);
+		expect(dryBlank.summary.error).toBe(0);
+		expect(dryBlank.summary.create).toBe(1);
+
+		const unknown = await buildContactsXlsx([
+			{
+				external_id: 'ext-unknown-title',
+				contact_type: 'Hasta',
+				title: 'Uzaylı Ünvan',
+				first_name: 'Ghost',
+				email: 'ghost@example.com'
+			}
+		]);
+		const dryUnknown = await service.contactsDryRun(tenantA, unknown);
+		expect(dryUnknown.summary.error).toBe(1);
+		expect(dryUnknown.rows[0]?.errors.some((e) => e.includes('unknown title'))).toBe(true);
 	});
 });
