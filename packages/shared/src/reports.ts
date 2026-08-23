@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
 import { contactStatusSchema } from './contact.js';
+import { addCalendarDays, calendarDaysBetween } from './incentive-file.js';
 import { transactionKindSchema } from './transaction.js';
 
 export const reportPeriodParams = z.object({
@@ -9,11 +10,52 @@ export const reportPeriodParams = z.object({
 });
 export type ReportPeriodParams = z.infer<typeof reportPeriodParams>;
 
+/**
+ * `compare=previous` — dönem karşılaştırması (yalnız `summary` + `appointment-metrics`,
+ * docs/2026-08-23-maya-icgoru-sorulari.md § 6/7 adım 4). Diğer rapor uçları bu alanı
+ * hiç okumaz; `reportPeriodParams`'ı genişletmek yerine ayrı bir şema tutuyoruz ki
+ * onlar bu değişiklikten tamamen etkilenmesin.
+ */
+export const reportCompareParam = z.enum(['previous']);
+export type ReportCompareParam = z.infer<typeof reportCompareParam>;
+
+export const reportPeriodCompareParams = reportPeriodParams.extend({
+	compare: reportCompareParam.optional()
+});
+export type ReportPeriodCompareParams = z.infer<typeof reportPeriodCompareParams>;
+
 export const reportPeriodSchema = z.object({
 	from: isoDate.nullable(),
 	to: isoDate.nullable()
 });
 export type ReportPeriod = z.infer<typeof reportPeriodSchema>;
+
+/**
+ * "Önceki dönem" penceresi — dönem karşılaştırmasının çekirdek kuralı
+ * (docs/2026-08-23-maya-icgoru-sorulari.md § 6). `from`/`to` arasındaki gün sayısı kadar,
+ * `from`'un bir gün öncesinde biten bir pencere.
+ *
+ * Örnek: `2026-08-01..2026-08-31` (31 gün) → `2026-07-01..2026-07-31`.
+ * Örnek: `2026-08-10..2026-08-20` (11 gün) → `2026-07-30..2026-08-09`.
+ *
+ * Ay uzunluğu BİLİNÇLİ OLARAK eşitlenmez: Şubat 28 gün, Mart 31 gün olsa da kural sabit
+ * kalır — ay adına göre değil pencere uzunluğuna göre karşılaştırıyoruz. Sonradan "şubat
+ * neden kısa geldi" diye burayı "önceki ay" mantığına çevirmeyin, bu bilinçli bir tercih.
+ *
+ * `from`/`to` eksikse (sınırsız dönem) "öncesi" tanımsızdır → `null`. Çağıran `compare`'i
+ * bu durumda sessizce yok sayar, hata vermez.
+ */
+export function previousReportPeriod(
+	from: string | undefined,
+	to: string | undefined
+): { from: string; to: string } | null {
+	if (!from || !to) return null;
+	const dayCount = calendarDaysBetween(from, to) + 1;
+	if (dayCount <= 0) return null;
+	const prevTo = addCalendarDays(from, -1);
+	const prevFrom = addCalendarDays(prevTo, -(dayCount - 1));
+	return { from: prevFrom, to: prevTo };
+}
 
 export const reportFxMissingByCurrencySchema = z.object({
 	currency: supportedCurrencySchema,
@@ -22,7 +64,7 @@ export const reportFxMissingByCurrencySchema = z.object({
 });
 export type ReportFxMissingByCurrency = z.infer<typeof reportFxMissingByCurrencySchema>;
 
-export const reportSummarySchema = z.object({
+export const reportSummaryDataSchema = z.object({
 	period: reportPeriodSchema,
 	income_base: moneyMinor,
 	expense_base: moneyMinor,
@@ -38,6 +80,18 @@ export const reportSummarySchema = z.object({
 	 * Cross-currency value weights are not comparable without FX.
 	 */
 	coverage_ratio: z.number().min(0).max(1)
+});
+export type ReportSummaryData = z.infer<typeof reportSummaryDataSchema>;
+
+/**
+ * `compare=previous` — `previous` aynı şekli taşır (bkz. `reportSummaryDataSchema`), önceki
+ * dönemin ham rakamlarıyla. Sunucu yüzde/fark üretmez; istemci iki bloğu da elinde tutup
+ * deltayı kendi hesaplar (docs/2026-08-23-maya-icgoru-sorulari.md § 6). `compare`
+ * verilmediğinde veya `from`/`to` eksikken bu alan tamamen YOK (undefined) — bugünkü
+ * cevapla birebir aynı kalır, geriye dönük kırıcı değişiklik değildir.
+ */
+export const reportSummarySchema = reportSummaryDataSchema.extend({
+	previous: reportSummaryDataSchema.optional()
 });
 export type ReportSummary = z.infer<typeof reportSummarySchema>;
 
@@ -209,7 +263,7 @@ export const reportAppointmentMonthRowSchema = z.object({
 });
 export type ReportAppointmentMonthRow = z.infer<typeof reportAppointmentMonthRowSchema>;
 
-export const reportAppointmentMetricsSchema = z.object({
+export const reportAppointmentMetricsDataSchema = z.object({
 	period: reportPeriodSchema,
 	total: z.number().int().nonnegative(),
 	/** completed ÷ total */
@@ -223,6 +277,18 @@ export const reportAppointmentMetricsSchema = z.object({
 	by_doctor: z.array(reportDoctorMetricsRowSchema),
 	by_doctor_type: z.array(reportDoctorTypeCrossRowSchema),
 	monthly: z.array(reportAppointmentMonthRowSchema)
+});
+export type ReportAppointmentMetricsData = z.infer<typeof reportAppointmentMetricsDataSchema>;
+
+/**
+ * `compare=previous` — `previous` aynı şekli taşır, önceki dönemin ham rakamlarıyla
+ * (`by_doctor`/`by_clinic` dahil — bunlar zaten TAM agregat, sayfalanmış kısmi liste değil,
+ * dolayısıyla istemci "tenant ortalaması" gibi türetilmiş değerleri bu tam kümeden kendi
+ * hesaplayabilir; ayrı bir "average" alanı burada bilinçli olarak eklenmedi). `compare`
+ * verilmediğinde veya `from`/`to` eksikken bu alan tamamen YOK (undefined).
+ */
+export const reportAppointmentMetricsSchema = reportAppointmentMetricsDataSchema.extend({
+	previous: reportAppointmentMetricsDataSchema.optional()
 });
 export type ReportAppointmentMetrics = z.infer<typeof reportAppointmentMetricsSchema>;
 
@@ -503,6 +569,8 @@ export function reportUrl(
 		to?: string | null;
 		category?: string | null;
 		contact_type?: string | null;
+		/** `summary` / `appointment-metrics` only; other paths ignore it server-side. */
+		compare?: ReportCompareParam | null;
 	}
 ): string {
 	const url = new URL(`/v1/reports/${path}`, 'http://local');
@@ -510,5 +578,6 @@ export function reportUrl(
 	if (params?.to) url.searchParams.set('to', params.to);
 	if (params?.category) url.searchParams.set('category', params.category);
 	if (params?.contact_type) url.searchParams.set('contact_type', params.contact_type);
+	if (params?.compare) url.searchParams.set('compare', params.compare);
 	return `${url.pathname}${url.search}`;
 }

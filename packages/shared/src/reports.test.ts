@@ -3,12 +3,14 @@ import {
 	REPORT_TRANSACTION_DUPLICATES_ITEMS_LIMIT,
 	cohortMonthDiff,
 	maturationBucket,
+	previousReportPeriod,
 	reportAppointmentMetricsSchema,
 	reportBalanceRowSchema,
 	reportBalancesSchema,
 	reportCohortsSchema,
 	reportConsistencySchema,
 	reportContactDistributionSchema,
+	reportPeriodCompareParams,
 	reportSummarySchema,
 	reportTransactionDuplicatesParams,
 	reportTransactionDuplicatesSchema
@@ -30,6 +32,86 @@ describe('reportSummarySchema', () => {
 		expect(parsed.pending_base).toBe(2500);
 		expect(parsed.fx_missing_count).toBe(1);
 		expect(parsed.coverage_ratio).toBe(0.5);
+	});
+});
+
+describe('reportSummarySchema — previous (dönem karşılaştırması)', () => {
+	const base = {
+		period: { from: '2026-08-01', to: '2026-08-31' },
+		income_base: 10000,
+		expense_base: 3000,
+		net_base: 7000,
+		pending_base: 2500,
+		transaction_count: 2,
+		fx_missing_count: 0,
+		fx_missing_amount_by_currency: [],
+		coverage_ratio: 1
+	};
+
+	it('parses without `previous` — bugünkü şekliyle aynı (regresyon)', () => {
+		const parsed = reportSummarySchema.parse(base);
+		expect(parsed.previous).toBeUndefined();
+		expect('previous' in parsed).toBe(false);
+	});
+
+	it('accepts `previous` in the same shape', () => {
+		const parsed = reportSummarySchema.parse({
+			...base,
+			previous: { ...base, period: { from: '2026-07-01', to: '2026-07-31' } }
+		});
+		expect(parsed.previous?.income_base).toBe(10000);
+		expect(parsed.previous?.period.from).toBe('2026-07-01');
+	});
+});
+
+describe('previousReportPeriod', () => {
+	it('31 günlük Ağustos → 31 günlük Temmuz', () => {
+		expect(previousReportPeriod('2026-08-01', '2026-08-31')).toEqual({
+			from: '2026-07-01',
+			to: '2026-07-31'
+		});
+	});
+
+	it('11 günlük pencere → aynı uzunlukta önceki pencere', () => {
+		expect(previousReportPeriod('2026-08-10', '2026-08-20')).toEqual({
+			from: '2026-07-30',
+			to: '2026-08-09'
+		});
+	});
+
+	it('from veya to eksikse null (sınırsız dönemin öncesi tanımsız)', () => {
+		expect(previousReportPeriod(undefined, '2026-08-31')).toBeNull();
+		expect(previousReportPeriod('2026-08-01', undefined)).toBeNull();
+		expect(previousReportPeriod(undefined, undefined)).toBeNull();
+	});
+
+	it('tek günlük pencere → tek günlük önceki gün', () => {
+		expect(previousReportPeriod('2026-08-10', '2026-08-10')).toEqual({
+			from: '2026-08-09',
+			to: '2026-08-09'
+		});
+	});
+});
+
+describe('reportPeriodCompareParams', () => {
+	it('compare opsiyonel — yoksa undefined', () => {
+		const parsed = reportPeriodCompareParams.parse({ from: '2026-08-01', to: '2026-08-31' });
+		expect(parsed.compare).toBeUndefined();
+	});
+
+	it('compare=previous kabul edilir', () => {
+		const parsed = reportPeriodCompareParams.parse({
+			from: '2026-08-01',
+			to: '2026-08-31',
+			compare: 'previous'
+		});
+		expect(parsed.compare).toBe('previous');
+	});
+
+	it('geçersiz compare değeri reddedilir', () => {
+		expect(() =>
+			reportPeriodCompareParams.parse({ from: '2026-08-01', to: '2026-08-31', compare: 'yes' })
+		).toThrow();
 	});
 });
 
