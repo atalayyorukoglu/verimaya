@@ -239,7 +239,8 @@ function refreshUsage(store: ReturnType<typeof getStore>) {
 			if (
 				a.clinic_contact_id === c.id ||
 				a.hotel_contact_id === c.id ||
-				a.transfer_contact_id === c.id
+				a.transfer_contact_id === c.id ||
+				a.doctor_contact_id === c.id
 			) {
 				n += 1;
 			}
@@ -775,6 +776,59 @@ function buildReportAppointmentMetrics(
 		typeMap.set(label, (typeMap.get(label) ?? 0) + 1);
 	}
 
+	// Hekim kırılımı — doctor_contact_id'nin denormalized bir isim kolonu yok
+	// (clinic_name'in aksine); isim her zaman contacts'a bakılarak çözülür.
+	const doctorName = (id: string | null) =>
+		(id ? store.contacts.find((c) => c.id === id)?.display_name : null) ?? 'Atanmamış';
+	const doctorMap = new Map<
+		string,
+		{
+			doctor_contact_id: string | null;
+			doctor_name: string;
+			total: number;
+			completed: number;
+			no_show: number;
+			cancelled: number;
+		}
+	>();
+	const doctorTypeMap = new Map<
+		string,
+		{
+			doctor_contact_id: string | null;
+			doctor_name: string;
+			appointment_type: string;
+			count: number;
+		}
+	>();
+	for (const a of items) {
+		const name = doctorName(a.doctor_contact_id);
+		const key = `${a.doctor_contact_id ?? ''}\0${name}`;
+		const cur = doctorMap.get(key) ?? {
+			doctor_contact_id: a.doctor_contact_id,
+			doctor_name: name,
+			total: 0,
+			completed: 0,
+			no_show: 0,
+			cancelled: 0
+		};
+		cur.total += 1;
+		if (a.status === 'completed') cur.completed += 1;
+		if (a.status === 'no_show') cur.no_show += 1;
+		if (a.status === 'cancelled') cur.cancelled += 1;
+		doctorMap.set(key, cur);
+
+		const type = (a.appointment_type ?? '').trim() || 'Belirtilmemiş';
+		const typeKey = `${key}\0${type}`;
+		const curType = doctorTypeMap.get(typeKey) ?? {
+			doctor_contact_id: a.doctor_contact_id,
+			doctor_name: name,
+			appointment_type: type,
+			count: 0
+		};
+		curType.count += 1;
+		doctorTypeMap.set(typeKey, curType);
+	}
+
 	const monthMap = new Map<string, number>();
 	for (const a of items) {
 		const month = toTenantDayKey(new Date(a.starts_at), tz).slice(0, 7);
@@ -802,6 +856,8 @@ function buildReportAppointmentMetrics(
 				ratio: rate(count)
 			}))
 			.sort((a, b) => b.count - a.count),
+		by_doctor: [...doctorMap.values()].sort((a, b) => b.total - a.total),
+		by_doctor_type: [...doctorTypeMap.values()].sort((a, b) => b.count - a.count),
 		monthly: [...monthMap.entries()]
 			.map(([month, count]) => ({ month, count }))
 			.sort((a, b) => a.month.localeCompare(b.month))
@@ -1392,7 +1448,8 @@ export const handlers = [
 					a.contact_id === contactInvolves ||
 					a.clinic_contact_id === contactInvolves ||
 					a.hotel_contact_id === contactInvolves ||
-					a.transfer_contact_id === contactInvolves
+					a.transfer_contact_id === contactInvolves ||
+					a.doctor_contact_id === contactInvolves
 			);
 		}
 		if (status) items = items.filter((a) => a.status === status);
@@ -3539,6 +3596,9 @@ export const handlers = [
 			}
 			if (a.transfer_contact_id && drop.has(a.transfer_contact_id)) {
 				a.transfer_contact_id = keep_id;
+			}
+			if (a.doctor_contact_id && drop.has(a.doctor_contact_id)) {
+				a.doctor_contact_id = keep_id;
 			}
 		}
 		for (const f of store.files) {

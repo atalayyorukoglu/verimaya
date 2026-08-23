@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Appointment } from '@verimaya/shared';
+	import type { Appointment, Contact } from '@verimaya/shared';
 	import { appointmentStatusLabels } from '@verimaya/shared';
 	import { formatDate, formatTime } from '$lib/format';
 	import { appointmentStatusTone } from '$lib/status-tone';
@@ -12,9 +12,12 @@
 
 	let {
 		appointments = [],
+		contacts = [],
 		onedit
 	}: {
 		appointments?: Appointment[];
+		/** Doctor display name lookup — `doctor_contact_id` has no denormalized name. */
+		contacts?: Contact[];
 		onedit: (appt: Appointment) => void;
 	} = $props();
 
@@ -22,6 +25,14 @@
 
 	function toggle(id: string) {
 		expanded = { ...expanded, [id]: !expanded[id] };
+	}
+
+	const contactById = $derived(new Map(contacts.map((c) => [c.id, c])));
+
+	function doctorLabel(appt: Appointment): string | null {
+		if (!appt.doctor_contact_id) return null;
+		const doctor = contactById.get(appt.doctor_contact_id);
+		return doctor?.display_name ?? appt.doctor_contact_id;
 	}
 
 	const sorted = $derived([...appointments].sort((a, b) => a.starts_at.localeCompare(b.starts_at)));
@@ -80,6 +91,10 @@
 						<dl
 							class="grid gap-2 rounded-[6px] border border-border bg-surface-2/30 px-3 py-2.5 text-sm"
 						>
+							<div class="grid gap-0.5 sm:grid-cols-[7rem_1fr]">
+								<dt class="text-xs text-text-muted">{t('appointments.ops.doctorLabel')}</dt>
+								<dd class="text-text">{doctorLabel(appt) ?? '—'}</dd>
+							</div>
 							<div class="grid gap-0.5 sm:grid-cols-[7rem_1fr]">
 								<dt class="text-xs text-text-muted">Klinik</dt>
 								<dd class="text-text">{appt.clinic_name ?? '—'}</dd>

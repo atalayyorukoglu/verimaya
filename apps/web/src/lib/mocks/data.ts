@@ -188,6 +188,7 @@ function makeAppointment(contact: Contact, overrides: Partial<Appointment> = {})
 		clinic_contact_id: null,
 		hotel_contact_id: null,
 		transfer_contact_id: null,
+		doctor_contact_id: null,
 		notes: null,
 		contact_info_incomplete: !contact.phone?.trim() && !contact.email?.trim(),
 		created_at: iso(faker.date.recent({ days: 30 })),

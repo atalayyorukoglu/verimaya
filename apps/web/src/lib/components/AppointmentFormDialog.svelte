@@ -86,6 +86,26 @@
 		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Transfer'))
 	);
 
+	/**
+	 * Hekim seçici — BİLEREK ünvana göre filtrelenmiyor. `contact_titles` tenant'ın
+	 * yönettiği bir sözlük: tenant "Hekim"i "Doktor" diye yeniden adlandırırsa (veya
+	 * silip yeniden yazarsa) bir isim filtresi sessizce boşalır ve seçici hekimsiz
+	 * görünür. Bunun yerine tüm kişiler listelenir, ünvan satırda yanında gösterilir
+	 * ("Ahmet Yılmaz · Hekim"), kullanıcı arayarak seçer. Ünvanı olanlar listede önce
+	 * gelir — bu bir sıralama ipucu, filtre değil (bkz. AGENTS.md: ünvan izne girmez,
+	 * burada da yalnız görüntüleme sırası için okunuyor).
+	 */
+	function doctorLabel(c: Contact): string {
+		return c.title_name ? t('appointments.form.doctorTitleSuffix', { name: c.display_name, title: c.title_name }) : c.display_name;
+	}
+	const doctorContacts = $derived(
+		[...directoryContacts].sort((a, b) => {
+			const titled = Number(!!b.title_name) - Number(!!a.title_name);
+			if (titled !== 0) return titled;
+			return a.display_name.localeCompare(b.display_name, 'tr');
+		})
+	);
+
 	let contact_id = $state('');
 	let title = $state('');
 	let appointment_type = $state('Konsültasyon');
@@ -95,6 +115,7 @@
 	let clinic_contact_id = $state('');
 	let hotel_contact_id = $state('');
 	let transfer_contact_id = $state('');
+	let doctor_contact_id = $state('');
 	let transfer_note = $state('');
 	let notes = $state('');
 	let deletePhase = $state<DeleteConfirmPhase>('form');
@@ -134,6 +155,11 @@
 			);
 		}
 	);
+	const orphanDoctorContact = $derived.by((): Contact | undefined => {
+		if (!doctor_contact_id || doctorContacts.some((c) => c.id === doctor_contact_id))
+			return undefined;
+		return findContactById(doctor_contact_id);
+	});
 
 	function toLocalInput(iso: string | null | undefined): string {
 		if (!iso) return '';
@@ -164,6 +190,7 @@
 		clinic_contact_id = appointment?.clinic_contact_id ?? '';
 		hotel_contact_id = appointment?.hotel_contact_id ?? '';
 		transfer_contact_id = appointment?.transfer_contact_id ?? '';
+		doctor_contact_id = appointment?.doctor_contact_id ?? '';
 		transfer_note = appointment?.transfer_note ?? '';
 		notes = appointment?.notes ?? '';
 		deletePhase = 'form';
@@ -207,6 +234,7 @@
 			clinic_contact_id: clinic_contact_id || null,
 			hotel_contact_id: hotel_contact_id || null,
 			transfer_contact_id: transfer_contact_id || null,
+			doctor_contact_id: doctor_contact_id || null,
 			clinic_name: clinic?.display_name ?? null,
 			hotel_name: hotel?.display_name ?? null,
 			transfer_note: transfer_note.trim() || null,
@@ -333,6 +361,20 @@
 					</select>
 				</div>
 				<div>
+					<label class={labelClass} for="appt-doctor">{t('appointments.form.doctor')}</label>
+					<select id="appt-doctor" class={fieldClass} bind:value={doctor_contact_id}>
+						<option value="">{t('appointments.form.doctorNone')}</option>
+						{#if orphanDoctorContact}
+							<option value={orphanDoctorContact.id}>{doctorLabel(orphanDoctorContact)}</option>
+						{/if}
+						{#each doctorContacts as c (c.id)}
+							<option value={c.id}>{doctorLabel(c)}</option>
+						{/each}
+					</select>
+				</div>
+			</div>
+			<div class="grid gap-3 sm:grid-cols-2">
+				<div>
 					<label class={labelClass} for="appt-hotel">Otel</label>
 					<select id="appt-hotel" class={fieldClass} bind:value={hotel_contact_id}>
 						<option value="">—</option>
@@ -344,20 +386,20 @@
 						{/each}
 					</select>
 				</div>
-			</div>
-			<div>
-				<label class={labelClass} for="appt-transfer-c"
-					>{t('appointments.form.transferCompany')}</label
-				>
-				<select id="appt-transfer-c" class={fieldClass} bind:value={transfer_contact_id}>
-					<option value="">—</option>
-					{#if orphanTransferContact}
-						<option value={orphanTransferContact.id}>{orphanTransferContact.display_name}</option>
-					{/if}
-					{#each transferContacts as c (c.id)}
-						<option value={c.id}>{c.display_name}</option>
-					{/each}
-				</select>
+				<div>
+					<label class={labelClass} for="appt-transfer-c"
+						>{t('appointments.form.transferCompany')}</label
+					>
+					<select id="appt-transfer-c" class={fieldClass} bind:value={transfer_contact_id}>
+						<option value="">—</option>
+						{#if orphanTransferContact}
+							<option value={orphanTransferContact.id}>{orphanTransferContact.display_name}</option>
+						{/if}
+						{#each transferContacts as c (c.id)}
+							<option value={c.id}>{c.display_name}</option>
+						{/each}
+					</select>
+				</div>
 			</div>
 			<div>
 				<label class={labelClass} for="appt-transfer">Transfer notu</label>

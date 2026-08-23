@@ -90,6 +90,12 @@
 	let customTo = $state('');
 	let kindFilter = $state<'all' | 'income' | 'expense'>('all');
 	let drill = $state<Drill>(null);
+	/**
+	 * Hekim kırılımında oran sütunu hangi randevu tipine göre hesaplansın.
+	 * 'RPT' sunucuya gömülmüyor (tenant sözlüğü) — liste `ops.by_appointment_type`'tan
+	 * gelir, kullanıcı seçer. Varsayılan olarak listede 'RPT' varsa o seçilir.
+	 */
+	let doctorRatioType = $state<string | null>(null);
 
 	$effect(() => {
 		void periodKey;
@@ -322,6 +328,40 @@
 		const list = [...buckets.values()];
 		const max = Math.max(1, ...list.map((b) => b.count));
 		return { list, max };
+	});
+
+	/** Types available for the doctor-breakdown ratio column (server never hardcodes 'RPT'). */
+	const doctorRatioTypeOptions = $derived(
+		(appointmentMetricsQuery.data?.by_appointment_type ?? []).map((t) => t.appointment_type)
+	);
+
+	$effect(() => {
+		const options = doctorRatioTypeOptions;
+		if (doctorRatioType && options.includes(doctorRatioType)) return;
+		doctorRatioType = options.includes('RPT') ? 'RPT' : (options[0] ?? null);
+	});
+
+	/**
+	 * by_doctor_type is the raw cross-tab (server never computes a ratio for a
+	 * tenant-defined type name) — the selected type's share is computed here,
+	 * per doctor, from that doctor's own by_doctor.total (not summed across rows).
+	 */
+	const doctorRows = $derived.by(() => {
+		const ops = appointmentMetricsQuery.data;
+		if (!ops) return [];
+		const selected = doctorRatioType;
+		return ops.by_doctor.map((d) => {
+			const typeCount = selected
+				? (ops.by_doctor_type.find(
+						(r) => r.doctor_contact_id === d.doctor_contact_id && r.appointment_type === selected
+					)?.count ?? 0)
+				: null;
+			return {
+				...d,
+				completion_rate: d.total === 0 ? 0 : d.completed / d.total,
+				ratio_of_selected_type: typeCount === null || d.total === 0 ? null : typeCount / d.total
+			};
+		});
 	});
 
 	const statusDist = $derived.by(() => {
@@ -674,6 +714,63 @@
 						</ul>
 					</div>
 				</div>
+
+				{#if ops.by_doctor.length > 0}
+					<div class="mt-4">
+						<div class="flex flex-wrap items-center justify-between gap-2">
+							<h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">
+								{t('reports.ops.doctors')}
+							</h3>
+							{#if doctorRatioTypeOptions.length > 0}
+								<label class="flex items-center gap-1.5 text-xs text-text-muted">
+									{t('reports.ops.doctorRatioTypeLabel')}
+									<select
+										class="rounded-[6px] border border-border bg-surface px-1.5 py-1 text-xs text-text"
+										bind:value={doctorRatioType}
+									>
+										{#each doctorRatioTypeOptions as typeName (typeName)}
+											<option value={typeName}>{typeName}</option>
+										{/each}
+									</select>
+								</label>
+							{/if}
+						</div>
+						<div class="mt-2 overflow-x-auto">
+							<table class="w-full min-w-[28rem] text-sm">
+								<thead>
+									<tr class="border-b border-border text-left text-xs text-text-muted">
+										<th class="py-1.5 font-medium">{t('reports.ops.col.doctor')}</th>
+										<th class="py-1.5 text-right font-medium">{t('reports.ops.col.count')}</th>
+										<th class="py-1.5 text-right font-medium">{t('reports.ops.col.completion')}</th>
+										{#if doctorRatioType}
+											<th class="py-1.5 text-right font-medium">
+												{t('reports.ops.doctorTypeRatioCol', { type: doctorRatioType })}
+											</th>
+										{/if}
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-border">
+									{#each doctorRows as row (`${row.doctor_contact_id ?? ''}:${row.doctor_name}`)}
+										<tr>
+											<td class="min-w-0 truncate py-2 text-text">{row.doctor_name}</td>
+											<td class="py-2 text-right text-text-muted tabular-nums">{row.total}</td>
+											<td class="py-2 text-right text-text-muted tabular-nums">
+												{formatPercent(row.completion_rate, 0)}
+											</td>
+											{#if doctorRatioType}
+												<td class="py-2 text-right text-text-muted tabular-nums">
+													{row.ratio_of_selected_type === null
+														? '—'
+														: formatPercent(row.ratio_of_selected_type, 0)}
+												</td>
+											{/if}
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				{/if}
 
 				<div class="mt-4">
 					<h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">

@@ -113,7 +113,11 @@
 
 	const relatedAppointments = $derived(
 		(opsApptQuery.data?.items ?? []).filter(
-			(a) => a.clinic_contact_id === id || a.hotel_contact_id === id || a.transfer_contact_id === id
+			(a) =>
+				a.clinic_contact_id === id ||
+				a.hotel_contact_id === id ||
+				a.transfer_contact_id === id ||
+				a.doctor_contact_id === id
 		)
 	);
 
@@ -301,6 +305,7 @@
 		if (appt.clinic_contact_id === id) roles.push(t('contacts.detail.roleClinic'));
 		if (appt.hotel_contact_id === id) roles.push(t('contacts.detail.roleHotel'));
 		if (appt.transfer_contact_id === id) roles.push(t('contacts.detail.roleTransfer'));
+		if (appt.doctor_contact_id === id) roles.push(t('contacts.detail.roleDoctor'));
 		return roles.join(' · ');
 	}
 </script>

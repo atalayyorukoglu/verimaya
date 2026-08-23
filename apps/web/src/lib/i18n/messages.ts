@@ -719,6 +719,10 @@ const tr = {
 	'reports.ops.col.completion': 'Tamamlanma',
 	'reports.ops.col.ratio': 'Oran',
 	'reports.ops.clinicStats': '{count} · tamamlanma {pct}',
+	'reports.ops.doctors': 'Hekim kırılımı',
+	'reports.ops.col.doctor': 'Hekim',
+	'reports.ops.doctorRatioTypeLabel': 'Oran türü',
+	'reports.ops.doctorTypeRatioCol': '{type} oranı',
 	'reports.marketing.spend': 'Reklam harcaması ({currency})',
 	'reports.marketing.revenue': 'Tahsilat (dönem) ({currency})',
 	'reports.marketing.roas': 'Gerçek ROAS',
@@ -1662,6 +1666,7 @@ const tr = {
 	'contacts.detail.roleClinic': 'Klinik',
 	'contacts.detail.roleHotel': 'Otel',
 	'contacts.detail.roleTransfer': 'Transfer',
+	'contacts.detail.roleDoctor': 'Hekim',
 	'contacts.duplicates.documentTitle': 'Çift kayıt · Kişiler · Verimaya',
 	'contacts.duplicates.title': 'Kişi çift kayıtları',
 	'contacts.duplicates.description': 'Aynı telefon, e-posta veya adla birden fazla kişi kaydı.',
@@ -2429,6 +2434,9 @@ const tr = {
 	'appointments.form.start': 'Başlangıç',
 	'appointments.form.end': 'Bitiş',
 	'appointments.form.transferCompany': 'Transfer firması',
+	'appointments.form.doctor': 'Hekim',
+	'appointments.form.doctorNone': '—',
+	'appointments.form.doctorTitleSuffix': '{name} · {title}',
 	'appointments.form.contactInfoMissingPhone':
 		'Seçilen kişide telefon yok. Randevu öncesi arayabilmek için kişi kaydına telefon ekleyin — yine de kaydedebilirsiniz.',
 	'appointments.form.contactInfoMissingEmail':
@@ -2440,6 +2448,7 @@ const tr = {
 	'appointments.ops.patientNotes': 'Hasta notları',
 	'appointments.ops.hideDetail': 'Detayı gizle',
 	'appointments.ops.edit': 'Düzenle',
+	'appointments.ops.doctorLabel': 'Hekim',
 
 	// command palette
 	'command.placeholder': 'Hasta, randevu veya işlem ara…',
@@ -3365,6 +3374,10 @@ const en: Record<MessageKey, string> = {
 	'reports.ops.col.completion': 'Completion',
 	'reports.ops.col.ratio': 'Share',
 	'reports.ops.clinicStats': '{count} · completion {pct}',
+	'reports.ops.doctors': 'Doctor breakdown',
+	'reports.ops.col.doctor': 'Doctor',
+	'reports.ops.doctorRatioTypeLabel': 'Ratio type',
+	'reports.ops.doctorTypeRatioCol': '{type} share',
 	'reports.marketing.spend': 'Ad spend ({currency})',
 	'reports.marketing.revenue': 'Collected (period) ({currency})',
 	'reports.marketing.roas': 'Real ROAS',
@@ -4280,6 +4293,7 @@ const en: Record<MessageKey, string> = {
 	'contacts.detail.roleClinic': 'Clinic',
 	'contacts.detail.roleHotel': 'Hotel',
 	'contacts.detail.roleTransfer': 'Transfer',
+	'contacts.detail.roleDoctor': 'Doctor',
 	'contacts.duplicates.documentTitle': 'Duplicates · Contacts · Verimaya',
 	'contacts.duplicates.title': 'Contact duplicates',
 	'contacts.duplicates.description': 'Multiple contacts with the same phone, email, or name.',
@@ -5025,6 +5039,9 @@ const en: Record<MessageKey, string> = {
 	'appointments.form.start': 'Start',
 	'appointments.form.end': 'End',
 	'appointments.form.transferCompany': 'Transfer company',
+	'appointments.form.doctor': 'Doctor',
+	'appointments.form.doctorNone': '—',
+	'appointments.form.doctorTitleSuffix': '{name} · {title}',
 	'appointments.form.contactInfoMissingPhone':
 		'This contact has no phone. Add a phone number on the contact record so you can call before the appointment — you can still save.',
 	'appointments.form.contactInfoMissingEmail':
@@ -5036,6 +5053,7 @@ const en: Record<MessageKey, string> = {
 	'appointments.ops.patientNotes': 'Patient notes',
 	'appointments.ops.hideDetail': 'Hide detail',
 	'appointments.ops.edit': 'Edit',
+	'appointments.ops.doctorLabel': 'Doctor',
 
 	'command.placeholder': 'Search patients, appointments, or transactions…',
 	'command.aria': 'Quick search',

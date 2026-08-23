@@ -525,7 +525,11 @@
 					{t('appointments.ops.description')}
 				</p>
 			</div>
-			<AppointmentOpsList appointments={rangeAppointments} onedit={openEdit} />
+			<AppointmentOpsList
+				appointments={rangeAppointments}
+				contacts={contactsQuery.data?.items ?? []}
+				onedit={openEdit}
+			/>
 		</section>
 	{/if}
 </div>
