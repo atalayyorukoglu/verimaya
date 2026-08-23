@@ -13,6 +13,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"migrate:pending": "node scripts/pending-migrations.js",
 		"webhook:identity": "node scripts/webhook-identity.js",
+		"llm:compare": "node scripts/llm-compare.js",
 		"db:studio": "drizzle-kit studio",
 		"etl": "node scripts/etl.js",
 		"etl:dry-run": "node scripts/etl.js",

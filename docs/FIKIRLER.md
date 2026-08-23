@@ -93,6 +93,24 @@ testler; dayanağın kendisi kuralı çiğniyorsa er geç bakılmalı.
 **Ön koşul:** yok, kapasiteye bağlı. Yeni yazılan spec'ler zaten doğru desende (drizzle
 transaction + `SET LOCAL`). **Boyut: M** (16 dosya, mekanik ama dikkat ister).
 
+### Heuristic'te yazıyla para birimi ve gelir ipuçları
+`llm:compare` aracı ilk koşuşta somut bir boşluk gösterdi: para birimi regex'i yalnız
+`TRY|GBP|EUR|USD|₺|£|€|$` tanıyor. Türkçe WhatsApp'ta **çok yaygın olan** yazılı biçimler
+tanınmıyor:
+
+```
+"1500 euro kapora aldık"  → 1.500 TRY GİDER   ✗   (olması gereken: 1500 EUR GELİR)
+"12.400 TL havale yaptım" → 12.400 TRY gider  ~   (doğru ama tesadüfen — TL eşleşmedi,
+                                                   yedek yola düştü, havale de kaçtı)
+```
+
+İki eksik: (1) `euro|avro|dolar|sterlin|TL|lira` gibi yazılı biçimler, (2) `aldık|tahsil
+ettik|geldi` gibi gelir ipuçları (`INCOME_HINTS` bugün dar).
+
+**Neden hemen yapılmadı:** LLM açılırsa bu boşluk zaten kapanır ve heuristic yalnız yedek
+yol olarak kalır. LLM açılmazsa **mutlaka** yapılmalı — S, birkaç regex satırı.
+Karar AB API denemesinden sonra. **Boyut: S**
+
 ### Yerinde kurulum (on-prem) — egemenlik bir SKU olarak
 Sağlık verisiyle çalışan bir klinik "verim hiçbir yere gitmesin" diyebilir. Bugün böyle bir
 müşteriye satılacak bir şey yok.
