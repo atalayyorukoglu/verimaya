@@ -429,6 +429,43 @@ export const reportCohortsSchema = z.object({
 });
 export type ReportCohorts = z.infer<typeof reportCohortsSchema>;
 
+/**
+ * Referans değeri raporu (ihtiyaç haritası §A — "X 4 referans hasta gönderdi, koordinatörü Y").
+ *
+ * Yalnız DOĞRUDAN referans: `contacts.referred_by_contact_id` bir seviye izlenir.
+ * "X'in getirdiğinin getirdiği" (zincir) v1'de YOK — özyinelemeli sorgu döngü koruması
+ * ve derinlik sınırı ister, ayrı iş.
+ *
+ * Gelir tanımı `ContactsService.financeSummary` ile birebir aynı: her getirilen kişi için
+ * `contact_id = X OR case_contact_id = X`, soft-delete hariç, tenant baz para birimine
+ * `resolveBaseAmount` ile çevrilmiş. Referans ilişkisi zamansızdır (`referred_count` dönem
+ * filtresinden etkilenmez) — yalnız işlemler `occurred_on` ile dönem filtrelenir. Yani bu
+ * "bu dönemde getirdiği" değil, "getirdiklerinden bu dönemde gelen para"dır.
+ */
+export const reportReferralRowSchema = z.object({
+	referrer_contact_id: uuid,
+	referrer_display_name: z.string(),
+	/** Referans verenin ünvanı (varsa); yalnız tanımlayıcı. */
+	referrer_title_name: z.string().nullable(),
+	/** Referans verenin `assigned_user_id`'sinden çözülür; atanmamışsa null. */
+	coordinator_name: z.string().nullable(),
+	/** Kaç kişi getirdi — soft-delete hariç, dönemden bağımsız. */
+	referred_count: z.number().int().nonnegative(),
+	/** Getirdiklerinden kaçında (dönem içinde) çözülebilir geliri var. */
+	referred_with_revenue_count: z.number().int().nonnegative(),
+	total_income_base: moneyMinor,
+	total_expense_base: moneyMinor,
+	total_net_base: moneyMinor
+});
+export type ReportReferralRow = z.infer<typeof reportReferralRowSchema>;
+
+export const reportReferralsSchema = z.object({
+	period: reportPeriodSchema,
+	/** `total_net_base` azalan — en değerli referans veren üstte. */
+	items: z.array(reportReferralRowSchema)
+});
+export type ReportReferrals = z.infer<typeof reportReferralsSchema>;
+
 /** Months between cohort `YYYY-MM` and payment `YYYY-MM-DD` (or `YYYY-MM`). */
 export function cohortMonthDiff(cohortMonth: string, occurredOn: string): number {
 	const [cy, cm] = cohortMonth.split('-').map(Number);
@@ -455,7 +492,8 @@ export type ReportUrlPath =
 	| 'consistency'
 	| 'transaction-duplicates'
 	| 'untouched-contacts'
-	| 'cohorts';
+	| 'cohorts'
+	| 'referrals';
 
 /** Build a report URL (path + query only, no origin). */
 export function reportUrl(
