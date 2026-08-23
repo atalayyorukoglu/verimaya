@@ -89,6 +89,15 @@ sorabilse operasyonel olarak anlamlı olurdu.
 soru yanlış araca gider. AI-11a'nın araç seçimi zaten `BILINMIYOR` diyebiliyor, yani güvenlik
 tarafı hazır — sorun yalnız tanıma kalitesi. **Boyut: M**
 
+### Ürün içi "Yenilikler" yüzeyi
+Panele giren kullanıcıya son eklenen özellikleri gösteren küçük bir bileşen (changelog'un
+ürün içi yüzü). `changelog.ts` tek kaynak zaten var, veri hazır.
+
+**Neden şimdi değil:** dahili pilot başlamadı, prod'da kullanıcı yok. Sıfır kullanıcıya
+tanıtım yapan bir yüzey olur. Ayrıca DOC-04 borcu kapanmadan gösterilecek doğru içerik yok.
+
+**Ön koşul:** DOC-04 + gerçek kullanıcı. **Boyut: M**
+
 ### Panel içi bildirim
 AI-04 alarmları ve AI-05 müdahale listesi bugün ancak kullanıcı o sayfaya giderse görülüyor.
 "Uçuşa 48 saat kaldı, transfer atanmadı" uyarısının kullanıcıyı **bulması** gerekiyor.

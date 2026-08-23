@@ -308,6 +308,64 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 
 ---
 
+## Tanıtım ve benimseme (DOC-04, DOC-05, ADOPT-01)
+
+> **Neden bu blok açıldı (2026-08-23, kullanıcı sorusu).** *"Bir sürü yeni özellik geldi;
+> bunları nerede tanıtacağız, kullandıracağız, kullandıklarını takip edeceğiz?"*
+> Cevap: altyapı var (`/features` dört durumlu, `/changelog` tek kaynaktan, kurallar
+> `docs/CHANGELOG-KURALLARI.md`'de) **ama süreç bir aydır işlemiyor** ve benimseme takibi hiç yok.
+>
+> **Sıralamanın dayanağı: henüz kullanıcı yok.** Dahili pilot başlamadı (README), PILOT-02
+> ertelendi, prod'da canlı veri yok. Sıfır kullanıcı için ürün içi tur / bildirim / benimseme
+> paneli yapmak erken optimizasyondur — kimsenin benimsemediği şeyin benimsenmesini ölçen panel.
+> Bu yüzden yalnız DOC-04 şimdi; diğerleri pilota bağlı.
+
+- [ ] **DOC-04 — changelog + `features.ts` borcu. (S)** *şimdi*
+  **Son changelog kaydı 2026-07-22.** 23 Ağustos itibarıyla bir aylık boşluk var; 17–23 Ağustos
+  arasında eklenen dokuz şeyin hiçbiri ne changelog'da ne `features.ts`'de:
+  AI-01/02/04/06 · AUDIT-04 · AI-08 (randevu ajanı akışta) · AI-11a (Maya canlı veri) ·
+  AI-09 (kaynak izi) · AI-03 (isabet ölçümü) · ünvanlar (`0064`) · hekim alanı (`0065`) ·
+  referans raporu · karşılaştırma katmanı · eşik tablosu · olay kaydı (`0066`).
+  **Kural zaten yazılıydı** (`CHANGELOG-KURALLARI.md` madde 3: durum yükseltildiğinde aynı
+  commit'te güncellenir) — uygulanmadı. Borç her gün büyüyor ve geriye dönük yazmak
+  zorlaşıyor.
+  **Kabul:** her kalem için `changelog.ts` kaydı + `features.ts` durumu; iddia ile durum
+  tutarlı (madde 1: "eklendi + çalışır" diyorsan `yayinda`/`pilotta`) · `/changelog` ve
+  `/features` sayfaları doğru gösteriyor.
+  **Süreç düzeltmesi (asıl iş):** bundan sonra kullanıcıya görünen her özellik commit'i
+  changelog kaydını **aynı commit'te** taşır. Borç yeniden birikirse kural değil süreç
+  bozuktur — o zaman kontrol otomatikleştirilir (CI'da "yeni feature id var ama changelog
+  kaydı yok" kontrolü).
+  **Görüş:**
+
+- [ ] **DOC-05 — kullanıcı için "ne yapabilirsin" rehberi. (M)** *pilot başlamadan*
+  Geliştirici için `docs/YAPIM-GUNLUGU.md` var; **kullanıcı için karşılığı yok.** Pilot ekibi
+  panele girdiğinde ünvanların, hekim alanının, Maya'nın canlı veriye bağlandığının veya
+  taslaktaki kaynak rozetinin ne işe yaradığını nereden bilecek?
+  **Kabul:** ekran ekran değil, **iş akışı akışı** anlatan bir doküman — "WhatsApp'tan mesaj
+  geldi, ne oluyor", "bir hastadan kâr ettim mi nasıl bakarım", "Maya'ya ne sorabilirim".
+  Panelden erişilebilir (Kaynaklar/Yardım altına link).
+  **Bağımlı:** DOC-04 (rehber, changelog ile aynı gerçeği anlatmalı).
+  **Görüş:**
+
+- [ ] **ADOPT-01 — benimseme takibi. (M)** *pilot başlayınca*
+  "Kim hangi özelliği kullanıyor" bugün ölçülmüyor. **Ham veri kısmen zaten var:**
+  `audit_logs` (kim ne oluşturdu/güncelledi/sildi), `maya_questions` (AI-11a soru kaydı —
+  hangi araç kaç kez), `jobs → llm.parse` (AI çağrı sayısı ve maliyeti), `ai_corrections`
+  (AI taslağı ne sıklıkla düzeltiliyor). Eksik olan: sayfa görüntüleme ve bunları birleştiren
+  tek görünüm.
+  **Karar gerekiyor:** sayfa görüntüleme takibi eklenecek mi? Panelde kullanıcı izleme, KVKK
+  ve güven açısından ayrı bir tartışma — mevcut yazma-eylemi verisiyle yetinmek de savunulabilir
+  ve hiçbir yeni veri toplamaz.
+  **Bağımlı:** gerçek kullanıcı (PILOT-02).
+  **Görüş:**
+
+> **Ürün içi "Yenilikler" yüzeyi** (panele giren kullanıcıya yeni özellikleri gösteren
+> bileşen) bilinçli olarak buraya alınmadı — `docs/FIKIRLER.md`'de duruyor. İkinci müşteri
+> eşiğinden önce yapılırsa sıfır kullanıcıya tanıtım yapan bir yüzey olur.
+
+---
+
 ## Faz 9 — kalan denetim / ürün artıkları (sıra yok; kapasiteye göre)
 
 - **LEG-02 artığı — anonimizasyon kapsamı: case note gövdeleri + dosya adları.**
