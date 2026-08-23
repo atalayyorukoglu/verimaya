@@ -48,6 +48,11 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
   Unutursan uygulama ilk update'te "permission denied" atar — sessiz açık değil, gürültülü hata.
   `meta/_journal.json`'a kayıt, `db:migrate` ile uygula, `src/db/schema/` altındaki şemayı da
   güncelle.
+- **Ünvan (kişi görevi, `contact_titles`) iki bağlayıcı kuralla sınırlı** (2026-08-23,
+  `docs/2026-08-23-maya-icgoru-sorulari.md`): (1) ünvan hiçbir izin kontrolünde okunmaz —
+  yetki modeli `user` + `member` rolü + `tenant_permission_overrides`'tır ve tektir,
+  `hasOrgPermission` çağrısına ünvan girmez; (2) ünvan yalnız `contacts` üzerinde yaşar,
+  `user` tablosuna ünvan alanı eklenmez. İhlali iş reddi sebebidir.
 
 ## Dil ve slug — 2026-07-26 kuralı
 
