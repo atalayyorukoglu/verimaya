@@ -16,6 +16,8 @@ Gerçek durum ve açık riskler (arşiv, tarihli kanıt): [`docs/Arşiv/2026-08-
 
 Projenin sıfırdan bugüne nasıl yapıldığı (yazılıma yeni başlayanlar için, kararlar ve gerekçeleriyle): [`docs/YAPIM-GUNLUGU.md`](./docs/YAPIM-GUNLUGU.md).
 
+Kararı verilmemiş fikirler (açık-iş listesi değil): [`docs/FIKIRLER.md`](./docs/FIKIRLER.md).
+
 Mimari: [`docs/MIMARI.md`](./docs/MIMARI.md) — tasarım: [`docs/TASARIM.md`](./docs/TASARIM.md) — Coolify: [`docs/DEPLOY-COOLIFY.md`](./docs/DEPLOY-COOLIFY.md).
 
 ## Stack

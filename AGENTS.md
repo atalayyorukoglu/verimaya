@@ -77,6 +77,11 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 ## Süreç
 
 - **Aktif yapılacaklar listesi: `docs/2026-08-11-YAPILACAKLAR.md` — tek kaynak.** Öncelik sıralı; her kalemin kabul kriteri ve dokunulacak dosyaları orada. Adım bitince o dosyadaki kutuyu işaretle, **Görüş** satırını doldur ve kalemi "Son kapananlar"a taşı. Listenin dışına çıkan işe başlama. İkinci “açık işler” dosyası yazma.
+- **Kararı verilmemiş fikirler `docs/FIKIRLER.md`'de** (2026-08-23). Orası açık-iş listesi
+  değildir: fikir oradayken kimse çalışmaz, kabul kriteri yazılmaz. Yapmaya karar verilince
+  YAPILACAKLAR'a kalem olarak taşınır ve FIKIRLER'den **silinir**; yapılmayacağına karar
+  verilince "Bilinçli olarak yapılmayacaklar" tablosuna gerekçesiyle yazılıp silinir.
+  İki yerde birden durmaz — kural 9'un önlediği çift işaret sapması.
 - Obsidian yol haritası (`SecondBrain-Remote/03-Areas/VeriMaya/02-yol-haritasi.md`) durum belgesidir (öncelik sırası YAPILACAKLAR'dadır); eski faz metni `Arşiv/2026-07-30-yol-haritasi.md`.
 - Ürünün kanıta dayalı gerçek durumu (arşiv, tarihli kanıt): `docs/Arşiv/2026-08-02-PROJE-DEGERLENDIRMESI.md`.
 - Eski plan/rapor/durum belgeleri (`CURSOR-PLAN.md`, `KONTROL-RAPORU.md`, `ROASMATE-GECIS.md`, `SAHA-TESTI-KAYDI.md`, 2026-08-03/08-09 listeleri, TUM-ACIK-ISLER, 2026-08-08 prod checklist) `docs/Arşiv/`'de; aktif iş tek dosyada — `docs/2026-08-11-YAPILACAKLAR.md`. Prod smoke tıklama: `docs/Arşiv/2026-08-09-PROD-SMOKE-REHBERI.md`.
