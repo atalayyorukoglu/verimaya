@@ -254,10 +254,25 @@ alınacaktı.
 40 mesaj **0,0124 USD**. Mesaj başına ~0,0003 USD — günde 200 mesajlık bir acente için
 **aylık ~2 USD**.
 
-> **Model seçimi kararı:** `mistral-small` yetmiyor (para birimi %55–78 arası savruluyor,
-> token eşleştirmesini kaldıramıyor). `mistral-medium` %95'e çıkıyor ve maliyet yine
-> önemsiz. Küçük modelle "idare etmek" burada yanlış ekonomi — kazanılan kuruş, düzeltme
-> emeğiyle geri ödeniyor.
+### Üç model, aynı 40 mesaj — büyük olan daha iyi değil
+
+| Model | Taslak üretti | Para birimi doğru | Karşı taraf |
+|---|---|---|---|
+| `mistral-small-latest` | 30–36/40 | %55–78 | %43–50 |
+| **`mistral-medium-latest`** | **36–38/40** | **%90–95** | **%60** |
+| `mistral-large-latest` | 27/40 | %68 | %50 |
+
+`large` iki ayrı koşuda da `medium`'un gerisinde kaldı — tesadüf değil. Yapılandırılmış
+çıkarım bir **biçime uyma** işi, akıl yürütme işi değil; büyük modeller daha temkinli
+davranıp kayıt üretmeyi bırakabiliyor. Maliyet farkı da yok (0,012 vs 0,010 USD / 40 mesaj).
+
+> **"En kalitelisini seçelim" burada yanlış içgüdü.** Görev için en iyisi ölçülen modeldir,
+> en büyüğü değil. Bu ölçüm olmasaydı `large` seçilir ve sistem %22 daha kötü çalışırdı.
+
+> **Model seçimi kararı: `mistral-medium-latest`.** `small` yetmiyor (savruluyor, token
+> eşleştirmesini kaldıramıyor), `large` daha kötü. Ortadaki ölçülen model kazanıyor.
+> Küçükle "idare etmek" de büyükle "garantiye almak" da burada yanlış — ikisi de ölçüm
+> yerine sezgiyle karar vermek olurdu.
 
 **Okunuş:** LLM yazılı para birimini ("euro", "pound") ve yönü ("alındı"/"ödendi") belirgin
 biçimde daha iyi çözüyor. Ama **her vakada üstün değil** — çok satırlı, birden çok tutar
