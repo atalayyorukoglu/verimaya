@@ -4,6 +4,7 @@
 		Contact,
 		ContactCreate,
 		ContactStatus,
+		ContactTitle,
 		ContactType,
 		ContactUpdate,
 		MembershipUser,
@@ -68,6 +69,12 @@
 		enabled: open && qs.ready
 	}));
 
+	const titlesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.contactTitles(),
+		queryFn: () => apiGet<{ items: ContactTitle[] }>(apiPaths.settingsContactTitles),
+		enabled: open && qs.ready
+	}));
+
 	const organizationsQuery = createQuery(() => ({
 		queryKey: qs.keys.settings.organizations(),
 		queryFn: () => apiGet<{ items: Organization[] }>(apiPaths.settingsOrganizations),
@@ -81,6 +88,7 @@
 	}));
 
 	let contact_type_id = $state('');
+	let title_id = $state('');
 	let first_name = $state('');
 	let last_name = $state('');
 	let organization_id = $state('');
@@ -104,6 +112,9 @@
 	let deletePhase = $state<DeleteConfirmPhase>('form');
 
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
+	const contactTitles = $derived(
+		[...(titlesQuery.data?.items ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+	);
 	const organizations = $derived(
 		[...(organizationsQuery.data?.items ?? [])].sort((a, b) => a.name.localeCompare(b.name))
 	);
@@ -153,6 +164,7 @@
 		}
 		const types = typesQuery.data?.items ?? [];
 		contact_type_id = contact?.contact_type_id ?? types[0]?.id ?? '';
+		title_id = contact?.title_id ?? '';
 		first_name = contact?.first_name ?? '';
 		last_name = contact?.last_name ?? '';
 		organization_id = contact?.organization_id ?? '';
@@ -276,6 +288,7 @@
 
 		const payload: ContactCreate | ContactUpdate = {
 			contact_type_id,
+			title_id: title_id || null,
 			first_name: first_name.trim(),
 			last_name: last_name.trim() || null,
 			phone: phone.trim() || null,
@@ -351,6 +364,15 @@
 				<label class={labelClass} for="c-type">{t('contacts.form.type')}</label>
 				<select id="c-type" class={fieldClass} bind:value={contact_type_id} required>
 					{#each contactTypes as ct (ct.id)}
+						<option value={ct.id}>{ct.name}</option>
+					{/each}
+				</select>
+			</div>
+			<div>
+				<label class={labelClass} for="c-title">{t('contacts.form.title')}</label>
+				<select id="c-title" class={fieldClass} bind:value={title_id}>
+					<option value="">{t('contacts.form.titleNone')}</option>
+					{#each contactTitles as ct (ct.id)}
 						<option value={ct.id}>{ct.name}</option>
 					{/each}
 				</select>

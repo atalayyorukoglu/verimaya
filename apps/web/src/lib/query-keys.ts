@@ -73,6 +73,7 @@ export function queryKeys(scope: QueryScope) {
 		settings: {
 			appointmentTypes: () => k('settings', 'appointment-types'),
 			contactTypes: () => k('settings', 'contact-types'),
+			contactTitles: () => k('settings', 'contact-titles'),
 			organizations: () => k('settings', 'organizations'),
 			financeCategories: () => k('settings', 'finance-categories'),
 			aiDisclosure: () => k('settings', 'ai-disclosure'),

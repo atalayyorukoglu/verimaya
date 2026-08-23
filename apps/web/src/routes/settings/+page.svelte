@@ -16,6 +16,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Bell from '@lucide/svelte/icons/bell';
 	import Contact from '@lucide/svelte/icons/contact';
+	import IdCard from '@lucide/svelte/icons/id-card';
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import Megaphone from '@lucide/svelte/icons/megaphone';
 	import Webhook from '@lucide/svelte/icons/webhook';
@@ -81,6 +82,12 @@
 					title: t('settings.nav.contactTypes.title'),
 					description: 'Otel, klinik, transfer, hasta…',
 					icon: Contact
+				},
+				{
+					href: '/settings/contact-titles',
+					title: t('settings.nav.contactTitles.title'),
+					description: t('settings.nav.contactTitles.description'),
+					icon: IdCard
 				},
 				{
 					href: '/settings/organizations',

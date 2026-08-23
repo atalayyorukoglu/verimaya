@@ -315,6 +315,12 @@ const tr = {
 	'settings.contactTypes.renameFailed': 'Yeniden adlandırma başarısız',
 	'settings.contactTypes.delete': 'Sil',
 
+	'settings.contactTitles.rename': 'Yeniden adlandır',
+	'settings.contactTitles.renameSave': 'Kaydet',
+	'settings.contactTitles.renameCancel': 'Vazgeç',
+	'settings.contactTitles.renameFailed': 'Yeniden adlandırma başarısız',
+	'settings.contactTitles.delete': 'Sil',
+
 	// Ücretsiz karne — sonuç ve lead kapısı (LEG-01)
 	'karne.result.gate.eyebrow': 'Sonuç hazır',
 	'karne.result.gate.title': 'Detaylı özeti e-posta ile alın',
@@ -1591,8 +1597,11 @@ const tr = {
 	'contacts.list.filterApply': 'Filtrele',
 	'contacts.list.filterClear': 'Temizle',
 	'contacts.list.filterTypeAria': 'Tür filtresi',
+	'contacts.list.filterTitleAll': 'Tüm ünvanlar',
+	'contacts.list.filterTitleAria': 'Ünvan filtresi',
 	'contacts.list.col.name': 'Ad Soyad',
 	'contacts.list.col.type': 'Tür',
+	'contacts.list.col.title': 'Ünvan',
 	'contacts.list.col.phone': 'Telefon',
 	'contacts.list.col.source': 'Kaynak',
 	'contacts.list.col.status': 'Durum',
@@ -1670,6 +1679,8 @@ const tr = {
 	'contacts.form.organizationCreateFailed': 'Firma oluşturulamadı',
 	'contacts.form.organizationOrphan': 'Seçili firma (listede yok)',
 	'contacts.form.type': 'Tür',
+	'contacts.form.title': 'Ünvan',
+	'contacts.form.titleNone': '—',
 	'contacts.form.internalStaff': 'İç personel',
 	'contacts.form.status': 'Durum',
 	'contacts.form.assignee': 'Sorumlu',
@@ -2077,6 +2088,8 @@ const tr = {
 	'settings.nav.appointmentTypes.title': 'Randevu ayarları',
 	'settings.nav.appointmentTypes.description': 'Randevu tipleri (checklist şablonları Faz 1).',
 	'settings.nav.contactTypes.title': 'Kişi türleri',
+	'settings.nav.contactTitles.title': 'Ünvanlar',
+	'settings.nav.contactTitles.description': 'Hekim, koordinatör, reklam uzmanı…',
 	'settings.nav.organizations.title': 'Firmalar',
 	'settings.nav.organizations.description':
 		'Klinik, otel, transfer firmaları — kişi formunda seçilir.',
@@ -2245,6 +2258,17 @@ const tr = {
 	'settings.contactTypes.newPlaceholder': 'Yeni tür',
 	'settings.contactTypes.footnote':
 		'Tip adı “Hasta” olan kişi oluşturulunca otomatik hasta kaydı açılır.',
+
+	// settings contact titles (ünvan / görev)
+	'settings.contactTitles.documentTitle': 'Ünvanlar · Ayarlar · Verimaya',
+	'settings.contactTitles.title': 'Ünvanlar',
+	'settings.contactTitles.description':
+		'Hekim, Koordinatör, Reklam Uzmanı… Kişinin ne iş yaptığını gösterir; yalnız tanımlayıcıdır, yetkiyi etkilemez.',
+	'settings.contactTitles.loading': 'Yükleniyor…',
+	'settings.contactTitles.loadError': 'Ünvanlar yüklenemedi.',
+	'settings.contactTitles.newPlaceholder': 'Yeni ünvan',
+	'settings.contactTitles.footnote':
+		'Kişi başına tek ünvan. Ünvanı silinen kişiler bozulmaz — ünvanı boş kalır.',
 
 	'settings.organizations.documentTitle': 'Firmalar · Ayarlar · Verimaya',
 	'settings.organizations.title': 'Firmalar',
@@ -2940,6 +2964,12 @@ const en: Record<MessageKey, string> = {
 	'settings.contactTypes.renameCancel': 'Cancel',
 	'settings.contactTypes.renameFailed': 'Rename failed',
 	'settings.contactTypes.delete': 'Delete',
+
+	'settings.contactTitles.rename': 'Rename',
+	'settings.contactTitles.renameSave': 'Save',
+	'settings.contactTitles.renameCancel': 'Cancel',
+	'settings.contactTitles.renameFailed': 'Rename failed',
+	'settings.contactTitles.delete': 'Delete',
 
 	'karne.result.gate.eyebrow': 'Result ready',
 	'karne.result.gate.title': 'Get the detailed summary by email',
@@ -4179,8 +4209,11 @@ const en: Record<MessageKey, string> = {
 	'contacts.list.filterApply': 'Filter',
 	'contacts.list.filterClear': 'Clear',
 	'contacts.list.filterTypeAria': 'Type filter',
+	'contacts.list.filterTitleAll': 'All titles',
+	'contacts.list.filterTitleAria': 'Title filter',
 	'contacts.list.col.name': 'Name',
 	'contacts.list.col.type': 'Type',
+	'contacts.list.col.title': 'Title',
 	'contacts.list.col.phone': 'Phone',
 	'contacts.list.col.source': 'Source',
 	'contacts.list.col.status': 'Status',
@@ -4258,6 +4291,8 @@ const en: Record<MessageKey, string> = {
 	'contacts.form.organizationCreateFailed': 'Could not create firm',
 	'contacts.form.organizationOrphan': 'Selected firm (not in list)',
 	'contacts.form.type': 'Type',
+	'contacts.form.title': 'Title',
+	'contacts.form.titleNone': '—',
 	'contacts.form.internalStaff': 'Internal staff',
 	'contacts.form.status': 'Status',
 	'contacts.form.assignee': 'Assignee',
@@ -4656,6 +4691,8 @@ const en: Record<MessageKey, string> = {
 	'settings.nav.appointmentTypes.description':
 		'Appointment types (checklist templates in Phase 1).',
 	'settings.nav.contactTypes.title': 'Contact types',
+	'settings.nav.contactTitles.title': 'Titles',
+	'settings.nav.contactTitles.description': 'Doctor, coordinator, ad specialist…',
 	'settings.nav.organizations.title': 'Firms',
 	'settings.nav.organizations.description':
 		'Clinic, hotel, transfer firms — selected on the contact form.',
@@ -4816,6 +4853,17 @@ const en: Record<MessageKey, string> = {
 	'settings.contactTypes.newPlaceholder': 'New type',
 	'settings.contactTypes.footnote':
 		'Creating a contact whose type name is “Patient” opens a patient record automatically.',
+
+	// settings contact titles (role / job title)
+	'settings.contactTitles.documentTitle': 'Titles · Settings · Verimaya',
+	'settings.contactTitles.title': 'Titles',
+	'settings.contactTitles.description':
+		'Doctor, coordinator, ad specialist… Shows what this person does; descriptive only, never affects permissions.',
+	'settings.contactTitles.loading': 'Loading…',
+	'settings.contactTitles.loadError': 'Could not load titles.',
+	'settings.contactTitles.newPlaceholder': 'New title',
+	'settings.contactTitles.footnote':
+		'One title per contact. Contacts whose title is deleted are unaffected — the title is simply cleared.',
 
 	'settings.organizations.documentTitle': 'Firms · Settings · Verimaya',
 	'settings.organizations.title': 'Firms',

@@ -5,6 +5,7 @@
 		Contact,
 		ContactCreate,
 		ContactsBulkTypeResult,
+		ContactTitle,
 		ContactType,
 		ContactUpdate,
 		ContractResponse,
@@ -30,6 +31,7 @@
 	let q = $state('');
 	let search = $state('');
 	let typeId = $state('');
+	let titleId = $state('');
 	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
@@ -47,6 +49,12 @@
 		enabled: qs.ready
 	}));
 
+	const titlesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.contactTitles(),
+		queryFn: () => apiGet<{ items: ContactTitle[] }>(apiPaths.settingsContactTitles),
+		enabled: qs.ready
+	}));
+
 	const membersQuery = createQuery(() => ({
 		queryKey: qs.keys.members.list({ for: 'contacts-list' }),
 		queryFn: () => apiGet<MembersPage>(listUrl('members', { limit: 100 })),
@@ -54,6 +62,9 @@
 	}));
 
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
+	const contactTitles = $derived(
+		[...(titlesQuery.data?.items ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+	);
 	const members = $derived(membersQuery.data?.items ?? []);
 
 	$effect(() => {
@@ -64,13 +75,18 @@
 	});
 
 	const contactsQuery = createInfiniteQuery(() => ({
-		queryKey: qs.keys.contacts.list({ q: search, type_id: typeId || null }),
+		queryKey: qs.keys.contacts.list({
+			q: search,
+			type_id: typeId || null,
+			title_id: titleId || null
+		}),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<ContactsPage>(
 				listUrl('contacts', {
 					limit: 15,
 					q: search || undefined,
 					type_id: typeId || undefined,
+					title_id: titleId || undefined,
 					cursor: pageParam
 				})
 			),
@@ -81,7 +97,7 @@
 
 	const items = $derived(contactsQuery.data?.pages.flatMap((p) => p.items) ?? []);
 	const totalCount = $derived(contactsQuery.data?.pages[0]?.total_count);
-	const filtered = $derived(Boolean(search || typeId));
+	const filtered = $derived(Boolean(search || typeId || titleId));
 	const listDescription = $derived(
 		totalCount == null
 			? t('contacts.list.description')
@@ -108,10 +124,15 @@
 		selectedIds = [];
 	}
 
+	function onTitleFilterChange() {
+		selectedIds = [];
+	}
+
 	function clearFilters() {
 		q = '';
 		search = '';
 		typeId = '';
+		titleId = '';
 		selectedIds = [];
 		defaultTypeApplied = true;
 	}
@@ -258,9 +279,20 @@
 				<option value={ct.id}>{ct.name}</option>
 			{/each}
 		</select>
+		<select
+			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-44"
+			bind:value={titleId}
+			onchange={onTitleFilterChange}
+			aria-label={t('contacts.list.filterTitleAria')}
+		>
+			<option value="">{t('contacts.list.filterTitleAll')}</option>
+			{#each contactTitles as ct (ct.id)}
+				<option value={ct.id}>{ct.name}</option>
+			{/each}
+		</select>
 		<div class="flex flex-wrap gap-2">
 			<Button type="submit" variant="secondary">{t('contacts.list.filterApply')}</Button>
-			{#if search || typeId}
+			{#if search || typeId || titleId}
 				<Button type="button" variant="outline" onclick={clearFilters}
 					>{t('contacts.list.filterClear')}</Button
 				>
@@ -344,14 +376,15 @@
 								/>
 							</th>
 						{/if}
-						<th class="{selectionMode ? 'w-[22%]' : 'w-[24%]'} px-4 py-3 font-medium"
+						<th class="{selectionMode ? 'w-[20%]' : 'w-[22%]'} px-4 py-3 font-medium"
 							>{t('contacts.list.col.name')}</th
 						>
-						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
-						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
-						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.source')}</th>
-						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.status')}</th>
-						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.assignee')}</th>
+						<th class="w-[10%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
+						<th class="w-[10%] px-4 py-3 font-medium">{t('contacts.list.col.title')}</th>
+						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
+						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.source')}</th>
+						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.status')}</th>
+						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.assignee')}</th>
 						<th class="w-[10%] px-4 py-3 font-medium"></th>
 					</tr>
 				</thead>
@@ -377,6 +410,7 @@
 							<td class="px-4 py-3">
 								<StatusBadge label={c.contact_type_name} tone="neutral" />
 							</td>
+							<td class="truncate px-4 py-3 text-text-faint">{c.title_name ?? '—'}</td>
 							<td class="truncate px-4 py-3 text-text-muted tabular-nums">{c.phone ?? '—'}</td>
 							<td class="truncate px-4 py-3 text-text-faint">{c.source ?? '—'}</td>
 							<td class="px-4 py-3">
@@ -439,6 +473,11 @@
 							</div>
 							<p class="mt-1 truncate text-xs text-text-muted tabular-nums">{c.phone ?? '—'}</p>
 							<div class="mt-2 flex flex-wrap items-center gap-2">
+								{#if c.title_name}
+									<span class="text-xs text-text-faint">
+										{t('contacts.list.col.title')}: {c.title_name}
+									</span>
+								{/if}
 								{#if c.status}
 									<StatusBadge
 										label={contactStatusLabels[c.status]}
