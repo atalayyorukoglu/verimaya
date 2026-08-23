@@ -588,6 +588,22 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > avoid inventing numbers" diye tanımlıyorlar; yani serbest SQL değil, kısıtlı metot listesi.
 
 - [ ] **AI-10 — LLM veri politikası. (S)** — kod işi değil
+  > **✅ GÜNCEL DURUM (2026-08-23 akşamı): LLM prod'da AÇILDI.**
+  > `LLM_MODEL=mistral-medium-latest`, `LLM_BASE_URL=https://api.mistral.ai/v1`,
+  > anahtar dolu — konteyner içinde doğrulandı. Sağlayıcı **Mistral (Fransa)**, yani veri
+  > AB'de kalıyor; mevcut Hetzner-Helsinki duruşuyla tutarlı.
+  >
+  > **AI-10a artık yazılabilir ve içeriği değişti:** "dış LLM kullanmıyoruz" cümlesi
+  > geçersiz. Yerine yazılacak: hangi sağlayıcı, hangi model, veri nereye gidiyor, ne
+  > maskeleniyor (`pii-mask.ts` — isim/telefon/e-posta/TCKN/IBAN/kart modele hiç gitmiyor,
+  > yalnız `KISI_n` token'ı gidiyor), saklama süresi ve eğitim opt-out (sağlayıcı
+  > sözleşmesinden **kanıtla**). **AI-10b düştü** — karar verildi, açıldı.
+  >
+  > Model seçimi ölçümle yapıldı, üç model karşılaştırıldı:
+  > `docs/2026-08-23-llm-altyapi-secenekleri.md`.
+  >
+  > <details><summary>Açılmadan önceki durum ve gerekçe (arşiv)</summary>
+  >
   > **⚠ ÖNCE KARAR: prod'da LLM YOK (2026-08-23'te Coolify env'de doğrulandı).**
   > 28 üretim değişkeni arasında `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` **yok.**
   > `createLlmClientFromEnv` anahtar boşken `HeuristicLlmClient` döndürüyor — yani canlıda
@@ -606,6 +622,7 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
   >
   > **Karar dayanağı olacak veri:** AI-03 isabet raporu + `maya_questions` cevaplanamama
   > oranı. Heuristic yeterliyse LLM'e para ve hukuk yükü ödemeye gerek yok.
+  > </details>
   >
   > **Altyapı seçenekleri (barındırılan / AB bölgesi / kendi sunucu / Apple Silicon / hibrit),
   > maliyet mertebeleri ve önerilen sıra:** `docs/2026-08-23-llm-altyapi-secenekleri.md`.
