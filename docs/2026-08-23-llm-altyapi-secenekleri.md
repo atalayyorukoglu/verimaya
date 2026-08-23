@@ -193,6 +193,41 @@ Somut örnekler:
   LLM    gelir · 3.950 TRY · —          ✗ LLM burada yanıldı
 ```
 
+### Ücretli katman sonrası tam ölçüm (40 gerçek mesaj)
+
+Hız sınırı kalkınca örneklem tamamlandı. **Üretimle aynı ayarlar** (kişi listesi 100 ile
+sınırlı, aynı maskeleme):
+
+| | REGEX | LLM |
+|---|---|---|
+| Taslak üretti | **40/40** | 31/40 |
+| Para birimi doğru | 25/40 (%63) | **31/40 (%78)** |
+| **Karşı taraf buldu** | 3/40 (%8) | **25/40 (%63)** |
+
+**Karşı taraf 8% → 63%.** Bu, `ai_corrections`'ta en çok düzeltilen alan; en büyük kazanç orada.
+
+**Ama LLM 9 mesajda hiç taslak üretmiyor** — regex her zaman üretiyor. Yedek yol bu yüzden
+değerli: `openai_compatible_fallback` yolu boş LLM çıktısında regex'e düşüyor ve kullanıcı
+yine bir taslak görüyor.
+
+### Ölçüm harness'i iki kez yanılttı — not düşülmeli
+
+1. **Sentetik isim listesi mesajı bozdu.** İsimleri büyük harfli kelime çiftlerinden
+   çıkarmıştım; `"Ödeme Alındı"` da listeye girmiş, `"Jack Hogsden 3530 gbp nakit ödeme
+   alındı"` → `"[HASTA] 3530 gbp nakit [HASTA]"` olmuş. Model haklı olarak susmuş.
+   İlk okuma "LLM %58 başarısız" idi — **yanlıştı.**
+2. **Kişi listesi boyutu sonucu değiştirdi.** 771 kişi → %43 üretim; 100 kişi (üretim sınırı)
+   → %78. Yani liste büyüdükçe model kötüleşiyor.
+
+> **2. maddeden çıkan gerçek ürün bulgusu:** modele giden kişi listesi **opak UUID**'lerden
+> ibaret (`patient_ref`), mesajdaki isimler ise `[HASTA]` ile maskeli. **Model ikisini
+> eşleştiremez** — hangi UUID'nin hangi `[HASTA]` olduğunu bilmesinin yolu yok. Yani bugünkü
+> hâliyle liste yalnız gürültü ve kaliteyi düşürüyor.
+>
+> **Doğrusu zaten projede var:** AI-11a'nın Maya araç seçiminde `KISI_n` token'ı ile UUID
+> **eşleştirilmiş** olarak gönderiliyor. WhatsApp çıkarım yolu bu desene geçirilmeli — o
+> zaman `contact_id` de doğru dolabilir. **Boyut: S–M.**
+
 **Okunuş:** LLM yazılı para birimini ("euro", "pound") ve yönü ("alındı"/"ödendi") belirgin
 biçimde daha iyi çözüyor. Ama **her vakada üstün değil** — çok satırlı, birden çok tutar
 içeren dökümlerde yanılabiliyor. Yani LLM regex'i "bitirmiyor"; yedek yol değerini koruyor.

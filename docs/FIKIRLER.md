@@ -111,6 +111,18 @@ ettik|geldi` gibi gelir ipuçları (`INCOME_HINTS` bugün dar).
 yol olarak kalır. LLM açılmazsa **mutlaka** yapılmalı — S, birkaç regex satırı.
 Karar AB API denemesinden sonra. **Boyut: S**
 
+### WhatsApp çıkarımında kişi eşleştirmesi (KISI_n deseni)
+Bugün modele giden kişi listesi opak `patient_ref` UUID'lerinden ibaret, mesajdaki isimler ise
+`[HASTA]` ile maskeli. **Model ikisini eşleştiremez** — bu yüzden `contact_id` LLM tarafından
+hiçbir zaman doğru doldurulamıyor, ve liste büyüdükçe kaliteyi düşürüyor (771 kişide taslak
+üretimi %43'e düşüyor, 100 kişide %78).
+
+Doğru desen **zaten projede var**: AI-11a'da Maya araç seçimi `KISI_n` token'ı ile UUID'yi
+eşleştirilmiş gönderiyor (`maya-contact-match.ts`). WhatsApp çıkarım yolu aynı desene geçirilmeli.
+
+**Ön koşul:** LLM prod'a açılsın (bugün heuristic'te bu sorun yok). Ölçüm:
+`docs/2026-08-23-llm-altyapi-secenekleri.md` § 3b. **Boyut: S–M**
+
 ### Yerinde kurulum (on-prem) — egemenlik bir SKU olarak
 Sağlık verisiyle çalışan bir klinik "verim hiçbir yere gitmesin" diyebilir. Bugün böyle bir
 müşteriye satılacak bir şey yok.
