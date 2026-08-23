@@ -308,6 +308,32 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 
 ---
 
+## Yarına bırakılanlar (2026-08-23 akşamı, kullanıcı)
+
+Gün sonunda konuşulup ertesi güne bırakılan üç başlık. Kalem değil, **oturum gündemi**.
+
+1. **Maliyet takibi nerede görünecek?** LLM canlıya açıldı; `jobs → llm.parse` ledger'ı
+   tenant başına token ve tahmini maliyeti zaten yazıyor — okunmuyor.
+   **Zemin hazır:** `apps/api/src/platform/` (platform admin guard + `GET /platform/tenants`)
+   ve web'de `/dev` ekranı mevcut. Yani yeni bir yetki modeli kurmaya gerek yok, var olan
+   platform yüzeyine tenant başına maliyet kırılımı eklenebilir. **Tahmini: S–M.**
+
+2. **Pazarlama iddiası: "%xx doğrulukla aylık ~2 dolara kaydediyoruz."**
+   ⚠ **Dikkatli kurulması gereken bir cümle.** Bugünkü ölçüm ne söylüyor, ne söylemiyor:
+   - %90 rakamı **tek bir firmanın** 40 mesajından çıktı ve yalnız **para birimi** alanını
+     ölçüyor. Genel bir "doğruluk oranı" değil.
+   - **2 dolar bizim maliyetimiz**, müşterinin gördüğü değer ya da fiyat değil. İkisini aynı
+     cümlede söylemek karışıklık yaratır ve pazarlığı maliyet üzerinden başlatır.
+   - *"Muhasebeciler eksik/hatalı giriyor"* karşılaştırması **ölçülmedi.** İnsan hata oranını
+     bilmeden "bizden iyi" demek iddiayı çürütülebilir kılar.
+   **Sağlam zemin:** pilot verisi. AI-03 raporu tam bunu sayıyor (kaç taslak dokunulmadan
+   onaylandı). Birkaç haftalık gerçek kullanım sonrası rakam **kendi müşterinden** çıkar ve
+   savunulabilir olur.
+
+3. **Kalan yapılacakların gözden geçirilmesi.** Bu dosyanın tamamı + `docs/FIKIRLER.md`.
+
+---
+
 ## Tanıtım ve benimseme (DOC-04, DOC-05, ADOPT-01)
 
 > **Neden bu blok açıldı (2026-08-23, kullanıcı sorusu).** *"Bir sürü yeni özellik geldi;
