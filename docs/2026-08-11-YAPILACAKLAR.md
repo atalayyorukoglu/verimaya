@@ -587,7 +587,25 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > — iç mimarilerini yayınlamıyorlar, ama yaklaşımlarını "constrained / strict set of methods /
 > avoid inventing numbers" diye tanımlıyorlar; yani serbest SQL değil, kısıtlı metot listesi.
 
-- [ ] **AI-10 — LLM veri politikası dokümanı. (S)** — kod işi değil
+- [ ] **AI-10 — LLM veri politikası. (S)** — kod işi değil
+  > **⚠ ÖNCE KARAR: prod'da LLM YOK (2026-08-23'te Coolify env'de doğrulandı).**
+  > 28 üretim değişkeni arasında `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` **yok.**
+  > `createLlmClientFromEnv` anahtar boşken `HeuristicLlmClient` döndürüyor — yani canlıda
+  > **hiçbir veri dışarı çıkmıyor**, tüm AI yolları deterministik kodla çalışıyor:
+  > WhatsApp ayrıştırma regex, Maya araç seçimi `heuristicRouteMayaTool`, bilgi bankası
+  > cevabı kelime eşleme, randevu önerisi regex tarih.
+  >
+  > **Bu, AI-10'un öncülünü değiştiriyor.** "Sağlayıcı sözleşmesini oku" diye yazılmıştı;
+  > okunacak sözleşme yok. Kalem ikiye ayrılıyor:
+  > - **AI-10a — bugünün gerçeğini yaz (S, şimdi yapılabilir):** "Canlı sistemde dış LLM
+  >   kullanılmıyor; hasta verisi hiçbir üçüncü tarafa gitmiyor." Bu, KVKK ve müşteri
+  >   sözleşmesi açısından **anlatılabilecek en güçlü cümle** ve bugün doğru. Yazılmalı.
+  > - **AI-10b — LLM açılacak mı (ürün kararı):** açılırsa sağlayıcı seçilir, sözleşme
+  >   okunur, veri politikası ona göre güncellenir. Açılmazsa heuristic kalır ve isabet
+  >   düşük olur (AI-03 raporu bunu ölçecek).
+  >
+  > **Karar dayanağı olacak veri:** AI-03 isabet raporu + `maya_questions` cevaplanamama
+  > oranı. Heuristic yeterliyse LLM'e para ve hukuk yükü ödemeye gerek yok.
   Bugün hiçbir dokümanda "modeller müşteri verisiyle eğitilmiyor" taahhüdü **yok**
   (`TEHDIT-MODELI.md` / `MIMARI.md` taraması boş). Satıcı UK (LEG-02), müşteri TR sağlık
   turizmi → sağlık verisinin yurtdışına aktarımı zaten açık risk. İlk müşteri sözleşmesinde
