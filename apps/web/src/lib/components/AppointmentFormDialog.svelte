@@ -96,7 +96,9 @@
 	 * burada da yalnız görüntüleme sırası için okunuyor).
 	 */
 	function doctorLabel(c: Contact): string {
-		return c.title_name ? t('appointments.form.doctorTitleSuffix', { name: c.display_name, title: c.title_name }) : c.display_name;
+		return c.title_name
+			? t('appointments.form.doctorTitleSuffix', { name: c.display_name, title: c.title_name })
+			: c.display_name;
 	}
 	const doctorContacts = $derived(
 		[...directoryContacts].sort((a, b) => {
