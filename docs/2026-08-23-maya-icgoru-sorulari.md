@@ -157,32 +157,191 @@ Yeni model icat etmeye gerek yok.
 Klinik atıyorsa ve hekim son anda değişiyorsa, alan boş kalır ve rapor yanıltıcı olur.
 Doldurulmayan alan, olmayan alandan kötüdür.
 
-### Karar 2 — RPT tam olarak ne demek?
+#### ✅ Genişletildi: ünvan / görev kavramı (2026-08-23)
 
-Bugün `RPT` bir **randevu tipi** değeri (`Yeni Hasta` / `Devam Hastası` / `RPT`). Legacy
-eşlemesinde de aynen korunmuş.
+> **Kullanıcı:** *"Hekim, koordinatör, reklam uzmanı, satışçı gibi title'lar kişiler için olası
+> görünüyor. Departman ve görevler gibi oldu. Ben şu an olsun diyorum ama negatif, kaldırılamaz
+> zararı varsa söyle."*
 
-Sorun: RPT iki farklı şeyi birden gösteriyor olabilir —
+**Değerlendirme: yapılabilir, kaldırılamaz bir zararı yok.** Ama üç somut risk var ve üçü de
+baştan kurala bağlanırsa sorun çıkmaz.
 
-- **İyi RPT:** hasta memnun, ikinci seans için geldi → ciro artışı
-- **Kötü RPT:** ilk operasyon tutmadı, düzeltme → maliyet ve itibar kaybı
+**Mevcut model bunu zaten kaldırıyor.** `contacts` üzerinde üç eksen hâlihazırda var:
 
-Rapor "RPT oranı arttı" derse ve bunların çoğu iyi RPT'yse, sistem **iyi haberi kötü haber
-gibi sunmuş olur.** Kullanıcı bir kere yanlış alarma koşarsa listeye bir daha güvenmez.
+| Eksen | Alan | Ne söyler |
+|---|---|---|
+| Kayıt cinsi | `contact_type_id` | Hasta / Klinik / Otel / Transfer / Personel / Diğer |
+| Bizim mi | `is_internal` | Kendi ekibimiz mi, dışarıdan mı |
+| Hangi firma | `organization_id` | Hangi klinik/otel/acentede |
 
-**Karar gereken:** ikisi ayrılacak mı?
-- **(a)** Ayrılmaz — "RPT oranı" ham sayı olarak verilir, yorumu insana bırakılır
-- **(b)** Randevu tipine dördüncü değer eklenir (`RPT-Revizyon`), enum genişletilir
-- **(c)** Randevuya "ücretli mi" işareti konur — ücretsiz RPT genelde revizyondur
+Ünvan **dördüncü ve dik bir eksen**: *bu insan ne iş yapıyor.* Örnekler mevcut modele temiz
+oturuyor:
 
-**Öneri: (c).** Enum genişletmek geçmiş veriyi bozar ve kullanıcıdan yeni disiplin ister.
-Oysa "bu RPT için para alındı mı" sorusunun cevabı **zaten `transactions`'da var** — dosyaya
-bağlı gelir kaydı varsa ücretli, yoksa revizyon şüphesi. Yeni alan gerekmez, mevcut veriden
-türetilir.
+```
+Hekim         → contact_type: Personel · is_internal: false · organization: "Ada Klinik" · ünvan: Hekim
+Koordinatör   → contact_type: Personel · is_internal: true                              · ünvan: Koordinatör
+Reklam uzmanı → contact_type: Personel · is_internal: true                              · ünvan: Reklam Uzmanı
+```
+
+Yani hekim için ayrı bir varlık icat etmeye gerek yok — **Karar 1 (b) ile ünvan aynı işi
+çözüyor.** `appointments.doctor_contact_id` eklenir, o FK'nın işaret ettiği kişi ünvanı "Hekim"
+olan bir `contacts` satırıdır.
+
+##### Risk 1 — Ünvan yetkiye dönüşürse (en ciddi olan)
+
+Sistemde **zaten** bir yetki modeli var: `user` + `member` rolü (owner/admin/agent) +
+`tenant_permission_overrides`. Ünvan bunun yanına ikinci bir yetki sistemi olarak yerleşirse,
+"bu kişi ne yapabilir" sorusunun iki cevabı olur ve zamanla birbirinden ayrılırlar.
+
+> **Kural (bağlayıcı):** Ünvan **yalnız tanımlayıcı bilgidir.** Hiçbir izin kontrolünde
+> okunmaz. `hasOrgPermission` çağrısında ünvan geçmez. Rapor ve filtre için vardır, kapı için
+> değil.
+
+Bu kural AGENTS.md'ye yazılırsa risk sıfırlanır. Yazılmazsa altı ay sonra biri "koordinatör
+ünvanlıysa finansı görsün" diye kısa yol yazar ve yetki modeli ikiye bölünür.
+
+##### Risk 2 — `user` ↔ `contacts` ikiliği zaten var, derinleşmesin
+
+Bugün "kim sorumlu" sorusunun iki temsili var:
+
+- `contacts.assigned_user_id` → **user** tablosuna FK (giriş yapan hesap)
+- `transactions.responsible_contact_id` → **contacts** tablosuna FK (kişi kaydı)
+
+Koordinatör hem giriş yapan bir kullanıcı hem de bir kişi kaydı olarak var olabilir. Ünvan
+ikisinden hangisinde yaşayacak?
+
+> **Kural:** Ünvan **yalnız `contacts`'te yaşar.** `user` tablosuna ünvan alanı eklenmez.
+> Giriş yapan bir personelin ünvanı, ona bağlı kişi kaydından okunur.
+
+İki yere de eklenirse ikisi kaçınılmaz olarak ayrışır ve "koordinatör kim" sorusunun iki farklı
+cevabı olur.
+
+##### Risk 3 — Serbest metin girilirse rapor parçalanır
+
+`Koordinatör` / `koordinatör` / `Koordinator` / `Kordinatör` — dört ayrı değer, dört ayrı satır,
+hiçbir rapor doğru çalışmaz. Bu geri alınması gerçekten zahmetli olan tek şey: 500 kayıt yanlış
+yazılmış ünvanla dolduktan sonra temizlemek elle iştir.
+
+> **Kural:** Serbest metin **yok.** `contact_types` / `organizations` / `appointment_types` ile
+> aynı desen: tenant'ın yönettiği sözlük tablosu + FK.
+
+##### Geri alınabilirlik — dürüst cevap
+
+| Ne | Geri alınabilir mi |
+|---|---|
+| Kolon/tablo düşürmek | ✅ kolay |
+| Tek ünvan → çok ünvan (kişi birden çok görev yapıyorsa) | ✅ kolay — FK → ara tablo, düz migration |
+| Yanlış modelle girilmiş 500 kayıt | 🟡 zahmetli ama mümkün |
+| Ünvan yetki kontrolüne sızmışsa | ❌ **zor** — kod her yere dağılır |
+| İnsanların güvendiği bir rapor ünvana dayanıyorsa | ❌ **zor** — model değişince rapor bozulur, güven gider |
+
+Son iki satır Risk 1 ve Risk 3'ün sonucudur. İkisi de baştan kurala bağlanabiliyor, yani
+**kaldırılamaz zarar önlenebilir.**
+
+##### Öneri
+
+`contact_titles` sözlük tablosu (tenant yönetir, `contact_types` deseni birebir) +
+`contacts.title_id` FK. **Kişi başına tek ünvan** ile başla.
+
+Çok ünvan (bir kişi hem satışçı hem koordinatör) muhtemelen 5-15 kişilik ekipte gerçek bir
+ihtiyaç — ama tek ünvandan çoka geçiş düz bir migration. Baştan ara tablo kurmak bugünkü işi
+büyütür, faydası ihtiyaç ortaya çıkana kadar sıfır.
+
+**Boyut: S–M** (sözlük tablosu + kişi formunda alan + ayarlar ekranı; `contact_types` ekranı
+kopyalanır).
+
+**Kazanç sadece rapor değil:** hekim sorusu (Karar 1) bu tek işle çözülüyor, ve E kümesindeki
+ekip soruları ("reklam uzmanının getirdiği lead kalitesi", "satışçının dönüşüm oranı") ünvan
+olmadan zaten yazılamıyordu.
+
+### Karar 2 — RPT tam olarak ne demek? ✅ **CEVAPLANDI (2026-08-23)**
+
+> **Kullanıcı:** *"RPT; operasyon tutmadı, düzeltme gereken hasta sorunu."*
+
+Yani RPT **tek anlamlı ve tamamen olumsuz.** "İyi RPT / kötü RPT" ayrımı diye bir şey yok —
+önceki bölümde önerilen "ücretli mi diye bak, ücretsizse revizyondur" fikri gereksiz. Düştü.
+
+**Sonuç sadeleşti:** `appointment_type = 'RPT'` sayısı doğrudan bir **kalite göstergesi**.
+Arttıysa kötü haber; başka koşula bakmaya gerek yok. Örnek 2 bu haliyle bugün hesaplanabilir
+(klinik kırılımıyla; hekim kırılımı Karar 1'e bağlı).
+
+**Ama bu bir sonraki soruyu açtı** — aşağıdaki 5. bölüm.
 
 ---
 
-## 5. Sistem hazır mı — dürüst cevap
+## 5. Genel sorun: sistem "ne oldu"yu biliyor, "ne ters gitti"yi bilmiyor
+
+> **Kullanıcı (2026-08-23):** *"Buna benzer ileride diğer departmanların sorunları da olabilir,
+> bu konuyu da tartışalım."*
+
+Bu, bu dosyadaki en önemli tespit. RPT'ye bakınca görünüyor: RPT bir **randevu tipi** olarak
+tutuluyor, çünkü kliniğin sorunu tesadüfen yeni bir randevu doğuruyor. Diğer departmanların
+sorunları böyle bir iz bırakmıyor:
+
+| Departman | Tipik sorun | Bugün sistemde izi | 
+|---|---|---|
+| Klinik | Operasyon tutmadı → revizyon | ✅ `appointment_type = 'RPT'` (tesadüfen) |
+| Otel | Oda uygun değil, konaklama şikâyeti | ❌ hiç yok |
+| Transfer | Karşılamaya gelmedi, geç kaldı | ❌ hiç yok |
+| Satış | Yanlış fiyat verildi, hasta kaçtı | ❌ hiç yok |
+| Reklam | Kalitesiz lead, yanlış hedefleme | ❌ hiç yok |
+| Koordinasyon | Takip edilmedi, hasta kayboldu | 🟡 dolaylı (temassızlık raporu) |
+
+**Sonuç:** bugünkü sistem *olan*ı ölçüyor — randevu, tahsilat, harcama. *Ters giden*i ölçmüyor.
+Oysa kullanıcının verdiği AI-05 örneklerinin ikisi de ters giden şeyler hakkında.
+
+### Öneri: tek genel kavram — olay kaydı
+
+Her departman için ayrı alan/bayrak açmak yerine **tek bir "olay" (incident) kaydı**:
+
+```
+olay_kaydi
+  dosya          → contacts (hangi hasta dosyası)
+  alan           → klinik | otel | transfer | satış | reklam | koordinasyon
+  tür            → tenant sözlüğü ("Revizyon gerekti", "Karşılamaya gelinmedi"…)
+  sorumlu taraf  → contacts (hangi klinik / hangi personel)
+  maliyet        → kuruş, opsiyonel (bu hata bize ne kadara mal oldu)
+  durum          → açık | çözüldü
+  açıklama       → serbest metin
+```
+
+**Neden tek tablo:** altı departman için altı ayrı alan açarsan altı ayrı migration, altı ayrı
+ekran ve **ortak rapor yok** olur. Tek tabloda "bu ay hangi alanda kaç sorun, kime kaça mal
+oldu" tek sorguyla çıkar. AI-05'in beslendiği asıl kaynak da bu olur.
+
+### RPT bununla ne olacak — değişmiyor
+
+**RPT randevusu olduğu gibi kalır.** Karıştırmamak gerek:
+
+- **RPT randevusu = olgu.** Gerçekten yapılan bir randevu. Takvimde yeri var, maliyeti var.
+- **Olay kaydı = yorum.** "Bu revizyon, ilk operasyon tutmadığı için oldu" değerlendirmesi.
+
+İkisi ayrı kalmalı, opsiyonel olarak birbirine bağlanmalı. RPT'yi olay kaydına *çevirmek*
+geçmiş veriyi bozar ve randevu takvimini eksiltir.
+
+### Bu tip sistemlerin klasik ölüm sebebi
+
+Olay kaydı sistemlerinin çoğu **veri girilmediği için** ölür. Kimse ekstra iş yapmak istemez,
+özellikle "hata kaydı" gibi kendini suçlar gibi hissettiren bir iş.
+
+Üç şart, üçü de zorunlu:
+
+1. **Tek tıkla girilsin.** Sorunun fark edildiği yerden — hasta dosyasından — girilmeli. Ayrı
+   menüye gidip form doldurmak gerekiyorsa girilmez.
+2. **Bağlam önceden dolsun.** Dosya, klinik, tarih zaten biliniyor; kullanıcı sadece türü ve
+   varsa maliyeti seçsin.
+3. **Karşılığı görünsün.** Girilen kayıt bir rapora dönüşmeli ve o rapor kullanılmalı. Kimsenin
+   bakmadığı bir kayda kimse veri girmez.
+
+**Ve tek departmanla başla.** Altı departmanın tür listesini ilk günde yazma — klinik/RPT ile
+başla, döngünün çalıştığını gör (girildi mi, rapora düştü mü, karar değiştirdi mi), sonra
+genişlet. Çalışmayan bir döngüyü altı kat büyütmek altı kat çöp üretir.
+
+**Boyut: M** (tek tablo + dosya içi giriş + tek rapor, tek departman kapsamında).
+
+---
+
+## 6. Sistem hazır mı — dürüst cevap
 
 **Veri katmanı: büyük ölçüde hazır.** Altı kümenin beşi bugünkü şemayla yazılabilir. Referans
 zinciri, koordinatör ataması, dosya bazlı kâr, randevu durumu, klinik kırılımı, kaynak/kampanya
@@ -211,23 +370,31 @@ Kapsaması da yanlış olur — Maya *sorulana* cevap veren yüzey. Bu sorular *
 
 ---
 
-## 6. Önerilen sıra
+## 7. Önerilen sıra
 
-| Adım | İş | Boyut |
-|---|---|---|
-| 1 | **Karar 1 ve Karar 2 cevaplanır** (hekim, RPT) | — kullanıcı |
-| 2 | **Referans değeri raporu** — "X kaç hasta getirdi, toplam ne kazandırdı". Örnek 1'in tam karşılığı, yeni alan gerektirmiyor, tek başına değerli | **M** |
-| 3 | **Karşılaştırma katmanı** — her metrik için "önceki dönem" ve "tenant ortalaması" | **M** |
-| 4 | **Eşik tablosu** — hangi değişim söylenmeye değer, minimum kayıt sayısı | **S** |
-| 5 | **Müdahale listesi v1** — yukarıdakilerin üstüne şablon cümleler, önem sırasına dizili | **M** |
-| 6 | Hekim alanı (Karar 1 (b) seçilirse) | **M** |
+| Adım | İş | Boyut | Durum |
+|---|---|---|---|
+| 1 | **Referans değeri raporu** — "X kaç hasta getirdi, toplam ne kazandırdı, koordinatörü kim". Örnek 1'in tam karşılığı, yeni alan gerektirmiyor | **M** | hazır |
+| 2 | **Ünvan sözlüğü** — `contact_titles` + `contacts.title_id`. Hekim sorusunu da çözer | **S–M** | ✅ karar verildi |
+| 3 | **Randevuya hekim alanı** — `appointments.doctor_contact_id` (2'ye bağlı) | **M** | ✅ karar verildi |
+| 4 | **Karşılaştırma katmanı** — her metrik için "önceki dönem" ve "tenant ortalaması" | **M** | AI-05'in çekirdeği |
+| 5 | **Eşik tablosu** — hangi değişim söylenmeye değer, minimum kayıt sayısı | **S** | 4'e bağlı |
+| 6 | **Olay kaydı v1** — tek tablo, yalnız klinik departmanı ile başla | **M** | 5. bölüm |
+| 7 | **Müdahale listesi v1** — şablon cümleler, önem sırasına dizili | **M** | 4+5+6 üstüne |
 
-**2. adım tek başına sevk edilebilir** ve kullanıcının verdiği ilk örneği bugün karşılar. 3–5
+**1. adım tek başına sevk edilebilir** ve kullanıcının verdiği ilk örneği bugün karşılar. 4–7
 olmadan da işe yarar. Oradan başlamak, AI-05'in tamamını beklemekten iyi.
+
+**2 ve 3 birlikte gider** — ünvan olmadan hekim alanı anlamsız, hekim olmadan ünvanın en net
+kullanım yeri eksik.
+
+> **Bağlayıcı iki kural (ünvan kararının şartı, AGENTS.md'ye işlenecek):**
+> 1. Ünvan hiçbir izin kontrolünde okunmaz — yetki modeli `user` + `member` rolüdür, tektir.
+> 2. Ünvan yalnız `contacts`'te yaşar; `user` tablosuna ünvan alanı eklenmez.
 
 ---
 
-## 7. Bu dosyanın statüsü
+## 8. Bu dosyanın statüsü
 
 Bu bir **karar girdisi**, yapılacaklar listesi değil. Tek kaynak kuralı gereği açık iş
 `docs/2026-08-11-YAPILACAKLAR.md` § AI-05 kaleminde kalır; burası o kalemin arkasındaki
