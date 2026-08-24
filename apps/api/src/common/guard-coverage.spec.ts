@@ -73,6 +73,8 @@ const PUBLIC_ROUTE_ALLOWLIST: Record<string, string> = {
     "AUDIT-F09-07 KVKK m.11 self deletion-request; Session+ActiveOrg; subject = session user only (no OrgPermission resource)",
   "PlatformController.listTenants":
     "Platform admin — Session+PlatformAdminGuard; cross-tenant org list (no ActiveOrg)",
+  "PlatformController.llmUsage":
+    "Platform admin — Session+PlatformAdminGuard; cross-tenant LLM cost aggregate (no ActiveOrg)",
   "PlatformController.createTenant":
     "Platform admin — Session+PlatformAdminGuard; create org across tenants",
   "PlatformController.updateTenant":

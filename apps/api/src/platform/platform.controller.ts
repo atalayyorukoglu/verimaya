@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from "@nestjs/common";
@@ -15,6 +16,7 @@ import {
   platformMemberUpsertSchema,
   platformTenantCreateSchema,
   platformTenantUpdateSchema,
+  reportPeriodParams,
 } from "@verimaya/shared";
 import type { FastifyRequest } from "fastify";
 import { SessionGuard } from "../auth/session.guard";
@@ -32,6 +34,16 @@ export class PlatformController {
   @Get("tenants")
   listTenants() {
     return this.platformService.listTenants();
+  }
+
+  /**
+   * Tenant başına LLM maliyeti (Mistral `mistral-medium-latest`, `jobs.job_type='llm.parse'`).
+   * `from`/`to` yoksa son 30 gün. RLS'i bilerek aşan tek uç — bkz. platform.service.ts.
+   */
+  @Get("llm-usage")
+  llmUsage(@Query("from") from?: string, @Query("to") to?: string) {
+    const params = reportPeriodParams.parse({ from, to });
+    return this.platformService.llmUsage(params);
   }
 
   @Post("tenants")

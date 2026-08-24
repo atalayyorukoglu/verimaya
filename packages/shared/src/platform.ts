@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDateTime, uuid } from './common.js';
+import { isoDate, isoDateTime, uuid } from './common.js';
 import { userUiPreferencesSchema } from './product-modules.js';
 import { tenantSchema } from './tenant.js';
 import { membershipUserSchema, userRoleSchema } from './user.js';
@@ -71,3 +71,51 @@ export const platformSoftDeleteResultSchema = z.object({
 	id: uuid,
 	deleted_at: isoDateTime
 });
+
+/**
+ * Tenant-başına LLM harcama takibi (`GET /v1/platform/llm-usage`).
+ * `jobs.job_type = 'llm.parse'` ledger'ından SQL'de agregasyon — RLS'in olağan
+ * tenant sınırını platform admin için bilerek aşan tek uç (bkz. platform.service.ts).
+ */
+export const platformLlmUsagePathCountsSchema = z.object({
+	heuristic: z.number().int().nonnegative(),
+	openai_compatible: z.number().int().nonnegative(),
+	openai_compatible_fallback: z.number().int().nonnegative()
+});
+
+export type PlatformLlmUsagePathCounts = z.infer<typeof platformLlmUsagePathCountsSchema>;
+
+export const platformLlmUsageTenantRowSchema = z.object({
+	tenant_id: uuid,
+	tenant_name: z.string(),
+	call_count: z.number().int().nonnegative(),
+	total_tokens: z.number().int().nonnegative(),
+	/** Micro-dollars (1e-6 USD). Bölme yalnız `apps/web/src/lib/format.ts#formatUsdMicros`'ta. */
+	estimated_cost_usd_micros: z.number().int().nonnegative(),
+	path_counts: platformLlmUsagePathCountsSchema,
+	error_count: z.number().int().nonnegative(),
+	/** Dönem içinde görülen model adları — model değişimi burada görünür. */
+	models: z.array(z.string())
+});
+
+export type PlatformLlmUsageTenantRow = z.infer<typeof platformLlmUsageTenantRowSchema>;
+
+export const platformLlmUsageTotalsSchema = z.object({
+	call_count: z.number().int().nonnegative(),
+	total_tokens: z.number().int().nonnegative(),
+	estimated_cost_usd_micros: z.number().int().nonnegative(),
+	path_counts: platformLlmUsagePathCountsSchema,
+	error_count: z.number().int().nonnegative()
+});
+
+export type PlatformLlmUsageTotals = z.infer<typeof platformLlmUsageTotalsSchema>;
+
+export const platformLlmUsageResponseSchema = z.object({
+	/** İstenen/uygulanan dönem — `from`/`to` verilmezse son 30 gün varsayılır. */
+	period: z.object({ from: isoDate, to: isoDate }),
+	/** Maliyet azalan sırada; hiç çağrısı olmayan tenant listede yer almaz. */
+	items: z.array(platformLlmUsageTenantRowSchema),
+	totals: platformLlmUsageTotalsSchema
+});
+
+export type PlatformLlmUsageResponse = z.infer<typeof platformLlmUsageResponseSchema>;

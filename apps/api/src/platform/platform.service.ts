@@ -6,19 +6,33 @@ import {
 } from "@nestjs/common";
 import { hashPassword } from "better-auth/crypto";
 import {
+  addCalendarDays,
+  utcTodayIsoDate,
   type MembershipUser,
+  type PlatformLlmUsagePathCounts,
+  type PlatformLlmUsageResponse,
+  type PlatformLlmUsageTenantRow,
   type PlatformMemberUpsert,
   type PlatformTenant,
   type PlatformTenantCreate,
   type PlatformTenantUpdate,
+  type ReportPeriodParams,
   type SoftDeleteResult,
 } from "@verimaya/shared";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte, lt, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { writeAuditLog, type AuditActor } from "../common/audit-helper";
 import { toTenant } from "../common/mappers";
 import { DbService } from "../db/db.service";
-import { account, member, organization, tenants, user } from "../db/schema";
+import {
+  account,
+  jobs,
+  member,
+  organization,
+  tenants,
+  user,
+} from "../db/schema";
+import { LLM_PARSE_JOB_TYPE } from "../integrations/llm";
 import { TenantContextService } from "../tenant/tenant-context.service";
 
 function slugifyName(name: string): string {
@@ -50,6 +64,113 @@ export class PlatformService {
     );
     // Lock flag is expensive cross-tenant; platform UI doesn't edit base_currency.
     return { items };
+  }
+
+  /**
+   * Tenant başına LLM maliyeti (`jobs.job_type = 'llm.parse'`).
+   *
+   * `jobs` üzerinde RLS var (FORCE ROW LEVEL SECURITY, `tenant_id = app.current_tenant_id()`).
+   * Tek sorguda tüm tenant'ları okuyacak bir bypass yok — `verimaya_app` rolü NOBYPASSRLS
+   * (bkz. tenant-context.service.ts). Bunun yerine `OutboxAdminService.listDead`/`requeue`
+   * ile aynı deseni kullanıyoruz: tenant id listesini RLS'siz `tenants` tablosundan al,
+   * her tenant için `tenantContext.withTenant` ile ayrı bir SET LOCAL'lı sorgu çalıştır,
+   * SQL'in tek tenant için ürettiği agregatları (COUNT/SUM/array_agg) TS'te birleştir.
+   * Bu, ham job satırlarını çekip istemcide toplamaktan farklı — her sorgu zaten
+   * kendi tenant'ı için tam agregasyonu SQL'de yapıyor.
+   */
+  async llmUsage(params: ReportPeriodParams): Promise<PlatformLlmUsageResponse> {
+    const to = params.to ?? utcTodayIsoDate();
+    const from = params.from ?? addCalendarDays(to, -29);
+    const startUtc = new Date(`${from}T00:00:00.000Z`);
+    const endExclusiveUtc = new Date(`${addCalendarDays(to, 1)}T00:00:00.000Z`);
+
+    const tenantRows = await this.db.client
+      .select({ id: tenants.id, name: tenants.name })
+      .from(tenants)
+      .orderBy(asc(tenants.name));
+
+    const items: PlatformLlmUsageTenantRow[] = [];
+    for (const t of tenantRows) {
+      const [row] = await this.tenantContext.withTenant(t.id, ({ db }) =>
+        db
+          .select({
+            callCount: sql<number>`count(*)::int`,
+            totalTokens: sql<number>`coalesce(sum((${jobs.payload}->>'total_tokens')::bigint), 0)`,
+            costMicros: sql<number>`coalesce(sum((${jobs.payload}->>'estimated_cost_usd_micros')::bigint), 0)`,
+            heuristicCount: sql<number>`count(*) filter (where ${jobs.payload}->>'path' = 'heuristic')::int`,
+            openaiCompatibleCount: sql<number>`count(*) filter (where ${jobs.payload}->>'path' = 'openai_compatible')::int`,
+            fallbackCount: sql<number>`count(*) filter (where ${jobs.payload}->>'path' = 'openai_compatible_fallback')::int`,
+            errorCount: sql<number>`count(*) filter (where coalesce(${jobs.payload}->>'error', '') <> '')::int`,
+            models: sql<
+              string[]
+            >`coalesce(array_agg(distinct ${jobs.payload}->>'model') filter (where ${jobs.payload}->>'model' is not null), '{}')`,
+          })
+          .from(jobs)
+          .where(
+            and(
+              eq(jobs.jobType, LLM_PARSE_JOB_TYPE),
+              eq(jobs.status, "completed"),
+              gte(jobs.createdAt, startUtc),
+              lt(jobs.createdAt, endExclusiveUtc),
+            ),
+          ),
+      );
+
+      const callCount = Number(row?.callCount ?? 0);
+      if (callCount === 0) continue;
+
+      items.push({
+        tenant_id: t.id,
+        tenant_name: t.name,
+        call_count: callCount,
+        total_tokens: Number(row?.totalTokens ?? 0),
+        estimated_cost_usd_micros: Number(row?.costMicros ?? 0),
+        path_counts: {
+          heuristic: Number(row?.heuristicCount ?? 0),
+          openai_compatible: Number(row?.openaiCompatibleCount ?? 0),
+          openai_compatible_fallback: Number(row?.fallbackCount ?? 0),
+        },
+        error_count: Number(row?.errorCount ?? 0),
+        models: (row?.models ?? []).filter(
+          (m): m is string => m != null && m !== "",
+        ),
+      });
+    }
+
+    items.sort((a, b) => b.estimated_cost_usd_micros - a.estimated_cost_usd_micros);
+
+    const totals = items.reduce<{
+      call_count: number;
+      total_tokens: number;
+      estimated_cost_usd_micros: number;
+      error_count: number;
+      path_counts: PlatformLlmUsagePathCounts;
+    }>(
+      (acc, item) => {
+        acc.call_count += item.call_count;
+        acc.total_tokens += item.total_tokens;
+        acc.estimated_cost_usd_micros += item.estimated_cost_usd_micros;
+        acc.error_count += item.error_count;
+        acc.path_counts.heuristic += item.path_counts.heuristic;
+        acc.path_counts.openai_compatible += item.path_counts.openai_compatible;
+        acc.path_counts.openai_compatible_fallback +=
+          item.path_counts.openai_compatible_fallback;
+        return acc;
+      },
+      {
+        call_count: 0,
+        total_tokens: 0,
+        estimated_cost_usd_micros: 0,
+        error_count: 0,
+        path_counts: {
+          heuristic: 0,
+          openai_compatible: 0,
+          openai_compatible_fallback: 0,
+        },
+      },
+    );
+
+    return { period: { from, to }, items, totals };
   }
 
   async createTenant(

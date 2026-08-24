@@ -28,6 +28,7 @@ export const apiPaths = {
 	platformTenantMembers: (id: string) => `${API_V1_PREFIX}/platform/tenants/${id}/members`,
 	platformTenantMember: (tenantId: string, userId: string) =>
 		`${API_V1_PREFIX}/platform/tenants/${tenantId}/members/${userId}`,
+	platformLlmUsage: `${API_V1_PREFIX}/platform/llm-usage`,
 	cspReports: `${API_V1_PREFIX}/csp-reports`,
 	members: `${API_V1_PREFIX}/members`,
 	member: (id: string) => `${API_V1_PREFIX}/members/${id}`,
@@ -348,6 +349,7 @@ import {
 import {
 	meOrganizationListSchema,
 	meSchema,
+	platformLlmUsageResponseSchema,
 	platformMemberListSchema,
 	platformMemberUpsertSchema,
 	platformSoftDeleteResultSchema,
@@ -465,6 +467,9 @@ export const apiContract = {
 	'POST /v1/platform/tenants/:id/members': {
 		body: platformMemberUpsertSchema,
 		response: membershipUserSchema
+	},
+	'GET /v1/platform/llm-usage': {
+		response: platformLlmUsageResponseSchema
 	},
 	'DELETE /v1/platform/tenants/:id/members/:userId': {
 		response: softDeleteResultSchema
