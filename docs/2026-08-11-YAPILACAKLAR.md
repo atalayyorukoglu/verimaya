@@ -308,6 +308,56 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 
 ---
 
+## WAHA (WAHA-01, WAHA-02) — 2026-08-24, kullanıcı
+
+> **Nerede çalışıyor (sorunun cevabı, artık kayıtlı):** Tracker'ın **Railway** projesinde,
+> Cursor tarafından kurulmuş. Repoda hiçbir yerde yazmıyordu — WEBHOOK-01'in takıldığı yer
+> buydu. Railway proje id `9388b1e4-3378-4a98-979e-928c91ec6c3e`.
+
+- [ ] **WAHA-01 — WAHA'yı Hetzner/Coolify'a taşı. (S–M)**
+  **Neden:** (1) WAHA ham mesajı görüyor — `pii-mask.ts` kapısının **önünde** duruyor, yani
+  hasta adı/telefonu/tedavi konuşması orada maskesiz. Mistral "AB'de kalsın" diye seçildi;
+  Railway'in varsayılan bölgesi ABD, bölge doğrulanmadı. (2) Terk edilecek sistemin
+  (Tracker) içinde duruyor — Tracker kapanınca WhatsApp akışı da kapanır. (3) WhatsApp
+  oturumu = firmanın numarası; kontrol edilmeyen bir projenin faturasına bağlı.
+  **Kod işi yok:** bağımlılık tek yönlü (WAHA → `POST /v1/webhooks/waha`); repoda WAHA'ya
+  giden bağlantı yok. Verimaya tarafı zaten çok kiracılı — tenant, header'dan değil secret'ın
+  hash'inden çözülüyor (`tenant_provider_identities`). N firma aynı endpoint'e yazar.
+  **⛔ Ön koşul — sunucu RAM'i yetmiyor (2026-08-24 ölçümü):** `ubuntu-2gb-hel1-2` toplam
+  1.9 GB, boş 1.1 GB, **swap yok**. WEBJS motoru (Chromium) tek oturumda ~1–2 GB ister.
+  OOM killer Postgres'i veya API'yi vurar → prod çöker. **Önce 4 GB'a yükselt** (Hetzner bir
+  kademe, reboot ister). Alternatif NOWEB motoru (çok daha hafif) ama swapsiz 2 GB'da yine dar.
+  **Kurulum notları:** `/app/.sessions` kalıcı volume'e bağlanmalı (yoksa her restart QR
+  ister) · **API key zorunlu** — auth'suz açık WAHA = firmanın numarasından herkes mesaj
+  atabilir ve gelen kutusunu okuyabilir, taşımanın tek gerçek riski bu · public domain'e
+  gerek yok, Coolify iç ağı yeterli · firma başına bir konteyner (WAHA Core tek oturum;
+  çok oturum Plus'ta ücretli). Bugün 2 firma = 2 konteyner. QR yeniden okutulacak (kullanıcı
+  onayladı, sorun değil).
+  **WEBHOOK-01 ile tek geçişte yapılır** — ikisi de WAHA'nın webhook secret'ına dokunuyor;
+  ayrı yapılırsa secret iki kez değişir. Sıra: konteyner → QR → webhook URL + yeni secret →
+  test mesajı → `WEBHOOK_IDENTITY_DEFAULT_SECRET=false` + redeploy → Railway'deki **durdur,
+  silme** (birkaç gün geri dönüş).
+  **Müşteri başına kurulum maliyeti:** yeni müşteri = WAHA oturumu + QR + kimlik satırı +
+  webhook URL. Yani "kaydol ve kullan" değil, kurulumlu ürün. **MARKET-02 fiyat kartında
+  karşılığı olmalı** (kurulum ücreti ya da onboarding süresi).
+  **Ajan:** kullanıcı (sunucu + Coolify + QR erişimi sende) + Claude (adımlar, doğrulama).
+  **Görüş:**
+
+- [ ] **WAHA-02 — grup ayrımı: hangi grup hangi akışa. (M)** — *tartışma açık*
+  Bir WhatsApp numarası = bir oturum, o oturum firmanın **tüm** gruplarını görür (Muhasebe,
+  Planlama, …). Ayrı kurulum değil; ayrım mesajın içinde.
+  **Veri duruyor, kullanan yok:** WAHA her mesajda grup/sohbet id'si yolluyor (`…@g.us`) ve
+  `inbound_messages.payload` (jsonb) bunu olduğu gibi saklıyor — ama indeksli sütun yok ve
+  hiçbir yer ona göre yönlendirmiyor. Bugün tüm gruplar tek gelen kutusuna düşüyor.
+  **Eksik olan:** grup id → akış eşlemesi ("Muhasebe grubu finans ayrıştırmasına, Planlama
+  grubu randevu ajanına"). Karar gerektiren sorular: eşleme tenant ayarı mı yoksa sabit mi ·
+  eşlenmemiş grup ne olsun (gelen kutusuna düşsün mü, sessizce atılsın mı) · grup adı
+  değişirse ne olur (id sabit, ad değil).
+  **Veri taşımayı bloklamıyor**, ama pilotta ilk gün karşıya çıkar.
+  **Görüş:**
+
+---
+
 ## AI-12 — Öğrenme döngüsünü tanıt ve kapat (2026-08-24, kullanıcı)
 
 > **Kullanıcı:** *"Bu üçlü kontrol ve geliştirme aracını muhakkak tanıtmamız ve çalışır hale
