@@ -334,6 +334,21 @@ gibi hissediyor — oysa her düzeltme bir katkı.
 ve AI İsabet raporuna panelden görünür yol. Changelog + `features.ts` kaydı (DOC-04 kuralı:
 aynı commit'te).
 
+**Aynı bölüm satış dilidir (2026-08-24 kararı).** Doğruluk oranı vaat etmiyoruz; anlattığımız
+şey **mekanizma**. Dördü de bugün kodda:
+
+| Söz | Kod karşılığı |
+|---|---|
+| "Onaysız hiçbir şey kayda geçmez." | AI taslak yazar, kayıt onayla oluşur |
+| "Emin olmadığında söyler." | AI-09 güven seviyesi kırılımı |
+| "Her düzeltmeniz kaydediliyor ve sayılıyor." | `ai_corrections` (append-only) |
+| "Neyi ne sıklıkta düzelttiğinizi gösteririz." | Ayarlar → AI Öğrenme Raporu · Raporlar → AI İsabet |
+
+Kurulan cümle: *"Doğruluk oranı vaat etmiyoruz — kendi oranınızı gösteriyoruz. Bu sayı ay
+içinde yükseliyorsa sistem sizin işinize göre öğreniyor demektir; yükselmiyorsa bunu da
+görürsünüz."* Savunması kolay: müşteri kendi panelinde kendi rakamını görür, bizim
+savunmamız gereken bir iddia kalmaz. Rehber bölümü ile satış metni **ayrı yazılmaz**.
+
 ### 2. Döngü kapanmıyor — ölçüyor ama beslemiyor
 
 Rapor *"karşı taraf %80 düzeltiliyor"* diyor; oradan **eyleme giden yol yok.** Kullanıcının
@@ -365,16 +380,19 @@ Gün sonunda konuşulup ertesi güne bırakılan üç başlık. Kalem değil, **
    platform yüzeyine tenant başına maliyet kırılımı eklenebilir. **Tahmini: S–M.**
 
 2. **Pazarlama iddiası: "%xx doğrulukla aylık ~2 dolara kaydediyoruz."**
-   ⚠ **Dikkatli kurulması gereken bir cümle.** Bugünkü ölçüm ne söylüyor, ne söylemiyor:
+   → **Karar (2026-08-24, kullanıcı): hiç söylemeyeceğiz.** Ne doğruluk oranı, ne maliyet
+   rakamı, ne de muhasebeci karşılaştırması pazarlama diline girmez. Gerekçe:
    - %90 rakamı **tek bir firmanın** 40 mesajından çıktı ve yalnız **para birimi** alanını
      ölçüyor. Genel bir "doğruluk oranı" değil.
    - **2 dolar bizim maliyetimiz**, müşterinin gördüğü değer ya da fiyat değil. İkisini aynı
      cümlede söylemek karışıklık yaratır ve pazarlığı maliyet üzerinden başlatır.
    - *"Muhasebeciler eksik/hatalı giriyor"* karşılaştırması **ölçülmedi.** İnsan hata oranını
      bilmeden "bizden iyi" demek iddiayı çürütülebilir kılar.
-   **Sağlam zemin:** pilot verisi. AI-03 raporu tam bunu sayıyor (kaç taslak dokunulmadan
-   onaylandı). Birkaç haftalık gerçek kullanım sonrası rakam **kendi müşterinden** çıkar ve
-   savunulabilir olur.
+
+   **Yerine ne diyoruz:** rakam değil **mekanizma** — onay kapısı, güven seviyesi, düzeltme
+   kaydı, kendi isabet raporun. Metin **AI-12 § 1**'e taşındı; rehber bölümü ile satış dili
+   tek iştir. Sayı bir gün söylenecekse **müşterinin kendi panelinden** çıkar (AI-03 sayıyor),
+   bizim ölçümümüzden değil. **Bu başlık kapandı; kalan iş AI-12.**
 
 3. **Kalan yapılacakların gözden geçirilmesi.** Bu dosyanın tamamı + `docs/FIKIRLER.md`.
 
