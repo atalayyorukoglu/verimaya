@@ -69,5 +69,7 @@ export function featureStatusTone(status: FeatureStatus): Tone {
 			return 'info';
 		case 'harici-onay-bekliyor':
 			return 'warning';
+		case 'yakinda':
+			return 'neutral';
 	}
 }

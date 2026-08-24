@@ -1,4 +1,17 @@
-export type FeatureStatus = 'kod-hazir' | 'pilotta' | 'yayinda' | 'harici-onay-bekliyor';
+/**
+ * `yakinda` (2026-08-24): **kararı verilmiş ama henüz yazılmamış** iş.
+ *
+ * Sınır önemli — buraya yalnız `docs/2026-08-11-YAPILACAKLAR.md`'de kalemi olan işler
+ * girer. `docs/FIKIRLER.md`'deki fikirler **girmez**: orası kararı verilmemiş defterdir
+ * ve müşteriye görünen bir "Yakında" listesi taahhüt anlamına gelir. Fikri taahhüde
+ * çevirmek, FIKIRLER'in var olma sebebini ortadan kaldırır.
+ */
+export type FeatureStatus =
+	| 'kod-hazir'
+	| 'pilotta'
+	| 'yayinda'
+	| 'harici-onay-bekliyor'
+	| 'yakinda';
 
 export type FeatureModule =
 	| 'Hasta Takibi'
@@ -35,6 +48,91 @@ export type Feature = {
  * "Yayında"ya geçen özellik aynı commit'te changelog.ts'e de yazılır.
  */
 export const features: Feature[] = [
+	// --- Aşağıdakiler `docs/FIKIRLER.md`'den gelir: kararı VERİLMEMİŞ fikirler. -------
+	// Açıklamaları bilinçli olarak taahhüt dili taşımaz ("olabilir", "değerlendiriliyor"),
+	// çünkü fikri söze çevirmek FIKIRLER defterinin var olma sebebini ortadan kaldırır.
+	// Yapılmasına karar verilirse YAPILACAKLAR'a kalem olur ve açıklaması netleşir.
+	{
+		id: 'referral-chain',
+		module: 'Raporlama',
+		title: 'Referans zinciri',
+		description:
+			'Bugün doğrudan referans sayılıyor. Getirdiğinizin getirdiğini de sayan zincir görünümü değerlendiriliyor.',
+		status: 'yakinda'
+	},
+	{
+		id: 'multi-title',
+		module: 'Hasta Takibi',
+		title: 'Çok ünvanlı kişi',
+		description:
+			'Bugün kişi başına tek ünvan var. Aynı kişinin birden çok görevi olabilmesi değerlendiriliyor.',
+		status: 'yakinda'
+	},
+	{
+		id: 'incidents-departments',
+		module: 'Hasta Takibi',
+		title: 'Olay kaydı — diğer departmanlar',
+		description:
+			'Bugün yalnız klinik sorunları kaydediliyor. Otel, transfer, satış ve reklam türlerinin eklenmesi, klinik döngüsü sahada çalıştıktan sonra değerlendirilecek.',
+		status: 'yakinda'
+	},
+	{
+		id: 'maya-voice',
+		module: 'Platform',
+		title: 'Maya\'ya sesli soru',
+		description:
+			'Maya bugün yazıyla soruluyor. Sesle sormak değerlendiriliyor; Türkçe ses tanıma kalitesi belirleyici olacak.',
+		status: 'yakinda'
+	},
+	{
+		id: 'in-app-notifications',
+		module: 'Platform',
+		title: 'Panel içi bildirim',
+		description:
+			'Alarmlar ve müdahale listesi bugün ilgili sayfaya girilince görülüyor. Uyarının kullanıcıyı bulması değerlendiriliyor — eşikler oturmadan açılmayacak.',
+		status: 'yakinda'
+	},
+	{
+		id: 'whats-new-surface',
+		module: 'Platform',
+		title: 'Ürün içi yenilikler',
+		description:
+			'Panele girildiğinde son eklenenleri gösteren bir yüzey değerlendiriliyor.',
+		status: 'yakinda'
+	},
+	{
+		id: 'on-prem',
+		module: 'Platform',
+		title: 'Yerinde kurulum',
+		description:
+			'Verisinin hiçbir yere çıkmamasını isteyen klinikler için tek kutu kurulum değerlendiriliyor.',
+		status: 'yakinda'
+	},
+	// --- Buradan aşağısı YAPILACAKLAR'da kalemi olan, kararı VERİLMİŞ işler. ---------
+	{
+		id: 'maya-open-questions',
+		module: 'Platform',
+		title: 'Maya — akla gelen her soru',
+		description:
+			'Maya bugün beş sabit soruyu cevaplıyor; kısıtlı sorgu katmanıyla kayıtlarla ilgili serbest soruları da cevaplayacak.',
+		status: 'yakinda'
+	},
+	{
+		id: 'ai-learning-loop',
+		module: 'Platform',
+		title: 'AI öğrenme döngüsü',
+		description:
+			'Düzeltmeleriniz zaten kaydediliyor ve raporlanıyor; rapordan doğrudan AI notunu güncelleyebileceğiniz adım eklenecek.',
+		status: 'yakinda'
+	},
+	{
+		id: 'suggestion-whitelist',
+		module: 'Randevu',
+		title: 'Öneri alanlarının genişlemesi',
+		description:
+			'AI bugün yalnız randevu tarihi için öneri üretiyor; ölçüm sonrası telefon ve randevu durumu gibi alanlar da kapsama girecek.',
+		status: 'yakinda'
+	},
 	{
 		id: 'ai-knowledge-base',
 		module: 'WhatsApp',

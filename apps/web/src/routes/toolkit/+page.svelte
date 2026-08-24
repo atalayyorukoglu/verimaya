@@ -47,6 +47,16 @@
 		'referral-value': 'toolkit.feature.referral-value.description',
 		'report-compare': 'toolkit.feature.report-compare.description',
 		interventions: 'toolkit.feature.interventions.description',
+		'maya-open-questions': 'toolkit.feature.maya-open-questions.description',
+		'ai-learning-loop': 'toolkit.feature.ai-learning-loop.description',
+		'suggestion-whitelist': 'toolkit.feature.suggestion-whitelist.description',
+		'referral-chain': 'toolkit.feature.referral-chain.description',
+		'multi-title': 'toolkit.feature.multi-title.description',
+		'incidents-departments': 'toolkit.feature.incidents-departments.description',
+		'maya-voice': 'toolkit.feature.maya-voice.description',
+		'in-app-notifications': 'toolkit.feature.in-app-notifications.description',
+		'whats-new-surface': 'toolkit.feature.whats-new-surface.description',
+		'on-prem': 'toolkit.feature.on-prem.description',
 		'campaign-assistant': 'toolkit.feature.campaign-assistant.description',
 		'patients-list': 'toolkit.feature.patients-list.description',
 		'appointments-calendar': 'toolkit.feature.appointments-calendar.description',
@@ -83,6 +93,16 @@
 		'referral-value': 'toolkit.feature.referral-value.title',
 		'report-compare': 'toolkit.feature.report-compare.title',
 		interventions: 'toolkit.feature.interventions.title',
+		'maya-open-questions': 'toolkit.feature.maya-open-questions.title',
+		'ai-learning-loop': 'toolkit.feature.ai-learning-loop.title',
+		'suggestion-whitelist': 'toolkit.feature.suggestion-whitelist.title',
+		'referral-chain': 'toolkit.feature.referral-chain.title',
+		'multi-title': 'toolkit.feature.multi-title.title',
+		'incidents-departments': 'toolkit.feature.incidents-departments.title',
+		'maya-voice': 'toolkit.feature.maya-voice.title',
+		'in-app-notifications': 'toolkit.feature.in-app-notifications.title',
+		'whats-new-surface': 'toolkit.feature.whats-new-surface.title',
+		'on-prem': 'toolkit.feature.on-prem.title',
 		'campaign-assistant': 'toolkit.feature.campaign-assistant.title',
 		'patients-list': 'toolkit.feature.patients-list.title',
 		'appointments-calendar': 'toolkit.feature.appointments-calendar.title',
@@ -173,7 +193,13 @@
 		>
 			{t('features.filterAll')}
 		</button>
-		{#each ['kod-hazir', 'pilotta', 'yayinda', 'harici-onay-bekliyor'] as const as status (status)}
+		<!--
+			Filtreler bilinçli olarak üç: Kod Hazır · Onay Bekliyor · Yakında.
+			`pilotta` ve `yayinda` veride duruyor ama pilot başlamadığı için hiçbir kalem
+			o durumda değil — boş filtre düğmesi göstermek kafa karıştırır. PILOT-02 ile
+			bu listeye geri eklenecekler.
+		-->
+		{#each ['kod-hazir', 'harici-onay-bekliyor', 'yakinda'] as const as status (status)}
 			<button
 				type="button"
 				class="rounded-[6px] border px-3 py-1.5 text-xs font-medium transition-colors {statusFilter ===

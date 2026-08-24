@@ -1550,6 +1550,36 @@ const tr = {
 	'toolkit.feature.interventions.title': 'Müdahale listesi',
 	'toolkit.feature.interventions.description':
 		'Sistemin size söylediği yer: kalite düşüşü, açık olaylar, değerli referanslar. Eşiğin altındaki dalgalanma raporlanmaz.',
+	'toolkit.feature.maya-open-questions.title': 'Maya — akla gelen her soru',
+	'toolkit.feature.maya-open-questions.description':
+		'Maya bugün beş sabit soruyu cevaplıyor; kısıtlı sorgu katmanıyla kayıtlarla ilgili serbest soruları da cevaplayacak.',
+	'toolkit.feature.ai-learning-loop.title': 'AI öğrenme döngüsü',
+	'toolkit.feature.ai-learning-loop.description':
+		'Düzeltmeleriniz zaten kaydediliyor ve raporlanıyor; rapordan doğrudan AI notunu güncelleyebileceğiniz adım eklenecek.',
+	'toolkit.feature.suggestion-whitelist.title': 'Öneri alanlarının genişlemesi',
+	'toolkit.feature.suggestion-whitelist.description':
+		'AI bugün yalnız randevu tarihi için öneri üretiyor; ölçüm sonrası telefon ve randevu durumu gibi alanlar da kapsama girecek.',
+	'toolkit.feature.referral-chain.title': 'Referans zinciri',
+	'toolkit.feature.referral-chain.description':
+		'Bugün doğrudan referans sayılıyor. Getirdiğinizin getirdiğini de sayan zincir görünümü değerlendiriliyor.',
+	'toolkit.feature.multi-title.title': 'Çok ünvanlı kişi',
+	'toolkit.feature.multi-title.description':
+		'Bugün kişi başına tek ünvan var. Aynı kişinin birden çok görevi olabilmesi değerlendiriliyor.',
+	'toolkit.feature.incidents-departments.title': 'Olay kaydı — diğer departmanlar',
+	'toolkit.feature.incidents-departments.description':
+		'Bugün yalnız klinik sorunları kaydediliyor. Otel, transfer, satış ve reklam türlerinin eklenmesi, klinik döngüsü sahada çalıştıktan sonra değerlendirilecek.',
+	'toolkit.feature.maya-voice.title': "Maya'ya sesli soru",
+	'toolkit.feature.maya-voice.description':
+		'Maya bugün yazıyla soruluyor. Sesle sormak değerlendiriliyor; Türkçe ses tanıma kalitesi belirleyici olacak.',
+	'toolkit.feature.in-app-notifications.title': 'Panel içi bildirim',
+	'toolkit.feature.in-app-notifications.description':
+		'Alarmlar ve müdahale listesi bugün ilgili sayfaya girilince görülüyor. Uyarının kullanıcıyı bulması değerlendiriliyor — eşikler oturmadan açılmayacak.',
+	'toolkit.feature.whats-new-surface.title': 'Ürün içi yenilikler',
+	'toolkit.feature.whats-new-surface.description':
+		'Panele girildiğinde son eklenenleri gösteren bir yüzey değerlendiriliyor.',
+	'toolkit.feature.on-prem.title': 'Yerinde kurulum',
+	'toolkit.feature.on-prem.description':
+		'Verisinin hiçbir yere çıkmamasını isteyen klinikler için tek kutu kurulum değerlendiriliyor.',
 	'toolkit.feature.patients-list.title': 'Hasta listesi ve detay',
 	'toolkit.feature.patients-list.description':
 		'Lead ve hasta kayıtlarını listeleyin, durumlarını takip edin, not ve iletişim bilgilerine tek ekrandan ulaşın.',
@@ -4300,6 +4330,36 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.interventions.title': 'Intervention list',
 	'toolkit.feature.interventions.description':
 		'Where the system speaks first: quality drops, open incidents, valuable referrers. Changes below the threshold are not reported.',
+	'toolkit.feature.maya-open-questions.title': 'Maya — any question',
+	'toolkit.feature.maya-open-questions.description':
+		'Maya answers five fixed questions today; a constrained query layer will let it answer open questions about your records.',
+	'toolkit.feature.ai-learning-loop.title': 'AI learning loop',
+	'toolkit.feature.ai-learning-loop.description':
+		'Your corrections are already recorded and reported; a step to update the AI note straight from the report will be added.',
+	'toolkit.feature.suggestion-whitelist.title': 'Wider suggestion coverage',
+	'toolkit.feature.suggestion-whitelist.description':
+		'AI suggests only appointment dates today; phone and appointment status will follow once accuracy is measured.',
+	'toolkit.feature.referral-chain.title': 'Referral chain',
+	'toolkit.feature.referral-chain.description':
+		'Direct referrals are counted today. A chain view that also counts referrals-of-referrals is under consideration.',
+	'toolkit.feature.multi-title.title': 'Multiple titles per contact',
+	'toolkit.feature.multi-title.description':
+		'One title per contact today. Letting one person hold several roles is under consideration.',
+	'toolkit.feature.incidents-departments.title': 'Incident log — other departments',
+	'toolkit.feature.incidents-departments.description':
+		'Only clinic problems are recorded today. Hotel, transfer, sales and marketing types will be considered once the clinic loop proves itself in the field.',
+	'toolkit.feature.maya-voice.title': 'Ask Maya by voice',
+	'toolkit.feature.maya-voice.description':
+		'Maya is asked in writing today. Voice input is under consideration; Turkish speech recognition quality will decide it.',
+	'toolkit.feature.in-app-notifications.title': 'In-app notifications',
+	'toolkit.feature.in-app-notifications.description':
+		'Alerts and the intervention list are seen only when you open the page. Letting a warning find the user is under consideration — not before thresholds settle.',
+	'toolkit.feature.whats-new-surface.title': "What's new surface",
+	'toolkit.feature.whats-new-surface.description':
+		'A surface showing recent additions when you open the panel is under consideration.',
+	'toolkit.feature.on-prem.title': 'On-premise install',
+	'toolkit.feature.on-prem.description':
+		'A single-box install for clinics that want their data to never leave is under consideration.',
 	'toolkit.feature.patients-list.title': 'Patient list and detail',
 	'toolkit.feature.patients-list.description':
 		'List leads and patients, track status, and reach notes and contact details from one screen.',
