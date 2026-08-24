@@ -1496,6 +1496,10 @@ const tr = {
 	// toolkit (Araçlar — features listesi)
 	'toolkit.showInProducts': 'Ürünlerde Göster',
 	'toolkit.hideInProducts': 'Ürünlerde Gizle',
+	'toolkit.recentDescription': 'Son 30 günde eklenen özellikler.',
+	'toolkit.recentHeading': 'Son eklenenler',
+	'toolkit.open': 'Aç',
+	'toolkit.new': 'Yeni',
 	'toolkit.productModules.saveFailed': 'Ürün tercihi kaydedilemedi. Yeniden deneyin.',
 	'toolkit.module.patientTracking': 'Hasta Takibi',
 	'toolkit.module.appointments': 'Randevu',
@@ -4206,6 +4210,10 @@ const en: Record<MessageKey, string> = {
 
 	'toolkit.showInProducts': 'Show in Products',
 	'toolkit.hideInProducts': 'Hide from Products',
+	'toolkit.recentDescription': 'Features added in the last 30 days.',
+	'toolkit.recentHeading': 'Recently added',
+	'toolkit.open': 'Open',
+	'toolkit.new': 'New',
 	'toolkit.productModules.saveFailed': 'Could not save product preference. Please try again.',
 	'toolkit.module.patientTracking': 'Patient tracking',
 	'toolkit.module.appointments': 'Appointments',

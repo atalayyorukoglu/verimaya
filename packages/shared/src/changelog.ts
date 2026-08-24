@@ -18,6 +18,39 @@ export type ChangelogEntry = {
  * Tek kaynak: /changelog + (ileride) CHANGELOG.md buradan beslenir.
  * docs/CHANGELOG-KURALLARI.md
  */
+/**
+ * Bir özelliğin changelog'a **ilk girdiği** tarih. Yoksa `null`.
+ *
+ * `features.ts` ile `changelog.ts` zaten ayrı ayrı tutuluyor; bu fonksiyon ikisini
+ * birleştirir ve "Yeni" rozetini **bedavaya** üretir — yeni veri yazmaya gerek yok.
+ * DOC-04 kuralı (her özellik aynı commit'te changelog'a yazılır) bunu otomatik besler.
+ */
+export function featureFirstReleaseDate(featureId: string): string | null {
+	let earliest: string | null = null;
+	for (const entry of changelog) {
+		for (const change of entry.changes) {
+			if (change.featureId !== featureId) continue;
+			if (earliest === null || entry.date < earliest) earliest = entry.date;
+		}
+	}
+	return earliest;
+}
+
+/** Kaç gün "Yeni" sayılır. Bir ay: yeni gelen personel önceki ayın işlerini de görsün. */
+export const FEATURE_NEW_WINDOW_DAYS = 30;
+
+/**
+ * `today`'e göre özellik yeni mi. `today` dışarıdan verilir ki test sabit kalsın ve
+ * saat dilimi kararı çağıranda olsun.
+ */
+export function isFeatureNew(featureId: string, today: string): boolean {
+	const released = featureFirstReleaseDate(featureId);
+	if (!released) return false;
+	const diffMs = Date.parse(today) - Date.parse(released);
+	if (Number.isNaN(diffMs) || diffMs < 0) return false;
+	return diffMs <= FEATURE_NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export const changelog: ChangelogEntry[] = [
 	{
 		version: '0.11.0',

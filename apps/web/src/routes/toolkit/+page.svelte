@@ -3,7 +3,9 @@
 		features,
 		featureStatusLabels,
 		type FeatureModule,
-		type FeatureStatus
+		type FeatureStatus,
+		featureFirstReleaseDate,
+		isFeatureNew
 	} from '@verimaya/shared';
 	import { featureStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -100,6 +102,21 @@
 		features.filter((f) => statusFilter === 'all' || f.status === statusFilter)
 	);
 
+	/** "Yeni" rozeti bugüne göre hesaplanır; tarih tek yerde çözülür. */
+	const today = new Date().toISOString().slice(0, 10);
+
+	/**
+	 * Son eklenenler — modül gruplarından ÖNCE gelir. Kaynak `changelog.ts`; yeni veri
+	 * yazılmıyor, iki mevcut liste birleştiriliyor. Ay geçtikçe kendiliğinden boşalır.
+	 */
+	const recentFeatures = $derived(
+		filtered
+			.filter((f) => isFeatureNew(f.id, today))
+			.sort((a, b) =>
+				(featureFirstReleaseDate(b.id) ?? '').localeCompare(featureFirstReleaseDate(a.id) ?? '')
+			)
+	);
+
 	const grouped = $derived(
 		modules
 			.map((module) => ({
@@ -159,6 +176,38 @@
 		{/each}
 	</div>
 
+	{#if recentFeatures.length > 0}
+		<!--
+			Son eklenenler modül gruplarından ÖNCE gelir: kullanıcı sayfaya girdiğinde
+			"neler değişti" sorusunun cevabını aramadan görür. Liste `changelog.ts`'ten
+			türetilir, elle tutulmaz; ay geçtikçe kendiliğinden boşalır.
+		-->
+		<section class="mb-8 rounded-lg border border-brand/30 bg-brand-subtle/30 p-4">
+			<h2 class="text-sm font-semibold text-text">{t('toolkit.recentHeading')}</h2>
+			<p class="mt-0.5 mb-3 text-xs text-text-muted">{t('toolkit.recentDescription')}</p>
+			<ul class="flex flex-wrap gap-2">
+				{#each recentFeatures as feature (feature.id)}
+					<li>
+						{#if feature.route}
+							<a
+								href={feature.route}
+								class="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-text hover:bg-surface-2"
+							>
+								{t(featureTitleKey(feature.id))} →
+							</a>
+						{:else}
+							<span
+								class="inline-flex items-center rounded-[6px] border border-border bg-surface px-2.5 py-1.5 text-xs text-text-muted"
+							>
+								{t(featureTitleKey(feature.id))}
+							</span>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
 	<div class="space-y-8">
 		{#each grouped as group (group.module)}
 			<section>
@@ -176,14 +225,33 @@
 								<div class="flex min-w-0 flex-1 flex-col gap-2">
 									<div class="flex flex-wrap items-start justify-between gap-2">
 										<h3 class="font-medium text-text">{t(featureTitleKey(feature.id))}</h3>
-										<StatusBadge
-											label={featureStatusLabels[feature.status]}
-											tone={featureStatusTone(feature.status)}
-										/>
+										<div class="flex shrink-0 items-center gap-1.5">
+											{#if isFeatureNew(feature.id, today)}
+												<span
+													class="rounded-full bg-brand-subtle px-2 py-0.5 text-[11px] font-medium text-brand-text"
+												>
+													{t('toolkit.new')}
+												</span>
+											{/if}
+											<StatusBadge
+												label={featureStatusLabels[feature.status]}
+												tone={featureStatusTone(feature.status)}
+											/>
+										</div>
 									</div>
 									<p class="text-sm text-text-muted">
 										{t(featureDescriptionKey(feature.id))}
 									</p>
+									{#if feature.route}
+										<!-- "Listelenmiş" ile "tanıtılmış" arasındaki fark: kullanıcı nereden
+										     açacağını bilmeli. Rotası olmayan kalemler yalnız açıklayıcıdır. -->
+										<a
+											href={feature.route}
+											class="inline-flex w-fit items-center gap-1 text-xs font-medium text-brand-text hover:underline"
+										>
+											{t('toolkit.open')} →
+										</a>
+									{/if}
 									{#if feature.status === 'yayinda' && feature.version}
 										<a href="/changelog" class="inline-block text-xs text-info hover:underline">
 											{t('features.versionLink', { version: feature.version })}
