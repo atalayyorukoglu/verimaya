@@ -308,6 +308,52 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 
 ---
 
+## AI-12 — Öğrenme döngüsünü tanıt ve kapat (2026-08-24, kullanıcı)
+
+> **Kullanıcı:** *"Bu üçlü kontrol ve geliştirme aracını muhakkak tanıtmamız ve çalışır hale
+> getirmemiz lazım."*
+
+**Bugün ne var (üç katman, üçü de kodda ve canlıda):**
+
+| Katman | Nerede | Ne yapıyor |
+|---|---|---|
+| Kayıt | `ai_corrections` tablosu | Onay anında "AI ne önerdi / kullanıcı ne yaptı" farkını append-only yazıyor |
+| Ekran | Ayarlar → **AI Öğrenme Raporu** | En çok düzeltilen alanlar: alan · düzeltme · mesaj sayısı |
+| Rapor | Raporlar → **AI İsabet** (AI-03) | Üstüne randevu önerisi kabul oranı + Maya'nın cevaplayamadıkları; AI-09 sayesinde **güven seviyesi kırılımı** da var |
+
+**Eksik olan iki şey:**
+
+### 1. Tanıtım — kullanıcı bu döngüyü bilmiyor
+
+`docs/KULLANIM-REHBERI.md`'de "AI İsabet" iki kez geçiyor ama **döngünün kendisi
+anlatılmamış**: kullanıcı taslağı düzelttiğinde bunun kaydedildiğini, sayıldığını ve
+sistemi iyileştirmek için kullanılabileceğini bilmiyor. Bilmeyince de "düzeltmek zahmet"
+gibi hissediyor — oysa her düzeltme bir katkı.
+
+**Kabul:** rehbere ayrı bir bölüm — *"Düzelttiğiniz her şey sayılıyor"*. Ayarlar ekranına
+ve AI İsabet raporuna panelden görünür yol. Changelog + `features.ts` kaydı (DOC-04 kuralı:
+aynı commit'te).
+
+### 2. Döngü kapanmıyor — ölçüyor ama beslemiyor
+
+Rapor *"karşı taraf %80 düzeltiliyor"* diyor; oradan **eyleme giden yol yok.** Kullanıcının
+kendiliğinden Ayarlar → AI Notu'na gidip doğru cümleyi yazması bekleniyor. Gitmiyor.
+
+**Kabul:** raporda her bulgunun yanında **"AI notuna ekle"** eylemi. Sistem önerilen metni
+**hazırlıyor**, kullanıcı görüp düzenliyor ve kaydediyor — otomatik yazma **yok**.
+
+> **Bu, AI-03 kapsam daraltmasının uygulanmış hâli.** Orada "sık red desenleri prompt'a
+> otomatik girsin" reddedilmişti: kendini yazan prompt, "onaysız hiçbir şey kayda geçmez"
+> kuralının tek istisnası olur ve dış mesajlar için enjeksiyon yüzeyi açar. Buradaki fark
+> **insan kapısı**: sistem taslak cümleyi hazırlar, yazan kullanıcıdır. Aynı fayda, kontrol
+> yerinde. Bu ayrım kodda ve testte korunmalı.
+
+**Ön koşul:** gerçek kullanım verisi. Bugün `ai_corrections` boş; boş bir raporu tanıtmak
+kimseyi ikna etmez. **PILOT-02 ile birlikte.**
+**Boyut: M** · **Bağımlı:** DOC-05 (rehber), AI-03 (rapor)
+
+---
+
 ## Yarına bırakılanlar (2026-08-23 akşamı, kullanıcı)
 
 Gün sonunda konuşulup ertesi güne bırakılan üç başlık. Kalem değil, **oturum gündemi**.
@@ -480,6 +526,7 @@ Gün sonunda konuşulup ertesi güne bırakılan üç başlık. Kalem değil, **
 | **AI-10** | LLM veri politikası dokümanı — sağlayıcı, eğitim opt-out, saklama, yurtdışı aktarım | LEG-02 | S |
 | ~~**AI-11a**~~ ✅ | Maya canlı veri v1 — sabit araç listesi (5 araç) + **soru kaydı** | AUDIT-04 | M |
 | **AI-11b** | Maya canlı veri v2 — kısıtlı sorgu katmanı ("akla gelen her soru") | AI-11a soru kaydı | L |
+| **AI-12** | Öğrenme döngüsünü tanıt ve kapat — ölçüyor ama beslemiyor | PILOT-02 verisi | M |
 
 **Değişmez kurallar** (bozulursa "insan onaylı" savunması çöker): toplu kabul yok, her kart tek
 tek onaylanır · eşleşme belirsizse öneri **üretilmez** · para alanları, `deleted_at`, rol/izin
