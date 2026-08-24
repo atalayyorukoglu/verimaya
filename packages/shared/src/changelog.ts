@@ -36,8 +36,14 @@ export function featureFirstReleaseDate(featureId: string): string | null {
 	return earliest;
 }
 
-/** Kaç gün "Yeni" sayılır. Bir ay: yeni gelen personel önceki ayın işlerini de görsün. */
-export const FEATURE_NEW_WINDOW_DAYS = 30;
+/**
+ * Kaç gün "Yeni" sayılır.
+ *
+ * 30 gündü, **14'e indirildi (2026-08-24)**: bu projede neredeyse her gün sürüm çıkıyor,
+ * 30 günlük pencerede bir aylık iş birden "yeni" görünüyordu (GoHighLevel senkronu gibi
+ * çoktan yerleşmiş özellikler dahil). Rozet her yerdeyse hiçbir yerde değildir.
+ */
+export const FEATURE_NEW_WINDOW_DAYS = 14;
 
 /**
  * `today`'e göre özellik yeni mi. `today` dışarıdan verilir ki test sabit kalsın ve

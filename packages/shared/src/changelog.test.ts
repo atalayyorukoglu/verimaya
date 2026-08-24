@@ -25,9 +25,9 @@ describe('featureFirstReleaseDate / isFeatureNew (Araçlar "Yeni" rozeti)', () =
 		expect(featureFirstReleaseDate('boyle-bir-ozellik-yok')).toBeNull();
 	});
 
-	it('30 gün içinde yeni, sonrasında değil', () => {
-		expect(isFeatureNew('referral-value', '2026-09-10')).toBe(true);
-		expect(isFeatureNew('referral-value', '2026-10-01')).toBe(false);
+	it('pencere içinde yeni, sonrasında değil', () => {
+		expect(isFeatureNew('referral-value', '2026-08-30')).toBe(true);
+		expect(isFeatureNew('referral-value', '2026-09-10')).toBe(false);
 	});
 
 	it('yayın tarihi gelecekteyse yeni saymaz (saat dilimi kayması)', () => {

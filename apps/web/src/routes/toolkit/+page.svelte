@@ -4,7 +4,6 @@
 		featureStatusLabels,
 		type FeatureModule,
 		type FeatureStatus,
-		featureFirstReleaseDate,
 		isFeatureNew
 	} from '@verimaya/shared';
 	import { featureStatusTone } from '$lib/status-tone';
@@ -129,18 +128,6 @@
 	/** "Yeni" rozeti bugüne göre hesaplanır; tarih tek yerde çözülür. */
 	const today = new Date().toISOString().slice(0, 10);
 
-	/**
-	 * Son eklenenler — modül gruplarından ÖNCE gelir. Kaynak `changelog.ts`; yeni veri
-	 * yazılmıyor, iki mevcut liste birleştiriliyor. Ay geçtikçe kendiliğinden boşalır.
-	 */
-	const recentFeatures = $derived(
-		filtered
-			.filter((f) => isFeatureNew(f.id, today))
-			.sort((a, b) =>
-				(featureFirstReleaseDate(b.id) ?? '').localeCompare(featureFirstReleaseDate(a.id) ?? '')
-			)
-	);
-
 	const grouped = $derived(
 		modules
 			.map((module) => ({
@@ -199,38 +186,6 @@
 			</button>
 		{/each}
 	</div>
-
-	{#if recentFeatures.length > 0}
-		<!--
-			Son eklenenler modül gruplarından ÖNCE gelir: kullanıcı sayfaya girdiğinde
-			"neler değişti" sorusunun cevabını aramadan görür. Liste `changelog.ts`'ten
-			türetilir, elle tutulmaz; ay geçtikçe kendiliğinden boşalır.
-		-->
-		<section class="mb-8 rounded-lg border border-brand/30 bg-brand-subtle/30 p-4">
-			<h2 class="text-sm font-semibold text-text">{t('toolkit.recentHeading')}</h2>
-			<p class="mt-0.5 mb-3 text-xs text-text-muted">{t('toolkit.recentDescription')}</p>
-			<ul class="flex flex-wrap gap-2">
-				{#each recentFeatures as feature (feature.id)}
-					<li>
-						{#if feature.route}
-							<a
-								href={feature.route}
-								class="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-text hover:bg-surface-2"
-							>
-								{t(featureTitleKey(feature.id))} →
-							</a>
-						{:else}
-							<span
-								class="inline-flex items-center rounded-[6px] border border-border bg-surface px-2.5 py-1.5 text-xs text-text-muted"
-							>
-								{t(featureTitleKey(feature.id))}
-							</span>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
 
 	<div class="space-y-8">
 		{#each grouped as group (group.module)}
