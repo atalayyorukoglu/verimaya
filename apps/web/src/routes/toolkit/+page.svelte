@@ -36,6 +36,18 @@
 	}
 
 	const FEATURE_DESCRIPTION_KEYS = {
+		'ai-knowledge-base': 'toolkit.feature.ai-knowledge-base.description',
+		'ai-record-suggestions': 'toolkit.feature.ai-record-suggestions.description',
+		'ai-operation-alerts': 'toolkit.feature.ai-operation-alerts.description',
+		'ai-evidence': 'toolkit.feature.ai-evidence.description',
+		'ai-accuracy': 'toolkit.feature.ai-accuracy.description',
+		'maya-live-data': 'toolkit.feature.maya-live-data.description',
+		'contact-titles': 'toolkit.feature.contact-titles.description',
+		'appointment-doctor': 'toolkit.feature.appointment-doctor.description',
+		incidents: 'toolkit.feature.incidents.description',
+		'referral-value': 'toolkit.feature.referral-value.description',
+		'report-compare': 'toolkit.feature.report-compare.description',
+		interventions: 'toolkit.feature.interventions.description',
 		'campaign-assistant': 'toolkit.feature.campaign-assistant.description',
 		'patients-list': 'toolkit.feature.patients-list.description',
 		'appointments-calendar': 'toolkit.feature.appointments-calendar.description',
@@ -60,6 +72,18 @@
 	} as const satisfies Record<string, MessageKey>;
 
 	const FEATURE_TITLE_KEYS = {
+		'ai-knowledge-base': 'toolkit.feature.ai-knowledge-base.title',
+		'ai-record-suggestions': 'toolkit.feature.ai-record-suggestions.title',
+		'ai-operation-alerts': 'toolkit.feature.ai-operation-alerts.title',
+		'ai-evidence': 'toolkit.feature.ai-evidence.title',
+		'ai-accuracy': 'toolkit.feature.ai-accuracy.title',
+		'maya-live-data': 'toolkit.feature.maya-live-data.title',
+		'contact-titles': 'toolkit.feature.contact-titles.title',
+		'appointment-doctor': 'toolkit.feature.appointment-doctor.title',
+		incidents: 'toolkit.feature.incidents.title',
+		'referral-value': 'toolkit.feature.referral-value.title',
+		'report-compare': 'toolkit.feature.report-compare.title',
+		interventions: 'toolkit.feature.interventions.title',
 		'campaign-assistant': 'toolkit.feature.campaign-assistant.title',
 		'patients-list': 'toolkit.feature.patients-list.title',
 		'appointments-calendar': 'toolkit.feature.appointments-calendar.title',

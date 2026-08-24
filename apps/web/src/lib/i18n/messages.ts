@@ -1514,6 +1514,42 @@ const tr = {
 	'toolkit.feature.campaign-assistant.title': 'Kampanya Asistanı',
 	'toolkit.feature.campaign-assistant.description':
 		'Pazarlama hub’ı — gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontrolleri tek yerde.',
+	'toolkit.feature.ai-knowledge-base.title': 'Bilgi bankası',
+	'toolkit.feature.ai-knowledge-base.description':
+		'Hizmetler, fiyatlar, ödeme kuralları ve red gerekçeleri buradan girilir; WhatsApp ayrıştırması ve Maya bu bilgiden cevaplar. Değişiklikler sürümlenerek saklanır.',
+	'toolkit.feature.ai-record-suggestions.title': 'Randevu güncelleme önerileri',
+	'toolkit.feature.ai-record-suggestions.description':
+		'WhatsApp mesajından çıkan tarih değişikliği öneri olarak kuyruğa düşer. Her kart tek tek onaylanır; eşleşme belirsizse öneri üretilmez.',
+	'toolkit.feature.ai-operation-alerts.title': 'Operasyon alarmları',
+	'toolkit.feature.ai-operation-alerts.description':
+		'Uçuş ve transfer gibi zaman kilitli kalemler eşiğe gelince uyarı üretir. Deterministik kod — yapay zekâ değil.',
+	'toolkit.feature.ai-evidence.title': 'Taslakta kaynak izi',
+	'toolkit.feature.ai-evidence.description':
+		'Taslaktaki her alan hangi cümleden çıktığını taşır; rozete tıklayınca mesajda o alıntı vurgulanır. Uydurma alıntı sunucuda düşürülür.',
+	'toolkit.feature.ai-accuracy.title': 'AI isabet ölçümü',
+	'toolkit.feature.ai-accuracy.description':
+		'Taslakların ne kadarı düzeltilmeden onaylandı, hangi alan en çok düzeltiliyor, Maya neyi cevaplayamadı.',
+	'toolkit.feature.maya-live-data.title': 'Maya canlı veri',
+	'toolkit.feature.maya-live-data.description':
+		'Maya bakiye, açık alacak, randevu, dönem özeti ve temassız kişileri canlı veriden cevaplar. Rakamı veritabanı verir, model yalnız hangi sorgunun çalışacağını seçer.',
+	'toolkit.feature.contact-titles.title': 'Kişi ünvanları',
+	'toolkit.feature.contact-titles.description':
+		'Hekim, koordinatör, satış, reklam uzmanı gibi görev etiketleri; liste Ayarlar’dan yönetilir. Ünvan tanımlayıcıdır, yetkiyi değiştirmez.',
+	'toolkit.feature.appointment-doctor.title': 'Randevuda hekim',
+	'toolkit.feature.appointment-doctor.description':
+		'Randevuya hekim atanır; randevu metrikleri hekim kırılımı ve hekim × randevu tipi çapraz sayımı döndürür.',
+	'toolkit.feature.incidents.title': 'Olay kaydı',
+	'toolkit.feature.incidents.description':
+		'Hasta dosyasından tek tıkla açılan sorun kaydı: revizyon gerekti, komplikasyon, süreç gecikmesi. Opsiyonel maliyet taşır ve çözüldü olarak kapatılır.',
+	'toolkit.feature.referral-value.title': 'Referans değeri',
+	'toolkit.feature.referral-value.description':
+		'Kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve koordinatörü kim.',
+	'toolkit.feature.report-compare.title': 'Dönem karşılaştırması',
+	'toolkit.feature.report-compare.description':
+		'Özet ve randevu metrikleri önceki dönemle karşılaştırılır. Az kayda dayanan değişimde yüzde gösterilmez.',
+	'toolkit.feature.interventions.title': 'Müdahale listesi',
+	'toolkit.feature.interventions.description':
+		'Sistemin size söylediği yer: kalite düşüşü, açık olaylar, değerli referanslar. Eşiğin altındaki dalgalanma raporlanmaz.',
 	'toolkit.feature.patients-list.title': 'Hasta listesi ve detay',
 	'toolkit.feature.patients-list.description':
 		'Lead ve hasta kayıtlarını listeleyin, durumlarını takip edin, not ve iletişim bilgilerine tek ekrandan ulaşın.',
@@ -4228,6 +4264,42 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.campaign-assistant.title': 'Campaign Assistant',
 	'toolkit.feature.campaign-assistant.description':
 		'Marketing hub — real ROAS calculator, simulator, compliance scan, and pre-launch checks in one place.',
+	'toolkit.feature.ai-knowledge-base.title': 'Knowledge base',
+	'toolkit.feature.ai-knowledge-base.description':
+		'Services, prices, payment rules and rejection reasons live here; WhatsApp parsing and Maya answer from it. Changes are versioned.',
+	'toolkit.feature.ai-record-suggestions.title': 'Appointment update suggestions',
+	'toolkit.feature.ai-record-suggestions.description':
+		'Date changes found in a WhatsApp message land in a queue. Every card is approved one by one; ambiguous matches produce nothing.',
+	'toolkit.feature.ai-operation-alerts.title': 'Operation alerts',
+	'toolkit.feature.ai-operation-alerts.description':
+		'Time-locked items like flights and transfers raise a warning at the threshold. Deterministic code — not AI.',
+	'toolkit.feature.ai-evidence.title': 'Source trail on drafts',
+	'toolkit.feature.ai-evidence.description':
+		'Every draft field carries the sentence it came from; clicking the badge highlights that quote. Fabricated quotes are dropped server-side.',
+	'toolkit.feature.ai-accuracy.title': 'AI accuracy report',
+	'toolkit.feature.ai-accuracy.description':
+		'How many drafts were approved untouched, which field is corrected most, and what Maya could not answer.',
+	'toolkit.feature.maya-live-data.title': 'Maya live data',
+	'toolkit.feature.maya-live-data.description':
+		'Maya answers balance, receivables, appointment, period summary and untouched-contact questions from live data. The database provides the number; the model only picks the query.',
+	'toolkit.feature.contact-titles.title': 'Contact titles',
+	'toolkit.feature.contact-titles.description':
+		'Role labels such as doctor, coordinator, sales, ad specialist; the list is managed in Settings. A title is descriptive and never changes permissions.',
+	'toolkit.feature.appointment-doctor.title': 'Doctor on appointments',
+	'toolkit.feature.appointment-doctor.description':
+		'Assign a doctor to an appointment; appointment metrics return a per-doctor breakdown and a doctor × type cross-count.',
+	'toolkit.feature.incidents.title': 'Incident log',
+	'toolkit.feature.incidents.description':
+		'One-click problem record from the case file: revision needed, complication, process delay. Carries an optional cost and can be marked resolved.',
+	'toolkit.feature.referral-value.title': 'Referral value',
+	'toolkit.feature.referral-value.description':
+		'Who referred how many people, what those people earned, plus the referrer’s title and coordinator.',
+	'toolkit.feature.report-compare.title': 'Period comparison',
+	'toolkit.feature.report-compare.description':
+		'Summary and appointment metrics compare against the previous period. No percentage is shown when the sample is too small.',
+	'toolkit.feature.interventions.title': 'Intervention list',
+	'toolkit.feature.interventions.description':
+		'Where the system speaks first: quality drops, open incidents, valuable referrers. Changes below the threshold are not reported.',
 	'toolkit.feature.patients-list.title': 'Patient list and detail',
 	'toolkit.feature.patients-list.description':
 		'List leads and patients, track status, and reach notes and contact details from one screen.',
