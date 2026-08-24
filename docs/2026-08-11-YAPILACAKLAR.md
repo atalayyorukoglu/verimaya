@@ -342,6 +342,30 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
   gerek yok, Coolify iç ağı yeterli · firma başına bir konteyner (WAHA Core tek oturum;
   çok oturum Plus'ta ücretli). Bugün 2 firma = 2 konteyner. QR yeniden okutulacak (kullanıcı
   onayladı, sorun değil).
+  **✅ Çevirmen yazıldı (2026-08-24) — `apps/waha-relay/`.** Kurulum sırasında çıkan blokaj:
+  **WAHA, Verimaya'nın istediği imzayı üretemiyor.** API her istekte taze `X-Webhook-Timestamp`
+  ve `${ts}.waha.${tenantId}.${gövde}` üzerinden hesaplanmış HMAC istiyor; WAHA webhook'a
+  yalnız **sabit** başlık ekleyebiliyor. Yani **WAHA → Verimaya yolu hiç çalışmadı** —
+  mesajlar bugün eski Tracker'a düşüyor (`fixrav-tracker/backend/app/routers/whatsapp_webhook.py`,
+  sabit `X-Webhook-Token` kabul ediyor). Verimaya'da o gevşek yol bilinçli kapalı; WEBHOOK-01'in
+  tüm gerekçesi buydu.
+  **Çözüm — araya imzalayan bir aracı:** WhatsApp → WAHA → `waha-relay` → API. Sıfır bağımlılık,
+  14/14 test yeşil. Oturum→firma eşlemesi orada duruyor; eşlenmemiş oturum **iletilmiyor**
+  (yanlış firmaya yazmaktansa reddet), mesaj içeriği **loglanmıyor** (pii-mask kapısının önünde).
+  API'nin imza kanonu değişirse kaynaktan okuyan drift testi kırmızıya dönüyor — canlıda
+  sessiz 401 yerine testte görünsün diye. Reddedilen iki alternatif: API'ye sabit token yolu
+  açmak (WEBHOOK-01'i çöpe atardı) ve WAHA'yı imza üretecek şekilde ayarlamak (öyle bir
+  özelliği yok).
+
+  **⏸ Sıra kararı (2026-08-24, kullanıcı): kurulum veri taşımadan SONRA.** Gerekçe: taşıma
+  yeni tenant açacak, tenant id değişecek; şimdi kimlik satırı açmak boşa gider. Sıra:
+  **(1) veri taşıma → (2) `webhook:identity issue` + secret'lar → (3) WAHA + relay + QR →
+  (4) WEBHOOK-01 kapanışı.**
+  **Bilinerek kabul edilen sonuç:** WhatsApp gelen kutusu o zamana kadar **Tracker'da kalıyor**,
+  Verimaya'ya akmıyor. WEBHOOK-01 de (23 Ağustos'ta gecikmişti) bu kuyruğa giriyor.
+  Kimlik satırı komutu hazır ve prod imajının içinde: `node scripts/webhook-identity.js
+  status|issue --provider waha`.
+
   **WEBHOOK-01 ile tek geçişte yapılır** — ikisi de WAHA'nın webhook secret'ına dokunuyor;
   ayrı yapılırsa secret iki kez değişir. Sıra: konteyner → QR → webhook URL + yeni secret →
   test mesajı → `WEBHOOK_IDENTITY_DEFAULT_SECRET=false` + redeploy → Railway'deki **durdur,
