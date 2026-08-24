@@ -49,6 +49,19 @@ export function formatRatio(value: number): string {
 	return `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 }).format(value)}×`;
 }
 
+/**
+ * `estimated_cost_usd_micros` (1e-6 USD) → "$0.001234". Bölme yalnız burada —
+ * platform LLM kullanım panelinin tek para gösterim yeri.
+ */
+export function formatUsdMicros(micros: number): string {
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD',
+		minimumFractionDigits: 6,
+		maximumFractionDigits: 6
+	}).format(micros / 1_000_000);
+}
+
 /** Fraction as percent, e.g. 0.53 → "53,0%". Non-finite → "—". */
 export function formatPercent(fraction: number, digits = 1): string {
 	if (!Number.isFinite(fraction)) return '—';

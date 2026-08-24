@@ -1,15 +1,23 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import type { CspReportList, MembershipUser, PlatformTenant, UserRole } from '@verimaya/shared';
+	import type {
+		CspReportList,
+		MembershipUser,
+		PlatformLlmUsageResponse,
+		PlatformTenant,
+		UserRole
+	} from '@verimaya/shared';
 	import { apiPaths, userRoleLabels } from '@verimaya/shared';
 	import { apiGet, apiSend, fieldClass } from '$lib/api';
 	import { cspHintKey, cspModeFromHeaders, parseCspHeader } from '$lib/csp-policy';
 	import { canAccessPlatformPanel, resolveDevPanelRoute } from '$lib/dev-panel';
 	import { DEV_PANEL_ENABLED } from '$lib/dev-panel-enabled';
+	import { formatUsdMicros } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 
 	const queryClient = useQueryClient();
@@ -78,6 +86,26 @@
 		enabled: platformEnabled
 	}));
 	const reports = $derived(reportsQuery.data?.items ?? []);
+
+	const llmUsageQuery = createQuery(() => ({
+		queryKey: ['platform', 'llm-usage'],
+		queryFn: () => apiGet<PlatformLlmUsageResponse>(apiPaths.platformLlmUsage),
+		enabled: platformEnabled
+	}));
+	const llmUsage = $derived(llmUsageQuery.data);
+
+	/** %20 üstü sarı, %40 üstü kırmızı — boş/hatalı LLM dönüşü işareti. */
+	function fallbackRate(row: {
+		call_count: number;
+		path_counts: { openai_compatible_fallback: number };
+	}) {
+		return row.call_count > 0 ? row.path_counts.openai_compatible_fallback / row.call_count : 0;
+	}
+	function fallbackTone(rate: number): 'neutral' | 'warning' | 'danger' {
+		if (rate > 0.4) return 'danger';
+		if (rate > 0.2) return 'warning';
+		return 'neutral';
+	}
 
 	let newOrgName = $state('');
 	let grantSelf = $state(true);
@@ -310,6 +338,79 @@
 					</table>
 				{/if}
 			</div>
+		</section>
+
+		<section>
+			<h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">
+				{t('dev.llmUsage.title')}
+			</h2>
+			<p class="mt-1 text-xs text-text-muted">{t('dev.llmUsage.hint')}</p>
+
+			{#if llmUsageQuery.isPending}
+				<p class="mt-3 text-sm text-text-muted">{t('dev.loading')}</p>
+			{:else if llmUsageQuery.isError}
+				<p class="mt-3 text-sm text-danger">{t('dev.llmUsage.error.load')}</p>
+			{:else if !llmUsage || llmUsage.items.length === 0}
+				<p class="mt-3 text-sm text-text-muted">{t('dev.llmUsage.empty')}</p>
+			{:else}
+				<div class="mt-3 flex flex-wrap gap-4">
+					<div class="rounded-lg border border-border bg-surface px-4 py-3">
+						<p class="text-xs text-text-muted">{t('dev.llmUsage.totalCalls')}</p>
+						<p class="mt-1 text-lg font-semibold text-text">{llmUsage.totals.call_count}</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface px-4 py-3">
+						<p class="text-xs text-text-muted">{t('dev.llmUsage.totalTokens')}</p>
+						<p class="mt-1 text-lg font-semibold text-text">{llmUsage.totals.total_tokens}</p>
+					</div>
+					<div class="rounded-lg border border-border bg-surface px-4 py-3">
+						<p class="text-xs text-text-muted">{t('dev.llmUsage.totalCost')}</p>
+						<p class="mt-1 text-lg font-semibold text-text">
+							{formatUsdMicros(llmUsage.totals.estimated_cost_usd_micros)}
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+					<table class="w-full min-w-[48rem] text-left text-sm">
+						<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
+							<tr>
+								<th class="px-3 py-2 font-medium">{t('dev.llmUsage.colTenant')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.llmUsage.colCalls')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.llmUsage.colTokens')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.llmUsage.colCost')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.llmUsage.colFallback')}</th>
+								<th class="px-3 py-2 font-medium">{t('dev.llmUsage.colErrors')}</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-border">
+							{#each llmUsage.items as row (row.tenant_id)}
+								{@const rate = fallbackRate(row)}
+								<tr>
+									<td class="px-3 py-2 align-top text-text">
+										<div class="font-medium">{row.tenant_name}</div>
+										<div class="font-mono text-[11px] text-text-faint">{row.models.join(', ')}</div>
+									</td>
+									<td class="px-3 py-2 align-top text-text">{row.call_count}</td>
+									<td class="px-3 py-2 align-top text-text">{row.total_tokens}</td>
+									<td class="px-3 py-2 align-top text-text">
+										{formatUsdMicros(row.estimated_cost_usd_micros)}
+									</td>
+									<td class="px-3 py-2 align-top">
+										<StatusBadge
+											label={new Intl.NumberFormat('tr-TR', {
+												style: 'percent',
+												maximumFractionDigits: 1
+											}).format(rate)}
+											tone={fallbackTone(rate)}
+										/>
+									</td>
+									<td class="px-3 py-2 align-top text-text">{row.error_count}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
 		</section>
 
 		<section>

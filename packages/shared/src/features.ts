@@ -188,6 +188,15 @@ export const features: Feature[] = [
 		route: '/maya'
 	},
 	{
+		id: 'llm-cost-tracking',
+		module: 'Platform',
+		title: 'LLM maliyet takibi',
+		description:
+			'Platform yöneticisi tenant başına LLM çağrı sayısı, token ve maliyeti görür; fallback oranı yüksekse renkli işaretle uyarır.',
+		status: 'kod-hazir',
+		route: '/dev'
+	},
+	{
 		id: 'contact-titles',
 		module: 'Hasta Takibi',
 		title: 'Kişi ünvanları',

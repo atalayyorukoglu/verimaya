@@ -136,6 +136,20 @@ const tr = {
 	'dev.csp.hint.report-to': 'İhlal kaydının gittiği adres (yeni tarayıcılar)',
 	'dev.csp.hint.other': 'Bu kural tarayıcıya ek bir sınır söyler',
 
+	'dev.llmUsage.title': 'LLM kullanımı',
+	'dev.llmUsage.hint': 'Son 30 gün · jobs tablosundaki llm.parse kayıtlarından.',
+	'dev.llmUsage.empty': 'Henüz LLM çağrısı yok.',
+	'dev.llmUsage.totalCalls': 'Çağrı',
+	'dev.llmUsage.totalTokens': 'Token',
+	'dev.llmUsage.totalCost': 'Maliyet',
+	'dev.llmUsage.colTenant': 'Tenant',
+	'dev.llmUsage.colCalls': 'Çağrı',
+	'dev.llmUsage.colTokens': 'Token',
+	'dev.llmUsage.colCost': 'Maliyet',
+	'dev.llmUsage.colFallback': 'Fallback oranı',
+	'dev.llmUsage.colErrors': 'Hata',
+	'dev.llmUsage.error.load': 'LLM kullanım verisi alınamadı',
+
 	// Maya AI — POST /v1/maya/ask (bilgi bankası + AI-11a canlı veri araçları)
 	'maya.title': 'Maya AI',
 	'maya.subtitle': 'Operasyon asistanı — taslak önerir, sen onaylarsın.',
@@ -1532,6 +1546,9 @@ const tr = {
 	'toolkit.feature.maya-live-data.title': 'Maya canlı veri',
 	'toolkit.feature.maya-live-data.description':
 		'Maya bakiye, açık alacak, randevu, dönem özeti ve temassız kişileri canlı veriden cevaplar. Rakamı veritabanı verir, model yalnız hangi sorgunun çalışacağını seçer.',
+	'toolkit.feature.llm-cost-tracking.title': 'LLM maliyet takibi',
+	'toolkit.feature.llm-cost-tracking.description':
+		'Tenant başına LLM çağrı sayısı, token ve maliyet platform panelinde; fallback oranı yüksekse renkli işaretlenir.',
 	'toolkit.feature.contact-titles.title': 'Kişi ünvanları',
 	'toolkit.feature.contact-titles.description':
 		'Hekim, koordinatör, satış, reklam uzmanı gibi görev etiketleri; liste Ayarlar’dan yönetilir. Ünvan tanımlayıcıdır, yetkiyi değiştirmez.',
@@ -2953,6 +2970,20 @@ const en: Record<MessageKey, string> = {
 	'dev.csp.hint.report-to': 'Where violation reports are sent (newer browsers)',
 	'dev.csp.hint.other': 'An extra browser restriction',
 
+	'dev.llmUsage.title': 'LLM usage',
+	'dev.llmUsage.hint': 'Last 30 days · from the jobs table llm.parse records.',
+	'dev.llmUsage.empty': 'No LLM calls yet.',
+	'dev.llmUsage.totalCalls': 'Calls',
+	'dev.llmUsage.totalTokens': 'Tokens',
+	'dev.llmUsage.totalCost': 'Cost',
+	'dev.llmUsage.colTenant': 'Tenant',
+	'dev.llmUsage.colCalls': 'Calls',
+	'dev.llmUsage.colTokens': 'Tokens',
+	'dev.llmUsage.colCost': 'Cost',
+	'dev.llmUsage.colFallback': 'Fallback rate',
+	'dev.llmUsage.colErrors': 'Errors',
+	'dev.llmUsage.error.load': 'Could not load LLM usage data',
+
 	'maya.title': 'Maya AI',
 	'maya.subtitle': 'Operations assistant — suggests drafts, you approve.',
 	'maya.documentTitle': 'Maya AI · Verimaya',
@@ -4312,6 +4343,9 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.maya-live-data.title': 'Maya live data',
 	'toolkit.feature.maya-live-data.description':
 		'Maya answers balance, receivables, appointment, period summary and untouched-contact questions from live data. The database provides the number; the model only picks the query.',
+	'toolkit.feature.llm-cost-tracking.title': 'LLM cost tracking',
+	'toolkit.feature.llm-cost-tracking.description':
+		'Per-tenant LLM call count, tokens and cost in the platform panel; a high fallback rate is flagged with a color badge.',
 	'toolkit.feature.contact-titles.title': 'Contact titles',
 	'toolkit.feature.contact-titles.description':
 		'Role labels such as doctor, coordinator, sales, ad specialist; the list is managed in Settings. A title is descriptive and never changes permissions.',

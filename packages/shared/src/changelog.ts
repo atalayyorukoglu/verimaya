@@ -59,6 +59,19 @@ export function isFeatureNew(featureId: string, today: string): boolean {
 
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.12.0',
+		date: '2026-08-24',
+		title: 'LLM maliyet takibi',
+		changes: [
+			{
+				type: 'eklendi',
+				module: 'Platform',
+				text: 'Platform paneli artık tenant başına LLM çağrı sayısını, token ve maliyeti gösteriyor; boş/hatalı dönüş oranı (fallback) yüksek olan tenant renkli işaretle görünüyor.',
+				featureId: 'llm-cost-tracking'
+			}
+		]
+	},
+	{
 		version: '0.11.0',
 		date: '2026-08-23',
 		title: 'AI temeli ve operasyon derinliği',
