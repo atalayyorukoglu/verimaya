@@ -323,10 +323,19 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
   **Kod işi yok:** bağımlılık tek yönlü (WAHA → `POST /v1/webhooks/waha`); repoda WAHA'ya
   giden bağlantı yok. Verimaya tarafı zaten çok kiracılı — tenant, header'dan değil secret'ın
   hash'inden çözülüyor (`tenant_provider_identities`). N firma aynı endpoint'e yazar.
-  **⛔ Ön koşul — sunucu RAM'i yetmiyor (2026-08-24 ölçümü):** `ubuntu-2gb-hel1-2` toplam
-  1.9 GB, boş 1.1 GB, **swap yok**. WEBJS motoru (Chromium) tek oturumda ~1–2 GB ister.
-  OOM killer Postgres'i veya API'yi vurar → prod çöker. **Önce 4 GB'a yükselt** (Hetzner bir
-  kademe, reboot ister). Alternatif NOWEB motoru (çok daha hafif) ama swapsiz 2 GB'da yine dar.
+  **Karar (2026-08-24): WAHA prod sunucusuna kurulmayacak, ayrı sunucu alınacak.**
+  Ölçüm: `ubuntu-2gb-hel1-2` toplam 1.9 GB, boş 1.1 GB, **swap yok**; WEBJS motoru (Chromium)
+  tek oturumda ~1–2 GB ister → OOM killer Postgres'i veya API'yi vurar, prod çöker.
+  Ama asıl gerekçe kaynak değil **izolasyon**: WAHA en açık bileşen (WhatsApp oturumu +
+  ham PII + üçüncü parti imaj) ve Postgres'le aynı kutuda durmamalı. Ayrıca QR yenileme,
+  WAHA güncellemesi, oturum düşmesi prod'a dokunmadan halledilir.
+  **Sunucu: Hetzner CX23 (2 vCPU / 4 GB / 40 GB, ~$7/ay), lokasyon Helsinki — prod ile aynı.**
+  Aynı lokasyon şart: Hetzner özel ağı bölge içidir; farklı lokasyonda WAHA→API trafiği
+  internete çıkar. Coolify uzak sunucu ekleyebiliyor, panel tek kalıyor.
+  **Netverim (TR VPS) değerlendirildi, seçilmedi:** VPS-TR #2 (4 GB, günlük yedek, 230,12 ₺/ay)
+  uygundu ama Türkiye lokasyonu KVKK'yı çözmüyor — veri zaten Helsinki'ye akıyor, aktarım
+  yine var. Ayrı sağlayıcı = ayrı panel, public internet, DPA'sı bilinmiyor. Hetzner'in
+  veri işleyen sözleşmesi hazır (LEG-02 için lazım).
   **Kurulum notları:** `/app/.sessions` kalıcı volume'e bağlanmalı (yoksa her restart QR
   ister) · **API key zorunlu** — auth'suz açık WAHA = firmanın numarasından herkes mesaj
   atabilir ve gelen kutusunu okuyabilir, taşımanın tek gerçek riski bu · public domain'e
