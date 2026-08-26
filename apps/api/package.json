@@ -60,7 +60,7 @@
 		"@nestjs/schematics": "^11.0.7",
 		"@types/node": "^24.13.3",
 		"drizzle-kit": "^0.31.4",
-		"typescript": "^5.9.2",
+		"typescript": "^7.0.2",
 		"vitest": "^4.1.10",
 		"yaml": "^2.9.0",
 		"zod-to-json-schema": "^3.25.2"
