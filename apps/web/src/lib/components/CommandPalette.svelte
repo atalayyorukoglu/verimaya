@@ -22,6 +22,19 @@
 	let open = $state(false);
 	let q = $state('');
 	let triggerEl: HTMLButtonElement | undefined = $state();
+	let inputEl: HTMLInputElement | undefined = $state();
+
+	/*
+	 * Arama kutusu acilir acilmaz odagi alir; kullanici ayrica tiklamak zorunda kalmaz.
+	 * `focusTrap` de ilk odaklanabilir ogeyi odakliyor ama adayları `offsetParent !== null`
+	 * ile suzuyor: portal ile eklenen pencere daha yerlesmeden calistigi icin giris alani
+	 * eleniyor ve odak hic verilmiyordu. Bir kare beklemek yerlesmeyi garantiler.
+	 */
+	$effect(() => {
+		if (!open) return;
+		const frame = requestAnimationFrame(() => inputEl?.focus());
+		return () => cancelAnimationFrame(frame);
+	});
 
 	const qs = useQueryScope();
 
@@ -135,6 +148,7 @@
 			<div class="flex items-center gap-2 border-b border-border px-3">
 				<Search class="size-4 shrink-0 text-text-faint" aria-hidden="true" />
 				<input
+					bind:this={inputEl}
 					bind:value={q}
 					class="h-12 w-full bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
 					placeholder={t('command.placeholder')}
