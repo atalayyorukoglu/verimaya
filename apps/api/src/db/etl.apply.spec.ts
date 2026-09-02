@@ -22,7 +22,7 @@ const {
 		opts?: { fxBackfill?: boolean; fetchFn?: typeof fetch }
 	) => Promise<{
 		contacts: { inserted: number; skipped: number };
-		patients: { inserted: number; skipped: number };
+		patients: { inserted: number; skipped: number; merged: number };
 		appointments: { inserted: number; skipped: number };
 		transactions: { inserted: number; skipped: number };
 		files: { inserted: number; skipped: number };
@@ -33,7 +33,7 @@ const {
 	loadFixtureFile: (path: string) => unknown;
 	mapFixture: (source: unknown, tenantId: string) => {
 		contacts: unknown[];
-		patients: unknown[];
+		patients: Array<{ _merged_contact_legacy: string | null }>;
 		appointments: unknown[];
 		transactions: { verimaya: { amount: number | null; title: string | null } }[];
 		files: unknown[];
@@ -103,7 +103,11 @@ describe('ETL apply layer 1+2 (Adım 28–29)', () => {
 			fetchFn: mockFetch
 		});
 		expect(first.contacts.inserted).toBe(mapped.contacts.length);
-		expect(first.patients.inserted).toBe(mapped.patients.length);
+		// Bağlı case+contact çifti yeni satır açmaz, var olan kişiyi Hasta'ya çevirir.
+		const mergedPairs = mapped.patients.filter((p) => p._merged_contact_legacy).length;
+		expect(mergedPairs).toBeGreaterThan(0);
+		expect(first.patients.merged).toBe(mergedPairs);
+		expect(first.patients.inserted).toBe(mapped.patients.length - mergedPairs);
 		expect(first.appointments.inserted).toBe(mapped.appointments.length);
 		expect(first.transactions.inserted).toBe(mapped.transactions.length);
 		expect(first.files.inserted).toBe(mapped.files.length);
@@ -168,6 +172,9 @@ describe('ETL apply layer 1+2 (Adım 28–29)', () => {
 		});
 		expect(second.contacts.inserted).toBe(0);
 		expect(second.patients.inserted).toBe(0);
+		// İkinci koşuda birleşme de tekrarlanmaz: case legacy id'si artık external_ids'te.
+		expect(second.patients.merged).toBe(0);
+		expect(second.patients.skipped).toBe(mapped.patients.length);
 		expect(second.appointments.inserted).toBe(0);
 		expect(second.transactions.inserted).toBe(0);
 		expect(second.files.inserted).toBe(0);

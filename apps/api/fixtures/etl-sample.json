@@ -62,6 +62,14 @@
 			"is_internal": false
 		},
 		{
+			"id": 106,
+			"type": "Hasta",
+			"name": "Sandra Blake",
+			"phone": "+445550001111",
+			"email": "sandra.blake@example.com",
+			"notes": null
+		},
+		{
 			"id": 105,
 			"type": "Personel",
 			"name": "Ayşe Operasyon",
@@ -91,7 +99,7 @@
 			"status": "arrived",
 			"source": "Referral",
 			"notes": null,
-			"contact_id": null,
+			"contact_id": 106,
 			"assigned_user": null
 		},
 		{
@@ -290,6 +298,20 @@
 			"case_id": 502,
 			"body": "Transfer notu: SAW → otel.",
 			"author_display_name": "Ops"
+		},
+		{
+			"id": 1003,
+			"contact_id": 101,
+			"body": "Kişiye yazılmış not — o kişinin hastası olduğu için hasta kartına düşer.",
+			"author_display_name": "Gülçin Özer",
+			"created_at": "2026-07-02T13:05:01.036708+00:00"
+		},
+		{
+			"id": 1004,
+			"contact_id": 104,
+			"body": "Hastası olmayan kişiye yazılmış not — kişinin kendisinde kalır.",
+			"author_display_name": "Atalay",
+			"created_at": "2026-04-29T08:36:20.001402+00:00"
 		}
 	]
 }

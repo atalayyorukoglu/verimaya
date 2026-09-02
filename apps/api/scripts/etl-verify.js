@@ -86,15 +86,26 @@ function expectedFromMapped(mapped, source) {
 		(t) => t.responsible_contact_id != null && String(t.responsible_contact_id).trim() !== ''
 	).length;
 
+	/*
+	 * Bağlı case+contact çifti tek kişiye iner (bkz. etl.js `_merged_contact_legacy`),
+	 * ama external_ids'te iki legacy id de yaşamaya devam eder.
+	 */
+	const mergedPairs = mapped.patients.filter((p) => p._merged_contact_legacy).length;
+	// Birleşmemiş, kaynağında zaten Hasta tipli olan kişiler de Hasta satırı sayılır.
+	const standaloneHastaContacts = mapped.contacts.filter(
+		(c) => !c._merged_case_legacy && String(c.verimaya.contact_type_name ?? '').toLowerCase() === 'hasta'
+	).length;
+
 	return {
 		counts: {
-			// Cases land as Hasta contacts; total contacts = parties + patients.
-			contacts: mapped.contacts.length + mapped.patients.length,
-			patients: mapped.patients.length,
+			// Cases land as Hasta contacts; bağlı çiftler tek satır.
+			contacts: mapped.contacts.length + mapped.patients.length - mergedPairs,
+			patients: mapped.patients.length + standaloneHastaContacts,
 			appointments: mapped.appointments.filter((a) => a._case_legacy).length,
 			transactions: mapped.transactions.filter((t) => t.verimaya.amount != null).length,
 			files: mapped.files.filter((f) => f._case_legacy).length,
-			case_notes: mapped.case_notes.filter((n) => n._case_legacy).length,
+			// Not ya hastaya (case) ya da doğrudan kişiye bağlanır; ikisi de yoksa hedefsizdir.
+			case_notes: mapped.case_notes.filter((n) => n._case_legacy || n._contact_legacy).length,
 			transactions_with_case_contact: withCase,
 			transactions_with_responsible: withResponsible
 		},
@@ -105,6 +116,7 @@ function expectedFromMapped(mapped, source) {
 			transaction_count: mapped.transactions.filter((t) => t.verimaya.amount != null).length
 		},
 		sample_transactions: sampleTx,
+		externalEntities: mapped.contacts.length + mapped.patients.length,
 		duplicates: expectedDuplicatesFromMapped(mapped),
 		/** Wrong-type FKs must be zero after apply. */
 		type_guards: {
@@ -126,17 +138,33 @@ function expectedDuplicatesFromMapped(mapped) {
 	/** @type {Map<string, number>} */
 	const contactEmail = new Map();
 
+	/*
+	 * Mükerrer grupları nihai satırlar üzerinden say: her case bir Hasta satırıdır
+	 * (birleşmişse contact'ın e-posta/telefonuyla), birleşmemiş Hasta tipli contact'lar
+	 * da Hasta satırıdır; Hasta olmayan contact'lar ayrı kovada.
+	 */
+	const countInto = (/** @type {Map<string, number>} */ m, /** @type {string} */ key) => {
+		if (key) m.set(key, (m.get(key) ?? 0) + 1);
+	};
+	const emailKey = (/** @type {unknown} */ v) => (v ? String(v).trim().toLowerCase() : '');
+	const phoneKey = (/** @type {unknown} */ v) => {
+		const digits = v ? String(v).replace(/\D/g, '') : '';
+		return digits.length >= 7 ? digits : '';
+	};
+
 	for (const p of mapped.patients) {
-		const email = p.verimaya.email ? String(p.verimaya.email).trim().toLowerCase() : '';
-		if (email) patientEmail.set(email, (patientEmail.get(email) ?? 0) + 1);
-		const phone = p.verimaya.phone
-			? String(p.verimaya.phone).replace(/\D/g, '')
-			: '';
-		if (phone.length >= 7) patientPhone.set(phone, (patientPhone.get(phone) ?? 0) + 1);
+		countInto(patientEmail, emailKey(p.verimaya.email));
+		countInto(patientPhone, phoneKey(p.verimaya.phone));
 	}
 	for (const c of mapped.contacts) {
-		const email = c.verimaya.email ? String(c.verimaya.email).trim().toLowerCase() : '';
-		if (email) contactEmail.set(email, (contactEmail.get(email) ?? 0) + 1);
+		if (c._merged_case_legacy) continue; // satırı yukarıda hasta olarak sayıldı
+		const isHasta = String(c.verimaya.contact_type_name ?? '').toLowerCase() === 'hasta';
+		if (isHasta) {
+			countInto(patientEmail, emailKey(c.verimaya.email));
+			countInto(patientPhone, phoneKey(c.verimaya.phone));
+		} else {
+			countInto(contactEmail, emailKey(c.verimaya.email));
+		}
 	}
 
 	const toGroups = (/** @type {Map<string, number>} */ m) =>
@@ -291,8 +319,9 @@ function buildDiffs(input) {
 		});
 	}
 
+	// Her legacy id kendi external_ids satırını alır; birleşme satır sayısını azaltmaz.
 	const expectedExternal =
-		expected.counts.contacts +
+		expected.externalEntities +
 		expected.counts.appointments +
 		expected.counts.transactions +
 		expected.counts.files +

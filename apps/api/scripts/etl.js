@@ -55,7 +55,7 @@ const APPOINTMENT_STATUS_MAP = {
  * @typedef {{ id: string | number, case_id: string | number | null, contact_id?: string | number | null, title?: string | null, type?: string | null, status?: string | null, starts_at: string, ends_at?: string | null, clinic_name?: string | null, hotel_name?: string | null, transfer_note?: string | null, notes?: string | null, clinic_contact_id?: string | number | null, hotel_contact_id?: string | number | null, transfer_contact_id?: string | number | null }} SourceAppointment
  * @typedef {{ id: string | number, case_id?: string | number | null, kind: string, title?: string | null, subtitle?: string | null, category?: string | null, occurred_on: string, status: string, invoice_status?: string, payment_method?: string | null, amount_major?: number, amount?: number, currency: string, paid_amount_major?: number | null, paid_amount?: number | null, contact_id?: string | number | null, responsible_contact_id?: string | number | null, contact_label?: string | null, description?: string | null, counterparty_amount?: number | null, equivalent_currency?: string | null }} SourceTransaction
  * @typedef {{ id: string | number, case_id: string | number | null, appointment_id?: string | number | null, filename: string, mime_type?: string | null, size_bytes?: number | null }} SourceFile
- * @typedef {{ id: string | number, case_id: string | number, body: string, author_display_name?: string | null }} SourceCaseNote
+ * @typedef {{ id: string | number, case_id?: string | number | null, contact_id?: string | number | null, body: string, author_display_name?: string | null, created_at?: string | null }} SourceCaseNote
  * @typedef {{
  *   source?: string,
  *   contact_types?: string[],
@@ -475,12 +475,30 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 	/** @type {Map<string, string>} */
 	const appointmentIdMap = new Map();
 
+	/*
+	 * DOMAIN-02 sonrası Verimaya'da hasta = Hasta tipinde bir kişi. Tracker'da aynı hasta
+	 * hem `contacts` hem `cases` satırı olabiliyor ve `cases.contact_id` ikisini bağlıyor.
+	 * Bağı kurmazsak her hasta panelde iki kez çıkar: biri iletişim bilgili ama notsuz,
+	 * diğeri notlu ama iletişimsiz (2026-09-02 provasında 738 mükerrer ad).
+	 * Bir contact'a birden çok case bağlıysa yalnız ilki birleşir; kalanı ayrı kalır.
+	 */
+	/** @type {Map<string, string>} contactLegacy -> caseLegacy */
+	const caseByContactLegacy = new Map();
+	for (const c of fixture.cases ?? []) {
+		if (c.contact_id == null) continue;
+		const contactLegacy = extId(c.contact_id);
+		if (!caseByContactLegacy.has(contactLegacy)) {
+			caseByContactLegacy.set(contactLegacy, extId(c.id));
+		}
+	}
+
 	const contacts = (fixture.contacts ?? []).map((c) => {
 		const legacy = extId(c.id);
 		const id = mapId('contact', legacy);
 		contactIdMap.set(legacy, id);
 		return {
 			legacy_id: legacy,
+			_merged_case_legacy: caseByContactLegacy.get(legacy) ?? null,
 			external: { source: SOURCE, external_id: legacy },
 			verimaya: {
 				id,
@@ -495,21 +513,39 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 		};
 	});
 
+	const contactByLegacy = new Map(contacts.map((c) => [c.legacy_id, c]));
 	const patients = (fixture.cases ?? []).map((c) => {
 		const legacy = extId(c.id);
-		const id = mapId('patient', legacy);
-		patientIdMap.set(legacy, id);
 		const contactLegacy = c.contact_id != null ? extId(c.contact_id) : null;
+		// Birleşme yalnız bu case, o contact'ın İLK case'i ise geçerli.
+		const mergedContactLegacy =
+			contactLegacy != null &&
+			contactIdMap.has(contactLegacy) &&
+			caseByContactLegacy.get(contactLegacy) === legacy
+				? contactLegacy
+				: null;
+		const mergedContact = mergedContactLegacy ? contactByLegacy.get(mergedContactLegacy) : null;
+		// Birleşen çiftte tek satır olur; kimlik contact tarafındandır, case legacy id'si de
+		// aynı satıra çözülür (external_ids iki satır, tek internal_id).
+		const id = mergedContactLegacy
+			? /** @type {string} */ (contactIdMap.get(mergedContactLegacy))
+			: mapId('patient', legacy);
+		patientIdMap.set(legacy, id);
 		return {
 			legacy_id: legacy,
 			_contact_legacy: contactLegacy,
+			_merged_contact_legacy: mergedContactLegacy,
 			external: { source: SOURCE, external_id: legacy },
 			verimaya: {
 				id,
 				tenant_id: tenantPlaceholder,
 				full_name: c.full_name,
-				phone: c.phone,
-				email: normalizeEmail(c.email),
+				// Birleşmede contact tarafı doludur ve daha güvenilirdir (case adı elle
+				// yazılmış olabiliyor); case yalnız boşlukları doldurur.
+				phone: mergedContact ? (mergedContact.verimaya.phone ?? c.phone) : c.phone,
+				email: mergedContact
+					? (mergedContact.verimaya.email ?? normalizeEmail(c.email))
+					: normalizeEmail(c.email),
 				status: normalizePatientStatus(c.status),
 				source: c.source,
 				notes: c.notes,
@@ -656,17 +692,32 @@ function mapFixture(fixture, tenantPlaceholder = '<target-tenant-id>') {
 
 	const caseNotes = (fixture.case_notes ?? []).map((n) => {
 		const legacy = extId(n.id);
-		const caseLegacy = extId(n.case_id);
+		const contactLegacy = n.contact_id != null ? extId(n.contact_id) : null;
+		/*
+		 * Tracker notları kişiye yazıyor (`contact_note_messages.contact_id`), hasta kartında
+		 * gösteriyor. Aynı görüntüyü korumak için önce o kişinin case'ine bağlanır; case yoksa
+		 * not kişinin kendisinde kalır. Böylece hiçbir not düşmez (2026-09-02 dumpında
+		 * 104 notun 42 kişisi case'li, 2 kişi case'siz).
+		 */
+		const caseLegacy =
+			n.case_id != null
+				? extId(n.case_id)
+				: contactLegacy != null
+					? (contactToCaseLegacy.get(contactLegacy) ?? null)
+					: null;
 		return {
 			legacy_id: legacy,
 			_case_legacy: caseLegacy,
+			_contact_legacy: contactLegacy,
 			external: { source: SOURCE, external_id: legacy },
 			verimaya: {
 				id: mapId('case_note', legacy),
 				tenant_id: tenantPlaceholder,
-				patient_id: patientIdMap.get(caseLegacy) ?? null,
+				patient_id: caseLegacy != null ? (patientIdMap.get(caseLegacy) ?? null) : null,
+				contact_id: contactLegacy != null ? (contactIdMap.get(contactLegacy) ?? null) : null,
 				body: n.body,
-				author_display_name: n.author_display_name?.trim() || 'ETL import'
+				author_display_name: n.author_display_name?.trim() || 'ETL import',
+				created_at: n.created_at ?? null
 			}
 		};
 	});
@@ -796,6 +847,14 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 			where tenant_id = ${trackerTenantId}
 			order by uploaded_at
 		`;
+		// Gerçek not akışı burada: yazar adı + zaman damgası ile. `cases.notes` tek kolonu
+		// canlı Tracker'da boş; bu tablo okunmazsa klinik notların tamamı taşınmadan kalır.
+		const noteMessages = await sql`
+			select id, contact_id, author_display_name, body, created_at
+			from contact_note_messages
+			where tenant_id = ${trackerTenantId}
+			order by created_at
+		`;
 
 		/** @type {SourceCaseNote[]} */
 		const caseNotes = [];
@@ -808,6 +867,17 @@ async function loadFromTracker(trackerUrl, trackerTenantId) {
 					author_display_name: 'Legacy case notes'
 				});
 			}
+		}
+		for (const n of noteMessages) {
+			caseNotes.push({
+				id: `contact-note:${n.id}`,
+				contact_id: String(n.contact_id),
+				body: String(n.body),
+				author_display_name:
+					n.author_display_name != null ? String(n.author_display_name) : null,
+				created_at:
+					n.created_at instanceof Date ? n.created_at.toISOString() : String(n.created_at)
+			});
 		}
 
 		return {
@@ -1021,7 +1091,7 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
 		finance_categories: { inserted: 0, skipped: 0 },
 		appointment_types: { inserted: 0, skipped: 0 },
 		contacts: { inserted: 0, skipped: 0 },
-		patients: { inserted: 0, skipped: 0 },
+		patients: { inserted: 0, skipped: 0, merged: 0 },
 		errors: /** @type {string[]} */ ([])
 	};
 
@@ -1178,6 +1248,11 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
 	}
 
 	// Cases → Hasta contacts (patients table dropped in DOMAIN-02 / 0036).
+	// Bağlı contact'ı olan case yeni satır açmaz; var olan kişiyi Hasta'ya çevirir.
+	/** @type {Map<string, string>} */
+	const contactDisplayByLegacy = new Map(
+		mapped.contacts.map((c) => [c.legacy_id, String(c.verimaya.display_name || '').trim()])
+	);
 	const hastaTypeId = typeByName.get('hasta');
 	if (!hastaTypeId && mapped.patients.length > 0) {
 		stats.errors.push('patients: Hasta contact type missing — cannot insert cases');
@@ -1203,9 +1278,49 @@ async function applyLayer1(sql, tenantId, mapped, batchSize) {
 				}
 				if (!hastaTypeId) continue;
 
-				const parts = fullName.split(/\s+/);
-				const firstName = parts[0] ?? fullName;
+				const mergeContactLegacy = item._merged_contact_legacy;
+				const mergeTargetId = mergeContactLegacy ? contactMap.get(mergeContactLegacy) : null;
+				if (mergeContactLegacy && !mergeTargetId) {
+					stats.errors.push(
+						`patient ${legacy}: birleşecek contact ${mergeContactLegacy} bulunamadı — ayrı kişi olarak yazıldı`
+					);
+				}
+
+				// Ad contact tarafından alınır (Tracker'da case adı elle yazılabiliyor:
+				// dumpta "Linds Wilson" ↔ "Linda Wilson"); contact adı yoksa case adı kullanılır.
+				const contactDisplay = mergeContactLegacy
+					? (contactDisplayByLegacy.get(mergeContactLegacy) ?? '')
+					: '';
+				const preferredName =
+					contactDisplay && contactDisplay !== 'Adsız' ? contactDisplay : fullName;
+				const parts = preferredName.split(/\s+/);
+				const firstName = parts[0] ?? preferredName;
 				const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null;
+
+				if (mergeTargetId) {
+					// Tek satır: var olan kişi Hasta'ya çevrilir, case yalnız boşlukları doldurur.
+					await tx`
+						update contacts set
+							contact_type_id = ${hastaTypeId},
+							contact_type_name = 'Hasta',
+							display_name = ${preferredName},
+							first_name = coalesce(first_name, ${firstName}),
+							last_name = coalesce(last_name, ${lastName}),
+							phone = coalesce(phone, ${item.verimaya.phone}),
+							email = coalesce(email, ${item.verimaya.email}),
+							status = coalesce(status, ${item.verimaya.status}),
+							source = coalesce(source, ${item.verimaya.source}),
+							notes = case
+								when notes is null or btrim(notes) = '' then ${item.verimaya.notes}
+								else notes
+							end
+						where id = ${mergeTargetId}
+					`;
+					// Case legacy id'si de aynı satıra çözülsün (idempotent tekrar koşu için şart).
+					await insertExternal(tx, tenantId, 'contact', legacy, mergeTargetId);
+					stats.patients.merged++;
+					continue;
+				}
 
 				const internalId = randomUUID();
 				await tx`
@@ -1519,10 +1634,13 @@ async function applyLayer2(sql, tenantId, mapped, batchSize, opts = {}) {
 					continue;
 				}
 
-				const patientId = patientMap.get(item._case_legacy);
-				if (!patientId) {
+				// Hasta (case) varsa oraya, yoksa notun yazıldığı kişiye bağlanır.
+				const targetId =
+					(item._case_legacy ? patientMap.get(item._case_legacy) : null) ??
+					(item._contact_legacy ? contactMap.get(item._contact_legacy) : null);
+				if (!targetId) {
 					stats.errors.push(
-						`case_note ${legacy}: patient for case ${item._case_legacy} not found — skipped`
+						`case_note ${legacy}: hedef bulunamadı (case=${item._case_legacy ?? '-'}, contact=${item._contact_legacy ?? '-'}) — atlandı`
 					);
 					continue;
 				}
@@ -1533,14 +1651,17 @@ async function applyLayer2(sql, tenantId, mapped, batchSize, opts = {}) {
 				}
 
 				const internalId = randomUUID();
+				// created_at kaynaktan taşınır; yoksa now(). Zaman damgası düşerse notların
+				// kronolojisi (plan değişikliği sırası) kaybolur.
 				await tx`
-					insert into case_notes (id, tenant_id, contact_id, body, author_display_name)
+					insert into case_notes (id, tenant_id, contact_id, body, author_display_name, created_at)
 					values (
 						${internalId},
 						${tenantId},
-						${patientId},
+						${targetId},
 						${body},
-						${item.verimaya.author_display_name || 'ETL import'}
+						${item.verimaya.author_display_name || 'ETL import'},
+						coalesce(${item.verimaya.created_at ?? null}::timestamptz, now())
 					)
 				`;
 				await insertExternal(tx, tenantId, 'case_note', legacy, internalId);
