@@ -911,6 +911,41 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- [x] **MARKET-03 — Ana sayfa metni acente/klinik ayrımından çıkarıldı (2026-09-02, kullanıcı
+  isteği).** Canlı `/` (`HubHomeV4`) okuyucuyu kurum tipine göre ayırıyordu: hero etiketi
+  "Sağlık turizmi acenteleri için", KVKK bandında "Her acentenin verisi", "Birden fazla
+  acenteyle çalışıyoruz", "Kimin için" bölümünde ise **Birincil → acente** / **kenar kart →
+  klinik** ("Reklam veren kliniklerden gelen talepleri değerlendiriyoruz"). Yeni eksen kurum
+  tipi değil **zincirdeki rol**: hero "Sağlık turizmi operasyonları için", bölüm başlığı
+  "Zinciri kim yönetiyorsa onun için", gövde "…hastayı reklamla bulan, sürecini yürüten,
+  parasını tahsil eden ve iş ortağının hakedişini ödeyen taraf sizseniz… kurum tipine göre
+  ikiye ayrılmış iki ayrı ürün yok". Kenar kart segment yerine **ölçek** anlatıyor (tek marka
+  ↔ birden fazla şube/iş ortağı), yani eski "birden fazla klinik, tek hesap" vaadi kayıp
+  değil, genelleşti. "Klinik" sözcüğü hakedişte ve temsilî listede taraf adı olarak geçtiği
+  için "iş ortağı"na döndü (hakediş her iki yönde işliyor: acente kliniğe, klinik
+  yönlendirene/acenteye öder).
+  **Görüş:** Bu bir **metin** kararı, segment kararı değil — MARKET-01 (a) "birincil segment:
+  acente" yürürlükte, ilk 20 görüşmenin hedefi değişmedi. Değişen tek şey: siteye gelen
+  klinik artık kendini "ikinci sıradaki talep" olarak okumuyor, acente de kendini kaybetmiyor;
+  ürünün gerçekten iki segmentin kesişiminde (operasyon + finans) güçlü olduğu MARKET-01
+  (a) metninde de yazılı. Segment adı geri gelecekse yeri ana sayfa değil, hedefli açılış
+  sayfası olur (ayrı iş).
+  **Kapsam:** `HubHomeV4` (canlı `/` + prerender kaynağı `/vitrin`), paylaşılan
+  `messages.ts` kataloğu (TR **ve** EN; `hubHome.audience.agency`/`.clinic` anahtarları
+  `.primary`/`.scale` olarak yeniden adlandırıldı — anahtar adı segment taşımıyor artık) ve
+  deneme yüzeyleri `HubHomeV1`–`V3` aynı cümleleri taşıdığı için birlikte hizalandı.
+  **Bilinçli dokunulmayanlar:** (1) V4 gövde metni katalog dışı kaldı — hub gövdesi DOC-03e
+  kararında **bilinçli kısmi** i18n; AUDIT-F09-10 süpürmesi de marketing yüzeyini kapsam
+  dışı bırakmıştı, bu tur o kararı değiştirmiyor. (2) "Acente komisyon desteği" bir teşvik
+  programının **adı**, konumlandırma cümlesi değil — olduğu gibi kaldı. (3) Zincir
+  halkalarındaki "Hekim / klinik" tedavinin geçtiği yeri anlatıyor, okuyucuyu
+  sınıflandırmıyor. (4) `features.ts`'teki "Her klinik/acente kendi verisini görür" ikisini
+  birden sayıyor, dışlamıyor — panel yüzeyi olduğu için bu turda açılmadı.
+  **Doğrulama:** `svelte-check` 0 hata, prettier + eslint temiz, web 96/96 test yeşil,
+  `pnpm build` sonrası `build/hub.html` içinde "acente" **0** eşleşme. `nginx.conf` CSP
+  hash'i **değişmedi** — JSON-LD betiği (`title`/`description`/`PUBLIC_SITE_URL`) bu turda
+  dokunulmadı; inject script'in yerelde ürettiği farklı hash env kaynaklı, commit'e alınmadı.
+
 - [x] **OPS-04 — `pnpm check` artık lint de koşturuyor (2026-08-23).** Kök `package.json`:
   `turbo run check` → `turbo run check lint`. **Neden:** 22 Ağustos'ta CI tam bu yüzden
   kırıldı — yerelde `pnpm check` yeşildi, CI ayrıca `web lint` (prettier+eslint) koşturuyordu.
