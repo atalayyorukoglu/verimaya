@@ -88,7 +88,7 @@
 		{ halka: 'Hasta', soru: 'Hasta hangi aşamada bekliyor, kime hatırlatma gitmedi?' },
 		{ halka: 'Hekim / klinik', soru: 'Hangi tedavi planı isabetli, RPT nereden kaynaklanıyor?' },
 		{ halka: 'Tahsilat', soru: 'Kim ödedi, kim ödemedi, ne kadar alacağımız var?' },
-		{ halka: 'Hakediş', soru: 'Klinik başına ne hak edildi, ne ödendi?' },
+		{ halka: 'Hakediş', soru: 'Kime ne hak edildi, ne kadarı ödendi?' },
 		{ halka: 'Teşvik', soru: 'Hangi dosyanın süresi doluyor?' }
 	] as const;
 
@@ -106,7 +106,7 @@
 			tarih: '22 Ağu'
 		},
 		{
-			baslik: 'X Kliniği hakedişini mutabakata bağla',
+			baslik: 'İş ortağı hakedişini mutabakata bağla',
 			neden: 'İki tarafta iki farklı rakam görünüyor',
 			kim: 'Finans',
 			tarih: '25 Ağu'
@@ -149,7 +149,7 @@
 	const privacy = [
 		{
 			b: 'İzolasyon',
-			t: 'Her acentenin verisi ayrı tutulur. İzolasyon sözleşmede yazılıdır, denetime açıktır.'
+			t: 'Her firmanın verisi ayrı tutulur. İzolasyon sözleşmede yazılıdır, denetime açıktır.'
 		},
 		{
 			b: 'Model eğitimi',
@@ -161,7 +161,7 @@
 		},
 		{
 			b: 'Şeffaflık',
-			t: 'Birden fazla acenteyle çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
+			t: 'Aynı sektörde birden fazla firmayla çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
 		}
 	] as const;
 </script>
@@ -302,7 +302,7 @@
 		<section class="v4-hero">
 			<div class="v4-hero-glow" aria-hidden="true"></div>
 			<div class="v4-hero-in">
-				<span class="v4-label">Sağlık turizmi acenteleri için</span>
+				<span class="v4-label">Sağlık turizmi operasyonları için</span>
 				<h1>Sisteminiz size <em>ne yapmanız gerektiğini</em> söylüyor mu?</h1>
 				<p>
 					Kayıt tutan yazılım çok. Verimaya reklamdan tahsilata bütün zinciri okur, nerede para
@@ -512,16 +512,24 @@
 		<section class="v4-band">
 			<div class="v4-in v4-aud">
 				<article class="v4-aud-main">
-					<span class="v4-label">Birincil</span>
-					<h2>Acenteler için: birden fazla klinik, tek hesap.</h2>
+					<span class="v4-label">Kimin için</span>
+					<h2>Zinciri kim yönetiyorsa onun için.</h2>
 					<p>
-						Lead, hasta, tahsilat ve hakediş aynı yerde. Hangi kliniğin kazandırdığı, hangi
+						Hastayı reklamla bulan, sürecini yürüten, parasını tahsil eden ve iş ortağının
+						hakedişini ödeyen taraf sizseniz doğru yerdesiniz. Kurum tipine göre ikiye ayrılmış iki
+						ayrı ürün yok — zincir aynı zincir.
+					</p>
+					<p>
+						Lead, hasta, tahsilat ve hakediş aynı yerde. Hangi iş ortağının kazandırdığı, hangi
 						kampanyanın para getirdiği ve kimin ne hak ettiği tek tabloda.
 					</p>
 				</article>
 				<aside>
-					<span class="v4-label">Klinikler</span>
-					<p>Reklam veren kliniklerden gelen talepleri değerlendiriyoruz.</p>
+					<span class="v4-label">Ölçek</span>
+					<p>
+						Tek marka ile de çalışır, birden fazla şube ve iş ortağıyla da — hepsi tek hesapta.
+						Yanında ikinci bir tablo tutmanız gerekmez.
+					</p>
 				</aside>
 			</div>
 		</section>

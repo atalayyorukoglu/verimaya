@@ -378,7 +378,7 @@
 						<HubI18nText key="hubHome.audience.title" />
 					</h2>
 					<p class="mt-5 max-w-3xl leading-relaxed text-text-muted">
-						<HubI18nText key="hubHome.audience.agency" />
+						<HubI18nText key="hubHome.audience.primary" />
 					</p>
 					<a
 						href="#ilk-bulgu"
@@ -392,7 +392,7 @@
 					class="flex items-center rounded-[1.5rem] border border-border bg-surface p-6 sm:p-8"
 				>
 					<p class="leading-relaxed text-text-muted">
-						<HubI18nText key="hubHome.audience.clinic" />
+						<HubI18nText key="hubHome.audience.scale" />
 					</p>
 				</aside>
 			</div>

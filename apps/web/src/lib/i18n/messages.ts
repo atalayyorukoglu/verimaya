@@ -2646,7 +2646,7 @@ const tr = {
 	// hub ana sayfa v2
 	'hubHome.meta.title': 'Verimaya — Reklamdan tahsilata büyüme sistemi',
 	'hubHome.meta.description':
-		'Sağlık turizmi acenteleri için reklamdan hasta dosyasına, tahsilata ve hakedişe uzanan yönetilen büyüme sistemi.',
+		'Sağlık turizmi operasyonları için reklamdan hasta dosyasına, tahsilata ve hakedişe uzanan yönetilen büyüme sistemi.',
 	'hubHome.category': 'Sağlık turizminde reklamdan tahsilata büyüme sistemi',
 	'hubHome.nav.what': 'Ne yapar',
 	'hubHome.nav.forWhom': 'Kimin için',
@@ -2663,7 +2663,7 @@ const tr = {
 	'hubHome.questions.title': 'Büyümenin hesabı bu üç cevapta.',
 	'hubHome.questions.revenue': 'Reklama verdiğiniz paranın kaçı tahsilata döndü?',
 	'hubHome.questions.untouched': 'Kaç lead’e hiç dönülmedi?',
-	'hubHome.questions.commission': 'Klinik başına hakedişiniz ne kadar, nerede yazıyor?',
+	'hubHome.questions.commission': 'İş ortağı başına hakediş ne kadar, nerede yazıyor?',
 	'hubHome.finding.eyebrow': 'İlk bulgu raporu',
 	'hubHome.finding.title': 'Kurulumun ilk 10 dakikasında bilmediğiniz bir sayı.',
 	'hubHome.finding.description':
@@ -2684,11 +2684,11 @@ const tr = {
 	'hubHome.how.ghlNote':
 		'Maya Satış üçüncü taraf platform (GoHighLevel) üzerinde çalışır; platform kesintileri Verimaya kontrolünde değildir.',
 	'hubHome.audience.eyebrow': 'Kimin için',
-	'hubHome.audience.title': 'Önce sağlık turizmi acenteleri için.',
-	'hubHome.audience.agency':
-		'Yurt dışı reklam bütçesini yöneten, hastayı kliniğe taşıyan ve klinik hakedişlerini izleyen acenteler için para zincirini uçtan uca yönetiriz.',
-	'hubHome.audience.clinic':
-		'Birincil odağımız acenteler. Kliniklerden gelen talebe açığız; uygunluğu kapsam görüşmesinde birlikte değerlendiririz.',
+	'hubHome.audience.title': 'Zinciri kim yönetiyorsa onun için.',
+	'hubHome.audience.primary':
+		'Hastayı reklamla bulan, sürecini yürüten, parasını tahsil eden ve iş ortağının hakedişini ödeyen taraf sizseniz para zincirini uçtan uca yönetiriz. Kurum tipine göre ikiye ayrılmış iki ayrı ürün yok.',
+	'hubHome.audience.scale':
+		'Tek marka ile de çalışır, birden fazla şube ve iş ortağıyla da — hepsi tek hesapta, kırılımı tek tabloda.',
 	'hubHome.why.eyebrow': 'Neden Verimaya',
 	'hubHome.why.title': 'Bir CRM daha satmıyoruz.',
 	'hubHome.why.othersLabel': 'Lead sayan sistemler',
@@ -2702,7 +2702,7 @@ const tr = {
 	'hubHome.privacy.boundaries':
 		'Veri yalnız tanımlı hizmet kapsamı ve açık işleme amacı için kullanılır; insan onayı gerektiren kararlar otomatik kesin kayda dönüşmez.',
 	'hubHome.privacy.transparency':
-		'Birden fazla acenteyle çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.',
+		'Aynı sektörde birden fazla firmayla çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.',
 	'hubHome.tools.eyebrow': 'Ücretsiz araçlar',
 	'hubHome.tools.title': 'İlk bulguya giden hesabı küçük bir adımla başlatın.',
 	'hubHome.tools.description':
@@ -2716,7 +2716,7 @@ const tr = {
 	'hubHome.tools.preLaunch.title': 'Kampanya Öncesi Kontrol',
 	'hubHome.tools.preLaunch.desc':
 		'Reklam açılmadan önce takip ve hasta yolculuğu eksiklerini kontrol edin.',
-	'hubHome.tools.templates.title': 'Acente Rapor Şablonları',
+	'hubHome.tools.templates.title': 'Rapor Şablonları',
 	'hubHome.tools.templates.desc':
 		'Reklam, tahsilat ve hakediş takibi için hazır çalışma şablonlarını alın.',
 	'hubHome.tools.request': 'E-posta ile iste',
@@ -5417,7 +5417,7 @@ const en: Record<MessageKey, string> = {
 
 	'hubHome.meta.title': 'Verimaya — Growth from ads to collections',
 	'hubHome.meta.description':
-		'A managed growth system for health tourism agencies, connecting advertising, patient files, collections, and commissions.',
+		'A managed growth system for health tourism operations, connecting advertising, patient files, collections, and commissions.',
 	'hubHome.category': 'The health tourism growth system from advertising to collections',
 	'hubHome.nav.what': 'What it does',
 	'hubHome.nav.forWhom': 'Who it is for',
@@ -5434,7 +5434,7 @@ const en: Record<MessageKey, string> = {
 	'hubHome.questions.title': 'Growth is accounted for in these three answers.',
 	'hubHome.questions.revenue': 'How much of your advertising spend turned into collections?',
 	'hubHome.questions.untouched': 'How many leads received no follow-up?',
-	'hubHome.questions.commission': 'What is your commission per clinic, and where is it recorded?',
+	'hubHome.questions.commission': 'What is the commission per partner, and where is it recorded?',
 	'hubHome.finding.eyebrow': 'First findings report',
 	'hubHome.finding.title': 'A number you did not know in the first 10 minutes of setup.',
 	'hubHome.finding.description':
@@ -5456,11 +5456,11 @@ const en: Record<MessageKey, string> = {
 	'hubHome.how.ghlNote':
 		'Maya Sales runs on a third-party platform (GoHighLevel); platform outages are outside Verimaya’s control.',
 	'hubHome.audience.eyebrow': 'Who it is for',
-	'hubHome.audience.title': 'Built first for health tourism agencies.',
-	'hubHome.audience.agency':
-		'For agencies that manage international advertising budgets, move patients to clinics, and track clinic commissions, we manage the money chain end to end.',
-	'hubHome.audience.clinic':
-		'Agencies are our primary focus. We are open to inbound requests from clinics and assess fit together in a scope call.',
+	'hubHome.audience.title': 'For whoever runs the chain.',
+	'hubHome.audience.primary':
+		'If you are the side that finds the patient through advertising, runs the process, collects the money and pays partner commissions, we manage the money chain end to end. There is no second product split by company type.',
+	'hubHome.audience.scale':
+		'Works with a single brand and with several branches and partners alike — all in one account, broken down in one table.',
 	'hubHome.why.eyebrow': 'Why Verimaya',
 	'hubHome.why.title': 'We are not selling another CRM.',
 	'hubHome.why.othersLabel': 'Systems that count leads',
@@ -5475,7 +5475,7 @@ const en: Record<MessageKey, string> = {
 	'hubHome.privacy.boundaries':
 		'Data is used only for the defined service scope and explicit processing purpose; decisions requiring human approval never become final records automatically.',
 	'hubHome.privacy.transparency':
-		'We work with more than one agency — we tell you this before you ask. If we access your data for support, it lands in your own audit log; there is no silent access.',
+		'We work with more than one company in this sector — we tell you this before you ask. If we access your data for support, it lands in your own audit log; there is no silent access.',
 	'hubHome.tools.eyebrow': 'Free tools',
 	'hubHome.tools.title': 'Start the calculation behind your first finding with one small step.',
 	'hubHome.tools.description':
@@ -5489,7 +5489,7 @@ const en: Record<MessageKey, string> = {
 	'hubHome.tools.preLaunch.title': 'Pre-campaign Check',
 	'hubHome.tools.preLaunch.desc':
 		'Check tracking and patient journey gaps before launching advertising.',
-	'hubHome.tools.templates.title': 'Agency Reporting Templates',
+	'hubHome.tools.templates.title': 'Reporting Templates',
 	'hubHome.tools.templates.desc':
 		'Get ready-to-use templates for advertising, collection, and commission tracking.',
 	'hubHome.tools.request': 'Request by email',

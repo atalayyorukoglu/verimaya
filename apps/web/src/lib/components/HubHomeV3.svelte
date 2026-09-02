@@ -19,8 +19,8 @@
 		},
 		{
 			no: '03',
-			q: 'Klinik başına hakedişiniz ne kadar, nerede yazıyor?',
-			a: 'Çoğu acente bu tabloyu hâlâ elle tutar.'
+			q: 'İş ortağı başına hakediş ne kadar, nerede yazıyor?',
+			a: 'Bu tabloyu çoğu firma hâlâ elle tutar.'
 		}
 	] as const;
 
@@ -29,7 +29,7 @@
 		{ ad: 'Lead', not: 'Her lead bir sahibe düşer' },
 		{ ad: 'Hasta', not: 'Dosya, randevu, süreç tek yerde' },
 		{ ad: 'Tahsilat', not: 'Kasaya giren para kayda girer' },
-		{ ad: 'Hakediş', not: 'Klinik başına alacak görünür' },
+		{ ad: 'Hakediş', not: 'İş ortağı başına alacak görünür' },
 		{ ad: 'Teşvik', not: 'Dosya ve süre takipte kalır' }
 	] as const;
 
@@ -102,7 +102,7 @@
 	const privacy = [
 		{
 			b: 'İzolasyon',
-			t: 'Her acentenin verisi ayrı tutulur. İzolasyon sözleşmede yazılıdır, denetime açıktır.'
+			t: 'Her firmanın verisi ayrı tutulur. İzolasyon sözleşmede yazılıdır, denetime açıktır.'
 		},
 		{
 			b: 'Model eğitimi',
@@ -110,7 +110,7 @@
 		},
 		{
 			b: 'Şeffaflık',
-			t: 'Birden fazla acenteyle çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
+			t: 'Aynı sektörde birden fazla firmayla çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
 		}
 	] as const;
 
@@ -122,7 +122,7 @@
 	<title>Verimaya — Reklamdan tahsilata tek hesap</title>
 	<meta
 		name="description"
-		content="Sağlık turizmi acenteleri için reklam harcamasından tahsilata ve hakedişe kadar tek hesap. İlk bulgu raporu kendi verinizden çıkar."
+		content="Sağlık turizmi operasyonları için reklam harcamasından tahsilata ve hakedişe kadar tek hesap. İlk bulgu raporu kendi verinizden çıkar."
 	/>
 </svelte:head>
 
@@ -152,7 +152,7 @@
 			<div class="v3-hero-bg" aria-hidden="true"></div>
 			<div class="v3-hero-in">
 				<div class="v3-hero-copy">
-					<span class="v3-label">Sağlık turizmi acenteleri için</span>
+					<span class="v3-label">Sağlık turizmi operasyonları için</span>
 					<h1>Reklam bütçenizin kaç lirası kasaya döndü?</h1>
 					<p>
 						Lead saymıyoruz. Reklam harcamasından hasta dosyasına, tahsilata ve hakedişe kadar tek
@@ -431,16 +431,19 @@
 		<section class="v3-band">
 			<div class="v3-in v3-aud">
 				<article class="v3-aud-main">
-					<span class="v3-label">Birincil</span>
-					<h2>Acenteler için: birden fazla klinik, tek hesap.</h2>
+					<span class="v3-label">Kimin için</span>
+					<h2>Zinciri kim yönetiyorsa onun için: birden fazla iş ortağı, tek hesap.</h2>
 					<p>
-						Lead, hasta, tahsilat ve hakediş aynı yerde. Hangi kliniğin kazandırdığı, hangi
+						Lead, hasta, tahsilat ve hakediş aynı yerde. Hangi iş ortağının kazandırdığı, hangi
 						kampanyanın para getirdiği ve kimin ne hak ettiği tek tabloda.
 					</p>
 				</article>
 				<aside class="v3-aud-side">
-					<span class="v3-label">Klinikler</span>
-					<p>Reklam veren kliniklerden gelen talepleri değerlendiriyoruz.</p>
+					<span class="v3-label">Ölçek</span>
+					<p>
+						Tek marka ile de çalışır, birden fazla şube ve iş ortağıyla da — kurum tipine göre ikiye
+						ayrılmış iki ayrı ürün yok.
+					</p>
 				</aside>
 			</div>
 		</section>
