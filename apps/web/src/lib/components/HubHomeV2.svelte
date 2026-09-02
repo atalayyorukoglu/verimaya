@@ -16,8 +16,8 @@
 			a: 'Listede duran lead ile takip edilen lead aynı şey değildir.'
 		},
 		{
-			q: 'Klinik başına hakedişiniz ne kadar, nerede yazıyor?',
-			a: 'Çoğu acente bu tabloyu hâlâ elle tutar.'
+			q: 'İş ortağı başına hakediş ne kadar, nerede yazıyor?',
+			a: 'Bu tabloyu çoğu firma hâlâ elle tutar.'
 		}
 	] as const;
 
@@ -81,9 +81,9 @@
 	] as const;
 
 	const privacy = [
-		'Her acentenin verisi ayrı tutulur. İzolasyon sözleşmede yazılıdır, denetime açıktır.',
+		'Her firmanın verisi ayrı tutulur. İzolasyon sözleşmede yazılıdır, denetime açıktır.',
 		'Verileriniz yapay zekâ modeli eğitmek için kullanılmaz — ne bizim tarafımızdan, ne kullandığımız sağlayıcılar tarafından. Hangi sağlayıcıları kullandığımız sözleşmede yazılıdır.',
-		'Birden fazla acenteyle çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
+		'Aynı sektörde birden fazla firmayla çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
 	] as const;
 </script>
 
@@ -91,7 +91,7 @@
 	<title>Verimaya — Reklamdan tahsilata tek hesap</title>
 	<meta
 		name="description"
-		content="Sağlık turizmi acenteleri için reklam harcamasından tahsilata ve hakedişe kadar tek hesap. İlk bulgu raporu kendi verinizden çıkar."
+		content="Sağlık turizmi operasyonları için reklam harcamasından tahsilata ve hakedişe kadar tek hesap. İlk bulgu raporu kendi verinizden çıkar."
 	/>
 </svelte:head>
 
@@ -111,7 +111,7 @@
 		<!-- ── 1. Hero ───────────────────────────────────────── -->
 		<section class="v2-hero">
 			<div>
-				<p class="v2-kicker">Sağlık turizmi acenteleri için</p>
+				<p class="v2-kicker">Sağlık turizmi operasyonları için</p>
 				<h1>Reklam bütçenizin kaç lirası kasaya döndü?</h1>
 				<p class="v2-lede">
 					Lead saymıyoruz. Reklam harcamasından hasta dosyasına, tahsilata ve hakedişe kadar
@@ -323,16 +323,19 @@
 		<!-- ── 9. Kimin için ─────────────────────────────────── -->
 		<section class="v2-audience">
 			<article class="v2-primary-aud">
-				<p class="v2-kicker">Acenteler için</p>
-				<h2>Birden fazla klinik, tek hesap.</h2>
+				<p class="v2-kicker">Kimin için</p>
+				<h2>Birden fazla iş ortağı, tek hesap.</h2>
 				<p>
-					Lead, hasta, tahsilat ve hakediş aynı yerde. Hangi kliniğin kazandırdığı, hangi
+					Lead, hasta, tahsilat ve hakediş aynı yerde. Hangi iş ortağının kazandırdığı, hangi
 					kampanyanın para getirdiği ve kimin ne hak ettiği tek tabloda.
 				</p>
 			</article>
 			<aside>
-				<p class="v2-kicker">Klinikler için</p>
-				<p>Reklam veren kliniklerden gelen talepleri değerlendiriyoruz.</p>
+				<p class="v2-kicker">Ölçek</p>
+				<p>
+					Tek marka ile de çalışır, birden fazla şube ve iş ortağıyla da — kurum tipine göre ikiye
+					ayrılmış iki ayrı ürün yok.
+				</p>
 			</aside>
 		</section>
 
