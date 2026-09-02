@@ -30,8 +30,8 @@
 	};
 
 	const navItems = [
-		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },
-		{ href: '/crm/', labelKey: 'hub.nav.crm' as MessageKey },
+		{ href: '/operations/', labelKey: 'hub.nav.webApp' as MessageKey },
+		{ href: '/sales/', labelKey: 'hub.nav.crm' as MessageKey },
 		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
 		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
 	] as const;
@@ -561,8 +561,8 @@
 						<HubI18nText key="hub.footer.links" />
 					</p>
 					<ul class="mt-4 space-y-2">
-						<li><a href="/app/"><HubI18nText key="hub.nav.webApp" /></a></li>
-						<li><a href="/crm/"><HubI18nText key="hub.nav.crm" /></a></li>
+						<li><a href="/operations/"><HubI18nText key="hub.nav.webApp" /></a></li>
+						<li><a href="/sales/"><HubI18nText key="hub.nav.crm" /></a></li>
 						<li><a href="/tools/"><HubI18nText key="hub.nav.tools" /></a></li>
 						<li>
 							<a href="/resources/"><HubI18nText key="hub.nav.resources" /></a>

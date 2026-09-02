@@ -49,5 +49,5 @@
 	outcome={mk('pillar.tools.outcome')}
 	{features}
 	primaryCta={{ label: mk('pillar.tools.cta'), href: '/tools/calculator/' }}
-	secondaryCta={{ label: mk('pillar.tools.ctaSecondary'), href: '/app/' }}
+	secondaryCta={{ label: mk('pillar.tools.ctaSecondary'), href: '/operations/' }}
 />

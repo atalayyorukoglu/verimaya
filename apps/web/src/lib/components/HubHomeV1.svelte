@@ -46,8 +46,8 @@
 	});
 
 	const navItems = [
-		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },
-		{ href: '/crm/', labelKey: 'hub.nav.crm' as MessageKey },
+		{ href: '/operations/', labelKey: 'hub.nav.webApp' as MessageKey },
+		{ href: '/sales/', labelKey: 'hub.nav.crm' as MessageKey },
 		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
 		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
 	] as const;
@@ -406,7 +406,7 @@
 						</p>
 						<div class="mt-8">
 							<a
-								href="/app/"
+								href="/operations/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
 								<HubI18nText key="hub.apps.app.ctaFeaturesPage" />
@@ -467,7 +467,7 @@
 						</p>
 						<div class="mt-8">
 							<a
-								href="/crm/"
+								href="/sales/"
 								class="inline-flex items-center justify-center rounded-md bg-brand px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-brand-hover"
 							>
 								<HubI18nText key="hub.apps.crm.ctaFeaturesPage" />
@@ -668,12 +668,14 @@
 					</p>
 					<ul class="mt-4 space-y-2">
 						<li>
-							<a href="/app/" class="text-xs text-text-muted transition-colors hover:text-text"
+							<a
+								href="/operations/"
+								class="text-xs text-text-muted transition-colors hover:text-text"
 								><HubI18nText key="hub.nav.webApp" /></a
 							>
 						</li>
 						<li>
-							<a href="/crm/" class="text-xs text-text-muted transition-colors hover:text-text"
+							<a href="/sales/" class="text-xs text-text-muted transition-colors hover:text-text"
 								><HubI18nText key="hub.nav.crm" /></a
 							>
 						</li>

@@ -114,7 +114,7 @@ Tetik: `main` push (`apps/web/**`, `packages/shared/**`, lockfile…) veya **Run
    - `COOLIFY_WEB_DEPLOY_WEBHOOK` = webhook URL (`…/deploy?uuid=…`)
    - `COOLIFY_API_TOKEN` = Coolify **Keys & Tokens → API Tokens** (scope: **deploy**)
 6. Workflow deploy tetikleyici `Authorization: Bearer` gönderir (yalnız URL yetmez).
-7. Actions’ta **Deploy web image** yeşil olsun; sonra siteyi doğrula (`/` hub, `/app/`).
+7. Actions’ta **Deploy web image** yeşil olsun; sonra siteyi doğrula (`/` hub, `/operations/`).
 
 Fallback (eski yol, OOM riski): Dockerfile + monorepo context — yalnız acil / CI kırıkken.
 

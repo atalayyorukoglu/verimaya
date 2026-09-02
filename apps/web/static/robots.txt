@@ -7,10 +7,10 @@ Allow: /yapay-zeka-karnesi
 Allow: /yapay-zeka-karnesi/
 Allow: /kvkk-aydinlatma
 Allow: /kvkk-aydinlatma/
-Allow: /app
-Allow: /app/
-Allow: /crm
-Allow: /crm/
+Allow: /operations
+Allow: /operations/
+Allow: /sales
+Allow: /sales/
 Allow: /resources
 Allow: /resources/
 Allow: /tools

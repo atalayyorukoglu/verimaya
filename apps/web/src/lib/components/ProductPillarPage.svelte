@@ -53,8 +53,8 @@
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
 
 	const navItems = [
-		{ href: '/app/', labelKey: 'hub.nav.webApp' as MessageKey },
-		{ href: '/crm/', labelKey: 'hub.nav.crm' as MessageKey },
+		{ href: '/operations/', labelKey: 'hub.nav.webApp' as MessageKey },
+		{ href: '/sales/', labelKey: 'hub.nav.crm' as MessageKey },
 		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
 		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
 	] as const;

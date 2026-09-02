@@ -29,12 +29,12 @@
 <ProductPillarPage
 	pageTitle={mk('pillar.crm.metaTitle')}
 	pageDescription={mk('pillar.crm.metaDesc')}
-	canonicalPath="/crm/"
+	canonicalPath="/sales/"
 	eyebrow={mk('pillar.crm.eyebrow')}
 	heading={mk('pillar.crm.heading')}
 	problem={mk('pillar.crm.problem')}
 	outcome={mk('pillar.crm.outcome')}
 	{features}
 	primaryCta={{ label: mk('pillar.crm.cta'), href: PUBLIC_CRM_URL, external: true }}
-	secondaryCta={{ label: mk('pillar.crm.ctaSecondary'), href: '/app/' }}
+	secondaryCta={{ label: mk('pillar.crm.ctaSecondary'), href: '/operations/' }}
 />

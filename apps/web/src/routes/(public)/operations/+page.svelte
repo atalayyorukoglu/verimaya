@@ -36,7 +36,7 @@
 <ProductPillarPage
 	pageTitle={mk('pillar.app.metaTitle')}
 	pageDescription={mk('pillar.app.metaDesc')}
-	canonicalPath="/app/"
+	canonicalPath="/operations/"
 	eyebrow={mk('pillar.app.eyebrow')}
 	heading={mk('pillar.app.heading')}
 	problem={mk('pillar.app.problem')}
