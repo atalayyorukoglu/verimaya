@@ -1214,7 +1214,7 @@ const tr = {
 	'hub.footer.resources': 'Kaynaklar',
 	'hub.footer.tools': 'Araçlar',
 
-	// Public pillar pages (/app /crm /tools /resources)
+	// Public pillar pages (/operations /sales /tools /resources)
 	'pillar.app.metaTitle': 'Maya App (Operasyon) — Verimaya',
 	'pillar.app.metaDesc':
 		'Hasta, randevu, finans, rapor ve denetim: sağlık turizmi operasyonunu tek panelde yönetin.',
@@ -2596,6 +2596,7 @@ const tr = {
 		'Hasta seçimi ve tarih zorunlu. Klinik / otel / transfer kişilerden seçilir.',
 	'appointments.form.contact': 'Hasta',
 	'appointments.form.noContacts': 'Hasta yok — önce kişi ekleyin',
+	'appointments.form.unknownContact': 'Kayıt bulunamadı',
 	'appointments.form.noPatients': 'Hasta yok — önce hasta ekleyin',
 	'appointments.form.title': 'Başlık',
 	'appointments.form.type': 'Tür',
@@ -5370,6 +5371,7 @@ const en: Record<MessageKey, string> = {
 		'Patient and dates are required. Clinic / hotel / transfer are picked from contacts.',
 	'appointments.form.contact': 'Patient',
 	'appointments.form.noContacts': 'No patients — add a contact first',
+	'appointments.form.unknownContact': 'Record not found',
 	'appointments.form.noPatients': 'No patients — add a patient first',
 	'appointments.form.title': 'Title',
 	'appointments.form.type': 'Type',

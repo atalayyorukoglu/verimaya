@@ -6,7 +6,8 @@
 		AppointmentStatus,
 		AppointmentTypeSetting,
 		AppointmentUpdate,
-		Contact
+		Contact,
+		ContactType
 	} from '@verimaya/shared';
 	import { apiPaths, appointmentStatusLabels } from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
@@ -50,10 +51,54 @@
 		enabled: open && qs.ready
 	}));
 
+	/*
+	 * Kişi dizini TÜRE GÖRE çekilir, tek bir "ilk N kişi" sayfasıyla değil.
+	 * Tek sayfa çekildiğinde (eskiden `limit: 100`) tenant büyüdükçe klinik/otel/transfer
+	 * kayıtları sayfanın dışında kalıyor, seçici onları bulamıyor ve aşağıdaki "orphan"
+	 * yedeği kimliği ad olarak basıyordu — panelde ad yerine UUID görünüyordu
+	 * (2026-09-02, OrbisMed taşımasından sonra 831 kişide ortaya çıktı).
+	 * Klinik/otel/transfer birer sözlük; tenant başına onlarca kayıt, tamamı çekilebilir.
+	 */
+	const CONTACT_PAGE = 500;
+
+	const contactTypesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.contactTypes(),
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
+		enabled: open && qs.ready
+	}));
+
+	function typeIdByName(name: string): string | undefined {
+		return contactTypesQuery.data?.items.find(
+			(x) => x.name.localeCompare(name, 'tr', { sensitivity: 'base' }) === 0
+		)?.id;
+	}
+
+	const clinicTypeId = $derived(typeIdByName('Klinik'));
+	const hotelTypeId = $derived(typeIdByName('Otel'));
+	const transferTypeId = $derived(typeIdByName('Transfer'));
+
+	function typedContactsQuery(typeId: () => string | undefined) {
+		return createQuery(() => ({
+			queryKey: qs.keys.contacts.list({ type_id: typeId() ?? '-', for: 'appt-form' }),
+			queryFn: () =>
+				apiGet<{ items: Contact[]; next_cursor: string | null }>(
+					listUrl('contacts', { type_id: typeId(), limit: CONTACT_PAGE })
+				),
+			enabled: open && qs.ready && !!typeId()
+		}));
+	}
+
+	const clinicQuery = typedContactsQuery(() => clinicTypeId);
+	const hotelQuery = typedContactsQuery(() => hotelTypeId);
+	const transferQuery = typedContactsQuery(() => transferTypeId);
+
+	/** Hasta + hekim seçicileri tüm kişiler üzerinden çalışır; sayfa boyu türlerden büyük. */
 	const directoryQuery = createQuery(() => ({
-		queryKey: qs.keys.contacts.list({ limit: 100, for: 'appt-form' }),
+		queryKey: qs.keys.contacts.list({ limit: CONTACT_PAGE, for: 'appt-form' }),
 		queryFn: () =>
-			apiGet<{ items: Contact[]; next_cursor: string | null }>(listUrl('contacts', { limit: 100 })),
+			apiGet<{ items: Contact[]; next_cursor: string | null }>(
+				listUrl('contacts', { limit: CONTACT_PAGE })
+			),
 		enabled: open && qs.ready
 	}));
 
@@ -64,27 +109,39 @@
 	);
 
 	const directoryContacts = $derived(directoryQuery.data?.items ?? []);
+	const typedContacts = $derived([
+		...(clinicQuery.data?.items ?? []),
+		...(hotelQuery.data?.items ?? []),
+		...(transferQuery.data?.items ?? [])
+	]);
 
 	function sortByDisplayName(list: Contact[]) {
 		return [...list].sort((a, b) => a.display_name.localeCompare(b.display_name, 'tr'));
 	}
 
 	function findContactById(id: string): Contact | undefined {
-		return directoryContacts.find((c) => c.id === id) ?? contacts.find((c) => c.id === id);
+		return (
+			directoryContacts.find((c) => c.id === id) ??
+			typedContacts.find((c) => c.id === id) ??
+			linkedContacts.find((c) => c.id === id) ??
+			contacts.find((c) => c.id === id)
+		);
 	}
 
 	const patientContacts = $derived(
 		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Hasta'))
 	);
-	const clinicContacts = $derived(
-		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Klinik'))
-	);
-	const hotelContacts = $derived(
-		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Otel'))
-	);
-	const transferContacts = $derived(
-		sortByDisplayName(directoryContacts.filter((c) => c.contact_type_name === 'Transfer'))
-	);
+	// Tür sorgusu henüz dönmediyse eski davranışa düş: dizinde ne varsa onu göster.
+	function byTypeOr(list: Contact[] | undefined, typeName: string) {
+		return sortByDisplayName(
+			list && list.length > 0
+				? list
+				: directoryContacts.filter((c) => c.contact_type_name === typeName)
+		);
+	}
+	const clinicContacts = $derived(byTypeOr(clinicQuery.data?.items, 'Klinik'));
+	const hotelContacts = $derived(byTypeOr(hotelQuery.data?.items, 'Otel'));
+	const transferContacts = $derived(byTypeOr(transferQuery.data?.items, 'Transfer'));
 
 	/**
 	 * Hekim seçici — BİLEREK ünvana göre filtrelenmiyor. `contact_titles` tenant'ın
@@ -122,41 +179,53 @@
 	let notes = $state('');
 	let deletePhase = $state<DeleteConfirmPhase>('form');
 
-	const orphanPatientContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
-		if (!contact_id || patientContacts.some((c) => c.id === contact_id)) return undefined;
-		return findContactById(contact_id) ?? { id: contact_id, display_name: contact_id };
-	});
-	const orphanClinicContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
-		if (!clinic_contact_id || clinicContacts.some((c) => c.id === clinic_contact_id))
-			return undefined;
-		return (
-			findContactById(clinic_contact_id) ?? {
-				id: clinic_contact_id,
-				display_name: clinic_contact_id
-			}
-		);
-	});
-	const orphanHotelContact = $derived.by((): Pick<Contact, 'id' | 'display_name'> | undefined => {
-		if (!hotel_contact_id || hotelContacts.some((c) => c.id === hotel_contact_id)) return undefined;
-		return (
-			findContactById(hotel_contact_id) ?? {
-				id: hotel_contact_id,
-				display_name: hotel_contact_id
-			}
-		);
-	});
-	const orphanTransferContact = $derived.by(
-		(): Pick<Contact, 'id' | 'display_name'> | undefined => {
-			if (!transfer_contact_id || transferContacts.some((c) => c.id === transfer_contact_id))
-				return undefined;
-			return (
-				findContactById(transfer_contact_id) ?? {
-					id: transfer_contact_id,
-					display_name: transfer_contact_id
-				}
-			);
-		}
+	/*
+	 * Seçili kişi hiçbir listede yoksa (silinmiş, türü değişmiş ya da sayfa dışında kalmış)
+	 * tek tek kimliğinden çekilir. Kullanıcıya asla ham UUID gösterilmez.
+	 */
+	const linkedIds = $derived(
+		[contact_id, clinic_contact_id, hotel_contact_id, transfer_contact_id, doctor_contact_id]
+			.filter((id) => !!id)
+			.filter((id) => !directoryContacts.some((c) => c.id === id))
+			.filter((id) => !typedContacts.some((c) => c.id === id))
+			.filter((id) => !contacts.some((c) => c.id === id))
 	);
+
+	const linkedQuery = createQuery(() => ({
+		queryKey: qs.keys.contacts.list({ ids: [...linkedIds].sort().join(','), for: 'appt-form' }),
+		queryFn: () =>
+			Promise.all(linkedIds.map((id) => apiGet<Contact>(apiPaths.contact(id)).catch(() => null))),
+		enabled: open && qs.ready && linkedIds.length > 0
+	}));
+
+	const linkedContacts = $derived((linkedQuery.data ?? []).filter((c): c is Contact => c != null));
+
+	/*
+	 * Seçili ama listede olmayan kişi için yer tutucu. Adı bulunamazsa kimliği YAZMA —
+	 * kullanıcıya UUID göstermek "bu alan bozuk" izlenimi verir ve hangi klinik/otel
+	 * olduğunu da söylemez. Bunun yerine nötr bir etiket gösterilir; kimlik `value`
+	 * içinde durduğu için form kaydedildiğinde bağ korunur.
+	 */
+	function orphanOption(
+		id: string,
+		list: Pick<Contact, 'id'>[]
+	): Pick<Contact, 'id' | 'display_name'> | undefined {
+		if (!id || list.some((c) => c.id === id)) return undefined;
+		const found = findContactById(id);
+		if (found) return found;
+		// Kimliğinden çekme hâlâ sürüyorsa bekleme etiketi, bittiyse "bulunamadı".
+		return {
+			id,
+			display_name: linkedQuery.isFetching
+				? t('common.loading')
+				: t('appointments.form.unknownContact')
+		};
+	}
+
+	const orphanPatientContact = $derived(orphanOption(contact_id, patientContacts));
+	const orphanClinicContact = $derived(orphanOption(clinic_contact_id, clinicContacts));
+	const orphanHotelContact = $derived(orphanOption(hotel_contact_id, hotelContacts));
+	const orphanTransferContact = $derived(orphanOption(transfer_contact_id, transferContacts));
 	const orphanDoctorContact = $derived.by((): Contact | undefined => {
 		if (!doctor_contact_id || doctorContacts.some((c) => c.id === doctor_contact_id))
 			return undefined;

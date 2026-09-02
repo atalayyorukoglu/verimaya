@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { createQuery } from '@tanstack/svelte-query';
 	import type { Appointment, Contact, Transaction } from '@verimaya/shared';
-	import { apiGet } from '$lib/api';
+	import { apiGet, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime, formatMoney } from '$lib/format';
 	import { focusTrap } from '$lib/actions/focus-trap';
@@ -25,9 +25,41 @@
 
 	const qs = useQueryScope();
 
+	/*
+	 * Arama, var olan liste uçlarının `q` filtresini kullanır.
+	 *
+	 * Eskiden `GET /v1/search` çağrılıyordu; o uç **hiç yazılmamıştı** — yalnız MSW
+	 * sahte katmanında bir karşılığı vardı (`lib/mocks/handlers.ts`). Geliştirmede
+	 * çalışıyor görünüyor, canlıda 404 dönüyordu; başlıktaki arama bu yüzden hiçbir
+	 * zaman sonuç getirmedi (2026-09-02).
+	 *
+	 * Tek uç yazmak yerine üç liste ucu kullanıldı: üçü de sözleşmede `q` kabul ediyor
+	 * (`list-query.ts`), tenant izolasyon testleri zaten var, yeni yüzey açılmıyor.
+	 * `contacts` ucu display_name + first_name + last_name üzerinden arıyor.
+	 */
+	const SEARCH_LIMITS = { contacts: 8, appointments: 6, transactions: 6 } as const;
+
 	const searchQuery = createQuery(() => ({
 		queryKey: qs.keys.search.query(q),
-		queryFn: () => apiGet<SearchResult>(`/v1/search?q=${encodeURIComponent(q)}`),
+		queryFn: async (): Promise<SearchResult> => {
+			const term = q.trim();
+			const [contacts, appointments, transactions] = await Promise.all([
+				apiGet<{ items: Contact[] }>(
+					listUrl('contacts', { q: term, limit: SEARCH_LIMITS.contacts })
+				).catch(() => ({ items: [] })),
+				apiGet<{ items: Appointment[] }>(
+					listUrl('appointments', { q: term, limit: SEARCH_LIMITS.appointments })
+				).catch(() => ({ items: [] })),
+				apiGet<{ items: Transaction[] }>(
+					listUrl('transactions', { q: term, limit: SEARCH_LIMITS.transactions })
+				).catch(() => ({ items: [] }))
+			]);
+			return {
+				contacts: contacts.items,
+				appointments: appointments.items,
+				transactions: transactions.items
+			};
+		},
 		enabled: open && q.trim().length >= 2 && qs.ready
 	}));
 
