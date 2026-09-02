@@ -59,6 +59,8 @@
 | Dev panel (`/dev`) Nest `/v1/dev` | Bilinçli yok; prod gizli / platform allowlist | GAP-28 (kapandı) |
 | Hub `/tr/` `/en/` SEO ağacı | Bilinçli yok (kısmi UI i18n) | Bilinçli yapılmayacaklar |
 | Randevu checklist şablonları | Muhtemelen hiç yapılmayacak | GAP-F09-20 (skip adayı) |
+| WhatsApp'ta bir olay = birkaç mesaj + PDF | Bugün ayrı kartlar; PDF hiç işlenmiyor | **AI-13** |
+| Tracker'dan veri taşıma (kesim) | Araçlar hazır, runbook `docs/Arşiv/ETL-KESIM.md` | **MIGRATE-01** |
 
 ---
 
@@ -308,6 +310,167 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 
 ---
 
+## MIGRATE-01 — Tracker → Verimaya veri taşıma (kesim) — 2026-09-02, kullanıcı
+
+> **Neden ayrı kalem:** 2026-08-24'te sıra kararı verildi (**veri taşıma → kimlik satırı →
+> WAHA + relay + QR → WEBHOOK-01**) ama taşımanın kendisi hiçbir yerde kalem değildi —
+> yalnız WAHA-01'in gövdesinde "önce bu" diye geçiyordu. Zincirin ilk halkası ve bugün
+> yapılacak iş; kendi satırı olmalı.
+
+> **Kesim kontrol listesi hazır ve arşivde duruyor:** `docs/Arşiv/ETL-KESIM.md` — 0.x ön
+> koşullar, 2.x apply, 3.x verify, 6.x T+1 ikinci verify, geri dönüş sütunuyla birlikte.
+> **Arşivde olması onu geçersiz yapmıyor**; bugün izlenecek runbook o. Kesim bitince
+> gerçekten arşiv olur.
+
+> ### 🔴 ENGEL (2026-09-02, yedek incelemesi) — apply YAPILMADI
+>
+> Yedek: `~/Downloads/tracker-production-20260902-120511.dump` (pg_custom, 648 KB,
+> Railway PG 18.6). SHA-256 doğrulandı. Kaynak tenant **`c51906c7-ae36-496c-b9a3-de4aaecf6c78`
+> "OrbisMed Clinics"** → hedef **`a0244aac-de21-466b-a157-94fd76f9b421` "OrbisMed-01"**.
+> Dump'taki diğer iki tenant (Gee Smile, Acme-Clinics) veri taşımıyor.
+>
+> **Kaynak satır sayıları:** contacts 816 · cases 757 · appointments 706 · transactions 618 ·
+> contact_note_messages 104 · case_files 27 · inbound_messages 157 · whatsapp_corrections 1480.
+>
+> **E1 — ✅ ÇÖZÜLDÜ (2026-09-02).** Hasta notları taşınmıyordu. Tracker'da notlar
+> **`contact_note_messages`** tablosunda: 104 not, 44 hastaya yazılmış, yazar adı ve zaman
+> damgasıyla (Gülçin Özer, Atalay). `etl.js` bu tabloyu **hiç sorgulamıyor** — canlı yol
+> (satır ~800) notları yalnız `cases.notes` tek kolonundan üretiyor ve **o kolon dumpta
+> tamamen boş (0 satır)**. Yani bugünkü ETL ile **104 klinik notun tamamı kaybolur**;
+> taşınan tek şey `contacts.notes` (14 satır). Hedef tablo Verimaya'da hazır ve doğru
+> şekilde kişi bazlı (`case_notes.contact_id`, `author_display_name`) — eksik olan yalnız
+> okuma tarafı. Düzeltme dar: canlı sorgulara `contact_note_messages` eklenip
+> `contactIdMap` üzerinden eşlenmesi.
+>
+> **Yapılan düzeltme (4 dosya):** `etl.js` canlı yolu artık `contact_note_messages`'ı
+> okuyor; not önce o kişinin hastasına (case) bağlanıyor, hastası yoksa kişinin kendisinde
+> kalıyor — hedefsiz not kalmıyor. `created_at` kaynaktan taşınıyor (yoksa `now()`), aksi
+> hâlde tüm notlar içe aktarma anıyla damgalanıp kronoloji kaybolurdu. `etl-verify.js`
+> beklentisi de kişi bazlı notları sayacak şekilde düzeltildi. Fixture'a iki not eklendi
+> (hastalı + hastasız yol), `etl.map.spec.ts`'e kapsayan test yazıldı.
+> **Doğrulama:** ETL specleri 10/10 · API paketi 889/889 · `pnpm check` (tsc + lint) temiz.
+> Dry-run fixture üzerinde `case_notes` sayısı 2 → 4.
+> **Kalan:** gerçek dumpta 104 notun taşındığı, apply sonrası `etl:verify` ile doğrulanacak.
+>
+> **E2 — Saat dilimi çakışması.** Tracker ekranı **Europe/London** gösteriyor (dumpta
+> `2026-07-02 13:00 UTC`, ekranda `14:00`; `2026-04-29 08:36 UTC`, ekranda `09:36`).
+> Verimaya'da `tenants.timezone` varsayılanı **`Europe/Istanbul`**. Yaz saatinde 2 saat
+> fark: randevu saatleri kayar, gece/sabah uçlarındaki kayıtlar rapor gün kovasında yanlış
+> güne düşer. **Apply öncesi OrbisMed-01'in timezone'u kontrol edilip `Europe/London`'a
+> çekilmeli** (ya da farkın bilinçli kabul edildiği yazılmalı).
+>
+> **E3 — kısmen çözüldü.** Docker + yerel Postgres (5433) 2026-09-02'de ayağa kaldırıldı
+> ve migration'lar uygulandı; dump'ın scratch veritabanına `pg_restore` edilmesi kaldı.
+> Özgün not: **Çalıştırma ön koşulu eksik.** `etl.js` kaynak olarak ya canlı `TRACKER_DATABASE_URL`
+> ya da Tracker biçiminde fixture JSON istiyor; **pg_dump dosyasını doğrudan okuyamıyor.**
+> Dump'ı yerel Postgres'e geri yüklemek gerekiyor, Docker çalışmıyor ve makinede sunucu
+> yok (yalnız libpq istemcisi). Önce `docker compose up -d postgres`, sonra ayrı bir scratch
+> veritabanına `pg_restore`, `TRACKER_DATABASE_URL` oraya bakar. **Canlı Railway'e değil
+> yerel kopyaya bağlanmak tercih edilmeli** — okuma bile olsa üretime dokunmamak daha temiz.
+>
+> **Taşınmayacağı bilinen, karar bekleyen:** `whatsapp_corrections` (1480 satır — AI
+> düzeltme geçmişi; Verimaya'daki `ai_corrections` karşılığına aktarılırsa AI-03 isabet
+> raporu geçmişle başlar, aktarılmazsa sıfırdan) ve `inbound_messages` (157 — WhatsApp
+> gelen kutusu geçmişi). İkisi de ETL kapsamında değil; bilinçli mi, kalem mi?
+>
+> **Sıra:** E1 ✅ · E2 ✅ (kullanıcı) · E3 ✅ · E4 ✅ (hepsi 2026-09-02).
+> **Apply'ı bloklayan kalmadı.** Kalan E5 ve E6 karar kalemi, engel değil.
+> Üretim apply'ı prova komutlarının aynısı; tek fark `DATABASE_URL_APP`'ın üretimi
+> göstermesi (`.env`'deki değer yereli gösteriyor — üretim sırrı Coolify'da, kullanıcıda).
+
+> ### 🧪 PROVA TURU (2026-09-02) — yerelde tam tur koşuldu, üretime YAZILMADI
+>
+> Dump `verimaya_rehearsal` adlı yerel veritabanına açıldı (tenant `a0244aac-…`,
+> `Europe/London`, GBP). Sıra: apply → ikinci apply → `etl:verify`.
+>
+> **Geçenler:** contacts 816 · appointments 703 · transactions 618 · **case_notes 104** ·
+> external_ids 3022 · para checksum'ları (gelir 853.971,00 · gider 8.996.626,43) tam tuttu ·
+> **ikinci apply her tabloda 0 insert** (idempotentlik kanıtlandı) · E1 düzeltmesi çalıştı,
+> 104 notun 100'ü hastaya, 4'ü kişiye bağlandı, hedefsiz not yok, tarihler korundu.
+>
+> **E4 — ✅ ÇÖZÜLDÜ (2026-09-02). Her hasta iki kez oluşuyordu.**
+> Tracker'da bir hasta hem `cases` hem `contacts` tablosunda duruyor (757 case'in 742'si bir
+> contact'a bağlı; 744 contact "Hasta" tipinde). ETL ikisini de ayrı ayrı Verimaya kişisine
+> çeviriyordu → panelde **738 hasta adı mükerrer**. *Lisa Gumersell* iki kayıt olurdu — biri
+> e-posta/telefonlu ama notsuz, diğeri notlu ama iletişimsiz.
+> **Bu bizim değişikliğimizden gelmiyordu**, ETL'in baştan beri taşıdığı davranıştı; prova
+> olmasa doğrudan üretimde ortaya çıkacaktı.
+>
+> **Düzeltme:** `cases.contact_id` dolu olan çift **tek Verimaya kişisine** iniyor — var olan
+> kişi Hasta'ya çevriliyor, case yalnız boş alanları dolduruyor, case legacy id'si de aynı
+> satıra `external_ids` üzerinden bağlanıyor (iki legacy id → tek internal id), böylece
+> tekrar koşuda birleşme yinelenmiyor. Ad **contact tarafından** alınıyor; case adı elle
+> yazıldığı için sapabiliyor (dumpta `Linds Wilson` ↔ `Linda Wilson` — doğrusu geliyor).
+> Bir contact'a birden çok case bağlıysa yalnız ilki birleşir (bu dumpta hiç yok).
+> `etl-verify.js` beklentileri de birleşmiş görünüme göre yeniden yazıldı.
+>
+> **Temiz veritabanında tam tur:** 742 birleşme · 15 ayrı hasta · 104 not · ikinci apply tüm
+> tablolarda 0 (birleşme dahil) · **verify 17 kontrolün 16'sı ✓**. `Lisa Gumersell` ve
+> `Linda Wilson` tek kart: e-posta, telefon, notlar bir arada.
+> Testler: ETL 11/11 · API 890/890 · `pnpm check` temiz.
+>
+> **🟡 E5 — kısmen düzeltildi (2026-09-02, kullanıcı kararı): 20 → 9.**
+> `type.responsible_personel` sorumlu işaretlenmiş ama Personel tipinde olmayanları sayıyor.
+> Başlangıçta 20'ydi. **Berkay Bal Personel yapıldı** (11 işlem) — hasta dosyası yok, diğer
+> personelle (Gülçin Özer, Sude Karataş, Emir Fidan, Müjdat Küçükkaya, Atalay Yörükoğlu)
+> aynı desende, tenant AI promptunda da "Berkay yaptı" sorumlu göstergesi olarak geçiyor.
+>
+> ⚠️ **Düzeltme taşıma kopyasında yapıldı, Tracker'ın kendisinde değil.** Yeniden dump
+> alınırsa ya da canlı Tracker'a bağlanılırsa tekrarlanmalı:
+> ```sql
+> update contacts set contact_type_id =
+>   (select id from contact_types where name='Personel' and tenant_id='c51906c7-ae36-496c-b9a3-de4aaecf6c78')
+> where id = '8b065439-4d46-4279-b733-c1b69af64c81';  -- Berkay Bal
+> ```
+> Kalıcı olması için aynı değişiklik Tracker arayüzünde de yapılmalı (Tracker birkaç gün
+> geri dönüş için ayakta kalacaksa şart).
+>
+> **Kalan 9, karar bekliyor:** Şirket-OrbisMed (Diğer, 3) · Paul Scott (Hasta, 2) ·
+> Paul Drogomir (Hasta, 1) · Blue Ice Lab (Laboratuvar, 1) · Enes Bey (Transfer, 1) ·
+> Anka Lab (Laboratuvar, 1). Veri kaybı değil, bağlar duruyor. Şirket-OrbisMed muhtemelen
+> firmanın kendisi (Personel değil, "iç hesap"); laboratuvar ve transfer kalemlerinde
+> sorumlu alanı yanlış doldurulmuş görünüyor. Ya Tracker'da düzeltilir ya bilinçli kabul
+> edilip verify toleransına yazılır. ETL'in sessizce tip değiştirmesi doğru olmaz.
+>
+> **🟡 E6 — 6 kayıt atlandı.** 3 randevu (`case_id` ve contact→case bağı yok) + 3 dosya
+> (`case_id` yok). Hata değil, kaynakta bağsız kayıtlar; kabul edilip edilmeyeceği karar.
+>
+> **Prova ortamı:** `tracker_scratch` + `verimaya_rehearsal` yerel Postgres'te duruyor.
+> Üretim apply'ından önce E4 kapanmalı; sonra prova tekrarlanıp verify temiz alınmalı.
+>
+
+**Araçlar (hepsi hazır, `apps/api/scripts/`):**
+```bash
+# 1) dry-run — hiçbir şey yazmaz
+pnpm --filter @verimaya/api etl -- --tracker-tenant-id "$TRACKER_TENANT"
+# 2) apply — RLS rolüyle (DATABASE_URL_APP = verimaya_app)
+pnpm --filter @verimaya/api etl -- --apply --tenant-id "$TENANT" --tracker-tenant-id "$TRACKER_TENANT"
+# 3) verify — beklenen/gerçek sayım + para checksum, exit≠0 ise kesimi durdur
+pnpm --filter @verimaya/api etl:verify -- --tenant-id "$TENANT" --tracker-tenant-id "$TRACKER_TENANT"
+```
+
+- [ ] **Adım 0 — Yedek.** `pg_dump` + **sunucu dışı** kopya. Geri dönüşün tek dayanağı bu;
+  OPS-01'in otomatik dış yedeği hâlâ yok, yani bu kez elle.
+- [ ] **Adım 1 — Dry-run.** Hata raporu boş olmalı. Eşleşmeyen kalemler burada görünür;
+  alan eşlemesi `docs/legacy-reference/ETL-ESLEME.md`.
+- [ ] **Adım 2 — Apply (1. koşu).** `--apply --tenant-id <pilot tenant>`.
+- [ ] **Adım 3 — Apply (2. koşu) = 0 insert.** İdempotentlik kanıtı (`external_ids` UNIQUE).
+  0 değilse dur; ikinci koşu veri çoğaltıyor demektir.
+- [ ] **Adım 4 — `etl:verify`.** Tolerans dışı diff = 0. **En kritik kontrol:** Raporlar'daki
+  hasta sayısı = Kişiler'de tür=Hasta sayısı.
+- [ ] **Adım 5 — T+1 ikinci verify.** Ertesi gün tekrar; gün içi yazılan kayıtlar sayımı
+  bozmuş mu.
+- [ ] **Adım 6 — Tenant id'yi kaydet.** Yeni tenant id WAHA-01'in kimlik satırının girdisi;
+  yazılı olmadan zincirin sonraki halkası başlamaz.
+
+**Bağımlı:** yok — zincirin ilk halkası.
+**Kabul:** `etl:verify` tolerans dışı 0 diff · ikinci apply 0 insert · yedek dosyası sunucu
+dışında · yeni tenant id bu kaleme yazılı.
+**Ajan:** kullanıcı (prod erişimi sende) + Claude (komut, doğrulama, hata okuma).
+**Görüş:**
+
+---
+
 ## WAHA (WAHA-01, WAHA-02) — 2026-08-24, kullanıcı
 
 > **Nerede çalışıyor (sorunun cevabı, artık kayıtlı):** Tracker'ın **Railway** projesinde,
@@ -359,8 +522,8 @@ Sıra önemli: `0061` → `0062`. İkisi de yerelde koşturuldu ve doğrulandı 
 
   **⏸ Sıra kararı (2026-08-24, kullanıcı): kurulum veri taşımadan SONRA.** Gerekçe: taşıma
   yeni tenant açacak, tenant id değişecek; şimdi kimlik satırı açmak boşa gider. Sıra:
-  **(1) veri taşıma → (2) `webhook:identity issue` + secret'lar → (3) WAHA + relay + QR →
-  (4) WEBHOOK-01 kapanışı.**
+  **(1) veri taşıma (→ **MIGRATE-01**, kendi kalemi açıldı 2026-09-02) → (2) `webhook:identity
+  issue` + secret'lar → (3) WAHA + relay + QR → (4) WEBHOOK-01 kapanışı.**
   **Bilinerek kabul edilen sonuç:** WhatsApp gelen kutusu o zamana kadar **Tracker'da kalıyor**,
   Verimaya'ya akmıyor. WEBHOOK-01 de (23 Ağustos'ta gecikmişti) bu kuyruğa giriyor.
   Kimlik satırı komutu hazır ve prod imajının içinde: `node scripts/webhook-identity.js
@@ -449,6 +612,52 @@ kendiliğinden Ayarlar → AI Notu'na gidip doğru cümleyi yazması bekleniyor.
 **Ön koşul:** gerçek kullanım verisi. Bugün `ai_corrections` boş; boş bir raporu tanıtmak
 kimseyi ikna etmez. **PILOT-02 ile birlikte.**
 **Boyut: M** · **Bağımlı:** DOC-05 (rehber), AI-03 (rapor)
+
+---
+
+## AI-13 — Bir olay, bir kart: WhatsApp mesajlarını tek işleme bağla (2026-09-02, kullanıcı)
+
+> **Bulgu (kullanıcı, canlı Tracker ekranı):** Bir otel konaklamasının kaydı WhatsApp'a
+> **dört parça** hâlinde düşüyor — fatura PDF'i · "Wayne Embleton Dumos Hotel konaklama
+> faturası 13.496,88 tl." · dekont PDF'i · "…ödenmiştir. 13.496,88 tl + 16,76 tl işlem
+> ücreti." Panelde bunlar **dört ayrı kart**.
+
+**Bugün kodda ne oluyor (doğrulandı):**
+- **PDF'ler hiç işlenmiyor.** `whatsapp.service.ts:177` — gövdesi boş satır atlanıyor
+  ("skips media-only messages"). `inbound-mapper.ts` `has_media` / `media_path` alanlarını
+  saklıyor ama kimse okumuyor.
+- **Her mesaj tek başına ayrıştırılıyor.** Mesajlar arası bağ yok.
+- **Mükerrer koruması yok.** 11:02 ve 11:03 mesajlarının ikisi de onaylanırsa aynı gider
+  **iki kez** kaydolur. `transactions`'ta dedupe araması boş döndü.
+
+### Kapsam — kural tabanlı, model yok
+
+- [ ] **Olay gruplama.** Aynı sohbet + dar zaman penceresi (öneri: 15 dk) + **aynı tutar**
+  geçen mesajlar tek karta toplanır. Tutar zaten iki mesajda da yazılı; eşleştirme için
+  LLM gerekmiyor. Grup **kartta gösterilir**, birleştirme kararı kullanıcınındır.
+- [ ] **Fatura → ödeme zinciri.** İlk mesaj borcu, ikinci mesaj ödemeyi anlatıyor. Tek
+  işlemin iki hâli: `amount` + `paid_amount`, iki ayrı işlem değil.
+- [ ] **Ek dosyayı işleme değil, işleme *iliştir*.** PDF **modele gönderilmeden** işlemin
+  ekine bağlanır (dosya depolama zaten var). Kanıt insanın gözünde kalır.
+- [ ] **Belirsizlik kullanıcıya sorulur.** "16,76 işlem ücreti ayrı kalem mi, tutara dahil
+  mi" — AI karar vermez, kartta iki seçenek olarak sunulur.
+
+**Kapsam DIŞI (bilinçli): PDF'i modele okutmak.** Bugün modele giden şey maskelenmiş metin
+(`pii-mask.ts` — isim `KİŞİ_n`, telefon/e-posta/TCKN/IBAN çıkarılır). Faturada hasta adı,
+acentenin VKN'si, banka müşteri no ve dekont referansı **maskesiz** duruyor; sayfayı modele
+göndermek bu kapıyı devre dışı bırakır. **LEG-02 (hukukçu onayı) kapanmadan açılmaz.**
+Bir gün açılırsa da model PDF'i değil, PDF'ten çıkarılmış **maskelenmiş alanları** görür.
+
+**Neden bu sırayla:** mükerrer kayıt riski AI'ın yanılmasından daha pahalı. AI yanılırsa
+insan onay kapısında düzeltir ve düzeltme `ai_corrections`'a yazılır; mükerrer kayıt ise
+sessizce finans raporunu bozar.
+
+**Bağımlı:** WAHA-02 (grup ayrımı) ile aynı veriye dokunuyor — `inbound_messages.payload`
+içindeki sohbet id'si (`…@g.us`) bugün saklanıyor ama indeksli sütun yok ve hiçbir yer ona
+göre yönlendirmiyor. İkisi tek geçişte yapılırsa o sütun bir kez açılır.
+**Boyut: M** · **Kabul:** dört mesajlık örnek tek kart · iki kez onaylanamaz (mükerrer
+testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
+**Görüş:**
 
 ---
 

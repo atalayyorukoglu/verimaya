@@ -27,3 +27,11 @@ _tmp_*
 testsprite_tests/tmp/
 testsprite_tests/tmp/config.json
 .cursor-brief/
+
+# graphify — türetilmiş bilgi grafı. Koddan yeniden üretiliyor (`graphify update .`),
+# graph.json tek başına 11 MB; repoda tutulmuyor.
+graphify-out/
+
+# OpenClaw ajan çalışma alanı dosyaları (kişisel, repoya ait değil)
+openclaw-workspace-state.json
+memory/
