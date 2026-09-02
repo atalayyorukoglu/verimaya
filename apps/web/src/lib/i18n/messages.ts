@@ -1228,7 +1228,7 @@ const tr = {
 	'pillar.app.outcome':
 		'Sonuç: Ay sonunda “Hasta başı ne kazandık, kim kimi referans etti?” sorularının net ve şeffaf yanıtı tek tıkla karşınızda.',
 	'pillar.app.cta': "Maya App'e git",
-	'pillar.app.ctaSecondary': 'Özellikler kataloğu ›',
+	'pillar.app.ctaSecondary': 'Tüm özellikler ›',
 	'pillar.app.f.patients.title': 'Hasta listesi ve detay',
 	'pillar.app.f.patients.desc':
 		'Lead ve hasta kayıtlarını listeleyin; durum, not ve iletişim bilgisine tek ekrandan ulaşın.',
@@ -1318,7 +1318,7 @@ const tr = {
 	'pillar.resources.f.karne.desc': '5 dakikada, üyeliksiz: kurumunuzun AI olgunluğunu ölçün.',
 	'pillar.resources.f.features.title': 'Özellikler özeti',
 	'pillar.resources.f.features.desc':
-		'Modül bazında hangi özelliğin hazır, pilot veya yayında olduğunu görün.',
+		'Tüm modülleri ve hangi yeteneğin hangi üründe olduğunu tek sayfada görün.',
 	'pillar.resources.f.changelog.title': 'Yenilikler',
 	'pillar.resources.f.changelog.desc': 'Sürüm notlarıyla panele neyin geldiğini takip edin.',
 
@@ -1415,6 +1415,44 @@ const tr = {
 	'pillar.tools.prelaunch.body':
 		'Uyumluluk taraması, hesap (birim ekonomi) ve ölçüm olgunluğu eşiklerini bir arada doğrular.',
 	'pillar.tools.prelaunch.cta': 'Kontrolü panelde aç',
+
+	'pillar.features.metaTitle': 'Özellikler — Verimaya',
+	'pillar.features.metaDesc':
+		'Hasta operasyonu, randevu, finans, satış, yapay zeka ve raporlama: Verimaya’nın tüm modülleri tek sayfada.',
+	'pillar.features.eyebrow': 'Özellikler',
+	'pillar.features.heading': 'Sağlık turizmi operasyonunun tamamı tek platformda.',
+	'pillar.features.problem':
+		'Hasta takibi bir yerde, randevular başka yerde, tahsilat Excel’de, reklam raporu ajansta — hangi rakamın doğru olduğunu kimse bilmiyor mu?',
+	'pillar.features.body':
+		'Verimaya iki üründen oluşur: satış hattını yöneten Maya CRM ve operasyonu, finansı, raporlamayı yöneten Maya App. Aşağıdaki modüller bu iki ürünün üzerinde aynı veri modelini paylaşır.',
+	'pillar.features.outcome':
+		'Sonuç: Lead’den tahsilata tek kayıt zinciri; her raporun arkasında aynı veri.',
+	'pillar.features.cta': "Maya App'i aç",
+	'pillar.features.ctaSecondary': 'Maya App detayları ›',
+	'pillar.features.f.patients.title': 'Hasta ve kişi yönetimi',
+	'pillar.features.f.patients.desc':
+		'Lead ve hasta kayıtları, cari dizin, çift kayıt tarama ve ünvan bazlı kişi ilişkileri.',
+	'pillar.features.f.appointments.title': 'Randevu ve takvim',
+	'pillar.features.f.appointments.desc':
+		'Klinik, doktor, otel ve transfer notlarıyla gün/hafta görünümünde randevu yönetimi.',
+	'pillar.features.f.finance.title': 'Finans ve tahsilat',
+	'pillar.features.f.finance.desc':
+		'Gelir-gider işlemleri, P2P net bakiyeler, komisyon ve prim hesabı; tutarlar kuruş hassasiyetinde.',
+	'pillar.features.f.sales.title': 'Satış ve lead hattı',
+	'pillar.features.f.sales.desc':
+		'Lead yakalama, pipeline, otomatik takip ve çok kanallı iletişim Maya CRM tarafında.',
+	'pillar.features.f.ai.title': 'Yapay zeka (Maya)',
+	'pillar.features.f.ai.desc':
+		'WhatsApp mesajından ve faturadan işlem çıkarımı, kayıt önerileri, operasyon uyarıları — hepsi insan onayıyla.',
+	'pillar.features.f.reports.title': 'Raporlama ve Gerçek ROAS',
+	'pillar.features.f.reports.desc':
+		'Dönem özeti, kategori drill-down, kaynak kırılımı ve reklam harcamasını tahsilatla kıyaslayan Gerçek ROAS.',
+	'pillar.features.f.ads.title': 'Reklam araçları',
+	'pillar.features.f.ads.desc':
+		'Yayın öncesi simülatör, uyumluluk taraması, kampanya şablonları ve ölçüm olgunluğu kontrolü.',
+	'pillar.features.f.platform.title': 'Platform ve entegrasyonlar',
+	'pillar.features.f.platform.desc':
+		'Çok kiracılı organizasyon, rol bazlı yetki, denetim kaydı, n8n ve imzalı webhook’larla dış API.',
 
 	// —— AUDIT-F09-10 common ——
 	'common.loading': 'Yükleniyor…',
@@ -4045,7 +4083,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.app.outcome':
 		'Outcome: by month-end, clear answers to “What did we earn per patient, who referred whom?” are one click away.',
 	'pillar.app.cta': 'Go to Maya App',
-	'pillar.app.ctaSecondary': 'Feature catalog ›',
+	'pillar.app.ctaSecondary': 'All features ›',
 	'pillar.app.f.patients.title': 'Patient list and detail',
 	'pillar.app.f.patients.desc':
 		'List leads and patients; reach status, notes, and contact details in one screen.',
@@ -4125,7 +4163,7 @@ const en: Record<MessageKey, string> = {
 	'pillar.resources.f.karne.desc': 'Five minutes, no signup: measure your org’s AI maturity.',
 	'pillar.resources.f.features.title': 'Feature summary',
 	'pillar.resources.f.features.desc':
-		'See which capabilities are ready, piloting, or live by module.',
+		'See every module and which product each capability lives in, on one page.',
 	'pillar.resources.f.changelog.title': 'What’s new',
 	'pillar.resources.f.changelog.desc': 'Follow release notes for what landed in the panel.',
 
@@ -4218,6 +4256,44 @@ const en: Record<MessageKey, string> = {
 	'pillar.tools.prelaunch.body':
 		'Combines compliance scan, calculator (unit economics), and measurement maturity thresholds.',
 	'pillar.tools.prelaunch.cta': 'Open pre-launch in panel',
+
+	'pillar.features.metaTitle': 'Features — Verimaya',
+	'pillar.features.metaDesc':
+		'Patient operations, appointments, finance, sales, AI, and reporting: every Verimaya module on one page.',
+	'pillar.features.eyebrow': 'Features',
+	'pillar.features.heading': 'Your entire health tourism operation on one platform.',
+	'pillar.features.problem':
+		'Patients tracked in one place, appointments in another, payments in a spreadsheet, ad reporting at the agency — and nobody knows which number is right?',
+	'pillar.features.body':
+		'Verimaya is two products: Maya CRM runs the sales pipeline, Maya App runs operations, finance, and reporting. The modules below share one data model across both.',
+	'pillar.features.outcome':
+		'Outcome: one record chain from lead to payment, and the same data behind every report.',
+	'pillar.features.cta': 'Open Maya App',
+	'pillar.features.ctaSecondary': 'Maya App details ›',
+	'pillar.features.f.patients.title': 'Patient and contact management',
+	'pillar.features.f.patients.desc':
+		'Lead and patient records, supplier directory, duplicate scanning, and title-based contact relations.',
+	'pillar.features.f.appointments.title': 'Appointments and calendar',
+	'pillar.features.f.appointments.desc':
+		'Day and week views with clinic, doctor, hotel, and transfer notes on every appointment.',
+	'pillar.features.f.finance.title': 'Finance and collections',
+	'pillar.features.f.finance.desc':
+		'Income and expense entries, P2P net balances, commission and incentive math, all in minor units.',
+	'pillar.features.f.sales.title': 'Sales and lead pipeline',
+	'pillar.features.f.sales.desc':
+		'Lead capture, pipeline, automated follow-up, and multi-channel messaging on the Maya CRM side.',
+	'pillar.features.f.ai.title': 'AI (Maya)',
+	'pillar.features.f.ai.desc':
+		'Transaction extraction from WhatsApp and invoices, record suggestions, operation alerts — every one human-approved.',
+	'pillar.features.f.reports.title': 'Reporting and Real ROAS',
+	'pillar.features.f.reports.desc':
+		'Period summaries, category drill-down, source breakdown, and Real ROAS that compares ad spend to collections.',
+	'pillar.features.f.ads.title': 'Advertising tools',
+	'pillar.features.f.ads.desc':
+		'Pre-launch simulator, compliance scan, campaign templates, and measurement maturity checks.',
+	'pillar.features.f.platform.title': 'Platform and integrations',
+	'pillar.features.f.platform.desc':
+		'Multi-tenant organizations, role-based access, audit log, n8n, and an external API with signed webhooks.',
 
 	// —— AUDIT-F09-10 common ——
 	'common.loading': 'Loading…',

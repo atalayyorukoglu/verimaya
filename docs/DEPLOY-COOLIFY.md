@@ -138,6 +138,19 @@ Prerender önce, SPA fallback sonda — `try_files $uri $uri/index.html $uri/ /i
 
 **nginx (imaj içi):** Apex/www host’ta `/` → `hub.html` (prerender hub); app host’ta `/` → SPA `index.html`. Eski `/vitrin` → `301 /`. Cloudflare’de ayrıca `/`→`/vitrin` redirect **gerekmez**.
 
+**Host ayrımı kök yolla sınırlı değil (2026-09-02):** Tek imaj iki host’a hizmet ettiği için
+`location /` fallback’i eskiden **her** panel yolunu apex’te de açıyordu
+(`verimaya.com/contacts`, `/settings`…). Artık `nginx.conf` başındaki `$panel_path` map’i panel
+rotalarını tanır ve apex’te gelen istek `302 https://app.verimaya.com$request_uri` ile panel
+host’una taşınır. Liste bilinçli olarak **deny-list**’tir: yeni bir pazarlama sayfası eklenince
+kazara yönlendirilmez; unutulan yeni bir panel rotası ise yalnız eski davranışta kalır.
+`/resources` ayrık yazılıdır — `(public)/resources/` pazarlama, `/resources/docs` ve
+`/resources/ai-prep` paneldir. **302 bilinçli:** doğrulanana kadar 301 cache’lenmesin; canlıda
+teyit sonrası 301’e çekilir. Yeni panel rotası eklerken `$panel_path` map’ini güncelle.
+
+`/features` panelden pazarlamaya taşındı: apex’te prerender `(public)/features/` sayfası
+açılır; app host’ta eski yer imleri için `/features` → `301 /toolkit`.
+
 **Web cache politikası:** SPA `index.html` kabuğu ve prerender `hub.html`
 `Cache-Control: no-cache, must-revalidate`; `/sw.js` `no-cache`; içerik hash’li
 `/_app/immutable/` dosyaları `public, max-age=31536000, immutable` döner. Kabuk her
@@ -448,6 +461,16 @@ curl -sS "$SITE/yapay-zeka-karnesi/" | grep -qiE "karne|yapay.?zeka" && echo "ka
 ! curl -sS "$SITE/" | grep -q noindex && echo "hub indexable ok"
 # Eski path → kök
 curl -sSI "$SITE/vitrin/" | grep -qiE 'location:.*/$' && echo "vitrin 301 to root ok"
+
+# Özellikler sayfası — apex prerender, panel değil
+curl -sS "$SITE/features/" | grep -q "Özellikler — Verimaya" && echo "features prerender ok"
+! curl -sS "$SITE/features/" | grep -q noindex && echo "features indexable ok"
+
+# Host ayrımı: panel yolu apex'te açılmaz, app host'ta açılır
+curl -sSI "$SITE/toolkit" | grep -qi "location: $APP/toolkit" && echo "apex panel redirect ok"
+curl -sSI "$SITE/contacts" | grep -qi "location: $APP/contacts" && echo "apex contacts redirect ok"
+curl -sSI "$APP/contacts" | grep -qE 'HTTP/[0-9.]+ 200' && echo "app host panel ok"
+curl -sSI "$APP/features" | grep -qi 'location:.*/toolkit' && echo "app features 301 toolkit ok"
 ```
 
 Ek:

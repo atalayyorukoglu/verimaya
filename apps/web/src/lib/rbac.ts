@@ -17,7 +17,6 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/finance/balances': ['owner', 'admin', 'manager', 'finance'],
 	'/reports': ['owner', 'admin', 'manager', 'finance', 'readonly'],
 	'/settings': ['owner', 'admin'],
-	'/features': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/maya': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/changelog': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	/** Real gate is `platform_admin` / MSW-DEV; org role not used. */

@@ -1120,6 +1120,26 @@ onay anında `original_parsed` ≠ `corrected` ise satır yazıyor, web `origina
 > 2026-08-09 dönemi kapananların tamamı: `docs/Arşiv/2026-08-09-YAPILACAKLAR.md` § Son kapananlar.
 > 2026-08-03 ve öncesi: `docs/Arşiv/2026-08-03-YAPILACAKLAR.md`.
 
+- [x] **MARKET-04 — `/features` pazarlama sayfası + apex/app host ayrımı tamamlandı (2026-09-02,
+  kullanıcı bildirimi).** Hub footer'ındaki "Özellikler" bağlantısı `/features/`'a gidiyordu ama
+  `/features` bir **panel** rotasıydı (`routes/features/+page.ts` → `redirect(308, '/toolkit')`);
+  kullanıcı apex'te gezerken `AppShell`'li panel görünümüne düşüyordu. İki kök neden vardı:
+  (1) pazarlama tarafında `/features/` diye bir sayfa hiç yoktu, (2) nginx'te host ayrımı
+  **yalnız kök yolda** gerçekti — `location /` fallback'i apex'te de tüm panel rotalarını
+  (`verimaya.com/contacts`, `/settings`, `/toolkit`…) SPA kabuğuyla açıyordu.
+  Yapılan: panel rotası silindi; `(public)/features/+page.svelte` prerender pillar sayfası
+  eklendi (8 modül kartı, her biri `/operations/` `/sales/` `/tools/` `/resources/` pillar'ına
+  devrediyor — içerik tekrarı yok, yol haritası kamuya açılmıyor); `pillar.features.*`
+  anahtarları tr + en; `isIndexablePublic` + `robots.txt` + `sitemap.xml` güncellendi;
+  `nginx.conf`'a `$panel_path` deny-list map'i ve apex → `302 app.verimaya.com$request_uri`
+  yönlendirmesi kondu; app host'ta `/features` → `301 /toolkit` (eski panel yer imi).
+  **Görüş:** Deny-list bilinçli tercih — allow-list'te unutulan yeni bir pazarlama sayfası
+  apex'ten kaçardı ve cache'lenmiş yönlendirmeyi geri almak pahalıdır; deny-list'te unutulan
+  yeni panel rotası ise sadece bugünkü davranışta kalır. Aynı gerekçeyle ilk sürüm **302**;
+  canlıda `docs/DEPLOY-COOLIFY.md` § Canlı kabul curl'leri geçtikten sonra 301'e çekilecek.
+  Doğrulama: yerel nginx konteynerinde 36 yol × 2 host denendi (apex public 200, apex panel 302,
+  app host panel 200, statik/immutable asset'ler etkilenmedi).
+
 - [x] **MARKET-03 — Ana sayfa metni acente/klinik ayrımından çıkarıldı (2026-09-02, kullanıcı
   isteği).** Canlı `/` (`HubHomeV4`) okuyucuyu kurum tipine göre ayırıyordu: hero etiketi
   "Sağlık turizmi acenteleri için", KVKK bandında "Her acentenin verisi", "Birden fazla

@@ -7,6 +7,8 @@ Allow: /yapay-zeka-karnesi
 Allow: /yapay-zeka-karnesi/
 Allow: /kvkk-aydinlatma
 Allow: /kvkk-aydinlatma/
+Allow: /features
+Allow: /features/
 Allow: /operations
 Allow: /operations/
 Allow: /sales
@@ -27,7 +29,9 @@ Disallow: /marketing
 Disallow: /contacts
 Disallow: /login
 Disallow: /dev
-Disallow: /features
 Disallow: /changelog
+Disallow: /toolkit
+Disallow: /resources/docs
+Disallow: /resources/ai-prep
 
 Sitemap: https://verimaya.com/sitemap.xml
