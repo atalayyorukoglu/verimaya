@@ -17,16 +17,24 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import {
 		apiPaths,
+		appointmentStatusLabels,
 		type Appointment,
 		type ContactCaseNote,
 		type ContactFile,
 		type ContactFilePresignResponse,
 		type Incident,
-		type IncidentType
+		type IncidentType,
+		type Transaction
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl, resolveApiUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
-	import { formatBytes, formatDateTime, formatRelativeTime, initialsOf } from '$lib/format';
+	import {
+		formatBytes,
+		formatDateTime,
+		formatMoney,
+		formatRelativeTime,
+		initialsOf
+	} from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
 	import AlertTriangle from '@lucide/svelte/icons/triangle-alert';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
@@ -35,17 +43,38 @@
 	import Eye from '@lucide/svelte/icons/eye';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Plus from '@lucide/svelte/icons/plus';
+	import Calendar from '@lucide/svelte/icons/calendar';
+	import Wallet from '@lucide/svelte/icons/wallet';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Pencil from '@lucide/svelte/icons/pencil';
 
 	let {
 		contactId,
 		appointments = [],
-		canWrite = true
+		transactions = [],
+		canWrite = true,
+		onNewAppointment,
+		onNewTransaction,
+		onNewIncident,
+		onEditAppointment,
+		onEditTransaction
 	}: {
 		contactId: string;
 		appointments?: Appointment[];
+		transactions?: Transaction[];
 		canWrite?: boolean;
+		onNewAppointment?: () => void;
+		onNewTransaction?: () => void;
+		onNewIncident?: () => void;
+		onEditAppointment?: (appointment: Appointment) => void;
+		onEditTransaction?: (transaction: Transaction) => void;
 	} = $props();
+
+	let addMenuOpen = $state(false);
+	function runAdd(action: (() => void) | undefined) {
+		addMenuOpen = false;
+		action?.();
+	}
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
@@ -78,7 +107,9 @@
 	type TimelineItem =
 		| { kind: 'note'; id: string; at: string; note: ContactCaseNote }
 		| { kind: 'file'; id: string; at: string; file: ContactFile }
-		| { kind: 'incident'; id: string; at: string; incident: Incident };
+		| { kind: 'incident'; id: string; at: string; incident: Incident }
+		| { kind: 'appointment'; id: string; at: string; appointment: Appointment }
+		| { kind: 'transaction'; id: string; at: string; transaction: Transaction };
 
 	const incidentTypes = $derived(incidentTypesQuery.data?.items ?? []);
 	const incidents = $derived(incidentsQuery.data?.items ?? []);
@@ -104,12 +135,30 @@
 				id: incident.id,
 				at: incident.created_at,
 				incident
+			})),
+			/*
+			 * Randevu ve işlem, kaydedildikleri an değil OLDUKLARI an ile sıralanır
+			 * (`starts_at` / `occurred_on`) — hasta geçmişini okurken anlamlı olan bu.
+			 * `occurred_on` saatsiz bir tarih; aynı güne düşen saatli kayıtlardan önce
+			 * gelir, kabul edilebilir.
+			 */
+			...appointments.map((appointment): TimelineItem => ({
+				kind: 'appointment',
+				id: appointment.id,
+				at: appointment.starts_at,
+				appointment
+			})),
+			...transactions.map((transaction): TimelineItem => ({
+				kind: 'transaction',
+				id: transaction.id,
+				at: transaction.occurred_on,
+				transaction
 			}))
 		];
 		return merged.sort((a, b) => a.at.localeCompare(b.at));
 	});
 
-	type Filter = 'all' | 'incident' | 'file';
+	type Filter = 'all' | 'incident' | 'file' | 'appointment' | 'transaction';
 	let filter = $state<Filter>('all');
 	const visibleItems = $derived(filter === 'all' ? items : items.filter((i) => i.kind === filter));
 
@@ -372,12 +421,82 @@
 		</div>
 	{/if}
 
+	{#if canWrite}
+		<!--
+			Tek giriş noktası: randevu, işlem, dosya ve olay buradan açılır. Kayıt açmak
+			için sayfada ayrı bölüm aramak gerekmiyor (ClickUp'ın etkinlik panelindeki
+			"+" mantığı). Dosya doğrudan burada seçilir, diğerleri kendi penceresini açar.
+		-->
+		<div class="relative">
+			<button
+				type="button"
+				class="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted transition-colors hover:text-text"
+				aria-haspopup="menu"
+				aria-expanded={addMenuOpen}
+				onclick={() => (addMenuOpen = !addMenuOpen)}
+			>
+				<Plus class="size-3.5" />
+				{t('contacts.timeline.add')}
+			</button>
+			{#if addMenuOpen}
+				<!-- Dışarı tıklayınca kapanır; menü kendi tıklamasını yutar. -->
+				<button
+					type="button"
+					class="fixed inset-0 z-10 cursor-default"
+					aria-label={t('common.close')}
+					onclick={() => (addMenuOpen = false)}
+				></button>
+				<div
+					class="absolute z-20 mt-1 min-w-44 rounded-[6px] border border-border bg-surface p-1 shadow-lg"
+					role="menu"
+				>
+					<button
+						type="button"
+						role="menuitem"
+						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+						onclick={() => runAdd(onNewAppointment)}
+					>
+						<Calendar class="size-3.5 text-text-faint" />
+						{t('contacts.timeline.addAppointment')}
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+						onclick={() => runAdd(onNewTransaction)}
+					>
+						<Wallet class="size-3.5 text-text-faint" />
+						{t('contacts.timeline.addTransaction')}
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+						onclick={() => runAdd(() => fileInput?.click())}
+					>
+						<Paperclip class="size-3.5 text-text-faint" />
+						{t('contacts.timeline.addFile')}
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+						onclick={() => runAdd(onNewIncident)}
+					>
+						<AlertTriangle class="size-3.5 text-text-faint" />
+						{t('contacts.timeline.addIncident')}
+					</button>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
 	<div
 		class="flex flex-wrap items-center gap-1.5"
 		role="group"
 		aria-label={t('contacts.timeline.filterAria')}
 	>
-		{#each [{ id: 'all', label: t('contacts.timeline.filterAll') }, { id: 'incident', label: t('contacts.timeline.filterIncidents') }, { id: 'file', label: t('contacts.timeline.filterFiles') }] as chip (chip.id)}
+		{#each [{ id: 'all', label: t('contacts.timeline.filterAll') }, { id: 'appointment', label: t('contacts.timeline.filterAppointments') }, { id: 'transaction', label: t('contacts.timeline.filterTransactions') }, { id: 'incident', label: t('contacts.timeline.filterIncidents') }, { id: 'file', label: t('contacts.timeline.filterFiles') }] as chip (chip.id)}
 			<button
 				type="button"
 				class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {filter === chip.id
@@ -417,13 +536,21 @@
 						class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold {item.kind ===
 						'incident'
 							? 'bg-warning/15 text-warning'
-							: item.kind === 'file'
-								? 'bg-surface-2 text-text-muted'
-								: 'bg-brand/15 text-brand'}"
+							: item.kind === 'appointment'
+								? 'bg-info/15 text-info'
+								: item.kind === 'transaction'
+									? 'bg-success/15 text-success'
+									: item.kind === 'file'
+										? 'bg-surface-2 text-text-muted'
+										: 'bg-brand/15 text-brand'}"
 						aria-hidden="true"
 					>
 						{#if item.kind === 'incident'}
 							<AlertTriangle class="size-3.5" />
+						{:else if item.kind === 'appointment'}
+							<Calendar class="size-3.5" />
+						{:else if item.kind === 'transaction'}
+							<Wallet class="size-3.5" />
 						{:else if item.kind === 'file'}
 							<Paperclip class="size-3.5" />
 						{:else}
@@ -436,6 +563,14 @@
 							<span class="truncate text-sm font-semibold text-text">
 								{#if item.kind === 'incident'}
 									{incidentLabel(item.incident)}
+								{:else if item.kind === 'appointment'}
+									{item.appointment.appointment_type ||
+										item.appointment.title ||
+										t('contacts.timeline.filterAppointments')}
+								{:else if item.kind === 'transaction'}
+									{item.transaction.title ||
+										item.transaction.category ||
+										t('contacts.timeline.filterTransactions')}
 								{:else if item.kind === 'file'}
 									{item.file.uploaded_by_display_name || t('contacts.timeline.filterFiles')}
 								{:else}
@@ -458,6 +593,21 @@
 										? t('contacts.timeline.statusOpen')
 										: t('contacts.timeline.statusResolved')}
 								</span>
+							{:else if item.kind === 'appointment'}
+								<span class="rounded-full bg-surface-2 px-1.5 py-px text-[10px] text-text-faint">
+									{appointmentStatusLabels[item.appointment.status]}
+								</span>
+							{:else if item.kind === 'transaction'}
+								<span
+									class="text-xs font-medium {item.transaction.kind === 'income'
+										? 'text-success'
+										: 'text-text-muted'}"
+								>
+									{item.transaction.kind === 'income' ? '+' : '−'}{formatMoney(
+										item.transaction.amount,
+										item.transaction.currency
+									)}
+								</span>
 							{/if}
 						</div>
 
@@ -469,6 +619,18 @@
 									{item.incident.description}
 								</p>
 							{/if}
+						{:else if item.kind === 'appointment'}
+							<p class="mt-0.5 text-xs text-text-faint">
+								{formatDateTime(item.appointment.starts_at)}{item.appointment.clinic_name
+									? ` · ${item.appointment.clinic_name}`
+									: ''}{item.appointment.hotel_name ? ` · ${item.appointment.hotel_name}` : ''}
+							</p>
+						{:else if item.kind === 'transaction'}
+							<p class="mt-0.5 text-xs text-text-faint">
+								{item.transaction.category ?? ''}{item.transaction.subtitle
+									? ` · ${item.transaction.subtitle}`
+									: ''}
+							</p>
 						{:else}
 							<p class="mt-0.5 text-sm break-all text-text">{item.file.filename}</p>
 							<p class="text-xs text-text-faint">
@@ -514,7 +676,29 @@
 								<Check class="size-3.5" />
 							</button>
 						{/if}
-						{#if canWrite && item.kind !== 'incident'}
+						{#if canWrite && item.kind === 'appointment' && onEditAppointment}
+							<button
+								type="button"
+								class="rounded p-1 text-text-faint transition-colors hover:text-text"
+								aria-label={t('common.edit')}
+								title={t('common.edit')}
+								onclick={() => onEditAppointment?.(item.appointment)}
+							>
+								<Pencil class="size-3.5" />
+							</button>
+						{/if}
+						{#if canWrite && item.kind === 'transaction' && onEditTransaction}
+							<button
+								type="button"
+								class="rounded p-1 text-text-faint transition-colors hover:text-text"
+								aria-label={t('common.edit')}
+								title={t('common.edit')}
+								onclick={() => onEditTransaction?.(item.transaction)}
+							>
+								<Pencil class="size-3.5" />
+							</button>
+						{/if}
+						{#if canWrite && (item.kind === 'note' || item.kind === 'file')}
 							<button
 								type="button"
 								class="rounded p-1 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"

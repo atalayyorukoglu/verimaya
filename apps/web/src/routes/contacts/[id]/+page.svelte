@@ -17,23 +17,12 @@
 		TransactionCreate,
 		TransactionUpdate
 	} from '@verimaya/shared';
-	import {
-		apiPaths,
-		appointmentStatusLabels,
-		contactStatusLabels,
-		listUrl,
-		transactionKindLabels,
-		transactionStatusLabels
-	} from '@verimaya/shared';
+	import { apiPaths, contactStatusLabels, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
-	import {
-		appointmentStatusTone,
-		contactStatusTone,
-		transactionStatusTone
-	} from '$lib/status-tone';
+	import { contactStatusTone } from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
@@ -43,7 +32,6 @@
 	import IncidentFormDialog from '$lib/components/IncidentFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n/locale.svelte';
-	import Pencil from '@lucide/svelte/icons/pencil';
 
 	type PageOf<T> = { items: T[]; next_cursor: string | null };
 
@@ -553,145 +541,41 @@
 			</div>
 		</dl>
 
+		<!--
+			Akış = hastanin tum gecmisi: randevu, islem, not, olay, dosya tek zaman
+			cizgisinde. Eskiden bunlar ucu uca bes ayri bolumdu; hasta kartini okumak
+			icin sayfayi kaydirmak, kayit acmak icin dogru bolumu bulmak gerekiyordu.
+			Ayri "Randevular" ve "Islemler" listeleri kaldirildi - ayni kayitlar akista
+			duruyor, satirdaki kalem ikonu kendi penceresini aciyor. Finans ozeti
+			(toplamlar, kategori dagilimi) yukarida kaldi: o gecmis degil, ozet.
+			Takvim ve Finans sayfalarina baglantilar akisin ustunde.
+		-->
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">{t('contacts.detail.appointments')}</h2>
-				<div class="flex flex-wrap items-center gap-2">
+				<h2 class="text-sm font-semibold text-text">{t('contacts.timeline.title')}</h2>
+				<div class="flex flex-wrap items-center gap-3">
 					<a
 						href={`/appointments?contact_involves=${contact.id}`}
 						class="text-xs font-medium text-brand hover:underline"
 						>{t('contacts.detail.calendarLink')}</a
 					>
-					<Button type="button" size="sm" variant="secondary" onclick={openCreateAppt}
-						>{t('contacts.detail.newAppointment')}</Button
-					>
-				</div>
-			</div>
-			{#if apptQuery.isPending}
-				<p class="text-sm text-text-muted">{t('common.loading')}</p>
-			{:else if appointments.length === 0}
-				<p class="text-sm text-text-muted">{t('contacts.detail.appointmentsEmpty')}</p>
-			{:else}
-				<ul class="divide-y divide-border">
-					{#each appointments as appt (appt.id)}
-						<li class="flex min-w-0 items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
-							<button
-								type="button"
-								class="min-w-0 flex-1 cursor-pointer text-left"
-								onclick={() => openEditAppt(appt)}
-							>
-								<p class="truncate text-sm font-medium text-text hover:text-brand">
-									{appt.title ?? appt.appointment_type ?? t('contacts.files.appointmentFallback')}
-								</p>
-								<p class="text-xs text-text-faint">
-									{formatDate(appt.starts_at)} · {formatTime(appt.starts_at)}
-								</p>
-							</button>
-							<StatusBadge
-								label={appointmentStatusLabels[appt.status]}
-								tone={appointmentStatusTone(appt.status)}
-							/>
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		</section>
-
-		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">{t('contacts.detail.transactions')}</h2>
-				<div class="flex flex-wrap items-center gap-2">
 					<a
 						href={`/finance?contact=${contact.id}`}
 						class="text-xs font-medium text-brand hover:underline"
-					>
-						{t('contacts.detail.allLink')}
-					</a>
-					<Button type="button" size="sm" variant="secondary" onclick={openCreateTx}
-						>{t('contacts.detail.newTransaction')}</Button
+						>{t('contacts.detail.viewInFinance')}</a
 					>
 				</div>
 			</div>
-			{#if txQuery.isPending}
-				<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
-			{:else if transactions.length === 0}
-				<p class="text-sm text-text-muted">{t('contacts.detail.transactionsEmpty')}</p>
-			{:else}
-				<ul class="-mx-1 divide-y divide-border">
-					{#each transactions as tx (tx.id)}
-						<li class="group">
-							<div
-								class="flex min-w-0 items-start gap-3 rounded-[6px] px-1 py-3 transition-colors hover:bg-surface-2/70"
-							>
-								<button
-									type="button"
-									class="min-w-0 flex-1 cursor-pointer text-left"
-									onclick={() => openEditTx(tx)}
-								>
-									<p class="truncate text-sm font-medium text-text group-hover:text-brand">
-										{tx.title}
-									</p>
-									<p class="text-xs text-text-faint">
-										{formatDate(tx.occurred_on)} · {transactionKindLabels[tx.kind]}
-										{#if tx.category}
-											· {tx.category}
-										{/if}
-									</p>
-									<div class="mt-1.5">
-										<StatusBadge
-											label={transactionStatusLabels[tx.status]}
-											tone={transactionStatusTone(tx.status)}
-										/>
-									</div>
-								</button>
-								<div class="flex shrink-0 flex-col items-end gap-2 pt-0.5">
-									<p
-										class="text-sm font-semibold tabular-nums {tx.kind === 'income'
-											? 'text-success'
-											: 'text-text'}"
-									>
-										{tx.kind === 'expense' ? '−' : '+'}{formatMoney(tx.amount, tx.currency)}
-									</p>
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										class="h-7 gap-1 px-2 text-xs"
-										onclick={() => openEditTx(tx)}
-									>
-										<Pencil class="size-3" />
-										{t('common.edit')}
-									</Button>
-								</div>
-							</div>
-						</li>
-					{/each}
-				</ul>
-				{#if txQuery.data?.next_cursor}
-					<p class="mt-3 text-xs text-text-faint">
-						{t('contacts.detail.moreTransactions')}
-						<a href={`/finance?contact=${contact.id}`} class="text-brand hover:underline"
-							>{t('contacts.detail.viewInFinance')}</a
-						>
-					</p>
-				{/if}
-			{/if}
-		</section>
-
-		<!--
-			Akış: not + olay + dosya tek yerde. Eskiden ucu uca uc bolum vardi
-			("Olaylar", "Dosyalar", notlar) ve ilk ikisi bos kaliyordu; kayit acmanin
-			bedeli yazmanin bedelinden yuksekti. Ayrintili olay girisi (maliyet,
-			sorumlu, randevu bagi) hala IncidentFormDialog ile yapiliyor.
-		-->
-		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">{t('contacts.timeline.title')}</h2>
-				<Button type="button" size="sm" variant="secondary" onclick={openCreateIncident}>
-					{t('contacts.detail.newIncident')}
-				</Button>
-			</div>
-			<ContactTimeline contactId={contact.id} {appointments} />
+			<ContactTimeline
+				contactId={contact.id}
+				{appointments}
+				{transactions}
+				onNewAppointment={openCreateAppt}
+				onNewTransaction={openCreateTx}
+				onNewIncident={openCreateIncident}
+				onEditAppointment={openEditAppt}
+				onEditTransaction={openEditTx}
+			/>
 			{#if incidentResolveError}
 				<p class="mt-2 text-sm text-danger">{incidentResolveError}</p>
 			{/if}
