@@ -202,7 +202,7 @@
 	type DayGroup = { key: string; label: string; items: TimelineItem[] };
 	const groups = $derived.by((): DayGroup[] => {
 		const out: DayGroup[] = [];
-		for (const item of visibleItems) {
+		for (const item of items) {
 			const key = dayKey(item.at);
 			const last = out[out.length - 1];
 			if (last && last.key === key) last.items.push(item);
@@ -210,20 +210,6 @@
 		}
 		return out;
 	});
-
-	/** Filtre çiplerindeki sayılar. */
-	const counts = $derived({
-		all: items.length,
-		appointment: items.filter((i) => i.kind === 'appointment').length,
-		transaction: items.filter((i) => i.kind === 'transaction').length,
-		incident: items.filter((i) => i.kind === 'incident').length,
-		file: items.filter((i) => i.kind === 'file').length,
-		note: items.filter((i) => i.kind === 'note').length
-	});
-
-	type Filter = 'all' | 'incident' | 'file' | 'appointment' | 'transaction' | 'note';
-	let filter = $state<Filter>('all');
-	const visibleItems = $derived(filter === 'all' ? items : items.filter((i) => i.kind === filter));
 
 	/*
 	 * Üç kaynak birbirinden bağımsız: biri düşerse akış kararmaz, gelen gösterilir.
@@ -533,36 +519,7 @@
 		</div>
 	{/if}
 
-	<!-- Çipler tek satır, yatay kaydırmalı; aktif olan koyu dolgu, her çipte sayı. -->
-	<div
-		class="-mx-0.5 flex [scrollbar-width:none] items-center gap-1.5 overflow-x-auto px-0.5 pb-0.5 [&::-webkit-scrollbar]:hidden"
-		role="group"
-		aria-label={t('contacts.timeline.filterAria')}
-	>
-		{#each [{ id: 'all', label: t('contacts.timeline.filterAll'), n: counts.all }, { id: 'appointment', label: t('contacts.timeline.filterAppointments'), n: counts.appointment }, { id: 'transaction', label: t('contacts.timeline.filterTransactions'), n: counts.transaction }, { id: 'incident', label: t('contacts.timeline.filterIncidents'), n: counts.incident }, { id: 'file', label: t('contacts.timeline.filterFiles'), n: counts.file }, { id: 'note', label: t('contacts.timeline.filterNotes'), n: counts.note }] as chip (chip.id)}
-			<button
-				type="button"
-				class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors {filter ===
-				chip.id
-					? 'border-text bg-text text-surface'
-					: 'border-border text-text-muted hover:text-text'}"
-				aria-pressed={filter === chip.id}
-				onclick={() => (filter = chip.id as Filter)}
-			>
-				{chip.label}
-				{#if chip.id !== 'all'}
-					<span class="tabular-nums opacity-70">{chip.n}</span>
-				{/if}
-			</button>
-		{/each}
-	</div>
-
-	<div
-		bind:this={listEl}
-		class="max-h-[28rem] min-h-24 overflow-y-auto"
-		role="log"
-		aria-label={t('contacts.timeline.aria')}
-	>
+	<div bind:this={listEl} class="min-h-24 pb-6" role="log" aria-label={t('contacts.timeline.aria')}>
 		{#if isPending}
 			<p class="text-sm text-text-faint">{t('contacts.notes.loading')}</p>
 		{:else if isError}
@@ -571,27 +528,29 @@
 			<p class="text-sm text-text-faint">{t('contacts.timeline.empty')}</p>
 		{:else}
 			{#each groups as group (group.key)}
-				<h3 class="sticky top-0 z-10 bg-surface py-1.5 text-xs font-semibold text-text-muted">
-					{group.label}
+				<h3 class="mt-10 mb-7 flex items-center gap-4 first:mt-2">
+					<span class="h-px flex-1 bg-border"></span>
+					<span class="shrink-0 text-sm text-text-muted">{group.label}</span>
+					<span class="h-px flex-1 bg-border"></span>
 				</h3>
-				<ul class="space-y-4">
+				<ul class="space-y-7">
 					{#each group.items as item (item.kind + item.id)}
 						<!-- Satır: solda tip renkli yuvarlak, sağda ad + zaman ve gövde balonu. -->
-						<li class="relative flex gap-3 max-[480px]:gap-2.5">
+						<li class="relative flex gap-3.5 max-[480px]:gap-3">
 							<span
-								class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full max-[480px]:size-7 {TYPE_STYLE[
+								class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full max-[480px]:size-9 {TYPE_STYLE[
 									item.kind
 								]}"
 								aria-hidden="true"
 							>
 								{#if item.kind === 'incident'}
-									<AlertTriangle class="size-4 max-[480px]:size-3.5" />
+									<AlertTriangle class="size-[18px] max-[480px]:size-4" />
 								{:else if item.kind === 'appointment'}
-									<Calendar class="size-4 max-[480px]:size-3.5" />
+									<Calendar class="size-[18px] max-[480px]:size-4" />
 								{:else if item.kind === 'transaction'}
-									<Wallet class="size-4 max-[480px]:size-3.5" />
+									<Wallet class="size-[18px] max-[480px]:size-4" />
 								{:else if item.kind === 'file'}
-									<Paperclip class="size-4 max-[480px]:size-3.5" />
+									<Paperclip class="size-[18px] max-[480px]:size-4" />
 								{:else}
 									<span class="text-[11px] font-semibold"
 										>{initialsOf(item.note.author_display_name)}</span
@@ -605,7 +564,7 @@
 									class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 max-[480px]:flex-col max-[480px]:items-start"
 								>
 									<span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-										<span class="truncate text-sm font-semibold text-text">
+										<span class="truncate text-[15px] font-semibold text-text">
 											{#if item.kind === 'incident'}
 												{incidentLabel(item.incident)}
 											{:else if item.kind === 'appointment'}
@@ -660,20 +619,20 @@
 									<time
 										datetime={item.at}
 										title={formatDateTime(item.at)}
-										class="shrink-0 text-xs text-text-faint">{rowTime(item.at)}</time
+										class="shrink-0 text-sm text-text-faint">{rowTime(item.at)}</time
 									>
 								</div>
 
 								{#if item.kind === 'note'}
 									<p
-										class="mt-1 rounded-[10px] border border-border bg-surface-2 px-3 py-2 text-sm whitespace-pre-wrap text-text"
+										class="mt-2 rounded-[12px] border border-border bg-surface-2 px-4 py-3 text-sm whitespace-pre-wrap text-text"
 									>
 										{item.note.body}
 									</p>
 								{:else if item.kind === 'incident'}
 									{#if item.incident.description}
 										<p
-											class="mt-1 rounded-[10px] border border-border bg-surface-2 px-3 py-2 text-sm whitespace-pre-wrap text-text"
+											class="mt-2 rounded-[12px] border border-border bg-surface-2 px-4 py-3 text-sm whitespace-pre-wrap text-text"
 										>
 											{item.incident.description}
 										</p>
@@ -696,7 +655,7 @@
 										açar — 44px'lik hedefler dar ekranda yan yana sığmıyor.
 									-->
 									<div
-										class="mt-1.5 flex items-center gap-2.5 rounded-[8px] border border-border bg-surface px-2.5 py-2"
+										class="mt-2 flex items-center gap-3 rounded-[12px] border border-border bg-surface px-3 py-3"
 									>
 										<button
 											type="button"

@@ -17,13 +17,11 @@
 		TransactionCreate,
 		TransactionUpdate
 	} from '@verimaya/shared';
-	import { apiPaths, contactStatusLabels, listUrl } from '@verimaya/shared';
+	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
-	import { contactStatusTone } from '$lib/status-tone';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import ContactTimeline from '$lib/components/ContactTimeline.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
@@ -331,10 +329,6 @@
 </svelte:head>
 
 <div class="mx-auto max-w-4xl min-w-0">
-	<a href="/contacts" class="mb-4 inline-block text-sm text-info hover:underline"
-		>{t('contacts.detail.back')}</a
-	>
-
 	{#if contactQuery.isPending}
 		<p class="text-sm text-text-muted">{t('common.loading')}</p>
 	{:else if contactQuery.isError || !contact}
@@ -353,22 +347,10 @@
 			verilir, üstüne binmesin.
 		-->
 		<div
-			class="sticky top-0 z-20 -mx-4 mb-3 border-b border-border bg-bg px-4 pt-1 sm:-mx-6 sm:px-6"
+			class="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-bg px-4 pt-2 sm:-mx-6 sm:px-6"
 		>
-			<div class="flex flex-wrap items-center justify-between gap-2 pb-2">
-				<div class="flex min-w-0 flex-wrap items-center gap-2">
-					<h1 class="truncate text-lg font-semibold text-text">{contact.display_name}</h1>
-					<StatusBadge label={contact.contact_type_name} tone="neutral" />
-					{#if contact.status}
-						<StatusBadge
-							label={contactStatusLabels[contact.status]}
-							tone={contactStatusTone(contact.status)}
-						/>
-					{/if}
-					{#if contact.is_internal}
-						<StatusBadge label={t('contacts.detail.internalStaff')} tone="info" />
-					{/if}
-				</div>
+			<div class="flex flex-wrap items-center justify-between gap-3 pb-3">
+				<h1 class="min-w-0 truncate text-xl font-semibold text-text">{contact.display_name}</h1>
 				<div class="flex shrink-0 items-center gap-3">
 					<button
 						type="button"
@@ -383,7 +365,7 @@
 
 			<!-- Segment denetimi: üç sekme eşit genişlikte, aktif olan yüzeyde. -->
 			<div
-				class="mb-2 flex rounded-[8px] border border-border bg-surface-2 p-0.5"
+				class="mb-3 flex rounded-[10px] border border-border bg-surface-2 p-1"
 				role="tablist"
 				aria-label={t('contacts.detail.tabsAria')}
 			>
@@ -392,7 +374,7 @@
 						type="button"
 						role="tab"
 						aria-selected={activeTab === tab.id}
-						class="flex-1 rounded-[6px] px-2 py-1.5 text-sm font-medium transition-colors {activeTab ===
+						class="flex-1 rounded-[8px] px-2 py-2 text-sm font-medium transition-colors {activeTab ===
 						tab.id
 							? 'bg-surface text-text shadow-sm'
 							: 'text-text-muted hover:text-text'}"
