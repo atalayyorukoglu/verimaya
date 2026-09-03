@@ -574,14 +574,12 @@
 				<h3 class="sticky top-0 z-10 bg-surface py-1.5 text-xs font-semibold text-text-muted">
 					{group.label}
 				</h3>
-				<!-- Ray: ikon sütununun ortasından geçen ince dikey çizgi. -->
-				<ul
-					class="relative ml-4 space-y-3 border-l border-border pl-5 max-[480px]:ml-3.5 max-[480px]:pl-4"
-				>
+				<ul class="space-y-4">
 					{#each group.items as item (item.kind + item.id)}
-						<li class="relative">
+						<!-- Satır: solda tip renkli yuvarlak, sağda ad + zaman ve gövde balonu. -->
+						<li class="relative flex gap-3 max-[480px]:gap-2.5">
 							<span
-								class="absolute top-0 -left-[calc(1.25rem+1px)] flex size-8 -translate-x-1/2 items-center justify-center rounded-full ring-4 ring-surface max-[480px]:-left-[calc(1rem+1px)] max-[480px]:size-7 {TYPE_STYLE[
+								class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full max-[480px]:size-7 {TYPE_STYLE[
 									item.kind
 								]}"
 								aria-hidden="true"
@@ -601,7 +599,7 @@
 								{/if}
 							</span>
 
-							<div class="group min-w-0">
+							<div class="group min-w-0 flex-1">
 								<!-- Başlık satırı; dar ekranda zaman alta iner. -->
 								<div
 									class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 max-[480px]:flex-col max-[480px]:items-start"
@@ -667,10 +665,16 @@
 								</div>
 
 								{#if item.kind === 'note'}
-									<p class="mt-0.5 text-sm whitespace-pre-wrap text-text">{item.note.body}</p>
+									<p
+										class="mt-1 rounded-[10px] border border-border bg-surface-2 px-3 py-2 text-sm whitespace-pre-wrap text-text"
+									>
+										{item.note.body}
+									</p>
 								{:else if item.kind === 'incident'}
 									{#if item.incident.description}
-										<p class="mt-0.5 text-sm whitespace-pre-wrap text-text">
+										<p
+											class="mt-1 rounded-[10px] border border-border bg-surface-2 px-3 py-2 text-sm whitespace-pre-wrap text-text"
+										>
 											{item.incident.description}
 										</p>
 									{/if}
@@ -808,7 +812,14 @@
 	</div>
 
 	{#if canWrite}
-		<div class="flex flex-col gap-1.5 border-t border-border pt-3">
+		<!--
+			Yazma alanı alta yapışık. Masaüstünde kaydıran kap `<main>`, mobilde belge;
+			`sticky` ikisinde de doğru kaba tutunur. Mobilde alt menü `fixed` olduğu için
+			onun yüksekliği kadar yukarıdan başlar, üstüne binmesin.
+		-->
+		<div
+			class="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 -mx-4 flex flex-col gap-1.5 border-t border-border bg-surface px-4 pt-3 pb-2 sm:-mx-5 sm:px-5 md:bottom-0"
+		>
 			{#if asIncident}
 				<div class="flex flex-wrap items-center gap-1.5">
 					{#if incidentTypes.length === 0}

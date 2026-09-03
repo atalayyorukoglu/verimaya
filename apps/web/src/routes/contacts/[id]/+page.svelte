@@ -23,7 +23,6 @@
 	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
 	import { contactStatusTone } from '$lib/status-tone';
-	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import ContactTimeline from '$lib/components/ContactTimeline.svelte';
@@ -57,6 +56,10 @@
 	let incidentSaving = $state(false);
 	let incidentFormError = $state<string | null>(null);
 	let incidentResolveError = $state<string | null>(null);
+
+	/** Kişi kartı sekmeleri; hasta açılınca akış karşılar. */
+	type ContactTab = 'flow' | 'finance' | 'info';
+	let activeTab = $state<ContactTab>('flow');
 
 	let autoLinking = $state(false);
 	let autoLinkMessage = $state<string | null>(null);
@@ -339,233 +342,69 @@
 			<p class="text-sm text-danger">{t('contacts.detail.notFound')}</p>
 		</div>
 	{:else}
-		<PageHeader title={contact.display_name}>
-			{#snippet actions()}
-				<StatusBadge label={contact.contact_type_name} tone="neutral" />
-				{#if contact.status}
-					<StatusBadge
-						label={contactStatusLabels[contact.status]}
-						tone={contactStatusTone(contact.status)}
-					/>
-				{/if}
-				{#if contact.is_internal}
-					<StatusBadge label={t('contacts.detail.internalStaff')} tone="info" />
-				{/if}
-				<Button type="button" variant="secondary" onclick={() => (formOpen = true)}
-					>{t('common.edit')}</Button
-				>
-			{/snippet}
-		</PageHeader>
-
-		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">{t('contacts.finance.title')}</h2>
-				<Button
-					type="button"
-					size="sm"
-					variant="secondary"
-					disabled={autoLinking}
-					onclick={autoLinkTransactions}
-				>
-					{autoLinking ? t('contacts.finance.autoLinking') : t('contacts.finance.autoLink')}
-				</Button>
-			</div>
-
-			{#if autoLinkMessage}
-				<p class="mb-3 text-sm text-success">{autoLinkMessage}</p>
-			{/if}
-			{#if autoLinkError}
-				<p class="mb-3 text-sm text-danger">{autoLinkError}</p>
-			{/if}
-
-			{#if !USE_MSW && financeSummaryQuery.isPending}
-				<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
-			{:else if !USE_MSW && financeSummaryQuery.data}
-				{@const summary = financeSummaryQuery.data}
-				<div class="grid grid-cols-3 gap-3">
-					<div>
-						<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
-						<p class="mt-1 text-base font-semibold text-success tabular-nums">
-							+{formatMoney(summary.income_base, baseCurrency)}
-						</p>
-					</div>
-					<div>
-						<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
-						<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-							−{formatMoney(summary.expense_base, baseCurrency)}
-						</p>
-					</div>
-					<div>
-						<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
-						<p
-							class="mt-1 text-base font-semibold tabular-nums {summary.net_base >= 0
-								? 'text-text'
-								: 'text-danger'}"
-						>
-							{formatMoney(summary.net_base, baseCurrency)}
-						</p>
-					</div>
-				</div>
-				{#if summary.transaction_count === 0}
-					<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
-				{:else}
-					<div class="mt-3 grid grid-cols-2 gap-3">
-						<div>
-							<p class="text-xs text-text-muted">
-								{t('contacts.finance.collected', { currency: baseCurrency })}
-							</p>
-							<p class="mt-1 text-sm font-semibold text-text tabular-nums">
-								{formatMoney(summary.paid_base, baseCurrency)}
-							</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted">
-								{t('contacts.finance.outstanding', { currency: baseCurrency })}
-							</p>
-							<p class="mt-1 text-sm font-semibold text-warning tabular-nums">
-								{formatMoney(summary.outstanding_base, baseCurrency)}
-							</p>
-						</div>
-					</div>
-				{/if}
-			{:else if txQuery.isPending}
-				<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
-			{:else if finance.currencies.length === 0}
-				<div class="grid grid-cols-3 gap-3">
-					<div>
-						<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
-						<p class="mt-1 text-base font-semibold text-success tabular-nums">
-							+{formatMoney(0, baseCurrency)}
-						</p>
-					</div>
-					<div>
-						<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
-						<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-							−{formatMoney(0, baseCurrency)}
-						</p>
-					</div>
-					<div>
-						<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
-						<p class="mt-1 text-base font-semibold text-text tabular-nums">
-							{formatMoney(0, baseCurrency)}
-						</p>
-					</div>
-				</div>
-				<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
-			{:else}
-				{#each finance.currencies as [currency, totals] (currency)}
-					{@const net = totals.income - totals.expense}
-					<div class="mb-3 last:mb-0">
-						<div class="grid grid-cols-3 gap-3">
-							<div>
-								<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
-								<p class="mt-1 text-base font-semibold text-success tabular-nums">
-									+{formatMoney(totals.income, currency)}
-								</p>
-							</div>
-							<div>
-								<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
-								<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-									−{formatMoney(totals.expense, currency)}
-								</p>
-							</div>
-							<div>
-								<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
-								<p
-									class="mt-1 text-base font-semibold tabular-nums {net >= 0
-										? 'text-text'
-										: 'text-danger'}"
-								>
-									{formatMoney(net, currency)}
-								</p>
-							</div>
-						</div>
-					</div>
-				{/each}
-
-				{#if USE_MSW && finance.categories.length > 0}
-					<div class="mt-4 border-t border-border pt-4">
-						<h3 class="mb-3 text-xs font-semibold tracking-wide text-text-muted uppercase">
-							{t('contacts.detail.categoryBreakdown')}
-						</h3>
-						<ul class="space-y-2">
-							{#each finance.categories as row (row.name)}
-								<li>
-									<div class="flex items-center justify-between gap-2 text-xs">
-										<span class="truncate text-text">{row.name}</span>
-										<span class="shrink-0 text-text-muted tabular-nums">
-											{formatMoney(row.amount)}
-										</span>
-									</div>
-									<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-										<div class="h-full rounded-full bg-brand" style="width: {row.pct}%"></div>
-									</div>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				{/if}
-			{/if}
-		</section>
-
-		<dl
-			class="mb-4 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
-		>
-			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.phone')}</dt>
-				<dd class="text-sm break-all text-text tabular-nums">{contact.phone ?? '—'}</dd>
-			</div>
-			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.email')}</dt>
-				<dd class="text-sm break-all text-text">{contact.email ?? '—'}</dd>
-			</div>
-			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.source')}</dt>
-				<dd class="text-sm break-words text-text">{contact.source ?? '—'}</dd>
-			</div>
-			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.medium')}</dt>
-				<dd class="text-sm break-words text-text">{contact.medium ?? '—'}</dd>
-			</div>
-			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.campaign')}</dt>
-				<dd class="text-sm break-words text-text">{contact.campaign ?? '—'}</dd>
-			</div>
-			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-				<dt class="text-xs font-medium text-text-muted">{t('common.createdAt')}</dt>
-				<dd class="text-sm text-text">{formatDateTime(contact.created_at)}</dd>
-			</div>
-			<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
-				<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.notes')}</dt>
-				<dd class="text-sm break-words whitespace-pre-wrap text-text">{contact.notes ?? '—'}</dd>
-			</div>
-		</dl>
-
 		<!--
-			Akış = hastanin tum gecmisi: randevu, islem, not, olay, dosya tek zaman
-			cizgisinde. Eskiden bunlar ucu uca bes ayri bolumdu; hasta kartini okumak
-			icin sayfayi kaydirmak, kayit acmak icin dogru bolumu bulmak gerekiyordu.
-			Ayri "Randevular" ve "Islemler" listeleri kaldirildi - ayni kayitlar akista
-			duruyor, satirdaki kalem ikonu kendi penceresini aciyor. Finans ozeti
-			(toplamlar, kategori dagilimi) yukarida kaldi: o gecmis degil, ozet.
-			Takvim ve Finans sayfalarina baglantilar akisin ustunde.
+			Kişi kartı üç sekme: Akış / Finans Özet / Kişi Bilgileri (kullanıcı tasarımı,
+			2026-09-03). Hasta açılınca doğrudan akış karşılar.
+
+			Başlık + sekme çubuğu yapışkan (üstte), akış sekmesinde yazma alanı yapışkan
+			(altta). Masaüstünde kaydıran kap `<main>` (AppShell `md:overflow-y-auto`),
+			mobilde belgenin kendisi — `sticky` ikisinde de doğru kaba tutunur. Mobilde
+			alt menü `fixed` olduğu için yazma alanına onun yüksekliği kadar boşluk
+			verilir, üstüne binmesin.
 		-->
-		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">{t('contacts.timeline.title')}</h2>
-				<div class="flex flex-wrap items-center gap-3">
-					<a
-						href={`/appointments?contact_involves=${contact.id}`}
-						class="text-xs font-medium text-brand hover:underline"
-						>{t('contacts.detail.calendarLink')}</a
+		<div
+			class="sticky top-0 z-20 -mx-4 mb-3 border-b border-border bg-bg px-4 pt-1 sm:-mx-6 sm:px-6"
+		>
+			<div class="flex flex-wrap items-center justify-between gap-2 pb-2">
+				<div class="flex min-w-0 flex-wrap items-center gap-2">
+					<h1 class="truncate text-lg font-semibold text-text">{contact.display_name}</h1>
+					<StatusBadge label={contact.contact_type_name} tone="neutral" />
+					{#if contact.status}
+						<StatusBadge
+							label={contactStatusLabels[contact.status]}
+							tone={contactStatusTone(contact.status)}
+						/>
+					{/if}
+					{#if contact.is_internal}
+						<StatusBadge label={t('contacts.detail.internalStaff')} tone="info" />
+					{/if}
+				</div>
+				<div class="flex shrink-0 items-center gap-3">
+					<button
+						type="button"
+						class="text-sm font-medium text-text-muted transition-colors hover:text-text"
+						onclick={() => (formOpen = true)}>{t('common.edit')}</button
 					>
-					<a
-						href={`/finance?contact=${contact.id}`}
-						class="text-xs font-medium text-brand hover:underline"
-						>{t('contacts.detail.viewInFinance')}</a
+					<a href="/contacts" class="text-sm font-medium text-text-muted hover:text-text"
+						>{t('common.close')}</a
 					>
 				</div>
 			</div>
+
+			<!-- Segment denetimi: üç sekme eşit genişlikte, aktif olan yüzeyde. -->
+			<div
+				class="mb-2 flex rounded-[8px] border border-border bg-surface-2 p-0.5"
+				role="tablist"
+				aria-label={t('contacts.detail.tabsAria')}
+			>
+				{#each [{ id: 'flow', label: t('contacts.detail.tabFlow') }, { id: 'finance', label: t('contacts.detail.tabFinance') }, { id: 'info', label: t('contacts.detail.tabInfo') }] as tab (tab.id)}
+					<button
+						type="button"
+						role="tab"
+						aria-selected={activeTab === tab.id}
+						class="flex-1 rounded-[6px] px-2 py-1.5 text-sm font-medium transition-colors {activeTab ===
+						tab.id
+							? 'bg-surface text-text shadow-sm'
+							: 'text-text-muted hover:text-text'}"
+						onclick={() => (activeTab = tab.id as ContactTab)}
+					>
+						{tab.label}
+					</button>
+				{/each}
+			</div>
+		</div>
+
+		{#if activeTab === 'flow'}
 			<ContactTimeline
 				contactId={contact.id}
 				{appointments}
@@ -579,26 +418,221 @@
 			{#if incidentResolveError}
 				<p class="mt-2 text-sm text-danger">{incidentResolveError}</p>
 			{/if}
-		</section>
-
-		{#if relatedAppointments.length > 0}
+		{:else if activeTab === 'finance'}
+			<div class="flex flex-wrap items-center gap-3 pb-2">
+				<a
+					href={`/appointments?contact_involves=${contact.id}`}
+					class="text-xs font-medium text-brand hover:underline"
+					>{t('contacts.detail.calendarLink')}</a
+				>
+				<a
+					href={`/finance?contact=${contact.id}`}
+					class="text-xs font-medium text-brand hover:underline"
+					>{t('contacts.detail.viewInFinance')}</a
+				>
+			</div>
 			<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-				<h2 class="mb-3 text-sm font-semibold text-text">{t('contacts.detail.opsRolesTitle')}</h2>
-				{#if opsApptQuery.isPending}
-					<p class="text-sm text-text-muted">{t('common.loading')}</p>
-				{:else}
-					<ul class="divide-y divide-border">
-						{#each relatedAppointments as a (a.id)}
-							<li class="py-2.5">
-								<p class="text-sm font-medium">{a.contact_display_name}</p>
-								<p class="text-xs text-text-faint">
-									{formatDate(a.starts_at)} · {formatTime(a.starts_at)} · {opsRoleLabel(a)}
+				<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+					<h2 class="text-sm font-semibold text-text">{t('contacts.finance.title')}</h2>
+					<Button
+						type="button"
+						size="sm"
+						variant="secondary"
+						disabled={autoLinking}
+						onclick={autoLinkTransactions}
+					>
+						{autoLinking ? t('contacts.finance.autoLinking') : t('contacts.finance.autoLink')}
+					</Button>
+				</div>
+
+				{#if autoLinkMessage}
+					<p class="mb-3 text-sm text-success">{autoLinkMessage}</p>
+				{/if}
+				{#if autoLinkError}
+					<p class="mb-3 text-sm text-danger">{autoLinkError}</p>
+				{/if}
+
+				{#if !USE_MSW && financeSummaryQuery.isPending}
+					<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
+				{:else if !USE_MSW && financeSummaryQuery.data}
+					{@const summary = financeSummaryQuery.data}
+					<div class="grid grid-cols-3 gap-3">
+						<div>
+							<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+							<p class="mt-1 text-base font-semibold text-success tabular-nums">
+								+{formatMoney(summary.income_base, baseCurrency)}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+								−{formatMoney(summary.expense_base, baseCurrency)}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+							<p
+								class="mt-1 text-base font-semibold tabular-nums {summary.net_base >= 0
+									? 'text-text'
+									: 'text-danger'}"
+							>
+								{formatMoney(summary.net_base, baseCurrency)}
+							</p>
+						</div>
+					</div>
+					{#if summary.transaction_count === 0}
+						<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
+					{:else}
+						<div class="mt-3 grid grid-cols-2 gap-3">
+							<div>
+								<p class="text-xs text-text-muted">
+									{t('contacts.finance.collected', { currency: baseCurrency })}
 								</p>
-							</li>
-						{/each}
-					</ul>
+								<p class="mt-1 text-sm font-semibold text-text tabular-nums">
+									{formatMoney(summary.paid_base, baseCurrency)}
+								</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted">
+									{t('contacts.finance.outstanding', { currency: baseCurrency })}
+								</p>
+								<p class="mt-1 text-sm font-semibold text-warning tabular-nums">
+									{formatMoney(summary.outstanding_base, baseCurrency)}
+								</p>
+							</div>
+						</div>
+					{/if}
+				{:else if txQuery.isPending}
+					<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
+				{:else if finance.currencies.length === 0}
+					<div class="grid grid-cols-3 gap-3">
+						<div>
+							<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+							<p class="mt-1 text-base font-semibold text-success tabular-nums">
+								+{formatMoney(0, baseCurrency)}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+								−{formatMoney(0, baseCurrency)}
+							</p>
+						</div>
+						<div>
+							<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+							<p class="mt-1 text-base font-semibold text-text tabular-nums">
+								{formatMoney(0, baseCurrency)}
+							</p>
+						</div>
+					</div>
+					<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
+				{:else}
+					{#each finance.currencies as [currency, totals] (currency)}
+						{@const net = totals.income - totals.expense}
+						<div class="mb-3 last:mb-0">
+							<div class="grid grid-cols-3 gap-3">
+								<div>
+									<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+									<p class="mt-1 text-base font-semibold text-success tabular-nums">
+										+{formatMoney(totals.income, currency)}
+									</p>
+								</div>
+								<div>
+									<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+									<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+										−{formatMoney(totals.expense, currency)}
+									</p>
+								</div>
+								<div>
+									<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+									<p
+										class="mt-1 text-base font-semibold tabular-nums {net >= 0
+											? 'text-text'
+											: 'text-danger'}"
+									>
+										{formatMoney(net, currency)}
+									</p>
+								</div>
+							</div>
+						</div>
+					{/each}
+
+					{#if USE_MSW && finance.categories.length > 0}
+						<div class="mt-4 border-t border-border pt-4">
+							<h3 class="mb-3 text-xs font-semibold tracking-wide text-text-muted uppercase">
+								{t('contacts.detail.categoryBreakdown')}
+							</h3>
+							<ul class="space-y-2">
+								{#each finance.categories as row (row.name)}
+									<li>
+										<div class="flex items-center justify-between gap-2 text-xs">
+											<span class="truncate text-text">{row.name}</span>
+											<span class="shrink-0 text-text-muted tabular-nums">
+												{formatMoney(row.amount)}
+											</span>
+										</div>
+										<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+											<div class="h-full rounded-full bg-brand" style="width: {row.pct}%"></div>
+										</div>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
 				{/if}
 			</section>
+		{:else}
+			<dl
+				class="mb-4 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
+			>
+				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.phone')}</dt>
+					<dd class="text-sm break-all text-text tabular-nums">{contact.phone ?? '—'}</dd>
+				</div>
+				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.email')}</dt>
+					<dd class="text-sm break-all text-text">{contact.email ?? '—'}</dd>
+				</div>
+				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.source')}</dt>
+					<dd class="text-sm break-words text-text">{contact.source ?? '—'}</dd>
+				</div>
+				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.medium')}</dt>
+					<dd class="text-sm break-words text-text">{contact.medium ?? '—'}</dd>
+				</div>
+				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.campaign')}</dt>
+					<dd class="text-sm break-words text-text">{contact.campaign ?? '—'}</dd>
+				</div>
+				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+					<dt class="text-xs font-medium text-text-muted">{t('common.createdAt')}</dt>
+					<dd class="text-sm text-text">{formatDateTime(contact.created_at)}</dd>
+				</div>
+				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
+					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.notes')}</dt>
+					<dd class="text-sm break-words whitespace-pre-wrap text-text">{contact.notes ?? '—'}</dd>
+				</div>
+			</dl>
+			{#if relatedAppointments.length > 0}
+				<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
+					<h2 class="mb-3 text-sm font-semibold text-text">{t('contacts.detail.opsRolesTitle')}</h2>
+					{#if opsApptQuery.isPending}
+						<p class="text-sm text-text-muted">{t('common.loading')}</p>
+					{:else}
+						<ul class="divide-y divide-border">
+							{#each relatedAppointments as a (a.id)}
+								<li class="py-2.5">
+									<p class="text-sm font-medium">{a.contact_display_name}</p>
+									<p class="text-xs text-text-faint">
+										{formatDate(a.starts_at)} · {formatTime(a.starts_at)} · {opsRoleLabel(a)}
+									</p>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</section>
+			{/if}
 		{/if}
 
 		<ContactFormDialog
