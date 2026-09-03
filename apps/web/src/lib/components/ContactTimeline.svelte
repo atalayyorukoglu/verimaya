@@ -183,6 +183,22 @@
 	let uploadProgress = $state<number | null>(null);
 	let busyId = $state<string | null>(null);
 	let error = $state<string | null>(null);
+	/*
+	 * Yazma alanı "etkin" mi — ikincil kontroller (randevu bağı) buna göre görünür.
+	 * Odak kaybında hemen kapatılmıyor: randevu seçicisine tıklamak girişten odağı
+	 * alır ve satır kapanırsa tıklama boşa düşerdi. Kısa gecikme geçişe izin verir;
+	 * seçici de aynı işleyicileri kullandığı için odak orada kaldığı sürece açık kalır.
+	 */
+	let composerFocused = $state(false);
+	let composerBlurTimer: ReturnType<typeof setTimeout> | undefined;
+	function onComposerFocus() {
+		clearTimeout(composerBlurTimer);
+		composerFocused = true;
+	}
+	function onComposerBlur() {
+		clearTimeout(composerBlurTimer);
+		composerBlurTimer = setTimeout(() => (composerFocused = false), 150);
+	}
 	let listEl: HTMLDivElement | undefined = $state();
 	let fileInput: HTMLInputElement | undefined = $state();
 
@@ -421,85 +437,17 @@
 		</div>
 	{/if}
 
-	{#if canWrite}
-		<!--
-			Tek giriş noktası: randevu, işlem, dosya ve olay buradan açılır. Kayıt açmak
-			için sayfada ayrı bölüm aramak gerekmiyor (ClickUp'ın etkinlik panelindeki
-			"+" mantığı). Dosya doğrudan burada seçilir, diğerleri kendi penceresini açar.
-		-->
-		<div class="relative">
-			<button
-				type="button"
-				class="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted transition-colors hover:text-text"
-				aria-haspopup="menu"
-				aria-expanded={addMenuOpen}
-				onclick={() => (addMenuOpen = !addMenuOpen)}
-			>
-				<Plus class="size-3.5" />
-				{t('contacts.timeline.add')}
-			</button>
-			{#if addMenuOpen}
-				<!-- Dışarı tıklayınca kapanır; menü kendi tıklamasını yutar. -->
-				<button
-					type="button"
-					class="fixed inset-0 z-10 cursor-default"
-					aria-label={t('common.close')}
-					onclick={() => (addMenuOpen = false)}
-				></button>
-				<div
-					class="absolute z-20 mt-1 min-w-44 rounded-[6px] border border-border bg-surface p-1 shadow-lg"
-					role="menu"
-				>
-					<button
-						type="button"
-						role="menuitem"
-						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
-						onclick={() => runAdd(onNewAppointment)}
-					>
-						<Calendar class="size-3.5 text-text-faint" />
-						{t('contacts.timeline.addAppointment')}
-					</button>
-					<button
-						type="button"
-						role="menuitem"
-						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
-						onclick={() => runAdd(onNewTransaction)}
-					>
-						<Wallet class="size-3.5 text-text-faint" />
-						{t('contacts.timeline.addTransaction')}
-					</button>
-					<button
-						type="button"
-						role="menuitem"
-						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
-						onclick={() => runAdd(() => fileInput?.click())}
-					>
-						<Paperclip class="size-3.5 text-text-faint" />
-						{t('contacts.timeline.addFile')}
-					</button>
-					<button
-						type="button"
-						role="menuitem"
-						class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
-						onclick={() => runAdd(onNewIncident)}
-					>
-						<AlertTriangle class="size-3.5 text-text-faint" />
-						{t('contacts.timeline.addIncident')}
-					</button>
-				</div>
-			{/if}
-		</div>
-	{/if}
-
+	<!-- Tek satır, yatay kaydırmalı: mobilde beş çip iki satıra taşıp dikey alan yiyordu. -->
 	<div
-		class="flex flex-wrap items-center gap-1.5"
+		class="-mx-0.5 flex [scrollbar-width:none] items-center gap-1.5 overflow-x-auto px-0.5 pb-0.5 [&::-webkit-scrollbar]:hidden"
 		role="group"
 		aria-label={t('contacts.timeline.filterAria')}
 	>
 		{#each [{ id: 'all', label: t('contacts.timeline.filterAll') }, { id: 'appointment', label: t('contacts.timeline.filterAppointments') }, { id: 'transaction', label: t('contacts.timeline.filterTransactions') }, { id: 'incident', label: t('contacts.timeline.filterIncidents') }, { id: 'file', label: t('contacts.timeline.filterFiles') }] as chip (chip.id)}
 			<button
 				type="button"
-				class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {filter === chip.id
+				class="shrink-0 rounded-full border px-2.5 py-0.5 text-xs transition-colors {filter ===
+				chip.id
 					? 'border-brand bg-brand/10 text-text'
 					: 'border-border text-text-muted hover:text-text'}"
 				aria-pressed={filter === chip.id}
@@ -741,11 +689,18 @@
 				</div>
 			{/if}
 
-			{#if appointments.length > 0}
+			<!--
+				Randevu bağı yalnız yazarken görünür (Twist'in "Tag" satırı gibi): mobilde
+				her zaman duran tam genişlikte bir açılır liste, kısıtlı dikey alanı
+				yazma alanından çalıyordu.
+			-->
+			{#if appointments.length > 0 && (composerFocused || asIncident || draft.trim().length > 0)}
 				<select
 					class="h-8 w-full rounded-[6px] border border-border bg-surface px-2 text-xs text-text-muted outline-none sm:max-w-xs"
 					bind:value={linkAppointmentId}
 					aria-label={t('contacts.files.linkAppointment')}
+					onfocus={onComposerFocus}
+					onblur={onComposerBlur}
 				>
 					<option value="">{t('contacts.files.noAppointment')}</option>
 					{#each appointments as appt (appt.id)}
@@ -757,7 +712,13 @@
 				</select>
 			{/if}
 
-			<div class="flex items-end gap-2">
+			<!--
+				Yazma satırı: [+ Ekle ▾] [⚠] [ geniş giriş ] [gönder].
+				"+ Ekle" başlıktan buraya indi (kullanıcı) — hem tek satır kazanıldı hem
+				ekleme eylemi yazma alanının yanında. Giriş alanı belirgin: dolgulu zemin,
+				yuvarlak hap, tam yükseklik; mobilde en geniş öğe o.
+			-->
+			<div class="flex items-center gap-1.5">
 				<input
 					bind:this={fileInput}
 					type="file"
@@ -766,19 +727,73 @@
 					aria-hidden="true"
 					tabindex="-1"
 				/>
+				<div class="relative shrink-0">
+					<button
+						type="button"
+						class="inline-flex h-10 items-center gap-1 rounded-full border border-border px-2.5 text-xs font-medium text-text-muted transition-colors hover:text-text disabled:opacity-40 sm:px-3"
+						aria-haspopup="menu"
+						aria-expanded={addMenuOpen}
+						aria-label={t('contacts.timeline.add')}
+						disabled={uploading || sending}
+						onclick={() => (addMenuOpen = !addMenuOpen)}
+					>
+						<Plus class="size-4" />
+						<span class="hidden sm:inline">{t('contacts.timeline.add')}</span>
+					</button>
+					{#if addMenuOpen}
+						<!-- Dışarı tıklayınca kapanır; menü kendi tıklamasını yutar. -->
+						<button
+							type="button"
+							class="fixed inset-0 z-10 cursor-default"
+							aria-label={t('common.close')}
+							onclick={() => (addMenuOpen = false)}
+						></button>
+						<div
+							class="absolute bottom-full left-0 z-20 mb-1 min-w-44 rounded-[6px] border border-border bg-surface p-1 shadow-lg"
+							role="menu"
+						>
+							<button
+								type="button"
+								role="menuitem"
+								class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+								onclick={() => runAdd(onNewAppointment)}
+							>
+								<Calendar class="size-3.5 text-text-faint" />
+								{t('contacts.timeline.addAppointment')}
+							</button>
+							<button
+								type="button"
+								role="menuitem"
+								class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+								onclick={() => runAdd(onNewTransaction)}
+							>
+								<Wallet class="size-3.5 text-text-faint" />
+								{t('contacts.timeline.addTransaction')}
+							</button>
+							<button
+								type="button"
+								role="menuitem"
+								class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+								onclick={() => runAdd(() => fileInput?.click())}
+							>
+								<Paperclip class="size-3.5 text-text-faint" />
+								{t('contacts.timeline.addFile')}
+							</button>
+							<button
+								type="button"
+								role="menuitem"
+								class="flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-2"
+								onclick={() => runAdd(onNewIncident)}
+							>
+								<AlertTriangle class="size-3.5 text-text-faint" />
+								{t('contacts.timeline.addIncident')}
+							</button>
+						</div>
+					{/if}
+				</div>
 				<button
 					type="button"
-					class="inline-flex size-9 shrink-0 items-center justify-center rounded-[6px] border border-border text-text-muted transition-colors hover:text-text disabled:opacity-40"
-					aria-label={t('contacts.timeline.attach')}
-					title={t('contacts.timeline.attach')}
-					disabled={uploading || sending}
-					onclick={() => fileInput?.click()}
-				>
-					<Plus class="size-4" />
-				</button>
-				<button
-					type="button"
-					class="inline-flex size-9 shrink-0 items-center justify-center rounded-[6px] border transition-colors disabled:opacity-40 {asIncident
+					class="inline-flex size-10 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-40 {asIncident
 						? 'border-warning bg-warning/10 text-warning'
 						: 'border-border text-text-muted hover:text-text'}"
 					aria-label={t('contacts.timeline.markIncident')}
@@ -790,17 +805,19 @@
 					<AlertTriangle class="size-4" />
 				</button>
 				<input
-					class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:text-sm"
+					class="h-10 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-base text-text outline-none placeholder:text-text-faint focus:border-brand focus:ring-2 focus:ring-brand/30 sm:text-sm"
 					placeholder={asIncident
 						? t('contacts.timeline.incidentPlaceholder')
 						: t('contacts.timeline.placeholder')}
 					bind:value={draft}
 					disabled={sending || uploading}
 					onkeydown={onKeydown}
+					onfocus={onComposerFocus}
+					onblur={onComposerBlur}
 				/>
 				<button
 					type="button"
-					class="inline-flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-brand text-primary-foreground disabled:opacity-40"
+					class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-primary-foreground disabled:opacity-40"
 					aria-label={t('contacts.notes.sendAria')}
 					disabled={sending || uploading || !draft.trim()}
 					onclick={() => void send()}
