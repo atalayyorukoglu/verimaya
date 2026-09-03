@@ -10,7 +10,6 @@
 		ContactAutoLinkTransactionsResult,
 		ContactFinanceSummary,
 		ContactUpdate,
-		Incident,
 		IncidentCreate,
 		SupportedCurrency,
 		Tenant,
@@ -22,7 +21,6 @@
 		apiPaths,
 		appointmentStatusLabels,
 		contactStatusLabels,
-		incidentStatusLabels,
 		listUrl,
 		transactionKindLabels,
 		transactionStatusLabels
@@ -34,14 +32,12 @@
 	import {
 		appointmentStatusTone,
 		contactStatusTone,
-		incidentStatusTone,
 		transactionStatusTone
 	} from '$lib/status-tone';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
-	import ContactFilesPanel from '$lib/components/ContactFilesPanel.svelte';
-	import ContactCaseNotesThread from '$lib/components/ContactCaseNotesThread.svelte';
+	import ContactTimeline from '$lib/components/ContactTimeline.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import IncidentFormDialog from '$lib/components/IncidentFormDialog.svelte';
@@ -72,7 +68,6 @@
 	let incidentFormOpen = $state(false);
 	let incidentSaving = $state(false);
 	let incidentFormError = $state<string | null>(null);
-	let resolvingIncidentId = $state<string | null>(null);
 	let incidentResolveError = $state<string | null>(null);
 
 	let autoLinking = $state(false);
@@ -105,13 +100,6 @@
 		enabled: qs.ready
 	}));
 
-	/** Hasta dosyasının olayları — giriş noktası burası (bkz. IncidentFormDialog). */
-	const incidentsQuery = createQuery(() => ({
-		queryKey: qs.keys.incidents.list({ contact_id: id, limit: 20 }),
-		queryFn: () => apiGet<PageOf<Incident>>(listUrl('incidents', { limit: 20, contact_id: id })),
-		enabled: qs.ready
-	}));
-
 	const tenantQuery = createQuery(() => ({
 		queryKey: qs.keys.tenants.current(),
 		queryFn: () => apiGet<Tenant>(apiPaths.tenantsCurrent),
@@ -127,7 +115,6 @@
 	const contact = $derived(contactQuery.data);
 	const transactions = $derived(txQuery.data?.items ?? []);
 	const appointments = $derived(apptQuery.data?.items ?? []);
-	const incidents = $derived(incidentsQuery.data?.items ?? []);
 	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	const relatedAppointments = $derived(
@@ -311,19 +298,6 @@
 			incidentFormError = err instanceof Error ? err.message : t('incidents.saveFailed');
 		} finally {
 			incidentSaving = false;
-		}
-	}
-
-	async function resolveIncident(incidentId: string) {
-		resolvingIncidentId = incidentId;
-		incidentResolveError = null;
-		try {
-			await apiSend(apiPaths.incidentResolve(incidentId), 'PATCH');
-			await queryClient.invalidateQueries({ queryKey: qs.keys.incidents.all() });
-		} catch (err) {
-			incidentResolveError = err instanceof Error ? err.message : t('incidents.resolveFailed');
-		} finally {
-			resolvingIncidentId = null;
 		}
 	}
 
@@ -625,68 +599,6 @@
 
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-sm font-semibold text-text">{t('contacts.detail.incidents')}</h2>
-				<Button type="button" size="sm" variant="secondary" onclick={openCreateIncident}>
-					{t('contacts.detail.newIncident')}
-				</Button>
-			</div>
-			{#if incidentsQuery.isPending}
-				<p class="text-sm text-text-muted">{t('common.loading')}</p>
-			{:else if incidents.length === 0}
-				<p class="text-sm text-text-muted">{t('contacts.detail.incidentsEmpty')}</p>
-			{:else}
-				<ul class="divide-y divide-border">
-					{#each incidents as incident (incident.id)}
-						<li
-							class="flex flex-wrap items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
-						>
-							<div class="min-w-0">
-								<p class="truncate text-sm font-medium text-text">{incident.incident_type_name}</p>
-								<p class="text-xs text-text-faint">
-									{formatDate(incident.occurred_on)}
-									{#if incident.responsible_display_name}
-										· {incident.responsible_display_name}
-									{/if}
-									{#if incident.cost_amount != null && incident.cost_currency}
-										· {formatMoney(incident.cost_amount, incident.cost_currency)}
-									{/if}
-								</p>
-								{#if incident.description}
-									<p class="mt-1 text-xs whitespace-pre-wrap text-text-muted">
-										{incident.description}
-									</p>
-								{/if}
-							</div>
-							<div class="flex shrink-0 items-center gap-2">
-								<StatusBadge
-									label={incidentStatusLabels[incident.status]}
-									tone={incidentStatusTone(incident.status)}
-								/>
-								{#if incident.status === 'open'}
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										disabled={resolvingIncidentId === incident.id}
-										onclick={() => resolveIncident(incident.id)}
-									>
-										{resolvingIncidentId === incident.id
-											? t('incidents.resolving')
-											: t('incidents.resolve')}
-									</Button>
-								{/if}
-							</div>
-						</li>
-					{/each}
-				</ul>
-				{#if incidentResolveError}
-					<p class="mt-2 text-sm text-danger">{incidentResolveError}</p>
-				{/if}
-			{/if}
-		</section>
-
-		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 				<h2 class="text-sm font-semibold text-text">{t('contacts.detail.transactions')}</h2>
 				<div class="flex flex-wrap items-center gap-2">
 					<a
@@ -766,11 +678,23 @@
 			{/if}
 		</section>
 
-		<ContactFilesPanel contactId={contact.id} {appointments} />
-
+		<!--
+			Akış: not + olay + dosya tek yerde. Eskiden ucu uca uc bolum vardi
+			("Olaylar", "Dosyalar", notlar) ve ilk ikisi bos kaliyordu; kayit acmanin
+			bedeli yazmanin bedelinden yuksekti. Ayrintili olay girisi (maliyet,
+			sorumlu, randevu bagi) hala IncidentFormDialog ile yapiliyor.
+		-->
 		<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-			<h2 class="mb-3 text-sm font-semibold text-text">{t('contacts.notes.aria')}</h2>
-			<ContactCaseNotesThread contactId={contact.id} />
+			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+				<h2 class="text-sm font-semibold text-text">{t('contacts.timeline.title')}</h2>
+				<Button type="button" size="sm" variant="secondary" onclick={openCreateIncident}>
+					{t('contacts.detail.newIncident')}
+				</Button>
+			</div>
+			<ContactTimeline contactId={contact.id} {appointments} />
+			{#if incidentResolveError}
+				<p class="mt-2 text-sm text-danger">{incidentResolveError}</p>
+			{/if}
 		</section>
 
 		{#if relatedAppointments.length > 0}
