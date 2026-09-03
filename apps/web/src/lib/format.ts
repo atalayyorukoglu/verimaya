@@ -37,6 +37,33 @@ export function formatTime(iso: string): string {
 	}).format(new Date(iso));
 }
 
+/**
+ * Akış satırlarında zaman: "<1dk", "12dk", "3sa", "5g", sonrası tarih.
+ * Mesajlaşma ekranlarında tam tarih gürültü yapıyor; kesin değer `title`/`datetime`
+ * özniteliğinde kalır (bkz. ContactTimeline).
+ */
+export function formatRelativeTime(iso: string, now = new Date()): string {
+	const then = new Date(iso).getTime();
+	if (Number.isNaN(then)) return '';
+	const diffSec = Math.round((now.getTime() - then) / 1000);
+	if (diffSec < 60) return '<1dk';
+	const min = Math.floor(diffSec / 60);
+	if (min < 60) return `${min}dk`;
+	const hour = Math.floor(min / 60);
+	if (hour < 24) return `${hour}sa`;
+	const day = Math.floor(hour / 24);
+	if (day < 7) return `${day}g`;
+	return formatDate(iso);
+}
+
+/** Ad/soyaddan en fazla iki harflik baş harf; avatar yerine kullanılır. */
+export function initialsOf(name: string | null | undefined): string {
+	const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+	if (parts.length === 0) return '?';
+	const letters = parts.slice(0, 2).map((p) => p[0] ?? '');
+	return letters.join('').toLocaleUpperCase('tr-TR');
+}
+
 export function formatBytes(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`;
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;

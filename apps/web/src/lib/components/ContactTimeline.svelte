@@ -26,7 +26,7 @@
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl, resolveApiUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
-	import { formatBytes, formatDateTime } from '$lib/format';
+	import { formatBytes, formatDateTime, formatRelativeTime, initialsOf } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
 	import AlertTriangle from '@lucide/svelte/icons/triangle-alert';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
@@ -393,7 +393,7 @@
 
 	<div
 		bind:this={listEl}
-		class="max-h-[28rem] min-h-24 space-y-2 overflow-y-auto rounded-[6px] border border-border bg-surface-2/40 p-2.5"
+		class="max-h-[28rem] min-h-24 space-y-0.5 overflow-y-auto rounded-[6px] border border-border bg-surface-2/30 p-1.5"
 		role="log"
 		aria-label={t('contacts.timeline.aria')}
 	>
@@ -405,78 +405,129 @@
 			<p class="text-sm text-text-faint">{t('contacts.timeline.empty')}</p>
 		{:else}
 			{#each visibleItems as item (item.kind + item.id)}
-				<div class="rounded-[6px] border border-border bg-surface px-3 py-2 text-sm shadow-sm">
+				<!--
+					Satır kutusuz: avatar + kalın ad + göreli zaman + gövde. Her kaydı
+					çerçeveye almak uzun akışta gürültü yapıyordu; eylemler yalnız üzerine
+					gelince (ve klavye odağında) çıkar.
+				-->
+				<div
+					class="group flex gap-2.5 rounded-[6px] px-1.5 py-1.5 transition-colors hover:bg-surface"
+				>
 					<div
-						class="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs text-text-faint"
+						class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold {item.kind ===
+						'incident'
+							? 'bg-warning/15 text-warning'
+							: item.kind === 'file'
+								? 'bg-surface-2 text-text-muted'
+								: 'bg-brand/15 text-brand'}"
+						aria-hidden="true"
 					>
-						<span class="flex min-w-0 items-center gap-1.5 font-medium text-text-muted">
-							{#if item.kind === 'incident'}
-								<AlertTriangle class="size-3.5 shrink-0 text-warning" aria-hidden="true" />
-								<span class="truncate">{incidentLabel(item.incident)}</span>
-							{:else if item.kind === 'file'}
-								<Paperclip class="size-3.5 shrink-0" aria-hidden="true" />
-								<span class="truncate">{item.file.uploaded_by_display_name ?? ''}</span>
-							{:else}
-								<span class="truncate">{item.note.author_display_name}</span>
-							{/if}
-						</span>
-						<div class="flex shrink-0 items-center gap-1.5">
-							<time datetime={item.at} class="tabular-nums">{formatDateTime(item.at)}</time>
-							{#if item.kind === 'file'}
-								<button
-									type="button"
-									class="rounded p-0.5 text-text-faint transition-colors hover:text-text"
-									aria-label={t('contacts.files.previewAria')}
-									title={t('contacts.files.previewAria')}
-									onclick={() => void previewFile(item.file)}
-								>
-									<Eye class="size-3.5" />
-								</button>
-								<button
-									type="button"
-									class="rounded p-0.5 text-text-faint transition-colors hover:text-text"
-									aria-label={t('contacts.files.downloadAria')}
-									title={t('contacts.files.downloadAria')}
-									onclick={() => void downloadFile(item.file)}
-								>
-									<Download class="size-3.5" />
-								</button>
-							{/if}
-							{#if canWrite && item.kind !== 'incident'}
-								<button
-									type="button"
-									class="rounded p-0.5 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"
-									aria-label={t('contacts.notes.deleteAria')}
-									title={t('contacts.notes.deleteAria')}
-									disabled={busyId === item.id}
-									onclick={() =>
-										item.kind === 'note' ? void removeNote(item.id) : void removeFile(item.file)}
-								>
-									<Trash2 class="size-3.5" />
-								</button>
-							{/if}
-						</div>
+						{#if item.kind === 'incident'}
+							<AlertTriangle class="size-3.5" />
+						{:else if item.kind === 'file'}
+							<Paperclip class="size-3.5" />
+						{:else}
+							{initialsOf(item.note.author_display_name)}
+						{/if}
 					</div>
 
-					{#if item.kind === 'note'}
-						<p class="mt-1.5 whitespace-pre-wrap text-text">{item.note.body}</p>
-					{:else if item.kind === 'incident'}
-						<p class="mt-1.5 whitespace-pre-wrap text-text">
-							{item.incident.description ?? ''}
-						</p>
-						<p class="mt-1 text-xs text-text-faint">
-							{item.incident.status === 'open'
-								? t('contacts.timeline.statusOpen')
-								: t('contacts.timeline.statusResolved')}
-						</p>
-					{:else}
-						<p class="mt-1.5 break-all text-text">{item.file.filename}</p>
-						<p class="mt-0.5 text-xs text-text-faint">
-							{formatBytes(item.file.size_bytes)}{item.file.appointment_label
-								? ` · ${item.file.appointment_label}`
-								: ''}
-						</p>
-					{/if}
+					<div class="min-w-0 flex-1">
+						<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+							<span class="truncate text-sm font-semibold text-text">
+								{#if item.kind === 'incident'}
+									{incidentLabel(item.incident)}
+								{:else if item.kind === 'file'}
+									{item.file.uploaded_by_display_name || t('contacts.timeline.filterFiles')}
+								{:else}
+									{item.note.author_display_name}
+								{/if}
+							</span>
+							<time
+								datetime={item.at}
+								title={formatDateTime(item.at)}
+								class="text-xs text-text-faint">{formatRelativeTime(item.at)}</time
+							>
+							{#if item.kind === 'incident'}
+								<span
+									class="rounded-full px-1.5 py-px text-[10px] font-medium {item.incident.status ===
+									'open'
+										? 'bg-warning/15 text-warning'
+										: 'bg-surface-2 text-text-faint'}"
+								>
+									{item.incident.status === 'open'
+										? t('contacts.timeline.statusOpen')
+										: t('contacts.timeline.statusResolved')}
+								</span>
+							{/if}
+						</div>
+
+						{#if item.kind === 'note'}
+							<p class="mt-0.5 text-sm whitespace-pre-wrap text-text">{item.note.body}</p>
+						{:else if item.kind === 'incident'}
+							{#if item.incident.description}
+								<p class="mt-0.5 text-sm whitespace-pre-wrap text-text">
+									{item.incident.description}
+								</p>
+							{/if}
+						{:else}
+							<p class="mt-0.5 text-sm break-all text-text">{item.file.filename}</p>
+							<p class="text-xs text-text-faint">
+								{formatBytes(item.file.size_bytes)}{item.file.appointment_label
+									? ` · ${item.file.appointment_label}`
+									: ''}
+							</p>
+						{/if}
+					</div>
+
+					<div
+						class="flex shrink-0 items-start gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+					>
+						{#if item.kind === 'file'}
+							<button
+								type="button"
+								class="rounded p-1 text-text-faint transition-colors hover:text-text"
+								aria-label={t('contacts.files.previewAria')}
+								title={t('contacts.files.previewAria')}
+								onclick={() => void previewFile(item.file)}
+							>
+								<Eye class="size-3.5" />
+							</button>
+							<button
+								type="button"
+								class="rounded p-1 text-text-faint transition-colors hover:text-text"
+								aria-label={t('contacts.files.downloadAria')}
+								title={t('contacts.files.downloadAria')}
+								onclick={() => void downloadFile(item.file)}
+							>
+								<Download class="size-3.5" />
+							</button>
+						{/if}
+						{#if canWrite && item.kind === 'incident' && item.incident.status === 'open'}
+							<button
+								type="button"
+								class="rounded p-1 text-text-faint transition-colors hover:text-text disabled:opacity-40"
+								aria-label={t('incidents.resolve')}
+								title={t('incidents.resolve')}
+								disabled={busyId === item.id}
+								onclick={() => void resolveIncident(item.id)}
+							>
+								<Check class="size-3.5" />
+							</button>
+						{/if}
+						{#if canWrite && item.kind !== 'incident'}
+							<button
+								type="button"
+								class="rounded p-1 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"
+								aria-label={t('contacts.notes.deleteAria')}
+								title={t('contacts.notes.deleteAria')}
+								disabled={busyId === item.id}
+								onclick={() =>
+									item.kind === 'note' ? void removeNote(item.id) : void removeFile(item.file)}
+							>
+								<Trash2 class="size-3.5" />
+							</button>
+						{/if}
+					</div>
 				</div>
 			{/each}
 		{/if}
