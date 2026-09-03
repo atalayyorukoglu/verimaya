@@ -232,22 +232,6 @@
 	let uploadProgress = $state<number | null>(null);
 	let busyId = $state<string | null>(null);
 	let error = $state<string | null>(null);
-	/*
-	 * Yazma alanı "etkin" mi — ikincil kontroller (randevu bağı) buna göre görünür.
-	 * Odak kaybında hemen kapatılmıyor: randevu seçicisine tıklamak girişten odağı
-	 * alır ve satır kapanırsa tıklama boşa düşerdi. Kısa gecikme geçişe izin verir;
-	 * seçici de aynı işleyicileri kullandığı için odak orada kaldığı sürece açık kalır.
-	 */
-	let composerFocused = $state(false);
-	let composerBlurTimer: ReturnType<typeof setTimeout> | undefined;
-	function onComposerFocus() {
-		clearTimeout(composerBlurTimer);
-		composerFocused = true;
-	}
-	function onComposerBlur() {
-		clearTimeout(composerBlurTimer);
-		composerBlurTimer = setTimeout(() => (composerFocused = false), 150);
-	}
 	let listEl: HTMLDivElement | undefined = $state();
 	let fileInput: HTMLInputElement | undefined = $state();
 	let composerInput: HTMLInputElement | undefined = $state();
@@ -467,6 +451,27 @@
 	function incidentLabel(incident: Incident): string {
 		return incident.incident_type_name;
 	}
+
+	/*
+	 * Gövde metni — Figma 3:654 ölçüleri (16/24) korunur; arka plan / kenarlık yok
+	 * (kullanıcı, 2026-09-03: balon zemini satırı kart gibi okutturuyordu).
+	 */
+	const BUBBLE = 'mt-1.5 text-base leading-6 text-text';
+
+	/* Figma'da randevu/işlem satırı da balonlu; detay tek satırda " · " ile birleşir. */
+	function appointmentDetail(appointment: Appointment): string {
+		const parts: string[] = [formatTime(appointment.starts_at)];
+		if (appointment.clinic_name) parts.push(appointment.clinic_name);
+		if (appointment.hotel_name) parts.push(appointment.hotel_name);
+		return parts.join(' · ');
+	}
+
+	function transactionDetail(transaction: Transaction): string {
+		const parts: string[] = [];
+		if (transaction.category) parts.push(transaction.category);
+		if (transaction.subtitle) parts.push(transaction.subtitle);
+		return parts.join(' · ');
+	}
 </script>
 
 <!--
@@ -474,13 +479,13 @@
 	Kayıtlar güne göre gruplanır (Bugün / Dün / 2 Mayıs 2025), grup başlığı yapışkan.
 	En yeni üstte: hasta kartı açılınca son durum ilk görünür.
 -->
-<div class="flex flex-col gap-3">
+<div class="flex min-h-0 flex-1 flex-col">
 	{#if openIncidents.length > 0}
 		<!-- Açık olay uyarısı: sol kalın sarı kenar; mobilde "Çözüldü" tam genişlikte alta iner. -->
-		<div
-			class="rounded-[8px] border border-l-4 border-tl-incident/35 border-l-tl-incident bg-tl-incident-soft px-3 py-2.5"
-		>
-			<div class="flex items-start gap-2.5">
+		<div class="tl-measure mt-6">
+			<div
+				class="flex items-start gap-2.5 rounded-md border border-l-4 border-tl-incident/35 border-l-tl-incident bg-tl-incident-soft px-3 py-2.5"
+			>
 				<span
 					class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface text-tl-incident"
 					aria-hidden="true"
@@ -519,453 +524,474 @@
 		</div>
 	{/if}
 
-	<div bind:this={listEl} class="min-h-24 pb-6" role="log" aria-label={t('contacts.timeline.aria')}>
-		{#if isPending}
-			<p class="text-sm text-text-faint">{t('contacts.notes.loading')}</p>
-		{:else if isError}
-			<p class="text-sm text-danger">{t('contacts.notes.loadError')}</p>
-		{:else if groups.length === 0}
-			<p class="text-sm text-text-faint">{t('contacts.timeline.empty')}</p>
-		{:else}
-			{#each groups as group (group.key)}
-				<h3 class="mt-10 mb-7 flex items-center gap-4 first:mt-2">
-					<span class="h-px flex-1 bg-border"></span>
-					<span class="shrink-0 text-sm text-text-muted">{group.label}</span>
-					<span class="h-px flex-1 bg-border"></span>
-				</h3>
-				<ul class="space-y-7">
-					{#each group.items as item (item.kind + item.id)}
-						<!-- Satır: solda tip renkli yuvarlak, sağda ad + zaman ve gövde balonu. -->
-						<li class="relative flex gap-3.5 max-[480px]:gap-3">
-							<span
-								class="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full max-[480px]:size-9 {TYPE_STYLE[
-									item.kind
-								]}"
-								aria-hidden="true"
-							>
-								{#if item.kind === 'incident'}
-									<AlertTriangle class="size-[18px] max-[480px]:size-4" />
-								{:else if item.kind === 'appointment'}
-									<Calendar class="size-[18px] max-[480px]:size-4" />
-								{:else if item.kind === 'transaction'}
-									<Wallet class="size-[18px] max-[480px]:size-4" />
-								{:else if item.kind === 'file'}
-									<Paperclip class="size-[18px] max-[480px]:size-4" />
-								{:else}
-									<span class="text-[11px] font-semibold"
-										>{initialsOf(item.note.author_display_name)}</span
-									>
-								{/if}
-							</span>
-
-							<div class="group min-w-0 flex-1">
-								<!-- Başlık satırı; dar ekranda zaman alta iner. -->
-								<div
-									class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 max-[480px]:flex-col max-[480px]:items-start"
+	<!--
+		Kaydıran kap tam genişlikte: kaydırma çubuğu sayfanın sağ kenarına yaslanır
+		(Claude düzeni, kullanıcı referansı 2026-09-03). Ölçüyü içerideki sütun verir.
+	-->
+	<div
+		bind:this={listEl}
+		class="min-h-0 flex-1 overflow-y-auto"
+		role="log"
+		aria-label={t('contacts.timeline.aria')}
+	>
+		<div class="tl-measure pt-[var(--tl-list-top)] pb-[var(--tl-list-bottom)]">
+			{#if isPending}
+				<p class="text-sm text-text-faint">{t('contacts.notes.loading')}</p>
+			{:else if isError}
+				<p class="text-sm text-danger">{t('contacts.notes.loadError')}</p>
+			{:else if groups.length === 0}
+				<p class="text-sm text-text-faint">{t('contacts.timeline.empty')}</p>
+			{:else}
+				{#each groups as group (group.key)}
+					<!--
+						Gün ayracı (Figma 3:973): 20 yüksek, çizgi ile metin arası 8,
+						metin 14/20 medium. Alt boşluk satır aralığıyla aynı; üst
+						boşluk daha geniş (65) — gruplar birbirinden daha net ayrılsın
+						(kullanıcı, 2026-09-03).
+					-->
+					<h3
+						class="mt-[var(--tl-day-gap-top)] mb-[var(--tl-row-gap)] flex h-5 items-center gap-2 first:mt-0"
+					>
+						<span class="h-px flex-1 bg-border"></span>
+						<span class="shrink-0 text-sm leading-5 font-medium text-text-muted">{group.label}</span
+						>
+						<span class="h-px flex-1 bg-border"></span>
+					</h3>
+					<ul class="space-y-[var(--tl-row-gap)]">
+						{#each group.items as item (item.kind + item.id)}
+							<!--
+							Satır: solda tip renkli yuvarlak; ad + zaman yan yana, eylemler sağda
+							(kullanıcı, 2026-09-03).
+						-->
+							<li class="relative flex gap-[var(--tl-avatar-gap)]">
+								<span
+									class="flex size-[var(--tl-avatar)] shrink-0 items-center justify-center rounded-full {TYPE_STYLE[
+										item.kind
+									]}"
+									aria-hidden="true"
 								>
-									<span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-										<span class="truncate text-[15px] font-semibold text-text">
-											{#if item.kind === 'incident'}
-												{incidentLabel(item.incident)}
+									{#if item.kind === 'incident'}
+										<AlertTriangle class="size-[14px]" />
+									{:else if item.kind === 'appointment'}
+										<Calendar class="size-[14px]" />
+									{:else if item.kind === 'transaction'}
+										<Wallet class="size-[14px]" />
+									{:else if item.kind === 'file'}
+										<Paperclip class="size-[14px]" />
+									{:else}
+										<span class="text-[10px] font-semibold"
+											>{initialsOf(item.note.author_display_name)}</span
+										>
+									{/if}
+								</span>
+
+								<div class="min-w-0 flex-1">
+									<!-- Ad + zaman yan yana; eylemler sağda (kullanıcı, 2026-09-03). -->
+									<div class="flex h-5 min-w-0 items-center gap-2">
+										<span class="flex min-w-0 flex-1 items-center gap-2">
+											<span class="min-w-0 truncate text-sm leading-5 font-medium text-text">
+												{#if item.kind === 'incident'}
+													{incidentLabel(item.incident)}
+												{:else if item.kind === 'appointment'}
+													{item.appointment.appointment_type ||
+														item.appointment.title ||
+														t('contacts.timeline.filterAppointments')}
+												{:else if item.kind === 'transaction'}
+													{item.transaction.title ||
+														item.transaction.category ||
+														t('contacts.timeline.filterTransactions')}
+												{:else if item.kind === 'file'}
+													{item.file.uploaded_by_display_name || t('contacts.timeline.filterFiles')}
+												{:else}
+													{item.note.author_display_name}
+												{/if}
+											</span>
+
+											<time
+												datetime={item.at}
+												title={formatDateTime(item.at)}
+												class="shrink-0 text-xs leading-[18px] text-text-muted"
+												>{rowTime(item.at)}</time
+											>
+
+											{#if item.kind === 'file'}
+												<span class="shrink-0 text-xs leading-[18px] text-text-muted"
+													>{t('contacts.timeline.fileAdded')}</span
+												>
+											{:else if item.kind === 'incident'}
+												<span
+													class="shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium {item
+														.incident.status === 'open'
+														? 'bg-tl-incident-soft text-tl-incident'
+														: 'bg-surface-2 text-text-faint'}"
+												>
+													{item.incident.status === 'open'
+														? t('contacts.timeline.statusOpen')
+														: t('contacts.timeline.statusResolved')}
+												</span>
 											{:else if item.kind === 'appointment'}
-												{item.appointment.appointment_type ||
-													item.appointment.title ||
-													t('contacts.timeline.filterAppointments')}
+												<span
+													class="shrink-0 rounded-full bg-tl-appointment-soft px-1.5 py-px text-[10px] font-medium text-tl-appointment"
+												>
+													{appointmentStatusLabels[item.appointment.status]}
+												</span>
 											{:else if item.kind === 'transaction'}
-												{item.transaction.title ||
-													item.transaction.category ||
-													t('contacts.timeline.filterTransactions')}
-											{:else if item.kind === 'file'}
-												{item.file.uploaded_by_display_name || t('contacts.timeline.filterFiles')}
-											{:else}
-												{item.note.author_display_name}
+												<span
+													class="shrink-0 text-sm font-semibold {item.transaction.kind === 'income'
+														? 'text-tl-transaction'
+														: 'text-danger'}"
+												>
+													{item.transaction.kind === 'income' ? '+' : '−'}{formatMoney(
+														item.transaction.amount,
+														item.transaction.currency
+													)}
+												</span>
 											{/if}
 										</span>
 
-										{#if item.kind === 'file'}
-											<span class="text-xs text-text-muted">{t('contacts.timeline.fileAdded')}</span
-											>
-										{:else if item.kind === 'incident'}
-											<span
-												class="rounded-full px-1.5 py-px text-[10px] font-medium {item.incident
-													.status === 'open'
-													? 'bg-tl-incident-soft text-tl-incident'
-													: 'bg-surface-2 text-text-faint'}"
-											>
-												{item.incident.status === 'open'
-													? t('contacts.timeline.statusOpen')
-													: t('contacts.timeline.statusResolved')}
-											</span>
-										{:else if item.kind === 'appointment'}
-											<span
-												class="rounded-full bg-tl-appointment-soft px-1.5 py-px text-[10px] font-medium text-tl-appointment"
-											>
-												{appointmentStatusLabels[item.appointment.status]}
-											</span>
-										{:else if item.kind === 'transaction'}
-											<span
-												class="text-sm font-semibold {item.transaction.kind === 'income'
-													? 'text-tl-transaction'
-													: 'text-danger'}"
-											>
-												{item.transaction.kind === 'income' ? '+' : '−'}{formatMoney(
-													item.transaction.amount,
-													item.transaction.currency
-												)}
-											</span>
+										{#if canWrite && item.kind !== 'file'}
+											<div class="ml-auto flex shrink-0 items-center gap-0.5">
+												{#if item.kind === 'appointment' && onEditAppointment}
+													<button
+														type="button"
+														class="rounded p-1 text-text-faint transition-colors hover:text-text"
+														aria-label={t('common.edit')}
+														title={t('common.edit')}
+														onclick={() => onEditAppointment?.(item.appointment)}
+													>
+														<Pencil class="size-3.5" />
+													</button>
+												{:else if item.kind === 'transaction' && onEditTransaction}
+													<button
+														type="button"
+														class="rounded p-1 text-text-faint transition-colors hover:text-text"
+														aria-label={t('common.edit')}
+														title={t('common.edit')}
+														onclick={() => onEditTransaction?.(item.transaction)}
+													>
+														<Pencil class="size-3.5" />
+													</button>
+												{:else if item.kind === 'incident' && item.incident.status === 'open'}
+													<button
+														type="button"
+														class="rounded p-1 text-text-faint transition-colors hover:text-text disabled:opacity-40"
+														aria-label={t('incidents.resolve')}
+														title={t('incidents.resolve')}
+														disabled={busyId === item.id}
+														onclick={() => void resolveIncident(item.id)}
+													>
+														<Check class="size-3.5" />
+													</button>
+												{:else if item.kind === 'note'}
+													<button
+														type="button"
+														class="rounded p-1 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"
+														aria-label={t('contacts.notes.deleteAria')}
+														title={t('contacts.notes.deleteAria')}
+														disabled={busyId === item.id}
+														onclick={() => void removeNote(item.id)}
+													>
+														<Trash2 class="size-3.5" />
+													</button>
+												{/if}
+											</div>
 										{/if}
-									</span>
+									</div>
 
-									<time
-										datetime={item.at}
-										title={formatDateTime(item.at)}
-										class="shrink-0 text-sm text-text-faint">{rowTime(item.at)}</time
-									>
-								</div>
-
-								{#if item.kind === 'note'}
-									<p
-										class="mt-2 rounded-[12px] border border-border bg-surface-2 px-4 py-3 text-sm whitespace-pre-wrap text-text"
-									>
-										{item.note.body}
-									</p>
-								{:else if item.kind === 'incident'}
-									{#if item.incident.description}
-										<p
-											class="mt-2 rounded-[12px] border border-border bg-surface-2 px-4 py-3 text-sm whitespace-pre-wrap text-text"
-										>
-											{item.incident.description}
-										</p>
-									{/if}
-								{:else if item.kind === 'appointment'}
-									<p class="mt-0.5 text-sm text-text-muted">
-										{formatTime(item.appointment.starts_at)}{item.appointment.clinic_name
-											? ` · ${item.appointment.clinic_name}`
-											: ''}{item.appointment.hotel_name ? ` · ${item.appointment.hotel_name}` : ''}
-									</p>
-								{:else if item.kind === 'transaction'}
-									<p class="mt-0.5 text-sm text-text-muted">
-										{item.transaction.category ?? ''}{item.transaction.subtitle
-											? ` · ${item.transaction.subtitle}`
-											: ''}
-									</p>
-								{:else}
-									<!--
+									{#if item.kind === 'note'}
+										<p class="{BUBBLE} whitespace-pre-wrap">{item.note.body}</p>
+									{:else if item.kind === 'incident'}
+										{#if item.incident.description}
+											<p class="{BUBBLE} whitespace-pre-wrap">{item.incident.description}</p>
+										{/if}
+									{:else if item.kind === 'appointment'}
+										<p class={BUBBLE}>{appointmentDetail(item.appointment)}</p>
+									{:else if item.kind === 'transaction'}
+										{#if transactionDetail(item.transaction)}
+											<p class={BUBBLE}>{transactionDetail(item.transaction)}</p>
+										{/if}
+									{:else}
+										<!--
 										Dosya eki ayrı kart. Mobilde üç ikon gizli: karta dokunmak önizlemeyi
 										açar — 44px'lik hedefler dar ekranda yan yana sığmıyor.
 									-->
-									<div
-										class="mt-2 flex items-center gap-3 rounded-[12px] border border-border bg-surface px-3 py-3"
-									>
-										<button
-											type="button"
-											class="flex min-w-0 flex-1 items-center gap-2.5 text-left"
-											aria-label={t('contacts.timeline.openFile')}
-											onclick={() => void previewFile(item.file)}
+										<div
+											class="mt-1.5 flex items-center gap-3 rounded-md rounded-tl-none border border-border bg-surface p-3"
 										>
-											<span
-												class="flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-tl-file-soft text-[10px] font-bold text-tl-file"
-											>
-												{fileKindLabel(item.file)}
-											</span>
-											<span class="min-w-0">
-												<span class="block truncate text-sm text-text">{item.file.filename}</span>
-												<span class="block text-xs text-text-faint"
-													>{formatBytes(item.file.size_bytes)}{item.file.appointment_label
-														? ` · ${item.file.appointment_label}`
-														: ''}</span
-												>
-											</span>
-										</button>
-										<div class="hidden shrink-0 items-center gap-0.5 min-[481px]:flex">
 											<button
 												type="button"
-												class="rounded p-1.5 text-text-faint transition-colors hover:text-text"
-												aria-label={t('contacts.files.previewAria')}
-												title={t('contacts.files.previewAria')}
+												class="flex min-w-0 flex-1 items-center gap-3 text-left"
+												aria-label={t('contacts.timeline.openFile')}
 												onclick={() => void previewFile(item.file)}
 											>
-												<Eye class="size-4" />
+												<span
+													class="flex size-10 shrink-0 items-center justify-center rounded-sm bg-tl-file-soft text-[10px] font-bold text-tl-file"
+												>
+													{fileKindLabel(item.file)}
+												</span>
+												<span class="min-w-0">
+													<span class="block truncate text-sm leading-5 font-medium text-text"
+														>{item.file.filename}</span
+													>
+													<span class="block truncate text-sm leading-5 text-text-muted"
+														>{formatBytes(item.file.size_bytes)}{item.file.appointment_label
+															? ` · ${item.file.appointment_label}`
+															: ''}</span
+													>
+												</span>
 											</button>
-											<button
-												type="button"
-												class="rounded p-1.5 text-text-faint transition-colors hover:text-text"
-												aria-label={t('contacts.files.downloadAria')}
-												title={t('contacts.files.downloadAria')}
-												onclick={() => void downloadFile(item.file)}
-											>
-												<Download class="size-4" />
-											</button>
-											{#if canWrite}
+											<div class="hidden shrink-0 items-center gap-0.5 min-[481px]:flex">
 												<button
 													type="button"
-													class="rounded p-1.5 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"
-													aria-label={t('contacts.notes.deleteAria')}
-													title={t('contacts.notes.deleteAria')}
-													disabled={busyId === item.id}
-													onclick={() => void removeFile(item.file)}
+													class="rounded p-1.5 text-text-faint transition-colors hover:text-text"
+													aria-label={t('contacts.files.previewAria')}
+													title={t('contacts.files.previewAria')}
+													onclick={() => void previewFile(item.file)}
 												>
-													<Trash2 class="size-4" />
+													<Eye class="size-4" />
 												</button>
-											{/if}
+												<button
+													type="button"
+													class="rounded p-1.5 text-text-faint transition-colors hover:text-text"
+													aria-label={t('contacts.files.downloadAria')}
+													title={t('contacts.files.downloadAria')}
+													onclick={() => void downloadFile(item.file)}
+												>
+													<Download class="size-4" />
+												</button>
+												{#if canWrite}
+													<button
+														type="button"
+														class="rounded p-1.5 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"
+														aria-label={t('contacts.notes.deleteAria')}
+														title={t('contacts.notes.deleteAria')}
+														disabled={busyId === item.id}
+														onclick={() => void removeFile(item.file)}
+													>
+														<Trash2 class="size-4" />
+													</button>
+												{/if}
+											</div>
 										</div>
-									</div>
-								{/if}
-							</div>
-
-							<!-- Satır eylemleri: yalnız üzerine gelince ve klavye odağında. -->
-							{#if canWrite && item.kind !== 'file'}
-								<div
-									class="absolute top-0 right-0 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 max-[480px]:opacity-100"
-								>
-									{#if item.kind === 'appointment' && onEditAppointment}
-										<button
-											type="button"
-											class="rounded p-1 text-text-faint transition-colors hover:text-text"
-											aria-label={t('common.edit')}
-											title={t('common.edit')}
-											onclick={() => onEditAppointment?.(item.appointment)}
-										>
-											<Pencil class="size-3.5" />
-										</button>
-									{:else if item.kind === 'transaction' && onEditTransaction}
-										<button
-											type="button"
-											class="rounded p-1 text-text-faint transition-colors hover:text-text"
-											aria-label={t('common.edit')}
-											title={t('common.edit')}
-											onclick={() => onEditTransaction?.(item.transaction)}
-										>
-											<Pencil class="size-3.5" />
-										</button>
-									{:else if item.kind === 'incident' && item.incident.status === 'open'}
-										<button
-											type="button"
-											class="rounded p-1 text-text-faint transition-colors hover:text-text disabled:opacity-40"
-											aria-label={t('incidents.resolve')}
-											title={t('incidents.resolve')}
-											disabled={busyId === item.id}
-											onclick={() => void resolveIncident(item.id)}
-										>
-											<Check class="size-3.5" />
-										</button>
-									{:else if item.kind === 'note'}
-										<button
-											type="button"
-											class="rounded p-1 text-text-faint transition-colors hover:bg-danger/15 hover:text-danger disabled:opacity-40"
-											aria-label={t('contacts.notes.deleteAria')}
-											title={t('contacts.notes.deleteAria')}
-											disabled={busyId === item.id}
-											onclick={() => void removeNote(item.id)}
-										>
-											<Trash2 class="size-3.5" />
-										</button>
 									{/if}
 								</div>
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			{/each}
-		{/if}
+							</li>
+						{/each}
+					</ul>
+				{/each}
+			{/if}
+		</div>
 	</div>
 
 	{#if canWrite}
 		<!--
-			Yazma alanı alta yapışık. Masaüstünde kaydıran kap `<main>`, mobilde belge;
-			`sticky` ikisinde de doğru kaba tutunur. Mobilde alt menü `fixed` olduğu için
-			onun yüksekliği kadar yukarıdan başlar, üstüne binmesin.
+			Figma'da footer çerçevenin dibinde duruyor ve içeriği ÖRTMÜYOR: kayan şey
+			listenin kendisi. Burada da öyle — sütun kaydıran kabı dolduruyor, liste
+			`overflow-y-auto` ile kendi içinde kayıyor, yazma alanı onun altında
+			normal akışta duruyor.
+
+			Önceki `sticky` çözümü mobilde bozuluyordu: `main` yatayda gizli olduğu
+			için dikeyde de kaydıran kap oluyor, belgeyle birlikte iki katmanlı kaydırma
+			çıkıyordu; yapışkan alan `main` kutusunun dibine göre hizalanınca olay
+			satırı açıldığında giriş alt menünün altına iniyordu.
 		-->
-		<div
-			class="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 -mx-4 flex flex-col gap-1.5 border-t border-border bg-surface px-4 pt-3 pb-2 sm:-mx-5 sm:px-5 md:bottom-0"
-		>
-			{#if asIncident}
-				<div class="flex flex-wrap items-center gap-1.5">
-					{#if incidentTypes.length === 0}
-						<p class="text-xs text-text-faint">{t('incidents.form.noTypes')}</p>
-					{:else}
-						{#each incidentTypes as type (type.id)}
+		<div class="shrink-0 border-t border-border bg-surface">
+			<div class="tl-measure flex flex-col gap-1.5 py-4">
+				{#if asIncident}
+					<div class="flex flex-wrap items-center gap-1.5">
+						{#if incidentTypes.length === 0}
+							<p class="text-xs text-text-faint">{t('incidents.form.noTypes')}</p>
+						{:else}
+							{#each incidentTypes as type (type.id)}
+								<button
+									type="button"
+									class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {incidentTypeId ===
+									type.id
+										? 'border-tl-incident bg-tl-incident-soft text-text'
+										: 'border-border text-text-muted hover:text-text'}"
+									aria-pressed={incidentTypeId === type.id}
+									onclick={() => (incidentTypeId = type.id)}
+								>
+									{type.name}
+								</button>
+							{/each}
+						{/if}
+						{#if onNewIncident}
 							<button
 								type="button"
-								class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {incidentTypeId ===
-								type.id
-									? 'border-tl-incident bg-tl-incident-soft text-text'
-									: 'border-border text-text-muted hover:text-text'}"
-								aria-pressed={incidentTypeId === type.id}
-								onclick={() => (incidentTypeId = type.id)}
+								class="ml-auto text-xs font-medium text-brand hover:underline"
+								onclick={() => onNewIncident?.()}
 							>
-								{type.name}
+								{t('contacts.timeline.detailedIncident')}
 							</button>
+						{/if}
+					</div>
+				{/if}
+
+				<!--
+				Randevu bağı yalnız OLAY açarken sorulur. Düz not yazarken bu satır her
+				odakta açılıp yazma alanını zıplatıyordu ve notların randevuyla bir işi
+				yok — bağ yalnız olay kaydında (`incidents.appointment_id`) anlamlı.
+			-->
+				{#if appointments.length > 0 && asIncident}
+					<select
+						class="h-8 w-full rounded-[6px] border border-border bg-surface px-2 text-xs text-text-muted outline-none sm:max-w-xs"
+						bind:value={linkAppointmentId}
+						aria-label={t('contacts.files.linkAppointment')}
+					>
+						<option value="">{t('contacts.files.noAppointment')}</option>
+						{#each appointments as appt (appt.id)}
+							<option value={appt.id}>
+								{formatDateTime(appt.starts_at)}
+								{appt.title ? ` · ${appt.title}` : ''}
+							</option>
 						{/each}
-					{/if}
-					{#if onNewIncident}
+					</select>
+				{/if}
+
+				<!--
+				Tek "+" menüsü + geniş giriş + gönder. Ayrı ⚠ düğmesi kaldırıldı.
+				Ölçüler Figma 3:1032'den: aralık 12, ikonlar 24, giriş 40 yüksek /
+				12 yatay iç boşluk / 8 yarıçap. Figma'da soldaki ataç ve sağdaki
+				uçak çıplak ikon; bizde ikisi de düğme (biri menü açıyor, diğeri
+				gönderiyor) — kabuk kalıyor, ölçü Figma'dan geliyor.
+			-->
+				<div class="flex items-center gap-3">
+					<input
+						bind:this={fileInput}
+						type="file"
+						class="hidden"
+						onchange={onFilePicked}
+						aria-hidden="true"
+						tabindex="-1"
+					/>
+					<div class="relative shrink-0">
 						<button
 							type="button"
-							class="ml-auto text-xs font-medium text-brand hover:underline"
-							onclick={() => onNewIncident?.()}
+							class="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border text-text-muted transition-colors hover:text-text disabled:opacity-40"
+							aria-haspopup="menu"
+							aria-expanded={addMenuOpen}
+							aria-label={t('contacts.timeline.add')}
+							disabled={uploading || sending}
+							onclick={() => (addMenuOpen = !addMenuOpen)}
 						>
-							{t('contacts.timeline.detailedIncident')}
+							<Plus class="size-6" />
 						</button>
-					{/if}
-				</div>
-			{/if}
-
-			{#if appointments.length > 0 && (composerFocused || asIncident || draft.trim().length > 0)}
-				<select
-					class="h-8 w-full rounded-[6px] border border-border bg-surface px-2 text-xs text-text-muted outline-none sm:max-w-xs"
-					bind:value={linkAppointmentId}
-					aria-label={t('contacts.files.linkAppointment')}
-					onfocus={onComposerFocus}
-					onblur={onComposerBlur}
-				>
-					<option value="">{t('contacts.files.noAppointment')}</option>
-					{#each appointments as appt (appt.id)}
-						<option value={appt.id}>
-							{formatDateTime(appt.starts_at)}
-							{appt.title ? ` · ${appt.title}` : ''}
-						</option>
-					{/each}
-				</select>
-			{/if}
-
-			<!-- Tek "+" menüsü + geniş giriş + gönder. Ayrı ⚠ düğmesi kaldırıldı. -->
-			<div class="flex items-center gap-2">
-				<input
-					bind:this={fileInput}
-					type="file"
-					class="hidden"
-					onchange={onFilePicked}
-					aria-hidden="true"
-					tabindex="-1"
-				/>
-				<div class="relative shrink-0">
+						{#if addMenuOpen}
+							<button
+								type="button"
+								class="fixed inset-0 z-10 cursor-default"
+								aria-label={t('common.close')}
+								onclick={() => (addMenuOpen = false)}
+							></button>
+							<div
+								class="absolute bottom-full left-0 z-20 mb-1 min-w-48 rounded-[8px] border border-border bg-surface p-1 shadow-lg"
+								role="menu"
+							>
+								<button
+									type="button"
+									role="menuitem"
+									class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
+									onclick={() => runAdd(() => composerInput?.focus())}
+								>
+									<span
+										class="flex size-6 items-center justify-center rounded-full bg-tl-note-soft text-tl-note"
+									>
+										<Pencil class="size-3" />
+									</span>
+									{t('contacts.timeline.addNote')}
+								</button>
+								<button
+									type="button"
+									role="menuitem"
+									class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
+									onclick={() => runAdd(() => fileInput?.click())}
+								>
+									<span
+										class="flex size-6 items-center justify-center rounded-full bg-tl-file-soft text-tl-file"
+									>
+										<Paperclip class="size-3" />
+									</span>
+									{t('contacts.timeline.addFile')}
+								</button>
+								<button
+									type="button"
+									role="menuitem"
+									class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
+									onclick={() =>
+										runAdd(() => {
+											asIncident = true;
+											composerInput?.focus();
+										})}
+								>
+									<span
+										class="flex size-6 items-center justify-center rounded-full bg-tl-incident-soft text-tl-incident"
+									>
+										<AlertTriangle class="size-3" />
+									</span>
+									{t('contacts.timeline.addIncident')}
+								</button>
+								<button
+									type="button"
+									role="menuitem"
+									class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
+									onclick={() => runAdd(onNewAppointment)}
+								>
+									<span
+										class="flex size-6 items-center justify-center rounded-full bg-tl-appointment-soft text-tl-appointment"
+									>
+										<Calendar class="size-3" />
+									</span>
+									{t('contacts.timeline.addAppointment')}
+								</button>
+								<button
+									type="button"
+									role="menuitem"
+									class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
+									onclick={() => runAdd(onNewTransaction)}
+								>
+									<span
+										class="flex size-6 items-center justify-center rounded-full bg-tl-transaction-soft text-tl-transaction"
+									>
+										<Wallet class="size-3" />
+									</span>
+									{t('contacts.timeline.addTransaction')}
+								</button>
+							</div>
+						{/if}
+					</div>
+					<input
+						bind:this={composerInput}
+						class="h-10 min-w-0 flex-1 rounded-md border border-border bg-surface px-3 text-base leading-6 text-text shadow-xs outline-none placeholder:text-text-faint focus:border-brand focus:ring-2 focus:ring-brand/30"
+						placeholder={asIncident
+							? t('contacts.timeline.incidentPlaceholder')
+							: t('contacts.timeline.placeholder')}
+						bind:value={draft}
+						disabled={sending || uploading}
+						onkeydown={onKeydown}
+					/>
 					<button
 						type="button"
-						class="inline-flex size-10 items-center justify-center rounded-full border border-border text-text-muted transition-colors hover:text-text disabled:opacity-40 max-[480px]:size-9"
-						aria-haspopup="menu"
-						aria-expanded={addMenuOpen}
-						aria-label={t('contacts.timeline.add')}
-						disabled={uploading || sending}
-						onclick={() => (addMenuOpen = !addMenuOpen)}
+						class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-primary-foreground disabled:opacity-40"
+						aria-label={t('contacts.notes.sendAria')}
+						disabled={sending || uploading || !draft.trim()}
+						onclick={() => void send()}
 					>
-						<Plus class="size-4" />
+						<ArrowUp class="size-6" />
 					</button>
-					{#if addMenuOpen}
-						<button
-							type="button"
-							class="fixed inset-0 z-10 cursor-default"
-							aria-label={t('common.close')}
-							onclick={() => (addMenuOpen = false)}
-						></button>
-						<div
-							class="absolute bottom-full left-0 z-20 mb-1 min-w-48 rounded-[8px] border border-border bg-surface p-1 shadow-lg"
-							role="menu"
-						>
-							<button
-								type="button"
-								role="menuitem"
-								class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
-								onclick={() => runAdd(() => composerInput?.focus())}
-							>
-								<span
-									class="flex size-6 items-center justify-center rounded-full bg-tl-note-soft text-tl-note"
-								>
-									<Pencil class="size-3" />
-								</span>
-								{t('contacts.timeline.addNote')}
-							</button>
-							<button
-								type="button"
-								role="menuitem"
-								class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
-								onclick={() => runAdd(() => fileInput?.click())}
-							>
-								<span
-									class="flex size-6 items-center justify-center rounded-full bg-tl-file-soft text-tl-file"
-								>
-									<Paperclip class="size-3" />
-								</span>
-								{t('contacts.timeline.addFile')}
-							</button>
-							<button
-								type="button"
-								role="menuitem"
-								class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
-								onclick={() =>
-									runAdd(() => {
-										asIncident = true;
-										composerInput?.focus();
-									})}
-							>
-								<span
-									class="flex size-6 items-center justify-center rounded-full bg-tl-incident-soft text-tl-incident"
-								>
-									<AlertTriangle class="size-3" />
-								</span>
-								{t('contacts.timeline.addIncident')}
-							</button>
-							<button
-								type="button"
-								role="menuitem"
-								class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
-								onclick={() => runAdd(onNewAppointment)}
-							>
-								<span
-									class="flex size-6 items-center justify-center rounded-full bg-tl-appointment-soft text-tl-appointment"
-								>
-									<Calendar class="size-3" />
-								</span>
-								{t('contacts.timeline.addAppointment')}
-							</button>
-							<button
-								type="button"
-								role="menuitem"
-								class="flex w-full items-center gap-2 rounded-[6px] px-2 py-2 text-left text-sm text-text transition-colors hover:bg-surface-2"
-								onclick={() => runAdd(onNewTransaction)}
-							>
-								<span
-									class="flex size-6 items-center justify-center rounded-full bg-tl-transaction-soft text-tl-transaction"
-								>
-									<Wallet class="size-3" />
-								</span>
-								{t('contacts.timeline.addTransaction')}
-							</button>
-						</div>
-					{/if}
 				</div>
-				<input
-					bind:this={composerInput}
-					class="h-10 min-w-0 flex-1 rounded-full border border-border bg-surface-2 px-4 text-base text-text outline-none placeholder:text-text-faint focus:border-brand focus:ring-2 focus:ring-brand/30 max-[480px]:h-9 sm:text-sm"
-					placeholder={asIncident
-						? t('contacts.timeline.incidentPlaceholder')
-						: t('contacts.timeline.placeholder')}
-					bind:value={draft}
-					disabled={sending || uploading}
-					onkeydown={onKeydown}
-					onfocus={onComposerFocus}
-					onblur={onComposerBlur}
-				/>
-				<button
-					type="button"
-					class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-primary-foreground disabled:opacity-40 max-[480px]:size-9"
-					aria-label={t('contacts.notes.sendAria')}
-					disabled={sending || uploading || !draft.trim()}
-					onclick={() => void send()}
-				>
-					<ArrowUp class="size-4" />
-				</button>
 			</div>
 		</div>
 	{/if}
 
 	{#if uploading}
-		<p class="text-xs text-text-faint" aria-live="polite">
+		<p class="mt-2 text-xs text-text-faint" aria-live="polite">
 			{uploadProgress == null
 				? t('contacts.files.uploading')
 				: t('contacts.files.uploadingProgress', { progress: String(uploadProgress) })}
 		</p>
 	{/if}
 	{#if error}
-		<p class="text-xs text-danger">{error}</p>
+		<p class="mt-2 text-xs text-danger">{error}</p>
 	{/if}
 </div>

@@ -328,12 +328,31 @@
 	<title>{documentTitle}</title>
 </svelte:head>
 
-<div class="mx-auto max-w-4xl min-w-0">
+<!--
+	Tam yükseklikli sütun YALNIZ akış sekmesinde. Sebep: yazma alanının her zaman
+	ekranın dibinde durması için listenin `flex-1` ile kısılması, onun için de
+	sütunun KESİN bir yüksekliği olması gerekiyor (kullanıcı geri bildirimi,
+	2026-09-03); `min-h-full` yetmiyor, liste içeriği kadar uzayıp yazma alanını
+	aşağı itiyor.
+
+	Ama aynı `h-full`'ü her sekmeye vermek olmuyor: finans ve kişi bilgileri
+	sekmelerinin içeriği uzun ve esnek kutuda ezilip kaydırılamaz hale geliyordu
+	(1500px'lik deneme kutusu 171px'e iniyordu). O yüzden koşullu.
+-->
+<!--
+	AppShell kişi detayında main padding'i kapatır (flush): kenarlık, zemin ve
+	kaydırma tam genişlikte kalsın diye. İçerik `tl-measure` sütununda ortalanır
+	(`layout.css`) — kaydırma çubuğu sayfanın sağ kenarında, metin ise okunur bir
+	ölçüde durur (kullanıcı referansı, 2026-09-03). Yatay iç boşluk da o sınıfta.
+-->
+<div class={`min-w-0 ${activeTab === 'flow' ? 'flex h-full flex-col' : ''}`}>
 	{#if contactQuery.isPending}
-		<p class="text-sm text-text-muted">{t('common.loading')}</p>
+		<p class="tl-measure pt-4 text-sm text-text-muted">{t('common.loading')}</p>
 	{:else if contactQuery.isError || !contact}
-		<div class="rounded-lg border border-border bg-surface p-6">
-			<p class="text-sm text-danger">{t('contacts.detail.notFound')}</p>
+		<div class="tl-measure pt-4">
+			<div class="rounded-lg border border-border bg-surface p-6">
+				<p class="text-sm text-danger">{t('contacts.detail.notFound')}</p>
+			</div>
 		</div>
 	{:else}
 		<!--
@@ -346,275 +365,304 @@
 			alt menü `fixed` olduğu için yazma alanına onun yüksekliği kadar boşluk
 			verilir, üstüne binmesin.
 		-->
-		<div
-			class="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-bg px-4 pt-2 sm:-mx-6 sm:px-6"
-		>
-			<div class="flex flex-wrap items-center justify-between gap-3 pb-3">
-				<h1 class="min-w-0 truncate text-xl font-semibold text-text">{contact.display_name}</h1>
-				<div class="flex shrink-0 items-center gap-3">
-					<button
-						type="button"
-						class="text-sm font-medium text-text-muted transition-colors hover:text-text"
-						onclick={() => (formOpen = true)}>{t('common.edit')}</button
-					>
-					<a href="/contacts" class="text-sm font-medium text-text-muted hover:text-text"
-						>{t('common.close')}</a
-					>
-				</div>
-			</div>
+		<!--
+			Ölçüler Figma "iPhone 16 & 17 Pro Max - 1" (3:582) başlığından: üst 15,
+			alt 16, başlık satırı ile sekme çubuğu arası 20, başlık 18/28 semibold,
+			Düzenle/Kapat 14/20 regular ve aralarında 26.
 
-			<!-- Segment denetimi: üç sekme eşit genişlikte, aktif olan yüzeyde. -->
-			<div
-				class="mb-3 flex rounded-[10px] border border-border bg-surface-2 p-1"
-				role="tablist"
-				aria-label={t('contacts.detail.tabsAria')}
-			>
-				{#each [{ id: 'flow', label: t('contacts.detail.tabFlow') }, { id: 'finance', label: t('contacts.detail.tabFinance') }, { id: 'info', label: t('contacts.detail.tabInfo') }] as tab (tab.id)}
-					<button
-						type="button"
-						role="tab"
-						aria-selected={activeTab === tab.id}
-						class="flex-1 rounded-[8px] px-2 py-2 text-sm font-medium transition-colors {activeTab ===
-						tab.id
-							? 'bg-surface text-text shadow-sm'
-							: 'text-text-muted hover:text-text'}"
-						onclick={() => (activeTab = tab.id as ContactTab)}
-					>
-						{tab.label}
-					</button>
-				{/each}
+			Başlık altındaki 44'lük boşluk artık burada değil, akışın kendi
+			`--tl-list-top` payında — Figma'da o mesafe listeye ait. Diğer iki sekme
+			eski görünümünü korusun diye kendi `mt-6`'sını taşıyor.
+		-->
+		<div class="sticky top-0 z-20 shrink-0 border-b border-border bg-bg">
+			<div class="tl-measure pt-[15px] pb-4">
+				<div class="flex items-center gap-3 pb-5">
+					<h1 class="min-w-0 flex-1 truncate text-lg leading-7 font-semibold text-text">
+						{contact.display_name}
+					</h1>
+					<div class="flex shrink-0 items-center gap-[26px]">
+						<button
+							type="button"
+							class="text-sm leading-5 font-normal text-text-muted transition-colors hover:text-text"
+							onclick={() => (formOpen = true)}>{t('common.edit')}</button
+						>
+						<a
+							href="/contacts"
+							class="text-sm leading-5 font-normal text-text-muted hover:text-text"
+							>{t('common.close')}</a
+						>
+					</div>
+				</div>
+
+				<!--
+				Segment denetimi (Figma 3:589): çubuk 36 yüksek, iç boşluk yok, sekmeler
+				arası 2, her sekme 10/8 padding + 8 yarıçap. Sabit yükseklik yazılmıyor:
+				`layout.css` mobilde butonlara 44px dokunma tabanı uyguluyor (WCAG 2.5.8)
+				ve sekmeler birincil gezinme, o tabanı deleceğimiz yer burası değil —
+				masaüstünde padding zaten 36'ya oturuyor.
+			-->
+				<div
+					class="flex gap-0.5 rounded-md border border-border bg-surface-2"
+					role="tablist"
+					aria-label={t('contacts.detail.tabsAria')}
+				>
+					{#each [{ id: 'flow', label: t('contacts.detail.tabFlow') }, { id: 'finance', label: t('contacts.detail.tabFinance') }, { id: 'info', label: t('contacts.detail.tabInfo') }] as tab (tab.id)}
+						<button
+							type="button"
+							role="tab"
+							aria-selected={activeTab === tab.id}
+							class="flex-1 rounded-md border px-2.5 py-2 text-sm leading-5 font-semibold transition-colors {activeTab ===
+							tab.id
+								? 'border-border bg-surface text-text shadow-xs'
+								: 'border-transparent text-text-faint hover:text-text'}"
+							onclick={() => (activeTab = tab.id as ContactTab)}
+						>
+							{tab.label}
+						</button>
+					{/each}
+				</div>
 			</div>
 		</div>
 
 		{#if activeTab === 'flow'}
-			<ContactTimeline
-				contactId={contact.id}
-				{appointments}
-				{transactions}
-				onNewAppointment={openCreateAppt}
-				onNewTransaction={openCreateTx}
-				onNewIncident={openCreateIncident}
-				onEditAppointment={openEditAppt}
-				onEditTransaction={openEditTx}
-			/>
-			{#if incidentResolveError}
-				<p class="mt-2 text-sm text-danger">{incidentResolveError}</p>
-			{/if}
-		{:else if activeTab === 'finance'}
-			<div class="flex flex-wrap items-center gap-3 pb-2">
-				<a
-					href={`/appointments?contact_involves=${contact.id}`}
-					class="text-xs font-medium text-brand hover:underline"
-					>{t('contacts.detail.calendarLink')}</a
-				>
-				<a
-					href={`/finance?contact=${contact.id}`}
-					class="text-xs font-medium text-brand hover:underline"
-					>{t('contacts.detail.viewInFinance')}</a
-				>
+			<div class="flex min-h-0 flex-1 flex-col">
+				<ContactTimeline
+					contactId={contact.id}
+					{appointments}
+					{transactions}
+					onNewAppointment={openCreateAppt}
+					onNewTransaction={openCreateTx}
+					onNewIncident={openCreateIncident}
+					onEditAppointment={openEditAppt}
+					onEditTransaction={openEditTx}
+				/>
+				{#if incidentResolveError}
+					<p class="tl-measure mt-2 text-sm text-danger">{incidentResolveError}</p>
+				{/if}
 			</div>
-			<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-				<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-					<h2 class="text-sm font-semibold text-text">{t('contacts.finance.title')}</h2>
-					<Button
-						type="button"
-						size="sm"
-						variant="secondary"
-						disabled={autoLinking}
-						onclick={autoLinkTransactions}
+		{:else if activeTab === 'finance'}
+			<div class="tl-measure">
+				<div class="mt-6 flex flex-wrap items-center gap-3 pb-2">
+					<a
+						href={`/appointments?contact_involves=${contact.id}`}
+						class="text-xs font-medium text-brand hover:underline"
+						>{t('contacts.detail.calendarLink')}</a
 					>
-						{autoLinking ? t('contacts.finance.autoLinking') : t('contacts.finance.autoLink')}
-					</Button>
+					<a
+						href={`/finance?contact=${contact.id}`}
+						class="text-xs font-medium text-brand hover:underline"
+						>{t('contacts.detail.viewInFinance')}</a
+					>
 				</div>
-
-				{#if autoLinkMessage}
-					<p class="mb-3 text-sm text-success">{autoLinkMessage}</p>
-				{/if}
-				{#if autoLinkError}
-					<p class="mb-3 text-sm text-danger">{autoLinkError}</p>
-				{/if}
-
-				{#if !USE_MSW && financeSummaryQuery.isPending}
-					<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
-				{:else if !USE_MSW && financeSummaryQuery.data}
-					{@const summary = financeSummaryQuery.data}
-					<div class="grid grid-cols-3 gap-3">
-						<div>
-							<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
-							<p class="mt-1 text-base font-semibold text-success tabular-nums">
-								+{formatMoney(summary.income_base, baseCurrency)}
-							</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
-							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-								−{formatMoney(summary.expense_base, baseCurrency)}
-							</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
-							<p
-								class="mt-1 text-base font-semibold tabular-nums {summary.net_base >= 0
-									? 'text-text'
-									: 'text-danger'}"
-							>
-								{formatMoney(summary.net_base, baseCurrency)}
-							</p>
-						</div>
+				<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
+					<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+						<h2 class="text-sm font-semibold text-text">{t('contacts.finance.title')}</h2>
+						<Button
+							type="button"
+							size="sm"
+							variant="secondary"
+							disabled={autoLinking}
+							onclick={autoLinkTransactions}
+						>
+							{autoLinking ? t('contacts.finance.autoLinking') : t('contacts.finance.autoLink')}
+						</Button>
 					</div>
-					{#if summary.transaction_count === 0}
+
+					{#if autoLinkMessage}
+						<p class="mb-3 text-sm text-success">{autoLinkMessage}</p>
+					{/if}
+					{#if autoLinkError}
+						<p class="mb-3 text-sm text-danger">{autoLinkError}</p>
+					{/if}
+
+					{#if !USE_MSW && financeSummaryQuery.isPending}
+						<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
+					{:else if !USE_MSW && financeSummaryQuery.data}
+						{@const summary = financeSummaryQuery.data}
+						<div class="grid grid-cols-3 gap-3">
+							<div>
+								<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+								<p class="mt-1 text-base font-semibold text-success tabular-nums">
+									+{formatMoney(summary.income_base, baseCurrency)}
+								</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+								<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+									−{formatMoney(summary.expense_base, baseCurrency)}
+								</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+								<p
+									class="mt-1 text-base font-semibold tabular-nums {summary.net_base >= 0
+										? 'text-text'
+										: 'text-danger'}"
+								>
+									{formatMoney(summary.net_base, baseCurrency)}
+								</p>
+							</div>
+						</div>
+						{#if summary.transaction_count === 0}
+							<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
+						{:else}
+							<div class="mt-3 grid grid-cols-2 gap-3">
+								<div>
+									<p class="text-xs text-text-muted">
+										{t('contacts.finance.collected', { currency: baseCurrency })}
+									</p>
+									<p class="mt-1 text-sm font-semibold text-text tabular-nums">
+										{formatMoney(summary.paid_base, baseCurrency)}
+									</p>
+								</div>
+								<div>
+									<p class="text-xs text-text-muted">
+										{t('contacts.finance.outstanding', { currency: baseCurrency })}
+									</p>
+									<p class="mt-1 text-sm font-semibold text-warning tabular-nums">
+										{formatMoney(summary.outstanding_base, baseCurrency)}
+									</p>
+								</div>
+							</div>
+						{/if}
+					{:else if txQuery.isPending}
+						<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
+					{:else if finance.currencies.length === 0}
+						<div class="grid grid-cols-3 gap-3">
+							<div>
+								<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+								<p class="mt-1 text-base font-semibold text-success tabular-nums">
+									+{formatMoney(0, baseCurrency)}
+								</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+								<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+									−{formatMoney(0, baseCurrency)}
+								</p>
+							</div>
+							<div>
+								<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+								<p class="mt-1 text-base font-semibold text-text tabular-nums">
+									{formatMoney(0, baseCurrency)}
+								</p>
+							</div>
+						</div>
 						<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
 					{:else}
-						<div class="mt-3 grid grid-cols-2 gap-3">
-							<div>
-								<p class="text-xs text-text-muted">
-									{t('contacts.finance.collected', { currency: baseCurrency })}
-								</p>
-								<p class="mt-1 text-sm font-semibold text-text tabular-nums">
-									{formatMoney(summary.paid_base, baseCurrency)}
-								</p>
-							</div>
-							<div>
-								<p class="text-xs text-text-muted">
-									{t('contacts.finance.outstanding', { currency: baseCurrency })}
-								</p>
-								<p class="mt-1 text-sm font-semibold text-warning tabular-nums">
-									{formatMoney(summary.outstanding_base, baseCurrency)}
-								</p>
-							</div>
-						</div>
-					{/if}
-				{:else if txQuery.isPending}
-					<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
-				{:else if finance.currencies.length === 0}
-					<div class="grid grid-cols-3 gap-3">
-						<div>
-							<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
-							<p class="mt-1 text-base font-semibold text-success tabular-nums">
-								+{formatMoney(0, baseCurrency)}
-							</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
-							<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-								−{formatMoney(0, baseCurrency)}
-							</p>
-						</div>
-						<div>
-							<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
-							<p class="mt-1 text-base font-semibold text-text tabular-nums">
-								{formatMoney(0, baseCurrency)}
-							</p>
-						</div>
-					</div>
-					<p class="mt-3 text-sm text-text-muted">{t('contacts.finance.empty')}</p>
-				{:else}
-					{#each finance.currencies as [currency, totals] (currency)}
-						{@const net = totals.income - totals.expense}
-						<div class="mb-3 last:mb-0">
-							<div class="grid grid-cols-3 gap-3">
-								<div>
-									<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
-									<p class="mt-1 text-base font-semibold text-success tabular-nums">
-										+{formatMoney(totals.income, currency)}
-									</p>
-								</div>
-								<div>
-									<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
-									<p class="mt-1 text-base font-semibold text-danger tabular-nums">
-										−{formatMoney(totals.expense, currency)}
-									</p>
-								</div>
-								<div>
-									<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
-									<p
-										class="mt-1 text-base font-semibold tabular-nums {net >= 0
-											? 'text-text'
-											: 'text-danger'}"
-									>
-										{formatMoney(net, currency)}
-									</p>
+						{#each finance.currencies as [currency, totals] (currency)}
+							{@const net = totals.income - totals.expense}
+							<div class="mb-3 last:mb-0">
+								<div class="grid grid-cols-3 gap-3">
+									<div>
+										<p class="text-xs text-text-muted">{t('contacts.finance.incomeLabel')}</p>
+										<p class="mt-1 text-base font-semibold text-success tabular-nums">
+											+{formatMoney(totals.income, currency)}
+										</p>
+									</div>
+									<div>
+										<p class="text-xs text-text-muted">{t('contacts.finance.expenseLabel')}</p>
+										<p class="mt-1 text-base font-semibold text-danger tabular-nums">
+											−{formatMoney(totals.expense, currency)}
+										</p>
+									</div>
+									<div>
+										<p class="text-xs text-text-muted">{t('contacts.finance.netLabel')}</p>
+										<p
+											class="mt-1 text-base font-semibold tabular-nums {net >= 0
+												? 'text-text'
+												: 'text-danger'}"
+										>
+											{formatMoney(net, currency)}
+										</p>
+									</div>
 								</div>
 							</div>
-						</div>
-					{/each}
+						{/each}
 
-					{#if USE_MSW && finance.categories.length > 0}
-						<div class="mt-4 border-t border-border pt-4">
-							<h3 class="mb-3 text-xs font-semibold tracking-wide text-text-muted uppercase">
-								{t('contacts.detail.categoryBreakdown')}
-							</h3>
-							<ul class="space-y-2">
-								{#each finance.categories as row (row.name)}
-									<li>
-										<div class="flex items-center justify-between gap-2 text-xs">
-											<span class="truncate text-text">{row.name}</span>
-											<span class="shrink-0 text-text-muted tabular-nums">
-												{formatMoney(row.amount)}
-											</span>
-										</div>
-										<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-											<div class="h-full rounded-full bg-brand" style="width: {row.pct}%"></div>
-										</div>
+						{#if USE_MSW && finance.categories.length > 0}
+							<div class="mt-4 border-t border-border pt-4">
+								<h3 class="mb-3 text-xs font-semibold tracking-wide text-text-muted uppercase">
+									{t('contacts.detail.categoryBreakdown')}
+								</h3>
+								<ul class="space-y-2">
+									{#each finance.categories as row (row.name)}
+										<li>
+											<div class="flex items-center justify-between gap-2 text-xs">
+												<span class="truncate text-text">{row.name}</span>
+												<span class="shrink-0 text-text-muted tabular-nums">
+													{formatMoney(row.amount)}
+												</span>
+											</div>
+											<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+												<div class="h-full rounded-full bg-brand" style="width: {row.pct}%"></div>
+											</div>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+					{/if}
+				</section>
+			</div>
+		{:else}
+			<div class="tl-measure">
+				<dl
+					class="mt-6 mb-4 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
+				>
+					<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+						<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.phone')}</dt>
+						<dd class="text-sm break-all text-text tabular-nums">{contact.phone ?? '—'}</dd>
+					</div>
+					<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+						<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.email')}</dt>
+						<dd class="text-sm break-all text-text">{contact.email ?? '—'}</dd>
+					</div>
+					<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+						<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.source')}</dt>
+						<dd class="text-sm break-words text-text">{contact.source ?? '—'}</dd>
+					</div>
+					<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+						<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.medium')}</dt>
+						<dd class="text-sm break-words text-text">{contact.medium ?? '—'}</dd>
+					</div>
+					<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+						<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.campaign')}</dt>
+						<dd class="text-sm break-words text-text">{contact.campaign ?? '—'}</dd>
+					</div>
+					<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
+						<dt class="text-xs font-medium text-text-muted">{t('common.createdAt')}</dt>
+						<dd class="text-sm text-text">{formatDateTime(contact.created_at)}</dd>
+					</div>
+					<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
+						<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.notes')}</dt>
+						<dd class="text-sm break-words whitespace-pre-wrap text-text">
+							{contact.notes ?? '—'}
+						</dd>
+					</div>
+				</dl>
+				{#if relatedAppointments.length > 0}
+					<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
+						<h2 class="mb-3 text-sm font-semibold text-text">
+							{t('contacts.detail.opsRolesTitle')}
+						</h2>
+						{#if opsApptQuery.isPending}
+							<p class="text-sm text-text-muted">{t('common.loading')}</p>
+						{:else}
+							<ul class="divide-y divide-border">
+								{#each relatedAppointments as a (a.id)}
+									<li class="py-2.5">
+										<p class="text-sm font-medium">{a.contact_display_name}</p>
+										<p class="text-xs text-text-faint">
+											{formatDate(a.starts_at)} · {formatTime(a.starts_at)} · {opsRoleLabel(a)}
+										</p>
 									</li>
 								{/each}
 							</ul>
-						</div>
-					{/if}
+						{/if}
+					</section>
 				{/if}
-			</section>
-		{:else}
-			<dl
-				class="mb-4 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
-			>
-				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.phone')}</dt>
-					<dd class="text-sm break-all text-text tabular-nums">{contact.phone ?? '—'}</dd>
-				</div>
-				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.email')}</dt>
-					<dd class="text-sm break-all text-text">{contact.email ?? '—'}</dd>
-				</div>
-				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.source')}</dt>
-					<dd class="text-sm break-words text-text">{contact.source ?? '—'}</dd>
-				</div>
-				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.medium')}</dt>
-					<dd class="text-sm break-words text-text">{contact.medium ?? '—'}</dd>
-				</div>
-				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.campaign')}</dt>
-					<dd class="text-sm break-words text-text">{contact.campaign ?? '—'}</dd>
-				</div>
-				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-center">
-					<dt class="text-xs font-medium text-text-muted">{t('common.createdAt')}</dt>
-					<dd class="text-sm text-text">{formatDateTime(contact.created_at)}</dd>
-				</div>
-				<div class="grid gap-1 px-4 py-3 sm:grid-cols-[140px_1fr] sm:items-start">
-					<dt class="text-xs font-medium text-text-muted">{t('contacts.detail.notes')}</dt>
-					<dd class="text-sm break-words whitespace-pre-wrap text-text">{contact.notes ?? '—'}</dd>
-				</div>
-			</dl>
-			{#if relatedAppointments.length > 0}
-				<section class="mb-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
-					<h2 class="mb-3 text-sm font-semibold text-text">{t('contacts.detail.opsRolesTitle')}</h2>
-					{#if opsApptQuery.isPending}
-						<p class="text-sm text-text-muted">{t('common.loading')}</p>
-					{:else}
-						<ul class="divide-y divide-border">
-							{#each relatedAppointments as a (a.id)}
-								<li class="py-2.5">
-									<p class="text-sm font-medium">{a.contact_display_name}</p>
-									<p class="text-xs text-text-faint">
-										{formatDate(a.starts_at)} · {formatTime(a.starts_at)} · {opsRoleLabel(a)}
-									</p>
-								</li>
-							{/each}
-						</ul>
-					{/if}
-				</section>
-			{/if}
+			</div>
 		{/if}
 
 		<ContactFormDialog

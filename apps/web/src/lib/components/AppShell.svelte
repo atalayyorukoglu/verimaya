@@ -71,6 +71,8 @@
 	let installDismissed = $state(false);
 
 	const pathname = $derived(page.url.pathname);
+	/** Contact detail is a full-bleed chat layout — shell padding would inset the sticky chrome. */
+	const flushMain = $derived(/^\/contacts\/[^/]+\/?$/.test(pathname));
 	const showInstallPrompt = $derived(!USE_MSW && installPromptEvent != null && !installDismissed);
 
 	const qs = useQueryScope();
@@ -354,7 +356,7 @@
 />
 
 <div
-	class="flex min-h-dvh w-full flex-col bg-bg text-text md:h-dvh md:max-h-dvh md:min-h-0 md:flex-row md:overflow-hidden"
+	class="flex h-dvh max-h-dvh min-h-0 w-full flex-col overflow-hidden bg-bg text-text md:flex-row"
 >
 	{#if showInstallPrompt}
 		<div
@@ -623,7 +625,7 @@
 		</aside>
 	{/if}
 
-	<div class="flex min-w-0 flex-1 flex-col md:h-full md:min-h-0 md:overflow-hidden">
+	<div class="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 		<header
 			class="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-bg/95 px-3 backdrop-blur sm:px-4 md:static"
 		>
@@ -773,7 +775,12 @@
 		{/if}
 
 		<main
-			class="min-w-0 flex-1 overflow-x-hidden p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-6 md:min-h-0 md:overflow-y-auto md:pb-6"
+			class={cn(
+				'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto',
+				flushMain
+					? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0'
+					: 'p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-6 md:pb-6'
+			)}
 		>
 			{@render children()}
 		</main>
