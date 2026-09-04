@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# graphify — türetilmiş bilgi grafı çıktısı (koddan yeniden üretiliyor)
+/graphify-out/

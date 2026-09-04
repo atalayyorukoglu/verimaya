@@ -267,10 +267,41 @@
 		return bindSidebarScroll(el);
 	});
 
+	/**
+	 * Mobil menüde "aşağı devamı var" ipucu. Liste kaydırılabilir mi ve sonuna gelinmiş
+	 * mi — ikisi de ölçülür; içerik değişince (ResizeObserver) yeniden hesaplanır.
+	 */
+	let mobileScrollHint = $state(false);
+
+	function updateMobileScrollHint() {
+		const el = mobileNavEl;
+		if (!el) {
+			mobileScrollHint = false;
+			return;
+		}
+		mobileScrollHint = el.scrollHeight - el.clientHeight - el.scrollTop > 8;
+	}
+
+	function scrollMobileNavDown() {
+		const el = mobileNavEl;
+		if (!el) return;
+		el.scrollBy({ top: Math.max(120, el.clientHeight * 0.8), behavior: 'smooth' });
+	}
+
 	$effect(() => {
 		const el = mobileNavEl;
 		if (!el) return;
-		return bindSidebarScroll(el);
+		const unbindScrollbar = bindSidebarScroll(el);
+		updateMobileScrollHint();
+		const onScroll = () => updateMobileScrollHint();
+		el.addEventListener('scroll', onScroll, { passive: true });
+		const observer = new ResizeObserver(() => updateMobileScrollHint());
+		observer.observe(el);
+		return () => {
+			el.removeEventListener('scroll', onScroll);
+			observer.disconnect();
+			unbindScrollbar();
+		};
 	});
 
 	/** TickPort: lock document scroll on desktop so only main panes scroll */
@@ -565,12 +596,9 @@
 		<aside class="hidden h-full w-[220px] shrink-0 flex-col border-r border-border bg-bg md:flex">
 			{@render sidebarAccountHeader({ showCollapse: true })}
 
-			<nav
-				bind:this={desktopNavEl}
-				class="flex min-h-0 flex-1 flex-col px-2 py-3"
-				aria-label={t('shell.aria.mainMenu')}
-			>
-				<div class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
+			<nav class="flex min-h-0 flex-1 flex-col px-2 py-3" aria-label={t('shell.aria.mainMenu')}>
+				<!-- Kaydırma dinleyicisi gerçekten kaydıran öğede olmalı; `nav` kaydırmıyor. -->
+				<div bind:this={desktopNavEl} class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
 					{#each visibleGroups as group, gi (group.labelKey ?? group.items[0]?.href ?? gi)}
 						<div class={gi === 0 ? '' : 'mt-4'}>
 							{#if gi > 0}
@@ -631,12 +659,13 @@
 			class="fixed inset-y-0 left-0 z-50 flex w-[60vw] max-w-sm flex-col border-r border-border bg-bg md:hidden"
 		>
 			{@render sidebarAccountHeader({ showClose: true })}
-			<nav
-				bind:this={mobileNavEl}
-				class="flex flex-1 flex-col px-3 py-4"
-				aria-label={t('shell.aria.allMenu')}
-			>
-				<div class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
+			<!--
+				`min-h-0` şart: flex öğesinin varsayılan `min-height: auto` değeri, içindeki
+				kaydırıcının yüksekliğini sınırlamasını engelliyordu. Liste drawer'ın dışına
+				taşıyor, alttaki maddeler (Maya Ai ve sonrası) erişilemez kalıyordu.
+			-->
+			<nav class="flex min-h-0 flex-1 flex-col px-3 py-4" aria-label={t('shell.aria.allMenu')}>
+				<div bind:this={mobileNavEl} class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
 					{#each visibleGroups as group, gi (group.labelKey ?? group.items[0]?.href ?? gi)}
 						<div class={gi === 0 ? '' : 'mt-5'}>
 							{#if gi > 0}
@@ -678,6 +707,25 @@
 					</div>
 				{/if}
 			</nav>
+			<!--
+				Kaydırma ipucu: liste taşıyorsa ve sonuna gelinmediyse footer'ın hemen üstünde
+				aşağı ok. Üstündeki degrade "devamı var" hissini verir; tıklayınca bir ekran
+				aşağı kaydırır.
+			-->
+			{#if mobileScrollHint}
+				<button
+					type="button"
+					class="relative shrink-0 border-t border-border/50 bg-bg py-1.5 text-text-muted transition-colors hover:text-text"
+					aria-label={t('shell.aria.scrollMenu')}
+					onclick={scrollMobileNavDown}
+				>
+					<span
+						class="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-bg to-transparent"
+						aria-hidden="true"
+					></span>
+					<ChevronDown class="mx-auto size-5 animate-bounce" aria-hidden="true" />
+				</button>
+			{/if}
 			<div
 				class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border bg-bg px-4 pb-[env(safe-area-inset-bottom)] max-md:h-auto max-md:py-3 max-md:pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
 			>
