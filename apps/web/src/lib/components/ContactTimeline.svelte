@@ -804,7 +804,7 @@
 			class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border bg-surface"
 		>
 			<div class="tl-measure flex w-full flex-col justify-center gap-1.5">
-			{#if asIncident}
+				{#if asIncident}
 					<div class="flex flex-wrap items-center gap-1.5">
 						{#if incidentTypes.length === 0}
 							<p class="text-xs text-text-faint">{t('incidents.form.noTypes')}</p>

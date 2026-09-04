@@ -39,10 +39,7 @@
 	import { authClient } from '$lib/auth';
 	import { listUserOrganizations, setActiveOrganization } from '$lib/auth-org';
 	import { USE_MSW } from '$lib/env';
-	import {
-		isDemoChromeVisible,
-		toggleDemoChrome
-	} from '$lib/demo-chrome.svelte';
+	import { isDemoChromeVisible, toggleDemoChrome } from '$lib/demo-chrome.svelte';
 
 	type BeforeInstallPromptEvent = Event & {
 		prompt: () => Promise<void>;
@@ -354,11 +351,11 @@
 					{/if}
 				</span>
 				<span class="flex min-w-0 items-center gap-1">
-					<span
-						class={cn('truncate font-medium text-text', spacious ? 'text-base' : 'text-sm')}
-					>
+					<span class={cn('truncate font-medium text-text', spacious ? 'text-base' : 'text-sm')}>
 						{#if mePending}
-							<span class="inline-block h-3.5 w-16 animate-pulse rounded bg-surface-2" aria-hidden="true"
+							<span
+								class="inline-block h-3.5 w-16 animate-pulse rounded bg-surface-2"
+								aria-hidden="true"
 							></span>
 						{:else}
 							{meFirstName}
@@ -428,12 +425,7 @@
 					role="menu"
 				>
 					<div class={cn('border-b border-border', spacious ? 'px-3.5 py-3' : 'px-3 py-2.5')}>
-						<p
-							class={cn(
-								'truncate font-medium text-text',
-								spacious ? 'text-base' : 'text-sm'
-							)}
-						>
+						<p class={cn('truncate font-medium text-text', spacious ? 'text-base' : 'text-sm')}>
 							{me?.display_name ?? ''}
 						</p>
 						<p class={cn('truncate text-text-faint', spacious ? 'text-sm' : 'text-xs')}>
@@ -595,47 +587,45 @@
 						</li>
 					</ul>
 				{/if}
-			{#each visibleGroups as group, gi (group.labelKey)}
-				<div
-					class={showMayaNav ? (gi === 0 ? 'mt-3' : 'mt-4') : gi === 0 ? '' : 'mt-4'}
-				>
-					<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
-						{t(group.labelKey)}
-					</p>
-					<ul class="space-y-0">
-						{#each group.items as item (item.href)}
-							{@const active = isActive(item.href)}
-							{@const Icon = item.icon}
-							<li>
-								<a
-									href={item.href}
-									class={cn(
-										'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-										active
-											? 'bg-brand-subtle text-brand-text'
-											: 'text-text-muted hover:bg-surface-2 hover:text-text'
-									)}
-									aria-current={active ? 'page' : undefined}
-								>
-									<Icon class="size-4 shrink-0" aria-hidden="true" />
-									<span class="truncate">{t(item.labelKey)}</span>
-								</a>
-							</li>
-							{#if item.href === '/settings'}
-								{@render demoChromeNavItem()}
-							{/if}
-						{/each}
-					</ul>
-				</div>
-			{/each}
-		</nav>
+				{#each visibleGroups as group, gi (group.labelKey)}
+					<div class={showMayaNav ? (gi === 0 ? 'mt-3' : 'mt-4') : gi === 0 ? '' : 'mt-4'}>
+						<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
+							{t(group.labelKey)}
+						</p>
+						<ul class="space-y-0">
+							{#each group.items as item (item.href)}
+								{@const active = isActive(item.href)}
+								{@const Icon = item.icon}
+								<li>
+									<a
+										href={item.href}
+										class={cn(
+											'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+											active
+												? 'bg-brand-subtle text-brand-text'
+												: 'text-text-muted hover:bg-surface-2 hover:text-text'
+										)}
+										aria-current={active ? 'page' : undefined}
+									>
+										<Icon class="size-4 shrink-0" aria-hidden="true" />
+										<span class="truncate">{t(item.labelKey)}</span>
+									</a>
+								</li>
+								{#if item.href === '/settings'}
+									{@render demoChromeNavItem()}
+								{/if}
+							{/each}
+						</ul>
+					</div>
+				{/each}
+			</nav>
 
-		<div
-			class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border bg-bg px-4"
-		>
-			<SidebarVersionFooter />
-		</div>
-	</aside>
+			<div
+				class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border bg-bg px-4"
+			>
+				<SidebarVersionFooter />
+			</div>
+		</aside>
 	{/if}
 
 	{#if mobileOpen}
@@ -677,9 +667,7 @@
 					</ul>
 				{/if}
 				{#each visibleGroups as group, gi (group.labelKey)}
-					<div
-						class={showMayaNav ? (gi === 0 ? 'mt-4' : 'mt-5') : gi === 0 ? '' : 'mt-5'}
-					>
+					<div class={showMayaNav ? (gi === 0 ? 'mt-4' : 'mt-5') : gi === 0 ? '' : 'mt-5'}>
 						<p class="px-3 pb-1.5 text-xs font-semibold tracking-wide text-text-muted">
 							{t(group.labelKey)}
 						</p>
