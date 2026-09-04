@@ -46,7 +46,7 @@
 		await clearSessionCache();
 		const gate = await checkOrganizationGate();
 		if (gate.action === 'proceed') {
-			await goto('/');
+			await goto('/contacts');
 			return;
 		}
 		if (gate.action === 'pick') {
@@ -110,7 +110,7 @@
 		try {
 			await setActiveOrganization(selectedOrgId);
 			await clearSessionCache();
-			await goto('/');
+			await goto('/contacts');
 		} catch (err) {
 			error = err instanceof Error ? err.message : t('login.error.orgSelectFailed');
 		} finally {
@@ -132,7 +132,7 @@
 			const org = await createOrganization(name, slug);
 			await setActiveOrganization(org.id);
 			await clearSessionCache();
-			await goto('/');
+			await goto('/contacts');
 		} catch (err) {
 			error = err instanceof Error ? err.message : t('login.error.orgCreateFailed');
 		} finally {

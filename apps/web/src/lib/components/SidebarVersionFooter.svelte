@@ -12,7 +12,7 @@
 
 <div class="flex w-full flex-col items-center gap-1.5 text-center leading-snug text-text-muted">
 	<span class="text-[12px]">Verimaya · v{version}</span>
-	<div class="flex flex-col gap-0.5 text-[8px]">
+	<div class="flex flex-col gap-0 text-[8px] leading-none">
 		<p>{t('shell.sidebar.copyright', { year })}</p>
 		<p>
 			{t('shell.sidebar.brandPrefix')}

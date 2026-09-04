@@ -366,23 +366,20 @@
 			verilir, üstüne binmesin.
 		-->
 		<!--
-			Ölçüler Figma "iPhone 16 & 17 Pro Max - 1" (3:582) başlığından: üst 15,
-			alt 16, başlık satırı ile sekme çubuğu arası 20, başlık 18/28 semibold,
-			Düzenle/Kapat 14/20 regular ve aralarında 26.
-
-			Başlık altındaki 44'lük boşluk artık burada değil, akışın kendi
-			`--tl-list-top` payında — Figma'da o mesafe listeye ait. Diğer iki sekme
-			eski görünümünü korusun diye kendi `mt-6`'sını taşıyor.
+			Başlık sıkı (kullanıcı, 2026-09-04): üst/alt pay eşit (py-3), isim–sekme
+			arası küçük, sekme çubuğu `data-compact` — mobilde 44px dokunma tabanı
+			başlığı şişiriyordu.
 		-->
-		<div class="sticky top-0 z-20 shrink-0 border-b border-border bg-bg">
-			<div class="tl-measure pt-[15px] pb-4">
-				<div class="flex items-center gap-3 pb-5">
+		<div class="sticky top-0 z-20 shrink-0 border-b border-border bg-surface">
+			<div class="tl-measure py-3">
+				<div class="flex items-center gap-3 pb-2">
 					<h1 class="min-w-0 flex-1 truncate text-lg leading-7 font-semibold text-text">
 						{contact.display_name}
 					</h1>
 					<div class="flex shrink-0 items-center gap-[26px]">
 						<button
 							type="button"
+							data-compact
 							class="text-sm leading-5 font-normal text-text-muted transition-colors hover:text-text"
 							onclick={() => (formOpen = true)}>{t('common.edit')}</button
 						>
@@ -394,13 +391,6 @@
 					</div>
 				</div>
 
-				<!--
-				Segment denetimi (Figma 3:589): çubuk 36 yüksek, iç boşluk yok, sekmeler
-				arası 2, her sekme 10/8 padding + 8 yarıçap. Sabit yükseklik yazılmıyor:
-				`layout.css` mobilde butonlara 44px dokunma tabanı uyguluyor (WCAG 2.5.8)
-				ve sekmeler birincil gezinme, o tabanı deleceğimiz yer burası değil —
-				masaüstünde padding zaten 36'ya oturuyor.
-			-->
 				<div
 					class="flex gap-0.5 rounded-md border border-border bg-surface-2"
 					role="tablist"
@@ -410,8 +400,9 @@
 						<button
 							type="button"
 							role="tab"
+							data-compact
 							aria-selected={activeTab === tab.id}
-							class="flex-1 rounded-md border px-2.5 py-2 text-sm leading-5 font-semibold transition-colors {activeTab ===
+							class="flex-1 rounded-md border px-2 py-1.5 text-xs leading-4 font-semibold transition-colors {activeTab ===
 							tab.id
 								? 'border-border bg-surface text-text shadow-xs'
 								: 'border-transparent text-text-faint hover:text-text'}"
@@ -441,7 +432,7 @@
 				{/if}
 			</div>
 		{:else if activeTab === 'finance'}
-			<div class="tl-measure">
+			<div class="tl-measure pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">
 				<div class="mt-6 flex flex-wrap items-center gap-3 pb-2">
 					<a
 						href={`/appointments?contact_involves=${contact.id}`}
@@ -606,7 +597,7 @@
 				</section>
 			</div>
 		{:else}
-			<div class="tl-measure">
+			<div class="tl-measure pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">
 				<dl
 					class="mt-6 mb-4 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface"
 				>

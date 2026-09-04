@@ -118,7 +118,7 @@
 <button
 	bind:this={triggerEl}
 	type="button"
-	class="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] border border-border bg-surface px-3 text-left text-sm text-text-faint transition-colors hover:border-text-faint hover:text-text-muted md:max-w-xl"
+	class="flex h-9 w-full min-w-0 items-center gap-2 rounded-[6px] border border-border bg-surface px-3 text-left text-sm text-text-faint transition-colors hover:border-text-faint hover:text-text-muted"
 	aria-label={t('command.aria')}
 	onclick={openPalette}
 >

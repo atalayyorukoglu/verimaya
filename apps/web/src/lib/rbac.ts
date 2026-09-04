@@ -2,7 +2,6 @@ import { type UserRole, userRoleLabels } from '@verimaya/shared';
 
 /** Nav href → roles that can see it. */
 const NAV_ACCESS: Record<string, UserRole[]> = {
-	'/': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/contacts': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/patients': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/appointments': ['owner', 'admin', 'manager', 'agent', 'readonly'],
@@ -19,6 +18,7 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/settings': ['owner', 'admin'],
 	'/maya': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/changelog': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
+	'/account': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	/** Real gate is `platform_admin` / MSW-DEV; org role not used. */
 	'/dev': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly']
 };

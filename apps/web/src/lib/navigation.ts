@@ -1,5 +1,4 @@
 import type { Component } from 'svelte';
-import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import Users from '@lucide/svelte/icons/users';
 import Calendar from '@lucide/svelte/icons/calendar';
 import Wallet from '@lucide/svelte/icons/wallet';
@@ -9,6 +8,7 @@ import Library from '@lucide/svelte/icons/library';
 import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Bot from '@lucide/svelte/icons/bot';
+import Sparkles from '@lucide/svelte/icons/sparkles';
 
 import type { MessageKey } from '$lib/i18n/messages';
 
@@ -18,11 +18,12 @@ import type { MessageKey } from '$lib/i18n/messages';
  * Kural: docs/TASARIM.md § Dil ve slug.
  *
  * Sidebar IA:
- *   Panel (grup dışı)
- *   Maya AI (grup dışı — Panel’in hemen altında)
+ *   Maya AI (grup dışı)
  *   Ürünler → Kişiler, Randevular, Finans, Raporlar + açık ürün modülleri (ör. Kampanya Asistanı)
- *   Sistem → Araçlar, Kaynaklar, Ayarlar, Platform (`/dev` — gated by
+ *   Sistem → Araçlar, Kaynaklar, Yenilikler, Ayarlar, Platform (`/dev` — gated by
  *   `isDevPanelEnabled` in `$lib/dev-panel`, filtered in AppShell)
+ *
+ * Login / erişim reddi iniş: `/contacts` (Panel ana sayfası kaldırıldı, 2026-09-04).
  */
 export type NavItem = {
 	labelKey: MessageKey;
@@ -35,14 +36,7 @@ export type NavGroup = {
 	items: NavItem[];
 };
 
-/** Standalone entry — rendered above groups in the sidebar. */
-export const panelNavItem: NavItem = {
-	labelKey: 'nav.dashboard',
-	href: '/',
-	icon: LayoutDashboard
-};
-
-/** Standalone entry — directly under Panel, outside groups. */
+/** Standalone entry — above groups in the sidebar. */
 export const mayaNavItem: NavItem = {
 	labelKey: 'nav.maya',
 	href: '/maya',
@@ -60,6 +54,7 @@ export const coreProductNavItems: NavItem[] = [
 const systemNavItems: NavItem[] = [
 	{ labelKey: 'nav.tools', href: '/toolkit', icon: Wrench },
 	{ labelKey: 'nav.resources', href: '/knowledge', icon: Library },
+	{ labelKey: 'nav.changelog', href: '/changelog', icon: Sparkles },
 	{ labelKey: 'nav.settings', href: '/settings', icon: Settings },
 	{ labelKey: 'nav.developer', href: '/dev', icon: UserCog }
 ];
@@ -86,10 +81,16 @@ export function navGroupItems(group: NavGroup): NavItem[] {
 	return group.items;
 }
 
-/** Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar */
+/**
+ * Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar.
+ * Sıra: Finans, Kişiler, Randevular, Raporlar (+ Menü butonu AppShell’de).
+ */
 export const mobileTabItems: NavItem[] = [
-	panelNavItem,
+	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
 	{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
 	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
-	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet }
+	{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
 ];
+
+/** Oturum açılışı ve yetkisiz rota yönlendirmesi. */
+export const PANEL_HOME_HREF = '/contacts' as const;

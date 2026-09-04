@@ -81,6 +81,9 @@
 	*/
 	--tl-measure: 56rem;
 
+	/* Sidebar footer + kişi kartı yazma alanı — aynı yükseklik (kullanıcı, 2026-09-04). */
+	--panel-chrome-height: 4rem;
+
 	/* Radius — TASARIM: card 8px, control 6px */
 	--radius: 0.5rem;
 	--radius-control: 0.375rem;

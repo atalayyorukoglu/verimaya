@@ -53,7 +53,7 @@ describe('GAP-28 dev panel gate', () => {
 
 	describe('resolveDevPanelRoute (direct /dev visit)', () => {
 		it('redirects to panel home when the flag is off', () => {
-			expect(resolveDevPanelRoute(false)).toEqual({ action: 'redirect', to: '/' });
+			expect(resolveDevPanelRoute(false)).toEqual({ action: 'redirect', to: '/contacts' });
 		});
 
 		it('allows the page when the flag is on', () => {

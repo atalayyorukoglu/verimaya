@@ -795,9 +795,16 @@
 			çıkıyordu; yapışkan alan `main` kutusunun dibine göre hizalanınca olay
 			satırı açıldığında giriş alt menünün altına iniyordu.
 		-->
-		<div class="shrink-0 border-t border-border bg-surface">
-			<div class="tl-measure flex flex-col gap-1.5 py-4">
-				{#if asIncident}
+		<!--
+			Mobil alt menü payı yüzeyin DIŞINDA: `bg-surface` padding'inde tutmak
+			menü üstünde boş şerit bırakıyordu (kullanıcı, 2026-09-04). Ayırıcı
+			şeffaf spacer menü yüksekliği kadar (`h-14` + safe-area).
+		-->
+		<div
+			class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border bg-surface"
+		>
+			<div class="tl-measure flex w-full flex-col justify-center gap-1.5">
+			{#if asIncident}
 					<div class="flex flex-wrap items-center gap-1.5">
 						{#if incidentTypes.length === 0}
 							<p class="text-xs text-text-faint">{t('incidents.form.noTypes')}</p>
@@ -850,13 +857,12 @@
 				{/if}
 
 				<!--
-				Tek "+" menüsü + geniş giriş + gönder. Ayrı ⚠ düğmesi kaldırıldı.
-				Ölçüler Figma 3:1032'den: aralık 12, ikonlar 24, giriş 40 yüksek /
-				12 yatay iç boşluk / 8 yarıçap. Figma'da soldaki ataç ve sağdaki
-				uçak çıplak ikon; bizde ikisi de düğme (biri menü açıyor, diğeri
-				gönderiyor) — kabuk kalıyor, ölçü Figma'dan geliyor.
+				Cursor tarzı minimal composer (kullanıcı, 2026-09-04): tek çerçeve,
+				solda çıplak +, sağda muted daire gönder — ayrı kenarlıklı kabuk yok.
 			-->
-				<div class="flex items-center gap-3">
+				<div
+					class="flex items-center gap-1 rounded-lg border border-border bg-surface px-1.5 py-1 shadow-xs focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/30"
+				>
 					<input
 						bind:this={fileInput}
 						type="file"
@@ -868,14 +874,15 @@
 					<div class="relative shrink-0">
 						<button
 							type="button"
-							class="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border text-text-muted transition-colors hover:text-text disabled:opacity-40"
+							data-compact
+							class="inline-flex size-8 items-center justify-center rounded-md text-text-muted transition-colors hover:text-text disabled:opacity-40"
 							aria-haspopup="menu"
 							aria-expanded={addMenuOpen}
 							aria-label={t('contacts.timeline.add')}
 							disabled={uploading || sending}
 							onclick={() => (addMenuOpen = !addMenuOpen)}
 						>
-							<Plus class="size-6" />
+							<Plus class="size-5" />
 						</button>
 						{#if addMenuOpen}
 							<button
@@ -962,7 +969,7 @@
 					</div>
 					<input
 						bind:this={composerInput}
-						class="h-10 min-w-0 flex-1 rounded-md border border-border bg-surface px-3 text-base leading-6 text-text shadow-xs outline-none placeholder:text-text-faint focus:border-brand focus:ring-2 focus:ring-brand/30"
+						class="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-base leading-6 text-text outline-none placeholder:text-text-faint"
 						placeholder={asIncident
 							? t('contacts.timeline.incidentPlaceholder')
 							: t('contacts.timeline.placeholder')}
@@ -972,16 +979,23 @@
 					/>
 					<button
 						type="button"
-						class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-primary-foreground disabled:opacity-40"
+						data-compact
+						class="inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-30 {draft.trim()
+							? 'bg-text text-bg'
+							: 'bg-surface-2 text-text-faint'}"
 						aria-label={t('contacts.notes.sendAria')}
 						disabled={sending || uploading || !draft.trim()}
 						onclick={() => void send()}
 					>
-						<ArrowUp class="size-6" />
+						<ArrowUp class="size-4" strokeWidth={2.5} />
 					</button>
 				</div>
 			</div>
 		</div>
+		<div
+			class="h-[calc(3.5rem+env(safe-area-inset-bottom))] shrink-0 md:hidden"
+			aria-hidden="true"
+		></div>
 	{/if}
 
 	{#if uploading}

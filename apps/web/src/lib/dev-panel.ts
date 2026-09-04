@@ -30,7 +30,7 @@ export function filterDevPanelNavItems<T extends { href: string }>(
 
 export function resolveDevPanelRoute(
 	enabled: boolean
-): { action: 'allow' } | { action: 'redirect'; to: '/' } {
+): { action: 'allow' } | { action: 'redirect'; to: '/contacts' } {
 	if (enabled) return { action: 'allow' };
-	return { action: 'redirect', to: '/' };
+	return { action: 'redirect', to: '/contacts' };
 }

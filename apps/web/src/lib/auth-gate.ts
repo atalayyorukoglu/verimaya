@@ -2,6 +2,7 @@ import { goto } from '$app/navigation';
 import { authClient } from '$lib/auth';
 import { USE_MSW } from '$lib/env';
 import { isMarketingHost } from '$lib/host';
+import { PANEL_HOME_HREF } from '$lib/navigation';
 
 const STANDALONE_PUBLIC_PREFIXES = ['/login', '/reset-password'] as const;
 
@@ -32,7 +33,7 @@ export async function runAuthGate(pathname: string, isPublicRoute = false): Prom
 	const session = data?.session ?? null;
 
 	if (isLogin) {
-		if (session) await goto('/', { replaceState: true });
+		if (session) await goto(PANEL_HOME_HREF, { replaceState: true });
 		return;
 	}
 

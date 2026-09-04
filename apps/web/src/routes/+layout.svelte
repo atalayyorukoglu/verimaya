@@ -12,6 +12,7 @@
 	import { isMarketingHost } from '$lib/host';
 	import { USE_MSW } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
+	import { initDemoChrome, isDemoChromeVisible } from '$lib/demo-chrome.svelte';
 
 	let { children } = $props();
 
@@ -37,6 +38,8 @@
 			page.url.pathname.startsWith('/tools/') ||
 			page.url.pathname.startsWith('/resources/')
 	);
+
+	if (browser) initDemoChrome();
 
 	/** Unregister leftover PWA/MSW workers and wipe Cache Storage.
 	 *  Returns true when a controlling/registered SW existed (reload required). */
@@ -109,7 +112,7 @@
 				{@render children()}
 			</AppShell>
 		{/if}
-		{#if import.meta.env.DEV && USE_MSW}
+		{#if import.meta.env.DEV && USE_MSW && isDemoChromeVisible()}
 			<DevToolbar />
 		{/if}
 	</QueryClientProvider>
