@@ -32,6 +32,7 @@ const tr = {
 	// Panel navigasyonu — grup başlıkları
 	'nav.group.products': 'Ürünler',
 	'nav.group.tools': 'Araçlar',
+	'nav.group.resources': 'Kaynaklar',
 	'nav.group.system': 'Sistem',
 
 	// Panel navigasyonu — bağlantılar
@@ -50,6 +51,10 @@ const tr = {
 	'nav.resources.documentTitle': 'Kaynaklar · Verimaya',
 	'nav.resources.title': 'Kaynaklar',
 	'nav.resources.description': 'Operasyon ve satış rehberleri.',
+	'nav.guides': 'Rehberler',
+	'nav.guides.documentTitle': 'Rehberler · Verimaya',
+	'nav.guides.title': 'Rehberler',
+	'nav.guides.description': 'Operasyon ve satış rehberleri.',
 	'nav.aiPrep': 'Ai Hazırlık',
 	'nav.aiPrep.documentTitle': 'Ai Hazırlık · Verimaya',
 	'nav.aiPrep.title': 'Ai Hazırlık',
@@ -1727,7 +1732,7 @@ const tr = {
 		'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması — panel /scorecard.',
 
 	// knowledge (Kaynaklar rehberleri)
-	'knowledge.back': 'Kaynaklara dön',
+	'knowledge.back': 'Rehberlere dön',
 	'knowledge.comingSoon': 'İçerik yakında.',
 	'knowledge.notFound.title': 'Rehber bulunamadı',
 	'knowledge.notFound.description': 'Bu rehber mevcut değil veya taşınmış olabilir.',
@@ -2981,6 +2986,7 @@ const en: Record<MessageKey, string> = {
 
 	'nav.group.products': 'Products',
 	'nav.group.tools': 'Tools',
+	'nav.group.resources': 'Resources',
 	'nav.group.system': 'System',
 
 	'nav.dashboard': 'Dashboard',
@@ -2999,6 +3005,10 @@ const en: Record<MessageKey, string> = {
 	'nav.resources.documentTitle': 'Resources · Verimaya',
 	'nav.resources.title': 'Resources',
 	'nav.resources.description': 'Operations and sales guides.',
+	'nav.guides': 'Guides',
+	'nav.guides.documentTitle': 'Guides · Verimaya',
+	'nav.guides.title': 'Guides',
+	'nav.guides.description': 'Operations and sales guides.',
 	'nav.aiPrep': 'AI Prep',
 	'nav.aiPrep.documentTitle': 'AI Prep · Verimaya',
 	'nav.aiPrep.title': 'AI Prep',
@@ -4636,7 +4646,7 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.in-product-scorecard.description':
 		'Tenant measurement profile, 43 criteria, auto-fill and comparison — panel /scorecard.',
 
-	'knowledge.back': 'Back to resources',
+	'knowledge.back': 'Back to guides',
 	'knowledge.comingSoon': 'Content coming soon.',
 	'knowledge.notFound.title': 'Guide not found',
 	'knowledge.notFound.description': 'This guide does not exist or may have moved.',

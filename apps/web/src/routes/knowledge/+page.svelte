@@ -5,11 +5,11 @@
 </script>
 
 <svelte:head>
-	<title>{t('nav.resources.documentTitle')}</title>
+	<title>{t('nav.guides.documentTitle')}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl min-w-0">
-	<PageHeader title={t('nav.resources.title')} description={t('nav.resources.description')} />
+	<PageHeader title={t('nav.guides.title')} description={t('nav.guides.description')} />
 
 	<ul class="grid gap-3 sm:grid-cols-2">
 		{#each knowledgeGuides as guide (guide.slug)}

@@ -19,7 +19,7 @@ import type { MessageKey } from '$lib/i18n/messages';
  * Sidebar IA:
  *   Ürünler → Kişiler, Randevular, Finans, Raporlar
  *   Araçlar → /toolkit’ten açılan modüller (Temassız, Kohort, …)
- *            (Maya Ai + Kaynaklar araçlar bölümünden sonra, başlıksız)
+ *   Kaynaklar → Maya Ai + Rehberler (/knowledge)
  *   Sistem → Araçlar kataloğu, Ayarlar, Platform
  *   Yenilikler hesap menüsünde (Destek üstü).
  *
@@ -32,12 +32,12 @@ export type NavItem = {
 };
 
 export type NavGroup = {
-	/** Omit for untitled blocks (Maya / Kaynaklar after Araçlar). */
+	/** Omit only if a group must stay untitled (prefer labeled groups). */
 	labelKey?: MessageKey;
 	items: NavItem[];
 };
 
-/** @deprecated Standalone Maya kaldırıldı; secondary product block’ta. */
+/** @deprecated Standalone Maya kaldırıldı; Kaynaklar grubunda. */
 export const mayaNavItem: NavItem = {
 	labelKey: 'nav.maya',
 	href: '/maya',
@@ -52,10 +52,10 @@ export const coreProductNavItems: NavItem[] = [
 	{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
 ];
 
-/** After Araçlar divider: Maya + Kaynaklar (no group heading). */
+/** Kaynaklar grubu: Maya + Rehberler. */
 export const secondaryProductNavItems: NavItem[] = [
 	mayaNavItem,
-	{ labelKey: 'nav.resources', href: '/knowledge', icon: Library }
+	{ labelKey: 'nav.guides', href: '/knowledge', icon: Library }
 ];
 
 const systemNavItems: NavItem[] = [
@@ -82,6 +82,7 @@ export function buildNavGroups(enabledToolModules: NavItem[]): NavGroup[] {
 		});
 	}
 	groups.push({
+		labelKey: 'nav.group.resources',
 		items: [...secondaryProductNavItems]
 	});
 	groups.push({
