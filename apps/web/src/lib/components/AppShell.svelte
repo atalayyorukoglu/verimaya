@@ -576,20 +576,20 @@
 				aria-label={t('shell.aria.mainMenu')}
 			>
 				<div class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
-					{#each visibleGroups as group, gi (group.labelKey)}
+					{#each visibleGroups as group, gi (group.labelKey ?? group.items[0]?.href ?? gi)}
 						<div class={gi === 0 ? '' : 'mt-4'}>
-							<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
-								{t(group.labelKey)}
-							</p>
+							{#if gi > 0}
+								<div class="mx-3 mb-3 border-t border-border" aria-hidden="true"></div>
+							{/if}
+							{#if group.labelKey}
+								<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
+									{t(group.labelKey)}
+								</p>
+							{/if}
 							<ul class="space-y-0">
 								{#each group.items as item (item.href)}
 									{@const active = isActive(item.href)}
 									{@const Icon = item.icon}
-									{#if item.href === '/maya'}
-										<li aria-hidden="true" class="my-2">
-											<div class="mx-3 border-t border-border"></div>
-										</li>
-									{/if}
 									<li>
 										<a
 											href={item.href}
@@ -642,20 +642,20 @@
 				aria-label={t('shell.aria.allMenu')}
 			>
 				<div class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
-					{#each visibleGroups as group, gi (group.labelKey)}
+					{#each visibleGroups as group, gi (group.labelKey ?? group.items[0]?.href ?? gi)}
 						<div class={gi === 0 ? '' : 'mt-5'}>
-							<p class="px-3 pb-1.5 text-xs font-semibold tracking-wide text-text-muted">
-								{t(group.labelKey)}
-							</p>
+							{#if gi > 0}
+								<div class="mx-3 mb-3 border-t border-border" aria-hidden="true"></div>
+							{/if}
+							{#if group.labelKey}
+								<p class="px-3 pb-1.5 text-xs font-semibold tracking-wide text-text-muted">
+									{t(group.labelKey)}
+								</p>
+							{/if}
 							<ul class="space-y-1">
 								{#each group.items as item (item.href)}
 									{@const active = isActive(item.href)}
 									{@const Icon = item.icon}
-									{#if item.href === '/maya'}
-										<li aria-hidden="true" class="my-2">
-											<div class="mx-3 border-t border-border"></div>
-										</li>
-									{/if}
 									<li>
 										<a
 											href={item.href}

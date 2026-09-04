@@ -1,5 +1,5 @@
 /**
- * Toggleable product modules for the Ürünler sidebar group.
+ * Toggleable modules for the Araçlar sidebar group.
  * Server truth: `GET /v1/me` → `preferences.enabled_product_modules`.
  * localStorage remains an optimistic cache so the sidebar does not flash empty on mount.
  */
@@ -13,6 +13,11 @@ import {
 } from '@verimaya/shared';
 import type { QueryClient } from '@tanstack/svelte-query';
 import Megaphone from '@lucide/svelte/icons/megaphone';
+import UserRoundX from '@lucide/svelte/icons/user-round-x';
+import ChartColumnIncreasing from '@lucide/svelte/icons/chart-column-increasing';
+import Share2 from '@lucide/svelte/icons/share-2';
+import ListChecks from '@lucide/svelte/icons/list-checks';
+import Target from '@lucide/svelte/icons/target';
 
 import { apiPaths, apiSend } from '$lib/api';
 import type { MessageKey } from '$lib/i18n/messages';
@@ -35,10 +40,40 @@ const CATALOG_BY_ID: Record<ProductModuleId, Omit<ProductModule, 'id'>> = {
 		href: '/marketing',
 		icon: Megaphone,
 		department: 'Pazarlama'
+	},
+	'untouched-contacts': {
+		labelKey: 'reports.untouched.title',
+		href: '/reports/untouched',
+		icon: UserRoundX,
+		department: 'Raporlama'
+	},
+	cohorts: {
+		labelKey: 'reports.cohorts.title',
+		href: '/reports/cohorts',
+		icon: ChartColumnIncreasing,
+		department: 'Raporlama'
+	},
+	'referral-value': {
+		labelKey: 'reports.referrals.title',
+		href: '/reports/referrals',
+		icon: Share2,
+		department: 'Raporlama'
+	},
+	interventions: {
+		labelKey: 'reports.interventions.title',
+		href: '/reports/interventions',
+		icon: ListChecks,
+		department: 'Raporlama'
+	},
+	'ai-accuracy': {
+		labelKey: 'reports.aiAccuracy.title',
+		href: '/reports/ai-accuracy',
+		icon: Target,
+		department: 'Raporlama'
 	}
 };
 
-/** Single catalog of modules that can appear under Ürünler when enabled. */
+/** Single catalog of modules that can appear under Araçlar when enabled. */
 export const PRODUCT_MODULE_CATALOG: readonly ProductModule[] = PRODUCT_MODULE_IDS.map((id) => ({
 	id,
 	...CATALOG_BY_ID[id]
@@ -129,7 +164,7 @@ export function productModuleForFeatureId(featureId: string): ProductModule | un
 	return PRODUCT_MODULE_CATALOG.find((m) => m.id === featureId);
 }
 
-/** Nav items for enabled product modules — reactive when read inside `$derived`. */
+/** Nav items for enabled tools — reactive when read inside `$derived`. */
 export function getEnabledProductNavItems(): NavItem[] {
 	return PRODUCT_MODULE_CATALOG.filter((m) => enabledIds.includes(m.id)).map((m) => ({
 		labelKey: m.labelKey,

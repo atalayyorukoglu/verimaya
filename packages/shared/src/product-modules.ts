@@ -1,10 +1,17 @@
 import { z } from 'zod';
 
 /**
- * Canonical ids for toggleable “Ürünler” sidebar modules.
+ * Canonical ids for toggleable “Araçlar” sidebar modules.
  * Shared by API validation and the web catalog — keep in sync with UI entries.
  */
-export const PRODUCT_MODULE_IDS = ['campaign-assistant'] as const;
+export const PRODUCT_MODULE_IDS = [
+	'campaign-assistant',
+	'untouched-contacts',
+	'cohorts',
+	'referral-value',
+	'interventions',
+	'ai-accuracy'
+] as const;
 
 export type ProductModuleId = (typeof PRODUCT_MODULE_IDS)[number];
 

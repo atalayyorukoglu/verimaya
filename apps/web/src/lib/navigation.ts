@@ -17,10 +17,10 @@ import type { MessageKey } from '$lib/i18n/messages';
  * Kural: docs/TASARIM.md § Dil ve slug.
  *
  * Sidebar IA:
- *   Ürünler → Kişiler, Randevular, Finans, Raporlar, Maya AI, Kaynaklar
- *            + açık ürün modülleri (ör. Kampanya Asistanı)
- *   Sistem → Araçlar, Ayarlar, Platform (`/dev` — gated by
- *   `isDevPanelEnabled` in `$lib/dev-panel`, filtered in AppShell)
+ *   Ürünler → Kişiler, Randevular, Finans, Raporlar
+ *   Araçlar → /toolkit’ten açılan modüller (Temassız, Kohort, …)
+ *            (Maya Ai + Kaynaklar araçlar bölümünden sonra, başlıksız)
+ *   Sistem → Araçlar kataloğu, Ayarlar, Platform
  *   Yenilikler hesap menüsünde (Destek üstü).
  *
  * Login / erişim reddi iniş: `/contacts` (Panel ana sayfası kaldırıldı, 2026-09-04).
@@ -32,23 +32,28 @@ export type NavItem = {
 };
 
 export type NavGroup = {
-	labelKey: MessageKey;
+	/** Omit for untitled blocks (Maya / Kaynaklar after Araçlar). */
+	labelKey?: MessageKey;
 	items: NavItem[];
 };
 
-/** @deprecated Standalone Maya kaldırıldı; `coreProductNavItems` içinde (Raporlar altı). */
+/** @deprecated Standalone Maya kaldırıldı; secondary product block’ta. */
 export const mayaNavItem: NavItem = {
 	labelKey: 'nav.maya',
 	href: '/maya',
 	icon: Bot
 };
 
-/** Fixed Ürünler entries (toggleable modules appended at runtime). */
+/** Fixed Ürünler entries (toggleable tools live in the Araçlar group). */
 export const coreProductNavItems: NavItem[] = [
 	{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
 	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
 	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
-	{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn },
+	{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
+];
+
+/** After Araçlar divider: Maya + Kaynaklar (no group heading). */
+export const secondaryProductNavItems: NavItem[] = [
 	mayaNavItem,
 	{ labelKey: 'nav.resources', href: '/knowledge', icon: Library }
 ];
@@ -60,20 +65,30 @@ const systemNavItems: NavItem[] = [
 ];
 
 /**
- * Builds sidebar groups. Ürünler is reactive: pass enabled modules from
+ * Builds sidebar groups. Araçlar is reactive: pass enabled modules from
  * `$lib/product-modules.svelte`.
  */
-export function buildNavGroups(enabledProductModules: NavItem[]): NavGroup[] {
-	return [
+export function buildNavGroups(enabledToolModules: NavItem[]): NavGroup[] {
+	const groups: NavGroup[] = [
 		{
 			labelKey: 'nav.group.products',
-			items: [...coreProductNavItems, ...enabledProductModules]
-		},
-		{
-			labelKey: 'nav.group.system',
-			items: systemNavItems
+			items: [...coreProductNavItems]
 		}
 	];
+	if (enabledToolModules.length > 0) {
+		groups.push({
+			labelKey: 'nav.group.tools',
+			items: enabledToolModules
+		});
+	}
+	groups.push({
+		items: [...secondaryProductNavItems]
+	});
+	groups.push({
+		labelKey: 'nav.group.system',
+		items: systemNavItems
+	});
+	return groups;
 }
 
 /** Flatten links in a group (kept for AppShell helpers). */

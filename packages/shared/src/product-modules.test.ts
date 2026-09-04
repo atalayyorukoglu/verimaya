@@ -10,7 +10,7 @@ describe('product-modules / user UI preferences contract', () => {
 	it('accepts known module ids and rejects unknown ones', () => {
 		expect(
 			userUiPreferencesUpdateSchema.safeParse({
-				enabled_product_modules: ['campaign-assistant']
+				enabled_product_modules: ['campaign-assistant', 'untouched-contacts']
 			}).success
 		).toBe(true);
 		expect(
@@ -22,8 +22,13 @@ describe('product-modules / user UI preferences contract', () => {
 
 	it('filterKnownProductModuleIds drops unknowns and dedupes', () => {
 		expect(
-			filterKnownProductModuleIds(['campaign-assistant', 'x', 'campaign-assistant'])
-		).toEqual(['campaign-assistant']);
+			filterKnownProductModuleIds([
+				'campaign-assistant',
+				'x',
+				'campaign-assistant',
+				'ai-accuracy'
+			])
+		).toEqual(['campaign-assistant', 'ai-accuracy']);
 	});
 
 	it('meSchema requires preferences', () => {

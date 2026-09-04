@@ -179,6 +179,24 @@ export const features: Feature[] = [
 		route: '/reports/ai-accuracy'
 	},
 	{
+		id: 'untouched-contacts',
+		module: 'Raporlama',
+		title: 'Temassız kişiler',
+		description:
+			'Son X gündür randevu, işlem veya not düşülmemiş kişileri listeler; takip borcu olanları görünür kılar.',
+		status: 'kod-hazir',
+		route: '/reports/untouched'
+	},
+	{
+		id: 'cohorts',
+		module: 'Raporlama',
+		title: 'Kohort görünümü',
+		description:
+			'Hasta giriş ayına göre kohortlar; olgunlaşma pencerelerinde gelir ve dönüşüm nasıl birikir.',
+		status: 'kod-hazir',
+		route: '/reports/cohorts'
+	},
+	{
 		id: 'maya-live-data',
 		module: 'Platform',
 		title: 'Maya canlı veri',

@@ -31,6 +31,7 @@ const tr = {
 
 	// Panel navigasyonu — grup başlıkları
 	'nav.group.products': 'Ürünler',
+	'nav.group.tools': 'Araçlar',
 	'nav.group.system': 'Sistem',
 
 	// Panel navigasyonu — bağlantılar
@@ -44,7 +45,7 @@ const tr = {
 	'nav.tools': 'Araçlar',
 	'nav.tools.documentTitle': 'Araçlar · Verimaya',
 	'nav.tools.title': 'Araçlar',
-	'nav.tools.description': 'Modül yetenekleri, durumları ve Ürünler menüsünde gösterme tercihleri.',
+	'nav.tools.description': 'Modül yetenekleri, durumları ve Araçlar menüsünde gösterme tercihleri.',
 	'nav.resources': 'Kaynaklar',
 	'nav.resources.documentTitle': 'Kaynaklar · Verimaya',
 	'nav.resources.title': 'Kaynaklar',
@@ -1564,13 +1565,13 @@ const tr = {
 	'features.versionLink': 'Sürüm {version} yenilikleri',
 
 	// toolkit (Araçlar — features listesi)
-	'toolkit.showInProducts': 'Ürünlerde Göster',
-	'toolkit.hideInProducts': 'Ürünlerde Gizle',
+	'toolkit.showInProducts': 'Araçlarda Göster',
+	'toolkit.hideInProducts': 'Araçlarda Gizle',
 	'toolkit.recentDescription': 'Son 30 günde eklenen özellikler.',
 	'toolkit.recentHeading': 'Son eklenenler',
 	'toolkit.open': 'Aç',
 	'toolkit.new': 'Yeni',
-	'toolkit.productModules.saveFailed': 'Ürün tercihi kaydedilemedi. Yeniden deneyin.',
+	'toolkit.productModules.saveFailed': 'Araç tercihi kaydedilemedi. Yeniden deneyin.',
 	'toolkit.module.patientTracking': 'Hasta Takibi',
 	'toolkit.module.appointments': 'Randevu',
 	'toolkit.module.finance': 'Finans',
@@ -1599,6 +1600,12 @@ const tr = {
 	'toolkit.feature.ai-accuracy.title': 'AI isabet ölçümü',
 	'toolkit.feature.ai-accuracy.description':
 		'Taslakların ne kadarı düzeltilmeden onaylandı, hangi alan en çok düzeltiliyor, Maya neyi cevaplayamadı.',
+	'toolkit.feature.untouched-contacts.title': 'Temassız kişiler',
+	'toolkit.feature.untouched-contacts.description':
+		'Son X gündür randevu, işlem veya not düşülmemiş kişileri listeler; takip borcu olanları görünür kılar.',
+	'toolkit.feature.cohorts.title': 'Kohort görünümü',
+	'toolkit.feature.cohorts.description':
+		'Hasta giriş ayına göre kohortlar; olgunlaşma pencerelerinde gelir ve dönüşüm nasıl birikir.',
 	'toolkit.feature.maya-live-data.title': 'Maya canlı veri',
 	'toolkit.feature.maya-live-data.description':
 		'Maya bakiye, açık alacak, randevu, dönem özeti ve temassız kişileri canlı veriden cevaplar. Rakamı veritabanı verir, model yalnız hangi sorgunun çalışacağını seçer.',
@@ -2968,6 +2975,7 @@ const en: Record<MessageKey, string> = {
 	'locale.tr': 'Türkçe',
 
 	'nav.group.products': 'Products',
+	'nav.group.tools': 'Tools',
 	'nav.group.system': 'System',
 
 	'nav.dashboard': 'Dashboard',
@@ -2981,7 +2989,7 @@ const en: Record<MessageKey, string> = {
 	'nav.tools.documentTitle': 'Tools · Verimaya',
 	'nav.tools.title': 'Tools',
 	'nav.tools.description':
-		'Module capabilities, status, and preferences for showing items under Products.',
+		'Module capabilities, status, and preferences for showing items under Tools.',
 	'nav.resources': 'Resources',
 	'nav.resources.documentTitle': 'Resources · Verimaya',
 	'nav.resources.title': 'Resources',
@@ -4463,13 +4471,13 @@ const en: Record<MessageKey, string> = {
 	'features.filterAll': 'All',
 	'features.versionLink': 'Version {version} release notes',
 
-	'toolkit.showInProducts': 'Show in Products',
-	'toolkit.hideInProducts': 'Hide from Products',
+	'toolkit.showInProducts': 'Show in Tools',
+	'toolkit.hideInProducts': 'Hide from Tools',
 	'toolkit.recentDescription': 'Features added in the last 30 days.',
 	'toolkit.recentHeading': 'Recently added',
 	'toolkit.open': 'Open',
 	'toolkit.new': 'New',
-	'toolkit.productModules.saveFailed': 'Could not save product preference. Please try again.',
+	'toolkit.productModules.saveFailed': 'Could not save tool preference. Please try again.',
 	'toolkit.module.patientTracking': 'Patient tracking',
 	'toolkit.module.appointments': 'Appointments',
 	'toolkit.module.finance': 'Finance',
@@ -4498,6 +4506,12 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.ai-accuracy.title': 'AI accuracy report',
 	'toolkit.feature.ai-accuracy.description':
 		'How many drafts were approved untouched, which field is corrected most, and what Maya could not answer.',
+	'toolkit.feature.untouched-contacts.title': 'Untouched contacts',
+	'toolkit.feature.untouched-contacts.description':
+		'Lists contacts with no appointment, transaction, or note in the last X days — follow-ups that need attention.',
+	'toolkit.feature.cohorts.title': 'Cohort view',
+	'toolkit.feature.cohorts.description':
+		'Cohorts by patient intake month; how revenue and conversion accumulate across maturation windows.',
 	'toolkit.feature.maya-live-data.title': 'Maya live data',
 	'toolkit.feature.maya-live-data.description':
 		'Maya answers balance, receivables, appointment, period summary and untouched-contact questions from live data. The database provides the number; the model only picks the query.',
