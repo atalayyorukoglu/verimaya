@@ -141,7 +141,7 @@ describe('user UI preferences isolation', () => {
 			enabled_product_modules: ['campaign-assistant']
 		});
 		await expect(service.getPreferences(userB, tenantA)).resolves.toEqual({
-			enabled_product_modules: []
+			enabled_product_modules: ['untouched-contacts', 'referral-value']
 		});
 	});
 });

@@ -76,6 +76,11 @@ paths:
                           type: string
                           enum:
                             - campaign-assistant
+                            - untouched-contacts
+                            - cohorts
+                            - referral-value
+                            - interventions
+                            - ai-accuracy
                     required:
                       - enabled_product_modules
                     additionalProperties: false
@@ -140,6 +145,11 @@ paths:
                       type: string
                       enum:
                         - campaign-assistant
+                        - untouched-contacts
+                        - cohorts
+                        - referral-value
+                        - interventions
+                        - ai-accuracy
                 required:
                   - enabled_product_modules
                 additionalProperties: false
@@ -156,6 +166,11 @@ paths:
                     type: string
                     enum:
                       - campaign-assistant
+                      - untouched-contacts
+                      - cohorts
+                      - referral-value
+                      - interventions
+                      - ai-accuracy
               required:
                 - enabled_product_modules
               additionalProperties: false
