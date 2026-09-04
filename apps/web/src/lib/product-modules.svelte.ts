@@ -44,31 +44,31 @@ const CATALOG_BY_ID: Record<ProductModuleId, Omit<ProductModule, 'id'>> = {
 	},
 	'untouched-contacts': {
 		labelKey: 'reports.untouched.title',
-		href: '/reports/untouched',
+		href: '/untouched',
 		icon: UserRoundX,
 		department: 'Raporlama'
 	},
 	cohorts: {
 		labelKey: 'reports.cohorts.title',
-		href: '/reports/cohorts',
+		href: '/cohorts',
 		icon: ChartColumnIncreasing,
 		department: 'Raporlama'
 	},
 	'referral-value': {
 		labelKey: 'reports.referrals.title',
-		href: '/reports/referrals',
+		href: '/referrals',
 		icon: Share2,
 		department: 'Raporlama'
 	},
 	interventions: {
 		labelKey: 'reports.interventions.title',
-		href: '/reports/interventions',
+		href: '/interventions',
 		icon: ListChecks,
 		department: 'Raporlama'
 	},
 	'ai-accuracy': {
 		labelKey: 'reports.aiAccuracy.title',
-		href: '/reports/ai-accuracy',
+		href: '/ai-accuracy',
 		icon: Target,
 		department: 'Raporlama'
 	}

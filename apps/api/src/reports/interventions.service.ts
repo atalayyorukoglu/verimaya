@@ -320,7 +320,7 @@ export class InterventionsService {
 	): Promise<InterventionReferralValueItem[]> {
 		const referrals = await this.reportsService.referrals(tenantId, params);
 		const link = {
-			route: '/reports/referrals',
+			route: '/referrals',
 			params: {
 				...(params.from ? { from: params.from } : {}),
 				...(params.to ? { to: params.to } : {})

@@ -29,7 +29,7 @@ export type InterventionFindingKind = z.infer<typeof interventionFindingKindSche
  * Drill-down hedefi. `route` bir SvelteKit rota id'si (`/contacts/[id]` gibi); `params`
  * hem yol parametrelerini hem de web tarafının query string'e çevireceği anahtarları taşır
  * (`from`/`to`/`tab`). İstemci hangi rotanın hangi parametreyi yol/query yapacağını bilir —
- * sabit üç rota kullanılıyor (`/reports`, `/reports/referrals`, `/contacts/[id]`).
+ * sabit üç rota kullanılıyor (`/reports`, `/referrals`, `/contacts/[id]`).
  */
 export const interventionLinkSchema = z.object({
 	route: z.string().min(1),

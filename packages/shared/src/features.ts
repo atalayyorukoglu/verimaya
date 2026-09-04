@@ -205,7 +205,7 @@ export const features: Feature[] = [
 		description:
 			'Taslakların ne kadarı dokunulmadan onaylandı, hangi alan en çok düzeltiliyor, Maya neyi cevaplayamıyor. Cevaplanamayan sorular bilgi bankası yönlendirmesiyle gösterilir.',
 		status: 'kod-hazir',
-		route: '/reports/ai-accuracy'
+		route: '/ai-accuracy'
 	},
 	{
 		id: 'untouched-contacts',
@@ -214,7 +214,7 @@ export const features: Feature[] = [
 		description:
 			'Son X gündür randevu, işlem veya not düşülmemiş kişileri listeler; takip borcu olanları görünür kılar.',
 		status: 'kod-hazir',
-		route: '/reports/untouched'
+		route: '/untouched'
 	},
 	{
 		id: 'cohorts',
@@ -223,7 +223,7 @@ export const features: Feature[] = [
 		description:
 			'Hasta giriş ayına göre kohortlar; olgunlaşma pencerelerinde gelir ve dönüşüm nasıl birikir.',
 		status: 'kod-hazir',
-		route: '/reports/cohorts'
+		route: '/cohorts'
 	},
 	{
 		id: 'maya-live-data',
@@ -277,7 +277,7 @@ export const features: Feature[] = [
 		description:
 			'Kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve koordinatörü kim. Rakamlar kişi kartındaki finans özetiyle aynı kaynaktan gelir.',
 		status: 'kod-hazir',
-		route: '/reports/referrals'
+		route: '/referrals'
 	},
 	{
 		id: 'report-compare',
@@ -295,7 +295,7 @@ export const features: Feature[] = [
 		description:
 			'Kötüleşen hekim oranları, düşen dönem geliri, çözülmemiş olaylar ve en değerli referanslar tek listede — sistem kimse sormadan işaretler. Cümleler şablon, rakamlar SQL; dil modeli hiçbir bulgu üretmez.',
 		status: 'kod-hazir',
-		route: '/reports/interventions'
+		route: '/interventions'
 	},
 	{
 		id: 'campaign-assistant',

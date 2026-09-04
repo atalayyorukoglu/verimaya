@@ -15,6 +15,17 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/finance/ai-transaction': ['owner', 'admin', 'manager', 'finance'],
 	'/finance/balances': ['owner', 'admin', 'manager', 'finance'],
 	'/reports': ['owner', 'admin', 'manager', 'finance', 'readonly'],
+	/*
+	 * Rapor sayfaları üst seviyeye taşındı (2026-09-04). Önceden `/reports` önekine
+	 * takıldıkları için izinleri oradan miras alıyorlardı; üst seviyede eşleşme
+	 * bulunmayınca `canAccessPath` bilinmeyen yolu SERBEST sayar ve `agent` rolü de
+	 * görürdü. Aynı izin listesi burada açıkça tekrarlanıyor.
+	 */
+	'/ai-accuracy': ['owner', 'admin', 'manager', 'finance', 'readonly'],
+	'/cohorts': ['owner', 'admin', 'manager', 'finance', 'readonly'],
+	'/interventions': ['owner', 'admin', 'manager', 'finance', 'readonly'],
+	'/referrals': ['owner', 'admin', 'manager', 'finance', 'readonly'],
+	'/untouched': ['owner', 'admin', 'manager', 'finance', 'readonly'],
 	'/settings': ['owner', 'admin'],
 	'/maya': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/changelog': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
