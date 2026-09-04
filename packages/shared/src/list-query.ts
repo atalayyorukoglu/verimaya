@@ -36,6 +36,8 @@ export const appointmentListQuerySchema = cursorPageParams
 		from: isoDate.optional(),
 		to: isoDate.optional(),
 		status: appointmentStatusSchema.optional(),
+		/** Exact match on free-text `appointment_type` (dictionary name, e.g. RPT). */
+		appointment_type: z.string().trim().min(1).max(128).optional(),
 		q: z.string().trim().min(1).max(255).optional()
 	})
 	.strict();

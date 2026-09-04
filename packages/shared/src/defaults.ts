@@ -20,10 +20,9 @@ export const DEFAULT_CONTACT_TITLE_NAMES = [
 
 /** Default appointment type names seeded per tenant (deterministic IDs via defaultAppointmentTypeId). */
 export const DEFAULT_APPOINTMENT_TYPE_NAMES = [
-	'Konsültasyon',
-	'Tedavi',
-	'Kontrol',
-	'Transfer'
+	'Yeni Hasta',
+	'Devam Hastası',
+	'RPT'
 ] as const;
 
 /**

@@ -470,6 +470,13 @@
       "when": 1755700700000,
       "tag": "0066_incidents",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1756990000000,
+      "tag": "0067_appointment_types_patient_journey",
+      "breakpoints": true
     }
   ]
 }

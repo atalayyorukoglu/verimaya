@@ -1440,6 +1440,7 @@ export const handlers = [
 			from,
 			to,
 			status,
+			appointment_type: appointmentType,
 			q
 		} = parsed.data;
 		if (contactId) items = items.filter((a) => a.contact_id === contactId);
@@ -1454,6 +1455,7 @@ export const handlers = [
 			);
 		}
 		if (status) items = items.filter((a) => a.status === status);
+		if (appointmentType) items = items.filter((a) => a.appointment_type === appointmentType);
 		const tz = store.tenant.timezone;
 		if (from) {
 			const { start } = tenantDayRange(from, tz);

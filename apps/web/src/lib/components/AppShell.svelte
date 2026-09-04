@@ -7,7 +7,6 @@
 	import { apiGet } from '$lib/api';
 	import {
 		buildNavGroups,
-		mayaNavItem,
 		mobileTabItems,
 		navGroupItems,
 		PANEL_HOME_HREF
@@ -143,8 +142,6 @@
 			.filter((group) => group.items.length > 0)
 	);
 
-	const showMayaNav = $derived(canSeeNav(mayaNavItem.href, role));
-
 	const visibleTabs = $derived(mobileTabItems.filter((item) => canSeeNav(item.href, role)));
 
 	$effect(() => {
@@ -192,7 +189,6 @@
 	});
 
 	const allNavHrefs = $derived([
-		mayaNavItem.href,
 		...navGroups.flatMap((g) =>
 			filterDevPanelNavItems(navGroupItems(g), platformPanelEnabled).map((i) => i.href)
 		),
@@ -482,6 +478,20 @@
 						>
 							{t('account.nav')}
 						</a>
+						<a
+							href="/changelog"
+							role="menuitem"
+							class={cn(
+								'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+								spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+							)}
+							onclick={() => {
+								accountMenuOpen = false;
+								closeMobile();
+							}}
+						>
+							{t('nav.changelog')}
+						</a>
 						<button
 							type="button"
 							role="menuitem"
@@ -516,21 +526,19 @@
 
 	{#snippet demoChromeNavItem(spacious = false)}
 		{#if USE_MSW}
-			<li>
-				<button
-					type="button"
-					class={cn(
-						'flex w-full items-center rounded-lg text-left font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-						spacious ? 'gap-3 px-3 py-3 text-base' : 'gap-2 px-3 py-1.5 text-sm'
-					)}
-					onclick={() => toggleDemoChrome()}
+			<button
+				type="button"
+				class={cn(
+					'flex w-full items-center rounded-lg text-left font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+					spacious ? 'gap-3 px-3 py-3 text-base' : 'gap-2 px-3 py-1.5 text-sm'
+				)}
+				onclick={() => toggleDemoChrome()}
+			>
+				<FlaskConical class={cn('shrink-0', spacious ? 'size-5' : 'size-4')} aria-hidden="true" />
+				<span class="min-w-0 flex-1 truncate"
+					>{isDemoChromeVisible() ? t('demo.chrome.hide') : t('demo.chrome.show')}</span
 				>
-					<FlaskConical class={cn('shrink-0', spacious ? 'size-5' : 'size-4')} aria-hidden="true" />
-					<span class="min-w-0 flex-1 truncate"
-						>{isDemoChromeVisible() ? t('demo.chrome.hide') : t('demo.chrome.show')}</span
-					>
-				</button>
-			</li>
+			</button>
 		{/if}
 	{/snippet}
 
@@ -565,61 +573,49 @@
 
 			<nav
 				bind:this={desktopNavEl}
-				class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto px-2 py-3"
+				class="flex min-h-0 flex-1 flex-col px-2 py-3"
 				aria-label={t('shell.aria.mainMenu')}
 			>
-				{#if showMayaNav}
-					{@const mayaActive = isActive(mayaNavItem.href)}
-					{@const MayaIcon = mayaNavItem.icon}
-					<ul class="space-y-0">
-						<li>
-							<a
-								href={mayaNavItem.href}
-								class={cn(
-									'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-									mayaActive
-										? 'bg-brand-subtle text-brand-text'
-										: 'text-text-muted hover:bg-surface-2 hover:text-text'
-								)}
-								aria-current={mayaActive ? 'page' : undefined}
-							>
-								<MayaIcon class="size-4 shrink-0" aria-hidden="true" />
-								<span class="truncate">{t(mayaNavItem.labelKey)}</span>
-							</a>
-						</li>
-					</ul>
-				{/if}
-				{#each visibleGroups as group, gi (group.labelKey)}
-					<div class={showMayaNav ? (gi === 0 ? 'mt-3' : 'mt-4') : gi === 0 ? '' : 'mt-4'}>
-						<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
-							{t(group.labelKey)}
-						</p>
-						<ul class="space-y-0">
-							{#each group.items as item (item.href)}
-								{@const active = isActive(item.href)}
-								{@const Icon = item.icon}
-								<li>
-									<a
-										href={item.href}
-										class={cn(
-											'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-											active
-												? 'bg-brand-subtle text-brand-text'
-												: 'text-text-muted hover:bg-surface-2 hover:text-text'
-										)}
-										aria-current={active ? 'page' : undefined}
-									>
-										<Icon class="size-4 shrink-0" aria-hidden="true" />
-										<span class="truncate">{t(item.labelKey)}</span>
-									</a>
-								</li>
-								{#if item.href === '/settings'}
-									{@render demoChromeNavItem()}
-								{/if}
-							{/each}
-						</ul>
+				<div class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
+					{#each visibleGroups as group, gi (group.labelKey)}
+						<div class={gi === 0 ? '' : 'mt-4'}>
+							<p class="px-3 pb-1 text-[11px] font-semibold text-text-muted">
+								{t(group.labelKey)}
+							</p>
+							<ul class="space-y-0">
+								{#each group.items as item (item.href)}
+									{@const active = isActive(item.href)}
+									{@const Icon = item.icon}
+									{#if item.href === '/maya'}
+										<li aria-hidden="true" class="my-2">
+											<div class="mx-3 border-t border-border"></div>
+										</li>
+									{/if}
+									<li>
+										<a
+											href={item.href}
+											class={cn(
+												'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+												active
+													? 'bg-brand-subtle text-brand-text'
+													: 'text-text-muted hover:bg-surface-2 hover:text-text'
+											)}
+											aria-current={active ? 'page' : undefined}
+										>
+											<Icon class="size-4 shrink-0" aria-hidden="true" />
+											<span class="truncate">{t(item.labelKey)}</span>
+										</a>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/each}
+				</div>
+				{#if USE_MSW}
+					<div class="mt-auto shrink-0 border-t border-border pt-2">
+						{@render demoChromeNavItem()}
 					</div>
-				{/each}
+				{/if}
 			</nav>
 
 			<div
@@ -643,63 +639,50 @@
 			{@render sidebarAccountHeader({ showClose: true })}
 			<nav
 				bind:this={mobileNavEl}
-				class="sidebar-nav-scroll flex-1 overflow-y-auto px-3 py-4"
+				class="flex flex-1 flex-col px-3 py-4"
 				aria-label={t('shell.aria.allMenu')}
 			>
-				{#if showMayaNav}
-					{@const mayaActive = isActive(mayaNavItem.href)}
-					{@const MayaIcon = mayaNavItem.icon}
-					<ul class="space-y-1">
-						<li>
-							<a
-								href={mayaNavItem.href}
-								onclick={closeMobile}
-								class={cn(
-									'flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors',
-									mayaActive
-										? 'bg-brand-subtle text-brand-text'
-										: 'text-text-muted hover:bg-surface-2 hover:text-text'
-								)}
-								aria-current={mayaActive ? 'page' : undefined}
-							>
-								<MayaIcon class="size-5 shrink-0" aria-hidden="true" />
-								<span class="truncate">{t(mayaNavItem.labelKey)}</span>
-							</a>
-						</li>
-					</ul>
-				{/if}
-				{#each visibleGroups as group, gi (group.labelKey)}
-					<div class={showMayaNav ? (gi === 0 ? 'mt-4' : 'mt-5') : gi === 0 ? '' : 'mt-5'}>
-						<p class="px-3 pb-1.5 text-xs font-semibold tracking-wide text-text-muted">
-							{t(group.labelKey)}
-						</p>
-						<ul class="space-y-1">
-							{#each group.items as item (item.href)}
-								{@const active = isActive(item.href)}
-								{@const Icon = item.icon}
-								<li>
-									<a
-										href={item.href}
-										onclick={closeMobile}
-										class={cn(
-											'flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors',
-											active
-												? 'bg-brand-subtle text-brand-text'
-												: 'text-text-muted hover:bg-surface-2 hover:text-text'
-										)}
-										aria-current={active ? 'page' : undefined}
-									>
-										<Icon class="size-5 shrink-0" aria-hidden="true" />
-										<span class="truncate">{t(item.labelKey)}</span>
-									</a>
-								</li>
-								{#if item.href === '/settings'}
-									{@render demoChromeNavItem(true)}
-								{/if}
-							{/each}
-						</ul>
+				<div class="sidebar-nav-scroll min-h-0 flex-1 overflow-y-auto">
+					{#each visibleGroups as group, gi (group.labelKey)}
+						<div class={gi === 0 ? '' : 'mt-5'}>
+							<p class="px-3 pb-1.5 text-xs font-semibold tracking-wide text-text-muted">
+								{t(group.labelKey)}
+							</p>
+							<ul class="space-y-1">
+								{#each group.items as item (item.href)}
+									{@const active = isActive(item.href)}
+									{@const Icon = item.icon}
+									{#if item.href === '/maya'}
+										<li aria-hidden="true" class="my-2">
+											<div class="mx-3 border-t border-border"></div>
+										</li>
+									{/if}
+									<li>
+										<a
+											href={item.href}
+											onclick={closeMobile}
+											class={cn(
+												'flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors',
+												active
+													? 'bg-brand-subtle text-brand-text'
+													: 'text-text-muted hover:bg-surface-2 hover:text-text'
+											)}
+											aria-current={active ? 'page' : undefined}
+										>
+											<Icon class="size-5 shrink-0" aria-hidden="true" />
+											<span class="truncate">{t(item.labelKey)}</span>
+										</a>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/each}
+				</div>
+				{#if USE_MSW}
+					<div class="mt-auto shrink-0 border-t border-border pt-2">
+						{@render demoChromeNavItem(true)}
 					</div>
-				{/each}
+				{/if}
 			</nav>
 			<div
 				class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border bg-bg px-4 pb-[env(safe-area-inset-bottom)] max-md:h-auto max-md:py-3 max-md:pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"

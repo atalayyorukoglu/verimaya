@@ -182,13 +182,12 @@
 			<table class="w-full table-fixed text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						<th class="w-[22%] px-4 py-3 font-medium">{t('contacts.list.col.name')}</th>
-						<th class="w-[10%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
-						<th class="w-[10%] px-4 py-3 font-medium">{t('contacts.list.col.title')}</th>
-						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
-						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.source')}</th>
+						<th class="w-[24%] px-4 py-3 font-medium">{t('contacts.list.col.name')}</th>
+						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.source')}</th>
 						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.status')}</th>
-						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.assignee')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.assignee')}</th>
 						<th class="w-[10%] px-4 py-3 font-medium"></th>
 					</tr>
 				</thead>
@@ -203,7 +202,6 @@
 							<td class="px-4 py-3">
 								<StatusBadge label={c.contact_type_name} tone="neutral" />
 							</td>
-							<td class="truncate px-4 py-3 text-text-faint">{c.title_name ?? '—'}</td>
 							<td class="truncate px-4 py-3 text-text-muted tabular-nums">{c.phone ?? '—'}</td>
 							<td class="truncate px-4 py-3 text-text-faint">{c.source ?? '—'}</td>
 							<td class="px-4 py-3">

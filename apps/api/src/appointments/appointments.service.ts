@@ -57,6 +57,9 @@ export class AppointmentsService {
 				baseFilters.push(lt(appointments.startsAt, endExclusive));
 			}
 			if (params.status) baseFilters.push(eq(appointments.status, params.status));
+			if (params.appointment_type) {
+				baseFilters.push(eq(appointments.appointmentType, params.appointment_type));
+			}
 			const searchCond = textSearchCondition(params.q, [
 				appointments.contactDisplayName,
 				appointments.notes,

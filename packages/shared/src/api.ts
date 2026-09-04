@@ -212,6 +212,8 @@ export type ListQueryParams = {
 	title_id?: string | null;
 	kind?: string;
 	status?: string;
+	/** Appointments: exact match on free-text appointment_type */
+	appointment_type?: string;
 	category?: string;
 	/** Incidents: `clinic` | `hotel` | … — v1 web only ever sends `clinic`. */
 	area?: string;
@@ -245,6 +247,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.title_id) url.searchParams.set('title_id', params.title_id);
 	if (params?.kind) url.searchParams.set('kind', params.kind);
 	if (params?.status) url.searchParams.set('status', params.status);
+	if (params?.appointment_type) url.searchParams.set('appointment_type', params.appointment_type);
 	if (params?.category) url.searchParams.set('category', params.category);
 	if (params?.area) url.searchParams.set('area', params.area);
 	if (params?.due_within_days != null) {

@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		Appointment,
 		AppointmentCreate,
 		AppointmentStatus,
+		AppointmentTypeSetting,
 		AppointmentUpdate,
 		ContractResponse,
 		Tenant
@@ -14,77 +16,45 @@
 		apiPaths,
 		appointmentStatusLabels,
 		appointmentStatusSchema,
-		listUrl,
-		toTenantDayKey
+		listUrl
 	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
-	import { formatDate, formatTime } from '$lib/format';
+	import { formatDate, formatTime, initialsOf } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
-	import { appointmentStatusTone } from '$lib/status-tone';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import PeriodSelector from '$lib/components/PeriodSelector.svelte';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
-	import AppointmentOpsList from '$lib/components/AppointmentOpsList.svelte';
-	import Combobox from '$lib/components/Combobox.svelte';
 	import {
-		dayKeyToDate,
 		monthRangeInTz,
 		resolvePeriodRange,
 		type PeriodKey
 	} from '$lib/period-range';
 	import { Button } from '$lib/components/ui/button';
-	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
-	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import { cn } from '$lib/utils';
+	import Plus from '@lucide/svelte/icons/plus';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import X from '@lucide/svelte/icons/x';
 
 	type AppointmentsPage = ContractResponse<'GET /v1/appointments'>;
 	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
-	type ViewMode = 'day' | 'week';
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
 
 	const contactFilterId = $derived(page.url.searchParams.get('contact'));
 
-	let view = $state<ViewMode>('week');
-	let anchor = $state(startOfDay(new Date()));
 	let formOpen = $state(false);
 	let editing = $state<Appointment | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
 
-	let qInput = $state('');
-	let appliedQ = $state('');
 	let status = $state('');
-	let contactInvolvesId = $state(page.url.searchParams.get('contact_involves') ?? '');
+	let appointmentType = $state('');
 	let periodKey = $state<PeriodKey>('bu-ay');
 	let customFrom = $state('');
 	let customTo = $state('');
+	let customRangeHydrated = $state(false);
 
 	const statusOptions = $derived(appointmentStatusSchema.options);
-
-	function startOfDay(d: Date) {
-		const x = new Date(d);
-		x.setHours(0, 0, 0, 0);
-		return x;
-	}
-
-	function addDays(d: Date, n: number) {
-		const x = new Date(d);
-		x.setDate(x.getDate() + n);
-		return x;
-	}
-
-	function startOfWeek(d: Date) {
-		const x = startOfDay(d);
-		const day = x.getDay();
-		const diff = day === 0 ? -6 : 1 - day; // Monday start
-		return addDays(x, diff);
-	}
-
-	const rangeStart = $derived(view === 'day' ? startOfDay(anchor) : startOfWeek(anchor));
 
 	const tenantQuery = createQuery(() => ({
 		queryKey: qs.keys.tenants.current(),
@@ -94,40 +64,60 @@
 
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
 
-	const periodRange = $derived(resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone));
-
-	const listFilters = $derived({
-		from: periodRange.from ?? undefined,
-		to: periodRange.to ?? undefined,
-		contact_id: contactFilterId,
-		contact_involves: contactInvolvesId || undefined,
-		q: appliedQ || undefined,
-		status: (status || undefined) as AppointmentStatus | undefined
+	$effect(() => {
+		if (customRangeHydrated || !tenantTimezone) return;
+		if (!customFrom || !customTo) {
+			const r = monthRangeInTz(0, tenantTimezone);
+			customFrom = r.from;
+			customTo = r.to;
+		}
+		customRangeHydrated = true;
 	});
 
-	const days = $derived(
-		view === 'day' ? [rangeStart] : Array.from({ length: 7 }, (_, i) => addDays(rangeStart, i))
+	const periodRange = $derived(resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone));
+
+	const periodRangeText = $derived(
+		periodRange.from && periodRange.to
+			? `${periodRange.from} > ${periodRange.to}`
+			: t('reports.period.allTime')
+	);
+
+	const periodOptions = $derived([
+		{ key: 'bu-ay' as const, label: t('reports.period.thisMonth') },
+		{ key: 'gecen-ay' as const, label: t('reports.period.lastMonth') },
+		{ key: 'tum' as const, label: t('reports.period.allTime') },
+		{ key: 'ozel' as const, label: t('reports.period.custom') }
+	]);
+
+	const typesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.appointmentTypes(),
+		queryFn: () => apiGet<{ items: AppointmentTypeSetting[] }>(apiPaths.settingsAppointmentTypes),
+		enabled: qs.ready
+	}));
+
+	const typeNames = $derived(
+		[...(typesQuery.data?.items ?? [])]
+			.sort((a, b) => a.sort_order - b.sort_order)
+			.map((row) => row.name)
 	);
 
 	const appointmentsQuery = createQuery(() => ({
 		queryKey: qs.keys.appointments.list({
-			from: listFilters.from,
-			to: listFilters.to,
-			contact_id: listFilters.contact_id,
-			contact_involves: listFilters.contact_involves,
-			q: listFilters.q,
-			status: listFilters.status
+			from: periodRange.from ?? undefined,
+			to: periodRange.to ?? undefined,
+			contact_id: contactFilterId,
+			status: (status || undefined) as AppointmentStatus | undefined,
+			appointment_type: appointmentType || undefined
 		}),
 		queryFn: () =>
 			apiGet<AppointmentsPage>(
 				listUrl('appointments', {
 					limit: 100,
-					from: listFilters.from,
-					to: listFilters.to,
-					contact_id: listFilters.contact_id,
-					contact_involves: listFilters.contact_involves,
-					q: listFilters.q,
-					status: listFilters.status
+					from: periodRange.from ?? undefined,
+					to: periodRange.to ?? undefined,
+					contact_id: contactFilterId ?? undefined,
+					status: (status || undefined) as AppointmentStatus | undefined,
+					appointment_type: appointmentType || undefined
 				})
 			),
 		enabled: qs.ready && !!tenantQuery.data
@@ -139,112 +129,143 @@
 		enabled: qs.ready
 	}));
 
-	const contactOptions = $derived(
-		(contactsQuery.data?.items ?? []).map((c) => ({
-			value: c.id,
-			label: c.display_name,
-			description: c.contact_type_name
-		}))
+	const contactById = $derived(
+		new Map((contactsQuery.data?.items ?? []).map((c) => [c.id, c]))
 	);
 
 	const filterContact = $derived(
-		contactFilterId ? (contactsQuery.data?.items ?? []).find((c) => c.id === contactFilterId) : null
+		contactFilterId ? contactById.get(contactFilterId) : null
 	);
 
-	const filterInputClass =
-		'border-border bg-surface text-text placeholder:text-text-faint box-border h-11 min-h-11 w-full min-w-0 max-w-full rounded-[6px] border px-3 text-base outline-none focus:ring-2 focus:ring-brand/40';
-
-	const byDay = $derived.by(() => {
-		const map = new Map<string, Appointment[]>();
-		for (const day of days) {
-			map.set(toTenantDayKey(day, tenantTimezone), []);
-		}
-		for (const appt of appointmentsQuery.data?.items ?? []) {
-			const key = toTenantDayKey(new Date(appt.starts_at), tenantTimezone);
-			const list = map.get(key);
-			if (list) list.push(appt);
-		}
-		for (const list of map.values()) {
-			list.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-		}
-		return map;
-	});
-
-	const rangeLabel = $derived(
-		view === 'day'
-			? formatDate(rangeStart.toISOString())
-			: `${formatDate(rangeStart.toISOString())} – ${formatDate(addDays(rangeStart, 6).toISOString())}`
-	);
-
-	const rangeAppointments = $derived(
+	const items = $derived(
 		[...(appointmentsQuery.data?.items ?? [])].sort((a, b) =>
 			a.starts_at.localeCompare(b.starts_at)
 		)
 	);
 
-	const statusCountEntries = $derived.by(() => {
+	const selectedPeriodLabel = $derived(
+		periodOptions.find((opt) => opt.key === periodKey)?.label ?? t('reports.period.label')
+	);
+
+	const filteredCount = $derived.by(() => {
 		const counts = appointmentsQuery.data?.status_counts;
-		if (!counts) return [] as { status: AppointmentStatus; count: number }[];
-		return appointmentStatusSchema.options
-			.filter((s) => (counts[s] ?? 0) > 0)
-			.map((s) => ({ status: s, count: counts[s]! }));
+		if (!counts) return items.length;
+		return Object.values(counts).reduce((sum, n) => sum + (n ?? 0), 0);
 	});
 
-	function syncInvolvesUrl(id: string) {
-		const url = new URL(page.url);
-		if (id) {
-			url.searchParams.set('contact_involves', id);
-		} else {
-			url.searchParams.delete('contact_involves');
-		}
-		const next = `${url.pathname}${url.search}`;
-		const current = `${page.url.pathname}${page.url.search}`;
-		if (next === current) return;
-		void goto(next, { replaceState: true, keepFocus: true, noScroll: true });
-	}
+	const periodSummary = $derived(
+		appointmentsQuery.isPending
+			? selectedPeriodLabel
+			: t('appointments.list.periodSummary', {
+					period: selectedPeriodLabel,
+					count: String(filteredCount)
+				})
+	);
 
-	function applyFilters(e: Event) {
-		e.preventDefault();
-		appliedQ = qInput.trim();
-		syncInvolvesUrl(contactInvolvesId);
-	}
+	const fieldClass =
+		'h-9 rounded-[8px] border border-border bg-surface px-3 text-sm font-medium text-text outline-none focus:ring-2 focus:ring-brand/40';
 
-	function clearFilters() {
-		qInput = '';
-		appliedQ = '';
-		status = '';
-		contactInvolvesId = '';
-		syncInvolvesUrl('');
-	}
-
-	function syncAnchorToPeriod() {
-		if (periodKey === 'bu-ay') {
-			anchor = startOfDay(new Date());
-			return;
-		}
-		if (periodKey === 'gecen-ay') {
-			const { from } = monthRangeInTz(-1, tenantTimezone);
-			anchor = startOfDay(dayKeyToDate(from));
-			return;
-		}
-		if (periodKey === 'ozel' && customFrom) {
-			anchor = startOfDay(dayKeyToDate(customFrom));
+	function setPeriod(next: PeriodKey) {
+		periodKey = next;
+		if (next === 'ozel') {
+			const r = monthRangeInTz(0, tenantTimezone);
+			customFrom = r.from;
+			customTo = r.to;
 		}
 	}
 
-	$effect(() => {
-		void periodKey;
-		if (periodKey === 'ozel') void customFrom;
-		syncAnchorToPeriod();
-	});
+	function typeLabel(appt: Appointment): string {
+		return appt.appointment_type?.trim() || appointmentStatusLabels[appt.status];
+	}
+
+	function typePillClass(appt: Appointment): string {
+		const raw = appt.appointment_type?.trim() ?? '';
+		if (/^rpt$/i.test(raw)) return 'border-danger/25 bg-danger/10 text-danger';
+		if (/devam/i.test(raw)) return 'border-orange-200 bg-orange-50 text-orange-700';
+		if (/yeni\s*hasta/i.test(raw)) return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+		if (raw) return 'border-border bg-surface-2 text-text-muted';
+		switch (appt.status) {
+			case 'completed':
+				return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+			case 'cancelled':
+			case 'no_show':
+				return 'border-danger/25 bg-danger/10 text-danger';
+			case 'confirmed':
+			case 'in_progress':
+				return 'border-brand/30 bg-brand-subtle text-brand-text';
+			default:
+				return 'border-border bg-surface-2 text-text-muted';
+		}
+	}
+
+	function typeDotClass(appt: Appointment): string {
+		const raw = appt.appointment_type?.trim() ?? '';
+		if (/^rpt$/i.test(raw)) return 'bg-danger';
+		if (/devam/i.test(raw)) return 'bg-orange-500';
+		if (/yeni\s*hasta/i.test(raw)) return 'bg-emerald-600';
+		if (raw) return 'bg-text-faint';
+		switch (appt.status) {
+			case 'completed':
+				return 'bg-emerald-600';
+			case 'cancelled':
+			case 'no_show':
+				return 'bg-danger';
+			case 'confirmed':
+			case 'in_progress':
+				return 'bg-brand';
+			default:
+				return 'bg-text-faint';
+		}
+	}
+
+	function scheduleLabel(appt: Appointment): string {
+		const date = formatDate(appt.starts_at);
+		const start = formatTime(appt.starts_at);
+		if (appt.ends_at) {
+			return `${date} · ${start} - ${formatTime(appt.ends_at)}`;
+		}
+		return `${date} · ${start}`;
+	}
+
+	function transferLabel(appt: Appointment): string {
+		if (appt.transfer_contact_id) {
+			const name = contactById.get(appt.transfer_contact_id)?.display_name;
+			if (name) return name;
+		}
+		const note = appt.transfer_note?.trim();
+		if (note) {
+			const firstLine = note.split(/\n/)[0]?.trim();
+			return firstLine || '—';
+		}
+		return '—';
+	}
+
+	function logisticsParts(appt: Appointment): { label: string; value: string }[] {
+		return [
+			{
+				label: t('appointments.card.clinic'),
+				value: appt.clinic_name?.trim() || '—'
+			},
+			{
+				label: t('appointments.card.hotel'),
+				value: appt.hotel_name?.trim() || '—'
+			},
+			{
+				label: t('appointments.card.transfer'),
+				value: transferLabel(appt)
+			}
+		];
+	}
 
 	function openCreate() {
 		editing = null;
+		formError = null;
 		formOpen = true;
 	}
 
 	function openEdit(appt: Appointment) {
 		editing = appt;
+		formError = null;
 		formOpen = true;
 	}
 
@@ -283,101 +304,95 @@
 		}
 	}
 
-	function shift(dir: -1 | 1) {
-		const step = view === 'day' ? dir : dir * 7;
-		let next = addDays(anchor, step);
-		if (periodRange.from) {
-			const min = startOfDay(dayKeyToDate(periodRange.from));
-			if (next < min) next = min;
-		}
-		if (periodRange.to) {
-			const max = startOfDay(dayKeyToDate(periodRange.to));
-			if (next > max) next = max;
-		}
-		anchor = next;
-	}
-
 	function clearContactFilter() {
-		void goto('/appointments');
+		void goto(resolve('/appointments'));
 	}
 </script>
 
 <svelte:head>
-	<title>{t('appointments.title')} · Verimaya</title>
+	<title>{t('appointments.documentTitle')}</title>
 </svelte:head>
 
-<div class="mx-auto max-w-6xl min-w-0">
-	<PageHeader title={t('appointments.title')} description={t('appointments.description')}>
-		{#snippet actions()}
-			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-				<a
-					href="/appointments/alerts"
-					class="text-sm font-medium text-brand hover:underline sm:mr-2"
-				>
-					{t('appointments.alertsLink')}
-				</a>
-				<a
-					href="/appointments/suggestions"
-					class="text-sm font-medium text-brand hover:underline sm:mr-2"
-				>
-					{t('appointments.suggestionsLink')}
-				</a>
-				<div class="flex rounded-[6px] border border-border bg-surface p-0.5">
-					<button
-						type="button"
-						class="rounded-[4px] px-2.5 py-1 text-xs font-medium {view === 'day'
-							? 'bg-brand-subtle text-brand-text'
-							: 'text-text-muted'}"
-						onclick={() => (view = 'day')}
-					>
-						{t('appointments.view.day')}
-					</button>
-					<button
-						type="button"
-						class="rounded-[4px] px-2.5 py-1 text-xs font-medium {view === 'week'
-							? 'bg-brand-subtle text-brand-text'
-							: 'text-text-muted'}"
-						onclick={() => (view = 'week')}
-					>
-						{t('appointments.view.week')}
-					</button>
-				</div>
-				<div class="flex items-center gap-1">
-					<Button
-						variant="ghost"
-						size="icon"
-						type="button"
-						aria-label={t('appointments.prev')}
-						onclick={() => shift(-1)}
-					>
-						<ChevronLeft class="size-4" />
-					</Button>
-					<span class="min-w-0 text-sm font-medium text-text">{rangeLabel}</span>
-					<Button
-						variant="ghost"
-						size="icon"
-						type="button"
-						aria-label={t('appointments.next')}
-						onclick={() => shift(1)}
-					>
-						<ChevronRight class="size-4" />
-					</Button>
-					<Button
-						variant="secondary"
-						type="button"
-						onclick={() => {
-							anchor = startOfDay(new Date());
-						}}
-					>
-						{t('appointments.today')}
-					</Button>
-				</div>
-				<Button type="button" onclick={openCreate}>{t('appointments.new')}</Button>
-			</div>
-		{/snippet}
-	</PageHeader>
+<div class="mx-auto w-full max-w-xl min-w-0">
+	<header class="mb-4 border-b border-border pb-4">
+		<h1 class="text-base font-semibold tracking-tight text-text sm:text-xl">
+			{t('appointments.title')}
+		</h1>
+		<div class="mt-0.5 flex items-center justify-between gap-2 text-sm text-text-muted">
+			<span class="min-w-0 truncate">{periodSummary}</span>
+			<span class="shrink-0 text-right font-medium text-text-muted tabular-nums"
+				>{periodRangeText}</span
+			>
+		</div>
 
-	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone} />
+		<div
+			class="mt-3.5 flex gap-0.5 rounded-[8px] border border-border bg-surface-2 p-0.5"
+			role="tablist"
+			aria-label={t('reports.period.label')}
+		>
+			{#each periodOptions as opt (opt.key)}
+				<button
+					type="button"
+					role="tab"
+					aria-selected={periodKey === opt.key}
+					class={cn(
+						'min-w-0 flex-1 cursor-pointer rounded-[8px] px-1.5 py-2 text-center text-xs font-semibold transition-colors sm:px-2.5 sm:text-sm',
+						periodKey === opt.key
+							? 'border border-border bg-surface text-text shadow-xs'
+							: 'text-text-faint hover:text-text-muted'
+					)}
+					onclick={() => setPeriod(opt.key)}
+				>
+					<span class="line-clamp-1">{opt.label}</span>
+				</button>
+			{/each}
+		</div>
+
+		{#if periodKey === 'ozel'}
+			<div class="mt-3 grid grid-cols-2 gap-2 sm:max-w-md">
+				<label class="grid gap-1 text-xs text-text-muted">
+					{t('reports.period.from')}
+					<input type="date" class={fieldClass} bind:value={customFrom} />
+				</label>
+				<label class="grid gap-1 text-xs text-text-muted">
+					{t('reports.period.to')}
+					<input type="date" class={fieldClass} bind:value={customTo} />
+				</label>
+			</div>
+		{/if}
+
+		<div class="mt-3.5 flex flex-nowrap items-center gap-2">
+			<select
+				class="{fieldClass} min-w-0 flex-1 px-2 text-xs sm:px-3 sm:text-sm"
+				bind:value={appointmentType}
+				aria-label={t('appointments.filter.typeAria')}
+			>
+				<option value="">{t('appointments.filter.typeAll')}</option>
+				{#each typeNames as typeName (typeName)}
+					<option value={typeName}>{typeName}</option>
+				{/each}
+			</select>
+			<select
+				class="{fieldClass} min-w-0 flex-1 px-2 text-xs sm:px-3 sm:text-sm"
+				bind:value={status}
+				aria-label={t('appointments.filter.statusAria')}
+			>
+				<option value="">{t('appointments.filter.statusAll')}</option>
+				{#each statusOptions as s (s)}
+					<option value={s}>{appointmentStatusLabels[s]}</option>
+				{/each}
+			</select>
+			<Button
+				type="button"
+				class="shrink-0 px-2.5 sm:px-4"
+				aria-label={t('appointments.new')}
+				onclick={openCreate}
+			>
+				<Plus class="size-4" />
+				<span class="hidden sm:inline">{t('appointments.new')}</span>
+			</Button>
+		</div>
+	</header>
 
 	{#if contactFilterId}
 		<div
@@ -398,139 +413,84 @@
 		</div>
 	{/if}
 
-	<form
-		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end"
-		onsubmit={applyFilters}
-	>
-		<label class="grid min-w-0 flex-1 gap-1 lg:min-w-[14rem]">
-			<span class="text-xs font-medium text-text-muted">{t('appointments.filter.involves')}</span>
-			<Combobox
-				id="appointments-contact-involves"
-				bind:value={contactInvolvesId}
-				options={contactOptions}
-				placeholder={t('appointments.filter.involvesPlaceholder')}
-				emptyText={t('appointments.filter.involvesEmpty')}
-				clearLabel={t('appointments.filter.involvesClear')}
-				inputClass={filterInputClass}
-				onselect={(option) => syncInvolvesUrl(option?.value ?? '')}
-			/>
-		</label>
-		<input
-			class="{filterInputClass} flex-1 lg:min-w-[12rem]"
-			placeholder={t('appointments.filter.qPlaceholder')}
-			bind:value={qInput}
-		/>
-		<select class="{filterInputClass} lg:w-44" bind:value={status}>
-			<option value="">{t('appointments.filter.statusAll')}</option>
-			{#each statusOptions as s (s)}
-				<option value={s}>{appointmentStatusLabels[s]}</option>
-			{/each}
-		</select>
-		<div class="flex gap-2">
-			<Button type="submit" variant="secondary" class="min-h-11"
-				>{t('appointments.filter.apply')}</Button
-			>
-			{#if appliedQ || status || contactInvolvesId}
-				<Button type="button" variant="outline" class="min-h-11" onclick={clearFilters}
-					>{t('appointments.filter.clear')}</Button
-				>
-			{/if}
-		</div>
-	</form>
-
-	{#if !appointmentsQuery.isPending && !appointmentsQuery.isError && statusCountEntries.length > 0}
-		<p class="mb-4 text-sm text-text-muted" aria-label={t('appointments.stats.label')}>
-			{#each statusCountEntries as entry, i (entry.status)}
-				{#if i > 0}<span class="text-text-faint" aria-hidden="true"> · </span>{/if}
-				<span>
-					{t('appointments.stats.entry', {
-						label: appointmentStatusLabels[entry.status],
-						count: entry.count
-					})}
-				</span>
-			{/each}
-		</p>
-	{/if}
-
 	{#if appointmentsQuery.isPending}
 		<p class="text-sm text-text-muted">{t('appointments.loading')}</p>
 	{:else if appointmentsQuery.isError}
 		<p class="text-sm text-danger">{t('appointments.loadError')}</p>
-	{:else}
-		<div class="grid min-w-0 gap-3 {view === 'week' ? 'md:grid-cols-7' : 'grid-cols-1'}">
-			{#each days as day (day.toISOString())}
-				{@const key = toTenantDayKey(day, tenantTimezone)}
-				{@const items = byDay.get(key) ?? []}
-				{@const isToday = key === toTenantDayKey(new Date(), tenantTimezone)}
-				<section
-					class="min-w-0 overflow-hidden rounded-lg border border-border bg-surface {isToday
-						? 'ring-1 ring-brand/40'
-						: ''}"
-				>
-					<header class="border-b border-border bg-surface-2/40 px-3 py-2">
-						<p class="text-[11px] font-semibold tracking-wider text-text-muted uppercase">
-							{day.toLocaleDateString('tr-TR', { weekday: 'short' })}
-						</p>
-						<p class="text-sm font-semibold text-text">{day.getDate()}</p>
-					</header>
-					<ul class="min-h-24 space-y-1.5 p-2">
-						{#if items.length === 0}
-							<li class="px-1 py-3 text-center text-xs text-text-faint">
-								{t('appointments.emptyDay')}
-							</li>
-						{:else}
-							{#each items as appt (appt.id)}
-								<li>
-									<button
-										type="button"
-										class="w-full min-w-0 rounded-[6px] border border-transparent px-2 py-1.5 text-left transition-colors hover:bg-surface-2"
-										onclick={() => openEdit(appt)}
-									>
-										<p class="text-xs font-medium text-brand tabular-nums">
-											{formatTime(appt.starts_at)}
-										</p>
-										<p class="truncate text-xs font-medium text-text">
-											{appt.contact_display_name}
-										</p>
-										{#if appt.contact_info_incomplete}
-											<p class="mt-0.5">
-												<StatusBadge
-													label={t('appointments.contactInfoIncomplete')}
-													tone="warning"
-												/>
-											</p>
-										{/if}
-										<p class="truncate text-[11px] text-text-faint">
-											{appt.title ?? appt.appointment_type ?? t('appointments.fallbackTitle')}
-										</p>
-										<div class="mt-1">
-											<StatusBadge
-												label={appointmentStatusLabels[appt.status]}
-												tone={appointmentStatusTone(appt.status)}
-											/>
-										</div>
-									</button>
-								</li>
-							{/each}
-						{/if}
-					</ul>
-				</section>
-			{/each}
+	{:else if items.length === 0}
+		<div class="rounded-xl border border-border bg-surface p-8 text-center">
+			<p class="text-sm font-medium text-text">{t('appointments.emptyTitle')}</p>
+			<p class="mt-1 text-sm text-text-muted">{t('appointments.emptyBody')}</p>
+			<Button class="mt-4" type="button" onclick={openCreate}>
+				<Plus class="size-4" />
+				{t('appointments.new')}
+			</Button>
 		</div>
-
-		<section class="mt-8 min-w-0">
-			<div class="mb-3">
-				<h2 class="text-sm font-semibold text-text">{t('appointments.ops.heading')}</h2>
-				<p class="mt-0.5 text-xs text-text-muted">
-					{t('appointments.ops.description')}
-				</p>
-			</div>
-			<AppointmentOpsList
-				appointments={rangeAppointments}
-				contacts={contactsQuery.data?.items ?? []}
-				onedit={openEdit}
-			/>
-		</section>
+	{:else}
+		<ul class="space-y-2">
+			{#each items as appt (appt.id)}
+				<li class="min-w-0">
+					<div
+						class="relative flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-surface-2/40"
+					>
+						<Button
+							type="button"
+							size="icon"
+							variant="ghost"
+							class="absolute top-2 right-2 z-10 shrink-0"
+							aria-label={t('common.edit')}
+							onclick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								openEdit(appt);
+							}}
+						>
+							<Pencil class="size-4" />
+						</Button>
+						<a
+							href={resolve('/contacts/[id]', { id: appt.contact_id })}
+							class="flex min-w-0 flex-col gap-3 pr-8 text-left text-inherit no-underline"
+						>
+							<div class="flex min-w-0 items-center gap-3">
+								<span
+									class="flex size-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-sm font-semibold text-text"
+									aria-hidden="true"
+								>
+									{initialsOf(appt.contact_display_name)}
+								</span>
+								<div class="min-w-0 flex-1">
+									<p class="truncate text-base font-semibold text-text">
+										{appt.contact_display_name}
+									</p>
+									<div
+										class={cn(
+											'mt-1 inline-flex max-w-full items-center gap-1.5 rounded-[6px] border px-2 py-1',
+											typePillClass(appt)
+										)}
+									>
+										<span
+											class={cn('size-2 shrink-0 rounded-full', typeDotClass(appt))}
+											aria-hidden="true"
+										></span>
+										<span class="truncate text-xs font-semibold">{typeLabel(appt)}</span>
+										<span class="shrink-0 text-xs opacity-90 tabular-nums"
+											>{scheduleLabel(appt)}</span
+										>
+									</div>
+								</div>
+							</div>
+							<p class="min-w-0 text-sm break-words text-text-muted">
+								{#each logisticsParts(appt) as part, i (part.label)}
+									{#if i > 0}<span aria-hidden="true">, </span>{/if}
+									<span class="font-medium text-text">{part.label}:</span>
+									<span> {part.value}</span>
+								{/each}
+							</p>
+						</a>
+					</div>
+				</li>
+			{/each}
+		</ul>
 	{/if}
 </div>
 

@@ -178,7 +178,7 @@ function makeAppointment(contact: Contact, overrides: Partial<Appointment> = {})
 			'Kontrol randevusu',
 			'Tedavi günü'
 		]),
-		appointment_type: faker.helpers.arrayElement(['Konsültasyon', 'Tedavi', 'Kontrol', 'Transfer']),
+		appointment_type: faker.helpers.arrayElement(['Yeni Hasta', 'Devam Hastası', 'RPT']),
 		status: faker.helpers.arrayElement(['scheduled', 'confirmed', 'completed', 'cancelled']),
 		starts_at: iso(starts),
 		ends_at: iso(ends),
@@ -726,7 +726,7 @@ function makeFinanceCategories(): FinanceCategory[] {
 }
 
 function makeAppointmentTypes(): AppointmentTypeSetting[] {
-	return ['Konsültasyon', 'Tedavi', 'Kontrol', 'Transfer'].map((name, i) => ({
+	return ['Yeni Hasta', 'Devam Hastası', 'RPT'].map((name, i) => ({
 		id: faker.string.uuid(),
 		tenant_id: DEMO_TENANT_ID,
 		name,
@@ -1226,7 +1226,7 @@ function makeAtalaySeed(contact: Contact): {
 			id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',
 			offsetDays: -95,
 			title: 'İlk konsültasyon',
-			type: 'Konsültasyon',
+			type: 'Yeni Hasta',
 			status: 'completed',
 			hour: 11
 		},
@@ -1234,7 +1234,7 @@ function makeAtalaySeed(contact: Contact): {
 			id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
 			offsetDays: -70,
 			title: 'Tedavi günü',
-			type: 'Tedavi',
+			type: 'Yeni Hasta',
 			status: 'completed',
 			hour: 9
 		},
@@ -1242,7 +1242,7 @@ function makeAtalaySeed(contact: Contact): {
 			id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3',
 			offsetDays: -40,
 			title: '1. kontrol',
-			type: 'Kontrol',
+			type: 'Devam Hastası',
 			status: 'completed',
 			hour: 14
 		},
@@ -1250,7 +1250,7 @@ function makeAtalaySeed(contact: Contact): {
 			id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4',
 			offsetDays: -12,
 			title: '2. kontrol',
-			type: 'Kontrol',
+			type: 'Devam Hastası',
 			status: 'completed',
 			hour: 10
 		},
@@ -1258,7 +1258,7 @@ function makeAtalaySeed(contact: Contact): {
 			id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb5',
 			offsetDays: 5,
 			title: 'Takip randevusu',
-			type: 'Kontrol',
+			type: 'RPT',
 			status: 'confirmed',
 			hour: 15
 		}
@@ -1283,11 +1283,11 @@ function makeAtalaySeed(contact: Contact): {
 			starts_at: iso(start),
 			ends_at: iso(end),
 			clinic_name: 'Klinik Ortak',
-			hotel_name: v.type === 'Tedavi' ? 'Demo Hotel' : null,
+			hotel_name: v.title === 'Tedavi günü' ? 'Demo Hotel' : null,
 			clinic_contact_id: CONTACT_KLINIK_ID,
-			hotel_contact_id: v.type === 'Tedavi' ? CONTACT_DEMO_HOTEL_ID : null,
-			transfer_contact_id: v.type === 'Tedavi' ? CONTACT_TRANSFER_ID : null,
-			transfer_note: v.type === 'Tedavi' ? '08:30 havalimanı → otel → klinik' : null,
+			hotel_contact_id: v.title === 'Tedavi günü' ? CONTACT_DEMO_HOTEL_ID : null,
+			transfer_contact_id: v.title === 'Tedavi günü' ? CONTACT_TRANSFER_ID : null,
+			transfer_note: v.title === 'Tedavi günü' ? '08:30 havalimanı → otel → klinik' : null,
 			notes: v.status === 'completed' ? 'Ziyaret tamamlandı.' : 'Planlı takip.',
 			created_at: iso(new Date(start.getTime() - 3 * 86400_000)),
 			updated_at: iso(start)

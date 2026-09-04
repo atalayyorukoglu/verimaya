@@ -166,8 +166,7 @@
 	);
 
 	let contact_id = $state('');
-	let title = $state('');
-	let appointment_type = $state('Konsültasyon');
+	let appointment_type = $state('Yeni Hasta');
 	let status = $state<AppointmentStatus>('scheduled');
 	let startsLocal = $state('');
 	let endsLocal = $state('');
@@ -175,7 +174,6 @@
 	let hotel_contact_id = $state('');
 	let transfer_contact_id = $state('');
 	let doctor_contact_id = $state('');
-	let transfer_note = $state('');
 	let notes = $state('');
 	let deletePhase = $state<DeleteConfirmPhase>('form');
 
@@ -249,8 +247,7 @@
 			return;
 		}
 		contact_id = appointment?.contact_id ?? defaultContactId ?? contacts[0]?.id ?? '';
-		title = appointment?.title ?? '';
-		appointment_type = appointment?.appointment_type ?? typeNames[0] ?? 'Konsültasyon';
+		appointment_type = appointment?.appointment_type ?? typeNames[0] ?? 'Yeni Hasta';
 		status = appointment?.status ?? 'scheduled';
 		startsLocal = appointment
 			? toLocalInput(appointment.starts_at)
@@ -262,7 +259,6 @@
 		hotel_contact_id = appointment?.hotel_contact_id ?? '';
 		transfer_contact_id = appointment?.transfer_contact_id ?? '';
 		doctor_contact_id = appointment?.doctor_contact_id ?? '';
-		transfer_note = appointment?.transfer_note ?? '';
 		notes = appointment?.notes ?? '';
 		deletePhase = 'form';
 	});
@@ -297,7 +293,8 @@
 		const hotel = directoryContacts.find((c) => c.id === hotel_contact_id);
 		const payload = {
 			contact_id,
-			title: title.trim() || null,
+			// Formda yok: düzenlemede mevcut değer korunur, yenide null.
+			title: appointment?.title ?? null,
 			appointment_type: appointment_type.trim() || null,
 			status,
 			starts_at: fromLocalInput(startsLocal),
@@ -308,7 +305,7 @@
 			doctor_contact_id: doctor_contact_id || null,
 			clinic_name: clinic?.display_name ?? null,
 			hotel_name: hotel?.display_name ?? null,
-			transfer_note: transfer_note.trim() || null,
+			transfer_note: appointment?.transfer_note ?? null,
 			notes: notes.trim() || null
 		};
 		await onsubmit(payload);
@@ -370,10 +367,6 @@
 						{t(contactInfoWarningKey)}
 					</p>
 				{/if}
-			</div>
-			<div>
-				<label class={labelClass} for="appt-title">{t('appointments.form.title')}</label>
-				<input id="appt-title" class={fieldClass} bind:value={title} maxlength={255} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div>
@@ -471,10 +464,6 @@
 						{/each}
 					</select>
 				</div>
-			</div>
-			<div>
-				<label class={labelClass} for="appt-transfer">Transfer notu</label>
-				<input id="appt-transfer" class={fieldClass} bind:value={transfer_note} maxlength={8000} />
 			</div>
 			<div>
 				<label class={labelClass} for="appt-notes">Notlar</label>
