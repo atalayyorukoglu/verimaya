@@ -212,8 +212,7 @@
 					>
 						<a href={`/contacts/${c.id}`} class="min-w-0 flex-1 hover:underline">
 							<span class="block text-sm font-medium break-all text-text">{c.display_name}</span>
-							<span class="mt-0.5 block text-xs tabular-nums text-text-muted"
-								>{c.phone ?? '—'}</span
+							<span class="mt-0.5 block text-xs text-text-muted tabular-nums">{c.phone ?? '—'}</span
 							>
 							<span class="mt-0.5 block truncate text-xs text-text-muted">{c.email ?? '—'}</span>
 						</a>

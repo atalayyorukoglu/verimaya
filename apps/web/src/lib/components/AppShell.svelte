@@ -5,12 +5,7 @@
 	import type { Tenant } from '@verimaya/shared';
 	import { cn } from '$lib/utils';
 	import { apiGet } from '$lib/api';
-	import {
-		buildNavGroups,
-		mobileTabItems,
-		navGroupItems,
-		PANEL_HOME_HREF
-	} from '$lib/navigation';
+	import { buildNavGroups, mobileTabItems, navGroupItems, PANEL_HOME_HREF } from '$lib/navigation';
 	import {
 		getEnabledProductNavItems,
 		applyServerProductModules
@@ -693,7 +688,7 @@
 
 	<div class="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 		<header
-			class="relative sticky top-0 z-30 flex h-14 shrink-0 items-center overflow-y-auto border-b border-border bg-bg/95 px-4 backdrop-blur [scrollbar-gutter:stable] sm:px-6 md:static"
+			class="relative sticky top-0 z-30 flex h-14 shrink-0 [scrollbar-gutter:stable] items-center overflow-y-auto border-b border-border bg-bg/95 px-4 backdrop-blur sm:px-6 md:static"
 		>
 			{#if sidebarCollapsed}
 				<button
@@ -711,9 +706,7 @@
 				Masaüstü: main ile aynı yatay padding + max-w-xl — randevu vb. dar
 				içerik sütunuyla arama aynı dikey eksende.
 			-->
-			<div
-				class="flex h-full min-w-0 w-full items-center gap-2 md:mx-auto md:max-w-xl"
-			>
+			<div class="flex h-full w-full min-w-0 items-center gap-2 md:mx-auto md:max-w-xl">
 				<div class="flex shrink-0 items-center justify-start gap-1 md:hidden">
 					<a
 						href={PANEL_HOME_HREF}
@@ -763,7 +756,7 @@
 
 		<main
 			class={cn(
-				'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]',
+				'min-h-0 min-w-0 flex-1 [scrollbar-gutter:stable] overflow-x-hidden overflow-y-auto',
 				flushMain
 					? // Kişi kartı: alt menü payı yazma alanı / sekme gövdesinde (yüzey oraya kadar uzasın).
 						'pb-0'

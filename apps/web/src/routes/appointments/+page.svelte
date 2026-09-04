@@ -23,11 +23,7 @@
 	import { formatDate, formatTime, initialsOf } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
-	import {
-		monthRangeInTz,
-		resolvePeriodRange,
-		type PeriodKey
-	} from '$lib/period-range';
+	import { monthRangeInTz, resolvePeriodRange, type PeriodKey } from '$lib/period-range';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -135,13 +131,9 @@
 		enabled: qs.ready
 	}));
 
-	const contactById = $derived(
-		new Map((contactsQuery.data?.items ?? []).map((c) => [c.id, c]))
-	);
+	const contactById = $derived(new Map((contactsQuery.data?.items ?? []).map((c) => [c.id, c])));
 
-	const filterContact = $derived(
-		contactFilterId ? contactById.get(contactFilterId) : null
-	);
+	const filterContact = $derived(contactFilterId ? contactById.get(contactFilterId) : null);
 
 	const items = $derived(appointmentsQuery.data?.pages.flatMap((p) => p.items) ?? []);
 
@@ -475,7 +467,7 @@
 											aria-hidden="true"
 										></span>
 										<span class="truncate text-xs font-semibold">{typeLabel(appt)}</span>
-										<span class="shrink-0 text-xs opacity-90 tabular-nums"
+										<span class="shrink-0 text-xs tabular-nums opacity-90"
 											>{scheduleLabel(appt)}</span
 										>
 									</div>

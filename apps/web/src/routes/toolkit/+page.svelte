@@ -155,9 +155,7 @@
 	/** Varsayılan: Yayında olanlar. */
 	let statusFilter = $state<FeatureStatusBucket>('yayinda');
 
-	const filtered = $derived(
-		features.filter((f) => featureStatusBucket(f.status) === statusFilter)
-	);
+	const filtered = $derived(features.filter((f) => featureStatusBucket(f.status) === statusFilter));
 
 	/** "Yeni" rozeti bugüne göre hesaplanır; tarih tek yerde çözülür. */
 	const today = new Date().toISOString().slice(0, 10);
