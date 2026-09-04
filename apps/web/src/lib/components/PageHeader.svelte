@@ -21,7 +21,7 @@
 	let helpOpen = $state(false);
 </script>
 
-<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+<div class="mb-6 flex flex-row items-center justify-between gap-3">
 	<div class="min-w-0">
 		<h1
 			class="flex items-center gap-1.5 text-xl font-semibold tracking-tight break-words text-text"
@@ -43,7 +43,7 @@
 		{/if}
 	</div>
 	{#if actions}
-		<div class="flex shrink-0 flex-wrap items-center gap-2">
+		<div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
 			{@render actions()}
 		</div>
 	{/if}

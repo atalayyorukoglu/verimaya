@@ -372,24 +372,26 @@
 				</span>
 			</button>
 			<div class="flex shrink-0 items-center">
-				<a
-					href="/changelog"
-					class={cn(
-						'relative rounded-[6px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-						spacious ? 'p-2.5' : 'p-2'
-					)}
-					aria-label={t('nav.changelog')}
-					title={t('nav.changelog')}
-					onclick={closeMobile}
-				>
-					<Bell class={spacious ? 'size-5' : 'size-4'} />
-					{#if hasUnreadChangelog}
-						<span
-							class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-brand"
-							aria-hidden="true"
-						></span>
-					{/if}
-				</a>
+				{#if !opts.showClose}
+					<a
+						href="/changelog"
+						class={cn(
+							'relative rounded-[6px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+							spacious ? 'p-2.5' : 'p-2'
+						)}
+						aria-label={t('nav.changelog')}
+						title={t('nav.changelog')}
+						onclick={closeMobile}
+					>
+						<Bell class={spacious ? 'size-5' : 'size-4'} />
+						{#if hasUnreadChangelog}
+							<span
+								class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-brand"
+								aria-hidden="true"
+							></span>
+						{/if}
+					</a>
+				{/if}
 				{#if opts.showCollapse}
 					<button
 						type="button"

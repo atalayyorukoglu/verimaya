@@ -4,8 +4,6 @@
 	import type {
 		Contact,
 		ContactCreate,
-		ContactsBulkTypeResult,
-		ContactTitle,
 		ContactType,
 		ContactUpdate,
 		ContractResponse,
@@ -21,6 +19,7 @@
 	import { memberMatchesAssignee } from '$lib/member-assignee';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import Pencil from '@lucide/svelte/icons/pencil';
 
 	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
 	type MembersPage = { items: MembershipUser[]; next_cursor: string | null };
@@ -28,30 +27,16 @@
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
 
-	let q = $state('');
-	let search = $state('');
 	let typeId = $state('');
-	let titleId = $state('');
 	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
-	let selectionMode = $state(false);
-	let selectedIds = $state<string[]>([]);
-	let bulkTypeId = $state('');
-	let bulkBusy = $state(false);
-	let bulkError = $state<string | null>(null);
 
 	const typesQuery = createQuery(() => ({
 		queryKey: qs.keys.settings.contactTypes(),
 		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
-		enabled: qs.ready
-	}));
-
-	const titlesQuery = createQuery(() => ({
-		queryKey: qs.keys.settings.contactTitles(),
-		queryFn: () => apiGet<{ items: ContactTitle[] }>(apiPaths.settingsContactTitles),
 		enabled: qs.ready
 	}));
 
@@ -62,9 +47,6 @@
 	}));
 
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
-	const contactTitles = $derived(
-		[...(titlesQuery.data?.items ?? [])].sort((a, b) => a.sort_order - b.sort_order)
-	);
 	const members = $derived(membersQuery.data?.items ?? []);
 
 	$effect(() => {
@@ -76,17 +58,13 @@
 
 	const contactsQuery = createInfiniteQuery(() => ({
 		queryKey: qs.keys.contacts.list({
-			q: search,
-			type_id: typeId || null,
-			title_id: titleId || null
+			type_id: typeId || null
 		}),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<ContactsPage>(
 				listUrl('contacts', {
 					limit: 15,
-					q: search || undefined,
 					type_id: typeId || undefined,
-					title_id: titleId || undefined,
 					cursor: pageParam
 				})
 			),
@@ -97,7 +75,7 @@
 
 	const items = $derived(contactsQuery.data?.pages.flatMap((p) => p.items) ?? []);
 	const totalCount = $derived(contactsQuery.data?.pages[0]?.total_count);
-	const filtered = $derived(Boolean(search || typeId || titleId));
+	const filtered = $derived(Boolean(typeId));
 	const listDescription = $derived(
 		totalCount == null
 			? t('contacts.list.description')
@@ -105,36 +83,10 @@
 				? t('contacts.list.totalFiltered', { count: String(totalCount) })
 				: t('contacts.list.total', { count: String(totalCount) })
 	);
-	const allPageSelected = $derived(
-		items.length > 0 && items.every((c) => selectedIds.includes(c.id))
-	);
 
 	function assigneeName(userId: string | null): string | null {
 		if (!userId) return null;
 		return members.find((m) => memberMatchesAssignee(m, userId))?.display_name ?? null;
-	}
-
-	function submitSearch(e: Event) {
-		e.preventDefault();
-		search = q.trim();
-		selectedIds = [];
-	}
-
-	function onTypeFilterChange() {
-		selectedIds = [];
-	}
-
-	function onTitleFilterChange() {
-		selectedIds = [];
-	}
-
-	function clearFilters() {
-		q = '';
-		search = '';
-		typeId = '';
-		titleId = '';
-		selectedIds = [];
-		defaultTypeApplied = true;
 	}
 
 	function openCreate() {
@@ -147,62 +99,6 @@
 		editing = c;
 		formError = null;
 		formOpen = true;
-	}
-
-	function enterSelectionMode() {
-		selectionMode = true;
-	}
-
-	function exitSelectionMode() {
-		selectionMode = false;
-		selectedIds = [];
-		bulkTypeId = '';
-		bulkError = null;
-	}
-
-	function toggleRow(id: string, checked: boolean) {
-		if (checked) {
-			if (!selectedIds.includes(id)) selectedIds = [...selectedIds, id];
-		} else {
-			selectedIds = selectedIds.filter((x) => x !== id);
-		}
-	}
-
-	function toggleAllPage(checked: boolean) {
-		if (checked) {
-			const next = [...selectedIds];
-			for (const c of items) {
-				if (!next.includes(c.id)) next.push(c.id);
-			}
-			selectedIds = next;
-		} else {
-			const pageIds = items.map((c) => c.id);
-			selectedIds = selectedIds.filter((id) => !pageIds.includes(id));
-		}
-	}
-
-	function clearSelection() {
-		selectedIds = [];
-		bulkTypeId = '';
-		bulkError = null;
-	}
-
-	async function applyBulkType() {
-		if (!bulkTypeId || selectedIds.length === 0) return;
-		bulkBusy = true;
-		bulkError = null;
-		try {
-			await apiSend<ContactsBulkTypeResult>(apiPaths.contactsBulkType, 'PATCH', {
-				contact_ids: selectedIds,
-				contact_type_id: bulkTypeId
-			});
-			exitSelectionMode();
-			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
-		} catch (err) {
-			bulkError = err instanceof Error ? err.message : t('contacts.bulk.failed');
-		} finally {
-			bulkBusy = false;
-		}
 	}
 
 	async function saveContact(data: ContactCreate | ContactUpdate) {
@@ -259,19 +155,10 @@
 		{/snippet}
 	</PageHeader>
 
-	<form
-		class="mb-4 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center"
-		onsubmit={submitSearch}
-	>
-		<input
-			class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:min-w-[12rem]"
-			placeholder={t('contacts.list.searchPlaceholder')}
-			bind:value={q}
-		/>
+	<div class="mb-4">
 		<select
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-44"
+			class="h-9 w-full rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:w-44"
 			bind:value={typeId}
-			onchange={onTypeFilterChange}
 			aria-label={t('contacts.list.filterTypeAria')}
 		>
 			<option value="">{t('contacts.list.filterTypeAll')}</option>
@@ -279,77 +166,7 @@
 				<option value={ct.id}>{ct.name}</option>
 			{/each}
 		</select>
-		<select
-			class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 lg:w-44"
-			bind:value={titleId}
-			onchange={onTitleFilterChange}
-			aria-label={t('contacts.list.filterTitleAria')}
-		>
-			<option value="">{t('contacts.list.filterTitleAll')}</option>
-			{#each contactTitles as ct (ct.id)}
-				<option value={ct.id}>{ct.name}</option>
-			{/each}
-		</select>
-		<div class="flex flex-wrap gap-2">
-			<Button type="submit" variant="secondary">{t('contacts.list.filterApply')}</Button>
-			{#if search || typeId || titleId}
-				<Button type="button" variant="outline" onclick={clearFilters}
-					>{t('contacts.list.filterClear')}</Button
-				>
-			{/if}
-			{#if selectionMode}
-				<Button type="button" variant="outline" disabled={bulkBusy} onclick={exitSelectionMode}
-					>{t('contacts.bulk.modeExit')}</Button
-				>
-			{:else}
-				<Button type="button" variant="outline" onclick={enterSelectionMode}
-					>{t('contacts.bulk.modeEnter')}</Button
-				>
-			{/if}
-		</div>
-	</form>
-
-	{#if selectionMode && selectedIds.length > 0}
-		<div
-			class="mb-4 flex flex-col gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5 sm:flex-row sm:items-center"
-		>
-			<p class="text-sm text-text">
-				{t('contacts.bulk.selected', { count: String(selectedIds.length) })}
-			</p>
-			<select
-				class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:ml-auto sm:w-48"
-				bind:value={bulkTypeId}
-				disabled={bulkBusy}
-			>
-				<option value="">{t('contacts.bulk.selectType')}</option>
-				{#each contactTypes as ct (ct.id)}
-					<option value={ct.id}>{ct.name}</option>
-				{/each}
-			</select>
-			<Button
-				type="button"
-				size="sm"
-				disabled={bulkBusy || !bulkTypeId}
-				onclick={() => void applyBulkType()}
-			>
-				{bulkBusy ? t('contacts.bulk.assigning') : t('contacts.bulk.assignType')}
-			</Button>
-			<Button
-				type="button"
-				size="sm"
-				variant="outline"
-				disabled={bulkBusy}
-				onclick={clearSelection}
-			>
-				{t('contacts.bulk.clearSelection')}
-			</Button>
-		</div>
-		{#if bulkError}
-			<p class="mb-4 text-sm text-danger">{bulkError}</p>
-		{/if}
-	{:else if selectionMode && bulkError}
-		<p class="mb-4 text-sm text-danger">{bulkError}</p>
-	{/if}
+	</div>
 
 	{#if contactsQuery.isPending}
 		<p class="text-sm text-text-muted">{t('contacts.list.loading')}</p>
@@ -365,20 +182,7 @@
 			<table class="w-full table-fixed text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						{#if selectionMode}
-							<th class="w-8 px-3 py-3">
-								<input
-									type="checkbox"
-									class="size-4 rounded border-border"
-									checked={allPageSelected}
-									aria-label={t('contacts.bulk.selectAll')}
-									onchange={(e) => toggleAllPage(e.currentTarget.checked)}
-								/>
-							</th>
-						{/if}
-						<th class="{selectionMode ? 'w-[20%]' : 'w-[22%]'} px-4 py-3 font-medium"
-							>{t('contacts.list.col.name')}</th
-						>
+						<th class="w-[22%] px-4 py-3 font-medium">{t('contacts.list.col.name')}</th>
 						<th class="w-[10%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
 						<th class="w-[10%] px-4 py-3 font-medium">{t('contacts.list.col.title')}</th>
 						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
@@ -391,17 +195,6 @@
 				<tbody class="divide-y divide-border">
 					{#each items as c (c.id)}
 						<tr class="transition-colors hover:bg-surface-2/60">
-							{#if selectionMode}
-								<td class="px-3 py-3">
-									<input
-										type="checkbox"
-										class="size-4 rounded border-border"
-										checked={selectedIds.includes(c.id)}
-										aria-label={t('contacts.bulk.selectRow')}
-										onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
-									/>
-								</td>
-							{/if}
 							<td class="px-4 py-3">
 								<a href={`/contacts/${c.id}`} class="font-medium text-text hover:underline">
 									<span class="line-clamp-2 break-all">{c.display_name}</span>
@@ -438,67 +231,27 @@
 		</div>
 
 		<ul class="space-y-2 md:hidden">
-			{#if selectionMode}
-				<li class="flex items-center gap-3 px-1 py-1">
-					<input
-						type="checkbox"
-						class="size-4 rounded border-border"
-						checked={allPageSelected}
-						aria-label={t('contacts.bulk.selectAll')}
-						onchange={(e) => toggleAllPage(e.currentTarget.checked)}
-					/>
-					<span class="text-xs text-text-faint">{t('contacts.bulk.selectAll')}</span>
-				</li>
-			{/if}
 			{#each items as c (c.id)}
 				<li class="min-w-0">
 					<div
-						class="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-surface p-4"
+						class="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3"
 					>
-						{#if selectionMode}
-							<input
-								type="checkbox"
-								class="mt-1 size-4 shrink-0 rounded border-border"
-								checked={selectedIds.includes(c.id)}
-								aria-label={t('contacts.bulk.selectRow')}
-								onchange={(e) => toggleRow(c.id, e.currentTarget.checked)}
-							/>
-						{/if}
-						<a href={`/contacts/${c.id}`} class="min-w-0 flex-1 hover:opacity-90">
-							<div class="flex flex-wrap items-center gap-2">
-								<p class="min-w-0 flex-1 text-sm font-medium break-all text-text">
-									{c.display_name}
-								</p>
-								<StatusBadge label={c.contact_type_name} tone="neutral" />
-							</div>
-							<p class="mt-1 truncate text-xs text-text-muted tabular-nums">{c.phone ?? '—'}</p>
-							<div class="mt-2 flex flex-wrap items-center gap-2">
-								{#if c.title_name}
-									<span class="text-xs text-text-faint">
-										{t('contacts.list.col.title')}: {c.title_name}
-									</span>
-								{/if}
-								{#if c.status}
-									<StatusBadge
-										label={contactStatusLabels[c.status]}
-										tone={contactStatusTone(c.status)}
-									/>
-								{/if}
-								{#if c.source}
-									<span class="text-xs text-text-faint">
-										{t('contacts.list.col.source')}: {c.source}
-									</span>
-								{/if}
-								{#if assigneeName(c.assigned_user_id)}
-									<span class="text-xs text-text-faint">
-										{t('contacts.list.col.assignee')}: {assigneeName(c.assigned_user_id)}
-									</span>
-								{/if}
-							</div>
-						</a>
-						<Button type="button" size="sm" variant="outline" onclick={() => openEdit(c)}
-							>{t('common.edit')}</Button
+						<a
+							href={`/contacts/${c.id}`}
+							class="min-w-0 flex-1 text-sm font-medium break-all text-text hover:underline"
 						>
+							{c.display_name}
+						</a>
+						<Button
+							type="button"
+							size="icon"
+							variant="ghost"
+							class="shrink-0"
+							aria-label={t('common.edit')}
+							onclick={() => openEdit(c)}
+						>
+							<Pencil class="size-4" />
+						</Button>
 					</div>
 				</li>
 			{/each}
