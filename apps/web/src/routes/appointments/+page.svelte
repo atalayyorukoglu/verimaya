@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		Appointment,
 		AppointmentCreate,
@@ -101,18 +101,22 @@
 			.map((row) => row.name)
 	);
 
-	const appointmentsQuery = createQuery(() => ({
+	const PAGE_SIZE = 30;
+
+	const appointmentsQuery = createInfiniteQuery(() => ({
 		queryKey: qs.keys.appointments.list({
 			from: periodRange.from ?? undefined,
 			to: periodRange.to ?? undefined,
 			contact_id: contactFilterId,
 			status: (status || undefined) as AppointmentStatus | undefined,
-			appointment_type: appointmentType || undefined
+			appointment_type: appointmentType || undefined,
+			limit: PAGE_SIZE
 		}),
-		queryFn: () =>
+		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<AppointmentsPage>(
 				listUrl('appointments', {
-					limit: 100,
+					limit: PAGE_SIZE,
+					cursor: pageParam,
 					from: periodRange.from ?? undefined,
 					to: periodRange.to ?? undefined,
 					contact_id: contactFilterId ?? undefined,
@@ -120,6 +124,8 @@
 					appointment_type: appointmentType || undefined
 				})
 			),
+		initialPageParam: null as string | null,
+		getNextPageParam: (last: AppointmentsPage) => last.next_cursor,
 		enabled: qs.ready && !!tenantQuery.data
 	}));
 
@@ -137,18 +143,14 @@
 		contactFilterId ? contactById.get(contactFilterId) : null
 	);
 
-	const items = $derived(
-		[...(appointmentsQuery.data?.items ?? [])].sort((a, b) =>
-			a.starts_at.localeCompare(b.starts_at)
-		)
-	);
+	const items = $derived(appointmentsQuery.data?.pages.flatMap((p) => p.items) ?? []);
 
 	const selectedPeriodLabel = $derived(
 		periodOptions.find((opt) => opt.key === periodKey)?.label ?? t('reports.period.label')
 	);
 
 	const filteredCount = $derived.by(() => {
-		const counts = appointmentsQuery.data?.status_counts;
+		const counts = appointmentsQuery.data?.pages[0]?.status_counts;
 		if (!counts) return items.length;
 		return Object.values(counts).reduce((sum, n) => sum + (n ?? 0), 0);
 	});
@@ -491,6 +493,21 @@
 				</li>
 			{/each}
 		</ul>
+
+		{#if appointmentsQuery.hasNextPage}
+			<div class="mt-4 flex justify-center">
+				<Button
+					variant="outline"
+					type="button"
+					disabled={appointmentsQuery.isFetchingNextPage}
+					onclick={() => appointmentsQuery.fetchNextPage()}
+				>
+					{appointmentsQuery.isFetchingNextPage
+						? t('common.loading')
+						: t('appointments.list.loadMore')}
+				</Button>
+			</div>
+		{/if}
 	{/if}
 </div>
 

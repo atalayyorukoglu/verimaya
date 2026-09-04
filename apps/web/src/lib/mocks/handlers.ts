@@ -1475,8 +1475,8 @@ export const handlers = [
 					(a.hotel_name?.toLowerCase().includes(needle) ?? false)
 			);
 		}
-		// CONTRACT-02: match the real API's order (created_at desc) — the calendar UI
-		// re-sorts by starts_at client-side regardless, so this doesn't change behavior.
+		// CONTRACT-02: match the real API's order (created_at desc). List UI pages
+		// via cursor — do not re-sort by starts_at across pages.
 		items.sort(compareByCreatedAtDesc);
 
 		items = items.map((a) => {

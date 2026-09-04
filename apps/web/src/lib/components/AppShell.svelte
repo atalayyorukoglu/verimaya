@@ -31,7 +31,6 @@
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import SidebarVersionFooter from '$lib/components/SidebarVersionFooter.svelte';
-	import MayaAiFab from '$lib/components/MayaAiFab.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import type { Snippet } from 'svelte';
@@ -694,7 +693,7 @@
 
 	<div class="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 		<header
-			class="relative sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-border bg-bg/95 backdrop-blur md:static"
+			class="relative sticky top-0 z-30 flex h-14 shrink-0 items-center overflow-y-auto border-b border-border bg-bg/95 px-4 backdrop-blur [scrollbar-gutter:stable] sm:px-6 md:static"
 		>
 			{#if sidebarCollapsed}
 				<button
@@ -708,16 +707,17 @@
 				</button>
 			{/if}
 			<!--
-				Mobil: logo | arama | zil (yan kolonlar auto — üst üste binmez).
-				Masaüstü: arama tl-measure ortasında (eşit fr yanlar).
+				Mobil: logo | arama | zil.
+				Masaüstü: main ile aynı yatay padding + max-w-xl — randevu vb. dar
+				içerik sütunuyla arama aynı dikey eksende.
 			-->
 			<div
-				class="tl-measure grid h-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,36rem)_minmax(0,1fr)]"
+				class="flex h-full min-w-0 w-full items-center gap-2 md:mx-auto md:max-w-xl"
 			>
-				<div class="flex shrink-0 items-center justify-start gap-1">
+				<div class="flex shrink-0 items-center justify-start gap-1 md:hidden">
 					<a
 						href={PANEL_HOME_HREF}
-						class="shrink-0 rounded-md text-text md:hidden"
+						class="shrink-0 rounded-md text-text"
 						aria-label={homeAriaLabel}
 					>
 						{#if tenantPending}
@@ -729,14 +729,14 @@
 					</a>
 				</div>
 
-				<div class="min-w-0 overflow-hidden">
+				<div class="min-w-0 flex-1 overflow-hidden">
 					<CommandPalette />
 				</div>
 
-				<div class="flex shrink-0 items-center justify-end gap-1">
+				<div class="flex shrink-0 items-center justify-end gap-1 md:hidden">
 					<a
 						href="/changelog"
-						class="relative rounded-[6px] p-2 text-text-muted transition-colors hover:bg-surface-2 hover:text-text md:hidden"
+						class="relative rounded-[6px] p-2 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 						aria-label={t('nav.changelog')}
 						title={t('nav.changelog')}
 					>
@@ -763,7 +763,7 @@
 
 		<main
 			class={cn(
-				'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto',
+				'min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]',
 				flushMain
 					? // Kişi kartı: alt menü payı yazma alanı / sekme gövdesinde (yüzey oraya kadar uzasın).
 						'pb-0'
@@ -815,8 +815,6 @@
 		</ul>
 	</nav>
 </div>
-
-<MayaAiFab />
 
 <Dialog
 	bind:open={supportOpen}

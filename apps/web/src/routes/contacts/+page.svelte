@@ -6,23 +6,17 @@
 		ContactCreate,
 		ContactType,
 		ContactUpdate,
-		ContractResponse,
-		MembershipUser
+		ContractResponse
 	} from '@verimaya/shared';
-	import { apiPaths, contactStatusLabels, listUrl } from '@verimaya/shared';
+	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { t } from '$lib/i18n/locale.svelte';
-	import { contactStatusTone } from '$lib/status-tone';
-	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
-	import { memberMatchesAssignee } from '$lib/member-assignee';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Pencil from '@lucide/svelte/icons/pencil';
 
 	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
-	type MembersPage = { items: MembershipUser[]; next_cursor: string | null };
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
@@ -40,14 +34,7 @@
 		enabled: qs.ready
 	}));
 
-	const membersQuery = createQuery(() => ({
-		queryKey: qs.keys.members.list({ for: 'contacts-list' }),
-		queryFn: () => apiGet<MembersPage>(listUrl('members', { limit: 100 })),
-		enabled: qs.ready
-	}));
-
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
-	const members = $derived(membersQuery.data?.items ?? []);
 
 	$effect(() => {
 		if (defaultTypeApplied || contactTypes.length === 0) return;
@@ -83,11 +70,6 @@
 				? t('contacts.list.totalFiltered', { count: String(totalCount) })
 				: t('contacts.list.total', { count: String(totalCount) })
 	);
-
-	function assigneeName(userId: string | null): string | null {
-		if (!userId) return null;
-		return members.find((m) => memberMatchesAssignee(m, userId))?.display_name ?? null;
-	}
 
 	function openCreate() {
 		editing = null;
@@ -145,28 +127,34 @@
 	<title>{t('contacts.list.documentTitle')}</title>
 </svelte:head>
 
-<div class="mx-auto max-w-6xl min-w-0">
-	<PageHeader title={t('contacts.list.title')} description={listDescription}>
-		{#snippet actions()}
-			<Button type="button" variant="outline" onclick={() => goto('/contacts/duplicates')}
-				>{t('contacts.list.duplicates')}</Button
-			>
-			<Button type="button" onclick={openCreate}>{t('contacts.list.new')}</Button>
-		{/snippet}
-	</PageHeader>
+<div class="mx-auto w-full max-w-xl min-w-0">
+	<header class="mb-4 border-b border-border pb-4">
+		<div class="min-w-0">
+			<h1 class="text-base font-semibold tracking-tight text-text sm:text-xl">
+				{t('contacts.list.title')}
+			</h1>
+			<p class="mt-0.5 text-sm text-text-muted">{listDescription}</p>
+		</div>
 
-	<div class="mb-4">
-		<select
-			class="h-9 w-full rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:w-44"
-			bind:value={typeId}
-			aria-label={t('contacts.list.filterTypeAria')}
-		>
-			<option value="">{t('contacts.list.filterTypeAll')}</option>
-			{#each contactTypes as ct (ct.id)}
-				<option value={ct.id}>{ct.name}</option>
-			{/each}
-		</select>
-	</div>
+		<div class="mt-3.5 flex flex-wrap items-center gap-2">
+			<select
+				class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:max-w-44 sm:flex-none"
+				bind:value={typeId}
+				aria-label={t('contacts.list.filterTypeAria')}
+			>
+				<option value="">{t('contacts.list.filterTypeAll')}</option>
+				{#each contactTypes as ct (ct.id)}
+					<option value={ct.id}>{ct.name}</option>
+				{/each}
+			</select>
+			<div class="ml-auto flex shrink-0 items-center gap-2">
+				<Button type="button" variant="outline" onclick={() => goto('/contacts/duplicates')}
+					>{t('contacts.list.duplicates')}</Button
+				>
+				<Button type="button" onclick={openCreate}>{t('contacts.list.new')}</Button>
+			</div>
+		</div>
+	</header>
 
 	{#if contactsQuery.isPending}
 		<p class="text-sm text-text-muted">{t('contacts.list.loading')}</p>
@@ -182,13 +170,10 @@
 			<table class="w-full table-fixed text-left text-sm">
 				<thead class="border-b border-border bg-surface-2/50 text-xs text-text-muted">
 					<tr>
-						<th class="w-[24%] px-4 py-3 font-medium">{t('contacts.list.col.name')}</th>
-						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.type')}</th>
-						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
-						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.source')}</th>
-						<th class="w-[12%] px-4 py-3 font-medium">{t('contacts.list.col.status')}</th>
-						<th class="w-[14%] px-4 py-3 font-medium">{t('contacts.list.col.assignee')}</th>
-						<th class="w-[10%] px-4 py-3 font-medium"></th>
+						<th class="w-[34%] px-4 py-3 font-medium">{t('contacts.list.col.name')}</th>
+						<th class="w-[22%] px-4 py-3 font-medium">{t('contacts.list.col.phone')}</th>
+						<th class="w-[30%] px-4 py-3 font-medium">{t('contacts.list.col.email')}</th>
+						<th class="w-[14%] px-4 py-3 font-medium"></th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-border">
@@ -199,28 +184,19 @@
 									<span class="line-clamp-2 break-all">{c.display_name}</span>
 								</a>
 							</td>
-							<td class="px-4 py-3">
-								<StatusBadge label={c.contact_type_name} tone="neutral" />
-							</td>
 							<td class="truncate px-4 py-3 text-text-muted tabular-nums">{c.phone ?? '—'}</td>
-							<td class="truncate px-4 py-3 text-text-faint">{c.source ?? '—'}</td>
-							<td class="px-4 py-3">
-								{#if c.status}
-									<StatusBadge
-										label={contactStatusLabels[c.status]}
-										tone={contactStatusTone(c.status)}
-									/>
-								{:else}
-									<span class="text-text-faint">—</span>
-								{/if}
-							</td>
-							<td class="truncate px-4 py-3 text-text-faint">
-								{assigneeName(c.assigned_user_id) ?? '—'}
-							</td>
+							<td class="truncate px-4 py-3 text-text-muted">{c.email ?? '—'}</td>
 							<td class="px-4 py-3 text-right">
-								<Button type="button" size="sm" variant="outline" onclick={() => openEdit(c)}
-									>{t('common.edit')}</Button
+								<Button
+									type="button"
+									size="icon"
+									variant="ghost"
+									class="shrink-0"
+									aria-label={t('common.edit')}
+									onclick={() => openEdit(c)}
 								>
+									<Pencil class="size-4" />
+								</Button>
 							</td>
 						</tr>
 					{/each}
@@ -232,13 +208,14 @@
 			{#each items as c (c.id)}
 				<li class="min-w-0">
 					<div
-						class="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3"
+						class="flex min-w-0 items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3"
 					>
-						<a
-							href={`/contacts/${c.id}`}
-							class="min-w-0 flex-1 text-sm font-medium break-all text-text hover:underline"
-						>
-							{c.display_name}
+						<a href={`/contacts/${c.id}`} class="min-w-0 flex-1 hover:underline">
+							<span class="block text-sm font-medium break-all text-text">{c.display_name}</span>
+							<span class="mt-0.5 block text-xs tabular-nums text-text-muted"
+								>{c.phone ?? '—'}</span
+							>
+							<span class="mt-0.5 block truncate text-xs text-text-muted">{c.email ?? '—'}</span>
 						</a>
 						<Button
 							type="button"
