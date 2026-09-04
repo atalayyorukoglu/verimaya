@@ -6,12 +6,24 @@
 
 ## Özellik durumu (`features.ts`)
 
-| Kod | Kullanıcıya görünen | Anlam |
+Dahili kodlar changelog / yayınlama akışında kullanılır. Kullanıcıya görünen
+toolkit filtreleri **4 kova**dır (`featureStatusBucket`):
+
+| Kullanıcı kovası | Dahili kod(lar) | Anlam |
 |---|---|---|
-| `kod-hazir` | Kod hazır | Repoda çalışır; dahili/ücretli pilot veya dış müşteri kullanımı yok |
-| `pilotta` | Pilotta | Dahili veya ücretli pilotta aktif |
+| Yayında | `yayinda`, `pilotta` | Hedef kullanıcıya açık / pilotta |
+| Yakında | `kod-hazir` | Repoda çalışır; henüz resmi yayında değil |
+| Sıradaki | `yakinda`, `harici-onay-bekliyor` | Kararı verilmiş iş veya harici onay bekleyen |
+| Fikir Defteri | `fikir-defteri` | Kararı verilmemiş fikir / istek (FIKIRLER.md) |
+
+| Kod | (eski kullanıcı etiketi) | Anlam |
+|---|---|---|
+| `kod-hazir` | Kod hazır → **Yakında** | Repoda çalışır; dahili/ücretli pilot veya dış müşteri kullanımı yok |
+| `pilotta` | Pilotta → **Yayında** | Dahili veya ücretli pilotta aktif |
 | `yayinda` | Yayında | Hedef kullanıcıya açık; operasyonel kabul yapılmış |
-| `harici-onay-bekliyor` | Harici onay bekliyor | Kod hazır veya kısmi; hukuk / sağlayıcı / hesap onayı bekliyor |
+| `harici-onay-bekliyor` | Harici onay bekliyor → **Sıradaki** | Kod hazır veya kısmi; hukuk / sağlayıcı / hesap onayı bekliyor |
+| `yakinda` | Yakında → **Sıradaki** | YAPILACAKLAR’da kalemi var; henüz yazılmamış |
+| `fikir-defteri` | Fikir Defteri | FIKIRLER.md; taahhüt değil |
 
 Kurallar:
 

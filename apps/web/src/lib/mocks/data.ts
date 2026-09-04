@@ -80,7 +80,7 @@ export const demoUser: MembershipUser & {
 	tenant_id: DEMO_TENANT_ID,
 	role: 'owner',
 	platform_admin: true,
-	preferences: { enabled_product_modules: [] }
+	preferences: { enabled_product_modules: ['untouched-contacts', 'referral-value'] }
 };
 
 const STATUSES: ContactStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];

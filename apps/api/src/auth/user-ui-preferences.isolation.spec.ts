@@ -102,7 +102,10 @@ describe('user UI preferences isolation', () => {
 
 	it('another user in the same org does not receive peer preferences', async () => {
 		const peer = await service.getPreferences(userBoth, tenantA);
-		expect(peer.enabled_product_modules).toEqual([]);
+		expect(peer.enabled_product_modules).toEqual([
+			'untouched-contacts',
+			'referral-value'
+		]);
 
 		await service.savePreferences(userBoth, tenantA, {
 			enabled_product_modules: []

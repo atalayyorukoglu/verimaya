@@ -1,9 +1,11 @@
 <script lang="ts">
 	import {
+		FEATURE_STATUS_BUCKETS,
 		features,
-		featureStatusLabels,
+		featureStatusBucket,
+		featureStatusBucketLabels,
 		type FeatureModule,
-		type FeatureStatus,
+		type FeatureStatusBucket,
 		isFeatureNew
 	} from '@verimaya/shared';
 	import { featureStatusTone } from '$lib/status-tone';
@@ -141,12 +143,20 @@
 		Platform: 'toolkit.module.platform'
 	} as const satisfies Record<FeatureModule, MessageKey>;
 
+	const BUCKET_LABEL_KEYS = {
+		yayinda: 'toolkit.filter.yayinda',
+		yakinda: 'toolkit.filter.yakinda',
+		siradaki: 'toolkit.filter.siradaki',
+		'fikir-defteri': 'toolkit.filter.fikirDefteri'
+	} as const satisfies Record<FeatureStatusBucket, MessageKey>;
+
 	const modules = [...new Set(features.map((f) => f.module))] as FeatureModule[];
 
-	let statusFilter = $state<FeatureStatus | 'all'>('all');
+	/** Varsayılan: Yayında olanlar. */
+	let statusFilter = $state<FeatureStatusBucket>('yayinda');
 
 	const filtered = $derived(
-		features.filter((f) => statusFilter === 'all' || f.status === statusFilter)
+		features.filter((f) => featureStatusBucket(f.status) === statusFilter)
 	);
 
 	/** "Yeni" rozeti bugüne göre hesaplanır; tarih tek yerde çözülür. */
@@ -187,37 +197,29 @@
 	{/if}
 
 	<div class="mb-6 flex flex-wrap gap-2">
-		<button
-			type="button"
-			class="rounded-[6px] border px-3 py-1.5 text-xs font-medium transition-colors {statusFilter ===
-			'all'
-				? 'border-brand bg-brand-subtle text-brand-text'
-				: 'border-border text-text-muted hover:bg-surface-2'}"
-			onclick={() => (statusFilter = 'all')}
-		>
-			{t('features.filterAll')}
-		</button>
 		<!--
-			Filtreler bilinçli olarak üç: Kod Hazır · Onay Bekliyor · Yakında.
-			`pilotta` ve `yayinda` veride duruyor ama pilot başlamadığı için hiçbir kalem
-			o durumda değil — boş filtre düğmesi göstermek kafa karıştırır. PILOT-02 ile
-			bu listeye geri eklenecekler.
+			Dört kova (2026-09-04): Yayında · Yakında · Sıradaki · Fikir Defteri.
+			Dahili kodlar (kod-hazir, harici-onay-bekliyor, …) `featureStatusBucket` ile
+			eşlenir. Varsayılan Yayında.
 		-->
-		{#each ['kod-hazir', 'harici-onay-bekliyor', 'yakinda'] as const as status (status)}
+		{#each FEATURE_STATUS_BUCKETS as bucket (bucket)}
 			<button
 				type="button"
 				class="rounded-[6px] border px-3 py-1.5 text-xs font-medium transition-colors {statusFilter ===
-				status
+				bucket
 					? 'border-brand bg-brand-subtle text-brand-text'
 					: 'border-border text-text-muted hover:bg-surface-2'}"
-				onclick={() => (statusFilter = status)}
+				onclick={() => (statusFilter = bucket)}
 			>
-				{featureStatusLabels[status]}
+				{t(BUCKET_LABEL_KEYS[bucket])}
 			</button>
 		{/each}
 	</div>
 
 	<div class="space-y-8">
+		{#if grouped.length === 0}
+			<p class="text-sm text-text-muted">{t('toolkit.filter.empty')}</p>
+		{/if}
 		{#each grouped as group (group.module)}
 			<section>
 				<h2 class="mb-3 text-xs font-semibold tracking-wider text-text-muted uppercase">
@@ -227,6 +229,7 @@
 					{#each group.items as feature (feature.id)}
 						{@const productModule = productModuleForFeatureId(feature.id)}
 						{@const enabled = productModule ? isProductModuleEnabled(productModule.id) : false}
+						{@const bucket = featureStatusBucket(feature.status)}
 						<li class="flex min-h-0">
 							<div
 								class="flex h-full min-h-[7rem] w-full flex-col rounded-lg border border-border bg-surface p-4"
@@ -243,7 +246,7 @@
 												</span>
 											{/if}
 											<StatusBadge
-												label={featureStatusLabels[feature.status]}
+												label={featureStatusBucketLabels[bucket]}
 												tone={featureStatusTone(feature.status)}
 											/>
 										</div>

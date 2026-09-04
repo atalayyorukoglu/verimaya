@@ -1,17 +1,46 @@
 /**
- * `yakinda` (2026-08-24): **kararı verilmiş ama henüz yazılmamış** iş.
+ * Dahili durum kodları (changelog / yayınlama akışı). Kullanıcıya görünen 4 kova
+ * `featureStatusBucket` ile türetilir — bkz. docs/CHANGELOG-KURALLARI.md.
  *
- * Sınır önemli — buraya yalnız `docs/2026-08-11-YAPILACAKLAR.md`'de kalemi olan işler
- * girer. `docs/FIKIRLER.md`'deki fikirler **girmez**: orası kararı verilmemiş defterdir
- * ve müşteriye görünen bir "Yakında" listesi taahhüt anlamına gelir. Fikri taahhüde
- * çevirmek, FIKIRLER'in var olma sebebini ortadan kaldırır.
+ * `yakinda` (2026-08-24): **kararı verilmiş ama henüz yazılmamış** iş (YAPILACAKLAR).
+ * `fikir-defteri` (2026-09-04): kararı verilmemiş fikirler (FIKIRLER.md) — taahhüt değil.
  */
 export type FeatureStatus =
 	| 'kod-hazir'
 	| 'pilotta'
 	| 'yayinda'
 	| 'harici-onay-bekliyor'
-	| 'yakinda';
+	| 'yakinda'
+	| 'fikir-defteri';
+
+/**
+ * Kullanıcıya görünen toolkit filtre kovaları (2026-09-04):
+ * Yayında · Yakında · Sıradaki · Fikir Defteri
+ */
+export const FEATURE_STATUS_BUCKETS = [
+	'yayinda',
+	'yakinda',
+	'siradaki',
+	'fikir-defteri'
+] as const;
+
+export type FeatureStatusBucket = (typeof FEATURE_STATUS_BUCKETS)[number];
+
+/** Dahili FeatureStatus → kullanıcı kovası. */
+export function featureStatusBucket(status: FeatureStatus): FeatureStatusBucket {
+	switch (status) {
+		case 'yayinda':
+		case 'pilotta':
+			return 'yayinda';
+		case 'kod-hazir':
+			return 'yakinda';
+		case 'yakinda':
+		case 'harici-onay-bekliyor':
+			return 'siradaki';
+		case 'fikir-defteri':
+			return 'fikir-defteri';
+	}
+}
 
 export type FeatureModule =
 	| 'Hasta Takibi'
@@ -49,16 +78,16 @@ export type Feature = {
  */
 export const features: Feature[] = [
 	// --- Aşağıdakiler `docs/FIKIRLER.md`'den gelir: kararı VERİLMEMİŞ fikirler. -------
-	// Açıklamaları bilinçli olarak taahhüt dili taşımaz ("olabilir", "değerlendiriliyor"),
-	// çünkü fikri söze çevirmek FIKIRLER defterinin var olma sebebini ortadan kaldırır.
-	// Yapılmasına karar verilirse YAPILACAKLAR'a kalem olur ve açıklaması netleşir.
+	// Açıklamaları bilinçli olarak taahhüt dili taşımaz ("olabilir", "değerlendiriliyor").
+	// Yapılmasına karar verilirse YAPILACAKLAR'a kalem olur (`yakinda` / Sıradaki) ve
+	// buradan silinir.
 	{
 		id: 'referral-chain',
 		module: 'Raporlama',
 		title: 'Referans zinciri',
 		description:
 			'Bugün doğrudan referans sayılıyor. Getirdiğinizin getirdiğini de sayan zincir görünümü değerlendiriliyor.',
-		status: 'yakinda'
+		status: 'fikir-defteri'
 	},
 	{
 		id: 'multi-title',
@@ -66,7 +95,7 @@ export const features: Feature[] = [
 		title: 'Çok ünvanlı kişi',
 		description:
 			'Bugün kişi başına tek ünvan var. Aynı kişinin birden çok görevi olabilmesi değerlendiriliyor.',
-		status: 'yakinda'
+		status: 'fikir-defteri'
 	},
 	{
 		id: 'incidents-departments',
@@ -74,7 +103,7 @@ export const features: Feature[] = [
 		title: 'Olay kaydı — diğer departmanlar',
 		description:
 			'Bugün yalnız klinik sorunları kaydediliyor. Otel, transfer, satış ve reklam türlerinin eklenmesi, klinik döngüsü sahada çalıştıktan sonra değerlendirilecek.',
-		status: 'yakinda'
+		status: 'fikir-defteri'
 	},
 	{
 		id: 'maya-voice',
@@ -82,7 +111,7 @@ export const features: Feature[] = [
 		title: 'Maya\'ya sesli soru',
 		description:
 			'Maya bugün yazıyla soruluyor. Sesle sormak değerlendiriliyor; Türkçe ses tanıma kalitesi belirleyici olacak.',
-		status: 'yakinda'
+		status: 'fikir-defteri'
 	},
 	{
 		id: 'in-app-notifications',
@@ -90,7 +119,7 @@ export const features: Feature[] = [
 		title: 'Panel içi bildirim',
 		description:
 			'Alarmlar ve müdahale listesi bugün ilgili sayfaya girilince görülüyor. Uyarının kullanıcıyı bulması değerlendiriliyor — eşikler oturmadan açılmayacak.',
-		status: 'yakinda'
+		status: 'fikir-defteri'
 	},
 	{
 		id: 'whats-new-surface',
@@ -98,7 +127,7 @@ export const features: Feature[] = [
 		title: 'Ürün içi yenilikler',
 		description:
 			'Panele girildiğinde son eklenenleri gösteren bir yüzey değerlendiriliyor.',
-		status: 'yakinda'
+		status: 'fikir-defteri'
 	},
 	{
 		id: 'on-prem',
@@ -106,9 +135,9 @@ export const features: Feature[] = [
 		title: 'Yerinde kurulum',
 		description:
 			'Verisinin hiçbir yere çıkmamasını isteyen klinikler için tek kutu kurulum değerlendiriliyor.',
-		status: 'yakinda'
+		status: 'fikir-defteri'
 	},
-	// --- Buradan aşağısı YAPILACAKLAR'da kalemi olan, kararı VERİLMİŞ işler. ---------
+	// --- Buradan aşağısı YAPILACAKLAR'da kalemi olan, kararı VERİLMİŞ işler (Sıradaki). ---
 	{
 		id: 'maya-open-questions',
 		module: 'Platform',

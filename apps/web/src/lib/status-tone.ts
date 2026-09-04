@@ -71,5 +71,7 @@ export function featureStatusTone(status: FeatureStatus): Tone {
 			return 'warning';
 		case 'yakinda':
 			return 'neutral';
+		case 'fikir-defteri':
+			return 'neutral';
 	}
 }

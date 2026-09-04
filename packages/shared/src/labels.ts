@@ -2,7 +2,7 @@ import type { ContactStatus } from './contact.js';
 import type { AppointmentStatus } from './appointment.js';
 import type { InvoiceStatus, TransactionKind, TransactionStatus } from './transaction.js';
 import type { InboundMessageStatus } from './inbound-message.js';
-import type { FeatureStatus } from './features.js';
+import type { FeatureStatus, FeatureStatusBucket } from './features.js';
 import type { AuditAction, AuditEntity } from './audit.js';
 import type { UserRole } from './user.js';
 import type { IncidentStatus } from './incident.js';
@@ -53,12 +53,25 @@ export const inboundMessageStatusLabels: Record<InboundMessageStatus, string> = 
 	ignored: 'Yoksayıldı'
 };
 
-export const featureStatusLabels: Record<FeatureStatus, string> = {
-	'kod-hazir': 'Kod Hazır',
-	pilotta: 'Pilotta',
+/**
+ * Kullanıcıya görünen kova etiketleri (toolkit filtre + rozet).
+ * Dahili kod → kova: `featureStatusBucket` (features.ts).
+ */
+export const featureStatusBucketLabels: Record<FeatureStatusBucket, string> = {
 	yayinda: 'Yayında',
-	'harici-onay-bekliyor': 'Onay Bekliyor',
-	yakinda: 'Yakında'
+	yakinda: 'Yakında',
+	siradaki: 'Sıradaki',
+	'fikir-defteri': 'Fikir Defteri'
+};
+
+/** Rozet metni — kullanıcı kovası dilinde (eski “Kod Hazır / Onay Bekliyor” kaldırıldı). */
+export const featureStatusLabels: Record<FeatureStatus, string> = {
+	'kod-hazir': featureStatusBucketLabels.yakinda,
+	pilotta: featureStatusBucketLabels.yayinda,
+	yayinda: featureStatusBucketLabels.yayinda,
+	'harici-onay-bekliyor': featureStatusBucketLabels.siradaki,
+	yakinda: featureStatusBucketLabels.siradaki,
+	'fikir-defteri': featureStatusBucketLabels['fikir-defteri']
 };
 
 export const auditActionLabels: Record<AuditAction, string> = {

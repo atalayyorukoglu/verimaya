@@ -31,8 +31,15 @@ export const userUiPreferencesUpdateSchema = userUiPreferencesSchema;
 
 export type UserUiPreferencesUpdate = z.infer<typeof userUiPreferencesUpdateSchema>;
 
+/** Default-on tools in the Araçlar sidebar (until the user changes preferences). */
+export const DEFAULT_ENABLED_PRODUCT_MODULE_IDS: readonly ProductModuleId[] = [
+	'untouched-contacts',
+	'referral-value'
+];
+
+/** Preferences when the user has no saved row yet. */
 export function emptyUserUiPreferences(): UserUiPreferences {
-	return { enabled_product_modules: [] };
+	return { enabled_product_modules: [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS] };
 }
 
 /** Drop unknown ids; keep order of first occurrence among known ids. */

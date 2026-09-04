@@ -8,6 +8,7 @@ import type { Component } from 'svelte';
 import type { FeatureModule, ProductModuleId } from '@verimaya/shared';
 import {
 	PRODUCT_MODULE_IDS,
+	DEFAULT_ENABLED_PRODUCT_MODULE_IDS,
 	filterKnownProductModuleIds,
 	type UserUiPreferences
 } from '@verimaya/shared';
@@ -80,15 +81,15 @@ export const PRODUCT_MODULE_CATALOG: readonly ProductModule[] = PRODUCT_MODULE_I
 }));
 
 function readStoredEnabledIds(): ProductModuleId[] {
-	if (typeof localStorage === 'undefined') return [];
+	if (typeof localStorage === 'undefined') return [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS];
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
-		if (!raw) return [];
+		if (!raw) return [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS];
 		const parsed: unknown = JSON.parse(raw);
-		if (!Array.isArray(parsed)) return [];
+		if (!Array.isArray(parsed)) return [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS];
 		return filterKnownProductModuleIds(parsed.filter((id): id is string => typeof id === 'string'));
 	} catch {
-		return [];
+		return [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS];
 	}
 }
 
@@ -102,7 +103,7 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
 	return a.every((id, i) => id === b[i]);
 }
 
-/** Enabled module ids — default empty (all catalog entries off). Hydrated from localStorage cache. */
+/** Enabled module ids — hydrated from localStorage, else server defaults. */
 let enabledIds = $state<ProductModuleId[]>(readStoredEnabledIds());
 
 /**

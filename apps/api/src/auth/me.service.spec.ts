@@ -120,7 +120,7 @@ describe('MeService active organization membership', () => {
 		});
 	});
 
-	it('maps a valid membership to the shared Me contract with empty preferences', async () => {
+	it('maps a valid membership to the shared Me contract with default preferences', async () => {
 		await expect(
 			service.resolveMembershipUser({
 				userId: validUser,
@@ -134,7 +134,9 @@ describe('MeService active organization membership', () => {
 			tenant_id: organizationA,
 			role: 'manager',
 			platform_admin: false,
-			preferences: { enabled_product_modules: [] }
+			preferences: {
+				enabled_product_modules: ['untouched-contacts', 'referral-value']
+			}
 		});
 	});
 

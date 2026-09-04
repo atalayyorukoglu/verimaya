@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	DEFAULT_ENABLED_PRODUCT_MODULE_IDS,
 	emptyUserUiPreferences,
 	filterKnownProductModuleIds,
 	meSchema,
@@ -29,6 +30,16 @@ describe('product-modules / user UI preferences contract', () => {
 				'ai-accuracy'
 			])
 		).toEqual(['campaign-assistant', 'ai-accuracy']);
+	});
+
+	it('emptyUserUiPreferences defaults Temassız Kişiler + Referans Değeri on', () => {
+		expect(emptyUserUiPreferences()).toEqual({
+			enabled_product_modules: [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS]
+		});
+		expect(DEFAULT_ENABLED_PRODUCT_MODULE_IDS).toEqual([
+			'untouched-contacts',
+			'referral-value'
+		]);
 	});
 
 	it('meSchema requires preferences', () => {

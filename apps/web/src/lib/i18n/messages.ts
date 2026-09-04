@@ -185,7 +185,7 @@ const tr = {
 	'maya.tool.name.openBalances': 'Açık bakiyeler',
 	'maya.tool.name.contactAppointments': 'Kişi randevuları',
 	'maya.tool.name.periodSummary': 'Dönem özeti',
-	'maya.tool.name.untouchedContacts': 'Temassız kişiler',
+	'maya.tool.name.untouchedContacts': 'Temassız Kişiler',
 	'maya.tool.moreItems': '… ve {count} kayıt daha',
 	'maya.tool.contactBalance.answer':
 		'{name} — açık bakiye {outstanding}. Toplam {income} gelirin {paid} kadarı tahsil edilmiş ({count} işlem).',
@@ -499,7 +499,7 @@ const tr = {
 	'help.open': 'Bu ekran ne işe yarar?',
 	'help.exampleLabel': 'Örnek',
 
-	'help.untouched.title': 'Temassız kişiler',
+	'help.untouched.title': 'Temassız Kişiler',
 	'help.untouched.b1':
 		'Uzun süredir kimsenin dokunmadığı kişileri gösterir. "Dokunmak" demek: randevu, ödeme ya da not girilmiş olması.',
 	'help.untouched.b2':
@@ -561,7 +561,7 @@ const tr = {
 	'help.commissions.caveat':
 		'Komisyon otomatik hesaplanmaz — yüzde formülü yoktur. Kural her klinikte farklı olduğu için tutarı siz yazarsınız.',
 
-	'help.cohorts.title': 'Kohort görünümü',
+	'help.cohorts.title': 'Kohort Görünümü',
 	'help.cohorts.b1':
 		'Kişi hangi ay geldiyse o aya yazılır. Parası ne zaman gelirse gelsin yine o aya sayılır.',
 	'help.cohorts.b2':
@@ -1562,6 +1562,11 @@ const tr = {
 
 	// features (filter labels reused on /toolkit)
 	'features.filterAll': 'Tümü',
+	'toolkit.filter.yayinda': 'Yayında',
+	'toolkit.filter.yakinda': 'Yakında',
+	'toolkit.filter.siradaki': 'Sıradaki',
+	'toolkit.filter.fikirDefteri': 'Fikir Defteri',
+	'toolkit.filter.empty': 'Bu kategoride henüz özellik yok.',
 	'features.versionLink': 'Sürüm {version} yenilikleri',
 
 	// toolkit (Araçlar — features listesi)
@@ -1585,139 +1590,139 @@ const tr = {
 	'toolkit.feature.campaign-assistant.title': 'Kampanya Asistanı',
 	'toolkit.feature.campaign-assistant.description':
 		'Pazarlama hub’ı — gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontrolleri tek yerde.',
-	'toolkit.feature.ai-knowledge-base.title': 'Bilgi bankası',
+	'toolkit.feature.ai-knowledge-base.title': 'Bilgi Bankası',
 	'toolkit.feature.ai-knowledge-base.description':
 		'Hizmetler, fiyatlar, ödeme kuralları ve red gerekçeleri buradan girilir; WhatsApp ayrıştırması ve Maya bu bilgiden cevaplar. Değişiklikler sürümlenerek saklanır.',
-	'toolkit.feature.ai-record-suggestions.title': 'Randevu güncelleme önerileri',
+	'toolkit.feature.ai-record-suggestions.title': 'Randevu Güncelleme Önerileri',
 	'toolkit.feature.ai-record-suggestions.description':
 		'WhatsApp mesajından çıkan tarih değişikliği öneri olarak kuyruğa düşer. Her kart tek tek onaylanır; eşleşme belirsizse öneri üretilmez.',
-	'toolkit.feature.ai-operation-alerts.title': 'Operasyon alarmları',
+	'toolkit.feature.ai-operation-alerts.title': 'Operasyon Alarmları',
 	'toolkit.feature.ai-operation-alerts.description':
 		'Uçuş ve transfer gibi zaman kilitli kalemler eşiğe gelince uyarı üretir. Deterministik kod — yapay zekâ değil.',
-	'toolkit.feature.ai-evidence.title': 'Taslakta kaynak izi',
+	'toolkit.feature.ai-evidence.title': 'Taslakta Kaynak İzi',
 	'toolkit.feature.ai-evidence.description':
 		'Taslaktaki her alan hangi cümleden çıktığını taşır; rozete tıklayınca mesajda o alıntı vurgulanır. Uydurma alıntı sunucuda düşürülür.',
-	'toolkit.feature.ai-accuracy.title': 'AI isabet ölçümü',
+	'toolkit.feature.ai-accuracy.title': 'AI İsabet Ölçümü',
 	'toolkit.feature.ai-accuracy.description':
 		'Taslakların ne kadarı düzeltilmeden onaylandı, hangi alan en çok düzeltiliyor, Maya neyi cevaplayamadı.',
-	'toolkit.feature.untouched-contacts.title': 'Temassız kişiler',
+	'toolkit.feature.untouched-contacts.title': 'Temassız Kişiler',
 	'toolkit.feature.untouched-contacts.description':
 		'Son X gündür randevu, işlem veya not düşülmemiş kişileri listeler; takip borcu olanları görünür kılar.',
-	'toolkit.feature.cohorts.title': 'Kohort görünümü',
+	'toolkit.feature.cohorts.title': 'Kohort Görünümü',
 	'toolkit.feature.cohorts.description':
 		'Hasta giriş ayına göre kohortlar; olgunlaşma pencerelerinde gelir ve dönüşüm nasıl birikir.',
-	'toolkit.feature.maya-live-data.title': 'Maya canlı veri',
+	'toolkit.feature.maya-live-data.title': 'Maya Canlı Veri',
 	'toolkit.feature.maya-live-data.description':
 		'Maya bakiye, açık alacak, randevu, dönem özeti ve temassız kişileri canlı veriden cevaplar. Rakamı veritabanı verir, model yalnız hangi sorgunun çalışacağını seçer.',
-	'toolkit.feature.llm-cost-tracking.title': 'LLM maliyet takibi',
+	'toolkit.feature.llm-cost-tracking.title': 'LLM Maliyet Takibi',
 	'toolkit.feature.llm-cost-tracking.description':
 		'Tenant başına LLM çağrı sayısı, token ve maliyet platform panelinde; fallback oranı yüksekse renkli işaretlenir.',
-	'toolkit.feature.contact-titles.title': 'Kişi ünvanları',
+	'toolkit.feature.contact-titles.title': 'Kişi Ünvanları',
 	'toolkit.feature.contact-titles.description':
 		'Hekim, koordinatör, satış, reklam uzmanı gibi görev etiketleri; liste Ayarlar’dan yönetilir. Ünvan tanımlayıcıdır, yetkiyi değiştirmez.',
-	'toolkit.feature.appointment-doctor.title': 'Randevuda hekim',
+	'toolkit.feature.appointment-doctor.title': 'Randevuda Hekim',
 	'toolkit.feature.appointment-doctor.description':
 		'Randevuya hekim atanır; randevu metrikleri hekim kırılımı ve hekim × randevu tipi çapraz sayımı döndürür.',
-	'toolkit.feature.incidents.title': 'Olay kaydı',
+	'toolkit.feature.incidents.title': 'Olay Kaydı',
 	'toolkit.feature.incidents.description':
 		'Hasta dosyasından tek tıkla açılan sorun kaydı: revizyon gerekti, komplikasyon, süreç gecikmesi. Opsiyonel maliyet taşır ve çözüldü olarak kapatılır.',
-	'toolkit.feature.referral-value.title': 'Referans değeri',
+	'toolkit.feature.referral-value.title': 'Referans Değeri',
 	'toolkit.feature.referral-value.description':
 		'Kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve koordinatörü kim.',
-	'toolkit.feature.report-compare.title': 'Dönem karşılaştırması',
+	'toolkit.feature.report-compare.title': 'Dönem Karşılaştırması',
 	'toolkit.feature.report-compare.description':
 		'Özet ve randevu metrikleri önceki dönemle karşılaştırılır. Az kayda dayanan değişimde yüzde gösterilmez.',
-	'toolkit.feature.interventions.title': 'Müdahale listesi',
+	'toolkit.feature.interventions.title': 'Müdahale Listesi',
 	'toolkit.feature.interventions.description':
 		'Sistemin size söylediği yer: kalite düşüşü, açık olaylar, değerli referanslar. Eşiğin altındaki dalgalanma raporlanmaz.',
-	'toolkit.feature.maya-open-questions.title': 'Maya — akla gelen her soru',
+	'toolkit.feature.maya-open-questions.title': 'Maya — Akla Gelen Her Soru',
 	'toolkit.feature.maya-open-questions.description':
 		'Maya bugün beş sabit soruyu cevaplıyor; kısıtlı sorgu katmanıyla kayıtlarla ilgili serbest soruları da cevaplayacak.',
-	'toolkit.feature.ai-learning-loop.title': 'AI öğrenme döngüsü',
+	'toolkit.feature.ai-learning-loop.title': 'AI Öğrenme Döngüsü',
 	'toolkit.feature.ai-learning-loop.description':
 		'Düzeltmeleriniz zaten kaydediliyor ve raporlanıyor; rapordan doğrudan AI notunu güncelleyebileceğiniz adım eklenecek.',
-	'toolkit.feature.suggestion-whitelist.title': 'Öneri alanlarının genişlemesi',
+	'toolkit.feature.suggestion-whitelist.title': 'Öneri Alanlarının Genişlemesi',
 	'toolkit.feature.suggestion-whitelist.description':
 		'AI bugün yalnız randevu tarihi için öneri üretiyor; ölçüm sonrası telefon ve randevu durumu gibi alanlar da kapsama girecek.',
-	'toolkit.feature.referral-chain.title': 'Referans zinciri',
+	'toolkit.feature.referral-chain.title': 'Referans Zinciri',
 	'toolkit.feature.referral-chain.description':
 		'Bugün doğrudan referans sayılıyor. Getirdiğinizin getirdiğini de sayan zincir görünümü değerlendiriliyor.',
-	'toolkit.feature.multi-title.title': 'Çok ünvanlı kişi',
+	'toolkit.feature.multi-title.title': 'Çok Ünvanlı Kişi',
 	'toolkit.feature.multi-title.description':
 		'Bugün kişi başına tek ünvan var. Aynı kişinin birden çok görevi olabilmesi değerlendiriliyor.',
-	'toolkit.feature.incidents-departments.title': 'Olay kaydı — diğer departmanlar',
+	'toolkit.feature.incidents-departments.title': 'Olay Kaydı — Diğer Departmanlar',
 	'toolkit.feature.incidents-departments.description':
 		'Bugün yalnız klinik sorunları kaydediliyor. Otel, transfer, satış ve reklam türlerinin eklenmesi, klinik döngüsü sahada çalıştıktan sonra değerlendirilecek.',
-	'toolkit.feature.maya-voice.title': "Maya'ya sesli soru",
+	'toolkit.feature.maya-voice.title': "Maya'ya Sesli Soru",
 	'toolkit.feature.maya-voice.description':
 		'Maya bugün yazıyla soruluyor. Sesle sormak değerlendiriliyor; Türkçe ses tanıma kalitesi belirleyici olacak.',
-	'toolkit.feature.in-app-notifications.title': 'Panel içi bildirim',
+	'toolkit.feature.in-app-notifications.title': 'Panel İçi Bildirim',
 	'toolkit.feature.in-app-notifications.description':
 		'Alarmlar ve müdahale listesi bugün ilgili sayfaya girilince görülüyor. Uyarının kullanıcıyı bulması değerlendiriliyor — eşikler oturmadan açılmayacak.',
-	'toolkit.feature.whats-new-surface.title': 'Ürün içi yenilikler',
+	'toolkit.feature.whats-new-surface.title': 'Ürün İçi Yenilikler',
 	'toolkit.feature.whats-new-surface.description':
 		'Panele girildiğinde son eklenenleri gösteren bir yüzey değerlendiriliyor.',
-	'toolkit.feature.on-prem.title': 'Yerinde kurulum',
+	'toolkit.feature.on-prem.title': 'Yerinde Kurulum',
 	'toolkit.feature.on-prem.description':
 		'Verisinin hiçbir yere çıkmamasını isteyen klinikler için tek kutu kurulum değerlendiriliyor.',
-	'toolkit.feature.patients-list.title': 'Hasta listesi ve detay',
+	'toolkit.feature.patients-list.title': 'Hasta Listesi ve Detay',
 	'toolkit.feature.patients-list.description':
 		'Lead ve hasta kayıtlarını listeleyin, durumlarını takip edin, not ve iletişim bilgilerine tek ekrandan ulaşın.',
-	'toolkit.feature.appointments-calendar.title': 'Randevu takvimi',
+	'toolkit.feature.appointments-calendar.title': 'Randevu Takvimi',
 	'toolkit.feature.appointments-calendar.description':
 		'Klinik, otel ve transfer notlarıyla birlikte randevuları gün/hafta görünümünde yönetin.',
-	'toolkit.feature.finance-ledger.title': 'Gelir-gider işlemleri',
+	'toolkit.feature.finance-ledger.title': 'Gelir-Gider İşlemleri',
 	'toolkit.feature.finance-ledger.description':
 		'Tahsilat ve ödemeleri hasta bağlantısı, ödeme durumu ve fatura bilgisiyle kaydedin.',
-	'toolkit.feature.whatsapp-import.title': 'AI ile WhatsApp işlem aktarımı',
+	'toolkit.feature.whatsapp-import.title': 'AI ile WhatsApp İşlem Aktarımı',
 	'toolkit.feature.whatsapp-import.description':
 		'Grup mesajını yapıştırın veya WAHA kuyruğundan seçin; AI işlemleri ayrıştırır, onay sonrası kayıt açılır.',
-	'toolkit.feature.ghl-sync.title': 'GoHighLevel senkronu',
+	'toolkit.feature.ghl-sync.title': 'GoHighLevel Senkronu',
 	'toolkit.feature.ghl-sync.description':
 		'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Verimaya ile eşleştirin.',
-	'toolkit.feature.ads-metrics.title': 'Meta ve Google Ads metrikleri',
+	'toolkit.feature.ads-metrics.title': 'Meta ve Google Ads Metrikleri',
 	'toolkit.feature.ads-metrics.description':
 		'Reklam harcaması ve dönüşümleri günlük özet olarak panele çekin.',
-	'toolkit.feature.ads-connect.title': 'Meta & Google Ads bağlantısı',
+	'toolkit.feature.ads-connect.title': 'Meta & Google Ads Bağlantısı',
 	'toolkit.feature.ads-connect.description':
 		'Reklam hesabınızı bağlayın; kampanya harcaması günlük çekilir ve Gerçek ROAS raporunu besler.',
-	'toolkit.feature.n8n-api.title': 'n8n ve dış API',
+	'toolkit.feature.n8n-api.title': 'n8n ve Dış API',
 	'toolkit.feature.n8n-api.description':
 		'Scope’lu API anahtarı ve imzalı webhook’larla otomasyonları bağlayın.',
-	'toolkit.feature.reports-dashboard.title': 'Özet raporlar ve dashboard',
+	'toolkit.feature.reports-dashboard.title': 'Özet Raporlar ve Dashboard',
 	'toolkit.feature.reports-dashboard.description':
 		'Lead, dönüşüm, tahsilat ve mesaj hacmini dönemsel kartlarda görün.',
-	'toolkit.feature.real-roas.title': 'Gerçek ROAS raporu',
+	'toolkit.feature.real-roas.title': 'Gerçek ROAS Raporu',
 	'toolkit.feature.real-roas.description':
 		'Reklam harcamanızı dönem tahsilatıyla kıyaslayın; hasta başına maliyet ve kaynak kırılımı.',
-	'toolkit.feature.truth-calculator.title': 'Gerçek ROAS hesabı',
+	'toolkit.feature.truth-calculator.title': 'Gerçek ROAS Hesabı',
 	'toolkit.feature.truth-calculator.description':
 		'Platform ROAS’ını katkı payı ve maliyetlerle gerçek kâra çevirin; başabaş ve hasta başı reklam tavanını görün.',
-	'toolkit.feature.ad-simulator.title': 'Reklam matematiği simülatörü',
+	'toolkit.feature.ad-simulator.title': 'Reklam Matematiği Simülatörü',
 	'toolkit.feature.ad-simulator.description':
 		'CPC, dönüşüm ve satış oranıyla satış başı maliyet, trafik ışığı ve ölçek tavanını hesaplayın.',
-	'toolkit.feature.ad-compliance.title': 'Reklam uyumluluk taraması',
+	'toolkit.feature.ad-compliance.title': 'Reklam Uyumluluk Taraması',
 	'toolkit.feature.ad-compliance.description':
 		'Reklam veya landing metnindeki yasaklı / riskli sağlık vaatlerini tarayın.',
-	'toolkit.feature.marketing-templates.title': 'UTM ve bütçe şablonları',
+	'toolkit.feature.marketing-templates.title': 'UTM ve Bütçe Şablonları',
 	'toolkit.feature.marketing-templates.description':
 		'UTM linki üretin; 3:2:2 kreatif ve 60/30/10 bütçe bölüşümünü hızlıca çıkarın.',
-	'toolkit.feature.trust-score.title': 'Ölçüm olgunluğu (Trust Score)',
+	'toolkit.feature.trust-score.title': 'Ölçüm Olgunluğu (Trust Score)',
 	'toolkit.feature.trust-score.description':
 		'Consent, CAPI, enhanced conversions ve CRM geri bildirim checklist’iyle ölçüm skorunu görün.',
-	'toolkit.feature.campaign-precheck.title': 'Yayın öncesi kontrol',
+	'toolkit.feature.campaign-precheck.title': 'Yayın Öncesi Kontrol',
 	'toolkit.feature.campaign-precheck.description':
 		'Kampanyayı yayınlamadan önce uyumluluk, birim ekonomi ve ölçüm eşiğini tek ekranda kontrol edin.',
-	'toolkit.feature.duplicate-scan.title': 'Kişi ve hasta çift kayıt',
+	'toolkit.feature.duplicate-scan.title': 'Kişi ve Hasta Çift Kayıt',
 	'toolkit.feature.duplicate-scan.description':
 		'Telefon, e-posta veya ada göre mükerrerleri tarayın; kayıtları birleştirin.',
-	'toolkit.feature.multi-tenant.title': 'Çok kiracılı organizasyon',
+	'toolkit.feature.multi-tenant.title': 'Çok Kiracılı Organizasyon',
 	'toolkit.feature.multi-tenant.description':
 		'Her klinik/acente kendi verisini görür; ekip rolleriyle erişim sınırlanır.',
-	'toolkit.feature.free-ai-scorecard.title': 'Ücretsiz yapay zeka karnesi',
+	'toolkit.feature.free-ai-scorecard.title': 'Ücretsiz Yapay Zeka Karnesi',
 	'toolkit.feature.free-ai-scorecard.description':
 		'Üyeliksiz 5 dakikalık karne: kliniğin yapay zeka hazırlığında kanıtı olmayan alanları net cümlelerle görün.',
-	'toolkit.feature.in-product-scorecard.title': 'Ürün içi yapay zeka karnesi',
+	'toolkit.feature.in-product-scorecard.title': 'Ürün İçi Yapay Zeka Karnesi',
 	'toolkit.feature.in-product-scorecard.description':
 		'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması — panel /scorecard.',
 
@@ -2136,7 +2141,7 @@ const tr = {
 	'reports.description': 'Dönem özeti, kategori kırılımı ve gerçek ROAS.',
 
 	// Raporlar · Temassız kişiler
-	'reports.untouched.title': 'Temassız kişiler',
+	'reports.untouched.title': 'Temassız Kişiler',
 	'reports.untouched.description':
 		'Uzun süredir randevusu, işlemi veya notu olmayan kişiler. En eskisi üstte.',
 	'reports.untouched.thresholdLabel': 'Eşik',
@@ -2165,7 +2170,7 @@ const tr = {
 		'Gelecek tarihli randevusu olan kişiler listede yer almaz — onlar aktif takiptedir.',
 
 	// Raporlar · Kohort
-	'reports.cohorts.title': 'Kohort görünümü',
+	'reports.cohorts.title': 'Kohort Görünümü',
 	'reports.cohorts.description':
 		'Kişi hangi ay geldiyse o aya yazılır; tahsilatı ne zaman gelirse gelsin o aya sayılır.',
 	'reports.cohorts.noSpendData':
@@ -2238,7 +2243,7 @@ const tr = {
 		'Gelir düşüşü ve referans değeri bulguları yalnız finans görme yetkisi olan kullanıcılara gösterilir.',
 
 	// Raporlar · AI isabet ölçümü (AI-03)
-	'reports.aiAccuracy.title': 'AI isabet ölçümü',
+	'reports.aiAccuracy.title': 'AI İsabet Ölçümü',
 	'reports.aiAccuracy.description':
 		'AI ne kadar isabetli, nerede yanılıyor, Maya neyi bilmiyor — yalnız ölçüm, otomatik prompt beslemesi yok.',
 	'reports.aiAccuracy.loading': 'Rapor hazırlanıyor…',
@@ -3125,7 +3130,7 @@ const en: Record<MessageKey, string> = {
 	'maya.tool.name.openBalances': 'Open balances',
 	'maya.tool.name.contactAppointments': 'Contact appointments',
 	'maya.tool.name.periodSummary': 'Period summary',
-	'maya.tool.name.untouchedContacts': 'Untouched contacts',
+	'maya.tool.name.untouchedContacts': 'Untouched Contacts',
 	'maya.tool.moreItems': '… and {count} more',
 	'maya.tool.contactBalance.answer':
 		'{name} — open balance {outstanding}. {paid} of {income} income collected ({count} transactions).',
@@ -3435,7 +3440,7 @@ const en: Record<MessageKey, string> = {
 	'help.open': 'What is this screen for?',
 	'help.exampleLabel': 'Example',
 
-	'help.untouched.title': 'Untouched contacts',
+	'help.untouched.title': 'Untouched Contacts',
 	'help.untouched.b1':
 		'Shows contacts nobody has touched for a long time. "Touch" means an appointment, a payment, or a note.',
 	'help.untouched.b2': 'The longest-forgotten sits at the top. You work the list top to bottom.',
@@ -3496,7 +3501,7 @@ const en: Record<MessageKey, string> = {
 	'help.commissions.caveat':
 		'Commission is not calculated automatically — there is no percentage formula. Rules differ per clinic, so you enter the amount.',
 
-	'help.cohorts.title': 'Cohort view',
+	'help.cohorts.title': 'Cohort View',
 	'help.cohorts.b1':
 		'A contact is filed under the month they arrived. Whenever their money comes in, it still counts to that month.',
 	'help.cohorts.b2':
@@ -4469,8 +4474,12 @@ const en: Record<MessageKey, string> = {
 	'changelog.kind.guvenlik': 'Security',
 
 	'features.filterAll': 'All',
+	'toolkit.filter.yayinda': 'Live',
+	'toolkit.filter.yakinda': 'Coming soon',
+	'toolkit.filter.siradaki': 'Up next',
+	'toolkit.filter.fikirDefteri': 'Idea notebook',
+	'toolkit.filter.empty': 'No features in this category yet.',
 	'features.versionLink': 'Version {version} release notes',
-
 	'toolkit.showInProducts': 'Show in Tools',
 	'toolkit.hideInProducts': 'Hide from Tools',
 	'toolkit.recentDescription': 'Features added in the last 30 days.',
@@ -4491,139 +4500,139 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.campaign-assistant.title': 'Campaign Assistant',
 	'toolkit.feature.campaign-assistant.description':
 		'Marketing hub — real ROAS calculator, simulator, compliance scan, and pre-launch checks in one place.',
-	'toolkit.feature.ai-knowledge-base.title': 'Knowledge base',
+	'toolkit.feature.ai-knowledge-base.title': 'Knowledge Base',
 	'toolkit.feature.ai-knowledge-base.description':
 		'Services, prices, payment rules and rejection reasons live here; WhatsApp parsing and Maya answer from it. Changes are versioned.',
-	'toolkit.feature.ai-record-suggestions.title': 'Appointment update suggestions',
+	'toolkit.feature.ai-record-suggestions.title': 'Appointment Update Suggestions',
 	'toolkit.feature.ai-record-suggestions.description':
 		'Date changes found in a WhatsApp message land in a queue. Every card is approved one by one; ambiguous matches produce nothing.',
-	'toolkit.feature.ai-operation-alerts.title': 'Operation alerts',
+	'toolkit.feature.ai-operation-alerts.title': 'Operation Alerts',
 	'toolkit.feature.ai-operation-alerts.description':
 		'Time-locked items like flights and transfers raise a warning at the threshold. Deterministic code — not AI.',
-	'toolkit.feature.ai-evidence.title': 'Source trail on drafts',
+	'toolkit.feature.ai-evidence.title': 'Source Trail on Drafts',
 	'toolkit.feature.ai-evidence.description':
 		'Every draft field carries the sentence it came from; clicking the badge highlights that quote. Fabricated quotes are dropped server-side.',
-	'toolkit.feature.ai-accuracy.title': 'AI accuracy report',
+	'toolkit.feature.ai-accuracy.title': 'AI Accuracy Report',
 	'toolkit.feature.ai-accuracy.description':
 		'How many drafts were approved untouched, which field is corrected most, and what Maya could not answer.',
-	'toolkit.feature.untouched-contacts.title': 'Untouched contacts',
+	'toolkit.feature.untouched-contacts.title': 'Untouched Contacts',
 	'toolkit.feature.untouched-contacts.description':
 		'Lists contacts with no appointment, transaction, or note in the last X days — follow-ups that need attention.',
-	'toolkit.feature.cohorts.title': 'Cohort view',
+	'toolkit.feature.cohorts.title': 'Cohort View',
 	'toolkit.feature.cohorts.description':
 		'Cohorts by patient intake month; how revenue and conversion accumulate across maturation windows.',
-	'toolkit.feature.maya-live-data.title': 'Maya live data',
+	'toolkit.feature.maya-live-data.title': 'Maya Live Data',
 	'toolkit.feature.maya-live-data.description':
 		'Maya answers balance, receivables, appointment, period summary and untouched-contact questions from live data. The database provides the number; the model only picks the query.',
-	'toolkit.feature.llm-cost-tracking.title': 'LLM cost tracking',
+	'toolkit.feature.llm-cost-tracking.title': 'LLM Cost Tracking',
 	'toolkit.feature.llm-cost-tracking.description':
 		'Per-tenant LLM call count, tokens and cost in the platform panel; a high fallback rate is flagged with a color badge.',
-	'toolkit.feature.contact-titles.title': 'Contact titles',
+	'toolkit.feature.contact-titles.title': 'Contact Titles',
 	'toolkit.feature.contact-titles.description':
 		'Role labels such as doctor, coordinator, sales, ad specialist; the list is managed in Settings. A title is descriptive and never changes permissions.',
-	'toolkit.feature.appointment-doctor.title': 'Doctor on appointments',
+	'toolkit.feature.appointment-doctor.title': 'Doctor on Appointments',
 	'toolkit.feature.appointment-doctor.description':
 		'Assign a doctor to an appointment; appointment metrics return a per-doctor breakdown and a doctor × type cross-count.',
-	'toolkit.feature.incidents.title': 'Incident log',
+	'toolkit.feature.incidents.title': 'Incident Log',
 	'toolkit.feature.incidents.description':
 		'One-click problem record from the case file: revision needed, complication, process delay. Carries an optional cost and can be marked resolved.',
-	'toolkit.feature.referral-value.title': 'Referral value',
+	'toolkit.feature.referral-value.title': 'Referral Value',
 	'toolkit.feature.referral-value.description':
 		'Who referred how many people, what those people earned, plus the referrer’s title and coordinator.',
-	'toolkit.feature.report-compare.title': 'Period comparison',
+	'toolkit.feature.report-compare.title': 'Period Comparison',
 	'toolkit.feature.report-compare.description':
 		'Summary and appointment metrics compare against the previous period. No percentage is shown when the sample is too small.',
-	'toolkit.feature.interventions.title': 'Intervention list',
+	'toolkit.feature.interventions.title': 'Intervention List',
 	'toolkit.feature.interventions.description':
 		'Where the system speaks first: quality drops, open incidents, valuable referrers. Changes below the threshold are not reported.',
-	'toolkit.feature.maya-open-questions.title': 'Maya — any question',
+	'toolkit.feature.maya-open-questions.title': 'Maya — Any Question',
 	'toolkit.feature.maya-open-questions.description':
 		'Maya answers five fixed questions today; a constrained query layer will let it answer open questions about your records.',
-	'toolkit.feature.ai-learning-loop.title': 'AI learning loop',
+	'toolkit.feature.ai-learning-loop.title': 'AI Learning Loop',
 	'toolkit.feature.ai-learning-loop.description':
 		'Your corrections are already recorded and reported; a step to update the AI note straight from the report will be added.',
-	'toolkit.feature.suggestion-whitelist.title': 'Wider suggestion coverage',
+	'toolkit.feature.suggestion-whitelist.title': 'Wider Suggestion Coverage',
 	'toolkit.feature.suggestion-whitelist.description':
 		'AI suggests only appointment dates today; phone and appointment status will follow once accuracy is measured.',
-	'toolkit.feature.referral-chain.title': 'Referral chain',
+	'toolkit.feature.referral-chain.title': 'Referral Chain',
 	'toolkit.feature.referral-chain.description':
 		'Direct referrals are counted today. A chain view that also counts referrals-of-referrals is under consideration.',
-	'toolkit.feature.multi-title.title': 'Multiple titles per contact',
+	'toolkit.feature.multi-title.title': 'Multiple Titles per Contact',
 	'toolkit.feature.multi-title.description':
 		'One title per contact today. Letting one person hold several roles is under consideration.',
-	'toolkit.feature.incidents-departments.title': 'Incident log — other departments',
+	'toolkit.feature.incidents-departments.title': 'Incident Log — Other Departments',
 	'toolkit.feature.incidents-departments.description':
 		'Only clinic problems are recorded today. Hotel, transfer, sales and marketing types will be considered once the clinic loop proves itself in the field.',
-	'toolkit.feature.maya-voice.title': 'Ask Maya by voice',
+	'toolkit.feature.maya-voice.title': 'Ask Maya by Voice',
 	'toolkit.feature.maya-voice.description':
 		'Maya is asked in writing today. Voice input is under consideration; Turkish speech recognition quality will decide it.',
-	'toolkit.feature.in-app-notifications.title': 'In-app notifications',
+	'toolkit.feature.in-app-notifications.title': 'In-App Notifications',
 	'toolkit.feature.in-app-notifications.description':
 		'Alerts and the intervention list are seen only when you open the page. Letting a warning find the user is under consideration — not before thresholds settle.',
-	'toolkit.feature.whats-new-surface.title': "What's new surface",
+	'toolkit.feature.whats-new-surface.title': "What's New Surface",
 	'toolkit.feature.whats-new-surface.description':
 		'A surface showing recent additions when you open the panel is under consideration.',
-	'toolkit.feature.on-prem.title': 'On-premise install',
+	'toolkit.feature.on-prem.title': 'On-Premise Install',
 	'toolkit.feature.on-prem.description':
 		'A single-box install for clinics that want their data to never leave is under consideration.',
-	'toolkit.feature.patients-list.title': 'Patient list and detail',
+	'toolkit.feature.patients-list.title': 'Patient List and Detail',
 	'toolkit.feature.patients-list.description':
 		'List leads and patients, track status, and reach notes and contact details from one screen.',
-	'toolkit.feature.appointments-calendar.title': 'Appointment calendar',
+	'toolkit.feature.appointments-calendar.title': 'Appointment Calendar',
 	'toolkit.feature.appointments-calendar.description':
 		'Manage appointments in day/week views with clinic, hotel, and transfer notes.',
-	'toolkit.feature.finance-ledger.title': 'Income and expense ledger',
+	'toolkit.feature.finance-ledger.title': 'Income and Expense Ledger',
 	'toolkit.feature.finance-ledger.description':
 		'Record collections and payments with patient links, payment status, and invoice info.',
-	'toolkit.feature.whatsapp-import.title': 'AI WhatsApp transaction import',
+	'toolkit.feature.whatsapp-import.title': 'AI WhatsApp Transaction Import',
 	'toolkit.feature.whatsapp-import.description':
 		'Paste a group message or pick from the WAHA queue; AI extracts transactions, then you approve.',
-	'toolkit.feature.ghl-sync.title': 'GoHighLevel sync',
+	'toolkit.feature.ghl-sync.title': 'GoHighLevel Sync',
 	'toolkit.feature.ghl-sync.description':
 		'Match GHL leads and opportunities to Verimaya with field-level ownership rules.',
-	'toolkit.feature.ads-metrics.title': 'Meta and Google Ads metrics',
+	'toolkit.feature.ads-metrics.title': 'Meta and Google Ads Metrics',
 	'toolkit.feature.ads-metrics.description':
 		'Pull ad spend and conversions into the panel as a daily summary.',
-	'toolkit.feature.ads-connect.title': 'Meta & Google Ads connection',
+	'toolkit.feature.ads-connect.title': 'Meta & Google Ads Connection',
 	'toolkit.feature.ads-connect.description':
 		'Connect your ad account; daily campaign spend feeds the Real ROAS report.',
-	'toolkit.feature.n8n-api.title': 'n8n and external API',
+	'toolkit.feature.n8n-api.title': 'n8n and External API',
 	'toolkit.feature.n8n-api.description':
 		'Connect automations with scoped API keys and signed webhooks.',
-	'toolkit.feature.reports-dashboard.title': 'Summary reports and dashboard',
+	'toolkit.feature.reports-dashboard.title': 'Summary Reports and Dashboard',
 	'toolkit.feature.reports-dashboard.description':
 		'See leads, conversion, collections, and message volume on period cards.',
-	'toolkit.feature.real-roas.title': 'Real ROAS report',
+	'toolkit.feature.real-roas.title': 'Real ROAS Report',
 	'toolkit.feature.real-roas.description':
 		'Compare ad spend to period collections; cost per patient and source breakdown.',
-	'toolkit.feature.truth-calculator.title': 'Real ROAS calculator',
+	'toolkit.feature.truth-calculator.title': 'Real ROAS Calculator',
 	'toolkit.feature.truth-calculator.description':
 		'Turn platform ROAS into real profit with contribution margin and costs; break-even and ad-spend caps.',
-	'toolkit.feature.ad-simulator.title': 'Ad math simulator',
+	'toolkit.feature.ad-simulator.title': 'Ad Math Simulator',
 	'toolkit.feature.ad-simulator.description':
 		'CPC, conversion, and close rates into cost per sale, traffic light, and scale ceiling.',
-	'toolkit.feature.ad-compliance.title': 'Ad compliance scan',
+	'toolkit.feature.ad-compliance.title': 'Ad Compliance Scan',
 	'toolkit.feature.ad-compliance.description':
 		'Scan ad or landing copy for banned / risky health claims.',
-	'toolkit.feature.marketing-templates.title': 'UTM and budget templates',
+	'toolkit.feature.marketing-templates.title': 'UTM and Budget Templates',
 	'toolkit.feature.marketing-templates.description':
 		'Generate UTM links; quickly build 3:2:2 creative and 60/30/10 budget splits.',
-	'toolkit.feature.trust-score.title': 'Measurement maturity (Trust Score)',
+	'toolkit.feature.trust-score.title': 'Measurement Maturity (Trust Score)',
 	'toolkit.feature.trust-score.description':
 		'See measurement score with consent, CAPI, enhanced conversions, and CRM feedback checklist.',
-	'toolkit.feature.campaign-precheck.title': 'Pre-launch check',
+	'toolkit.feature.campaign-precheck.title': 'Pre-Launch Check',
 	'toolkit.feature.campaign-precheck.description':
 		'Check compliance, unit economics, and measurement thresholds before going live.',
-	'toolkit.feature.duplicate-scan.title': 'Contact and patient duplicates',
+	'toolkit.feature.duplicate-scan.title': 'Contact and Patient Duplicates',
 	'toolkit.feature.duplicate-scan.description':
 		'Scan duplicates by phone, email, or name; merge records.',
-	'toolkit.feature.multi-tenant.title': 'Multi-tenant organization',
+	'toolkit.feature.multi-tenant.title': 'Multi-Tenant Organization',
 	'toolkit.feature.multi-tenant.description':
 		'Each clinic/agency sees only its data; team roles limit access.',
-	'toolkit.feature.free-ai-scorecard.title': 'Free AI readiness scorecard',
+	'toolkit.feature.free-ai-scorecard.title': 'Free AI Readiness Scorecard',
 	'toolkit.feature.free-ai-scorecard.description':
 		'No-signup 5-minute scorecard: clear sentences on areas without AI-readiness evidence.',
-	'toolkit.feature.in-product-scorecard.title': 'In-product AI scorecard',
+	'toolkit.feature.in-product-scorecard.title': 'In-Product AI Scorecard',
 	'toolkit.feature.in-product-scorecard.description':
 		'Tenant measurement profile, 43 criteria, auto-fill and comparison — panel /scorecard.',
 
@@ -5035,7 +5044,7 @@ const en: Record<MessageKey, string> = {
 	'reports.title': 'Reports',
 	'reports.description': 'Period summary, category breakdown, and real ROAS.',
 
-	'reports.untouched.title': 'Untouched contacts',
+	'reports.untouched.title': 'Untouched Contacts',
 	'reports.untouched.description':
 		'Contacts with no appointment, transaction, or note for a long time. Oldest first.',
 	'reports.untouched.thresholdLabel': 'Threshold',
@@ -5063,7 +5072,7 @@ const en: Record<MessageKey, string> = {
 	'reports.untouched.futureNote':
 		'Contacts with an upcoming appointment are excluded — they are actively handled.',
 
-	'reports.cohorts.title': 'Cohort view',
+	'reports.cohorts.title': 'Cohort View',
 	'reports.cohorts.description':
 		'Contacts are attributed to the month they were created; collections count toward that month whenever they arrive.',
 	'reports.cohorts.noSpendData': 'No ad data for this month — spend is unknown, not zero.',
@@ -5104,7 +5113,7 @@ const en: Record<MessageKey, string> = {
 	'reports.referrals.footnote':
 		'Only direct referrals are shown — chains ("who they referred, referred") are not in v1. The period filter applies to collections from referred contacts; the referral link itself is timeless — the referred count is not affected by the period.',
 
-	'reports.interventions.title': 'Intervention list',
+	'reports.interventions.title': 'Intervention List',
 	'reports.interventions.description':
 		'Where the system says “look at this” without being asked. Sentences are templates, numbers come from the database — the model never produces a finding.',
 	'reports.interventions.loading': 'Preparing the list…',
@@ -5135,7 +5144,7 @@ const en: Record<MessageKey, string> = {
 		'Revenue drop and referral value findings are shown only to users with finance access.',
 
 	// Reports · AI accuracy measurement (AI-03)
-	'reports.aiAccuracy.title': 'AI accuracy',
+	'reports.aiAccuracy.title': 'AI Accuracy',
 	'reports.aiAccuracy.description':
 		'How accurate the AI is, where it gets it wrong, what Maya doesn’t know — measurement only, no automatic prompt feeding.',
 	'reports.aiAccuracy.loading': 'Preparing report…',
