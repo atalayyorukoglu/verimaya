@@ -770,7 +770,13 @@
 					</a>
 				</div>
 
-				<div class="min-w-0 flex-1 overflow-hidden">
+				<!--
+					Mobilde arama ikonu sağa yaslansın diye boşluk; masaüstünde yok, orada
+					arama alanı ortadaki geniş kutuyu doldurur.
+				-->
+				<div class="flex-1 md:hidden" aria-hidden="true"></div>
+
+				<div class="shrink-0 overflow-hidden md:min-w-0 md:flex-1">
 					<CommandPalette />
 				</div>
 
