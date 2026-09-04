@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+	import { fieldClass } from '$lib/api';
 	import { t } from '$lib/i18n/locale.svelte';
 	import {
 		monthRangeInTz,
@@ -6,17 +8,20 @@
 		resolvePeriodRange,
 		type PeriodKey
 	} from '$lib/period-range';
+	import { cn } from '$lib/utils';
 
 	let {
 		periodKey = $bindable(),
 		customFrom = $bindable(),
 		customTo = $bindable(),
-		tenantTimezone
+		tenantTimezone,
+		summaryTrailing
 	}: {
 		periodKey: PeriodKey;
 		customFrom: string;
 		customTo: string;
 		tenantTimezone: string;
+		summaryTrailing?: Snippet;
 	} = $props();
 
 	let customRangeHydrated = $state(false);
@@ -55,42 +60,46 @@
 	}
 </script>
 
-<section class="mb-4 rounded-lg border border-border bg-surface p-3 sm:p-4">
-	<div class="flex flex-wrap items-center justify-between gap-2">
-		<p class="text-xs font-medium text-text-muted">{t('reports.period.label')}</p>
-		<p class="text-xs font-semibold text-text">{periodText}</p>
+<section class="mb-4 border-b border-border pb-4">
+	<div class="mb-0.5 flex items-center justify-between gap-2 text-sm text-text-muted">
+		<span class="min-w-0 truncate">{periodText}</span>
+		{#if summaryTrailing}
+			<div class="shrink-0">{@render summaryTrailing()}</div>
+		{/if}
 	</div>
-	<div class="mt-2 flex flex-wrap gap-1.5">
+
+	<div
+		class="mt-3.5 flex gap-0.5 rounded-[8px] border border-border bg-surface-2 p-0.5"
+		role="tablist"
+		aria-label={t('reports.period.label')}
+	>
 		{#each options as opt (opt.key)}
 			<button
 				type="button"
-				class="cursor-pointer rounded-[6px] px-2.5 py-1.5 text-xs font-medium transition-colors {periodKey ===
-				opt.key
-					? 'bg-brand text-primary-foreground'
-					: 'bg-surface-2 text-text-muted hover:text-text'}"
+				role="tab"
+				aria-selected={periodKey === opt.key}
+				class={cn(
+					'min-w-0 flex-1 cursor-pointer rounded-[8px] px-1.5 py-2 text-center text-xs font-semibold transition-colors sm:px-2.5 sm:text-sm',
+					periodKey === opt.key
+						? 'border border-border bg-surface text-text shadow-xs'
+						: 'text-text-faint hover:text-text-muted'
+				)}
 				onclick={() => setPeriod(opt.key)}
 			>
-				{opt.label}
+				<span class="line-clamp-1">{opt.label}</span>
 			</button>
 		{/each}
 	</div>
+
 	{#if periodKey === 'ozel'}
 		<div class="mt-3 grid grid-cols-2 gap-2 sm:max-w-md">
 			<label class="grid gap-1 text-xs text-text-muted">
 				{t('reports.period.from')}
-				<input
-					type="date"
-					class="h-9 rounded-[6px] border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
-					bind:value={customFrom}
-				/>
+				<input type="date" class={fieldClass} bind:value={customFrom} />
 			</label>
 			<label class="grid gap-1 text-xs text-text-muted">
 				{t('reports.period.to')}
-				<input
-					type="date"
-					class="h-9 rounded-[6px] border border-border bg-surface-2 px-2 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
-					bind:value={customTo}
-				/>
+				<input type="date" class={fieldClass} bind:value={customTo} />
 			</label>
 		</div>
 	{/if}

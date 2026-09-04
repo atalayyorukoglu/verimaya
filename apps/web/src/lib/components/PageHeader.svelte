@@ -24,7 +24,7 @@
 <div class="mb-6 flex flex-row items-center justify-between gap-3">
 	<div class="min-w-0">
 		<h1
-			class="flex items-center gap-1.5 text-xl font-semibold tracking-tight break-words text-text"
+			class="flex items-center gap-1.5 text-base font-semibold tracking-tight break-words text-text sm:text-xl"
 		>
 			<span class="min-w-0 break-words">{title}</span>
 			{#if helpTopic}

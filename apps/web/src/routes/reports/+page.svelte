@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		MarketingReport,
@@ -645,93 +644,62 @@
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
-	<div class="mb-4">
-		<PageHeader title={t('reports.title')} description={t('reports.description')}>
-			{#snippet actions()}
-				<div class="flex shrink-0 flex-wrap gap-1.5">
-					<Button
-						type="button"
-						size="sm"
-						variant={tab === 'ozet' ? 'default' : 'outline'}
-						onclick={() => setTab('ozet')}
-					>
-						<LayoutGrid class="size-3.5" />
-						{t('reports.tab.summary')}
-					</Button>
-					<Button
-						type="button"
-						size="sm"
-						variant={tab === 'kategori' ? 'default' : 'outline'}
-						onclick={() => setTab('kategori')}
-					>
-						<FolderTree class="size-3.5" />
-						Kategori
-					</Button>
-					<Button
-						type="button"
-						size="sm"
-						variant={tab === 'pazarlama' ? 'default' : 'outline'}
-						onclick={() => setTab('pazarlama')}
-					>
-						<Megaphone class="size-3.5" />
-						Pazarlama
-					</Button>
-				</div>
-			{/snippet}
-		</PageHeader>
-	</div>
-
-	<!-- Operasyonel / kohort listeleri: dönemden bağımsız ayrı sayfalar. -->
-	<div class="mb-4 flex flex-wrap gap-x-4 gap-y-1">
-		<a
-			href={resolve('/reports/untouched')}
-			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-		>
-			{t('reports.untouched.title')} →
-		</a>
-		<a
-			href={resolve('/reports/cohorts')}
-			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-		>
-			{t('reports.cohorts.title')} →
-		</a>
-		<a
-			href={resolve('/reports/referrals')}
-			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-		>
-			{t('reports.referrals.title')} →
-		</a>
-		<a
-			href={resolve('/reports/interventions')}
-			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-		>
-			{t('reports.interventions.title')} →
-		</a>
-		<a
-			href={resolve('/reports/ai-accuracy')}
-			class="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-		>
-			{t('reports.aiAccuracy.title')} →
-		</a>
-	</div>
+	<PageHeader title={t('reports.title')}>
+		{#snippet actions()}
+			<div class="flex shrink-0 flex-wrap gap-1.5">
+				<Button
+					type="button"
+					size="sm"
+					class="h-6 min-h-0 gap-1 px-2 py-0 text-xs [&_svg]:!size-3.5"
+					variant={tab === 'ozet' ? 'default' : 'outline'}
+					onclick={() => setTab('ozet')}
+				>
+					<LayoutGrid class="size-3.5" />
+					{t('reports.tab.summary')}
+				</Button>
+				<Button
+					type="button"
+					size="sm"
+					class="h-6 min-h-0 gap-1 px-2 py-0 text-xs [&_svg]:!size-3.5"
+					variant={tab === 'kategori' ? 'default' : 'outline'}
+					onclick={() => setTab('kategori')}
+				>
+					<FolderTree class="size-3.5" />
+					Kategori
+				</Button>
+				<Button
+					type="button"
+					size="sm"
+					class="h-6 min-h-0 gap-1 px-2 py-0 text-xs [&_svg]:!size-3.5"
+					variant={tab === 'pazarlama' ? 'default' : 'outline'}
+					onclick={() => setTab('pazarlama')}
+				>
+					<Megaphone class="size-3.5" />
+					Pazarlama
+				</Button>
+			</div>
+		{/snippet}
+	</PageHeader>
 
 	<!-- Dönem seçici -->
-	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone} />
-
-	<label
-		class="mb-4 flex items-center gap-2 text-xs font-medium text-text-muted {canCompare
-			? ''
-			: 'opacity-50'}"
-		title={canCompare ? undefined : t('reports.compare.disabledHint')}
-	>
-		<input
-			type="checkbox"
-			class="size-3.5 rounded-[4px] border-border accent-brand"
-			bind:checked={compareEnabled}
-			disabled={!canCompare}
-		/>
-		{t('reports.compare.label')}
-	</label>
+	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone}>
+		{#snippet summaryTrailing()}
+			<label
+				class="flex items-center gap-2 text-xs font-medium text-text-muted {canCompare
+					? ''
+					: 'opacity-50'}"
+				title={canCompare ? undefined : t('reports.compare.disabledHint')}
+			>
+				<input
+					type="checkbox"
+					class="size-3.5 rounded-[4px] border-border accent-brand"
+					bind:checked={compareEnabled}
+					disabled={!canCompare}
+				/>
+				{t('reports.compare.label')}
+			</label>
+		{/snippet}
+	</PeriodSelector>
 
 	{#if loading}
 		<p class="text-sm text-text-muted">{t('reports.loading')}</p>
