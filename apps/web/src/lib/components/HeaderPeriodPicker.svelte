@@ -8,12 +8,24 @@
 	 * Dönemi olmayan sayfada kayıt yoktur ve bu bileşen hiç render edilmez.
 	 *
 	 * Oklar ay ay ilerletir; etikete basınca panel açılır (Bu aya git / başlangıç /
-	 * bitiş / tüm zamanlar). Panel `fixed`, başlık `overflow` kırpıyor.
+	 * bitiş / tüm zamanlar).
+	 *
+	 * Kap 44px: mobilde global dokunma hedefi kuralı (`layout.css`) butonlara
+	 * `min-height: 44px` veriyor. Kap 36px kalınca butonlar taşıyor ve ayraç çizgileri
+	 * yuvarlak köşelerin dışına çıkıyordu. Kuraldan muaf tutmak yerine (ok tuşları
+	 * gerçekten parmakla basılıyor) kap hedefe uyduruldu.
+	 *
+	 * Panel `portal` ile `document.body`'ye taşınır. `fixed` tek başına yetmiyor:
+	 * başlıkta `backdrop-blur` var ve `backdrop-filter` sabit konumlu torunlar için
+	 * kapsayıcı blok yaratıyor — panel başlığın içine hapsolup `overflow` tarafından
+	 * kırpılıyordu, yani açılıyor ama görünmüyordu. CommandPalette de aynı sebeple
+	 * portal kullanıyor (bkz. `actions/portal.ts`).
 	 */
 	import { activePeriod } from '$lib/period-bridge.svelte';
 	import { monthRangeInTz } from '$lib/period-range';
 	import { t } from '$lib/i18n/locale.svelte';
 	import { fieldClass } from '$lib/api';
+	import { portal } from '$lib/actions/portal';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -116,15 +128,16 @@
 </script>
 
 {#if period}
-	<div class="flex min-w-0 items-center">
+	<!-- Zil ikonunun soluna yaslı; başlıkta logo solda kalır. -->
+	<div class="flex min-w-0 items-center justify-end">
 		<div
-			class="flex h-9 min-w-0 items-center rounded-[8px] border border-border bg-surface"
+			class="flex h-11 min-w-0 items-stretch overflow-hidden rounded-[8px] border border-border bg-surface"
 			role="group"
 			aria-label={t('reports.period.label')}
 		>
 			<button
 				type="button"
-				class="flex size-8 shrink-0 items-center justify-center rounded-l-[7px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+				class="flex w-11 shrink-0 items-center justify-center text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 				aria-label={t('reports.period.prevMonth')}
 				onclick={() => stepMonth(-1)}
 			>
@@ -145,7 +158,7 @@
 			</button>
 			<button
 				type="button"
-				class="flex size-8 shrink-0 items-center justify-center rounded-r-[7px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+				class="flex w-11 shrink-0 items-center justify-center text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 				aria-label={t('reports.period.nextMonth')}
 				onclick={() => stepMonth(1)}
 			>
@@ -155,60 +168,62 @@
 	</div>
 
 	{#if open}
-		<button
-			type="button"
-			class="fixed inset-0 z-40 cursor-default"
-			aria-label={t('common.close')}
-			onclick={() => (open = false)}
-		></button>
-		<div
-			class="fixed inset-x-3 top-[calc(3.5rem+0.5rem)] z-50 rounded-[10px] border border-border bg-surface p-3 shadow-lg"
-			role="dialog"
-			aria-label={t('reports.period.label')}
-		>
+		<div use:portal>
 			<button
 				type="button"
-				class="w-full rounded-[8px] border border-brand/40 bg-brand-subtle px-3 py-2 text-sm font-medium text-brand-text transition-colors hover:bg-brand/15"
-				onclick={goThisMonth}
+				class="fixed inset-0 z-40 cursor-default"
+				aria-label={t('common.close')}
+				onclick={() => (open = false)}
+			></button>
+			<div
+				class="fixed inset-x-3 top-[calc(3.5rem+0.5rem)] z-50 rounded-[10px] border border-border bg-surface p-3 shadow-lg"
+				role="dialog"
+				aria-label={t('reports.period.label')}
 			>
-				{t('reports.period.goThisMonth')}
-			</button>
-
-			<div class="mt-3 grid gap-2">
-				<label class="grid gap-1 text-xs text-text-muted">
-					{t('reports.period.from')}
-					<input type="date" class={fieldClass} bind:value={draftFrom} />
-				</label>
-				<label class="grid gap-1 text-xs text-text-muted">
-					{t('reports.period.to')}
-					<input type="date" class={fieldClass} bind:value={draftTo} />
-				</label>
-			</div>
-
-			<button
-				type="button"
-				class="mt-3 w-full rounded-[8px] border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:text-text"
-				onclick={allTime}
-			>
-				{t('reports.period.allTime')}
-			</button>
-
-			<div class="mt-3 flex gap-2">
 				<button
 					type="button"
-					class="flex-1 rounded-[8px] bg-brand px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
-					disabled={!draftFrom || !draftTo}
-					onclick={applyRange}
+					class="w-full rounded-[8px] border border-brand/40 bg-brand-subtle px-3 py-2 text-sm font-medium text-brand-text transition-colors hover:bg-brand/15"
+					onclick={goThisMonth}
 				>
-					{t('common.apply')}
+					{t('reports.period.goThisMonth')}
 				</button>
+
+				<div class="mt-3 grid gap-2">
+					<label class="grid gap-1 text-xs text-text-muted">
+						{t('reports.period.from')}
+						<input type="date" class={fieldClass} bind:value={draftFrom} />
+					</label>
+					<label class="grid gap-1 text-xs text-text-muted">
+						{t('reports.period.to')}
+						<input type="date" class={fieldClass} bind:value={draftTo} />
+					</label>
+				</div>
+
 				<button
 					type="button"
-					class="flex-1 rounded-[8px] border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:text-text"
-					onclick={() => (open = false)}
+					class="mt-3 w-full rounded-[8px] border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:text-text"
+					onclick={allTime}
 				>
-					{t('common.cancel')}
+					{t('reports.period.allTime')}
 				</button>
+
+				<div class="mt-3 flex gap-2">
+					<button
+						type="button"
+						class="flex-1 rounded-[8px] bg-brand px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
+						disabled={!draftFrom || !draftTo}
+						onclick={applyRange}
+					>
+						{t('common.apply')}
+					</button>
+					<button
+						type="button"
+						class="flex-1 rounded-[8px] border border-border px-3 py-2 text-sm text-text-muted transition-colors hover:text-text"
+						onclick={() => (open = false)}
+					>
+						{t('common.cancel')}
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}
