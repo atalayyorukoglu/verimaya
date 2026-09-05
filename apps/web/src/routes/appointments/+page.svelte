@@ -24,6 +24,7 @@
 	import { t } from '$lib/i18n/locale.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import { monthRangeInTz, resolvePeriodRange, type PeriodKey } from '$lib/period-range';
+	import { bridgePeriod } from '$lib/period-bridge.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -71,6 +72,31 @@
 	});
 
 	const periodRange = $derived(resolvePeriodRange(periodKey, customFrom, customTo, tenantTimezone));
+
+	/*
+	 * Mobilde dönem seçimi kabuk başlığında (dikey alan). Sayfa kendi durumunu köprüye
+	 * verir; başlıktaki denetim aynı değeri okur ve aynı setter'ları çağırır — iki ayrı
+	 * durum olmaz. Aşağıdaki sekmeler mobilde gizli, masaüstünde açık.
+	 */
+	bridgePeriod(() => ({
+		key: periodKey,
+		from: periodRange.from ?? customFrom,
+		to: periodRange.to ?? customTo,
+		timeZone: tenantTimezone,
+		setKey: (next: PeriodKey) => {
+			periodKey = next;
+			if (next === 'ozel') {
+				const r = monthRangeInTz(0, tenantTimezone);
+				customFrom = r.from;
+				customTo = r.to;
+			}
+		},
+		setRange: (from: string, to: string) => {
+			customFrom = from;
+			customTo = to;
+			periodKey = 'ozel';
+		}
+	}));
 
 	const periodRangeText = $derived(
 		periodRange.from && periodRange.to
@@ -320,7 +346,7 @@
 		</div>
 
 		<div
-			class="mt-3.5 flex gap-0.5 rounded-[8px] border border-border bg-surface-2 p-0.5"
+			class="mt-3.5 flex gap-0.5 rounded-[8px] border border-border bg-surface-2 p-0.5 max-md:hidden"
 			role="tablist"
 			aria-label={t('reports.period.label')}
 		>

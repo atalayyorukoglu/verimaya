@@ -26,6 +26,7 @@
 	import { changelog } from '@verimaya/shared';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import HeaderPeriodPicker from '$lib/components/HeaderPeriodPicker.svelte';
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import SidebarVersionFooter from '$lib/components/SidebarVersionFooter.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -780,10 +781,12 @@
 				</div>
 
 				<!--
-					Mobilde arama ikonu sağa yaslansın diye boşluk; masaüstünde yok, orada
-					arama alanı ortadaki geniş kutuyu doldurur.
+					Aramanın alt menüye taşınmasıyla boşalan yer: mobilde dönem denetimi.
+					Sayfanın dönemi yoksa bileşen hiç render etmez, alan boş kalır.
 				-->
-				<div class="flex-1 md:hidden" aria-hidden="true"></div>
+				<div class="min-w-0 flex-1 md:hidden">
+					<HeaderPeriodPicker />
+				</div>
 
 				<div class="shrink-0 overflow-hidden md:min-w-0 md:flex-1">
 					<CommandPalette bind:open={searchOpen} />

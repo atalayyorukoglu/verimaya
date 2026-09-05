@@ -9,6 +9,7 @@
 		type PeriodKey
 	} from '$lib/period-range';
 	import { cn } from '$lib/utils';
+	import { bridgePeriod } from '$lib/period-bridge.svelte';
 
 	let {
 		periodKey = $bindable(),
@@ -58,9 +59,28 @@
 			customTo = r.to;
 		}
 	}
+
+	/*
+	 * Mobilde bu seçici gizlenir ve yerine kabuk başlığındaki kompakt denetim geçer
+	 * (dikey alan). İkisi ayrı durum tutmasın diye sayfa dönemi köprüye kaydedilir:
+	 * başlık aynı değeri okur, aynı setter'ları çağırır.
+	 */
+	bridgePeriod(() => ({
+		key: periodKey,
+		from: dateRange.from ?? customFrom,
+		to: dateRange.to ?? customTo,
+		timeZone: tenantTimezone,
+		setKey: setPeriod,
+		setRange: (from: string, to: string) => {
+			customFrom = from;
+			customTo = to;
+			periodKey = 'ozel';
+		}
+	}));
 </script>
 
-<section class="mb-4 border-b border-border pb-4">
+<!-- Mobilde gizli: orada dönem denetimi kabuk başlığında. -->
+<section class="mb-4 border-b border-border pb-4 max-md:hidden">
 	<div class="mb-0.5 flex items-center justify-between gap-2 text-sm text-text-muted">
 		<span class="min-w-0 truncate">{periodText}</span>
 		{#if summaryTrailing}
