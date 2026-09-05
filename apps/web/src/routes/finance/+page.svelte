@@ -273,10 +273,15 @@
 <div class="mx-auto max-w-6xl min-w-0">
 	<PageHeader title={t('finance.title')} description={listDescription}>
 		{#snippet actions()}
-			<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+			<!--
+				Mobilde yan yana: ikisi de tek satırlık kısayol, alt alta durunca başlığın
+				altını iki blok kaplıyordu (kullanıcı, 2026-09-05). `flex-1` ile eşit pay,
+				`sm`'den itibaren içeriğe göre daralırlar.
+			-->
+			<div class="flex w-full flex-row flex-wrap items-center gap-2 sm:w-auto">
 				<a
 					href={resolve('/finance/ai-transaction')}
-					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
+					class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium text-text hover:bg-surface-2 sm:h-9 sm:flex-none sm:px-4"
 				>
 					<Sparkles class="size-4" />
 					{t('finance.aiLink')}
@@ -290,7 +295,7 @@
 				</a>
 				<a
 					href={resolve('/finance/commissions')}
-					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
+					class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium text-text hover:bg-surface-2 sm:h-9 sm:flex-none sm:px-4"
 				>
 					{t('finance.commissionsLink')}
 				</a>

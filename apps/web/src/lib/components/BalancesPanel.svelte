@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { createQuery } from '@tanstack/svelte-query';
 	import type { ReportBalanceRow, ReportBalances, SupportedCurrency } from '@verimaya/shared';
@@ -13,7 +12,7 @@
 	import { t } from '$lib/i18n/locale.svelte';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
 	type Props = {
 		collapsible?: boolean;
@@ -25,22 +24,14 @@
 		receivable: number;
 	};
 
-	const STORAGE_KEY = 'verimaya:finance-balances-open';
-	const CONTENT_ID = 'finance-balances-panel-content';
-
 	let { collapsible = false }: Props = $props();
 	let directionFilter = $state<BalanceDirectionFilter>('all');
-	let open = $state(false);
-	let preferenceReady = $state(false);
 
 	const qs = useQueryScope();
 	const balancesQuery = createQuery(() => ({
 		queryKey: qs.keys.reports.balances(),
 		queryFn: () => apiGet<ReportBalances>(apiPaths.reportsBalances),
-		// Kapalıyken de çekilir: özet satırı (Borç / Alacak) kartın kapalı hâlinin
-		// tek içeriği. Eskiden `open` şartı vardı ve kart "Toplamları görmek için
-		// bölümü açın." yazıp duruyordu (kullanıcı, 2026-09-05).
-		enabled: qs.ready && (!collapsible || preferenceReady)
+		enabled: qs.ready
 	}));
 
 	const balances = $derived(balancesQuery.data?.items ?? []);
@@ -49,17 +40,6 @@
 	const footnoteParts = $derived(
 		t('finance.balances.footnote', { contactId: '\u0001' }).split('\u0001')
 	);
-
-	onMount(() => {
-		if (!collapsible) {
-			open = true;
-			preferenceReady = true;
-			return;
-		}
-		const stored = localStorage.getItem(STORAGE_KEY);
-		open = stored === null ? window.matchMedia('(min-width: 768px)').matches : stored === '1';
-		preferenceReady = true;
-	});
 
 	function summarizeBalances(items: ReportBalanceRow[]): CurrencySummary[] {
 		const totals: CurrencySummary[] = [];
@@ -83,75 +63,50 @@
 			.filter((item) => item.payable !== 0 || item.receivable !== 0)
 			.sort((a, b) => a.currency.localeCompare(b.currency));
 	}
-
-	function toggleOpen() {
-		open = !open;
-		localStorage.setItem(STORAGE_KEY, open ? '1' : '0');
-	}
 </script>
 
 {#if collapsible}
-	<section class="mb-6 min-w-0 overflow-hidden rounded-lg border border-border bg-surface">
-		<div class="min-w-0 p-4">
-			<!--
-				Kapalı kart iki satır: başlık + "Tam sayfada aç", altında para birimi başına
-				"Borç … · Alacak …". Açıklama cümlesi ("… filtrelerden bağımsızdır") ve
-				"Toplamları görmek için bölümü açın." kaldırıldı — ikisi de kartın yarısını
-				yiyip asıl sayıyı göstermiyordu (kullanıcı, 2026-09-05).
-			-->
-			<div class="flex min-w-0 items-center gap-3">
-				<button
-					type="button"
-					class="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-					aria-expanded={open}
-					aria-controls={CONTENT_ID}
-					aria-label={open ? t('finance.balances.collapse') : t('finance.balances.expand')}
-					onclick={toggleOpen}
-				>
-					<span class="min-w-0 truncate text-base font-semibold text-text"
-						>{t('finance.balances.title')}</span
-					>
-					<ChevronDown
-						class={['size-5 shrink-0 text-text-muted transition-transform', open && 'rotate-180']}
-						aria-hidden="true"
-					/>
-				</button>
-				<a
-					href={resolve('/finance/balances')}
-					class="inline-flex min-h-11 shrink-0 items-center text-sm font-medium text-brand hover:underline"
-				>
-					{t('finance.balances.fullPage')}
-				</a>
-			</div>
-
-			{#if !open}
-				{#if summaries.length > 0}
-					<ul class="mt-1 grid min-w-0 gap-1">
-						{#each summaries as summary (summary.currency)}
-							<li class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm tabular-nums">
-								<span class="min-w-0 text-text">
-									{t('finance.balances.summaryPayable')}:
-									{formatMoney(summary.payable, summary.currency)}
-								</span>
-								<span aria-hidden="true" class="text-text-faint">-</span>
-								<span class="min-w-0 text-success">
-									{t('finance.balances.summaryReceivable')}:
-									{formatMoney(summary.receivable, summary.currency)}
-								</span>
-							</li>
-						{/each}
-					</ul>
-				{:else if balancesQuery.data}
-					<p class="mt-1 text-sm text-text-faint">
-						{t('finance.balances.empty')}
-					</p>
-				{/if}
+	<!--
+		Tek satır: para birimi başına "Borç … - Alacak …", sağda "Detay ›".
+		Başlık, aç/kapa oku ve "Tam sayfada aç" kaldırıldı (kullanıcı, 2026-09-05):
+		kart üç satır yer kaplıyor ama tek işe yarıyordu, o da toplamları göstermek.
+		Yerinde açılma da bununla birlikte gitti — ayrıntı artık /finance/balances'ta.
+	-->
+	<section
+		class="mb-6 flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2"
+	>
+		<div class="min-w-0 flex-1">
+			{#if summaries.length > 0}
+				<ul class="grid min-w-0 gap-1">
+					{#each summaries as summary (summary.currency)}
+						<li class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm tabular-nums">
+							<span class="min-w-0 text-text">
+								{t('finance.balances.summaryPayable')}:
+								{formatMoney(summary.payable, summary.currency)}
+							</span>
+							<span aria-hidden="true" class="text-text-faint">-</span>
+							<span class="min-w-0 text-success">
+								{t('finance.balances.summaryReceivable')}:
+								{formatMoney(summary.receivable, summary.currency)}
+							</span>
+						</li>
+					{/each}
+				</ul>
+			{:else if balancesQuery.data}
+				<p class="text-sm text-text-faint">{t('finance.balances.empty')}</p>
+			{:else}
+				<!-- Yüklenirken satır çökmesin; sayı gelince yerine oturur. -->
+				<p class="text-sm text-text-faint">{t('finance.balances.loading')}</p>
 			{/if}
 		</div>
-
-		<div id={CONTENT_ID} class="min-w-0 border-t border-border p-4" hidden={!open}>
-			{@render BalanceContent()}
-		</div>
+		<a
+			href={resolve('/finance/balances')}
+			class="inline-flex min-h-11 shrink-0 items-center gap-0.5 text-sm font-medium text-brand hover:underline"
+			aria-label={t('finance.balances.title')}
+		>
+			{t('finance.balances.fullPage')}
+			<ChevronRight class="size-4" aria-hidden="true" />
+		</a>
 	</section>
 {:else}
 	{@render BalanceContent()}
