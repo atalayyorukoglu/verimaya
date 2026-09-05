@@ -138,8 +138,10 @@ struct InboxRow: View {
           .controlSize(.small)
           .disabled(isParsing)
 
+        // Marka rengi TabView'dan miras kaliyor; ikincil eylem okunmuyordu.
         Button("Yoksay", action: onIgnore)
           .buttonStyle(.bordered)
+          .tint(VerimayaTheme.textMuted)
           .controlSize(.small)
       }
     }

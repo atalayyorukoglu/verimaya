@@ -156,4 +156,23 @@ final class InboxTests: XCTestCase {
     XCTAssertTrue(json.contains("\"occurred_on\""))
     XCTAssertTrue(json.contains("\"contact_label\""))
   }
+
+  // MARK: /v1/me sözleşmesi
+
+  /// Regresyon: uygulama bir dönem better-auth şeklini (`user`/`session`)
+  /// bekliyordu; API düz tenant üyeliği döndürdüğü için giriş "Yanıt
+  /// çözümlenemedi" ile kırılıyordu.
+  func testMeDecodesFlatTenantMembership() throws {
+    let json = """
+    {"id":"u1","user_id":"u1","email":"a@b.com","display_name":"iOS Test",
+     "created_at":"2026-09-05T22:38:32.011Z","tenant_id":"t1","role":"owner",
+     "platform_admin":false,
+     "preferences":{"enabled_product_modules":["incentive-files"]}}
+    """
+    let me = try decode(MeResponse.self, json)
+    XCTAssertEqual(me.email, "a@b.com")
+    XCTAssertEqual(me.displayName, "iOS Test")
+    XCTAssertEqual(me.tenantId, "t1")
+    XCTAssertEqual(me.preferences?.enabledProductModules, ["incentive-files"])
+  }
 }

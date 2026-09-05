@@ -67,7 +67,7 @@ final class SessionStore: ObservableObject {
       }
       let me = try await APIClient.shared.me()
       apply(me)
-      persist(token: token, email: me.user.email)
+      persist(token: token, email: me.email)
       isAuthenticated = true
     } catch {
       statusMessage = message(from: error)
@@ -118,9 +118,9 @@ final class SessionStore: ObservableObject {
 
   // MARK: helpers
   private func apply(_ me: MeResponse) {
-    email = me.user.email
-    name = me.user.name
-    activeOrganizationId = me.session.activeOrganizationId
+    email = me.email
+    name = me.displayName
+    activeOrganizationId = me.tenantId
   }
   private func persist(token: String, email: String?) {
     Keychain.set(token, for: kToken)

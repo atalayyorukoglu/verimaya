@@ -334,18 +334,21 @@ struct MarketingReport: Decodable {
 
 // MARK: - Me / session
 
+/// `GET /v1/me` — better-auth oturumu değil, **tenant üyeliği** döner: düz bir
+/// nesne (`user`/`session` sarmalayıcısı yok). Aktif kiracı `tenant_id`'dir.
 struct MeResponse: Decodable {
-  struct User: Decodable {
-    let id: String
-    let email: String
-    let name: String?
-    let twoFactorEnabled: Bool
+  struct Preferences: Decodable {
+    let enabledProductModules: [String]?
   }
-  struct Session: Decodable {
-    let activeOrganizationId: String?
-  }
-  let user: User
-  let session: Session
+  let id: String
+  let userId: String
+  let email: String
+  let displayName: String?
+  let tenantId: String?
+  let role: String?
+  let platformAdmin: Bool?
+  let preferences: Preferences?
+  let createdAt: String?
 }
 
 // MARK: - WhatsApp gelen kutusu (AI işlem)

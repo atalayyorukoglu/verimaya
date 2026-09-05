@@ -28,6 +28,7 @@ targets:
     scheme:
       testTargets:
         - VerimayaTests
+        - VerimayaUITests
 
   VerimayaTests:
     type: bundle.unit-test
@@ -40,3 +41,16 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.verimaya.app.tests
         GENERATE_INFOPLIST_FILE: true
+
+  VerimayaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: VerimayaUITests
+    dependencies:
+      - target: Verimaya
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.verimaya.app.uitests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: Verimaya
