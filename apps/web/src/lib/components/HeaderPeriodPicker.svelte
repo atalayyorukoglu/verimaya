@@ -128,10 +128,10 @@
 </script>
 
 {#if period}
-	<!-- Zil ikonunun soluna yaslı; başlıkta logo solda kalır. -->
-	<div class="flex min-w-0 items-center justify-end">
+	<!-- Logodan arama ikonuna kadar uzanır; ay ortada durur. -->
+	<div class="flex min-w-0 items-center">
 		<div
-			class="flex h-11 min-w-0 items-stretch overflow-hidden rounded-[8px] border border-border bg-surface"
+			class="flex h-11 w-full min-w-0 items-stretch overflow-hidden rounded-[8px] border border-border bg-surface"
 			role="group"
 			aria-label={t('reports.period.label')}
 		>

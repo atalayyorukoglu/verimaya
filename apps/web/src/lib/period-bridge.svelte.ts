@@ -1,3 +1,4 @@
+import { page } from '$app/state';
 import type { PeriodKey } from '$lib/period-range';
 
 /**
@@ -12,6 +13,8 @@ import type { PeriodKey } from '$lib/period-range';
  * Kayıt yoksa (dönemi olmayan sayfa) başlıktaki denetim hiç render edilmez.
  */
 export type PeriodRegistration = {
+	/** Kaydı yapan rota. Sayfa değişince eski kayıt geçersizdir (bkz. `activePeriod`). */
+	path: string;
 	key: PeriodKey;
 	from: string;
 	to: string;
@@ -34,17 +37,25 @@ export function unregisterPeriod(reg: PeriodRegistration) {
 	if (state.current === reg) state.current = null;
 }
 
+/*
+ * Kayıt yalnız onu yapan rotada geçerli. Yalnız destroy'da temizlemek yetmiyordu:
+ * dönemi olmayan bir sayfaya geçince (ör. Kişiler) eski sayfanın kaydı ayakta
+ * kalabiliyor ve başlıkta alakasız bir takvim görünüyordu. Rota karşılaştırması
+ * sıraya bağlı değil, deterministik.
+ */
 export function activePeriod(): PeriodRegistration | null {
-	return state.current;
+	const cur = state.current;
+	if (!cur) return null;
+	return cur.path === page.url.pathname ? cur : null;
 }
 
 /**
  * Sayfa/bileşen dönemini köprüye bağlar. Bileşen kurulumunda çağrılmalı ($effect kuralı).
  * `read` her değişimde yeniden okunur; dönerken kayıt kaldırılır.
  */
-export function bridgePeriod(read: () => PeriodRegistration) {
+export function bridgePeriod(read: () => Omit<PeriodRegistration, 'path'>) {
 	$effect(() => {
-		const reg = read();
+		const reg: PeriodRegistration = { ...read(), path: page.url.pathname };
 		registerPeriod(reg);
 		return () => unregisterPeriod(reg);
 	});
