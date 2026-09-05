@@ -351,8 +351,14 @@
 		class="mb-4 flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end"
 		onsubmit={applyFilters}
 	>
+		<!--
+			`flex-1` YALNIZ `lg`'de: form mobilde `flex-col`, orada `flex-1` ana ekseni
+			DİKEY yapıyor ve `flex-basis: 0` yüksekliği ele geçirip `h-11`'i eziyordu —
+			arama kutusu 44px yerine 22px çıkıyordu, seçicilerin yarısı. Satır düzenine
+			geçilen `lg`'de flex-1 yine genişliği paylaştırır.
+		-->
 		<input
-			class="box-border h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:min-w-[12rem] lg:text-sm"
+			class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-auto lg:min-w-[12rem] lg:flex-1 lg:text-sm"
 			placeholder={t('finance.filter.qPlaceholder')}
 			bind:value={qInput}
 		/>
