@@ -101,11 +101,15 @@ export function navGroupItems(group: NavGroup): NavItem[] {
  * Mobil alt sekme — ana kısayollar; "Menü" tam navigasyonu açar.
  * Sıra: Finans, Kişiler, Randevular, Raporlar (+ Menü butonu AppShell’de).
  */
+/**
+ * Alt menü sekmeleri. Beşinci yuva "Menü", dördüncüsü ARAMA — ikisi de rota değil,
+ * AppShell'de ayrı render edilir. "Raporlar" buradan çıkarıldı (2026-09-05,
+ * kullanıcı): arama her ekranda lazım, raporlara ise menüden gidiliyor.
+ */
 export const mobileTabItems: NavItem[] = [
 	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
 	{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
-	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
-	{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
+	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar }
 ];
 
 /** Oturum açılışı ve yetkisiz rota yönlendirmesi. */

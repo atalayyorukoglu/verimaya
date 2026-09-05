@@ -18,6 +18,7 @@
 	import Bell from '@lucide/svelte/icons/bell';
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Search from '@lucide/svelte/icons/search';
 	import FlaskConical from '@lucide/svelte/icons/flask-conical';
 	import Menu from '@lucide/svelte/icons/menu';
 	import PanelLeft from '@lucide/svelte/icons/panel-left';
@@ -45,6 +46,8 @@
 	let { children }: { children: Snippet } = $props();
 
 	let mobileOpen = $state(false);
+	/** Arama penceresi — mobilde alt menüden, masaüstünde başlıktaki alandan açılır. */
+	let searchOpen = $state(false);
 	let hasUnreadChangelog = $state(false);
 	let supportOpen = $state(false);
 
@@ -777,7 +780,7 @@
 				<div class="flex-1 md:hidden" aria-hidden="true"></div>
 
 				<div class="shrink-0 overflow-hidden md:min-w-0 md:flex-1">
-					<CommandPalette />
+					<CommandPalette bind:open={searchOpen} />
 				</div>
 
 				<div class="flex shrink-0 items-center justify-end gap-1 md:hidden">
@@ -844,6 +847,22 @@
 					</a>
 				</li>
 			{/each}
+			<!-- Arama: rota değil, pencere açar. Başlıktaki alan mobilde kaldırıldı. -->
+			<li class="min-w-0 flex-1">
+				<button
+					type="button"
+					class={cn(
+						'flex h-full w-full flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors',
+						searchOpen ? 'text-brand' : 'text-text-muted'
+					)}
+					aria-label={t('command.aria')}
+					aria-expanded={searchOpen}
+					onclick={() => (searchOpen = true)}
+				>
+					<Search class="size-5 shrink-0" aria-hidden="true" />
+					<span class="truncate">{t('command.tabLabel')}</span>
+				</button>
+			</li>
 			<li class="min-w-0 flex-1">
 				<button
 					type="button"
