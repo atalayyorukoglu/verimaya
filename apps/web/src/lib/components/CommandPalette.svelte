@@ -127,17 +127,17 @@
 	(kullanıcı, 2026-09-04). Bileşen tek örnek kalır; pencere de buradan render
 	edildiği için iki ayrı tetikleyici koymak olmaz.
 -->
-<!-- Mobilde gizli: orada giriş alt menüdeki arama sekmesi (AppShell). -->
+<!-- Mobilde ikon (başlıkta, zilin solunda); masaüstünde tam arama alanı. -->
 <button
 	bind:this={triggerEl}
 	type="button"
-	class="hidden h-9 w-full min-w-0 items-center gap-2 rounded-[6px] border border-border bg-surface px-3 text-left text-sm text-text-faint transition-colors hover:border-text-faint hover:text-text-muted md:flex"
+	class="flex items-center gap-2 rounded-[6px] transition-colors max-md:size-11 max-md:shrink-0 max-md:justify-center max-md:text-text-muted max-md:hover:bg-surface-2 max-md:hover:text-text md:h-9 md:w-full md:min-w-0 md:border md:border-border md:bg-surface md:px-3 md:text-left md:text-sm md:text-text-faint md:hover:border-text-faint md:hover:text-text-muted"
 	aria-label={t('command.aria')}
 	title={t('command.aria')}
 	onclick={openPalette}
 >
-	<Search class="size-4 shrink-0" aria-hidden="true" />
-	<span class="truncate">{t('command.placeholder')}</span>
+	<Search class="size-6 shrink-0 md:size-4" aria-hidden="true" />
+	<span class="truncate max-md:hidden">{t('command.placeholder')}</span>
 	<kbd
 		class="ml-auto hidden items-center rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-text-faint md:inline-flex"
 	>

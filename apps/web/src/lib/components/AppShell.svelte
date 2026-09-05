@@ -18,7 +18,6 @@
 	import Bell from '@lucide/svelte/icons/bell';
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import Search from '@lucide/svelte/icons/search';
 	import FlaskConical from '@lucide/svelte/icons/flask-conical';
 	import Menu from '@lucide/svelte/icons/menu';
 	import PanelLeft from '@lucide/svelte/icons/panel-left';
@@ -772,17 +771,17 @@
 						aria-label={homeAriaLabel}
 					>
 						{#if tenantPending}
-							<span class="block size-7 animate-pulse rounded bg-surface-2" aria-hidden="true"
+							<span class="block size-8 animate-pulse rounded bg-surface-2" aria-hidden="true"
 							></span>
 						{:else}
-							<BrandMark class="h-7 w-7" title="" />
+							<BrandMark class="h-8 w-8" title="" />
 						{/if}
 					</a>
 				</div>
 
 				<!--
-					Aramanın alt menüye taşınmasıyla boşalan yer: mobilde dönem denetimi.
-					Sayfanın dönemi yoksa bileşen hiç render etmez, alan boş kalır.
+					Mobilde dönem denetimi; sayfanın dönemi yoksa hiç render etmez.
+					Arama ve zil sağda kaldığı için burası esner ve onları sağa iter.
 				-->
 				<div class="min-w-0 flex-1 md:hidden">
 					<HeaderPeriodPicker />
@@ -792,18 +791,16 @@
 					<CommandPalette bind:open={searchOpen} />
 				</div>
 
-				<div class="flex shrink-0 items-center justify-end gap-1 md:hidden">
+				<div class="flex shrink-0 items-center justify-end md:hidden">
 					<a
 						href="/changelog"
-						class="relative rounded-[6px] p-2 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+						class="relative flex size-11 items-center justify-center rounded-[6px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
 						aria-label={t('nav.changelog')}
 						title={t('nav.changelog')}
 					>
-						<Bell class="size-5" />
+						<Bell class="size-6" />
 						{#if hasUnreadChangelog}
-							<span
-								class="absolute top-1.5 right-1.5 size-2 rounded-full bg-brand"
-								aria-hidden="true"
+							<span class="absolute top-2 right-2 size-2 rounded-full bg-brand" aria-hidden="true"
 							></span>
 						{/if}
 					</a>
@@ -856,22 +853,6 @@
 					</a>
 				</li>
 			{/each}
-			<!-- Arama: rota değil, pencere açar. Başlıktaki alan mobilde kaldırıldı. -->
-			<li class="min-w-0 flex-1">
-				<button
-					type="button"
-					class={cn(
-						'flex h-full w-full flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors',
-						searchOpen ? 'text-brand' : 'text-text-muted'
-					)}
-					aria-label={t('command.aria')}
-					aria-expanded={searchOpen}
-					onclick={() => (searchOpen = true)}
-				>
-					<Search class="size-5 shrink-0" aria-hidden="true" />
-					<span class="truncate">{t('command.tabLabel')}</span>
-				</button>
-			</li>
 			<li class="min-w-0 flex-1">
 				<button
 					type="button"

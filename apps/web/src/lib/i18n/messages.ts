@@ -2743,7 +2743,6 @@ const tr = {
 	'appointments.ops.doctorLabel': 'Hekim',
 
 	// command palette
-	'command.tabLabel': 'Ara',
 	'command.placeholder': 'Hasta, randevu veya işlem ara…',
 	'command.aria': 'Hızlı arama',
 	'command.ariaInput': 'Hasta, randevu veya işlem ara',
@@ -5640,7 +5639,6 @@ const en: Record<MessageKey, string> = {
 	'appointments.ops.edit': 'Edit',
 	'appointments.ops.doctorLabel': 'Doctor',
 
-	'command.tabLabel': 'Search',
 	'command.placeholder': 'Search patients, appointments, or transactions…',
 	'command.aria': 'Quick search',
 	'command.ariaInput': 'Search patients, appointments, or transactions',
