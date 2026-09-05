@@ -10,7 +10,8 @@ export const PRODUCT_MODULE_IDS = [
 	'cohorts',
 	'referral-value',
 	'interventions',
-	'ai-accuracy'
+	'ai-accuracy',
+	'incentive-files'
 ] as const;
 
 export type ProductModuleId = (typeof PRODUCT_MODULE_IDS)[number];
@@ -34,7 +35,10 @@ export type UserUiPreferencesUpdate = z.infer<typeof userUiPreferencesUpdateSche
 /** Default-on tools in the Araçlar sidebar (until the user changes preferences). */
 export const DEFAULT_ENABLED_PRODUCT_MODULE_IDS: readonly ProductModuleId[] = [
 	'untouched-contacts',
-	'referral-value'
+	'referral-value',
+	// Finans başlığındaki sabit bağlantıdan taşındı (2026-09-05). Varsayılan AÇIK:
+	// kapalı gelseydi taşıma sonrası özellik kullanıcıdan tamamen kaybolurdu.
+	'incentive-files'
 ];
 
 /** Preferences when the user has no saved row yet. */

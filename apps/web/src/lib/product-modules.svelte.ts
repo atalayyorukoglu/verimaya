@@ -19,6 +19,7 @@ import ChartColumnIncreasing from '@lucide/svelte/icons/chart-column-increasing'
 import Share2 from '@lucide/svelte/icons/share-2';
 import ListChecks from '@lucide/svelte/icons/list-checks';
 import Target from '@lucide/svelte/icons/target';
+import FileBadge from '@lucide/svelte/icons/file-badge';
 
 import { apiPaths, apiSend } from '$lib/api';
 import type { MessageKey } from '$lib/i18n/messages';
@@ -71,6 +72,12 @@ const CATALOG_BY_ID: Record<ProductModuleId, Omit<ProductModule, 'id'>> = {
 		href: '/ai-accuracy',
 		icon: Target,
 		department: 'Raporlama'
+	},
+	'incentive-files': {
+		labelKey: 'finance.incentivesLink',
+		href: '/finance/incentives',
+		icon: FileBadge,
+		department: 'Finans'
 	}
 };
 

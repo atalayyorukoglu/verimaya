@@ -1676,6 +1676,9 @@ const tr = {
 	'toolkit.feature.appointments-calendar.title': 'Randevu Takvimi',
 	'toolkit.feature.appointments-calendar.description':
 		'Klinik, otel ve transfer notlarıyla birlikte randevuları gün/hafta görünümünde yönetin.',
+	'toolkit.feature.incentive-files.title': 'Teşvik dosyaları',
+	'toolkit.feature.incentive-files.description':
+		'Sağlık turizmi teşvik başvurusuna giren dosyaların takibi: hangi hasta, hangi tutar, hangi belge eksik.',
 	'toolkit.feature.finance-ledger.title': 'Gelir-Gider İşlemleri',
 	'toolkit.feature.finance-ledger.description':
 		'Tahsilat ve ödemeleri hasta bağlantısı, ödeme durumu ve fatura bilgisiyle kaydedin.',
@@ -1964,14 +1967,11 @@ const tr = {
 	'finance.balances.title': 'Bakiyeler',
 	'finance.balances.description':
 		'Kişi/firma etiketli işlemlerden net borç–alacak. Para birimi bazında; farklı birimler toplanmaz.',
-	'finance.balances.independent':
-		'Bakiyeler bu sayfadaki işlem filtrelerinden bağımsızdır ve tüm işlemlerden hesaplanır.',
 	'finance.balances.fullPage': 'Tam sayfada aç',
 	'finance.balances.expand': 'Bakiyeleri aç',
 	'finance.balances.collapse': 'Bakiyeleri kapat',
 	'finance.balances.summaryPayable': 'Borç',
 	'finance.balances.summaryReceivable': 'Alacak',
-	'finance.balances.summaryUnavailable': 'Toplamları görmek için bölümü açın.',
 	'finance.balances.loading': 'Yükleniyor…',
 	'finance.balances.loadError': 'Bakiyeler yüklenemedi.',
 	'finance.balances.filterAll': 'Tümü',
@@ -4596,6 +4596,9 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.appointments-calendar.title': 'Appointment Calendar',
 	'toolkit.feature.appointments-calendar.description':
 		'Manage appointments in day/week views with clinic, hotel, and transfer notes.',
+	'toolkit.feature.incentive-files.title': 'Incentive files',
+	'toolkit.feature.incentive-files.description':
+		'Track the files submitted for health-tourism incentives: which patient, which amount, which document is missing.',
 	'toolkit.feature.finance-ledger.title': 'Income and Expense Ledger',
 	'toolkit.feature.finance-ledger.description':
 		'Record collections and payments with patient links, payment status, and invoice info.',
@@ -4880,14 +4883,11 @@ const en: Record<MessageKey, string> = {
 	'finance.balances.title': 'Balances',
 	'finance.balances.description':
 		'Net payables/receivables from contact-tagged transactions. Per currency; currencies are not summed.',
-	'finance.balances.independent':
-		'Balances are independent of the transaction filters on this page and are calculated from all transactions.',
 	'finance.balances.fullPage': 'Open full page',
 	'finance.balances.expand': 'Expand balances',
 	'finance.balances.collapse': 'Collapse balances',
 	'finance.balances.summaryPayable': 'Payable',
 	'finance.balances.summaryReceivable': 'Receivable',
-	'finance.balances.summaryUnavailable': 'Expand the section to see totals.',
 	'finance.balances.loading': 'Loading…',
 	'finance.balances.loadError': 'Could not load balances.',
 	'finance.balances.filterAll': 'All',

@@ -25,7 +25,7 @@
 		transactionStatusLabels,
 		transactionStatusSchema
 	} from '@verimaya/shared';
-	import { apiGet, apiSend } from '$lib/api';
+	import { apiGet, apiSend, filterFieldClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { amountInBase } from '$lib/money-base';
@@ -183,12 +183,19 @@
 
 	const items = $derived(txQuery.data?.pages.flatMap((p) => p.items) ?? []);
 	const totalCount = $derived(txQuery.data?.pages[0]?.total_count);
+	/*
+	 * Sayaç geldiğinde yalnız sayaç yazılır. "Gelir ve gider kayıtları (tutarlar minor
+	 * unit)." her açılışta aynı şeyi söylüyordu ve mobilde iki satır yiyip sayacı
+	 * alt satıra itiyordu; "minor unit" zaten kullanıcı dili değil, geliştirici notu
+	 * (kullanıcı, 2026-09-05). Açıklama yalnız sayaç henüz yokken (ilk yükleme)
+	 * başlığın altını boş bırakmamak için kalıyor.
+	 */
 	const listDescription = $derived(
 		totalCount == null
 			? t('finance.description')
 			: filtersActive
-				? `${t('finance.description')} · ${t('finance.list.totalFiltered', { count: String(totalCount) })}`
-				: `${t('finance.description')} · ${t('finance.list.total', { count: String(totalCount) })}`
+				? t('finance.list.totalFiltered', { count: String(totalCount) })
+				: t('finance.list.total', { count: String(totalCount) })
 	);
 
 	function applyFilters(e: Event) {
@@ -282,20 +289,11 @@
 					{/if}
 				</a>
 				<a
-					href={resolve('/finance/incentives')}
-					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
-				>
-					{t('finance.incentivesLink')}
-				</a>
-				<a
 					href={resolve('/finance/commissions')}
 					class="inline-flex h-9 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-4 text-sm font-medium text-text hover:bg-surface-2"
 				>
 					{t('finance.commissionsLink')}
 				</a>
-				<Button type="button" class="w-full sm:w-auto" onclick={openCreate}
-					>{t('finance.new')}</Button
-				>
 			</div>
 		{/snippet}
 	</PageHeader>
@@ -363,31 +361,33 @@
 			bind:value={qInput}
 		/>
 		<div class="flex min-w-0 flex-nowrap items-center gap-2 md:contents">
-			<select
-				class="h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40 sm:px-3 sm:text-sm lg:h-9 lg:w-40 lg:flex-none lg:text-sm"
-				bind:value={kind}
-			>
+			<select class={filterFieldClass} bind:value={kind}>
 				<option value="">{t('finance.filter.kindAll')}</option>
 				{#each kindOptions as k (k)}
 					<option value={k}>{transactionKindLabels[k]}</option>
 				{/each}
 			</select>
-			<select
-				class="h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40 sm:px-3 sm:text-sm lg:h-9 lg:w-40 lg:flex-none lg:text-sm"
-				bind:value={status}
-			>
+			<select class={filterFieldClass} bind:value={status}>
 				<option value="">{t('finance.filter.statusAll')}</option>
 				{#each statusOptions as s (s)}
 					<option value={s}>{transactionStatusLabels[s]}</option>
 				{/each}
 			</select>
+			<!--
+				Tek "yeni islem" denetimi. Basliktaki buyuk buton kaldirildi (kullanici,
+				2026-09-05: "zaten + ikonu ile ekleniyor"); bu yuzden buton artik mobile
+				ozel degil. Masaustunde etiket acilir ve `md:order-last` ile satirin
+				sonuna, Uygula/Temizle'nin yanina gecer -- sarmalayici orada `contents`
+				oldugu icin `order` dogrudan forma uygulanir.
+			-->
 			<Button
 				type="button"
-				class="shrink-0 px-2.5 md:hidden"
+				class="shrink-0 max-md:w-11 max-md:px-0 md:order-last md:px-4"
 				aria-label={t('finance.new')}
 				onclick={openCreate}
 			>
 				<Plus class="size-4" />
+				<span class="max-md:hidden">{t('finance.new')}</span>
 			</Button>
 		</div>
 		<input

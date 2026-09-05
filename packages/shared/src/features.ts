@@ -342,6 +342,15 @@ export const features: Feature[] = [
 		version: '0.1.0'
 	},
 	{
+		id: 'incentive-files',
+		module: 'Finans',
+		title: 'Teşvik dosyaları',
+		description:
+			'Sağlık turizmi teşvik başvurusuna giren dosyaların takibi: hangi hasta, hangi tutar, hangi belge eksik.',
+		status: 'kod-hazir',
+		route: '/finance/incentives'
+	},
+	{
 		id: 'whatsapp-import',
 		module: 'Finans',
 		title: 'AI ile WhatsApp işlem aktarımı',

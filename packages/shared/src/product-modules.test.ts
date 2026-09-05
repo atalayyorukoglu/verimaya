@@ -38,7 +38,8 @@ describe('product-modules / user UI preferences contract', () => {
 		});
 		expect(DEFAULT_ENABLED_PRODUCT_MODULE_IDS).toEqual([
 			'untouched-contacts',
-			'referral-value'
+			'referral-value',
+			'incentive-files'
 		]);
 	});
 

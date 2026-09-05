@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker/locale/en';
 import {
+	DEFAULT_ENABLED_PRODUCT_MODULE_IDS,
 	DEFAULT_INCENTIVE_DOCUMENTS,
 	defaultWhatsappAiPrompt,
 	emptyKnowledgeSections,
@@ -80,7 +81,9 @@ export const demoUser: MembershipUser & {
 	tenant_id: DEMO_TENANT_ID,
 	role: 'owner',
 	platform_admin: true,
-	preferences: { enabled_product_modules: ['untouched-contacts', 'referral-value'] }
+	// Gerçek varsayılanla aynı kalsın diye paylaşılan sabitten okunur; elle tutulan
+	// kopya modül eklenince sessizce ayrışıyordu.
+	preferences: { enabled_product_modules: [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS] }
 };
 
 const STATUSES: ContactStatus[] = ['scheduled', 'arrived', 'treated', 'follow_up', 'cancelled'];

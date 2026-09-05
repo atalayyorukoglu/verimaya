@@ -37,7 +37,10 @@
 	const balancesQuery = createQuery(() => ({
 		queryKey: qs.keys.reports.balances(),
 		queryFn: () => apiGet<ReportBalances>(apiPaths.reportsBalances),
-		enabled: qs.ready && (!collapsible || (preferenceReady && open))
+		// Kapalıyken de çekilir: özet satırı (Borç / Alacak) kartın kapalı hâlinin
+		// tek içeriği. Eskiden `open` şartı vardı ve kart "Toplamları görmek için
+		// bölümü açın." yazıp duruyordu (kullanıcı, 2026-09-05).
+		enabled: qs.ready && (!collapsible || preferenceReady)
 	}));
 
 	const balances = $derived(balancesQuery.data?.items ?? []);
@@ -71,7 +74,14 @@
 			if (row.open_amount > 0) summary.receivable += row.open_amount;
 		}
 
-		return totals.sort((a, b) => a.currency.localeCompare(b.currency));
+		/*
+		 * Her iki tarafı da sıfır olan para birimi atlanır: kapalı karttaki özet
+		 * "Borç: €0,00 - Alacak: €0,00" gibi üç satır gürültü üretiyordu. Sıfır toplam,
+		 * o para biriminde net kapanmış kayıtlar demek — söyleyecek bir şeyi yok.
+		 */
+		return totals
+			.filter((item) => item.payable !== 0 || item.receivable !== 0)
+			.sort((a, b) => a.currency.localeCompare(b.currency));
 	}
 
 	function toggleOpen() {
@@ -83,34 +93,32 @@
 {#if collapsible}
 	<section class="mb-6 min-w-0 overflow-hidden rounded-lg border border-border bg-surface">
 		<div class="min-w-0 p-4">
-			<div class="flex min-w-0 items-start gap-3">
+			<!--
+				Kapalı kart iki satır: başlık + "Tam sayfada aç", altında para birimi başına
+				"Borç … · Alacak …". Açıklama cümlesi ("… filtrelerden bağımsızdır") ve
+				"Toplamları görmek için bölümü açın." kaldırıldı — ikisi de kartın yarısını
+				yiyip asıl sayıyı göstermiyordu (kullanıcı, 2026-09-05).
+			-->
+			<div class="flex min-w-0 items-center gap-3">
 				<button
 					type="button"
-					class="flex min-h-11 min-w-0 flex-1 items-start justify-between gap-3 rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+					class="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
 					aria-expanded={open}
 					aria-controls={CONTENT_ID}
 					aria-label={open ? t('finance.balances.collapse') : t('finance.balances.expand')}
 					onclick={toggleOpen}
 				>
-					<span class="min-w-0">
-						<span class="block text-base font-semibold text-text"
-							>{t('finance.balances.title')}</span
-						>
-						<span class="mt-1 block text-sm text-text-muted">
-							{t('finance.balances.independent')}
-						</span>
-					</span>
+					<span class="min-w-0 truncate text-base font-semibold text-text"
+						>{t('finance.balances.title')}</span
+					>
 					<ChevronDown
-						class={[
-							'mt-0.5 size-5 shrink-0 text-text-muted transition-transform',
-							open && 'rotate-180'
-						]}
+						class={['size-5 shrink-0 text-text-muted transition-transform', open && 'rotate-180']}
 						aria-hidden="true"
 					/>
 				</button>
 				<a
 					href={resolve('/finance/balances')}
-					class="hidden min-h-11 shrink-0 items-center text-sm font-medium text-brand hover:underline sm:inline-flex"
+					class="inline-flex min-h-11 shrink-0 items-center text-sm font-medium text-brand hover:underline"
 				>
 					{t('finance.balances.fullPage')}
 				</a>
@@ -118,38 +126,26 @@
 
 			{#if !open}
 				{#if summaries.length > 0}
-					<ul class="mt-3 grid min-w-0 gap-2 sm:grid-cols-2">
+					<ul class="mt-1 grid min-w-0 gap-1">
 						{#each summaries as summary (summary.currency)}
-							<li class="min-w-0 rounded-md bg-surface-2 px-3 py-2">
-								<p class="text-xs font-semibold text-text-muted">{summary.currency}</p>
-								<div class="mt-1 flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
-									<span class="min-w-0 text-text">
-										{t('finance.balances.summaryPayable')}:
-										{formatMoney(summary.payable, summary.currency)}
-									</span>
-									<span class="min-w-0 text-success">
-										{t('finance.balances.summaryReceivable')}:
-										{formatMoney(summary.receivable, summary.currency)}
-									</span>
-								</div>
+							<li class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm tabular-nums">
+								<span class="min-w-0 text-text">
+									{t('finance.balances.summaryPayable')}:
+									{formatMoney(summary.payable, summary.currency)}
+								</span>
+								<span aria-hidden="true" class="text-text-faint">-</span>
+								<span class="min-w-0 text-success">
+									{t('finance.balances.summaryReceivable')}:
+									{formatMoney(summary.receivable, summary.currency)}
+								</span>
 							</li>
 						{/each}
 					</ul>
 				{:else if balancesQuery.data}
-					<p class="mt-2 text-sm text-text-faint">
+					<p class="mt-1 text-sm text-text-faint">
 						{t('finance.balances.empty')}
 					</p>
-				{:else if preferenceReady}
-					<p class="mt-2 text-sm text-text-faint">
-						{t('finance.balances.summaryUnavailable')}
-					</p>
 				{/if}
-				<a
-					href={resolve('/finance/balances')}
-					class="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline sm:hidden"
-				>
-					{t('finance.balances.fullPage')}
-				</a>
 			{/if}
 		</div>
 

@@ -81,6 +81,7 @@ paths:
                             - referral-value
                             - interventions
                             - ai-accuracy
+                            - incentive-files
                     required:
                       - enabled_product_modules
                     additionalProperties: false
@@ -150,6 +151,7 @@ paths:
                         - referral-value
                         - interventions
                         - ai-accuracy
+                        - incentive-files
                 required:
                   - enabled_product_modules
                 additionalProperties: false
@@ -171,6 +173,7 @@ paths:
                       - referral-value
                       - interventions
                       - ai-accuracy
+                      - incentive-files
               required:
                 - enabled_product_modules
               additionalProperties: false

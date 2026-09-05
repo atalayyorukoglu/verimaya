@@ -18,7 +18,7 @@
 		appointmentStatusSchema,
 		listUrl
 	} from '@verimaya/shared';
-	import { apiGet, apiSend } from '$lib/api';
+	import { apiGet, apiSend, filterFieldClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatTime, initialsOf } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -383,7 +383,7 @@
 
 		<div class="mt-3.5 flex flex-nowrap items-center gap-2">
 			<select
-				class="{fieldClass} min-w-0 flex-1 px-2 text-xs sm:px-3 sm:text-sm"
+				class={filterFieldClass}
 				bind:value={appointmentType}
 				aria-label={t('appointments.filter.typeAria')}
 			>
@@ -393,7 +393,7 @@
 				{/each}
 			</select>
 			<select
-				class="{fieldClass} min-w-0 flex-1 px-2 text-xs sm:px-3 sm:text-sm"
+				class={filterFieldClass}
 				bind:value={status}
 				aria-label={t('appointments.filter.statusAria')}
 			>
@@ -402,9 +402,14 @@
 					<option value={s}>{appointmentStatusLabels[s]}</option>
 				{/each}
 			</select>
+			<!--
+				Mobilde kare: etiket `hidden` olsa da DOM'da duruyor, bu yüzden
+				`layout.css`'teki `button:has(> svg:only-child)` kuralı tutmuyor ve buton
+				44px yerine 36px kalıyordu — seçicilerin yanında ezik duruyordu.
+			-->
 			<Button
 				type="button"
-				class="shrink-0 px-2.5 sm:px-4"
+				class="shrink-0 max-sm:w-11 max-sm:px-0 sm:px-4"
 				aria-label={t('appointments.new')}
 				onclick={openCreate}
 			>

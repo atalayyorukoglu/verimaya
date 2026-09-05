@@ -144,6 +144,17 @@ export async function apiDownload(path: string, fallbackFilename: string): Promi
 export const fieldClass =
 	'border-border bg-surface text-text placeholder:text-text-faint box-border h-9 w-full min-w-0 max-w-full rounded-[6px] border px-3 text-sm outline-none focus:ring-2 focus:ring-brand/40';
 
+/**
+ * Liste sayfalarının filtre satırındaki seçici/kutu sınıfı (Finans + Randevular).
+ *
+ * `fieldClass`'tan ayrı çünkü davranışı farklı: mobilde 44px dokunma hedefi ve satırı
+ * paylaşan `flex-1`, masaüstünde 36px ve sabit 10rem. Randevular kendi kopyasını
+ * tutuyordu ve ayrışmıştı (8px köşe, `px-3`'ün `px-2`'yi ezmesi, 36px `+` butonu);
+ * kullanıcı Finans'takini isteyince (2026-09-05) tek kaynağa alındı.
+ */
+export const filterFieldClass =
+	'border-border bg-surface text-text h-11 min-w-0 flex-1 rounded-[6px] border px-2 text-xs outline-none focus:ring-2 focus:ring-brand/40 sm:px-3 sm:text-sm lg:h-9 lg:w-40 lg:flex-none lg:text-sm';
+
 export const textareaClass =
 	'border-border bg-surface text-text placeholder:text-text-faint box-border min-h-24 w-full min-w-0 max-w-full rounded-[6px] border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/40';
 
