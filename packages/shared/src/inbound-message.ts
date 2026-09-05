@@ -122,6 +122,8 @@ export const inboundMessageSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
 	chat_name: z.string().max(255).nullable(),
+	/** WAHA sohbet kimliği (`…@g.us` / `…@c.us`) — AI-13 olay gruplamasının anahtarı. */
+	chat_id: z.string().max(255).nullable().default(null),
 	sender: z.string().max(255).nullable(),
 	body: z.string().max(16000).nullable(),
 	has_media: z.boolean().default(false),
@@ -129,6 +131,12 @@ export const inboundMessageSchema = z.object({
 	status: inboundMessageStatusSchema.default('new'),
 	parsed_records: z.array(transactionDraftSchema).nullable(),
 	parse_error: z.string().max(2000).nullable(),
+	/**
+	 * AI-13: aynı olayı anlatan mesajlar (aynı sohbet + 15 dk + aynı tutar) grubun
+	 * en eski mesajının id'sini taşır. Tek başına duran mesajda null.
+	 * Sunucu **birleştirmez** — kartta gösterir, kararı kullanıcı verir.
+	 */
+	group_id: uuid.nullable().default(null),
 	created_at: isoDateTime
 });
 

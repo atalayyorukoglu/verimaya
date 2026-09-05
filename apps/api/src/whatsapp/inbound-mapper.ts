@@ -27,9 +27,24 @@ function pickBoolean(source: Record<string, unknown> | null, keys: string[]): bo
 	return false;
 }
 
+/**
+ * AI-13: sohbet kimliği (`…@g.us` grup, `…@c.us` birebir). WAHA grup mesajlarında
+ * `from` sohbeti, `author` mesajı yazan kişiyi gösterir; birebir sohbette `author`
+ * yoktur ve `from` zaten kişidir. Olay gruplaması sohbete göre yapılır, kişiye göre
+ * değil — aynı grupta iki kişi aynı ödemeyi yazabilir.
+ */
+export function extractChatId(payload: Record<string, unknown>): string | null {
+	const inner = asRecord(payload.payload) ?? payload;
+	return (
+		pickString(inner, ['chatId', 'chat_id', 'from']) ??
+		pickString(payload, ['chatId', 'chat_id'])
+	);
+}
+
 /** WAHA / provider webhook body → display fields for inbox API. */
 export function extractInboundDisplayFields(payload: Record<string, unknown>): {
 	chat_name: string | null;
+	chat_id: string | null;
 	sender: string | null;
 	body: string | null;
 	has_media: boolean;
@@ -41,6 +56,7 @@ export function extractInboundDisplayFields(payload: Record<string, unknown>): {
 		chat_name:
 			pickString(inner, ['chatName', 'chat_name']) ??
 			pickString(payload, ['chatName', 'chat_name']),
+		chat_id: extractChatId(payload),
 		sender: pickString(inner, ['from', 'author', 'sender']),
 		body: pickString(inner, ['body', 'text', 'caption']),
 		has_media: pickBoolean(inner, ['hasMedia', 'has_media']),
@@ -101,6 +117,7 @@ export function toInboundMessage(row: {
 		id: row.id,
 		tenant_id: row.tenantId,
 		chat_name: display.chat_name,
+		chat_id: display.chat_id,
 		sender: display.sender,
 		body: display.body,
 		has_media: display.has_media,
@@ -108,6 +125,8 @@ export function toInboundMessage(row: {
 		status: row.status as InboundMessage['status'],
 		parsed_records: extractParsedRecords(payload),
 		parse_error: extractParseError(payload),
+		// Gruplama liste düzeyinde hesaplanır (groupInboundMessages); tek satır kendini bilemez.
+		group_id: null,
 		created_at: row.createdAt.toISOString()
 	};
 }

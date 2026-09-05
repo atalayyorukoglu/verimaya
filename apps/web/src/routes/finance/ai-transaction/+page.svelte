@@ -474,6 +474,9 @@
 								{#if item.has_media}
 									<StatusBadge label={t('finance.ai.pending.media')} tone="neutral" />
 								{/if}
+								{#if item.group_id}
+									<StatusBadge label={t('finance.ai.pending.sameEvent')} tone="warning" />
+								{/if}
 								<time
 									class="ml-auto text-xs whitespace-nowrap text-text-faint"
 									datetime={item.created_at}
@@ -482,6 +485,11 @@
 								</time>
 							</div>
 							<p class="mt-1 line-clamp-2 text-sm text-text">{previewBody(item)}</p>
+							{#if item.group_id}
+								<p class="mt-1 text-xs text-warning">
+									{t('finance.ai.pending.sameEventHint')}
+								</p>
+							{/if}
 							{#if item.has_media && item.media_path}
 								<p class="mt-1 flex items-center gap-1 text-xs text-info">
 									<Paperclip class="size-3" />

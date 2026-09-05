@@ -1049,6 +1049,9 @@ const tr = {
 	'finance.ai.pending.mediaDemo': 'Dosya eki (demo)',
 	'finance.ai.pending.ignore': 'Yoksay',
 	'finance.ai.pending.emptyBody': '(boş mesaj)',
+	'finance.ai.pending.sameEvent': 'Aynı olay olabilir',
+	'finance.ai.pending.sameEventHint':
+		'Bu mesaj aynı sohbetteki başka bir mesajla aynı tutarı taşıyor. İkisini de onaylarsan aynı kayıt iki kez oluşur.',
 	'finance.ai.drafts.heading': 'Taslaklar',
 	'finance.ai.drafts.approve': 'Onayla ve kaydet',
 	'finance.ai.drafts.approving': 'Onaylanıyor…',
@@ -3991,6 +3994,9 @@ const en: Record<MessageKey, string> = {
 	'finance.ai.pending.mediaDemo': 'File attachment (demo)',
 	'finance.ai.pending.ignore': 'Ignore',
 	'finance.ai.pending.emptyBody': '(empty message)',
+	'finance.ai.pending.sameEvent': 'Possibly the same event',
+	'finance.ai.pending.sameEventHint':
+		'This message carries the same amount as another message in the same chat. Approving both creates the same record twice.',
 	'finance.ai.drafts.heading': 'Drafts',
 	'finance.ai.drafts.approve': 'Approve and save',
 	'finance.ai.drafts.approving': 'Approving…',

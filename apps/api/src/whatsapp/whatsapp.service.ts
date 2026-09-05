@@ -25,6 +25,7 @@ import {
 	type TransactionSource
 } from '../transactions/transactions.service';
 import { evidenceForApprovedDraft } from './evidence';
+import { groupInboundMessages } from './group-events';
 import {
 	asRecord,
 	extractInboundDisplayFields,
@@ -105,7 +106,8 @@ export class WhatsappService {
 
 			const page = buildCursorPage(rows, params.limit);
 			return {
-				messages: page.items.map(toInboundMessage),
+				// AI-13: aynı olayı anlatan mesajlar `group_id` ile işaretlenir; kayıt değişmez.
+				messages: groupInboundMessages(page.items.map(toInboundMessage)),
 				next_cursor: page.next_cursor
 			};
 		});

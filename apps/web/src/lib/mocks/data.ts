@@ -280,53 +280,63 @@ function makeTransaction(
 const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] = [
 	{
 		chat_name: 'Fixrav Finans',
+		chat_id: '120363143271144447@g.us',
 		sender: '120363143271144447@g.us',
 		body: 'Biliyorlar söylemiştim',
 		has_media: false,
 		media_path: null,
 		status: 'new',
 		parsed_records: null,
-		parse_error: null
+		parse_error: null,
+		group_id: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
+		chat_id: '120363143271144447@g.us',
 		sender: '120363143271144447@g.us',
 		body: "Vega Lab'a 1150 euro Müjdat bey tarafından odeme yapildi.",
 		has_media: false,
 		media_path: null,
 		status: 'new',
 		parsed_records: null,
-		parse_error: null
+		parse_error: null,
+		group_id: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
+		chat_id: '120363143271144447@g.us',
 		sender: '120363143271144447@g.us',
 		body: 'Bunu buraya not düşmeyi unuttum. Sehmuz beye verilen eurolardan 1 tanesi yırtılmış.',
 		has_media: false,
 		media_path: null,
 		status: 'parsed',
 		parsed_records: null,
-		parse_error: null
+		parse_error: null,
+		group_id: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
+		chat_id: '120363143271144447@g.us',
 		sender: '120363143271144447@g.us',
 		body: null,
 		has_media: true,
 		media_path: '/demo/receipt.jpg',
 		status: 'new',
 		parsed_records: null,
-		parse_error: null
+		parse_error: null,
+		group_id: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
+		chat_id: '120363143271144447@g.us',
 		sender: '120363143271144447@g.us',
 		body: 'Sandra 2900 GBP 2. vizit ödemesi + 450 GBP t-base ücretleri alındı. Toplamda 3.350 GBP kart ile ödeme alındı.',
 		has_media: false,
 		media_path: null,
 		status: 'new',
 		parsed_records: null,
-		parse_error: null
+		parse_error: null,
+		group_id: null
 	}
 ];
 
