@@ -25,6 +25,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import { changelog } from '@verimaya/shared';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import BrandMark from '$lib/components/BrandMark.svelte';
 	import SidebarVersionFooter from '$lib/components/SidebarVersionFooter.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -520,6 +521,11 @@
 						>
 							{t('nav.changelog')}
 						</a>
+						<!--
+							Koyu/açık tema. Menü kapanmıyor (`onToggle` tıklamayı yutuyor) —
+							değişimi anında görmek geri bildirimin kendisi.
+						-->
+						<ThemeToggle variant="menu" {spacious} />
 						<button
 							type="button"
 							role="menuitem"

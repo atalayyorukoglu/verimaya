@@ -5,13 +5,32 @@
 	import Moon from '@lucide/svelte/icons/moon';
 
 	let {
-		variant = 'icon'
+		variant = 'icon',
+		spacious = false
 	}: {
 		/** `icon` = hub; `menu` = dropdown; `nav` = sidebar satırı */
 		variant?: 'icon' | 'menu' | 'nav';
+		/** Mobil açılır menüde daha büyük dokunma alanı (AppShell `spacious` ile aynı). */
+		spacious?: boolean;
 	} = $props();
 
 	let theme = $state<Theme>(getStoredTheme());
+
+	/*
+	 * Etiket DOM'daki `dark` sınıfından takip edilir, yalnız kendi tıklamasından değil:
+	 * aynı anda birden çok ThemeToggle mount olabiliyor (kabuk menüsü + /account satırı).
+	 * Biri değiştirdiğinde diğeri eski etiketi göstermesin.
+	 */
+	$effect(() => {
+		const root = document.documentElement;
+		const sync = () => {
+			theme = root.classList.contains('dark') ? 'dark' : 'light';
+		};
+		sync();
+		const observer = new MutationObserver(sync);
+		observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+		return () => observer.disconnect();
+	});
 
 	function onToggle(e: MouseEvent) {
 		e.stopPropagation();
@@ -30,7 +49,7 @@
 		data-label-to-dark={t('theme.toDark')}
 		class={variant === 'nav'
 			? 'flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text'
-			: 'flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text hover:bg-surface-2'}
+			: `flex w-full items-center gap-2 px-3 text-left text-text-muted transition-colors hover:bg-surface-2 hover:text-text ${spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'}`}
 		aria-label={aria}
 		onclick={onToggle}
 	>
