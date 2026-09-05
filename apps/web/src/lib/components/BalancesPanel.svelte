@@ -72,8 +72,13 @@
 		kart üç satır yer kaplıyor ama tek işe yarıyordu, o da toplamları göstermek.
 		Yerinde açılma da bununla birlikte gitti — ayrıntı artık /finance/balances'ta.
 	-->
+	<!--
+		`-mt-3`: PageHeader kendi altına `mb-6` koyuyor ve kart tek satıra inince o
+		boşluk kartın kendisinden büyük kaldı. Header'ın kuralını tüm sayfalar için
+		değiştirmek yerine burada 24px → 12px'e çekiliyor; alt boşluk da `mb-3`.
+	-->
 	<section
-		class="mb-6 flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2"
+		class="-mt-3 mb-3 flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2"
 	>
 		<div class="min-w-0 flex-1">
 			{#if summaries.length > 0}

@@ -275,13 +275,14 @@
 		{#snippet actions()}
 			<!--
 				Mobilde yan yana: ikisi de tek satırlık kısayol, alt alta durunca başlığın
-				altını iki blok kaplıyordu (kullanıcı, 2026-09-05). `flex-1` ile eşit pay,
-				`sm`'den itibaren içeriğe göre daralırlar.
+				altını iki blok kaplıyordu (kullanıcı, 2026-09-05).
+				Eşit pay (`flex-1`) verilmişti ama "AI ile işlem" ikon + rozetle birlikte
+				o genişliğe sığmayıp iki satıra kırılıyordu; ikisi de artık içeriği kadar.
 			-->
-			<div class="flex w-full flex-row flex-wrap items-center gap-2 sm:w-auto">
+			<div class="flex flex-row flex-wrap items-center justify-end gap-2">
 				<a
 					href={resolve('/finance/ai-transaction')}
-					class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium text-text hover:bg-surface-2 sm:h-9 sm:flex-none sm:px-4"
+					class="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium whitespace-nowrap text-text hover:bg-surface-2 sm:h-9 sm:px-4"
 				>
 					<Sparkles class="size-4" />
 					{t('finance.aiLink')}
@@ -295,7 +296,7 @@
 				</a>
 				<a
 					href={resolve('/finance/commissions')}
-					class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium text-text hover:bg-surface-2 sm:h-9 sm:flex-none sm:px-4"
+					class="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium whitespace-nowrap text-text hover:bg-surface-2 sm:h-9 sm:px-4"
 				>
 					{t('finance.commissionsLink')}
 				</a>
@@ -350,8 +351,9 @@
 		kalıyor — mobilde her biri bir satır yiyordu ve seçiciler zaten anında
 		uygulanıyor (`listFilters` doğrudan `kind`/`status` okuyor).
 	-->
+	<!-- Alttaki ayraç: filtreler ile liste birbirine giriyordu. -->
 	<form
-		class="mb-4 flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end"
+		class="mb-4 flex min-w-0 flex-col gap-2 border-b border-border pb-4 lg:flex-row lg:flex-wrap lg:items-end"
 		onsubmit={applyFilters}
 	>
 		<!--
