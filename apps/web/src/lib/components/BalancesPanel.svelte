@@ -78,9 +78,10 @@
 		değiştirmek yerine burada 24px → 12px'e çekiliyor; alt boşluk da `mb-3`.
 	-->
 	<section
-		class="-mt-3 mb-3 flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4 py-2"
+		class="-mt-3 mb-2 flex min-h-11 min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4"
 	>
-		<div class="min-w-0 flex-1">
+		<!-- `py-1`: tek para biriminde `min-h-11` baskın, çok satırda satırlar sıkışmasın. -->
+		<div class="min-w-0 flex-1 py-1">
 			{#if summaries.length > 0}
 				<ul class="grid min-w-0 gap-1">
 					{#each summaries as summary (summary.currency)}
@@ -104,9 +105,14 @@
 				<p class="text-sm text-text-faint">{t('finance.balances.loading')}</p>
 			{/if}
 		</div>
+		<!--
+			`self-stretch` + kapta `min-h-11`: bağlantı kendi `min-h-11`'ini taşısa kart
+			44px yerine 62px oluyordu (44 + `py-2` + kenarlık) ve altındaki arama/seçici
+			satırlarından yüksek kalıyordu. Dokunma alanı satırın tamamı.
+		-->
 		<a
 			href={resolve('/finance/balances')}
-			class="inline-flex min-h-11 shrink-0 items-center gap-0.5 text-sm font-medium text-brand hover:underline"
+			class="inline-flex shrink-0 items-center gap-0.5 self-stretch text-sm font-medium text-brand hover:underline"
 			aria-label={t('finance.balances.title')}
 		>
 			{t('finance.balances.fullPage')}
@@ -181,7 +187,8 @@
 						>
 							<ArrowLeftRight class="size-4" aria-hidden="true" />
 						</span>
-						<div class="min-w-0 flex-1">
+						<!-- `py-1`: tek para biriminde `min-h-11` baskın, çok satırda satırlar sıkışmasın. -->
+						<div class="min-w-0 flex-1 py-1">
 							{#if row.open_amount < 0}
 								<p class="text-sm break-words text-text">
 									<span class="text-text-muted">{t('finance.balances.debtor')}</span>
