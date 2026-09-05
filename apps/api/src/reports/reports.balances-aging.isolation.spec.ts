@@ -4,6 +4,10 @@ import { sql as drizzleSql } from 'drizzle-orm';
 import { closeDb, getDb } from '../db/client';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { ReportsService } from './reports.service';
+import { toTenantDayKey } from '@verimaya/shared';
+
+/** Fixture tenant'ların saat dilimi — tarih üretimi ve servis ölçümü aynı olmalı. */
+const TENANT_TZ = 'Europe/Istanbul';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 /**
@@ -34,9 +38,18 @@ async function withTenant<T>(tenantId: string, fn: (tx: TenantDb) => Promise<T>)
 	});
 }
 
-/** `days` gün önceki tarihi ISO gün anahtarı olarak verir. */
+/**
+ * `days` gün önceki tarih, TENANT saat dilimine göre.
+ *
+ * UTC ile hesaplamak testi gecelik bir pencerede kırıyordu: servis yaşı
+ * `toTenantDayKey(new Date(), timezone)` ile ölçüyor (`reports.service.ts`), yani
+ * Istanbul'da (UTC+3) 21:00 UTC'den sonra "bugün" zaten ertesi gün. O saatlerde
+ * koşan CI'da 30 gün önce yazılan satır 31 günlük görünüp d31_60 kovasına düşüyordu.
+ * Aynı gün anahtarından geriye sayınca ölçüm saatten bağımsız kalır.
+ */
 function daysAgo(days: number): string {
-	const d = new Date();
+	const todayKey = toTenantDayKey(new Date(), TENANT_TZ);
+	const d = new Date(`${todayKey}T00:00:00Z`);
 	d.setUTCDate(d.getUTCDate() - days);
 	return d.toISOString().slice(0, 10);
 }
@@ -65,7 +78,7 @@ describe('reports balances — yaşlandırma', () => {
 			`;
 			await sql`
 				insert into tenants (id, name, slug, timezone)
-				values (${id}, ${name}, ${`aging-${id.slice(0, 8)}`}, 'Europe/Istanbul')
+				values (${id}, ${name}, ${`aging-${id.slice(0, 8)}`}, ${TENANT_TZ})
 			`;
 		}
 

@@ -76,6 +76,23 @@ Bu proje, `~/Projects/fixrav-web/_projects/fixrav-tracker` (FastAPI + React, dah
 
 ## Süreç
 
+- **Push, işin bitişi değildir — yeşil CI bitiştir.** `main`'e push CI'ı tetikler; "Deploy web
+  image" yalnız **CI başarılıysa** koşar, kırmızıda sessizce `skipped` olur. Yani kod GitHub'a
+  gider, canlıya çıkmaz ve hiçbir yerde uyarı belirmez. Push'tan sonra sonucu **bekle ve
+  doğrula**, "birazdan çıkar" deyip bırakma:
+
+  ```bash
+  gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
+  ```
+
+  Kırmızıysa düzelt; deploy'un koştuğunu `gh run list` ile teyit et. (2026-09-04'te bir gün
+  boyunca yapılan panel işi bu yüzden canlıya çıkmamıştı.)
+- **Tarihe bağlı testte "bugün"ü tenant saat diliminden al.** Servisler yaşı
+  `toTenantDayKey(new Date(), timezone)` ile ölçüyor. Test tarihleri UTC'den üretilirse
+  Istanbul'da 21:00 UTC sonrası bir gün kayar ve sınıra oturan testler yalnız gece koşan
+  CI'da kırılır — yerelde hep yeşil göründüğü için teşhisi pahalıdır. Örnek:
+  `reports.balances-aging.isolation.spec.ts`.
+
 - **Aktif yapılacaklar listesi: `docs/2026-08-11-YAPILACAKLAR.md` — tek kaynak.** Öncelik sıralı; her kalemin kabul kriteri ve dokunulacak dosyaları orada. Adım bitince o dosyadaki kutuyu işaretle, **Görüş** satırını doldur ve kalemi "Son kapananlar"a taşı. Listenin dışına çıkan işe başlama. İkinci “açık işler” dosyası yazma.
 - **Kararı verilmemiş fikirler `docs/FIKIRLER.md`'de** (2026-08-23). Orası açık-iş listesi
   değildir: fikir oradayken kimse çalışmaz, kabul kriteri yazılmaz. Yapmaya karar verilince
