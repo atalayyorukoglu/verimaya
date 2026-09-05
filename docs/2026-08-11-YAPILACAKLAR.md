@@ -632,9 +632,12 @@ kimseyi ikna etmez. **PILOT-02 ile birlikte.**
 
 ### Kapsam — kural tabanlı, model yok
 
-- [ ] **Olay gruplama.** Aynı sohbet + dar zaman penceresi (öneri: 15 dk) + **aynı tutar**
+- [x] **Olay gruplama.** Aynı sohbet + dar zaman penceresi (öneri: 15 dk) + **aynı tutar**
   geçen mesajlar tek karta toplanır. Tutar zaten iki mesajda da yazılı; eşleştirme için
   LLM gerekmiyor. Grup **kartta gösterilir**, birleştirme kararı kullanıcınındır.
+  **Görüş (2026-09-05):** `group_id` liste yanıtında hesaplanıyor (`group-events.ts`),
+  migration yok — `chat_id` payload'dan okunuyor. Mükerrer onay ayrı bir delik çıktı:
+  `@Idempotent()` yalnız aynı anahtarı yakalıyordu, ikinci onay 409 ile kapatıldı (`6ff697d`).
 - [ ] **Fatura → ödeme zinciri.** İlk mesaj borcu, ikinci mesaj ödemeyi anlatıyor. Tek
   işlemin iki hâli: `amount` + `paid_amount`, iki ayrı işlem değil.
 - [ ] **Ek dosyayı işleme değil, işleme *iliştir*.** PDF **modele gönderilmeden** işlemin
