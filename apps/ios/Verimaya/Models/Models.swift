@@ -347,3 +347,114 @@ struct MeResponse: Decodable {
   let user: User
   let session: Session
 }
+
+// MARK: - WhatsApp gelen kutusu (AI işlem)
+
+enum InboundMessageStatus: String, Codable, CaseIterable, Identifiable {
+  case new, parsed, approved, ignored
+  var id: String { rawValue }
+  var label: String {
+    switch self {
+    case .new: "Yeni"
+    case .parsed: "Ayrıştırıldı"
+    case .approved: "Onaylandı"
+    case .ignored: "Yoksayıldı"
+    }
+  }
+}
+
+/// AI'ın bir mesajdan çıkardığı işlem taslağı. İnsan onayı olmadan kayda yazılmaz.
+struct TransactionDraft: Decodable, Hashable {
+  let kind: TransactionKind
+  let amount: Int                    // minor units
+  let currency: SupportedCurrency
+  let title: String
+  let category: String?
+  let subcategory: String?
+  let contactId: String?
+  let contactDisplayName: String?
+  let contactLabel: String?
+  let occurredOn: String
+  let paymentMethod: String?
+  let description: String?
+}
+
+struct InboundMessage: Decodable, Identifiable, Hashable {
+  let id: String
+  let tenantId: String
+  let chatName: String?
+  let chatId: String?
+  let sender: String?
+  let body: String?
+  let hasMedia: Bool
+  let mediaPath: String?
+  let status: InboundMessageStatus
+  let parsedRecords: [TransactionDraft]?
+  let parseError: String?
+  /// AI-13: aynı olayı anlatan mesajlar grubun en eski mesajının id'sini taşır.
+  /// Sunucu birleştirmez — kartta uyarı gösterilir, kararı kullanıcı verir.
+  let groupId: String?
+  let createdAt: String
+}
+
+/// `GET /v1/whatsapp/inbox` — zarf `items` değil `messages` alanını kullanır.
+struct InboxPage: Decodable {
+  let messages: [InboundMessage]
+  let nextCursor: String?
+}
+
+struct InboxProcessResponse: Decodable {
+  let processed: Int
+  let parsed: Int
+  let error: Int
+}
+
+struct InboxParseResponse: Decodable {
+  let records: [TransactionDraft]
+}
+
+struct InboxActionResponse: Decodable {
+  let success: Bool
+  let id: String
+  let status: InboundMessageStatus
+}
+
+/// Onaya gönderilen taslak. Ödeme durumu, FX ve karşı taraf zorunlu — sessiz
+/// varsayılan yok (MONEY-01).
+struct ApproveDraftItem: Encodable {
+  var kind: TransactionKind
+  var amount: Int
+  var currency: SupportedCurrency
+  var title: String
+  var category: String?
+  var subcategory: String?
+  var contactId: String?
+  var contactDisplayName: String?
+  var contactLabel: String?
+  var occurredOn: String
+  var paymentMethod: String?
+  var description: String?
+  var status: TransactionStatus
+  var paidAmount: Int
+  var fxRate: Double
+  var amountBase: Int
+}
+
+struct ApproveDraftsRequest: Encodable {
+  var drafts: [ApproveDraftItem]
+}
+
+struct ApproveDraftsResponse: Decodable {
+  let id: String
+  let status: InboundMessageStatus
+  let transactions: [Transaction]
+  let correctionId: String?
+}
+
+// MARK: - Tenant
+
+struct Tenant: Decodable {
+  let id: String
+  let name: String
+  let baseCurrency: SupportedCurrency
+}

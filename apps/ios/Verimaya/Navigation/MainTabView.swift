@@ -25,6 +25,13 @@ struct MainTabView: View {
       }
 
       NavigationStack {
+        InboxView()
+      }
+      .tabItem {
+        Label("AI işlem", systemImage: "sparkles")
+      }
+
+      NavigationStack {
         ReportsView()
       }
       .tabItem {

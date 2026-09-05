@@ -55,6 +55,29 @@ extension APIClient {
     return try await get("reports/marketing", query: q)
   }
 
+  // MARK: WhatsApp gelen kutusu (AI işlem)
+  func listInbox(cursor: String? = nil, limit: Int = 25) async throws -> InboxPage {
+    try await get("whatsapp/inbox", query: pageQuery(cursor: cursor, limit: limit))
+  }
+  /// Gövdesi olan tüm `new` mesajları ayrıştırır. İşlem oluşturmaz.
+  func processInbox() async throws -> InboxProcessResponse {
+    try await post("whatsapp/inbox/process", body: EmptyBody(), idempotencyKey: nil)
+  }
+  func parseInboxItem(_ id: String) async throws -> InboxParseResponse {
+    try await post("whatsapp/inbox/\(id)/parse", body: EmptyBody(), idempotencyKey: nil)
+  }
+  /// MONEY-01 para yolu: işlemler + onay tek DB transaction'ında yazılır.
+  /// Idempotency-Key zorunlu; aynı mesaj ikinci kez onaylanırsa sunucu 409 döner.
+  func approveDrafts(_ id: String, _ body: ApproveDraftsRequest) async throws -> ApproveDraftsResponse {
+    try await post("whatsapp/inbox/\(id)/approve-drafts", body: body)
+  }
+  func ignoreInboxItem(_ id: String) async throws -> InboxActionResponse {
+    try await post("whatsapp/inbox/\(id)/ignore", body: EmptyBody(), idempotencyKey: nil)
+  }
+
+  // MARK: Tenant
+  func currentTenant() async throws -> Tenant { try await get("tenants/current") }
+
   // MARK: Me
   func me() async throws -> MeResponse { try await get("me") }
 
@@ -71,3 +94,6 @@ extension APIClient {
     return q
   }
 }
+
+/// Gövdesiz POST'lar için boş JSON nesnesi.
+struct EmptyBody: Encodable { init() {} }
