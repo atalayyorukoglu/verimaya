@@ -35,3 +35,20 @@ graphify-out/
 # OpenClaw ajan çalışma alanı dosyaları (kişisel, repoya ait değil)
 openclaw-workspace-state.json
 memory/
+
+# OpenClaw ajan kimlik/şablon dosyaları (bu klasör aynı zamanda ajan workspace'i)
+SOUL.md
+IDENTITY.md
+USER.md
+TOOLS.md
+HEARTBEAT.md
+
+# Claude Code yerel ayarları — mutlak ev dizini yolu içeriyor, paylaşılmaz
+.claude/
+
+# UI işleri için bırakılan ekran görüntüleri (kişisel, repoya ait değil)
+00-kisiler/
+
+# geçici script artıkları (`_usage.tmp.js` gibi)
+*.tmp.js
+*.tmp.ts
