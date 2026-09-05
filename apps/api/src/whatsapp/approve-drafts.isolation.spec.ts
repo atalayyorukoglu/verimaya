@@ -6,6 +6,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { ConflictException } from '@nestjs/common';
 import type { ApproveDraftsRequest } from '@verimaya/shared';
 import { closeDb, getDb } from '../db/client';
 import { IdempotencyService } from '../common/idempotency.service';
@@ -37,7 +38,6 @@ function draftPayload(overrides: Partial<ApproveDraftsRequest['drafts'][number]>
 		fx_rate: 1,
 		amount_base: 10_000,
 		contact_label: 'Test Contact',
-		contact_id: null,
 		contact_id: null,
 		category: null,
 		subcategory: null,
@@ -156,6 +156,54 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			return row!.n as number;
 		});
 		expect(count).toBe(1);
+	});
+
+	it('AI-13: farkli Idempotency-Key ile ikinci onay reddedilir, ikinci islem yazilmaz', async () => {
+		const { sql } = getDb(databaseUrl);
+		const freshInbox = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			const [row] = await tx`
+				insert into inbound_messages (tenant_id, provider, external_id, payload, status)
+				values (
+					${tenantId},
+					'waha',
+					${`ext-dup-${randomUUID().slice(0, 8)}`},
+					${JSON.stringify({ body: 'ayni gider iki kez' })}::jsonb,
+					'parsed'
+				)
+				returning id
+			`;
+			return row!.id as string;
+		});
+
+		const input: ApproveDraftsRequest = { drafts: [draftPayload({ title: 'AI-13 dup' })] };
+		const run = (key: string) =>
+			idempotency.run(
+				tenantId,
+				key,
+				'POST',
+				'/v1/whatsapp/inbox/:id/approve-drafts',
+				async (db) => ({
+					statusCode: 201,
+					body: await whatsappService.approveDraftsWithDb(db, tenantId, freshInbox, input, testActor)
+				})
+			);
+
+		const first = await run(`money01-dup-a-${randomUUID()}`);
+		expect(first.body.transactions).toHaveLength(1);
+
+		// Yeni anahtar => idempotency kaydi yok; korumayi servis vermeli.
+		await expect(run(`money01-dup-b-${randomUUID()}`)).rejects.toThrow(ConflictException);
+
+		const after = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			const [row] = await tx`
+				select count(*)::int as n from transactions
+				where tenant_id = ${tenantId} and source_inbound_message_id = ${freshInbox}
+			`;
+			return row!.n as number;
+		});
+		expect(after).toBe(1);
 	});
 
 	it('mid-flight failure rolls back — no transactions, inbox stays parsed', async () => {

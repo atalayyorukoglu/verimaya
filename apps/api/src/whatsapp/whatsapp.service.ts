@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
 import type {
 	ApproveDraftItem,
@@ -229,6 +229,15 @@ export class WhatsappService {
 		actor: AuditActor
 	): Promise<ApproveDraftsResponse> {
 		const inboxRow = await this.findRow(db, inboxId);
+
+		// AI-13: aynı mesaj iki kez onaylanamaz. `@Idempotent()` yalnız aynı
+		// Idempotency-Key'li tekrarı yakalar; yeni anahtarla gelen ikinci onay
+		// oraya takılmaz ve aynı gideri ikinci kez yazardı.
+		if (inboxRow.status === 'approved') {
+			throw new ConflictException({
+				error: { code: 'conflict', message: 'Inbound message already approved' }
+			});
+		}
 
 		// AI-09: iz sunucudaki taslaktan okunur, istek gövdesinden DEĞİL.
 		// Satır sayısı tutmuyorsa (kullanıcı taslak eklemiş/çıkarmışsa) sıra
