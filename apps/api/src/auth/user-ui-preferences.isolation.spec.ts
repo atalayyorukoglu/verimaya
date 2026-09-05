@@ -1,3 +1,4 @@
+import { DEFAULT_ENABLED_PRODUCT_MODULE_IDS } from '@verimaya/shared';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq, sql as drizzleSql } from 'drizzle-orm';
@@ -102,10 +103,7 @@ describe('user UI preferences isolation', () => {
 
 	it('another user in the same org does not receive peer preferences', async () => {
 		const peer = await service.getPreferences(userBoth, tenantA);
-		expect(peer.enabled_product_modules).toEqual([
-			'untouched-contacts',
-			'referral-value'
-		]);
+		expect(peer.enabled_product_modules).toEqual([...DEFAULT_ENABLED_PRODUCT_MODULE_IDS]);
 
 		await service.savePreferences(userBoth, tenantA, {
 			enabled_product_modules: []
@@ -141,7 +139,7 @@ describe('user UI preferences isolation', () => {
 			enabled_product_modules: ['campaign-assistant']
 		});
 		await expect(service.getPreferences(userB, tenantA)).resolves.toEqual({
-			enabled_product_modules: ['untouched-contacts', 'referral-value']
+			enabled_product_modules: [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS]
 		});
 	});
 });

@@ -1,3 +1,4 @@
+import { DEFAULT_ENABLED_PRODUCT_MODULE_IDS } from '@verimaya/shared';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
@@ -135,7 +136,7 @@ describe('MeService active organization membership', () => {
 			role: 'manager',
 			platform_admin: false,
 			preferences: {
-				enabled_product_modules: ['untouched-contacts', 'referral-value']
+				enabled_product_modules: [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS]
 			}
 		});
 	});
