@@ -154,13 +154,18 @@
 		</div>
 
 		<div id={CONTENT_ID} class="min-w-0 border-t border-border p-4" hidden={!open}>
-			<BalanceContent />
+			{@render BalanceContent()}
 		</div>
 	</section>
 {:else}
-	<BalanceContent />
+	{@render BalanceContent()}
 {/if}
 
+<!--
+	Snippet `{@render}` ile çağrılır; `<BalanceContent />` bileşen sözdizimidir ve
+	Svelte 5.56 bunu `invalid_snippet_arguments` ile reddediyor — Finans sayfası
+	hidrasyonda patlıyor, "Yükleniyor…" ekranında kalıyordu.
+-->
 {#snippet BalanceContent()}
 	<div class="mb-4 flex w-full min-w-0 overflow-hidden rounded-lg border border-border sm:w-fit">
 		<button

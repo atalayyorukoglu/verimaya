@@ -2,6 +2,9 @@
 	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { bridgePeriod } from '$lib/period-bridge.svelte';
+	import Plus from '@lucide/svelte/icons/plus';
+	import { monthRangeInTz, type PeriodKey } from '$lib/period-range';
 	import type {
 		ContractResponse,
 		InboundMessage,
@@ -93,6 +96,34 @@
 	}));
 
 	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
+	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
+
+	/*
+	 * Mobilde tarih seçimi kabuk başlığında (Randevular ile aynı desen). Bu sayfa
+	 * `PeriodKey` tutmuyor, ham `from`/`to` tutuyor — köprüye o ikisi üzerinden
+	 * bağlanıyor: aralık boşsa "tüm zamanlar", doluysa "özel". Aşağıdaki iki tarih
+	 * alanı mobilde gizli, masaüstünde açık.
+	 */
+	bridgePeriod(() => ({
+		key: (from || to ? 'ozel' : 'tum') as PeriodKey,
+		from,
+		to,
+		timeZone: tenantTimezone,
+		setKey: (next: PeriodKey) => {
+			if (next === 'tum') {
+				from = '';
+				to = '';
+				return;
+			}
+			const r = monthRangeInTz(next === 'gecen-ay' ? -1 : 0, tenantTimezone);
+			from = r.from;
+			to = r.to;
+		},
+		setRange: (nextFrom: string, nextTo: string) => {
+			from = nextFrom;
+			to = nextTo;
+		}
+	}));
 
 	/** Base equivalent only when txn currency differs and snapshot exists. */
 	function baseLine(tx: Transaction): string | null {
@@ -310,6 +341,12 @@
 
 	<BalancesPanel collapsible />
 
+	<!--
+		Mobilde Randevular ile aynı desen: tür + durum + "yeni" tek satırda, arama
+		üstte tam genişlik (Enter uygular). Kategori ve Uygula/Temizle masaüstünde
+		kalıyor — mobilde her biri bir satır yiyordu ve seçiciler zaten anında
+		uygulanıyor (`listFilters` doğrudan `kind`/`status` okuyor).
+	-->
 	<form
 		class="mb-4 flex min-w-0 flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-end"
 		onsubmit={applyFilters}
@@ -319,30 +356,41 @@
 			placeholder={t('finance.filter.qPlaceholder')}
 			bind:value={qInput}
 		/>
-		<select
-			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-40 lg:text-sm"
-			bind:value={kind}
-		>
-			<option value="">{t('finance.filter.kindAll')}</option>
-			{#each kindOptions as k (k)}
-				<option value={k}>{transactionKindLabels[k]}</option>
-			{/each}
-		</select>
-		<select
-			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-40 lg:text-sm"
-			bind:value={status}
-		>
-			<option value="">{t('finance.filter.statusAll')}</option>
-			{#each statusOptions as s (s)}
-				<option value={s}>{transactionStatusLabels[s]}</option>
-			{/each}
-		</select>
+		<div class="flex min-w-0 flex-nowrap items-center gap-2 md:contents">
+			<select
+				class="h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40 sm:px-3 sm:text-sm lg:h-9 lg:w-40 lg:flex-none lg:text-sm"
+				bind:value={kind}
+			>
+				<option value="">{t('finance.filter.kindAll')}</option>
+				{#each kindOptions as k (k)}
+					<option value={k}>{transactionKindLabels[k]}</option>
+				{/each}
+			</select>
+			<select
+				class="h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-2 text-xs text-text outline-none focus:ring-2 focus:ring-brand/40 sm:px-3 sm:text-sm lg:h-9 lg:w-40 lg:flex-none lg:text-sm"
+				bind:value={status}
+			>
+				<option value="">{t('finance.filter.statusAll')}</option>
+				{#each statusOptions as s (s)}
+					<option value={s}>{transactionStatusLabels[s]}</option>
+				{/each}
+			</select>
+			<Button
+				type="button"
+				class="shrink-0 px-2.5 md:hidden"
+				aria-label={t('finance.new')}
+				onclick={openCreate}
+			>
+				<Plus class="size-4" />
+			</Button>
+		</div>
 		<input
-			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-44 lg:text-sm"
+			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 max-md:hidden lg:h-9 lg:w-44 lg:text-sm"
 			placeholder={t('finance.filter.categoryPlaceholder')}
 			bind:value={categoryInput}
 		/>
-		<div class="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:contents">
+		<!-- Mobilde gizli: tarih seçimi kabuk başlığında. -->
+		<div class="grid min-w-0 grid-cols-1 gap-2 max-md:hidden sm:grid-cols-2 lg:contents">
 			<label class="min-w-0 text-xs font-medium text-text-muted lg:w-40">
 				<span class="mb-1 block lg:sr-only">{t('finance.filter.from')}</span>
 				<input
@@ -363,7 +411,7 @@
 			</label>
 		</div>
 		<div class="flex gap-2">
-			<Button class="min-h-11 lg:min-h-9" type="submit" variant="secondary"
+			<Button class="min-h-11 max-md:hidden lg:min-h-9" type="submit" variant="secondary"
 				>{t('finance.filter.apply')}</Button
 			>
 			{#if appliedQ || appliedCategory || kind || status || from || to}
