@@ -43,23 +43,22 @@ final class InboxFlowUITests: XCTestCase {
 
     app.buttons["Giriş yap"].tap()
 
-    // iOS 26'da SwiftUI TabView her zaman `tabBars` altına düşmüyor; ikisini de dene.
-    let tabBarButton = app.tabBars.buttons["AI işlem"]
-    let anyButton = app.buttons["AI işlem"]
-    XCTAssertTrue(
-      tabBarButton.waitForExistence(timeout: 20) || anyButton.waitForExistence(timeout: 10),
-      "Giriş sonrası sekmeler gelmedi"
-    )
-    (tabBarButton.exists ? tabBarButton : anyButton).tap()
+    // AI ile İşlem alt sekmede değil (web'de de değil) — Menü'den açılır.
+    XCTAssertTrue(app.buttons["Menü"].waitForExistence(timeout: 20), "Kabuk gelmedi")
+    app.buttons["Menü"].tap()
+
+    let aiItem = app.buttons["AI ile İşlem"]
+    XCTAssertTrue(aiItem.waitForExistence(timeout: 10), "Menüde AI ile İşlem yok")
+    aiItem.tap()
 
     XCTAssertTrue(
-      app.navigationBars["AI işlem"].waitForExistence(timeout: 10),
-      "AI işlem ekranı açılmadı"
+      app.staticTexts["AI ile İşlem"].waitForExistence(timeout: 10),
+      "AI ile İşlem ekranı açılmadı"
     )
 
     // Ekran ya mesajları ya da boş durumu göstermeli; ikisi de yoksa istek patlamıştır.
-    let emptyState = app.staticTexts["Bekleyen mesaj yok"]
-    let anyRow = app.buttons["Analiz et"].firstMatch
+    let emptyState = app.staticTexts["Bekleyen mesaj yok."]
+    let anyRow = app.buttons["Analiz Et"].firstMatch
     let loaded = emptyState.waitForExistence(timeout: 15) || anyRow.waitForExistence(timeout: 5)
     XCTAssertTrue(loaded, "Gelen kutusu ne liste ne boş durum gösterdi")
 
@@ -88,8 +87,12 @@ final class InboxFlowUITests: XCTestCase {
 
     app.buttons["Giriş yap"].tap()
 
-    let contactsNav = app.navigationBars["Kişiler"]
-    XCTAssertTrue(contactsNav.waitForExistence(timeout: 20), "Kişiler ekranı açılmadı")
+    XCTAssertTrue(app.buttons["Kişiler"].waitForExistence(timeout: 20), "Kabuk gelmedi")
+    app.buttons["Kişiler"].tap()
+    XCTAssertTrue(
+      app.staticTexts["Kişiler"].waitForExistence(timeout: 10),
+      "Kişiler ekranı açılmadı"
+    )
 
     // Hata şeridi API'den gelen ham mesajı gösteriyor; "Cannot GET" veya
     // "/v1/" içeren bir metin görünüyorsa uç yanlış demektir.

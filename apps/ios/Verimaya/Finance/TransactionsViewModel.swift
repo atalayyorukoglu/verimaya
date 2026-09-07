@@ -9,6 +9,8 @@ final class TransactionsViewModel: ObservableObject {
   @Published var hasMore = false
   @Published var totalIncomeMinor = 0
   @Published var totalExpenseMinor = 0
+  /// Finans başlığındaki "AI ile işlem" rozeti — bekleyen WhatsApp mesajı sayısı.
+  @Published var pendingInboxCount = 0
 
   private let api = APIClient.shared
   private var isLoadingMore = false
@@ -53,6 +55,11 @@ final class TransactionsViewModel: ObservableObject {
 
   func refresh() async {
     await load(reset: true)
+  }
+
+  func loadPendingInboxCount() async {
+    guard let page = try? await api.listInbox(limit: 50) else { return }
+    pendingInboxCount = page.messages.filter { $0.status == .new }.count
   }
 
   @discardableResult

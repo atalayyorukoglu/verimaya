@@ -60,6 +60,10 @@ extension APIClient {
   }
 
   // MARK: WhatsApp gelen kutusu (AI işlem)
+  /// Serbest metni ayrıştırır — kalıcı kayıt yazmaz, yalnız taslak önerir.
+  func parseMessage(_ message: String) async throws -> InboxParseResponse {
+    try await post("whatsapp/parse", body: WhatsappParseRequest(message: message), idempotencyKey: nil)
+  }
   func listInbox(cursor: String? = nil, limit: Int = 25) async throws -> InboxPage {
     try await get("whatsapp/inbox", query: pageQuery(cursor: cursor, limit: limit))
   }

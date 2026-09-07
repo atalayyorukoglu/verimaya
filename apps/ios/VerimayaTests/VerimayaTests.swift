@@ -3,10 +3,27 @@ import XCTest
 
 final class VerimayaTests: XCTestCase {
 
-  func testMoneyFormatsKurusToTRY() {
-    XCTAssertEqual(Money.format(minor: 123456), "1.234,56 ₺")
-    XCTAssertEqual(Money.format(minor: 0), "0,00 ₺")
-    XCTAssertEqual(Money.format(minor: 5, currency: "EUR"), "0,05 €")
+  /// Web ile aynı biçim: simge **başta** (`Intl.NumberFormat` `style: 'currency'`).
+  /// Uygulama bir dönem simgeyi sona koyuyordu, panelle uyuşmuyordu.
+  func testMoneyMatchesWebCurrencyFormat() {
+    XCTAssertEqual(Money.format(minor: 123456), "₺1.234,56")
+    XCTAssertEqual(Money.format(minor: 0), "₺0,00")
+    XCTAssertEqual(Money.format(minor: 5, currency: "EUR"), "€0,05")
+  }
+
+  /// `formatDate` karşılığı — "4 Eyl 2026". Takvim tarihi saat dilimine
+  /// çevrilmez, bu yüzden makineden bağımsız.
+  func testDayMatchesWebFormat() {
+    XCTAssertEqual(DateFmt.day("2026-09-04"), "4 Eyl 2026")
+  }
+
+  /// `formatTime` karşılığı — 24 saatlik "HH:mm". Değer makinenin saat dilimine
+  /// göre değiştiği için biçim doğrulanır, sabit saat değil.
+  func testTimeUsesTwentyFourHourFormat() {
+    let text = DateFmt.timeOnly("2026-09-04T15:00:00.000Z")
+    XCTAssertEqual(text.count, 5)
+    XCTAssertEqual(text.filter { $0 == ":" }.count, 1)
+    XCTAssertTrue(text.replacingOccurrences(of: ":", with: "").allSatisfy(\.isNumber))
   }
 
   private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
@@ -82,7 +99,7 @@ final class VerimayaTests: XCTestCase {
     XCTAssertEqual(t.kind, .expense)
     XCTAssertEqual(t.status, .partial)
     XCTAssertEqual(t.invoiceStatus, .notIssued)
-    XCTAssertEqual(Money.format(minor: t.amount), "1.500,00 ₺")
+    XCTAssertEqual(Money.format(minor: t.amount), "₺1.500,00")
   }
 
   func testCursorPageAndMarketingReport() throws {

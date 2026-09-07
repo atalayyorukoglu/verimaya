@@ -1,75 +1,49 @@
 import SwiftUI
 
-/// "AI işlem" sekmesi — WhatsApp'tan gelen mesajlar ve onay kuyruğu.
+/// AI ile İşlem — web panelindeki `/finance/ai-transaction` mobil görünümü.
+///
+/// Düzen: başlık + açıklama · "Mesajı yapıştır" kartı (metin alanı + Analiz Et) ·
+/// "Bekleyenler (N)" kartı ("Yeni mesajları işle" düğmesi + mesaj satırları).
 struct InboxView: View {
   @StateObject private var vm = InboxViewModel()
+  @State private var pasted = ""
+
+  private static let placeholder = """
+    Örnek:
+    Sandra 2900 GBP 2. vizit ödemesi + 450 GBP t-base ücretleri alındı.
+    Toplamda 3.350 GBP kart ile ödeme alındı.
+    """
 
   var body: some View {
-    ZStack {
-      VerimayaTheme.bg.ignoresSafeArea()
-
-      VStack(spacing: 0) {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 12) {
         if let message = vm.statusMessage {
           Text(message)
             .font(.footnote)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(VerimayaTheme.info)
+            .foregroundStyle(VerimayaTheme.info)
         }
 
-        if vm.messages.isEmpty && !vm.isLoading {
-          ContentUnavailableView(
-            "Bekleyen mesaj yok",
-            systemImage: "message",
-            description: Text("WhatsApp'tan mesaj geldiğinde burada görünür.")
+        VStack(alignment: .leading, spacing: 4) {
+          Text("AI ile İşlem")
+            .font(.title2.weight(.semibold))
+            .foregroundStyle(VerimayaTheme.text)
+          Text(
+            "WhatsApp grup mesajını yapıştır veya kuyruktan seç — AI işlemleri "
+              + "ayrıştırır, onayladıktan sonra kayıt açılır."
           )
-        } else {
-          List {
-            ForEach(vm.messages) { item in
-              InboxRow(
-                message: item,
-                siblingCount: vm.groupSiblings(of: item).count,
-                isParsing: vm.isParsing,
-                onAnalyze: { Task { await vm.analyze(item) } },
-                onIgnore: { Task { await vm.ignore(item.id) } }
-              )
-              .listRowBackground(VerimayaTheme.surface)
-            }
+          .font(.subheadline)
+          .foregroundStyle(VerimayaTheme.textMuted)
+          .fixedSize(horizontal: false, vertical: true)
+        }
 
-            if vm.hasMore {
-              HStack {
-                Spacer()
-                ProgressView()
-                Spacer()
-              }
-              .listRowBackground(VerimayaTheme.bg)
-              .onAppear { Task { await vm.loadMore() } }
-            }
-          }
-          .listStyle(.plain)
-          .scrollContentBackground(.hidden)
-          .refreshable { await vm.refresh() }
-        }
+        pasteCard
+        pendingCard
       }
+      .padding(VerimayaUI.pagePadding)
+      .padding(.bottom, 72)
     }
-    .navigationTitle("AI işlem")
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Button {
-          Task { await vm.processNew() }
-        } label: {
-          if vm.isProcessing {
-            ProgressView()
-          } else {
-            Image(systemName: "sparkles")
-          }
-        }
-        .disabled(vm.isProcessing)
-        .accessibilityLabel("Yeni mesajları işle")
-      }
-    }
+    .background(VerimayaTheme.bg)
+    .refreshable { await vm.refresh() }
     .sheet(item: $vm.activeMessage) { message in
       DraftApprovalView(
         message: message,
@@ -80,10 +54,92 @@ struct InboxView: View {
     }
     .task { await vm.load(reset: true) }
   }
+
+  private var pasteCard: some View {
+    PanelCard {
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Mesajı yapıştır")
+          .font(.body.weight(.semibold))
+          .foregroundStyle(VerimayaTheme.text)
+
+        ZStack(alignment: .topLeading) {
+          if pasted.isEmpty {
+            Text(Self.placeholder)
+              .font(.system(.subheadline, design: .monospaced))
+              .foregroundStyle(VerimayaTheme.textFaint)
+              .padding(.horizontal, 12)
+              .padding(.vertical, 10)
+              .allowsHitTesting(false)
+          }
+          TextEditor(text: $pasted)
+            .font(.system(.subheadline, design: .monospaced))
+            .scrollContentBackground(.hidden)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(minHeight: 140)
+        }
+        .background(VerimayaTheme.surface2)
+        .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
+        .overlay(
+          RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl)
+            .stroke(VerimayaTheme.border, lineWidth: 1)
+        )
+
+        BrandButton(title: "Analiz Et", systemImage: "sparkles") {
+          Task { await vm.analyzePasted(pasted) }
+        }
+        .opacity(pasted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
+        .disabled(pasted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vm.isParsing)
+      }
+    }
+  }
+
+  private var pendingCard: some View {
+    PanelCard {
+      VStack(alignment: .leading, spacing: 14) {
+        HStack(alignment: .center) {
+          HStack(spacing: 4) {
+            Text("Bekleyenler")
+              .font(.body.weight(.semibold))
+              .foregroundStyle(VerimayaTheme.text)
+            Text("(\(vm.pendingCount))")
+              .font(.body)
+              .foregroundStyle(VerimayaTheme.textMuted)
+          }
+          Spacer(minLength: 8)
+          OutlineButton(title: vm.isProcessing ? "İşleniyor…" : "Yeni mesajları işle") {
+            Task { await vm.processNew() }
+          }
+          .disabled(vm.isProcessing)
+        }
+
+        if vm.pending.isEmpty {
+          Text("Bekleyen mesaj yok.")
+            .font(.subheadline)
+            .foregroundStyle(VerimayaTheme.textMuted)
+            .padding(.vertical, 8)
+        } else {
+          ForEach(Array(vm.pending.enumerated()), id: \.element.id) { index, item in
+            if index > 0 {
+              Divider().overlay(VerimayaTheme.border)
+            }
+            InboxMessageRow(
+              message: item,
+              siblingCount: vm.groupSiblings(of: item).count,
+              isParsing: vm.isParsing,
+              onAnalyze: { Task { await vm.analyze(item) } },
+              onIgnore: { Task { await vm.ignore(item.id) } }
+            )
+          }
+        }
+      }
+    }
+  }
 }
 
-/// Tek mesaj satırı. Aynı olay uyarısı burada görünür (AI-13).
-struct InboxRow: View {
+/// Tek mesaj satırı: gönderen · durum rozeti · saat · gövde · iki düğme.
+/// AI-13 "aynı olay" uyarısı gövdenin altında.
+private struct InboxMessageRow: View {
   let message: InboundMessage
   let siblingCount: Int
   let isParsing: Bool
@@ -93,36 +149,35 @@ struct InboxRow: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 8) {
-        Text(message.chatName ?? message.sender ?? "Bilinmeyen sohbet")
-          .font(.caption)
-          .foregroundStyle(VerimayaTheme.textFaint)
+        Text(message.sender ?? message.chatName ?? emptyDash)
+          .font(.system(.caption, design: .monospaced))
+          .foregroundStyle(VerimayaTheme.textMuted)
           .lineLimit(1)
 
-        StatusChip(text: message.status.label, color: message.status == .new ? VerimayaTheme.warning : VerimayaTheme.info)
+        Chip(text: message.status.label, tone: message.status == .new ? .warning : .info)
 
-        if message.hasMedia {
-          StatusChip(text: "Medya", color: VerimayaTheme.textMuted)
-        }
-
-        Spacer()
+        Spacer(minLength: 4)
 
         Text(DateFmt.dateTime(message.createdAt))
-          .font(.caption2)
-          .foregroundStyle(VerimayaTheme.textFaint)
+          .font(.caption)
+          .foregroundStyle(VerimayaTheme.textMuted)
+          .lineLimit(1)
       }
 
       Text(message.body?.isEmpty == false ? message.body! : "(boş mesaj)")
         .font(.subheadline)
         .foregroundStyle(VerimayaTheme.text)
-        .lineLimit(3)
+        .fixedSize(horizontal: false, vertical: true)
 
       if siblingCount > 0 {
         Label(
-          "Aynı olay olabilir — bu tutar aynı sohbetteki \(siblingCount) mesajda daha geçiyor. İkisini de onaylarsan aynı kayıt iki kez oluşur.",
+          "Aynı olay olabilir — bu tutar aynı sohbetteki \(siblingCount) mesajda daha geçiyor. "
+            + "İkisini de onaylarsan aynı kayıt iki kez oluşur.",
           systemImage: "exclamationmark.triangle"
         )
         .font(.caption)
         .foregroundStyle(VerimayaTheme.warning)
+        .fixedSize(horizontal: false, vertical: true)
       }
 
       if let parseError = message.parseError {
@@ -131,35 +186,12 @@ struct InboxRow: View {
           .foregroundStyle(VerimayaTheme.danger)
       }
 
-      HStack(spacing: 10) {
-        Button("Analiz et", action: onAnalyze)
-          .buttonStyle(.borderedProminent)
-          .tint(VerimayaTheme.brand)
-          .controlSize(.small)
+      HStack(spacing: 8) {
+        BrandButton(title: "Analiz Et", action: onAnalyze)
           .disabled(isParsing)
-
-        // Marka rengi TabView'dan miras kaliyor; ikincil eylem okunmuyordu.
-        Button("Yoksay", action: onIgnore)
-          .buttonStyle(.bordered)
-          .tint(VerimayaTheme.textMuted)
-          .controlSize(.small)
+        OutlineButton(title: "Yoksay", action: onIgnore)
       }
     }
-    .padding(.vertical, 6)
-  }
-}
-
-struct StatusChip: View {
-  let text: String
-  let color: Color
-
-  var body: some View {
-    Text(text)
-      .font(.caption2.weight(.medium))
-      .foregroundStyle(color)
-      .padding(.horizontal, 6)
-      .padding(.vertical, 2)
-      .background(color.opacity(0.14))
-      .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
+    .padding(.vertical, 2)
   }
 }

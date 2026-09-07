@@ -1,353 +1,230 @@
-import Charts
 import SwiftUI
 
+/// Raporlar — web panelindeki `/reports` mobil görünümü.
+///
+/// Düzen: başlık + segmentli seçim (Özet · Kategori · Pazarlama) ·
+/// kart içinde bölüm başlığı, açıklama, 2×2 sayı kutuları ve kırılım listeleri.
 struct ReportsView: View {
   @StateObject private var vm = ReportsViewModel()
+  @State private var section: ReportSection = .summary
+
+  enum ReportSection: String, CaseIterable, Identifiable {
+    case summary, category, marketing
+    var id: String { rawValue }
+    var label: String {
+      switch self {
+      case .summary: "Özet"
+      case .category: "Kategori"
+      case .marketing: "Pazarlama"
+      }
+    }
+    var icon: String {
+      switch self {
+      case .summary: "square.grid.2x2"
+      case .category: "square.stack.3d.up"
+      case .marketing: "megaphone"
+      }
+    }
+  }
 
   var body: some View {
-    ZStack {
-      VerimayaTheme.bg.ignoresSafeArea()
-
-      VStack(spacing: 0) {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 12) {
         if let message = vm.statusMessage {
           Text(message)
             .font(.footnote)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(VerimayaTheme.danger)
+            .foregroundStyle(VerimayaTheme.danger)
         }
 
-        Picker("Dönem", selection: Binding(
-          get: { vm.preset },
-          set: { newValue in
-            Task { await vm.setPreset(newValue) }
-          }
-        )) {
-          ForEach(PeriodPreset.allCases) { p in
-            Text(p.label).tag(p)
-          }
+        HStack(alignment: .center, spacing: 8) {
+          // Web'de başlık ve üç düğme tek satıra sığıyor; iOS'ta başlık bir
+          // punto küçültülmeden sığmıyordu.
+          Text("Raporlar")
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(VerimayaTheme.text)
+            .lineLimit(1)
+            .fixedSize()
+          Spacer(minLength: 6)
+          sectionPicker
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
 
-        if vm.isLoading && vm.summary == nil && vm.marketing == nil {
-          ProgressView("Yükleniyor…")
-            .tint(VerimayaTheme.brand)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-          ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-              if vm.isLoading {
-                ProgressView()
-                  .tint(VerimayaTheme.brand)
-                  .frame(maxWidth: .infinity)
-              }
-
-              marketingCard
-              summaryCard
-              monthlyCard
-              categoryCard
-            }
-            .padding(16)
-          }
-          .refreshable { await vm.load() }
+        switch section {
+        case .summary: summaryCard
+        case .category: categoryCard
+        case .marketing: marketingCard
         }
       }
+      .padding(VerimayaUI.pagePadding)
+      .padding(.bottom, 72)
     }
-    .navigationTitle("Raporlar")
+    .background(VerimayaTheme.bg)
+    .refreshable { await vm.load() }
     .task { await vm.load() }
   }
 
-  // MARK: - Gerçek ROAS
-
-  private var marketingCard: some View {
-    VStack(alignment: .leading, spacing: 14) {
-      Text("Gerçek ROAS")
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(VerimayaTheme.brand)
-
-      Text(roasText(vm.marketing))
-        .font(.system(size: 36, weight: .bold, design: .rounded))
-        .foregroundStyle(VerimayaTheme.text)
-
-      if let m = vm.marketing {
-        HStack(spacing: 8) {
-          metricChip(
-            label: "Harcama",
-            value: m.spendBase.map { Money.format(minor: $0) } ?? "—",
-            color: VerimayaTheme.danger
-          )
-          metricChip(label: "Gelir", value: Money.format(minor: m.revenueBase), color: VerimayaTheme.success)
-        }
-        HStack(spacing: 8) {
-          metricChip(label: "Lead", value: "\(m.leadsCount)", color: VerimayaTheme.text)
-          metricChip(label: "Kapanan", value: "\(m.treatedCount)", color: VerimayaTheme.text)
-        }
-
-        VStack(alignment: .leading, spacing: 6) {
-          secondaryRow(label: "Lead başı maliyet", value: optionalMoney(m.costPerLead))
-          secondaryRow(label: "Kapanan başı maliyet", value: optionalMoney(m.costPerTreated))
-        }
-        .padding(.top, 4)
-
-        Divider().overlay(VerimayaTheme.border)
-
-        Text("Kaynak kırılımı")
-          .font(.caption.weight(.semibold))
-          .foregroundStyle(VerimayaTheme.textMuted)
-
-        if m.bySource.isEmpty {
-          Text("Kaynak verisi yok")
-            .font(.subheadline)
-            .foregroundStyle(VerimayaTheme.textFaint)
-        } else {
-          ForEach(m.bySource) { row in
-            HStack {
-              VStack(alignment: .leading, spacing: 2) {
-                Text(row.source)
-                  .font(.subheadline.weight(.medium))
-                  .foregroundStyle(VerimayaTheme.text)
-                Text("\(row.leads) lead · \(row.treated) kapanan")
-                  .font(.caption)
-                  .foregroundStyle(VerimayaTheme.textMuted)
-              }
-              Spacer()
-              Text(Money.format(minor: row.revenueBase))
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(VerimayaTheme.success)
-                .monospacedDigit()
-            }
+  /// Web'deki üç düğmeli seçim — seçili olan marka zeminli.
+  private var sectionPicker: some View {
+    HStack(spacing: 6) {
+      ForEach(ReportSection.allCases) { item in
+        Button {
+          section = item
+        } label: {
+          HStack(spacing: 4) {
+            Image(systemName: item.icon).font(.caption2)
+            Text(item.label)
+              .font(.footnote.weight(.medium))
+              .lineLimit(1)
+              .fixedSize()
           }
+          .foregroundStyle(section == item ? VerimayaTheme.onBrand : VerimayaTheme.text)
+          .padding(.horizontal, 9)
+          .frame(height: 36)
+          .background(section == item ? VerimayaTheme.brand : VerimayaTheme.surface)
+          .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
+          .overlay(
+            RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl)
+              .stroke(section == item ? .clear : VerimayaTheme.border, lineWidth: 1)
+          )
         }
-      } else {
-        Text("Pazarlama verisi yok")
-          .font(.subheadline)
-          .foregroundStyle(VerimayaTheme.textFaint)
+        .buttonStyle(.plain)
       }
     }
-    .padding(16)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(VerimayaTheme.brandSubtle)
-    .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusCard))
-    .overlay(
-      RoundedRectangle(cornerRadius: VerimayaTheme.radiusCard)
-        .stroke(VerimayaTheme.brand.opacity(0.35), lineWidth: 1)
-    )
   }
-
-  // MARK: - Özet
 
   private var summaryCard: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Özet")
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(VerimayaTheme.textMuted)
+    PanelCard {
+      VStack(alignment: .leading, spacing: 14) {
+        cardHeading("Finans", "Gelir, gider ve tahsilat durumu.")
 
-      if let s = vm.summary {
-        moneyRow(label: "Gelir", value: Money.format(minor: s.incomeBase), color: VerimayaTheme.success)
-        moneyRow(label: "Gider", value: Money.format(minor: s.expenseBase), color: VerimayaTheme.danger)
-        moneyRow(
-          label: "Net",
-          value: Money.format(minor: s.netBase),
-          color: s.netBase < 0 ? VerimayaTheme.danger : VerimayaTheme.success
-        )
-        moneyRow(label: "İşlem sayısı", value: "\(s.transactionCount)", color: VerimayaTheme.text)
-      } else {
-        Text("Veri yok")
-          .font(.subheadline)
-          .foregroundStyle(VerimayaTheme.textFaint)
-      }
-    }
-    .reportCard()
-  }
+        let s = vm.summary
+        HStack(spacing: 10) {
+          StatTile(
+            label: "Gelir",
+            value: Money.format(minor: s?.incomeBase ?? 0),
+            valueColor: VerimayaTheme.success
+          )
+          StatTile(label: "Gider", value: Money.format(minor: s?.expenseBase ?? 0))
+        }
+        HStack(spacing: 10) {
+          StatTile(
+            label: "Net",
+            value: Money.format(minor: s?.netBase ?? 0),
+            valueColor: (s?.netBase ?? 0) >= 0 ? VerimayaTheme.success : VerimayaTheme.danger
+          )
+          StatTile(label: "İşlem", value: "\(s?.transactionCount ?? 0)")
+        }
 
-  // MARK: - Aylık
-
-  private var monthlyCard: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Aylık")
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(VerimayaTheme.textMuted)
-
-      if let items = vm.monthly?.items, !items.isEmpty {
-        Chart {
-          ForEach(chartPoints(from: items)) { point in
-            BarMark(
-              x: .value("Ay", point.monthLabel),
-              y: .value("Tutar", point.major)
+        if let monthly = vm.monthly, !monthly.items.isEmpty {
+          SectionCaption(text: "Aylık trend")
+          ForEach(monthly.items) { row in
+            breakdownRow(
+              title: row.month,
+              detail: "\(row.transactionCount) işlem · net \(Money.format(minor: row.netBase))"
             )
-            .foregroundStyle(by: .value("Tür", point.series))
-            .position(by: .value("Tür", point.series))
           }
         }
-        .chartForegroundStyleScale([
-          "Gelir": VerimayaTheme.success,
-          "Gider": VerimayaTheme.danger
-        ])
-        .chartYAxis {
-          AxisMarks(position: .leading)
-        }
-        .frame(height: 200)
-
-        ForEach(items) { row in
-          HStack {
-            Text(shortMonth(row.month))
-              .font(.caption)
-              .foregroundStyle(VerimayaTheme.textMuted)
-              .frame(width: 56, alignment: .leading)
-            Spacer()
-            Text(Money.format(minor: row.netBase))
-              .font(.caption.weight(.medium))
-              .foregroundStyle(row.netBase < 0 ? VerimayaTheme.danger : VerimayaTheme.success)
-              .monospacedDigit()
-          }
-        }
-      } else {
-        Text("Veri yok")
-          .font(.subheadline)
-          .foregroundStyle(VerimayaTheme.textFaint)
       }
     }
-    .reportCard()
   }
-
-  // MARK: - Kategori
 
   private var categoryCard: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Kategori")
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(VerimayaTheme.textMuted)
+    PanelCard {
+      VStack(alignment: .leading, spacing: 14) {
+        cardHeading("Kategori", "Gelir ve giderin kategoriye göre dağılımı.")
 
-      if let items = vm.byCategory?.items, !items.isEmpty {
-        ForEach(items) { row in
-          HStack {
-            Text(row.categoryName)
-              .font(.subheadline)
-              .foregroundStyle(VerimayaTheme.text)
-            Spacer()
-            Text(Money.format(minor: row.netBase))
-              .font(.subheadline.weight(.medium))
-              .foregroundStyle(row.netBase < 0 ? VerimayaTheme.danger : VerimayaTheme.success)
-              .monospacedDigit()
+        if let rows = vm.byCategory?.items, !rows.isEmpty {
+          SectionCaption(text: "Kategori kırılımı")
+          ForEach(rows) { row in
+            breakdownRow(
+              title: row.categoryName,
+              detail: "\(row.transactionCount) · net \(Money.format(minor: row.netBase))"
+            )
           }
+        } else {
+          emptyLine
         }
-      } else {
-        Text("Veri yok")
-          .font(.subheadline)
-          .foregroundStyle(VerimayaTheme.textFaint)
       }
     }
-    .reportCard()
   }
 
-  // MARK: - Helpers
+  private var marketingCard: some View {
+    PanelCard {
+      VStack(alignment: .leading, spacing: 14) {
+        cardHeading("Pazarlama", "Reklam harcaması, gelir ve gerçek ROAS.")
 
-  private func metricChip(label: String, value: String, color: Color) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(label)
-        .font(.caption2)
-        .foregroundStyle(VerimayaTheme.textMuted)
-      Text(value)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(color)
-        .monospacedDigit()
+        let m = vm.marketing
+        HStack(spacing: 10) {
+          StatTile(label: "Harcama", value: Money.format(minor: m?.spendBase ?? 0))
+          StatTile(
+            label: "Gelir",
+            value: Money.format(minor: m?.revenueBase ?? 0),
+            valueColor: VerimayaTheme.success
+          )
+        }
+        HStack(spacing: 10) {
+          StatTile(label: "Gerçek ROAS", value: roasText(m?.realRoas))
+          StatTile(label: "Lead", value: "\(m?.leadsCount ?? 0)")
+        }
+
+        if let rows = m?.bySource, !rows.isEmpty {
+          SectionCaption(text: "Kaynak kırılımı")
+          ForEach(rows) { row in
+            breakdownRow(
+              title: row.source,
+              detail: "\(row.leads) lead · \(Money.format(minor: row.revenueBase))"
+            )
+          }
+        }
+
+        if m?.attributionMissing == true {
+          Text("Kaynak bilgisi eksik kayıtlar var — oranlar olduğundan düşük görünebilir.")
+            .font(.caption)
+            .foregroundStyle(VerimayaTheme.warning)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+      }
     }
-    .padding(.horizontal, 10)
-    .padding(.vertical, 8)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(VerimayaTheme.surface.opacity(0.85))
-    .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
   }
 
-  private func secondaryRow(label: String, value: String) -> some View {
-    HStack {
-      Text(label)
-        .font(.caption)
-        .foregroundStyle(VerimayaTheme.textMuted)
-      Spacer()
-      Text(value)
-        .font(.caption.weight(.medium))
+  private func cardHeading(_ title: String, _ description: String) -> some View {
+    VStack(alignment: .leading, spacing: 3) {
+      Text(title)
+        .font(.body.weight(.semibold))
         .foregroundStyle(VerimayaTheme.text)
-        .monospacedDigit()
-    }
-  }
-
-  private func moneyRow(label: String, value: String, color: Color) -> some View {
-    HStack {
-      Text(label)
+      Text(description)
         .font(.subheadline)
         .foregroundStyle(VerimayaTheme.textMuted)
-      Spacer()
-      Text(value)
-        .font(.subheadline.weight(.semibold))
-        .foregroundStyle(color)
-        .monospacedDigit()
+        .fixedSize(horizontal: false, vertical: true)
     }
   }
 
-  private func roasText(_ report: MarketingReport?) -> String {
-    guard let report else { return "—" }
-    if let value = report.realRoas {
-      let f = NumberFormatter()
-      f.locale = Locale(identifier: "tr_TR")
-      f.minimumFractionDigits = 2
-      f.maximumFractionDigits = 2
-      let number = f.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
-      return "\(number)×"
-    }
-    if report.spendFxMissing { return "Kur bilgisi eksik" }
-    if report.attributionMissing { return "Attribution verisi yok" }
-    return "Veri yok"
-  }
-
-  private func optionalMoney(_ minor: Int?) -> String {
-    guard let minor else { return "—" }
-    return Money.format(minor: minor)
-  }
-
-  private func shortMonth(_ yyyyMM: String) -> String {
-    let inF = DateFormatter()
-    inF.locale = Locale(identifier: "tr_TR")
-    inF.dateFormat = "yyyy-MM"
-    guard let date = inF.date(from: yyyyMM) else { return yyyyMM }
-    let outF = DateFormatter()
-    outF.locale = Locale(identifier: "tr_TR")
-    outF.dateFormat = "MMM yy"
-    return outF.string(from: date)
-  }
-
-  private func chartPoints(from items: [ReportMonthRow]) -> [MonthChartPoint] {
-    items.flatMap { row in
-      let label = shortMonth(row.month)
-      return [
-        MonthChartPoint(id: "\(row.month)-income", monthLabel: label, series: "Gelir", major: Double(row.incomeBase) / 100),
-        MonthChartPoint(id: "\(row.month)-expense", monthLabel: label, series: "Gider", major: Double(row.expenseBase) / 100)
-      ]
+  /// Web'de kırılım satırları: solda ad, sağda değer, altta ince çizgi.
+  private func breakdownRow(title: String, detail: String) -> some View {
+    VStack(spacing: 0) {
+      HStack(alignment: .firstTextBaseline) {
+        Text(title)
+          .font(.body)
+          .foregroundStyle(VerimayaTheme.text)
+        Spacer(minLength: 8)
+        Text(detail)
+          .font(.subheadline)
+          .foregroundStyle(VerimayaTheme.textMuted)
+          .monospacedDigit()
+      }
+      .padding(.vertical, 10)
+      Divider().overlay(VerimayaTheme.border)
     }
   }
-}
 
-private struct MonthChartPoint: Identifiable {
-  let id: String
-  let monthLabel: String
-  let series: String
-  let major: Double
-}
+  private var emptyLine: some View {
+    Text("Bu dönem için veri yok.")
+      .font(.subheadline)
+      .foregroundStyle(VerimayaTheme.textMuted)
+      .padding(.vertical, 8)
+  }
 
-private extension View {
-  func reportCard() -> some View {
-    self
-      .padding(16)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .background(VerimayaTheme.surface)
-      .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusCard))
-      .overlay(
-        RoundedRectangle(cornerRadius: VerimayaTheme.radiusCard)
-          .stroke(VerimayaTheme.border, lineWidth: 1)
-      )
+  private func roasText(_ value: Double?) -> String {
+    guard let value else { return emptyDash }
+    return String(format: "%.2f×", value)
   }
 }

@@ -1,105 +1,105 @@
 import SwiftUI
 
+/// Kişiler — web panelindeki `/contacts` mobil görünümünün karşılığı.
+///
+/// Düzen: başlık + "N kişi" · tür filtresi + "Yeni kişi" · kart listesi
+/// (ad, telefon, e-posta, sağda kalem).
 struct ContactsView: View {
   @StateObject private var vm = ContactsViewModel()
   @State private var showCreate = false
+  @State private var editing: Contact?
+  @State private var typeFilter = ""
+
+  private var filtered: [Contact] {
+    typeFilter.isEmpty ? vm.contacts : vm.contacts.filter { $0.contactTypeId == typeFilter }
+  }
+
+  private var typeOptions: [(value: String, label: String)] {
+    [(value: "", label: "Tüm türler")] + vm.contactTypes.map { (value: $0.id, label: $0.name) }
+  }
 
   var body: some View {
-    ZStack {
-      VerimayaTheme.bg.ignoresSafeArea()
-
-      VStack(spacing: 0) {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 12) {
         if let message = vm.statusMessage {
           Text(message)
             .font(.footnote)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(VerimayaTheme.danger)
+            .foregroundStyle(VerimayaTheme.danger)
         }
 
-        if vm.contacts.isEmpty && !vm.isLoading {
-          ContentUnavailableView(
-            "Henüz kişi yok",
-            systemImage: "person.2",
-            description: Text("Yeni kişi eklemek için + butonunu kullanın.")
-          )
+        PageTitle("Kişiler", subtitle: subtitle)
+
+        HStack(spacing: 8) {
+          SelectField(title: "Tüm türler", selection: $typeFilter, options: typeOptions)
+          BrandButton(title: "Yeni kişi") { showCreate = true }
+        }
+
+        Divider().overlay(VerimayaTheme.border)
+
+        if filtered.isEmpty && !vm.isLoading {
+          Text("Henüz kişi yok.")
+            .font(.subheadline)
+            .foregroundStyle(VerimayaTheme.textMuted)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 40)
         } else {
-          List {
-            ForEach(vm.contacts) { contact in
-              NavigationLink(value: contact.id) {
-                ContactRow(contact: contact)
-              }
-              .listRowBackground(VerimayaTheme.surface)
+          LazyVStack(spacing: 10) {
+            ForEach(filtered) { contact in
+              ContactCard(contact: contact) { editing = contact }
             }
 
             if vm.hasMore {
-              HStack {
-                Spacer()
-                ProgressView()
-                Spacer()
-              }
-              .listRowBackground(VerimayaTheme.bg)
-              .onAppear {
-                Task { await vm.loadMore() }
-              }
+              ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .onAppear { Task { await vm.loadMore() } }
             }
           }
-          .listStyle(.plain)
-          .scrollContentBackground(.hidden)
-          .refreshable { await vm.refresh() }
         }
       }
+      .padding(VerimayaUI.pagePadding)
+      .padding(.bottom, 72)
     }
-    .navigationTitle("Kişiler")
-    .navigationDestination(for: String.self) { id in
-      ContactDetailView(id: id, vm: vm)
-    }
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Button {
-          showCreate = true
-        } label: {
-          Image(systemName: "plus")
-        }
-        .accessibilityLabel("Yeni kişi")
-      }
-    }
-    .sheet(isPresented: $showCreate) {
-      ContactFormView(mode: .create, vm: vm)
-    }
+    .background(VerimayaTheme.bg)
+    .refreshable { await vm.refresh() }
+    .sheet(isPresented: $showCreate) { ContactFormView(mode: .create, vm: vm) }
+    .sheet(item: $editing) { c in ContactFormView(mode: .edit(c), vm: vm) }
     .task {
       await vm.load(reset: true)
+      await vm.loadContactTypes()
     }
+  }
+
+  private var subtitle: String {
+    let count = filtered.count
+    return typeFilter.isEmpty ? "\(count) kişi" : "\(count) kişi (filtreli)"
   }
 }
 
-private struct ContactRow: View {
+/// Web'deki kişi kartı: ad · telefon · e-posta, sağda kalem.
+/// Eksik alanlar uzun tire ile gösterilir — panelde de öyle.
+private struct ContactCard: View {
   let contact: Contact
+  let onEdit: () -> Void
 
   var body: some View {
-    HStack(alignment: .center, spacing: 12) {
-      VStack(alignment: .leading, spacing: 4) {
-        Text(contact.displayName)
-          .font(.body.weight(.medium))
-          .foregroundStyle(VerimayaTheme.text)
-        if let phone = contact.phone, !phone.isEmpty {
-          Text(phone)
+    PanelCard {
+      HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: 3) {
+          Text(contact.displayName)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(VerimayaTheme.text)
+          Text(contact.phone.dashed)
             .font(.subheadline)
             .foregroundStyle(VerimayaTheme.textMuted)
+          Text(contact.email.dashed)
+            .font(.subheadline)
+            .foregroundStyle(VerimayaTheme.textMuted)
+            .lineLimit(1)
         }
+        Spacer(minLength: 8)
+        EditPencil(action: onEdit)
       }
-      Spacer(minLength: 8)
-      // Durum yalnız Hasta tipinde dolu; boşsa kişi türünü göster.
-      Text(contact.status?.label ?? contact.contactTypeName)
-        .font(.caption.weight(.medium))
-        .foregroundStyle(VerimayaTheme.text)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(VerimayaTheme.brandSubtle)
-        .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
     }
-    .padding(.vertical, 2)
   }
 }

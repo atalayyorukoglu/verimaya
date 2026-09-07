@@ -21,9 +21,14 @@ final class InboxViewModel: ObservableObject {
   private let api = APIClient.shared
   private var isLoadingMore = false
 
-  /// Onay bekleyen sayısı — `approved` / `ignored` sayılmaz.
+  /// Onay bekleyenler — `approved` / `ignored` listede durmaz (web ile aynı süzgeç).
+  var pending: [InboundMessage] {
+    messages.filter { $0.status == .new || $0.status == .parsed }
+  }
+
+  /// Web'deki sayaç yalnız **yeni** mesajları sayar.
   var pendingCount: Int {
-    messages.filter { $0.status == .new || $0.status == .parsed }.count
+    messages.filter { $0.status == .new }.count
   }
 
   func load(reset: Bool) async {
@@ -92,6 +97,24 @@ final class InboxViewModel: ObservableObject {
         activeMessage = nil
       }
       await load(reset: true)
+    } catch {
+      statusMessage = Self.describe(error)
+    }
+  }
+
+  /// Panele yapıştırılan serbest metni ayrıştırır (kayıt oluşturmaz).
+  /// Kaynak mesaj olmadığı için onay akışı açılmaz — sonuç bilgilendirmedir.
+  func analyzePasted(_ message: String) async {
+    let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty else { return }
+    isParsing = true
+    statusMessage = nil
+    defer { isParsing = false }
+    do {
+      let result = try await api.parseMessage(text)
+      statusMessage = result.records.isEmpty
+        ? "Bu metinden işlem çıkarılamadı."
+        : "\(result.records.count) taslak çıkarıldı. Kayıt için kuyruktaki mesajı onayla."
     } catch {
       statusMessage = Self.describe(error)
     }

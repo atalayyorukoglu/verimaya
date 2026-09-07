@@ -438,6 +438,10 @@ struct InboxPage: Decodable {
   let nextCursor: String?
 }
 
+struct WhatsappParseRequest: Encodable {
+  var message: String
+}
+
 struct InboxProcessResponse: Decodable {
   let processed: Int
   let parsed: Int

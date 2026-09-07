@@ -8,6 +8,18 @@ final class AppointmentsViewModel: ObservableObject {
   @Published var nextCursor: String?
   @Published var hasMore = false
 
+  /// Web'de başlığın sağında duran "2026-09-01 > 2026-09-30" aralığı.
+  var rangeLabel: String {
+    let cal = Calendar.current
+    let now = Date()
+    guard let interval = cal.dateInterval(of: .month, for: now) else { return "" }
+    let fmt = DateFormatter()
+    fmt.locale = Locale(identifier: "tr_TR")
+    fmt.dateFormat = "yyyy-MM-dd"
+    let last = cal.date(byAdding: .day, value: -1, to: interval.end) ?? interval.end
+    return "\(fmt.string(from: interval.start)) > \(fmt.string(from: last))"
+  }
+
   private let api = APIClient.shared
   private var isLoadingMore = false
 

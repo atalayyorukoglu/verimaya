@@ -1,111 +1,141 @@
 import SwiftUI
 
+/// Randevular — web panelindeki `/appointments` mobil görünümü.
+///
+/// Düzen: "Randevular" + "Bu ay · N randevu" + tarih aralığı ·
+/// tür ve durum filtreleri + "+" · kart listesi (baş harf dairesi, ad,
+/// durum rozeti + saat, "Klinik / Otel / Transfer" satırı).
 struct AppointmentsView: View {
   @StateObject private var vm = AppointmentsViewModel()
   @State private var showCreate = false
   @State private var editing: Appointment?
+  @State private var typeFilter = ""
+  @State private var statusFilter = ""
+
+  private var filtered: [Appointment] {
+    vm.appointments.filter { a in
+      let matchesType = typeFilter.isEmpty || (a.appointmentType ?? "") == typeFilter
+      let matchesStatus = statusFilter.isEmpty || a.status.rawValue == statusFilter
+      return matchesType && matchesStatus
+    }
+  }
+
+  private var typeOptions: [(value: String, label: String)] {
+    let names = Set(vm.appointments.compactMap { $0.appointmentType }).sorted()
+    return [(value: "", label: "Tüm türler")] + names.map { (value: $0, label: $0) }
+  }
 
   var body: some View {
-    ZStack {
-      VerimayaTheme.bg.ignoresSafeArea()
-
-      VStack(spacing: 0) {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 12) {
         if let message = vm.statusMessage {
           Text(message)
             .font(.footnote)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(VerimayaTheme.danger)
+            .foregroundStyle(VerimayaTheme.danger)
         }
 
-        if vm.appointments.isEmpty && !vm.isLoading {
-          ContentUnavailableView(
-            "Henüz randevu yok",
-            systemImage: "calendar",
-            description: Text("Yeni randevu eklemek için + butonunu kullanın.")
-          )
-        } else {
-          List {
-            ForEach(vm.appointments) { appointment in
-              Button {
-                editing = appointment
-              } label: {
-                AppointmentRow(appointment: appointment)
-              }
-              .buttonStyle(.plain)
-              .listRowBackground(VerimayaTheme.surface)
-            }
+        PageTitle("Randevular", subtitle: "Bu ay · \(filtered.count) randevu") {
+          Text(vm.rangeLabel)
+            .font(.subheadline)
+            .foregroundStyle(VerimayaTheme.textMuted)
+            .monospacedDigit()
+        }
 
+        HStack(spacing: 8) {
+          SelectField(title: "Tüm türler", selection: $typeFilter, options: typeOptions)
+          SelectField(
+            title: "Tüm durumlar",
+            selection: $statusFilter,
+            options: [(value: "", label: "Tüm durumlar")]
+              + AppointmentStatus.allCases.map { (value: $0.rawValue, label: $0.label) }
+          )
+          AddSquareButton { showCreate = true }
+        }
+
+        Divider().overlay(VerimayaTheme.border)
+
+        if filtered.isEmpty && !vm.isLoading {
+          Text("Henüz randevu yok.")
+            .font(.subheadline)
+            .foregroundStyle(VerimayaTheme.textMuted)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 40)
+        } else {
+          LazyVStack(spacing: 10) {
+            ForEach(filtered) { appointment in
+              AppointmentCard(appointment: appointment) { editing = appointment }
+            }
             if vm.hasMore {
-              HStack {
-                Spacer()
-                ProgressView()
-                Spacer()
-              }
-              .listRowBackground(VerimayaTheme.bg)
-              .onAppear {
-                Task { await vm.loadMore() }
-              }
+              ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .onAppear { Task { await vm.loadMore() } }
             }
           }
-          .listStyle(.plain)
-          .scrollContentBackground(.hidden)
-          .refreshable { await vm.refresh() }
         }
       }
+      .padding(VerimayaUI.pagePadding)
+      .padding(.bottom, 72)
     }
-    .navigationTitle("Randevular")
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Button {
-          showCreate = true
-        } label: {
-          Image(systemName: "plus")
-        }
-        .accessibilityLabel("Yeni randevu")
-      }
-    }
-    .sheet(isPresented: $showCreate) {
-      AppointmentFormView(mode: .create, vm: vm)
-    }
-    .sheet(item: $editing) { appointment in
-      AppointmentFormView(mode: .edit(appointment), vm: vm)
-    }
-    .task {
-      await vm.load(reset: true)
-    }
+    .background(VerimayaTheme.bg)
+    .refreshable { await vm.refresh() }
+    .sheet(isPresented: $showCreate) { AppointmentFormView(mode: .create, vm: vm) }
+    .sheet(item: $editing) { a in AppointmentFormView(mode: .edit(a), vm: vm) }
+    .task { await vm.load(reset: true) }
   }
 }
 
-private struct AppointmentRow: View {
+private struct AppointmentCard: View {
   let appointment: Appointment
+  let onEdit: () -> Void
+
+  private var statusTone: Chip.Tone {
+    switch appointment.status {
+    case .completed: .success
+    case .scheduled, .confirmed: .success
+    case .inProgress: .info
+    case .cancelled: .danger
+    case .noShow: .warning
+    }
+  }
+
+  /// Web'de rozetin içinde tür kısaltması + tarih + saat aralığı var.
+  private var timeText: String {
+    let start = DateFmt.dateTime(appointment.startsAt)
+    guard let end = appointment.endsAt else { return start }
+    return "\(start) - \(DateFmt.timeOnly(end))"
+  }
 
   var body: some View {
-    HStack(alignment: .center, spacing: 12) {
-      VStack(alignment: .leading, spacing: 4) {
-        Text(appointment.contactDisplayName)
-          .font(.body.weight(.semibold))
-          .foregroundStyle(VerimayaTheme.text)
-        Text(DateFmt.dateTime(appointment.startsAt))
-          .font(.subheadline)
-          .foregroundStyle(VerimayaTheme.textMuted)
-        if let clinic = appointment.clinicName, !clinic.isEmpty {
-          Text(clinic)
+    PanelCard {
+      HStack(alignment: .top, spacing: 12) {
+        AvatarCircle(name: appointment.contactDisplayName)
+
+        VStack(alignment: .leading, spacing: 8) {
+          Text(appointment.contactDisplayName)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(VerimayaTheme.text)
+
+          Chip(
+            text: "\(appointment.appointmentType ?? appointment.status.label) · \(timeText)",
+            tone: statusTone,
+            showsDot: true
+          )
+
+          Text(logisticsLine)
             .font(.subheadline)
             .foregroundStyle(VerimayaTheme.textMuted)
+            .fixedSize(horizontal: false, vertical: true)
         }
+
+        Spacer(minLength: 4)
+        EditPencil(action: onEdit)
       }
-      Spacer(minLength: 8)
-      Text(appointment.status.label)
-        .font(.caption.weight(.medium))
-        .foregroundStyle(VerimayaTheme.text)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(VerimayaTheme.brandSubtle)
-        .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
     }
-    .padding(.vertical, 2)
+  }
+
+  private var logisticsLine: String {
+    "Klinik: \(appointment.clinicName.dashed), Otel: \(appointment.hotelName.dashed), "
+      + "Transfer: \(appointment.transferNote.dashed)"
   }
 }
