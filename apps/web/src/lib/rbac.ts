@@ -26,6 +26,8 @@ const NAV_ACCESS: Record<string, UserRole[]> = {
 	'/interventions': ['owner', 'admin', 'manager', 'finance', 'readonly'],
 	'/referrals': ['owner', 'admin', 'manager', 'finance', 'readonly'],
 	'/untouched': ['owner', 'admin', 'manager', 'finance', 'readonly'],
+	/** Teşvik dosyaları Araçlar altında `/incentives` — finans izinleri (readonly yok). */
+	'/incentives': ['owner', 'admin', 'manager', 'finance'],
 	'/settings': ['owner', 'admin'],
 	'/maya': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],
 	'/changelog': ['owner', 'admin', 'manager', 'agent', 'finance', 'readonly'],

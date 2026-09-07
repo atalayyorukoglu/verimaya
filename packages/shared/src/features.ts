@@ -348,7 +348,7 @@ export const features: Feature[] = [
 		description:
 			'Sağlık turizmi teşvik başvurusuna giren dosyaların takibi: hangi hasta, hangi tutar, hangi belge eksik.',
 		status: 'kod-hazir',
-		route: '/finance/incentives'
+		route: '/incentives'
 	},
 	{
 		id: 'whatsapp-import',

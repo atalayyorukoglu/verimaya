@@ -75,7 +75,7 @@ const CATALOG_BY_ID: Record<ProductModuleId, Omit<ProductModule, 'id'>> = {
 	},
 	'incentive-files': {
 		labelKey: 'finance.incentivesLink',
-		href: '/finance/incentives',
+		href: '/incentives',
 		icon: FileBadge,
 		department: 'Finans'
 	}
