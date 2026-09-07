@@ -25,6 +25,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: false
         ENABLE_TESTABILITY: YES
+        # Info.plist'e gomulur. Ana ekrandan acilan uygulamada ortam degiskeni
+        # yoktur; adres burada olmazsa uygulama localhost'a bakar ve telefonda calismaz.
+        VERIMAYA_API_URL_DEFAULT: https://api.verimaya.com
     scheme:
       testTargets:
         - VerimayaTests
