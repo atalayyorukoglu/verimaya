@@ -13,19 +13,57 @@ final class VerimayaTests: XCTestCase {
     try APIClient.decoder.decode(T.self, from: Data(json.utf8))
   }
 
-  func testPatientDecodesSnakeCaseAndStatus() throws {
+  /// Regresyon: sunucuda "hasta" varlığı yok, herkes bir **kişi**.
+  /// Uygulama bir dönem `/v1/patients` ve `full_name` bekliyordu; uç kalkınca
+  /// Kişiler ekranı "Cannot GET /v1/patients" veriyordu.
+  func testContactDecodesSnakeCaseAndOptionalStatus() throws {
     let json = """
     {"id":"11111111-1111-1111-1111-111111111111",
      "tenant_id":"22222222-2222-2222-2222-222222222222",
-     "full_name":"Ali Veli","phone":null,"email":null,
-     "status":"follow_up","source":"meta","notes":null,
-     "assigned_user_id":null,"contact_id":null,
+     "contact_type_id":"33333333-3333-3333-3333-333333333333",
+     "contact_type_name":"Hasta","title_id":null,"title_name":null,
+     "first_name":"Ali","last_name":"Veli","display_name":"Ali Veli",
+     "phone":null,"email":null,"notes":null,"organization_id":null,
+     "status":"follow_up","assigned_user_id":null,"source":"meta",
+     "medium":null,"campaign":null,"referred_by_contact_id":null,
+     "is_internal":false,"usage_count":3,
      "created_at":"2026-07-22T10:00:00.000Z","updated_at":"2026-07-22T10:00:00.000Z"}
     """
-    let p = try decode(Patient.self, json)
-    XCTAssertEqual(p.fullName, "Ali Veli")
-    XCTAssertEqual(p.status, .followUp)
-    XCTAssertNil(p.phone)
+    let c = try decode(Contact.self, json)
+    XCTAssertEqual(c.displayName, "Ali Veli")
+    XCTAssertEqual(c.firstName, "Ali")
+    XCTAssertEqual(c.contactTypeName, "Hasta")
+    XCTAssertEqual(c.status, .followUp)
+    XCTAssertNil(c.phone)
+  }
+
+  /// Durum yalnız "Hasta" tipinde anlamlı; diğer kişilerde null geliyor.
+  func testContactAcceptsNullStatus() throws {
+    let json = """
+    {"id":"1","tenant_id":"t","contact_type_id":"ct","contact_type_name":"Klinik",
+     "title_id":null,"title_name":null,"first_name":"Ada","last_name":null,
+     "display_name":"Ada","phone":null,"email":null,"notes":null,
+     "organization_id":null,"status":null,"assigned_user_id":null,"source":null,
+     "medium":null,"campaign":null,"referred_by_contact_id":null,
+     "is_internal":false,"usage_count":0,
+     "created_at":"2026-07-22T10:00:00.000Z","updated_at":"2026-07-22T10:00:00.000Z"}
+    """
+    let c = try decode(Contact.self, json)
+    XCTAssertNil(c.status)
+    XCTAssertNil(c.lastName)
+  }
+
+  /// Oluşturma gövdesi `display_name` göndermemeli — sunucu türetiyor, fazladan
+  /// alan sözleşmeyi bozar.
+  func testContactCreateEncodesSnakeCaseWithoutDisplayName() throws {
+    let body = ContactCreate(
+      contactTypeId: "ct", titleId: nil, firstName: "Ali", lastName: "Veli",
+      phone: nil, email: nil, notes: nil, status: .scheduled, source: nil
+    )
+    let json = try XCTUnwrap(String(data: APIClient.encoder.encode(body), encoding: .utf8))
+    XCTAssertTrue(json.contains("\"contact_type_id\""))
+    XCTAssertTrue(json.contains("\"first_name\""))
+    XCTAssertFalse(json.contains("display_name"))
   }
 
   func testTransactionDecodesEnumsAndMoney() throws {
@@ -34,8 +72,9 @@ final class VerimayaTests: XCTestCase {
      "subtitle":null,"category":"pazarlama","occurred_on":"2026-07-01",
      "status":"partial","invoice_status":"not_issued","payment_method":null,
      "amount":150000,"paid_amount":50000,"currency":"TRY","amount_base":150000,
-     "base_currency":"TRY","fx_rate":null,"fx_dated":null,"patient_id":null,
-     "patient_display_name":null,"contact_id":null,"contact_label":null,
+     "base_currency":"TRY","fx_rate":null,"fx_dated":null,
+     "contact_id":null,"contact_display_name":null,"contact_label":null,
+     "case_contact_id":null,"responsible_contact_id":null,
      "description":null,"created_at":"2026-07-01T00:00:00.000Z",
      "updated_at":"2026-07-01T00:00:00.000Z"}
     """
@@ -47,7 +86,7 @@ final class VerimayaTests: XCTestCase {
   }
 
   func testCursorPageAndMarketingReport() throws {
-    let cp = try decode(CursorPage<Patient>.self, #"{"items":[],"next_cursor":"abc"}"#)
+    let cp = try decode(CursorPage<Contact>.self, #"{"items":[],"next_cursor":"abc"}"#)
     XCTAssertEqual(cp.nextCursor, "abc")
 
     let mkt = """

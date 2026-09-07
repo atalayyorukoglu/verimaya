@@ -68,4 +68,39 @@ final class InboxFlowUITests: XCTestCase {
     shot.lifetime = .keepAlways
     add(shot)
   }
+
+  /// Regresyon: uygulama `/v1/patients` çağırıyordu, o uç kalkmıştı ve ekran
+  /// kırmızı bir "Cannot GET /v1/patients" şeridiyle açılıyordu.
+  func testContactsTabLoadsWithoutApiError() throws {
+    let creds = try XCTUnwrap(credentials)
+    let app = XCUIApplication()
+    app.launchEnvironment["VERIMAYA_API_URL"] = creds.apiURL
+    app.launch()
+
+    let emailField = app.textFields["E-posta"]
+    XCTAssertTrue(emailField.waitForExistence(timeout: 10), "Giriş ekranı açılmadı")
+    emailField.tap()
+    emailField.typeText(creds.email)
+
+    let passwordField = app.secureTextFields["Şifre"]
+    passwordField.tap()
+    passwordField.typeText(creds.password)
+
+    app.buttons["Giriş yap"].tap()
+
+    let contactsNav = app.navigationBars["Kişiler"]
+    XCTAssertTrue(contactsNav.waitForExistence(timeout: 20), "Kişiler ekranı açılmadı")
+
+    // Hata şeridi API'den gelen ham mesajı gösteriyor; "Cannot GET" veya
+    // "/v1/" içeren bir metin görünüyorsa uç yanlış demektir.
+    let errorBanner = app.staticTexts.containing(
+      NSPredicate(format: "label CONTAINS[c] 'Cannot GET' OR label CONTAINS[c] '/v1/'")
+    ).firstMatch
+    XCTAssertFalse(errorBanner.waitForExistence(timeout: 5), "Kişiler ekranında API hatası var")
+
+    let shot = XCTAttachment(screenshot: app.screenshot())
+    shot.name = "kisiler-sekmesi"
+    shot.lifetime = .keepAlways
+    add(shot)
+  }
 }

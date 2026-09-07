@@ -4,10 +4,10 @@ struct MainTabView: View {
   var body: some View {
     TabView {
       NavigationStack {
-        PatientsView()
+        ContactsView()
       }
       .tabItem {
-        Label("Hastalar", systemImage: "person.2")
+        Label("Kişiler", systemImage: "person.2")
       }
 
       NavigationStack {

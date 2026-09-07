@@ -28,13 +28,13 @@ final class SessionStore: ObservableObject {
     APIClient.shared.setAccessToken(token)
     do {
       if mode == .apiKey {
-        _ = try await APIClient.shared.listPatients(limit: 1)  // validate key
+        _ = try await APIClient.shared.listContacts(limit: 1)  // validate key
         email = nil; name = "API anahtarı"
       } else {
         apply(try await APIClient.shared.me())
         organizations = (try? await AuthAPI.listOrganizations(token: token)) ?? []
         // Self-heal: an older session may have no active org set. Set the first
-        // one so ActiveOrgGuard-protected endpoints (patients, etc.) work.
+        // one so ActiveOrgGuard-protected endpoints (contacts, etc.) work.
         if activeOrganizationId == nil, let first = organizations.first {
           try? await AuthAPI.setActive(token: token, organizationId: first.id)
           apply(try await APIClient.shared.me())
@@ -85,7 +85,7 @@ final class SessionStore: ObservableObject {
     defer { isBusy = false }
     APIClient.shared.setAccessToken(key)
     do {
-      _ = try await APIClient.shared.listPatients(limit: 1)  // validate against a tenant endpoint
+      _ = try await APIClient.shared.listContacts(limit: 1)  // validate against a tenant endpoint
       mode = .apiKey
       email = nil; name = "API anahtarı"
       persist(token: key, email: nil)

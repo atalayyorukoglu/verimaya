@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct PatientsView: View {
-  @StateObject private var vm = PatientsViewModel()
+struct ContactsView: View {
+  @StateObject private var vm = ContactsViewModel()
   @State private var showCreate = false
 
   var body: some View {
@@ -19,17 +19,17 @@ struct PatientsView: View {
             .background(VerimayaTheme.danger)
         }
 
-        if vm.patients.isEmpty && !vm.isLoading {
+        if vm.contacts.isEmpty && !vm.isLoading {
           ContentUnavailableView(
-            "Henüz hasta yok",
+            "Henüz kişi yok",
             systemImage: "person.2",
-            description: Text("Yeni hasta eklemek için + butonunu kullanın.")
+            description: Text("Yeni kişi eklemek için + butonunu kullanın.")
           )
         } else {
           List {
-            ForEach(vm.patients) { patient in
-              NavigationLink(value: patient.id) {
-                PatientRow(patient: patient)
+            ForEach(vm.contacts) { contact in
+              NavigationLink(value: contact.id) {
+                ContactRow(contact: contact)
               }
               .listRowBackground(VerimayaTheme.surface)
             }
@@ -52,9 +52,9 @@ struct PatientsView: View {
         }
       }
     }
-    .navigationTitle("Hastalar")
+    .navigationTitle("Kişiler")
     .navigationDestination(for: String.self) { id in
-      PatientDetailView(id: id, vm: vm)
+      ContactDetailView(id: id, vm: vm)
     }
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
@@ -63,11 +63,11 @@ struct PatientsView: View {
         } label: {
           Image(systemName: "plus")
         }
-        .accessibilityLabel("Yeni hasta")
+        .accessibilityLabel("Yeni kişi")
       }
     }
     .sheet(isPresented: $showCreate) {
-      PatientFormView(mode: .create, vm: vm)
+      ContactFormView(mode: .create, vm: vm)
     }
     .task {
       await vm.load(reset: true)
@@ -75,23 +75,24 @@ struct PatientsView: View {
   }
 }
 
-private struct PatientRow: View {
-  let patient: Patient
+private struct ContactRow: View {
+  let contact: Contact
 
   var body: some View {
     HStack(alignment: .center, spacing: 12) {
       VStack(alignment: .leading, spacing: 4) {
-        Text(patient.fullName)
+        Text(contact.displayName)
           .font(.body.weight(.medium))
           .foregroundStyle(VerimayaTheme.text)
-        if let phone = patient.phone, !phone.isEmpty {
+        if let phone = contact.phone, !phone.isEmpty {
           Text(phone)
             .font(.subheadline)
             .foregroundStyle(VerimayaTheme.textMuted)
         }
       }
       Spacer(minLength: 8)
-      Text(patient.status.label)
+      // Durum yalnız Hasta tipinde dolu; boşsa kişi türünü göster.
+      Text(contact.status?.label ?? contact.contactTypeName)
         .font(.caption.weight(.medium))
         .foregroundStyle(VerimayaTheme.text)
         .padding(.horizontal, 8)

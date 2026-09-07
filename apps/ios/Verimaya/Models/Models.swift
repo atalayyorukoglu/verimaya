@@ -2,23 +2,19 @@ import Foundation
 
 // MARK: - Shared enums (mirror packages/shared zod contracts)
 
-enum PatientStatus: String, Codable, CaseIterable, Identifiable {
-  case lead, contacted, qualified, scheduled, arrived, treated
+/// Kişi durumu — yalnız "Hasta" tipindeki kişilerde anlamlı, bu yüzden opsiyonel.
+/// Eski `lead/contacted/qualified/closed_*` degerleri sunucudan kalkti.
+enum ContactStatus: String, Codable, CaseIterable, Identifiable {
+  case scheduled, arrived, treated, cancelled
   case followUp = "follow_up"
-  case closedWon = "closed_won"
-  case closedLost = "closed_lost"
   var id: String { rawValue }
   var label: String {
     switch self {
-    case .lead: "Lead"
-    case .contacted: "İletişim kuruldu"
-    case .qualified: "Nitelikli"
     case .scheduled: "Planlandı"
     case .arrived: "Geldi"
     case .treated: "Tedavi edildi"
     case .followUp: "Takip"
-    case .closedWon: "Kazanıldı"
-    case .closedLost: "Kaybedildi"
+    case .cancelled: "İptal"
     }
   }
 }
@@ -85,49 +81,77 @@ struct CursorPage<T: Decodable>: Decodable {
   let nextCursor: String?
 }
 
-// MARK: - Patients
+// MARK: - Kişiler (contacts)
 
-struct Patient: Decodable, Identifiable, Hashable {
+/// Sunucuda "hasta" diye ayrı bir varlık yok: herkes bir **kişi**, hasta/klinik/
+/// otel ayrımı `contact_type` ile yapılıyor. `display_name` sunucuda
+/// ad + soyaddan türetiliyor, yazılamaz.
+struct Contact: Decodable, Identifiable, Hashable {
   let id: String
   let tenantId: String
-  let fullName: String
+  let contactTypeId: String
+  let contactTypeName: String
+  let titleId: String?
+  let titleName: String?
+  let firstName: String
+  let lastName: String?
+  let displayName: String
   let phone: String?
   let email: String?
-  let status: PatientStatus
-  let source: String?
   let notes: String?
+  let organizationId: String?
+  let status: ContactStatus?
   let assignedUserId: String?
-  let contactId: String?
+  let source: String?
+  let medium: String?
+  let campaign: String?
+  let referredByContactId: String?
+  let isInternal: Bool?
+  let usageCount: Int?
   let createdAt: String
   let updatedAt: String
 }
 
-struct PatientCreate: Encodable {
-  var fullName: String
+/// Oluşturma gövdesi — `display_name` **kabul edilmiyor**, sunucu türetiyor.
+/// `contact_type_id` zorunlu: kişinin ne olduğu (Hasta, Klinik, …) tenant sözlüğünden gelir.
+struct ContactCreate: Encodable {
+  var contactTypeId: String
+  var titleId: String?
+  var firstName: String
+  var lastName: String?
   var phone: String?
   var email: String?
-  var status: PatientStatus = .lead
-  var source: String?
   var notes: String?
-  var assignedUserId: String?
-  var contactId: String?
+  var status: ContactStatus?
+  var source: String?
 }
 
-/// PATCH partial — nil fields are omitted (unchanged).
-struct PatientUpdate: Encodable {
-  var fullName: String?
+/// PATCH partial — nil alanlar gönderilmez (değişmez).
+struct ContactUpdate: Encodable {
+  var contactTypeId: String?
+  var titleId: String?
+  var firstName: String?
+  var lastName: String?
   var phone: String?
   var email: String?
-  var status: PatientStatus?
-  var source: String?
   var notes: String?
-  var assignedUserId: String?
-  var contactId: String?
+  var status: ContactStatus?
+  var source: String?
 }
 
-struct PatientFinanceSummary: Decodable {
+/// Kişi sözlüğü — yeni kişi eklerken tip seçimi için.
+struct ContactType: Decodable, Identifiable, Hashable {
+  let id: String
+  let tenantId: String
+  let name: String
+  let sortOrder: Int?
+  let createdAt: String
+}
+
+struct ContactFinanceSummary: Decodable {
   let incomeBase: Int
   let expenseBase: Int
+  let netBase: Int
   let paidBase: Int
   let outstandingBase: Int
   let transactionCount: Int
@@ -138,8 +162,8 @@ struct PatientFinanceSummary: Decodable {
 struct Appointment: Decodable, Identifiable, Hashable {
   let id: String
   let tenantId: String
-  let patientId: String
-  let patientDisplayName: String
+  let contactId: String
+  let contactDisplayName: String
   let title: String?
   let appointmentType: String?
   let status: AppointmentStatus
@@ -151,13 +175,16 @@ struct Appointment: Decodable, Identifiable, Hashable {
   let clinicContactId: String?
   let hotelContactId: String?
   let transferContactId: String?
+  let doctorContactId: String?
   let notes: String?
+  /// Sunucu işareti: randevunun kişi bilgisi eksik.
+  let contactInfoIncomplete: Bool?
   let createdAt: String
   let updatedAt: String
 }
 
 struct AppointmentCreate: Encodable {
-  var patientId: String
+  var contactId: String
   var title: String?
   var appointmentType: String?
   var status: AppointmentStatus = .scheduled
@@ -169,11 +196,12 @@ struct AppointmentCreate: Encodable {
   var clinicContactId: String?
   var hotelContactId: String?
   var transferContactId: String?
+  var doctorContactId: String?
   var notes: String?
 }
 
 struct AppointmentUpdate: Encodable {
-  var patientId: String?
+  var contactId: String?
   var title: String?
   var appointmentType: String?
   var status: AppointmentStatus?
@@ -185,6 +213,7 @@ struct AppointmentUpdate: Encodable {
   var clinicContactId: String?
   var hotelContactId: String?
   var transferContactId: String?
+  var doctorContactId: String?
   var notes: String?
 }
 
@@ -208,10 +237,11 @@ struct Transaction: Decodable, Identifiable, Hashable {
   let baseCurrency: SupportedCurrency?
   let fxRate: Double?
   let fxDated: String?
-  let patientId: String?
-  let patientDisplayName: String?
   let contactId: String?
+  let contactDisplayName: String?
   let contactLabel: String?
+  let caseContactId: String?
+  let responsibleContactId: String?
   let description: String?
   let createdAt: String
   let updatedAt: String
@@ -233,9 +263,10 @@ struct TransactionCreate: Encodable {
   var baseCurrency: SupportedCurrency?
   var fxRate: Double?
   var fxDated: String?
-  var patientId: String?
   var contactId: String?
   var contactLabel: String?
+  var caseContactId: String?
+  var responsibleContactId: String?
   var description: String?
 }
 
@@ -255,9 +286,10 @@ struct TransactionUpdate: Encodable {
   var baseCurrency: SupportedCurrency?
   var fxRate: Double?
   var fxDated: String?
-  var patientId: String?
   var contactId: String?
   var contactLabel: String?
+  var caseContactId: String?
+  var responsibleContactId: String?
   var description: String?
 }
 

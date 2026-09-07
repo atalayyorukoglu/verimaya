@@ -3,18 +3,22 @@ import Foundation
 /// Typed endpoint surface. Screens call these; transport lives in APIClient.
 extension APIClient {
 
-  // MARK: Patients
-  func listPatients(cursor: String? = nil, limit: Int = 25) async throws -> CursorPage<Patient> {
-    try await get("patients", query: pageQuery(cursor: cursor, limit: limit))
+  // MARK: Kişiler (contacts)
+  func listContacts(cursor: String? = nil, limit: Int = 25) async throws -> CursorPage<Contact> {
+    try await get("contacts", query: pageQuery(cursor: cursor, limit: limit))
   }
-  func getPatient(_ id: String) async throws -> Patient { try await get("patients/\(id)") }
-  func createPatient(_ body: PatientCreate) async throws -> Patient { try await post("patients", body: body) }
-  func updatePatient(_ id: String, _ body: PatientUpdate) async throws -> Patient {
-    try await patch("patients/\(id)", body: body)
+  func getContact(_ id: String) async throws -> Contact { try await get("contacts/\(id)") }
+  func createContact(_ body: ContactCreate) async throws -> Contact { try await post("contacts", body: body) }
+  func updateContact(_ id: String, _ body: ContactUpdate) async throws -> Contact {
+    try await patch("contacts/\(id)", body: body)
   }
-  func deletePatient(_ id: String) async throws { try await delete("patients/\(id)") }
-  func patientFinanceSummary(_ id: String) async throws -> PatientFinanceSummary {
-    try await get("patients/\(id)/finance-summary")
+  func deleteContact(_ id: String) async throws { try await delete("contacts/\(id)") }
+  func contactFinanceSummary(_ id: String) async throws -> ContactFinanceSummary {
+    try await get("contacts/\(id)/finance-summary")
+  }
+  /// Kişi tipleri sözlüğü (Hasta, Klinik, Otel, …) — yeni kişide zorunlu alan.
+  func listContactTypes() async throws -> CursorPage<ContactType> {
+    try await get("settings/contact-types")
   }
 
   // MARK: Appointments

@@ -11,9 +11,9 @@ struct AppointmentFormView: View {
 
   @Environment(\.dismiss) private var dismiss
 
-  @State private var patients: [Patient] = []
-  @State private var isLoadingPatients = false
-  @State private var patientId = ""
+  @State private var contacts: [Contact] = []
+  @State private var isLoadingContacts = false
+  @State private var contactId = ""
   @State private var startsAt = Date()
   @State private var hasEnd = false
   @State private var endsAt = Date().addingTimeInterval(3600)
@@ -38,7 +38,7 @@ struct AppointmentFormView: View {
     guard !isSaving else { return false }
     switch mode {
     case .create:
-      return !patientId.isEmpty && !patients.isEmpty
+      return !contactId.isEmpty && !contacts.isEmpty
     case .edit:
       return true
     }
@@ -56,7 +56,7 @@ struct AppointmentFormView: View {
         }
 
         Section {
-          patientSection
+          contactSection
         }
 
         Section {
@@ -129,31 +129,31 @@ struct AppointmentFormView: View {
   }
 
   @ViewBuilder
-  private var patientSection: some View {
+  private var contactSection: some View {
     switch mode {
     case .create:
-      if isLoadingPatients {
+      if isLoadingContacts {
         HStack {
           Text("Hastalar yükleniyor…")
             .foregroundStyle(VerimayaTheme.textMuted)
           Spacer()
           ProgressView()
         }
-      } else if patients.isEmpty {
+      } else if contacts.isEmpty {
         Text("Önce Hastalar sekmesinden hasta ekleyin")
           .font(.footnote)
           .foregroundStyle(VerimayaTheme.danger)
       } else {
-        Picker("Hasta", selection: $patientId) {
+        Picker("Hasta", selection: $contactId) {
           Text("Seçin").tag("")
-          ForEach(patients) { p in
-            Text(p.fullName).tag(p.id)
+          ForEach(contacts) { p in
+            Text(p.displayName).tag(p.id)
           }
         }
       }
     case let .edit(appointment):
       LabeledContent("Hasta") {
-        Text(appointment.patientDisplayName)
+        Text(appointment.contactDisplayName)
           .foregroundStyle(VerimayaTheme.text)
       }
     }
@@ -169,13 +169,13 @@ struct AppointmentFormView: View {
   private func bootstrap() async {
     seed()
     guard case .create = mode else { return }
-    isLoadingPatients = true
-    defer { isLoadingPatients = false }
+    isLoadingContacts = true
+    defer { isLoadingContacts = false }
     do {
-      let page = try await APIClient.shared.listPatients(limit: 100)
-      patients = page.items
-      if patientId.isEmpty, let first = patients.first {
-        patientId = first.id
+      let page = try await APIClient.shared.listContacts(limit: 100)
+      contacts = page.items
+      if contactId.isEmpty, let first = contacts.first {
+        contactId = first.id
       }
     } catch {
       formError = (error as? APIError)?.errorDescription ?? error.localizedDescription
@@ -184,7 +184,7 @@ struct AppointmentFormView: View {
 
   private func seed() {
     guard case let .edit(appointment) = mode else { return }
-    patientId = appointment.patientId
+    contactId = appointment.contactId
     startsAt = DateFmt.parse(appointment.startsAt) ?? Date()
     if let end = appointment.endsAt, let parsed = DateFmt.parse(end) {
       hasEnd = true
@@ -215,7 +215,7 @@ struct AppointmentFormView: View {
     switch mode {
     case .create:
       ok = await vm.create(AppointmentCreate(
-        patientId: patientId,
+        contactId: contactId,
         title: optionalTrimmed(title),
         appointmentType: optionalTrimmed(appointmentType),
         status: status,

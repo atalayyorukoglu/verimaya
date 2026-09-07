@@ -1,12 +1,15 @@
 import Foundation
 
 @MainActor
-final class PatientsViewModel: ObservableObject {
-  @Published var patients: [Patient] = []
+final class ContactsViewModel: ObservableObject {
+  @Published var contacts: [Contact] = []
   @Published var isLoading = false
   @Published var statusMessage: String?
   @Published var nextCursor: String?
   @Published var hasMore = false
+  /// Kişi tipi sözlüğü (Hasta, Klinik, …). Yeni kişide zorunlu alan olduğu için
+  /// form açılmadan yüklenir.
+  @Published var contactTypes: [ContactType] = []
 
   private let api = APIClient.shared
   private var isLoadingMore = false
@@ -20,11 +23,11 @@ final class PatientsViewModel: ObservableObject {
     statusMessage = nil
     defer { isLoading = false }
     do {
-      let page = try await api.listPatients(cursor: reset ? nil : nextCursor)
+      let page = try await api.listContacts(cursor: reset ? nil : nextCursor)
       if reset {
-        patients = page.items
+        contacts = page.items
       } else {
-        patients.append(contentsOf: page.items)
+        contacts.append(contentsOf: page.items)
       }
       nextCursor = page.nextCursor
       hasMore = page.nextCursor != nil
@@ -38,8 +41,8 @@ final class PatientsViewModel: ObservableObject {
     isLoadingMore = true
     defer { isLoadingMore = false }
     do {
-      let page = try await api.listPatients(cursor: nextCursor)
-      patients.append(contentsOf: page.items)
+      let page = try await api.listContacts(cursor: nextCursor)
+      contacts.append(contentsOf: page.items)
       nextCursor = page.nextCursor
       hasMore = page.nextCursor != nil
     } catch {
@@ -51,12 +54,21 @@ final class PatientsViewModel: ObservableObject {
     await load(reset: true)
   }
 
+  func loadContactTypes() async {
+    guard contactTypes.isEmpty else { return }
+    do {
+      contactTypes = try await api.listContactTypes().items
+    } catch {
+      statusMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+    }
+  }
+
   @discardableResult
-  func create(_ body: PatientCreate) async -> Bool {
+  func create(_ body: ContactCreate) async -> Bool {
     statusMessage = nil
     do {
-      let created = try await api.createPatient(body)
-      patients.insert(created, at: 0)
+      let created = try await api.createContact(body)
+      contacts.insert(created, at: 0)
       return true
     } catch {
       statusMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
@@ -65,12 +77,12 @@ final class PatientsViewModel: ObservableObject {
   }
 
   @discardableResult
-  func update(id: String, _ body: PatientUpdate) async -> Bool {
+  func update(id: String, _ body: ContactUpdate) async -> Bool {
     statusMessage = nil
     do {
-      let updated = try await api.updatePatient(id, body)
-      if let idx = patients.firstIndex(where: { $0.id == id }) {
-        patients[idx] = updated
+      let updated = try await api.updateContact(id, body)
+      if let idx = contacts.firstIndex(where: { $0.id == id }) {
+        contacts[idx] = updated
       }
       return true
     } catch {
@@ -83,8 +95,8 @@ final class PatientsViewModel: ObservableObject {
   func delete(id: String) async -> Bool {
     statusMessage = nil
     do {
-      try await api.deletePatient(id)
-      patients.removeAll { $0.id == id }
+      try await api.deleteContact(id)
+      contacts.removeAll { $0.id == id }
       return true
     } catch {
       statusMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription

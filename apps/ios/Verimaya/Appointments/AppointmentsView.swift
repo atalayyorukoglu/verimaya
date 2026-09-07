@@ -85,7 +85,7 @@ private struct AppointmentRow: View {
   var body: some View {
     HStack(alignment: .center, spacing: 12) {
       VStack(alignment: .leading, spacing: 4) {
-        Text(appointment.patientDisplayName)
+        Text(appointment.contactDisplayName)
           .font(.body.weight(.semibold))
           .foregroundStyle(VerimayaTheme.text)
         Text(DateFmt.dateTime(appointment.startsAt))

@@ -1,13 +1,13 @@
 import SwiftUI
 
-struct PatientDetailView: View {
+struct ContactDetailView: View {
   let id: String
-  @ObservedObject var vm: PatientsViewModel
+  @ObservedObject var vm: ContactsViewModel
 
   @Environment(\.dismiss) private var dismiss
 
-  @State private var patient: Patient?
-  @State private var finance: PatientFinanceSummary?
+  @State private var contact: Contact?
+  @State private var finance: ContactFinanceSummary?
   @State private var isLoading = true
   @State private var errorMessage: String?
   @State private var showEdit = false
@@ -21,13 +21,13 @@ struct PatientDetailView: View {
       if isLoading {
         ProgressView("Yükleniyor…")
           .tint(VerimayaTheme.brand)
-      } else if let errorMessage, patient == nil {
+      } else if let errorMessage, contact == nil {
         ContentUnavailableView(
-          "Hasta yüklenemedi",
+          "Kişi yüklenemedi",
           systemImage: "exclamationmark.triangle",
           description: Text(errorMessage)
         )
-      } else if let patient {
+      } else if let contact {
         ScrollView {
           VStack(alignment: .leading, spacing: 16) {
             if let errorMessage {
@@ -41,8 +41,8 @@ struct PatientDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
             }
 
-            identityCard(patient)
-            if let notes = patient.notes, !notes.isEmpty {
+            identityCard(contact)
+            if let notes = contact.notes, !notes.isEmpty {
               notesCard(notes)
             }
             if let finance {
@@ -53,17 +53,17 @@ struct PatientDetailView: View {
         }
       }
     }
-    .navigationTitle(patient?.fullName ?? "Hasta")
+    .navigationTitle(contact?.displayName ?? "Kişi")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItemGroup(placement: .topBarTrailing) {
         Button("Düzenle") { showEdit = true }
-          .disabled(patient == nil || isDeleting)
+          .disabled(contact == nil || isDeleting)
         Button("Sil", role: .destructive) { confirmDelete = true }
-          .disabled(patient == nil || isDeleting)
+          .disabled(contact == nil || isDeleting)
       }
     }
-    .confirmationDialog("Hastayı silmek istediğinize emin misiniz?", isPresented: $confirmDelete, titleVisibility: .visible) {
+    .confirmationDialog("Kişiyı silmek istediğinize emin misiniz?", isPresented: $confirmDelete, titleVisibility: .visible) {
       Button("Sil", role: .destructive) {
         Task {
           isDeleting = true
@@ -78,20 +78,20 @@ struct PatientDetailView: View {
     .sheet(isPresented: $showEdit, onDismiss: {
       Task { await load() }
     }) {
-      if let patient {
-        PatientFormView(mode: .edit(patient), vm: vm)
+      if let contact {
+        ContactFormView(mode: .edit(contact), vm: vm)
       }
     }
     .task { await load() }
   }
 
   private func load() async {
-    isLoading = patient == nil
+    isLoading = contact == nil
     errorMessage = nil
     do {
-      async let p = APIClient.shared.getPatient(id)
-      async let f = APIClient.shared.patientFinanceSummary(id)
-      patient = try await p
+      async let p = APIClient.shared.getContact(id)
+      async let f = APIClient.shared.contactFinanceSummary(id)
+      contact = try await p
       finance = try await f
     } catch {
       errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
@@ -99,14 +99,14 @@ struct PatientDetailView: View {
     isLoading = false
   }
 
-  private func identityCard(_ patient: Patient) -> some View {
+  private func identityCard(_ contact: Contact) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(alignment: .firstTextBaseline) {
-        Text(patient.fullName)
+        Text(contact.displayName)
           .font(.title3.weight(.semibold))
           .foregroundStyle(VerimayaTheme.text)
         Spacer()
-        Text(patient.status.label)
+        Text(contact.status?.label ?? contact.contactTypeName)
           .font(.caption.weight(.medium))
           .foregroundStyle(VerimayaTheme.text)
           .padding(.horizontal, 8)
@@ -115,10 +115,11 @@ struct PatientDetailView: View {
           .clipShape(RoundedRectangle(cornerRadius: VerimayaTheme.radiusControl))
       }
 
-      detailRow(label: "Telefon", value: patient.phone)
-      detailRow(label: "E-posta", value: patient.email)
-      detailRow(label: "Kaynak", value: patient.source)
-      detailRow(label: "Oluşturulma", value: DateFmt.day(patient.createdAt))
+      detailRow(label: "Telefon", value: contact.phone)
+      detailRow(label: "E-posta", value: contact.email)
+      detailRow(label: "Tür", value: contact.contactTypeName)
+      detailRow(label: "Kaynak", value: contact.source)
+      detailRow(label: "Oluşturulma", value: DateFmt.day(contact.createdAt))
     }
     .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -149,7 +150,7 @@ struct PatientDetailView: View {
     )
   }
 
-  private func financeCard(_ summary: PatientFinanceSummary) -> some View {
+  private func financeCard(_ summary: ContactFinanceSummary) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("Finans özeti")
         .font(.subheadline.weight(.semibold))

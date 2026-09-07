@@ -22,10 +22,10 @@ struct TransactionFormView: View {
   @State private var occurredOn = Date()
   @State private var invoiceStatus: InvoiceStatus = .none
   @State private var paymentMethod = ""
-  @State private var patientId = ""
+  @State private var contactId = ""
   @State private var descriptionText = ""
-  @State private var patients: [Patient] = []
-  @State private var isLoadingPatients = false
+  @State private var contacts: [Contact] = []
+  @State private var isLoadingContacts = false
   @State private var isSaving = false
   @State private var formError: String?
 
@@ -101,7 +101,7 @@ struct TransactionFormView: View {
             }
           }
           TextField("Ödeme yöntemi", text: $paymentMethod)
-          patientPicker
+          contactPicker
           TextField("Açıklama", text: $descriptionText, axis: .vertical)
             .lineLimit(3...8)
         }
@@ -132,8 +132,8 @@ struct TransactionFormView: View {
   }
 
   @ViewBuilder
-  private var patientPicker: some View {
-    if isLoadingPatients {
+  private var contactPicker: some View {
+    if isLoadingContacts {
       HStack {
         Text("Hastalar yükleniyor…")
           .foregroundStyle(VerimayaTheme.textMuted)
@@ -141,10 +141,10 @@ struct TransactionFormView: View {
         ProgressView()
       }
     } else {
-      Picker("Hasta", selection: $patientId) {
+      Picker("Hasta", selection: $contactId) {
         Text("Yok").tag("")
-        ForEach(patients) { p in
-          Text(p.fullName).tag(p.id)
+        ForEach(contacts) { p in
+          Text(p.displayName).tag(p.id)
         }
       }
     }
@@ -159,13 +159,13 @@ struct TransactionFormView: View {
 
   private func bootstrap() async {
     seed()
-    isLoadingPatients = true
-    defer { isLoadingPatients = false }
+    isLoadingContacts = true
+    defer { isLoadingContacts = false }
     do {
-      let page = try await APIClient.shared.listPatients(limit: 100)
-      patients = page.items
+      let page = try await APIClient.shared.listContacts(limit: 100)
+      contacts = page.items
     } catch {
-      // Patient picker is optional — keep form usable.
+      // Kişi seçimi opsiyonel — keep form usable.
       if formError == nil {
         formError = (error as? APIError)?.errorDescription ?? error.localizedDescription
       }
@@ -185,7 +185,7 @@ struct TransactionFormView: View {
     occurredOn = Self.dayOut.date(from: tx.occurredOn) ?? Date()
     invoiceStatus = tx.invoiceStatus
     paymentMethod = tx.paymentMethod ?? ""
-    patientId = tx.patientId ?? ""
+    contactId = tx.contactId ?? ""
     descriptionText = tx.description ?? ""
   }
 
@@ -199,7 +199,7 @@ struct TransactionFormView: View {
     defer { isSaving = false }
 
     let paid: Int? = status == .partial ? paidAmountMinor : nil
-    let patient: String? = patientId.isEmpty ? nil : patientId
+    let selectedContact: String? = contactId.isEmpty ? nil : contactId
     let occurred = Self.dayOut.string(from: occurredOn)
 
     let ok: Bool
@@ -217,7 +217,7 @@ struct TransactionFormView: View {
         amount: amount,
         paidAmount: paid,
         currency: currency,
-        patientId: patient,
+        contactId: selectedContact,
         description: optionalTrimmed(descriptionText)
       ))
     case let .edit(tx):
@@ -233,7 +233,7 @@ struct TransactionFormView: View {
         amount: amount,
         paidAmount: paid,
         currency: currency,
-        patientId: patient,
+        contactId: selectedContact,
         description: optionalTrimmed(descriptionText)
       ))
     }
