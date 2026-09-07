@@ -48,6 +48,8 @@ HEARTBEAT.md
 
 # UI işleri için bırakılan ekran görüntüleri (kişisel, repoya ait değil)
 00-kisiler/
+Screenshot *.png
+Screen Shot *.png
 
 # geçici script artıkları (`_usage.tmp.js` gibi)
 *.tmp.js
