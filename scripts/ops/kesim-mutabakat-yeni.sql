@@ -6,6 +6,9 @@
 \pset footer off
 \pset null 'NULL'
 
+-- RLS: verimaya_app rolü tenant değişkeni olmadan HİÇBİR satır göremez.
+SET app.current_tenant_id = :'t';
+
 SELECT
   t.currency,
   t.kind,

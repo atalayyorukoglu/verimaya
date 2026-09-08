@@ -141,14 +141,14 @@
 				description: c.contact_type_name
 			}))
 	);
+	// Sorumlu tip kısıtsız: Tracker'da da Personel dışı kişiler (Laboratuvar, Diğer,
+	// Transfer, Hasta) sorumlu olabiliyordu; filtre bu kayıtları düzenlemede düşürüyordu.
 	const responsibleContactOptions = $derived(
-		(contactsQuery.data?.items ?? [])
-			.filter((c) => c.contact_type_name === 'Personel')
-			.map((c) => ({
-				value: c.id,
-				label: c.display_name,
-				description: c.contact_type_name
-			}))
+		(contactsQuery.data?.items ?? []).map((c) => ({
+			value: c.id,
+			label: c.display_name,
+			description: c.contact_type_name
+		}))
 	);
 	const paymentMethodOptions = $derived.by(() => {
 		const options: string[] = [...TRANSACTION_PAYMENT_METHODS];

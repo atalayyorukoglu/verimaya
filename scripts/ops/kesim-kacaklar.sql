@@ -4,6 +4,9 @@
 \pset fieldsep '|'
 \pset footer off
 
+-- RLS: verimaya_app rolü tenant değişkeni olmadan HİÇBİR satır göremez.
+SET app.current_tenant_id = :'t';
+
 SELECT 'etl_disi_islem' AS kontrol, count(*) AS adet
 FROM transactions t
 LEFT JOIN external_ids e

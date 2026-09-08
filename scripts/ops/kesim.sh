@@ -29,7 +29,7 @@ TRACKER_DATABASE_URL="${TRACKER_DATABASE_URL:?TRACKER_DATABASE_URL gerekli}"
 export TRACKER_DATABASE_URL
 TRACKER_DB_ROLE="${TRACKER_DB_ROLE:-fixrav}"
 BASLA="${BASLA:-1}"
-BITIR="${BITIR:-9}"
+BITIR="${BITIR:-9}"   # 8 boş: ECB dolgusu artık adım 5 içinde
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BACKUP_DIR="${REPO}/backups"
@@ -109,23 +109,20 @@ fi
 # ── 4. Kuru prova ─────────────────────────────────────────────────────────
 if adim 4; then
   baslik 4 "kuru prova"
-  "${ETL[@]}" etl -- --tenant-id "${TENANT_ID}" --tracker-tenant-id "${TRACKER_TENANT_ID}" \
-    --no-fx-backfill | tee "${LOG_DIR}/04-dry-run.log"
+  "${ETL[@]}" etl -- --tenant-id "${TENANT_ID}" --tracker-tenant-id "${TRACKER_TENANT_ID}" | tee "${LOG_DIR}/04-dry-run.log"
   onay "Hata sayısı 0 mı? Devam?"
 fi
 
 # ── 5. Aktar ──────────────────────────────────────────────────────────────
 if adim 5; then
   baslik 5 "aktar"
-  "${ETL[@]}" etl -- --apply --tenant-id "${TENANT_ID}" --tracker-tenant-id "${TRACKER_TENANT_ID}" \
-    --no-fx-backfill | tee "${LOG_DIR}/05-apply.log"
+  "${ETL[@]}" etl -- --apply --tenant-id "${TENANT_ID}" --tracker-tenant-id "${TRACKER_TENANT_ID}" | tee "${LOG_DIR}/05-apply.log"
 fi
 
 # ── 6. Idempotans: tekrar çalıştır, 0 insert bekle ────────────────────────
 if adim 6; then
   baslik 6 "tekrar çalıştır (0 insert bekleniyor)"
-  "${ETL[@]}" etl -- --apply --tenant-id "${TENANT_ID}" --tracker-tenant-id "${TRACKER_TENANT_ID}" \
-    --no-fx-backfill | tee "${LOG_DIR}/06-apply-tekrar.log"
+  "${ETL[@]}" etl -- --apply --tenant-id "${TENANT_ID}" --tracker-tenant-id "${TRACKER_TENANT_ID}" | tee "${LOG_DIR}/06-apply-tekrar.log"
   onay "Bu koşuda yeni satır EKLENMEDİ mi? Devam?"
 fi
 
@@ -138,13 +135,6 @@ if adim 7; then
   else
     dur "verify başarısız. Elle düzeltme YOK — logu oku, sorunu çöz, 'BASLA=3' ile baştan al."
   fi
-fi
-
-# ── 8. Kur çevrimini doldur ───────────────────────────────────────────────
-if adim 8; then
-  baslik 8 "ECB kur çevrimini doldur"
-  "${ETL[@]}" etl -- --apply --tenant-id "${TENANT_ID}" --tracker-tenant-id "${TRACKER_TENANT_ID}" \
-    | tee "${LOG_DIR}/08-fx-backfill.log"
 fi
 
 # ── 9. Mutabakat tablosu (iki DB, elle karşılaştır) ───────────────────────

@@ -365,11 +365,14 @@ function buildDiffs(input) {
 		actual: actual.type_guards.case_contact_not_hasta,
 		ok: actual.type_guards.case_contact_not_hasta === 0
 	});
+	// Sorumlu tipi kısıtsız: Tracker'da Personel dışı kişiler de (Laboratuvar, Diğer,
+	// Transfer, Hasta) sorumlu olabiliyor ve ETL bunu olduğu gibi taşıyor. Bilgi amaçlı
+	// raporlanır, başarısızlık sayılmaz.
 	rows.push({
-		check: 'type.responsible_personel',
-		expected: expected.type_guards.responsible_not_personel,
+		check: 'type.responsible_personel (bilgi)',
+		expected: 'kısıt yok',
 		actual: actual.type_guards.responsible_not_personel,
-		ok: actual.type_guards.responsible_not_personel === 0
+		ok: true
 	});
 
 	return rows;
