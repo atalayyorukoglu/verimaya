@@ -136,6 +136,8 @@ export class AppointmentsService {
 
 	async createWithDb(db: TenantDb, tenantId: string, input: AppointmentCreate) {
 		const contact = await this.requireContact(db, input.contact_id);
+		const clinicNameFromId = await this.contactNameById(db, input.clinic_contact_id);
+		const hotelNameFromId = await this.contactNameById(db, input.hotel_contact_id);
 		const [row] = await db
 			.insert(appointments)
 			.values({
@@ -147,8 +149,8 @@ export class AppointmentsService {
 				status: input.status ?? 'scheduled',
 				startsAt: new Date(input.starts_at),
 				endsAt: input.ends_at ? new Date(input.ends_at) : null,
-				clinicName: input.clinic_name ?? null,
-				hotelName: input.hotel_name ?? null,
+				clinicName: clinicNameFromId ?? input.clinic_name ?? null,
+				hotelName: hotelNameFromId ?? input.hotel_name ?? null,
 				transferNote: input.transfer_note ?? null,
 				clinicContactId: input.clinic_contact_id ?? null,
 				hotelContactId: input.hotel_contact_id ?? null,
@@ -174,6 +176,14 @@ export class AppointmentsService {
 		const previousStartsAtMs = existing.startsAt.getTime();
 		const contactId = input.contact_id ?? existing.contactId;
 		const contact = await this.requireContact(db, contactId);
+		const clinicContactId =
+			input.clinic_contact_id !== undefined
+				? input.clinic_contact_id
+				: existing.clinicContactId;
+		const hotelContactId =
+			input.hotel_contact_id !== undefined ? input.hotel_contact_id : existing.hotelContactId;
+		const clinicNameFromId = await this.contactNameById(db, clinicContactId);
+		const hotelNameFromId = await this.contactNameById(db, hotelContactId);
 
 		const [row] = await db
 			.update(appointments)
@@ -194,19 +204,15 @@ export class AppointmentsService {
 							: null
 						: existing.endsAt,
 				clinicName:
-					input.clinic_name !== undefined ? input.clinic_name : existing.clinicName,
+					clinicNameFromId ??
+					(input.clinic_name !== undefined ? input.clinic_name : existing.clinicName),
 				hotelName:
-					input.hotel_name !== undefined ? input.hotel_name : existing.hotelName,
+					hotelNameFromId ??
+					(input.hotel_name !== undefined ? input.hotel_name : existing.hotelName),
 				transferNote:
 					input.transfer_note !== undefined ? input.transfer_note : existing.transferNote,
-				clinicContactId:
-					input.clinic_contact_id !== undefined
-						? input.clinic_contact_id
-						: existing.clinicContactId,
-				hotelContactId:
-					input.hotel_contact_id !== undefined
-						? input.hotel_contact_id
-						: existing.hotelContactId,
+				clinicContactId,
+				hotelContactId,
 				transferContactId:
 					input.transfer_contact_id !== undefined
 						? input.transfer_contact_id
@@ -277,6 +283,22 @@ export class AppointmentsService {
 			.where(and(eq(appointments.id, id), isNull(appointments.deletedAt)))
 			.limit(1);
 		return row;
+	}
+
+	/**
+	 * Klinik/otel adı, kimliği verilmişse SUNUCUDA kişiden türetilir. Panel adı
+	 * kendi listesinden bulmaya çalışıyordu; liste ilk sayfayla sınırlı olduğu için
+	 * (500 kişi) büyük tenantlarda ad bulunamayıp `null` gönderiliyor ve kayıtlı ad
+	 * siliniyordu — kimlik yerinde kaldığı hâlde kart boş görünüyordu.
+	 */
+	private async contactNameById(db: TenantDb, contactId: string | null | undefined) {
+		if (!contactId) return null;
+		const [contact] = await db
+			.select({ displayName: contacts.displayName })
+			.from(contacts)
+			.where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
+			.limit(1);
+		return contact?.displayName ?? null;
 	}
 
 	private async requireContact(db: TenantDb, contactId: string) {

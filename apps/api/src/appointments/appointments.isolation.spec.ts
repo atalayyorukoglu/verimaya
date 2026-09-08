@@ -658,4 +658,54 @@ describe('appointments tenant isolation', () => {
 		const listB = await appointmentsService.list(tenantB, { limit: 25 });
 		expect(listB.items.some((appointment) => appointment.id === incomplete.id)).toBe(false);
 	});
+
+	it('klinik/otel adı kimlikten türetilir — panel null gönderse bile silinmez', async () => {
+		const clinicId = await withTenantSession(tenantA, async (tdb) => {
+			const c = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'TNC Klinik'
+			});
+			return c.id;
+		});
+		const hotelId = await withTenantSession(tenantA, async (tdb) => {
+			const c = await contactsService.createWithDb(tdb, tenantA, {
+				contact_type_id: contactTypeA,
+				first_name: 'Dumos Otel'
+			});
+			return c.id;
+		});
+
+		// Oluşturma: ad gönderilmese de kimlikten dolar.
+		const created = await withTenantSession(tenantA, (tdb) =>
+			appointmentsService.createWithDb(tdb, tenantA, {
+				contact_id: patientA,
+				starts_at: new Date().toISOString(),
+				ends_at: null,
+				title: 'Ad türetme',
+				appointment_type: null,
+				status: 'scheduled',
+				clinic_name: null,
+				hotel_name: null,
+				transfer_note: null,
+				clinic_contact_id: clinicId,
+				hotel_contact_id: hotelId,
+				transfer_contact_id: null,
+				notes: null
+			})
+		);
+		expect(created.clinic_name).toBe('TNC Klinik');
+		expect(created.hotel_name).toBe('Dumos Otel');
+
+		// Güncelleme: panel adı bulamayıp null gönderse bile kayıtlı ad korunur.
+		const updated = await withTenantSession(tenantA, (tdb) =>
+			appointmentsService.updateWithDb(tdb, created.id, {
+				clinic_name: null,
+				hotel_name: null,
+				notes: 'düzenlendi'
+			})
+		);
+		expect(updated.clinic_name).toBe('TNC Klinik');
+		expect(updated.hotel_name).toBe('Dumos Otel');
+		expect(updated.clinic_contact_id).toBe(clinicId);
+	});
 });

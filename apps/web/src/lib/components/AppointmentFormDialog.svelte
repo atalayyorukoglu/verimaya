@@ -289,8 +289,11 @@
 		e.preventDefault();
 		if (confirmingDelete) return;
 		if (!contact_id || !startsLocal) return;
-		const clinic = directoryContacts.find((c) => c.id === clinic_contact_id);
-		const hotel = directoryContacts.find((c) => c.id === hotel_contact_id);
+		// `directoryContacts` yalnız ilk sayfa (500 kişi). Seçili klinik/otel o sayfada
+		// olmayınca ad bulunamayıp null gidiyordu ve kayıtlı ad siliniyordu.
+		// `findContactById` tür listelerine ve tek tek çekilenlere de bakar.
+		const clinic = findContactById(clinic_contact_id);
+		const hotel = findContactById(hotel_contact_id);
 		const payload = {
 			contact_id,
 			// Formda yok: düzenlemede mevcut değer korunur, yenide null.
