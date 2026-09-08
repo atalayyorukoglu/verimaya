@@ -1,0 +1,8 @@
+# XcodeGen çıktısı — kaynak project.yml'dir
+Verimaya.xcodeproj/
+# Xcode
+xcuserdata/
+*.xcuserstate
+.DS_Store
+build/
+DerivedData/
