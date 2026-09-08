@@ -54,8 +54,11 @@ Arayüz web paneline benzetilmeye çalışıldı ama tutmadı; üstüne birkaç 
 - Prod `TRUSTED_ORIGINS` içinde `verimaya://ios` **var** (2026-09-07'de eklendi),
   yoksa cihazdan giriş 403 `INVALID_ORIGIN` alır.
 
-## Dikkat: main'e push canlıyı kapatıyor
+## main'e push artık canlıyı kapatmıyor (2026-09-08'de düzeltildi)
 
-Coolify, `main`'e her push'ta API'yi yeniden derliyor — yalnız iOS dosyası
-değişse bile. Derleme sırasında `api.verimaya.com` birkaç dakika cevap vermiyor.
-Web tarafında dosya-yolu kontrolü var, API tarafında yok.
+Eskiden Coolify `main`'e her push'ta API'yi yeniden derliyordu — yalnız iOS
+dosyası değişse bile — ve derleme boyunca `api.verimaya.com` birkaç dakika
+cevap vermiyordu. Coolify'da **Advanced → Auto deploy = Manual deployments
+only** yapıldı; tetikleme `.github/workflows/deploy-api.yml`'ye taşındı ve
+yol süzgecine bağlandı (`apps/api/`, `packages/shared/`, `docker/`,
+kilit/paket dosyaları). Ayrıntı: `docs/DEPLOY-COOLIFY.md`.
