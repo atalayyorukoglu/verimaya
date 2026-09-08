@@ -11,6 +11,8 @@ enum APIError: LocalizedError {
   case badURL
   case invalidResponse
   case decoding(Error)
+  /// Sunucuya ulaşılamadı (zaman aşımı, bağlantı yok, sunucu kapalı).
+  case unreachable
   /// HTTP status + parsed standard error body (code/message) when available.
   case http(status: Int, code: String?, message: String?)
 
@@ -18,6 +20,8 @@ enum APIError: LocalizedError {
     switch self {
     case .badURL: return "Geçersiz API adresi"
     case .invalidResponse: return "Sunucudan geçersiz yanıt"
+    case .unreachable:
+      return "Sunucuya ulaşılamıyor. Bağlantını kontrol et; sunucu bakımda olabilir."
     case .decoding: return "Yanıt çözümlenemedi"
     case let .http(status, _, message):
       if let message, !message.isEmpty { return message }
@@ -52,7 +56,17 @@ final class APIClient: ObservableObject {
   private let session: URLSession
   private(set) var accessToken: String?
 
-  init(session: URLSession = .shared) { self.session = session }
+  init(session: URLSession = APIClient.defaultSession) { self.session = session }
+
+  /// Sunucu cevap vermediğinde ekranın sonsuza kadar beklememesi için
+  /// zaman aşımı; `URLSession.shared` varsayılanı 60 sn ve çok uzun.
+  static let defaultSession: URLSession = {
+    let config = URLSessionConfiguration.default
+    config.timeoutIntervalForRequest = 20
+    config.timeoutIntervalForResource = 30
+    config.waitsForConnectivity = false
+    return URLSession(configuration: config)
+  }()
 
   func setAccessToken(_ token: String?) { accessToken = token }
 
@@ -131,7 +145,19 @@ final class APIClient: ObservableObject {
       request.httpBody = try APIClient.encoder.encode(body)
     }
 
-    let (data, response) = try await session.data(for: request)
+    let data: Data
+    let response: URLResponse
+    do {
+      (data, response) = try await session.data(for: request)
+    } catch let error as URLError {
+      switch error.code {
+      case .timedOut, .cannotConnectToHost, .cannotFindHost,
+           .networkConnectionLost, .notConnectedToInternet, .badServerResponse:
+        throw APIError.unreachable
+      default:
+        throw error
+      }
+    }
     guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
     guard (200..<300).contains(http.statusCode) else {
       let parsed = try? APIClient.decoder.decode(APIErrorBody.self, from: data)

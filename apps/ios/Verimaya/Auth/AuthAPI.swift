@@ -9,10 +9,12 @@ struct Organization: Decodable, Identifiable, Hashable {
 enum AuthError: LocalizedError {
   case server(String)
   case noToken
+  case unreachable
   var errorDescription: String? {
     switch self {
     case .server(let m): return m
     case .noToken: return "Sunucu oturum jetonu döndürmedi."
+    case .unreachable: return "Sunucuya ulaşılamıyor. Bağlantını kontrol et; sunucu bakımda olabilir."
     }
   }
 }
@@ -23,6 +25,17 @@ enum AuthError: LocalizedError {
 /// `set-auth-token` response header (bearer plugin).
 enum AuthAPI {
   struct SignInResult { let token: String?; let twoFactorRequired: Bool }
+
+  /// Zaman aşımı **şart**: sunucu cevap vermezse (bakım, dağıtım, kesinti)
+  /// varsayılan 60 sn boyunca giriş ekranı dönen çarkla kilitli kalıyordu.
+  /// 20 sn sonra istek düşer ve kullanıcı ne olduğunu görür.
+  private static let session: URLSession = {
+    let config = URLSessionConfiguration.default
+    config.timeoutIntervalForRequest = 20
+    config.timeoutIntervalForResource = 30
+    config.waitsForConnectivity = false
+    return URLSession(configuration: config)
+  }()
 
   static func signInEmail(email: String, password: String) async throws -> SignInResult {
     let (data, http) = try await request(
@@ -74,7 +87,20 @@ enum AuthAPI {
       req.setValue("application/json", forHTTPHeaderField: "Content-Type")
       req.httpBody = try JSONSerialization.data(withJSONObject: json)
     }
-    let (data, resp) = try await URLSession.shared.data(for: req)
+    let data: Data
+    let resp: URLResponse
+    do {
+      (data, resp) = try await Self.session.data(for: req)
+    } catch let error as URLError {
+      // Zaman aşımı / bağlantı yok / sunucu kapalı — hepsi aynı mesajla döner.
+      switch error.code {
+      case .timedOut, .cannotConnectToHost, .cannotFindHost,
+           .networkConnectionLost, .notConnectedToInternet, .badServerResponse:
+        throw AuthError.unreachable
+      default:
+        throw error
+      }
+    }
     guard let http = resp as? HTTPURLResponse else { throw AuthError.server("Geçersiz yanıt") }
     return (data, http)
   }
