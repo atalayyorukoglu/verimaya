@@ -147,7 +147,7 @@
 			</button>
 			<button
 				type="button"
-				class="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 border-x border-border px-2 text-sm font-medium text-text transition-colors hover:bg-surface-2"
+				class="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 border-x border-border px-3 text-sm font-medium whitespace-nowrap text-text transition-colors hover:bg-surface-2"
 				aria-haspopup="dialog"
 				aria-expanded={open}
 				onclick={() => (open ? (open = false) : openPanel())}

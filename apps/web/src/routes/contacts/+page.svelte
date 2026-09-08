@@ -15,6 +15,9 @@
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Pencil from '@lucide/svelte/icons/pencil';
+	import Search from '@lucide/svelte/icons/search';
+	import X from '@lucide/svelte/icons/x';
+	import { debounced } from '$lib/debounced.svelte';
 
 	type ContactsPage = ContractResponse<'GET /v1/contacts'>;
 
@@ -23,7 +26,9 @@
 
 	let typeId = $state('');
 	let qInput = $state('');
-	let appliedQ = $state('');
+	// Yazarken arar: Enter ve "Ara" düğmesi kalktı (kullanıcı, 2026-09-08).
+	const q = debounced(() => qInput);
+	const appliedQ = $derived(q.value.trim());
 	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
@@ -75,14 +80,10 @@
 				: t('contacts.list.total', { count: String(totalCount) })
 	);
 
-	function applySearch(event: SubmitEvent) {
-		event.preventDefault();
-		appliedQ = qInput.trim();
-	}
-
 	function clearSearch() {
 		qInput = '';
-		appliedQ = '';
+		// Bekleyen gecikmeli değer sonradan gelip temizliği geri almasın.
+		q.reset('');
 	}
 
 	function openCreate() {
@@ -160,44 +161,45 @@
 		</div>
 
 		<!--
-			Finans ile aynı desen: arama Enter ile uygulanır (her tuşta istek atmaz).
+			Yazarken arar (300ms gecikme). Form yok: Enter'ın uygulayacağı bir şey
+			kalmadı; temizleme kutunun içindeki çarpıda.
 			`flex-1` yalnız `sm`'de — mobilde `flex-col` ana ekseni dikey yapıp
 			`flex-basis: 0` ile kutunun yüksekliğini eziyor.
 		-->
-		<form
-			class="mt-3.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
-			onsubmit={applySearch}
-		>
-			<input
-				class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:h-9 sm:w-auto sm:flex-1 sm:text-sm"
-				placeholder={t('contacts.list.searchPlaceholder')}
-				aria-label={t('contacts.list.search')}
-				bind:value={qInput}
-			/>
-			<div class="flex min-w-0 items-center gap-2">
-				<select
-					class="h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 sm:h-9 sm:w-44 sm:flex-none sm:text-sm"
-					bind:value={typeId}
-					aria-label={t('contacts.list.filterTypeAria')}
-				>
-					<option value="">{t('contacts.list.filterTypeAll')}</option>
-					{#each contactTypes as ct (ct.id)}
-						<option value={ct.id}>{ct.name}</option>
-					{/each}
-				</select>
-				<Button class="min-h-11 shrink-0 sm:min-h-9" type="submit" variant="secondary"
-					>{t('contacts.list.search')}</Button
-				>
-				{#if appliedQ}
-					<Button
-						class="min-h-11 shrink-0 sm:min-h-9"
+		<div class="mt-3.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+			<div class="relative min-w-0 sm:flex-1">
+				<Search
+					class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-faint"
+					aria-hidden="true"
+				/>
+				<input
+					class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface pr-9 pl-9 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:h-9 sm:text-sm"
+					placeholder={t('contacts.list.searchPlaceholder')}
+					aria-label={t('contacts.list.search')}
+					bind:value={qInput}
+				/>
+				{#if qInput}
+					<button
 						type="button"
-						variant="ghost"
-						onclick={clearSearch}>{t('contacts.list.filterClear')}</Button
+						class="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[4px] text-text-faint transition-colors hover:bg-surface-2 hover:text-text"
+						aria-label={t('contacts.list.filterClear')}
+						onclick={clearSearch}
 					>
+						<X class="size-3.5" />
+					</button>
 				{/if}
 			</div>
-		</form>
+			<select
+				class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 sm:h-9 sm:w-44 sm:text-sm"
+				bind:value={typeId}
+				aria-label={t('contacts.list.filterTypeAria')}
+			>
+				<option value="">{t('contacts.list.filterTypeAll')}</option>
+				{#each contactTypes as ct (ct.id)}
+					<option value={ct.id}>{ct.name}</option>
+				{/each}
+			</select>
+		</div>
 	</header>
 
 	{#if contactsQuery.isPending}

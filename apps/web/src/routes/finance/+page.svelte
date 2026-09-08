@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { bridgePeriod, type PeriodRegistration } from '$lib/period-bridge.svelte';
 	import PeriodControl from '$lib/components/PeriodControl.svelte';
+	import { debounced } from '$lib/debounced.svelte';
 	import Plus from '@lucide/svelte/icons/plus';
 	import { monthRangeInTz, type PeriodKey } from '$lib/period-range';
 	import type {
@@ -51,8 +52,15 @@
 
 	let qInput = $state('');
 	let categoryInput = $state('');
-	let appliedQ = $state('');
-	let appliedCategory = $state('');
+	/*
+	 * Yazarken arar: Enter ve "Uygula" kalktı (kullanıcı, 2026-09-08). Tür/durum
+	 * seçicileri ve dönem zaten anında uygulanıyordu; iki metin alanı da 300ms
+	 * gecikmeyle onlara katıldı, formda uygulanacak bir şey kalmadı.
+	 */
+	const q = debounced(() => qInput);
+	const category = debounced(() => categoryInput);
+	const appliedQ = $derived(q.value.trim());
+	const appliedCategory = $derived(category.value.trim());
 	let kind = $state('');
 	let status = $state('');
 	let from = $state('');
@@ -212,17 +220,12 @@
 				: t('finance.list.total', { count: String(totalCount) })
 	);
 
-	function applyFilters(e: Event) {
-		e.preventDefault();
-		appliedQ = qInput.trim();
-		appliedCategory = categoryInput.trim();
-	}
-
 	function clearFilters() {
 		qInput = '';
 		categoryInput = '';
-		appliedQ = '';
-		appliedCategory = '';
+		// Bekleyen gecikmeli değerler sonradan gelip temizliği geri almasın.
+		q.reset('');
+		category.reset('');
 		kind = '';
 		status = '';
 		from = '';
@@ -362,13 +365,12 @@
 	<!--
 		Mobilde Randevular ile aynı desen: tür + durum + "yeni" tek satırda, arama
 		üstte tam genişlik (Enter uygular). Kategori ve Uygula/Temizle masaüstünde
-		kalıyor — mobilde her biri bir satır yiyordu ve seçiciler zaten anında
-		uygulanıyor (`listFilters` doğrudan `kind`/`status` okuyor).
+		kalıyor — mobilde her biri bir satır yiyordu. Tüm filtreler anında uygulanır;
+		metin alanları 300ms gecikmeli.
 	-->
 	<!-- Alttaki ayraç: filtreler ile liste birbirine giriyordu. -->
-	<form
+	<div
 		class="mb-4 flex min-w-0 flex-col gap-2 border-b border-border pb-4 lg:flex-row lg:flex-wrap lg:items-end"
-		onsubmit={applyFilters}
 	>
 		<!--
 			`flex-1` YALNIZ `lg`'de: form mobilde `flex-col`, orada `flex-1` ana ekseni
@@ -377,7 +379,7 @@
 			geçilen `lg`'de flex-1 yine genişliği paylaştırır.
 		-->
 		<input
-			class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-auto lg:min-w-[12rem] lg:flex-1 lg:text-sm"
+			class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-auto lg:min-w-[9rem] lg:flex-1 lg:text-sm"
 			placeholder={t('finance.filter.qPlaceholder')}
 			bind:value={qInput}
 		/>
@@ -412,7 +414,7 @@
 			</Button>
 		</div>
 		<input
-			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 max-md:hidden lg:h-9 lg:w-44 lg:text-sm"
+			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 max-md:hidden lg:h-9 lg:w-40 lg:text-sm"
 			placeholder={t('finance.filter.categoryPlaceholder')}
 			bind:value={categoryInput}
 		/>
@@ -421,18 +423,15 @@
 			üst üste binerdi. Masaüstünde iki çıplak tarih kutusunun yerini aldı
 			(kullanıcı, 2026-09-08).
 		-->
-		<PeriodControl period={localPeriod} class="max-md:hidden lg:w-56" />
-		<div class="flex gap-2">
-			<Button class="min-h-11 max-md:hidden lg:min-h-9" type="submit" variant="secondary"
-				>{t('finance.filter.apply')}</Button
-			>
-			{#if appliedQ || appliedCategory || kind || status || from || to}
+		<PeriodControl period={localPeriod} class="max-md:hidden lg:w-auto lg:shrink-0" />
+		{#if appliedQ || appliedCategory || kind || status || from || to}
+			<div class="flex gap-2">
 				<Button class="min-h-11 lg:min-h-9" type="button" variant="outline" onclick={clearFilters}
 					>{t('finance.filter.clear')}</Button
 				>
-			{/if}
-		</div>
-	</form>
+			</div>
+		{/if}
+	</div>
 
 	{#if txQuery.isPending}
 		<p class="text-sm text-text-muted">{t('finance.loading')}</p>
