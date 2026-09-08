@@ -9,20 +9,27 @@ import SwiftUI
 struct AppShell: View {
   @State private var tab: PanelTab = .finance
   @State private var menuOpen = false
+  @State private var searchOpen = false
+  /// Dönem tek yerde tutulur; sayfalar bunu sunucu süzgecine çevirir.
+  @StateObject private var period = PanelPeriod()
 
   var body: some View {
     ZStack(alignment: .bottom) {
       VerimayaTheme.bg.ignoresSafeArea()
 
       VStack(spacing: 0) {
-        PanelHeader(showsPeriod: tab.showsPeriod)
+        PanelHeader(
+          showsPeriod: tab.showsPeriod,
+          period: period,
+          onSearch: { searchOpen = true }
+        )
 
         Group {
           switch tab {
-          case .finance: TransactionsView(onOpenAI: { tab = .aiTransaction })
+          case .finance: TransactionsView(period: period, onOpenAI: { tab = .aiTransaction })
           case .contacts: ContactsView()
-          case .appointments: AppointmentsView()
-          case .reports: ReportsView()
+          case .appointments: AppointmentsView(period: period)
+          case .reports: ReportsView(period: period)
           case .aiTransaction: InboxView()
           case .settings: SettingsView()
           }
@@ -37,6 +44,12 @@ struct AppShell: View {
         } else {
           menuOpen.toggle()
         }
+      }
+    }
+    .sheet(isPresented: $searchOpen) {
+      PanelSearchSheet { destination in
+        tab = destination
+        searchOpen = false
       }
     }
     .sheet(isPresented: $menuOpen) {
@@ -61,7 +74,7 @@ enum PanelTab: String, CaseIterable, Identifiable {
     case .appointments: "Randevular"
     case .reports: "Raporlar"
     case .aiTransaction: "AI ile İşlem"
-    case .settings: "Ayarlar"
+    case .settings: "Profil ayarları"
     }
   }
 
@@ -85,22 +98,28 @@ enum PanelTab: String, CaseIterable, Identifiable {
   static let bottomTabs: [PanelTab] = [.finance, .contacts, .appointments, .reports]
 }
 
-/// Üst şerit: marka · dönem · arama · zil.
+/// Üst şerit: marka · dönem · arama.
+///
+/// Zil (değişiklik günlüğü) **bilinçli olarak yok**: web'de `/changelog`
+/// sayfasına gidiyor, uygulamada o ekran yok. Hiçbir yere gitmeyen düğme
+/// koymuyoruz.
 private struct PanelHeader: View {
   let showsPeriod: Bool
+  @ObservedObject var period: PanelPeriod
+  let onSearch: () -> Void
 
   var body: some View {
     HStack(spacing: 8) {
       BrandMark()
 
       if showsPeriod {
-        PeriodControl()
+        PeriodControl(period: period)
           .frame(maxWidth: .infinity)
       } else {
         Spacer(minLength: 0)
       }
 
-      Button {} label: {
+      Button(action: onSearch) {
         Image(systemName: "magnifyingglass")
           .font(.title3)
           .foregroundStyle(VerimayaTheme.textMuted)
@@ -108,15 +127,6 @@ private struct PanelHeader: View {
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Ara")
-
-      Button {} label: {
-        Image(systemName: "bell")
-          .font(.title3)
-          .foregroundStyle(VerimayaTheme.textMuted)
-          .frame(width: 40, height: 40)
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Değişiklikler")
     }
     .padding(.horizontal, VerimayaUI.pagePadding)
     .frame(height: 56)
@@ -139,27 +149,21 @@ private struct BrandMark: View {
   }
 }
 
-/// `‹ Eylül 2026 ›` — web'deki `HeaderPeriodPicker`.
+/// `‹ Eylül 2026 ›` — web'deki `HeaderPeriodPicker`. Seçim sayfaların
+/// sunucu süzgecine geçer; yalnız etiket değiştirmez.
 private struct PeriodControl: View {
-  @State private var month = Date()
-
-  private var label: String {
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "tr_TR")
-    f.dateFormat = "LLLL yyyy"
-    return f.string(from: month).capitalized(with: Locale(identifier: "tr_TR"))
-  }
+  @ObservedObject var period: PanelPeriod
 
   var body: some View {
     HStack(spacing: 0) {
-      stepper(icon: "chevron.left") { shift(-1) }
-      Text(label)
+      stepper(icon: "chevron.left") { period.shift(-1) }
+      Text(period.label)
         .font(.subheadline.weight(.medium))
         .foregroundStyle(VerimayaTheme.text)
         .lineLimit(1)
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 4)
-      stepper(icon: "chevron.right") { shift(1) }
+      stepper(icon: "chevron.right") { period.shift(1) }
     }
     .frame(height: 40)
     .background(VerimayaTheme.surface)
@@ -178,10 +182,6 @@ private struct PeriodControl: View {
         .frame(width: 36, height: 40)
     }
     .buttonStyle(.plain)
-  }
-
-  private func shift(_ months: Int) {
-    month = Calendar.current.date(byAdding: .month, value: months, to: month) ?? month
   }
 }
 

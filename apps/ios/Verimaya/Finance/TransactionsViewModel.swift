@@ -12,6 +12,13 @@ final class TransactionsViewModel: ObservableObject {
   /// Finans başlığındaki "AI ile işlem" rozeti — bekleyen WhatsApp mesajı sayısı.
   @Published var pendingInboxCount = 0
 
+  /// Sunucuya gönderilen süzgeçler.
+  @Published var search = ""
+  @Published var kind = ""
+  @Published var status = ""
+  @Published var from: String?
+  @Published var to: String?
+
   private let api = APIClient.shared
   private var isLoadingMore = false
 
@@ -24,7 +31,10 @@ final class TransactionsViewModel: ObservableObject {
     statusMessage = nil
     defer { isLoading = false }
     do {
-      let page = try await api.listTransactions(cursor: reset ? nil : nextCursor)
+      let page = try await api.listTransactions(
+        cursor: reset ? nil : nextCursor, q: search,
+        from: from, to: to, kind: kind, status: status
+      )
       if reset {
         transactions = page.items
       } else {
@@ -43,7 +53,9 @@ final class TransactionsViewModel: ObservableObject {
     isLoadingMore = true
     defer { isLoadingMore = false }
     do {
-      let page = try await api.listTransactions(cursor: nextCursor)
+      let page = try await api.listTransactions(
+        cursor: nextCursor, q: search, from: from, to: to, kind: kind, status: status
+      )
       transactions.append(contentsOf: page.items)
       nextCursor = page.nextCursor
       hasMore = page.nextCursor != nil

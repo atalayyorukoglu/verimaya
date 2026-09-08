@@ -6,22 +6,17 @@ import SwiftUI
 /// tür ve durum filtreleri + "+" · kart listesi (baş harf dairesi, ad,
 /// durum rozeti + saat, "Klinik / Otel / Transfer" satırı).
 struct AppointmentsView: View {
+  @ObservedObject var period: PanelPeriod
+
   @StateObject private var vm = AppointmentsViewModel()
   @State private var showCreate = false
   @State private var editing: Appointment?
-  @State private var typeFilter = ""
-  @State private var statusFilter = ""
 
-  private var filtered: [Appointment] {
-    vm.appointments.filter { a in
-      let matchesType = typeFilter.isEmpty || (a.appointmentType ?? "") == typeFilter
-      let matchesStatus = statusFilter.isEmpty || a.status.rawValue == statusFilter
-      return matchesType && matchesStatus
-    }
-  }
+  /// Süzgeçler sunucuda uygulanıyor.
+  private var rows: [Appointment] { vm.appointments }
 
   private var typeOptions: [(value: String, label: String)] {
-    let names = Set(vm.appointments.compactMap { $0.appointmentType }).sorted()
+    let names = Set(vm.knownTypes).sorted()
     return [(value: "", label: "Tüm türler")] + names.map { (value: $0, label: $0) }
   }
 
@@ -34,18 +29,18 @@ struct AppointmentsView: View {
             .foregroundStyle(VerimayaTheme.danger)
         }
 
-        PageTitle("Randevular", subtitle: "Bu ay · \(filtered.count) randevu") {
-          Text(vm.rangeLabel)
+        PageTitle("Randevular", subtitle: "Bu ay · \(rows.count) randevu") {
+          Text(period.rangeLabel)
             .font(.subheadline)
             .foregroundStyle(VerimayaTheme.textMuted)
             .monospacedDigit()
         }
 
         HStack(spacing: 8) {
-          SelectField(title: "Tüm türler", selection: $typeFilter, options: typeOptions)
+          SelectField(title: "Tüm türler", selection: $vm.appointmentType, options: typeOptions)
           SelectField(
             title: "Tüm durumlar",
-            selection: $statusFilter,
+            selection: $vm.status,
             options: [(value: "", label: "Tüm durumlar")]
               + AppointmentStatus.allCases.map { (value: $0.rawValue, label: $0.label) }
           )
@@ -54,7 +49,7 @@ struct AppointmentsView: View {
 
         Divider().overlay(VerimayaTheme.border)
 
-        if filtered.isEmpty && !vm.isLoading {
+        if rows.isEmpty && !vm.isLoading {
           Text("Henüz randevu yok.")
             .font(.subheadline)
             .foregroundStyle(VerimayaTheme.textMuted)
@@ -62,7 +57,7 @@ struct AppointmentsView: View {
             .padding(.vertical, 40)
         } else {
           LazyVStack(spacing: 10) {
-            ForEach(filtered) { appointment in
+            ForEach(rows) { appointment in
               AppointmentCard(appointment: appointment) { editing = appointment }
             }
             if vm.hasMore {
@@ -81,7 +76,21 @@ struct AppointmentsView: View {
     .refreshable { await vm.refresh() }
     .sheet(isPresented: $showCreate) { AppointmentFormView(mode: .create, vm: vm) }
     .sheet(item: $editing) { a in AppointmentFormView(mode: .edit(a), vm: vm) }
-    .task { await vm.load(reset: true) }
+    .task {
+      applyPeriod()
+      await vm.load(reset: true)
+    }
+    .onChange(of: period.month) { _, _ in
+      applyPeriod()
+      Task { await vm.load(reset: true) }
+    }
+    .onChange(of: vm.status) { _, _ in Task { await vm.load(reset: true) } }
+    .onChange(of: vm.appointmentType) { _, _ in Task { await vm.load(reset: true) } }
+  }
+
+  private func applyPeriod() {
+    vm.from = period.from
+    vm.to = period.to
   }
 }
 

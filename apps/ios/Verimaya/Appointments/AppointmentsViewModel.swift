@@ -8,17 +8,15 @@ final class AppointmentsViewModel: ObservableObject {
   @Published var nextCursor: String?
   @Published var hasMore = false
 
-  /// Web'de başlığın sağında duran "2026-09-01 > 2026-09-30" aralığı.
-  var rangeLabel: String {
-    let cal = Calendar.current
-    let now = Date()
-    guard let interval = cal.dateInterval(of: .month, for: now) else { return "" }
-    let fmt = DateFormatter()
-    fmt.locale = Locale(identifier: "tr_TR")
-    fmt.dateFormat = "yyyy-MM-dd"
-    let last = cal.date(byAdding: .day, value: -1, to: interval.end) ?? interval.end
-    return "\(fmt.string(from: interval.start)) > \(fmt.string(from: last))"
-  }
+  /// Sunucuya gönderilen süzgeçler.
+  @Published var search = ""
+  @Published var status = ""
+  @Published var appointmentType = ""
+  @Published var from: String?
+  @Published var to: String?
+  /// Tür seçicisinde gösterilecek adlar — süzgeç sunucuda, liste boşalınca
+  /// seçenekler kaybolmasın diye görülenler biriktirilir.
+  @Published var knownTypes: [String] = []
 
   private let api = APIClient.shared
   private var isLoadingMore = false
@@ -32,7 +30,10 @@ final class AppointmentsViewModel: ObservableObject {
     statusMessage = nil
     defer { isLoading = false }
     do {
-      let page = try await api.listAppointments(cursor: reset ? nil : nextCursor)
+      let page = try await api.listAppointments(
+        cursor: reset ? nil : nextCursor, q: search,
+        from: from, to: to, status: status, appointmentType: appointmentType
+      )
       if reset {
         appointments = page.items
       } else {
@@ -40,6 +41,7 @@ final class AppointmentsViewModel: ObservableObject {
       }
       nextCursor = page.nextCursor
       hasMore = page.nextCursor != nil
+      rememberTypes()
     } catch {
       statusMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
     }
@@ -50,12 +52,21 @@ final class AppointmentsViewModel: ObservableObject {
     isLoadingMore = true
     defer { isLoadingMore = false }
     do {
-      let page = try await api.listAppointments(cursor: nextCursor)
+      let page = try await api.listAppointments(
+        cursor: nextCursor, q: search, from: from, to: to,
+        status: status, appointmentType: appointmentType
+      )
       appointments.append(contentsOf: page.items)
       nextCursor = page.nextCursor
       hasMore = page.nextCursor != nil
     } catch {
       statusMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+    }
+  }
+
+  private func rememberTypes() {
+    for name in appointments.compactMap(\.appointmentType) where !knownTypes.contains(name) {
+      knownTypes.append(name)
     }
   }
 

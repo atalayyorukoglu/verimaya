@@ -5,28 +5,17 @@ import SwiftUI
 /// Düzen: "İşlemler" + "N işlem" · AI ile işlem düğmesi · bakiye kartı
 /// (Borç / Alacak + Detay) · arama · tür ve durum filtreleri + "+" · kart listesi.
 struct TransactionsView: View {
+  @ObservedObject var period: PanelPeriod
   /// Web'de bu düğme AI ile İşlem sayfasına gider; kabuk sekmeyi değiştirir.
   var onOpenAI: () -> Void = {}
 
   @StateObject private var vm = TransactionsViewModel()
   @State private var showCreate = false
   @State private var editing: Transaction?
-  @State private var search = ""
-  @State private var kindFilter: String = ""
-  @State private var statusFilter: String = ""
+  @State private var searchTask: Task<Void, Never>?
 
-  private var filtered: [Transaction] {
-    vm.transactions.filter { tx in
-      let matchesKind = kindFilter.isEmpty || tx.kind.rawValue == kindFilter
-      let matchesStatus = statusFilter.isEmpty || tx.status.rawValue == statusFilter
-      let needle = search.trimmingCharacters(in: .whitespaces).lowercased()
-      let matchesSearch = needle.isEmpty
-        || tx.title.lowercased().contains(needle)
-        || (tx.category ?? "").lowercased().contains(needle)
-        || (tx.contactDisplayName ?? tx.contactLabel ?? "").lowercased().contains(needle)
-      return matchesKind && matchesStatus && matchesSearch
-    }
-  }
+  /// Süzgeçler sunucuda uygulanıyor; liste doğrudan gösterilir.
+  private var rows: [Transaction] { vm.transactions }
 
   var body: some View {
     ScrollView {
@@ -37,7 +26,7 @@ struct TransactionsView: View {
             .foregroundStyle(VerimayaTheme.danger)
         }
 
-        PageTitle("İşlemler", subtitle: "\(filtered.count) işlem") {
+        PageTitle("İşlemler", subtitle: "\(rows.count) işlem") {
           OutlineButton(
             title: "AI ile işlem",
             systemImage: "sparkles",
@@ -57,13 +46,13 @@ struct TransactionsView: View {
         HStack(spacing: 8) {
           SelectField(
             title: "Tüm türler",
-            selection: $kindFilter,
+            selection: $vm.kind,
             options: [(value: "", label: "Tüm türler")]
               + TransactionKind.allCases.map { (value: $0.rawValue, label: $0.label) }
           )
           SelectField(
             title: "Tüm durumlar",
-            selection: $statusFilter,
+            selection: $vm.status,
             options: [(value: "", label: "Tüm durumlar")]
               + TransactionStatus.allCases.map { (value: $0.rawValue, label: $0.label) }
           )
@@ -72,7 +61,7 @@ struct TransactionsView: View {
 
         Divider().overlay(VerimayaTheme.border)
 
-        if filtered.isEmpty && !vm.isLoading {
+        if rows.isEmpty && !vm.isLoading {
           Text("Henüz işlem yok.")
             .font(.subheadline)
             .foregroundStyle(VerimayaTheme.textMuted)
@@ -80,7 +69,7 @@ struct TransactionsView: View {
             .padding(.vertical, 40)
         } else {
           LazyVStack(spacing: 10) {
-            ForEach(filtered) { tx in
+            ForEach(rows) { tx in
               TransactionCard(transaction: tx) { editing = tx }
             }
             if vm.hasMore {
@@ -100,14 +89,35 @@ struct TransactionsView: View {
     .sheet(isPresented: $showCreate) { TransactionFormView(mode: .create, vm: vm) }
     .sheet(item: $editing) { tx in TransactionFormView(mode: .edit(tx), vm: vm) }
     .task {
+      applyPeriod()
       await vm.load(reset: true)
       await vm.loadPendingInboxCount()
     }
+    // Dönem ve süzgeç değişince sunucuya yeniden sorulur.
+    .onChange(of: period.month) { _, _ in
+      applyPeriod()
+      Task { await vm.load(reset: true) }
+    }
+    .onChange(of: vm.kind) { _, _ in Task { await vm.load(reset: true) } }
+    .onChange(of: vm.status) { _, _ in Task { await vm.load(reset: true) } }
+    .onChange(of: vm.search) { _, _ in
+      searchTask?.cancel()
+      searchTask = Task {
+        try? await Task.sleep(for: .milliseconds(350))
+        guard !Task.isCancelled else { return }
+        await vm.load(reset: true)
+      }
+    }
+  }
+
+  private func applyPeriod() {
+    vm.from = period.from
+    vm.to = period.to
   }
 
   private var searchField: some View {
     HStack(spacing: 8) {
-      TextField("Başlık, kategori, hasta, kişi…", text: $search)
+      TextField("Başlık, kategori, hasta, kişi…", text: $vm.search)
         .font(.subheadline)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()

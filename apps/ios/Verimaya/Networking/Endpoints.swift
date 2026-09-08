@@ -4,8 +4,18 @@ import Foundation
 extension APIClient {
 
   // MARK: Kişiler (contacts)
-  func listContacts(cursor: String? = nil, limit: Int = 25) async throws -> CursorPage<Contact> {
-    try await get("contacts", query: pageQuery(cursor: cursor, limit: limit))
+  /// Süzgeçler **sunucuda** uygulanır (`contactListQuerySchema`): yalnız yüklü
+  /// sayfayı süzmek yanlış sonuç verir — kalan sayfalar görünmez.
+  func listContacts(
+    cursor: String? = nil,
+    limit: Int = 25,
+    q: String? = nil,
+    typeId: String? = nil
+  ) async throws -> CursorPage<Contact> {
+    var query = pageQuery(cursor: cursor, limit: limit)
+    appendIfPresent(&query, "q", q)
+    appendIfPresent(&query, "type_id", typeId)
+    return try await get("contacts", query: query)
   }
   func getContact(_ id: String) async throws -> Contact { try await get("contacts/\(id)") }
   func createContact(_ body: ContactCreate) async throws -> Contact { try await post("contacts", body: body) }
@@ -22,8 +32,23 @@ extension APIClient {
   }
 
   // MARK: Appointments
-  func listAppointments(cursor: String? = nil, limit: Int = 25) async throws -> CursorPage<Appointment> {
-    try await get("appointments", query: pageQuery(cursor: cursor, limit: limit))
+  /// `from`/`to` kiracının takvim günleridir (dahil); sunucu UTC sınırlarına çevirir.
+  func listAppointments(
+    cursor: String? = nil,
+    limit: Int = 25,
+    q: String? = nil,
+    from: String? = nil,
+    to: String? = nil,
+    status: String? = nil,
+    appointmentType: String? = nil
+  ) async throws -> CursorPage<Appointment> {
+    var query = pageQuery(cursor: cursor, limit: limit)
+    appendIfPresent(&query, "q", q)
+    appendIfPresent(&query, "from", from)
+    appendIfPresent(&query, "to", to)
+    appendIfPresent(&query, "status", status)
+    appendIfPresent(&query, "appointment_type", appointmentType)
+    return try await get("appointments", query: query)
   }
   func createAppointment(_ body: AppointmentCreate) async throws -> Appointment {
     try await post("appointments", body: body)
@@ -33,8 +58,23 @@ extension APIClient {
   }
 
   // MARK: Transactions
-  func listTransactions(cursor: String? = nil, limit: Int = 25) async throws -> CursorPage<Transaction> {
-    try await get("transactions", query: pageQuery(cursor: cursor, limit: limit))
+  /// `from`/`to` `occurred_on` sütununu süzer (takvim günü, dahil).
+  func listTransactions(
+    cursor: String? = nil,
+    limit: Int = 25,
+    q: String? = nil,
+    from: String? = nil,
+    to: String? = nil,
+    kind: String? = nil,
+    status: String? = nil
+  ) async throws -> CursorPage<Transaction> {
+    var query = pageQuery(cursor: cursor, limit: limit)
+    appendIfPresent(&query, "q", q)
+    appendIfPresent(&query, "from", from)
+    appendIfPresent(&query, "to", to)
+    appendIfPresent(&query, "kind", kind)
+    appendIfPresent(&query, "status", status)
+    return try await get("transactions", query: query)
   }
   func createTransaction(_ body: TransactionCreate) async throws -> Transaction {
     try await post("transactions", body: body)
@@ -90,6 +130,13 @@ extension APIClient {
   func me() async throws -> MeResponse { try await get("me") }
 
   // MARK: Query helpers
+  /// Boş değer sorgu dizesine yazılmaz — sunucu `.strict()` şemayla bilinmeyen
+  /// veya boş parametreyi 400 ile reddediyor.
+  private func appendIfPresent(_ query: inout [URLQueryItem], _ name: String, _ value: String?) {
+    guard let value, !value.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+    query.append(URLQueryItem(name: name, value: value))
+  }
+
   private func pageQuery(cursor: String?, limit: Int) -> [URLQueryItem] {
     var q = [URLQueryItem(name: "limit", value: String(limit))]
     if let cursor { q.append(URLQueryItem(name: "cursor", value: cursor)) }

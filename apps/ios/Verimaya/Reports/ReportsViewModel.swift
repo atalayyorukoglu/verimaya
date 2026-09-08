@@ -9,6 +9,9 @@ final class ReportsViewModel: ObservableObject {
   @Published var marketing: MarketingReport?
   @Published var isLoading = false
   @Published var statusMessage: String?
+  /// Üst şeritteki dönem — verilmişse `preset` yerine bu kullanılır.
+  @Published var from: String?
+  @Published var to: String?
 
   private let api = APIClient.shared
 
@@ -23,8 +26,8 @@ final class ReportsViewModel: ObservableObject {
     defer { isLoading = false }
 
     let range = preset.range
-    let from = range.from
-    let to = range.to
+    let from = self.from ?? range.from
+    let to = self.to ?? range.to
 
     async let summaryRes = fetch { try await api.reportSummary(from: from, to: to) }
     async let monthlyRes = fetch { try await api.reportMonthly(from: from, to: to) }

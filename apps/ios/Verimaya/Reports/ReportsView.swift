@@ -5,6 +5,8 @@ import SwiftUI
 /// Düzen: başlık + segmentli seçim (Özet · Kategori · Pazarlama) ·
 /// kart içinde bölüm başlığı, açıklama, 2×2 sayı kutuları ve kırılım listeleri.
 struct ReportsView: View {
+  @ObservedObject var period: PanelPeriod
+
   @StateObject private var vm = ReportsViewModel()
   @State private var section: ReportSection = .summary
 
@@ -58,8 +60,16 @@ struct ReportsView: View {
       .padding(.bottom, 72)
     }
     .background(VerimayaTheme.bg)
-    .refreshable { await vm.load() }
-    .task { await vm.load() }
+    .refreshable { await reload() }
+    .task { await reload() }
+    .onChange(of: period.month) { _, _ in Task { await reload() } }
+  }
+
+  /// Üst şeritteki dönem raporlara da geçer — web'de de aynı denetim.
+  private func reload() async {
+    vm.from = period.from
+    vm.to = period.to
+    await vm.load()
   }
 
   /// Web'deki üç düğmeli seçim — seçili olan marka zeminli.

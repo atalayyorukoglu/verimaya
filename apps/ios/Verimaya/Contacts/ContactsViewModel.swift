@@ -11,6 +11,10 @@ final class ContactsViewModel: ObservableObject {
   /// form açılmadan yüklenir.
   @Published var contactTypes: [ContactType] = []
 
+  /// Sunucuya gönderilen süzgeçler (istemcide süzmüyoruz).
+  @Published var search = ""
+  @Published var typeId = ""
+
   private let api = APIClient.shared
   private var isLoadingMore = false
 
@@ -23,7 +27,9 @@ final class ContactsViewModel: ObservableObject {
     statusMessage = nil
     defer { isLoading = false }
     do {
-      let page = try await api.listContacts(cursor: reset ? nil : nextCursor)
+      let page = try await api.listContacts(
+        cursor: reset ? nil : nextCursor, q: search, typeId: typeId
+      )
       if reset {
         contacts = page.items
       } else {
@@ -41,7 +47,7 @@ final class ContactsViewModel: ObservableObject {
     isLoadingMore = true
     defer { isLoadingMore = false }
     do {
-      let page = try await api.listContacts(cursor: nextCursor)
+      let page = try await api.listContacts(cursor: nextCursor, q: search, typeId: typeId)
       contacts.append(contentsOf: page.items)
       nextCursor = page.nextCursor
       hasMore = page.nextCursor != nil
