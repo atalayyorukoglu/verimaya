@@ -152,6 +152,13 @@ export const transactionSchema = z.object({
 	 */
 	case_contact_id: uuid.nullable().default(null),
 	/**
+	 * `case_contact_id`'nin görünen adı. Salt okunur, sunucuda birleştirmeyle
+	 * doldurulur — liste kartında hasta adını göstermek için (kullanıcı,
+	 * 2026-09-08). İstemci gönderirse yok sayılır (create/update şemaları
+	 * bu alanı dışarıda bırakır).
+	 */
+	case_contact_display_name: z.string().max(255).nullable().default(null),
+	/**
 	 * Staff member who spent / owns the expense (Personel). Optional.
 	 */
 	responsible_contact_id: uuid.nullable().default(null),
@@ -173,6 +180,36 @@ export type Transaction = z.infer<typeof transactionSchema>;
  * List/detail label when `title` is empty — Tracker-style derived display.
  * Order: title → category › subtitle → contact name → description first line → —.
  */
+/**
+ * Finans listesindeki iki satır (kullanıcı, 2026-09-08: "Tür, Kategori yazmasın;
+ * Alt kategori, Kişi/firma, Hasta yeterli").
+ *
+ * Aktarılan kayıtlarda `title` "Expense · Operasyon Giderleri · Otel/Apart ·
+ * 08 Sep 2026" gibi birleşik bir metin — tür ve kategori orada tekrar ediyor,
+ * tarih zaten ayrı sütunda. Bu yüzden başlık `subtitle` (alt kategori) üzerinden
+ * kurulur; alt kategorisi olmayan (uygulamadan girilmiş) kayıtlarda `title`
+ * kendi başına anlamlıdır ve olduğu gibi kullanılır.
+ */
+export function deriveTransactionLines(input: {
+	title?: string | null;
+	category?: string | null;
+	subtitle?: string | null;
+	contact_display_name?: string | null;
+	contact_label?: string | null;
+	case_contact_display_name?: string | null;
+	description?: string | null;
+}): { primary: string; secondary: string } {
+	const subtitle = input.subtitle?.trim() ?? '';
+	const primary = subtitle || deriveTransactionLabel(input);
+
+	const person = input.contact_display_name?.trim() || input.contact_label?.trim() || '';
+	const patient = input.case_contact_display_name?.trim() ?? '';
+	// Kişi ile hasta aynıysa iki kez yazma.
+	const parts = patient && patient !== person ? [person, patient] : [person];
+
+	return { primary, secondary: parts.filter(Boolean).join(' · ') || '—' };
+}
+
 export function deriveTransactionLabel(input: {
 	title?: string | null;
 	category?: string | null;
@@ -210,6 +247,7 @@ export const transactionCreateSchema = transactionSchema.omit({
 	id: true,
 	tenant_id: true,
 	contact_display_name: true,
+	case_contact_display_name: true,
 	source_inbound_message_id: true,
 	source_evidence: true,
 	created_at: true,

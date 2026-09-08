@@ -4688,6 +4688,11 @@ paths:
                           format: uuid
                           nullable: true
                           default: null
+                        case_contact_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
                         responsible_contact_id:
                           type: string
                           format: uuid
@@ -5029,6 +5034,11 @@ paths:
                   case_contact_id:
                     type: string
                     format: uuid
+                    nullable: true
+                    default: null
+                  case_contact_display_name:
+                    type: string
+                    maxLength: 255
                     nullable: true
                     default: null
                   responsible_contact_id:
@@ -7642,6 +7652,11 @@ paths:
                         case_contact_id:
                           type: string
                           format: uuid
+                          nullable: true
+                          default: null
+                        case_contact_display_name:
+                          type: string
+                          maxLength: 255
                           nullable: true
                           default: null
                         responsible_contact_id:

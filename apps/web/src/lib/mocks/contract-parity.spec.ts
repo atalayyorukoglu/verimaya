@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
-	compareByCreatedAtDesc,
+	compareByStartsAtDesc,
 	compareByLastNameAsc,
 	compareByOccurredOnDesc
 } from '@verimaya/shared';
@@ -65,10 +65,10 @@ async function fetchAllPages<T extends { id: string }>(path: string, limit: numb
 describe('CONTRACT-02: MSW list endpoints match the shared filter + order contract', () => {
 	const store = getStore('default');
 
-	it('appointments: contact_id filter matches the store exactly, newest first', async () => {
+	it('appointments: contact_id filter matches the store exactly, en yeni ziyaret önce', async () => {
 		const expected = store.appointments
 			.filter((a) => a.contact_id === ATALAY_CONTACT_ID)
-			.sort(compareByCreatedAtDesc)
+			.sort(compareByStartsAtDesc)
 			.map((a) => a.id);
 		expect(expected.length).toBeGreaterThan(0);
 		const page = await fetchPage<{ id: string }>(
@@ -78,7 +78,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 	});
 
 	it('appointments: cursor pagination covers every row exactly once, in order', async () => {
-		const expected = [...store.appointments].sort(compareByCreatedAtDesc).map((a) => a.id);
+		const expected = [...store.appointments].sort(compareByStartsAtDesc).map((a) => a.id);
 		const all = await fetchAllPages<{ id: string }>('/v1/appointments', 5);
 		expect(all.map((a) => a.id)).toEqual(expected);
 	});
@@ -86,7 +86,7 @@ describe('CONTRACT-02: MSW list endpoints match the shared filter + order contra
 	it('appointments: type_counts/status_counts match the filtered set (GAP-F09-21)', async () => {
 		const filtered = store.appointments
 			.filter((a) => a.contact_id === ATALAY_CONTACT_ID)
-			.sort(compareByCreatedAtDesc);
+			.sort(compareByStartsAtDesc);
 		expect(filtered.length).toBeGreaterThan(0);
 
 		const expectedType: Record<string, number> = {};

@@ -237,7 +237,10 @@ export function toCommissionEntry(
 	};
 }
 
-export function toTransaction(row: TransactionRow): Transaction {
+export function toTransaction(
+	row: TransactionRow,
+	extra?: { case_contact_display_name?: string | null }
+): Transaction {
 	return {
 		id: row.id,
 		tenant_id: row.tenantId,
@@ -260,6 +263,7 @@ export function toTransaction(row: TransactionRow): Transaction {
 		contact_display_name: row.contactDisplayName,
 		contact_label: row.contactLabel,
 		case_contact_id: row.caseContactId,
+		case_contact_display_name: extra?.case_contact_display_name ?? null,
 		responsible_contact_id: row.responsibleContactId,
 		description: row.description,
 		source_inbound_message_id: row.sourceInboundMessageId,

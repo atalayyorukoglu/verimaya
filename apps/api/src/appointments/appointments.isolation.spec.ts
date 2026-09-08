@@ -708,4 +708,52 @@ describe('appointments tenant isolation', () => {
 		expect(updated.hotel_name).toBe('Dumos Otel');
 		expect(updated.clinic_contact_id).toBe(clinicId);
 	});
+
+	it('liste ziyaret tarihine göre sıralanır, cursor da aynı sütunu taşır', async () => {
+		const marker = `sira-${randomUUID().slice(0, 8)}`;
+		// Kayıt sırası KASTEN ziyaret sırasının tersi: created_at'e göre sıralasaydı
+		// sonuç bunun tam tersi çıkardı.
+		const visits = ['2026-03-01', '2026-07-15', '2026-01-20', '2026-11-05'];
+		for (const day of visits) {
+			await withTenantSession(tenantA, (tdb) =>
+				appointmentsService.createWithDb(tdb, tenantA, {
+					contact_id: patientA,
+					starts_at: new Date(`${day}T09:00:00Z`).toISOString(),
+					ends_at: null,
+					title: `${marker} ${day}`,
+					// `q` başlıkta aramıyor (contact/notes/clinic/hotel); işaret nota konur.
+					appointment_type: null,
+					status: 'scheduled',
+					clinic_name: null,
+					hotel_name: null,
+					transfer_note: null,
+					clinic_contact_id: null,
+					hotel_contact_id: null,
+					transfer_contact_id: null,
+					notes: marker
+				})
+			);
+		}
+
+		const expected = [...visits].sort().reverse();
+
+		const page = await appointmentsService.list(tenantA, { limit: 25, q: marker });
+		expect(page.items.map((a) => a.starts_at.slice(0, 10))).toEqual(expected);
+
+		// Sayfalama: her satır tam bir kez ve aynı sırada gelmeli.
+		const paged: string[] = [];
+		let cursor: string | null = null;
+		for (let i = 0; i < 10; i++) {
+			const p: Awaited<ReturnType<typeof appointmentsService.list>> =
+				await appointmentsService.list(tenantA, {
+					limit: 2,
+					q: marker,
+					...(cursor ? { cursor } : {})
+				});
+			paged.push(...p.items.map((a) => a.starts_at.slice(0, 10)));
+			cursor = p.next_cursor;
+			if (!cursor) break;
+		}
+		expect(paged).toEqual(expected);
+	});
 });

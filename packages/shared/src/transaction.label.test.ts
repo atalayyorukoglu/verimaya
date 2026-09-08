@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveTransactionLabel } from './transaction.js';
+import { deriveTransactionLabel, deriveTransactionLines } from './transaction.js';
 
 describe('deriveTransactionLabel', () => {
 	it('prefers non-empty title', () => {
@@ -87,3 +87,41 @@ describe('deriveTransactionLabel', () => {
 		).toBe('—');
 	});
 });
+
+describe('deriveTransactionLines', () => {
+	it('aktarılan kayıtta tür/kategori/tarih yerine alt kategoriyi gösterir', () => {
+		const lines = deriveTransactionLines({
+			title: 'Expense · Operasyon Giderleri · Otel/Apart · 08 Sep 2026',
+			category: 'Operasyon Giderleri',
+			subtitle: 'Otel/Apart',
+			contact_display_name: 'Sever Suites',
+			case_contact_display_name: 'Linda Wilson'
+		});
+		expect(lines.primary).toBe('Otel/Apart');
+		expect(lines.secondary).toBe('Sever Suites · Linda Wilson');
+	});
+
+	it('alt kategori yoksa başlığa düşer', () => {
+		const lines = deriveTransactionLines({
+			title: 'Klinik komisyonu',
+			subtitle: null,
+			contact_display_name: 'Anka Lab'
+		});
+		expect(lines.primary).toBe('Klinik komisyonu');
+		expect(lines.secondary).toBe('Anka Lab');
+	});
+
+	it('kişi ile hasta aynıysa iki kez yazmaz', () => {
+		const lines = deriveTransactionLines({
+			subtitle: 'Tedavi Ücreti',
+			contact_display_name: 'Paul Scott',
+			case_contact_display_name: 'Paul Scott'
+		});
+		expect(lines.secondary).toBe('Paul Scott');
+	});
+
+	it('ikisi de yoksa tire', () => {
+		expect(deriveTransactionLines({ subtitle: 'Avans' }).secondary).toBe('—');
+	});
+});
+

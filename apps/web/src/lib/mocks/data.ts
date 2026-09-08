@@ -267,6 +267,7 @@ function makeTransaction(
 						{ probability: 0.2 }
 					) ?? null),
 		case_contact_id: null,
+		case_contact_display_name: null,
 		responsible_contact_id: null,
 		description: null,
 		source_inbound_message_id: null,

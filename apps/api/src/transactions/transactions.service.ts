@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
 	deriveTransactionLabel,
@@ -66,16 +67,29 @@ export class TransactionsService {
 			const pageFilters = [...baseFilters];
 			if (cursorCond) pageFilters.push(cursorCond);
 
+			/*
+			 * Hasta adı liste kartında gösteriliyor (kullanıcı, 2026-09-08). Adı
+			 * istemcide çözmek yerine burada birleştiriliyor: panelin kişi listesi
+			 * ilk sayfayla sınırlı, büyük tenantlarda ad bulunamıyordu (aynı tuzak
+			 * randevu formunda gerçek bir hataya yol açtı).
+			 */
+			const caseContacts = alias(contacts, 'case_contacts');
 			const rows = await db
-				.select()
+				.select({ tx: transactions, caseContactName: caseContacts.displayName })
 				.from(transactions)
+				.leftJoin(caseContacts, eq(caseContacts.id, transactions.caseContactId))
 				.where(and(...pageFilters))
 				.orderBy(desc(transactions.occurredOn), desc(transactions.id))
 				.limit(params.limit + 1);
 
-			const page = buildOccurredOnCursorPage(rows, params.limit);
+			const page = buildOccurredOnCursorPage(
+				rows.map((row) => ({ ...row.tx, caseContactName: row.caseContactName })),
+				params.limit
+			);
 			return {
-				items: page.items.map(toTransaction),
+				items: page.items.map((row) =>
+					toTransaction(row, { case_contact_display_name: row.caseContactName })
+				),
 				next_cursor: page.next_cursor,
 				total_count: Number(totalRow?.n ?? 0)
 			};
@@ -143,7 +157,9 @@ export class TransactionsService {
 			deriveTransactionAuditLabel(row!)
 		);
 
-		return toTransaction(row!);
+		return toTransaction(row!, {
+			case_contact_display_name: await this.caseContactName(db, row!.caseContactId)
+		});
 	}
 
 	async updateWithDb(
@@ -241,7 +257,9 @@ export class TransactionsService {
 			deriveTransactionAuditLabel(row!)
 		);
 
-		return toTransaction(row!);
+		return toTransaction(row!, {
+			case_contact_display_name: await this.caseContactName(db, row!.caseContactId)
+		});
 	}
 
 	async softDeleteWithDb(db: TenantDb, tenantId: string, id: string, actor: AuditActor) {
@@ -302,6 +320,17 @@ export class TransactionsService {
 				)
 			};
 		});
+	}
+
+	/** `case_contact_id`'nin görünen adı — yazma yollarının dönüşü listeyle aynı şekli taşısın. */
+	private async caseContactName(db: TenantDb, caseContactId: string | null) {
+		if (!caseContactId) return null;
+		const [row] = await db
+			.select({ displayName: contacts.displayName })
+			.from(contacts)
+			.where(and(eq(contacts.id, caseContactId), isNull(contacts.deletedAt)))
+			.limit(1);
+		return row?.displayName ?? null;
 	}
 
 	private async findActiveRow(db: TenantDb, id: string) {

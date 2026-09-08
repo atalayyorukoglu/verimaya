@@ -55,6 +55,7 @@ import {
 	whatsappCreateContactSchema,
 	compareByCreatedAtDesc,
 	compareByCreatedAtAsc,
+	compareByStartsAtDesc,
 	compareByLastNameAsc,
 	compareByOccurredOnDesc,
 	compareByDueAtAsc,
@@ -1475,9 +1476,10 @@ export const handlers = [
 					(a.hotel_name?.toLowerCase().includes(needle) ?? false)
 			);
 		}
-		// CONTRACT-02: match the real API's order (created_at desc). List UI pages
-		// via cursor — do not re-sort by starts_at across pages.
-		items.sort(compareByCreatedAtDesc);
+		// Randevular `starts_at DESC` sıralanır (CONTRACT-02'den bilinçli sapma,
+		// bkz. `compareByStartsAtDesc`). Gerçek API ile birebir aynı olmalı;
+		// sayfalama cursor ile yapılıyor, sayfalar arasında yeniden sıralama yok.
+		items.sort(compareByStartsAtDesc);
 
 		items = items.map((a) => {
 			const c = store.contacts.find((x) => x.id === a.contact_id);
@@ -1831,14 +1833,26 @@ export const handlers = [
 		}
 		// CONTRACT-02 exception: API orders transactions by occurred_on desc, id desc.
 		const sorted = items.sort(compareByOccurredOnDesc);
-		return HttpResponse.json(paginate(sorted, parsed.data.cursor ?? null, parsed.data.limit));
+		// Gerçek API `case_contact_id`'yi kişiye bağlayıp adını da döndürüyor.
+		const withCaseName = sorted.map((t) => ({
+			...t,
+			case_contact_display_name: t.case_contact_id
+				? (store.contacts.find((c) => c.id === t.case_contact_id)?.display_name ?? null)
+				: null
+		}));
+		return HttpResponse.json(paginate(withCaseName, parsed.data.cursor ?? null, parsed.data.limit));
 	}),
 
 	http.get('/v1/transactions/:id', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		const item = store.transactions.find((t) => t.id === params.id);
 		if (!item) return notFound('İşlem bulunamadı');
-		return HttpResponse.json(item);
+		return HttpResponse.json({
+			...item,
+			case_contact_display_name: item.case_contact_id
+				? (store.contacts.find((c) => c.id === item.case_contact_id)?.display_name ?? null)
+				: null
+		});
 	}),
 
 	http.get('/v1/reports/summary', ({ request }) => {

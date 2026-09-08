@@ -13,6 +13,7 @@ function tx(
 		kind: 'income',
 		title: 't',
 		subtitle: null,
+		case_contact_display_name: null,
 		category: null,
 		occurred_on: '2026-01-01',
 		status: 'paid',

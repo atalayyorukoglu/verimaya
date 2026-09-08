@@ -101,12 +101,6 @@
 		path: page.url.pathname
 	});
 
-	const periodRangeText = $derived(
-		periodRange.from && periodRange.to
-			? `${periodRange.from} > ${periodRange.to}`
-			: t('reports.period.allTime')
-	);
-
 	const periodOptions = $derived([
 		{ key: 'bu-ay' as const, label: t('reports.period.thisMonth') },
 		{ key: 'gecen-ay' as const, label: t('reports.period.lastMonth') },
@@ -338,18 +332,15 @@
 		<h1 class="text-base font-semibold tracking-tight text-text sm:text-xl">
 			{t('appointments.title')}
 		</h1>
-		<div class="mt-0.5 flex items-center justify-between gap-2 text-sm text-text-muted">
-			<span class="min-w-0 truncate">{periodSummary}</span>
-			<span class="shrink-0 text-right font-medium text-text-muted tabular-nums"
-				>{periodRangeText}</span
-			>
-		</div>
+		<p class="mt-0.5 min-w-0 truncate text-sm text-text-muted">{periodSummary}</p>
 
 		<!--
 			Sekme şeridi + özel aralık kutuları yerine tek denetim (kullanıcı,
-			2026-09-08). Mobilde gizli: orada aynısı kabuk başlığında duruyor.
+			2026-09-08). Ham "2026-09-01 > 2026-09-30" satırı kaldırılıp yeri buna
+			verildi: denetimin etiketi aynı bilgiyi okunur biçimde ("Eylül 2026")
+			zaten gösteriyordu. Mobilde gizli — orada aynısı kabuk başlığında.
 		-->
-		<PeriodControl period={localPeriod} class="mt-3.5 max-md:hidden sm:max-w-xs" />
+		<PeriodControl period={localPeriod} class="mt-2 w-full max-md:hidden" />
 
 		<div class="mt-3.5 flex flex-nowrap items-center gap-2">
 			<select
@@ -377,9 +368,10 @@
 				`layout.css`'teki `button:has(> svg:only-child)` kuralı tutmuyor ve buton
 				44px yerine 36px kalıyordu — seçicilerin yanında ezik duruyordu.
 			-->
+			<!-- `ml-auto`: masaüstünde satırın sağına yaslanır (kullanıcı, 2026-09-08). -->
 			<Button
 				type="button"
-				class="shrink-0 max-sm:w-11 max-sm:px-0 sm:px-4"
+				class="shrink-0 max-sm:w-11 max-sm:px-0 sm:ml-auto sm:px-4"
 				aria-label={t('appointments.new')}
 				onclick={openCreate}
 			>
@@ -481,6 +473,17 @@
 									<span> {part.value}</span>
 								{/each}
 							</p>
+							{#if appt.notes?.trim()}
+								<!--
+									Randevu notu kartta (kullanıcı, 2026-09-08). Uzun notlar kart
+									yüksekliğini patlatmasın diye iki satırda kesilir; tamamı
+									randevu detayında.
+								-->
+								<p class="mt-1 line-clamp-2 min-w-0 text-sm break-words text-text-muted">
+									<span class="font-medium text-text">{t('appointments.card.note')}:</span>
+									<span class="text-text-faint"> {appt.notes.trim()}</span>
+								</p>
+							{/if}
 						</a>
 					</div>
 				</li>

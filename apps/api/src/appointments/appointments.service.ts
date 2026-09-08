@@ -29,8 +29,19 @@ export class AppointmentsService {
 	async list(tenantId: string, params: AppointmentListQuery) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const timezone = await this.getTenantTimezone(db, tenantId);
+			/*
+			 * Sıralama `starts_at DESC, id DESC` — CONTRACT-02'nin created_at
+			 * varsayılanından bilinçli sapma (kullanıcı, 2026-09-08: "hastaların
+			 * geliş tarihine göre sıralansın"). Kayıt oluşturma sırası ziyaret
+			 * sırasıyla ilgisiz olduğu için liste karışık görünüyordu.
+			 *
+			 * Cursor da aynı sütuna taşındı: sıralama ile cursor ayrı sütunlarda
+			 * kalırsa sayfalama satır atlar/tekrarlar. `createdAtCursorCondition`
+			 * ve `buildCursorPage` tarih+id ikilisiyle DESC çalışıyor, sütun adı
+			 * fark etmiyor.
+			 */
 			const cursorCond = createdAtCursorCondition(
-				appointments.createdAt,
+				appointments.startsAt,
 				appointments.id,
 				params.cursor
 			);
@@ -110,14 +121,15 @@ export class AppointmentsService {
 				.from(appointments)
 				.leftJoin(contacts, eq(appointments.contactId, contacts.id))
 				.where(and(...pageFilters))
-				.orderBy(desc(appointments.createdAt), desc(appointments.id))
+				.orderBy(desc(appointments.startsAt), desc(appointments.id))
 				.limit(params.limit + 1);
 
 			const page = buildCursorPage(
 				rows.map((row) => ({
 					...row,
 					id: row.appointment.id,
-					createdAt: row.appointment.createdAt
+					// Cursor sıralama sütununu taşır; burada `starts_at`.
+					createdAt: row.appointment.startsAt
 				})),
 				params.limit
 			);

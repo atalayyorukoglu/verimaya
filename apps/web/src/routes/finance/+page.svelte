@@ -20,7 +20,7 @@
 	} from '@verimaya/shared';
 	import {
 		apiPaths,
-		deriveTransactionLabel,
+		deriveTransactionLines,
 		listUrl,
 		transactionKindLabels,
 		transactionKindSchema,
@@ -360,7 +360,18 @@
 		</div>
 	{/if}
 
-	<BalancesPanel collapsible />
+	<!--
+		Dönem denetimi bakiye satırının soluna alındı (kullanıcı, 2026-09-08); filtre
+		satırı zaten doluydu. `-mt-3` bakiye kartındaki aynı negatif boşluğu eşler —
+		kart PageHeader'ın `mb-6`'sını 12px'e çekiyor, denetim de aynı hizada dursun.
+		Mobilde gizli: orada aynısı kabuk başlığında.
+	-->
+	<div class="flex min-w-0 items-start gap-2">
+		<PeriodControl period={localPeriod} class="-mt-3 shrink-0 max-md:hidden" />
+		<div class="min-w-0 flex-1">
+			<BalancesPanel collapsible />
+		</div>
+	</div>
 
 	<!--
 		Mobilde Randevular ile aynı desen: tür + durum + "yeni" tek satırda, arama
@@ -418,12 +429,6 @@
 			placeholder={t('finance.filter.categoryPlaceholder')}
 			bind:value={categoryInput}
 		/>
-		<!--
-			Mobilde gizli: orada aynı denetim kabuk başlığında duruyor, iki kopya
-			üst üste binerdi. Masaüstünde iki çıplak tarih kutusunun yerini aldı
-			(kullanıcı, 2026-09-08).
-		-->
-		<PeriodControl period={localPeriod} class="max-md:hidden lg:w-auto lg:shrink-0" />
 		{#if appliedQ || appliedCategory || kind || status || from || to}
 			<div class="flex gap-2">
 				<Button class="min-h-11 lg:min-h-9" type="button" variant="outline" onclick={clearFilters}
@@ -461,6 +466,7 @@
 				<tbody class="divide-y divide-border">
 					{#each items as tx (tx.id)}
 						{@const baseAmt = baseLine(tx)}
+						{@const lines = deriveTransactionLines(tx)}
 						<tr
 							class="cursor-pointer transition-colors hover:bg-surface-2/60"
 							onclick={() => openEdit(tx)}
@@ -469,10 +475,15 @@
 								>{formatDate(tx.occurred_on)}</td
 							>
 							<td class="min-w-0 px-4 py-3">
-								<p class="truncate font-medium text-text">{deriveTransactionLabel(tx)}</p>
-								<p class="truncate text-xs text-text-faint">
-									{tx.contact_display_name ?? tx.subtitle ?? '—'}
-								</p>
+								<p class="truncate font-medium text-text">{lines.primary}</p>
+								<p class="truncate text-xs text-text-faint">{lines.secondary}</p>
+								{#if tx.description?.trim()}
+									<!-- Uzun açıklama satır yüksekliğini patlatmasın: tek satırda kesilir. -->
+									<p class="truncate text-xs text-text-muted">
+										<span class="font-medium">{t('finance.card.description')}:</span>
+										<span class="text-text-faint">{tx.description.trim()}</span>
+									</p>
+								{/if}
 							</td>
 							<td class="px-4 py-3 text-text-muted">{transactionKindLabels[tx.kind]}</td>
 							<td class="px-4 py-3">
@@ -502,6 +513,7 @@
 		<ul class="space-y-2 md:hidden">
 			{#each items as tx (tx.id)}
 				{@const baseAmt = baseLine(tx)}
+				{@const lines = deriveTransactionLines(tx)}
 				<li class="min-w-0">
 					<button
 						type="button"
@@ -510,7 +522,14 @@
 					>
 						<div class="flex min-w-0 items-start justify-between gap-2">
 							<div class="min-w-0 flex-1 overflow-hidden">
-								<p class="truncate text-sm font-medium text-text">{deriveTransactionLabel(tx)}</p>
+								<p class="truncate text-sm font-medium text-text">{lines.primary}</p>
+								<p class="truncate text-xs text-text-faint">{lines.secondary}</p>
+								{#if tx.description?.trim()}
+									<p class="line-clamp-2 text-xs text-text-muted">
+										<span class="font-medium">{t('finance.card.description')}:</span>
+										<span class="text-text-faint">{tx.description.trim()}</span>
+									</p>
+								{/if}
 								<p class="text-xs text-text-faint">{formatDate(tx.occurred_on)}</p>
 							</div>
 							<div class="shrink-0 text-right">

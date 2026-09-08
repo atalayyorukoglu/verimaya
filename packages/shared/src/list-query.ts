@@ -169,6 +169,20 @@ export function compareByOccurredOnDesc<T extends { occurred_on: string; id: str
 	return b.occurred_on.localeCompare(a.occurred_on) || b.id.localeCompare(a.id);
 }
 
+/**
+ * Randevu listesi sırası / MSW eşleşmesi (`starts_at DESC, id DESC`).
+ *
+ * CONTRACT-02'nin `created_at` varsayılanından bilinçli sapma: kayıt oluşturma
+ * sırası ziyaret sırasıyla ilgisiz olduğu için liste karışık görünüyordu
+ * (kullanıcı, 2026-09-08). Cursor da bu sütunu taşır.
+ */
+export function compareByStartsAtDesc<T extends { starts_at: string; id: string }>(
+	a: T,
+	b: T
+): number {
+	return b.starts_at.localeCompare(a.starts_at) || b.id.localeCompare(a.id);
+}
+
 /** Incentive files list order / MSW parity (`deadline_at ASC, id ASC`). */
 export function compareByDeadlineAtAsc<T extends { deadline_at: string; id: string }>(
 	a: T,
