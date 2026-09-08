@@ -62,6 +62,12 @@ export function normPhoneKey(phone: string | null | undefined): string | null {
 	return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
+/**
+ * Aksan körü ad anahtarı: "Mehmet Yılmaz" ile "Mehmet Yilmaz" aynı kişi sayılır.
+ * Türkçe klavyesiz girilen kayıtlar mükerrer taramasından kaçıyordu.
+ * NFD şapkaları ayırır (ş→s, ğ→g, ö→o, ü→u, ç→c); noktasız ı ayrışmadığı için
+ * elle katlanır. Yalnızca eşleştirme anahtarını etkiler, görünen ad değişmez.
+ */
 export function normNameKey(name: string | null | undefined): string | null {
 	if (!name) return null;
 	const n = name
@@ -69,6 +75,9 @@ export function normNameKey(name: string | null | undefined): string | null {
 		.replaceAll('İ', 'i')
 		.replaceAll('I', 'ı')
 		.toLocaleLowerCase('tr')
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replaceAll('ı', 'i')
 		.replace(/\s+/g, ' ');
 	return n.length >= 2 ? n : null;
 }

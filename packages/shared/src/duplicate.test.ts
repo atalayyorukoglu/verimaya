@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
 	DUPLICATE_SCAN_ROW_CAP,
-	contactDuplicateGroupsResponseSchema
+	contactDuplicateGroupsResponseSchema,
+	normNameKey
 } from './duplicate.js';
 
 describe('duplicate scan response schemas', () => {
@@ -27,5 +28,28 @@ describe('duplicate scan response schemas', () => {
 		});
 		expect(parsed.truncated).toBe(true);
 		expect(parsed.scanned_count).toBe(5000);
+	});
+});
+
+describe('normNameKey', () => {
+	it('Türkçe harfleri katlar — aksansız yazım aynı kişi sayılır', () => {
+		for (const [a, b] of [
+			['Mehmet Yılmaz', 'Mehmet Yilmaz'],
+			['Ayşe Çınar', 'Ayse Cinar'],
+			['İsmail Öz', 'Ismail Oz'],
+			['Gülşen Ağa', 'Gulsen Aga']
+		]) {
+			expect(normNameKey(a)).toBe(normNameKey(b));
+		}
+	});
+
+	it('farklı isimleri birleştirmez', () => {
+		expect(normNameKey('Ali Veli')).not.toBe(normNameKey('Ayşe Veli'));
+	});
+
+	it('boşlukları sadeleştirir, çok kısa adı elemez', () => {
+		expect(normNameKey('  Ali   Veli ')).toBe('ali veli');
+		expect(normNameKey('a')).toBeNull();
+		expect(normNameKey(null)).toBeNull();
 	});
 });
