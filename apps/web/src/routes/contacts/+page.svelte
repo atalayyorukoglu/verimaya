@@ -22,6 +22,8 @@
 	const qs = useQueryScope();
 
 	let typeId = $state('');
+	let qInput = $state('');
+	let appliedQ = $state('');
 	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
@@ -45,12 +47,14 @@
 
 	const contactsQuery = createInfiniteQuery(() => ({
 		queryKey: qs.keys.contacts.list({
-			type_id: typeId || null
+			type_id: typeId || null,
+			q: appliedQ || null
 		}),
 		queryFn: ({ pageParam }: { pageParam: string | null }) =>
 			apiGet<ContactsPage>(
 				listUrl('contacts', {
 					limit: 15,
+					q: appliedQ || undefined,
 					type_id: typeId || undefined,
 					cursor: pageParam
 				})
@@ -62,7 +66,7 @@
 
 	const items = $derived(contactsQuery.data?.pages.flatMap((p) => p.items) ?? []);
 	const totalCount = $derived(contactsQuery.data?.pages[0]?.total_count);
-	const filtered = $derived(Boolean(typeId));
+	const filtered = $derived(Boolean(typeId) || Boolean(appliedQ));
 	const listDescription = $derived(
 		totalCount == null
 			? t('contacts.list.description')
@@ -70,6 +74,16 @@
 				? t('contacts.list.totalFiltered', { count: String(totalCount) })
 				: t('contacts.list.total', { count: String(totalCount) })
 	);
+
+	function applySearch(event: SubmitEvent) {
+		event.preventDefault();
+		appliedQ = qInput.trim();
+	}
+
+	function clearSearch() {
+		qInput = '';
+		appliedQ = '';
+	}
 
 	function openCreate() {
 		editing = null;
@@ -129,31 +143,58 @@
 
 <div class="mx-auto w-full max-w-xl min-w-0">
 	<header class="mb-4 border-b border-border pb-4">
-		<div class="min-w-0">
-			<h1 class="text-base font-semibold tracking-tight text-text sm:text-xl">
-				{t('contacts.list.title')}
-			</h1>
-			<p class="mt-0.5 text-sm text-text-muted">{listDescription}</p>
-		</div>
-
-		<div class="mt-3.5 flex flex-wrap items-center gap-2">
-			<select
-				class="h-9 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40 sm:max-w-44 sm:flex-none"
-				bind:value={typeId}
-				aria-label={t('contacts.list.filterTypeAria')}
-			>
-				<option value="">{t('contacts.list.filterTypeAll')}</option>
-				{#each contactTypes as ct (ct.id)}
-					<option value={ct.id}>{ct.name}</option>
-				{/each}
-			</select>
-			<div class="ml-auto flex shrink-0 items-center gap-2">
+		<!-- Eylemler başlık hizasında; altındaki satır yalnız arama + tür filtresi. -->
+		<div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+			<div class="min-w-0">
+				<h1 class="text-base font-semibold tracking-tight text-text sm:text-xl">
+					{t('contacts.list.title')}
+				</h1>
+				<p class="mt-0.5 text-sm text-text-muted">{listDescription}</p>
+			</div>
+			<div class="flex shrink-0 items-center gap-2">
 				<Button type="button" variant="outline" onclick={() => goto('/contacts/duplicates')}
 					>{t('contacts.list.duplicates')}</Button
 				>
 				<Button type="button" onclick={openCreate}>{t('contacts.list.new')}</Button>
 			</div>
 		</div>
+
+		<!--
+			Finans ile aynı desen: arama Enter ile uygulanır (her tuşta istek atmaz).
+			`flex-1` yalnız `sm`'de — mobilde `flex-col` ana ekseni dikey yapıp
+			`flex-basis: 0` ile kutunun yüksekliğini eziyor.
+		-->
+		<form class="mt-3.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center" onsubmit={applySearch}>
+			<input
+				class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:h-9 sm:w-auto sm:flex-1 sm:text-sm"
+				placeholder={t('contacts.list.searchPlaceholder')}
+				aria-label={t('contacts.list.search')}
+				bind:value={qInput}
+			/>
+			<div class="flex min-w-0 items-center gap-2">
+				<select
+					class="h-11 min-w-0 flex-1 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 sm:h-9 sm:w-44 sm:flex-none sm:text-sm"
+					bind:value={typeId}
+					aria-label={t('contacts.list.filterTypeAria')}
+				>
+					<option value="">{t('contacts.list.filterTypeAll')}</option>
+					{#each contactTypes as ct (ct.id)}
+						<option value={ct.id}>{ct.name}</option>
+					{/each}
+				</select>
+				<Button class="min-h-11 shrink-0 sm:min-h-9" type="submit" variant="secondary"
+					>{t('contacts.list.search')}</Button
+				>
+				{#if appliedQ}
+					<Button
+						class="min-h-11 shrink-0 sm:min-h-9"
+						type="button"
+						variant="ghost"
+						onclick={clearSearch}>{t('contacts.list.filterClear')}</Button
+					>
+				{/if}
+			</div>
+		</form>
 	</header>
 
 	{#if contactsQuery.isPending}

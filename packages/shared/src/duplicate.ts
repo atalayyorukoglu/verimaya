@@ -78,6 +78,10 @@ export function normNameKey(name: string | null | undefined): string | null {
 		.normalize('NFD')
 		.replace(/[\u0300-\u036f]/g, '')
 		.replaceAll('ı', 'i')
+		// Noktalama kelime sayılmamalı: "Banka - İş Bankası" ile "Banka - Yapıkredi"
+		// ilk iki kelimesi ("banka -") aynı diye eşleşiyordu.
+		.replace(/[^\p{L}\p{N}]+/gu, ' ')
+		.trim()
 		.replace(/\s+/g, ' ');
 	return n.length >= 2 ? n : null;
 }
@@ -105,6 +109,48 @@ function pushGroups<TItem, TGroup>(
 	}
 }
 
+/**
+ * Bir ad için eşleştirme anahtarları. Tam ad her zaman üretilir; üç veya daha çok
+ * kelimeli adlarda ayrıca "ilk iki kelime" ve "ilk + son kelime" üretilir, çünkü
+ * aynı kişi bazen göbek adı veya soyadı olmadan giriliyor:
+ *
+ *   "Sergiu Adrian"         -> sergiu adrian
+ *   "Sergiu Adrian Craciun" -> sergiu adrian craciun | sergiu adrian | sergiu craciun
+ *
+ * İkisi "sergiu adrian" anahtarında buluşur. Tek kelimelik adlar kısaltma anahtarı
+ * üretmez — "Ali" herkesle eşleşirdi.
+ */
+export function nameMatchKeys(name: string | null | undefined): string[] {
+	const key = normNameKey(name);
+	if (!key) return [];
+	const words = key.split(' ').filter(Boolean);
+	if (words.length < 3) return [key];
+	return [key, `${words[0]} ${words[1]}`, `${words[0]} ${words[words.length - 1]}`];
+}
+
+/** Aynı kişi kümesini iki kez göstermemek için grup imzası. */
+function groupSignature(items: Contact[]): string {
+	return items
+		.map((c) => c.id)
+		.sort()
+		.join(',');
+}
+
+function multiKeyBuckets(
+	rows: Contact[],
+	keysOf: (row: Contact) => string[]
+): Array<[string, Contact[]]> {
+	const map = new Map<string, Contact[]>();
+	for (const row of rows) {
+		for (const key of new Set(keysOf(row))) {
+			const list = map.get(key) ?? [];
+			list.push(row);
+			map.set(key, list);
+		}
+	}
+	return [...map.entries()].filter(([, items]) => items.length > 1);
+}
+
 export function findContactDuplicateGroups(contacts: Contact[]): ContactDuplicateGroup[] {
 	const out: ContactDuplicateGroup[] = [];
 	const build = (
@@ -115,7 +161,16 @@ export function findContactDuplicateGroups(contacts: Contact[]): ContactDuplicat
 
 	pushGroups(out, 'email', buckets(contacts, (c) => normEmailKey(c.email)), build);
 	pushGroups(out, 'phone', buckets(contacts, (c) => normPhoneKey(c.phone)), build);
-	pushGroups(out, 'name', buckets(contacts, (c) => normNameKey(c.display_name)), build);
+
+	// Ad grupları: tam ad + kısaltılmış varyantlar. Aynı kişi kümesi birden çok
+	// anahtarda oluşabiliyor (tam ad ve "ilk iki kelime" gibi); imzayla tekilleştirilir.
+	const seen = new Set<string>();
+	for (const [label, items] of multiKeyBuckets(contacts, (c) => nameMatchKeys(c.display_name))) {
+		const signature = groupSignature(items);
+		if (seen.has(signature)) continue;
+		seen.add(signature);
+		out.push(build('name', label, items));
+	}
 
 	out.sort(
 		(a, b) =>
