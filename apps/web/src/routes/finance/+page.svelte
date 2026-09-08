@@ -2,7 +2,8 @@
 	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { bridgePeriod } from '$lib/period-bridge.svelte';
+	import { bridgePeriod, type PeriodRegistration } from '$lib/period-bridge.svelte';
+	import PeriodControl from '$lib/components/PeriodControl.svelte';
 	import Plus from '@lucide/svelte/icons/plus';
 	import { monthRangeInTz, type PeriodKey } from '$lib/period-range';
 	import type {
@@ -104,26 +105,39 @@
 	 * bağlanıyor: aralık boşsa "tüm zamanlar", doluysa "özel". Aşağıdaki iki tarih
 	 * alanı mobilde gizli, masaüstünde açık.
 	 */
-	bridgePeriod(() => ({
+	function setPeriodKey(next: PeriodKey) {
+		if (next === 'tum') {
+			from = '';
+			to = '';
+			return;
+		}
+		const r = monthRangeInTz(next === 'gecen-ay' ? -1 : 0, tenantTimezone);
+		from = r.from;
+		to = r.to;
+	}
+
+	function setPeriodRange(nextFrom: string, nextTo: string) {
+		from = nextFrom;
+		to = nextTo;
+	}
+
+	const periodRegistration = $derived({
 		key: (from || to ? 'ozel' : 'tum') as PeriodKey,
 		from,
 		to,
 		timeZone: tenantTimezone,
-		setKey: (next: PeriodKey) => {
-			if (next === 'tum') {
-				from = '';
-				to = '';
-				return;
-			}
-			const r = monthRangeInTz(next === 'gecen-ay' ? -1 : 0, tenantTimezone);
-			from = r.from;
-			to = r.to;
-		},
-		setRange: (nextFrom: string, nextTo: string) => {
-			from = nextFrom;
-			to = nextTo;
-		}
-	}));
+		setKey: setPeriodKey,
+		setRange: setPeriodRange
+	});
+
+	bridgePeriod(() => periodRegistration);
+
+	/* Sayfa içi denetim köprüden değil doğrudan bu kayıttan beslenir (rota
+	 * geçişinin ilk karesinde köprü `null` dönüyor). */
+	const localPeriod = $derived<PeriodRegistration>({
+		...periodRegistration,
+		path: page.url.pathname
+	});
 
 	/** Base equivalent only when txn currency differs and snapshot exists. */
 	function baseLine(tx: Transaction): string | null {
@@ -402,27 +416,12 @@
 			placeholder={t('finance.filter.categoryPlaceholder')}
 			bind:value={categoryInput}
 		/>
-		<!-- Mobilde gizli: tarih seçimi kabuk başlığında. -->
-		<div class="grid min-w-0 grid-cols-1 gap-2 max-md:hidden sm:grid-cols-2 lg:contents">
-			<label class="min-w-0 text-xs font-medium text-text-muted lg:w-40">
-				<span class="mb-1 block lg:sr-only">{t('finance.filter.from')}</span>
-				<input
-					type="date"
-					class="h-11 w-full max-w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:text-sm"
-					aria-label={t('finance.filter.from')}
-					bind:value={from}
-				/>
-			</label>
-			<label class="min-w-0 text-xs font-medium text-text-muted lg:w-40">
-				<span class="mb-1 block lg:sr-only">{t('finance.filter.to')}</span>
-				<input
-					type="date"
-					class="h-11 w-full max-w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none focus:ring-2 focus:ring-brand/40 lg:h-9 lg:text-sm"
-					aria-label={t('finance.filter.to')}
-					bind:value={to}
-				/>
-			</label>
-		</div>
+		<!--
+			Mobilde gizli: orada aynı denetim kabuk başlığında duruyor, iki kopya
+			üst üste binerdi. Masaüstünde iki çıplak tarih kutusunun yerini aldı
+			(kullanıcı, 2026-09-08).
+		-->
+		<PeriodControl period={localPeriod} class="max-md:hidden lg:w-56" />
 		<div class="flex gap-2">
 			<Button class="min-h-11 max-md:hidden lg:min-h-9" type="submit" variant="secondary"
 				>{t('finance.filter.apply')}</Button

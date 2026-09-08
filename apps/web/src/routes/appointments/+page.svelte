@@ -24,7 +24,8 @@
 	import { t } from '$lib/i18n/locale.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import { monthRangeInTz, resolvePeriodRange, type PeriodKey } from '$lib/period-range';
-	import { bridgePeriod } from '$lib/period-bridge.svelte';
+	import { bridgePeriod, type PeriodRegistration } from '$lib/period-bridge.svelte';
+	import PeriodControl from '$lib/components/PeriodControl.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -78,25 +79,27 @@
 	 * verir; başlıktaki denetim aynı değeri okur ve aynı setter'ları çağırır — iki ayrı
 	 * durum olmaz. Aşağıdaki sekmeler mobilde gizli, masaüstünde açık.
 	 */
-	bridgePeriod(() => ({
+	const periodRegistration = $derived({
 		key: periodKey,
 		from: periodRange.from ?? customFrom,
 		to: periodRange.to ?? customTo,
 		timeZone: tenantTimezone,
-		setKey: (next: PeriodKey) => {
-			periodKey = next;
-			if (next === 'ozel') {
-				const r = monthRangeInTz(0, tenantTimezone);
-				customFrom = r.from;
-				customTo = r.to;
-			}
-		},
+		setKey: setPeriod,
 		setRange: (from: string, to: string) => {
 			customFrom = from;
 			customTo = to;
 			periodKey = 'ozel';
 		}
-	}));
+	});
+
+	bridgePeriod(() => periodRegistration);
+
+	/* Sayfa içi denetim doğrudan bu kayıttan beslenir; köprü rota geçişinin ilk
+	 * karesinde `null` dönüyor. */
+	const localPeriod = $derived<PeriodRegistration>({
+		...periodRegistration,
+		path: page.url.pathname
+	});
 
 	const periodRangeText = $derived(
 		periodRange.from && periodRange.to
@@ -181,9 +184,6 @@
 					count: String(filteredCount)
 				})
 	);
-
-	const fieldClass =
-		'h-9 rounded-[8px] border border-border bg-surface px-3 text-sm font-medium text-text outline-none focus:ring-2 focus:ring-brand/40';
 
 	function setPeriod(next: PeriodKey) {
 		periodKey = next;
@@ -345,41 +345,11 @@
 			>
 		</div>
 
-		<div
-			class="mt-3.5 flex gap-0.5 rounded-[8px] border border-border bg-surface-2 p-0.5 max-md:hidden"
-			role="tablist"
-			aria-label={t('reports.period.label')}
-		>
-			{#each periodOptions as opt (opt.key)}
-				<button
-					type="button"
-					role="tab"
-					aria-selected={periodKey === opt.key}
-					class={cn(
-						'min-w-0 flex-1 cursor-pointer rounded-[8px] px-1.5 py-2 text-center text-xs font-semibold transition-colors sm:px-2.5 sm:text-sm',
-						periodKey === opt.key
-							? 'border border-border bg-surface text-text shadow-xs'
-							: 'text-text-faint hover:text-text-muted'
-					)}
-					onclick={() => setPeriod(opt.key)}
-				>
-					<span class="line-clamp-1">{opt.label}</span>
-				</button>
-			{/each}
-		</div>
-
-		{#if periodKey === 'ozel'}
-			<div class="mt-3 grid grid-cols-2 gap-2 sm:max-w-md">
-				<label class="grid gap-1 text-xs text-text-muted">
-					{t('reports.period.from')}
-					<input type="date" class={fieldClass} bind:value={customFrom} />
-				</label>
-				<label class="grid gap-1 text-xs text-text-muted">
-					{t('reports.period.to')}
-					<input type="date" class={fieldClass} bind:value={customTo} />
-				</label>
-			</div>
-		{/if}
+		<!--
+			Sekme şeridi + özel aralık kutuları yerine tek denetim (kullanıcı,
+			2026-09-08). Mobilde gizli: orada aynısı kabuk başlığında duruyor.
+		-->
+		<PeriodControl period={localPeriod} class="mt-3.5 max-md:hidden sm:max-w-xs" />
 
 		<div class="mt-3.5 flex flex-nowrap items-center gap-2">
 			<select

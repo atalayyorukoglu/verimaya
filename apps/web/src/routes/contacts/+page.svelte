@@ -164,7 +164,10 @@
 			`flex-1` yalnız `sm`'de — mobilde `flex-col` ana ekseni dikey yapıp
 			`flex-basis: 0` ile kutunun yüksekliğini eziyor.
 		-->
-		<form class="mt-3.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center" onsubmit={applySearch}>
+		<form
+			class="mt-3.5 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
+			onsubmit={applySearch}
+		>
 			<input
 				class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 sm:h-9 sm:w-auto sm:flex-1 sm:text-sm"
 				placeholder={t('contacts.list.searchPlaceholder')}

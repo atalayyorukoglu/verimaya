@@ -15,6 +15,10 @@
 	import SettingsBackLink from '$lib/components/SettingsBackLink.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import PeriodControl from '$lib/components/PeriodControl.svelte';
+	import { bridgePeriod, type PeriodRegistration } from '$lib/period-bridge.svelte';
+	import { monthRangeInTz, type PeriodKey } from '$lib/period-range';
+	import { page } from '$app/state';
 
 	type AuditLogsPage = ContractResponse<'GET /v1/audit-logs'>;
 
@@ -24,8 +28,6 @@
 	let entityType = $state('');
 	let actorInput = $state('');
 	let qInput = $state('');
-	let fromInput = $state('');
-	let toInput = $state('');
 	let appliedActor = $state('');
 	let appliedQ = $state('');
 	let appliedFrom = $state('');
@@ -69,12 +71,47 @@
 
 	const items = $derived(logsQuery.data?.pages.flatMap((p) => p.items) ?? []);
 
+	/*
+	 * Tarih aralığı, formun geri kalanından farklı olarak ANINDA uygulanır: dönem
+	 * denetiminin kendi "Uygula" düğmesi var, üstüne bir de formunkine basmak
+	 * gerekseydi iki aşamalı olurdu. Diğer sayfalarda da tarih anında uygulanıyor.
+	 */
+	const TZ = 'Europe/Istanbul';
+
+	function setPeriodKey(next: PeriodKey) {
+		if (next === 'tum') {
+			appliedFrom = '';
+			appliedTo = '';
+			return;
+		}
+		const r = monthRangeInTz(next === 'gecen-ay' ? -1 : 0, TZ);
+		appliedFrom = r.from;
+		appliedTo = r.to;
+	}
+
+	const periodRegistration = $derived({
+		key: (appliedFrom || appliedTo ? 'ozel' : 'tum') as PeriodKey,
+		from: appliedFrom,
+		to: appliedTo,
+		timeZone: TZ,
+		setKey: setPeriodKey,
+		setRange: (from: string, to: string) => {
+			appliedFrom = from;
+			appliedTo = to;
+		}
+	});
+
+	bridgePeriod(() => periodRegistration);
+
+	const localPeriod = $derived<PeriodRegistration>({
+		...periodRegistration,
+		path: page.url.pathname
+	});
+
 	function applyFilters(e: Event) {
 		e.preventDefault();
 		appliedActor = actorInput.trim();
 		appliedQ = qInput.trim();
-		appliedFrom = fromInput;
-		appliedTo = toInput;
 	}
 
 	function clearFilters() {
@@ -82,8 +119,6 @@
 		entityType = '';
 		actorInput = '';
 		qInput = '';
-		fromInput = '';
-		toInput = '';
 		appliedActor = '';
 		appliedQ = '';
 		appliedFrom = '';
@@ -144,22 +179,8 @@
 			placeholder={t('settings.audit.filter.qPlaceholder')}
 			bind:value={qInput}
 		/>
-		<label class="flex flex-col gap-1 text-xs text-text-muted">
-			<span>{t('settings.audit.filter.from')}</span>
-			<input
-				type="date"
-				class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
-				bind:value={fromInput}
-			/>
-		</label>
-		<label class="flex flex-col gap-1 text-xs text-text-muted">
-			<span>{t('settings.audit.filter.to')}</span>
-			<input
-				type="date"
-				class="h-9 rounded-[6px] border border-border bg-surface px-3 text-sm text-text outline-none focus:ring-2 focus:ring-brand/40"
-				bind:value={toInput}
-			/>
-		</label>
+		<!-- İki tarih kutusunun yerine tek dönem denetimi (kullanıcı, 2026-09-08). -->
+		<PeriodControl period={localPeriod} class="max-md:hidden lg:w-56" />
 		<div class="flex gap-2">
 			<Button type="submit" variant="secondary">{t('settings.audit.filter.apply')}</Button>
 			{#if filtersActive}
