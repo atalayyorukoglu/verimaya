@@ -1,0 +1,142 @@
+# API'yi yalnız API'yi ilgilendiren dosyalar değiştiğinde yeniden dağıt.
+#
+# Neden: Coolify'ın kendi git kancası `main`'e her push'ta imajı sıfırdan
+# derliyordu — yalnız `apps/ios/` değişse bile. Derleme boyunca (~5-7 dk)
+# `api.verimaya.com` cevap vermiyor; bu bir kez kullanıcıyı uygulamadan
+# kilitledi. Coolify'da "Auto deploy" kapatıldı, tetikleme buraya alındı.
+#
+# Desen `deploy-web.yml` ile aynı: CI yeşilse (workflow_run) çalışır, yol
+# süzgeci son başarılı dağıtımdan bu yana değişenlere bakar ve **hataya
+# açılır** (kararsız kalırsa dağıtır — eksik dağıtım, fazla dağıtımdan pahalı).
+# Fark: imajı burada derlemiyoruz; API'yi Coolify kendi derliyor, biz yalnız
+# dağıtım kancasını tetikliyoruz.
+name: Deploy API
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  gate:
+    # Kırmızı CI hiç dağıtmaz; PR CI dağıtmaz; elle tetikleme bu koşulu geçer.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      should_deploy: ${{ steps.decide.outputs.should_deploy }}
+      deploy_sha: ${{ steps.sha.outputs.deploy_sha }}
+    steps:
+      - name: Resolve deploy SHA
+        id: sha
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          GITHUB_SHA_FALLBACK: ${{ github.sha }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            echo "deploy_sha=$WORKFLOW_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_sha=$GITHUB_SHA_FALLBACK" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.sha.outputs.deploy_sha }}
+          # Yol süzgeci önceki dağıtım SHA'sıyla karşılaştırıyor — tam geçmiş gerekli.
+          fetch-depth: 0
+
+      - name: Decide whether to deploy
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOY_SHA: ${{ steps.sha.outputs.deploy_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Runner varsayılanı bash -euo pipefail — hataya açılma iptal olmasın diye kapatılıyor.
+          set +e
+          set +o pipefail
+          # API imajı depo kökünden derleniyor: paylaşılan paket ve kilit dosyası da sayılır.
+          PATH_RE='^(apps/api/|packages/shared/|docker/|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|package\.json$|turbo\.json$|\.npmrc$|\.github/workflows/deploy-api\.yml$)'
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "workflow_dispatch — yola bakmadan dağıt (acil çıkış)"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Taban = bu workflow'un son başarılı koşusunun head_sha'sı.
+          if ! API_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-api.yml/runs?status=success&per_page=1" 2>/dev/null); then
+            echo "HATAYA AÇIL: gh api başarısız — dağıt"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          PREV_SHA=$(printf '%s' "$API_JSON" | jq -r '.workflow_runs[0].head_sha // empty')
+          echo "Karşılaştırma: deploy_sha=${DEPLOY_SHA} ↔ önceki_başarılı=${PREV_SHA:-<yok>}"
+
+          if [ -z "$PREV_SHA" ]; then
+            echo "HATAYA AÇIL: önceki başarılı koşu yok — dağıt"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! git cat-file -e "${PREV_SHA}^{commit}" 2>/dev/null; then
+            echo "HATAYA AÇIL: ${PREV_SHA} geçmişte yok (force-push/rebase?) — dağıt"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! CHANGED=$(git diff --name-only "$PREV_SHA" "$DEPLOY_SHA" 2>/dev/null); then
+            echo "HATAYA AÇIL: git diff başarısız — dağıt"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Önceki başarılı koşudan bu yana değişenler:"
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -Eq "$PATH_RE"; then
+            echo "API'yi ilgilendiren yol değişmiş — dağıt"
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "API'yi ilgilendiren yol yok — dağıtma"
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: gate
+    if: needs.gate.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify redeploy
+        env:
+          WEBHOOK: ${{ secrets.COOLIFY_API_DEPLOY_WEBHOOK }}
+          TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          DEPLOY_SHA: ${{ needs.gate.outputs.deploy_sha }}
+        run: |
+          if [ -z "$WEBHOOK" ] || [ -z "$TOKEN" ]; then
+            echo "COOLIFY_API_DEPLOY_WEBHOOK ve/veya COOLIFY_API_TOKEN tanımlı değil — atlanıyor"
+            exit 1
+          fi
+          echo "Dağıtılan SHA: ${DEPLOY_SHA}"
+          # Coolify'ın API dağıtım ucu GET'e cevap verir; kaynak/elle kanca yalnız
+          # POST'a. İkisini de dene ki kanca URL'i değişirse sessizce takılmasın.
+          for method in GET POST; do
+            status=$(curl -sS -o /tmp/coolify-deploy.out -w '%{http_code}' -X "$method" "$WEBHOOK" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/json")
+            echo "Coolify kancası $method → HTTP $status"
+            if [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
+              echo "Coolify kancası tetiklendi"
+              exit 0
+            fi
+            cat /tmp/coolify-deploy.out
+          done
+          echo "Kanca GET ve POST için de başarısız — Coolify arayüzünden elle dağıt"
+          exit 1

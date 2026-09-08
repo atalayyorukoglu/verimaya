@@ -183,6 +183,23 @@ API CORS / auth:
 | `BETTER_AUTH_URL` | Public API URL (`https://api…`) |
 | `CREDENTIALS_ENCRYPTION_KEY` | 32-byte hex (64 char) veya base64; **kaybolursa credential’lar okunamaz** |
 | `TRUSTED_ORIGINS` | Panel origin(s), virgülle |
+
+> **API dağıtımı artık Coolify'ın kendi git kancasıyla değil, GitHub Actions ile
+> tetikleniyor** (`.github/workflows/deploy-api.yml`). Coolify'da uygulamanın
+> **Advanced → Auto deploy** ayarı *Manual deployments only*'ye çekildi.
+>
+> Neden: Coolify `main`'e her push'ta imajı sıfırdan derliyordu — yalnız
+> `apps/ios/` değişse bile. Derleme boyunca (~5-7 dk) `api.verimaya.com` cevap
+> vermiyor. 2026-09-08'de bu, kullanıcının mobil uygulamadan giriş yapamamasına
+> ve sorunu uygulamada sanmasına yol açtı.
+>
+> Yeni akış web ile aynı: CI yeşilse `Deploy API` koşar, yol süzgeci
+> (`apps/api/`, `packages/shared/`, `docker/`, kilit/paket dosyaları) tutarsa
+> Coolify dağıtım kancasını çağırır. Süzgeç **hataya açılır** — kararsız kalırsa
+> dağıtır. Acil durumda `workflow_dispatch` yola bakmadan dağıtır.
+>
+> Gerekli secret: `COOLIFY_API_DEPLOY_WEBHOOK` (uygulamanın Webhooks
+> sayfasındaki "Deploy webhook URL") + mevcut `COOLIFY_API_TOKEN`.
 | `WEB_PUBLIC_URL` | Public web kökü (OAuth return + karne CORS) |
 | `NODE_ENV` | `production` |
 | `API_PORT` | `3000` |
