@@ -1,4 +1,4 @@
-# Verimaya iOS — mockup arayüz (ağ katmanı yok).
+# Verimaya iOS.
 # Web paneli kaynak: apps/web/src/lib/components/AppShell.svelte + routes/*
 name: Verimaya
 options:
@@ -24,9 +24,14 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: false
         ENABLE_TESTABILITY: YES
+        # Sunucu adresi Info.plist'e GÖMÜLÜR (`VerimayaAPIURL`). Ana ekrandan
+        # açılan uygulamada ortam değişkeni yoktur; yalnız ona bakan bir sürüm
+        # cihazda localhost'a bağlanmaya çalışır (arşiv, "Ortam notları").
+        VERIMAYA_API_URL_DEFAULT: https://api.verimaya.com
     scheme:
       testTargets:
         - VerimayaTests
+        - VerimayaUITests
 
   VerimayaTests:
     type: bundle.unit-test
@@ -39,3 +44,22 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.verimaya.app.tests
         GENERATE_INFOPLIST_FILE: true
+
+  # UI testleri CANLI API ister. Değişkenler `TEST_RUNNER_` önekiyle geçirilir:
+  # XCUITest koşucusu ayrı bir süreçtir, öneksiz değişken ona ulaşmaz.
+  #   TEST_RUNNER_VERIMAYA_API_URL
+  #   TEST_RUNNER_VERIMAYA_UITEST_EMAIL
+  #   TEST_RUNNER_VERIMAYA_UITEST_PASSWORD
+  # Değişken yoksa testler ATLANIR (CI Node tarafında koşuyor, bunları görmez).
+  VerimayaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: VerimayaUITests
+    dependencies:
+      - target: Verimaya
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.verimaya.app.uitests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: Verimaya

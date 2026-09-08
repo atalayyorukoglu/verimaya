@@ -1,28 +1,21 @@
 import SwiftUI
 
 /*
- `apps/web/src/routes/account/+page.svelte` — mobil hâl.
+ `apps/web/src/routes/account/+page.svelte` — mobil hâl, gerçek veriyle.
 
- Web düzeni: `PageHeader` + dört kart (`rounded-lg border bg-surface p-4`):
-   1. Profil — görünen ad + e-posta (salt okunur, `dl/dt/dd`).
-   2. Şifreni değiştir — üç alan + gönder düğmesi, hata/başarı satırı.
-   3. Tema — `ThemeToggle variant="nav"` satırı, çerçeveli.
-   4. Bildirim tercihleri — "yakında" notu.
+ Kartlar: Profil (`GET /v1/me`), Organizasyon (birden çoksa değiştirici),
+ Tema, Bildirim tercihleri, Çıkış.
 
- Şifre değiştirme mockup'ta sunucuya gitmez; doğrulama (eşleşme + en az 8
- karakter) gerçekten çalışır, sonuç yerel bir bildirimdir.
+ Şifre değiştirme kartı bu turda KONMADI: better-auth `change-password` ucu ayrı
+ bir akış (mevcut şifre + diğer oturumları kapatma) ve mockup'taki hâli sunucuya
+ gitmiyordu. Çalışmayan form yerine yokluk (arşiv dersi #8); README'de yazılı.
 */
 struct AccountView: View {
     @Environment(\.palette) private var c
     @Environment(AppState.self) private var app
+    @Environment(SessionStore.self) private var session
 
     @Binding var storedTheme: String
-
-    @State private var currentPassword = ""
-    @State private var newPassword = ""
-    @State private var newPassword2 = ""
-    @State private var passwordError: String?
-    @State private var passwordOk = false
 
     private var isDark: Bool { storedTheme == VMTheme.dark.rawValue }
 
@@ -41,9 +34,10 @@ struct AccountView: View {
                 }
 
                 profileCard
-                passwordCard
+                if session.organizations.count > 1 { organizationCard }
                 themeCard
                 notificationsCard
+                signOutCard
             }
             .padding(VMSpace.page)
         }
@@ -78,37 +72,42 @@ struct AccountView: View {
     private var profileCard: some View {
         VMSection(title: S.Account.profileHeading, subtitle: S.Account.profileHint) {
             VStack(alignment: .leading, spacing: VMSpace.md) {
-                field(S.Account.displayName, MockData.userDisplayName)
-                field(S.Account.email, MockData.userEmail)
+                field(S.Account.displayName, session.displayName.isEmpty ? "—" : session.displayName)
+                field(S.Account.email, session.email.isEmpty ? "—" : session.email)
+                field("Organizasyon", session.tenantName.isEmpty ? "—" : session.tenantName)
+                if let role = session.me?.role {
+                    field("Rol", role)
+                }
             }
+            .accessibilityIdentifier("account.profile")
         }
     }
 
-    private var passwordCard: some View {
-        VMSection(title: S.Account.Password.title, subtitle: S.Account.Password.description) {
-            VStack(alignment: .leading, spacing: VMSpace.md) {
-                labelled(S.Account.Password.current) {
-                    VMTextField(placeholder: "", text: $currentPassword, secure: true)
+    private var organizationCard: some View {
+        VMSection(title: S.Shell.orgSwitch) {
+            VStack(spacing: VMSpace.sm) {
+                ForEach(session.organizations) { org in
+                    Button {
+                        Task { await session.switchOrganization(org.id) }
+                    } label: {
+                        HStack {
+                            Text(org.name)
+                                .font(VMFont.sm)
+                                .foregroundStyle(c.text)
+                            Spacer()
+                            if org.id == session.me?.tenantId {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(c.brand)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: VMSize.control)
+                        .vmCard(c, radius: VMRadius.control)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                labelled(S.Account.Password.new) {
-                    VMTextField(placeholder: "", text: $newPassword, secure: true)
-                }
-                labelled(S.Account.Password.confirm) {
-                    VMTextField(placeholder: "", text: $newPassword2, secure: true)
-                }
-
-                if let passwordError {
-                    Text(passwordError)
-                        .font(VMFont.sm)
-                        .foregroundStyle(c.danger)
-                }
-                if passwordOk {
-                    Text("Şifre değiştirildi (mockup: sunucuya gitmez).")
-                        .font(VMFont.sm)
-                        .foregroundStyle(c.success)
-                }
-
-                VMButton(title: S.Account.Password.submit) { submitPassword() }
             }
         }
     }
@@ -144,6 +143,15 @@ struct AccountView: View {
         }
     }
 
+    private var signOutCard: some View {
+        VMSection {
+            VMButton(title: S.Shell.signOut, variant: .outline, fullWidth: true) {
+                Task { await session.signOut() }
+            }
+            .accessibilityIdentifier("account.signOut")
+        }
+    }
+
     private func field(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
@@ -153,31 +161,5 @@ struct AccountView: View {
                 .font(VMFont.sm)
                 .foregroundStyle(c.text)
         }
-    }
-
-    private func labelled<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(VMFont.xs)
-                .foregroundStyle(c.textMuted)
-            content()
-        }
-    }
-
-    private func submitPassword() {
-        passwordOk = false
-        guard newPassword == newPassword2 else {
-            passwordError = S.Account.Password.mismatch
-            return
-        }
-        guard newPassword.count >= 8 else {
-            passwordError = S.Account.Password.tooShort
-            return
-        }
-        passwordError = nil
-        passwordOk = true
-        currentPassword = ""
-        newPassword = ""
-        newPassword2 = ""
     }
 }

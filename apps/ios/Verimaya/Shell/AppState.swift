@@ -71,6 +71,10 @@ final class AppState {
 
     var theme: VMTheme = .light
 
+    /// Kiracının baz para birimi (`GET /v1/tenants/current`); rapor kutuları ve
+    /// işlem satırındaki karşılık satırı buna göre yazılır. Oturum açılınca dolar.
+    var baseCurrency = "TRY"
+
     /*
      Ekran görüntüsü almak için başlangıç durumu (yalnız DEBUG).
      Simülatörde `simctl launch ... -vm-tab reports -vm-route account` gibi

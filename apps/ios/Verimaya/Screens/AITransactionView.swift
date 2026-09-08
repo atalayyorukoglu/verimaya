@@ -1,44 +1,27 @@
 import SwiftUI
 
 /*
- `apps/web/src/routes/finance/ai-transaction/+page.svelte` — mobil hâl.
+ `apps/web/src/routes/finance/ai-transaction/+page.svelte` — mobil hâl, gerçek
+ uçlarla.
 
- Web düzeni:
-   • `PageHeader`: "AI ile İşlem" + açıklama.
-   • "Mesajı yapıştır" kartı: mono yazı tipli çok satırlı alan (`min-h-28`),
-     altında "Analiz Et" düğmesi (kıvılcım ikonu). Kuyruktan seçilmişse
-     "Onay Kuyruğu'ndan seçildi" notu.
-   • "Bekleyenler (n)" kartı: her satırda gönderen (mono, xs), durum rozeti,
-     medya/aynı olay rozetleri, sağda zaman (`formatDateTime`), altında mesaj
-     önizlemesi (2 satır); sağda "Analiz Et" ve "Yoksay" düğmeleri.
-   • Taslaklar bölümü: "Taslaklar (n)" + "Onayla ve kaydet"; en altta not.
+ Uçlar:
+   • `GET  /v1/whatsapp/inbox`            → kuyruk (zarf **`messages`**, arşiv dersi #5)
+   • `POST /v1/whatsapp/parse`            → yapıştırılan metni ayrıştır
+   • `POST /v1/whatsapp/inbox/:id/parse`  → kuyruktaki mesajı ayrıştır
+   • `POST /v1/whatsapp/inbox/process`    → gövdesi olan tüm `new` mesajları ayrıştır
+   • `POST /v1/whatsapp/inbox/:id/ignore` → yoksay
 
- İlke 6: AI çıkarımı TASLAKTIR — onay olmadan kayda geçmez. Mockup'ta da öyle:
- "Onayla ve kaydet" yalnız kuyruktan gelen bir mesaj seçiliyken etkindir.
+ AGENTS.md ilke 6: AI çıkarımı TASLAKTIR, onaysız kayda geçmez. "Onayla ve
+ kaydet" bu turda YOK: `approve-drafts` her taslak için kur, ödeme durumu,
+ ödenen tutar ve karşı taraf ister; o form ayrı bir iş. Karşılığı olmayan düğme
+ koymuyoruz (arşiv dersi #8).
 */
 struct AITransactionView: View {
     @Environment(\.palette) private var c
     @Environment(AppState.self) private var app
 
+    @State private var store = InboxStore()
     @State private var message = ""
-    @State private var messages = MockData.inboundMessages
-    @State private var drafts: [TransactionDraft] = []
-    @State private var activeInboxId: String?
-    @State private var parsing = false
-    @State private var parseError: String?
-    @State private var approvedNotice: String?
-
-    private var pendingMessages: [InboundMessage] {
-        messages.filter { $0.status == .new || $0.status == .parsed }
-    }
-
-    private var pendingNewCount: Int {
-        messages.filter { $0.status == .new }.count
-    }
-
-    private var canApprove: Bool {
-        activeInboxId != nil && !drafts.isEmpty
-    }
 
     var body: some View {
         ScrollView {
@@ -47,18 +30,20 @@ struct AITransactionView: View {
                 headerBlock
                 pasteCard
                 pendingCard
-                if !drafts.isEmpty { draftsSection }
+                if !store.drafts.isEmpty { draftsSection }
             }
             .padding(VMSpace.page)
         }
         .background(c.bg)
+        .refreshable { await store.reload() }
+        .task { await store.reload() }
     }
 
     private var backButton: some View {
         @Bindable var app = app
 
         return Button {
-            app.financePath.removeLast()
+            if !app.financePath.isEmpty { app.financePath.removeLast() }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.left")
@@ -104,6 +89,7 @@ struct AITransactionView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .frame(minHeight: 112)
+                        .accessibilityIdentifier("ai.message")
                 }
                 .background(c.surface2)
                 .clipShape(RoundedRectangle(cornerRadius: VMRadius.control, style: .continuous))
@@ -112,25 +98,20 @@ struct AITransactionView: View {
                         .stroke(c.border, lineWidth: 1)
                 )
 
-                if let parseError {
+                if let parseError = store.parseError {
                     Text(parseError)
                         .font(VMFont.sm)
                         .foregroundStyle(c.danger)
-                }
-
-                if let approvedNotice {
-                    Text(approvedNotice)
-                        .font(VMFont.sm)
-                        .foregroundStyle(c.success)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack(spacing: VMSpace.sm) {
-                    VMButton(title: parsing ? S.Finance.AI.analyzing : S.Finance.AI.analyze,
+                    VMButton(title: store.isParsing ? S.Finance.AI.analyzing : S.Finance.AI.analyze,
                              systemImage: "sparkles",
-                             disabled: parsing || message.trimmed.isEmpty) {
-                        analyzePasted()
+                             disabled: store.isParsing || message.trimmed.isEmpty) {
+                        Task { await store.analyze(text: message) }
                     }
-                    if activeInboxId != nil {
+                    if store.activeMessageId != nil {
                         Text(S.Finance.AI.fromQueue)
                             .font(VMFont.xs)
                             .foregroundStyle(c.textFaint)
@@ -142,28 +123,30 @@ struct AITransactionView: View {
 
     private var pendingCard: some View {
         VMSection(
-            title: pendingNewCount > 0
-                ? "\(S.Finance.AI.pendingHeading) (\(pendingNewCount))"
+            title: store.newCount > 0
+                ? "\(S.Finance.AI.pendingHeading) (\(store.newCount))"
                 : S.Finance.AI.pendingHeading,
             trailing: AnyView(
-                VMButton(title: S.Finance.AI.pendingProcess, variant: .outline) {
-                    // "Yeni mesajları işle": kuyruktaki yeni mesajları ayrıştırılmış yapar.
-                    messages = messages.map { item in
-                        guard item.status == .new else { return item }
-                        return InboundMessage(id: item.id, sender: item.sender, body: item.body,
-                                              status: .parsed, hasMedia: item.hasMedia,
-                                              createdAt: item.createdAt)
-                    }
+                VMButton(
+                    title: store.isProcessing ? S.Finance.AI.pendingProcessing : S.Finance.AI.pendingProcess,
+                    variant: .outline,
+                    disabled: store.isProcessing
+                ) {
+                    Task { await store.processNew() }
                 }
             )
         ) {
-            if pendingMessages.isEmpty {
+            if let error = store.errorMessage {
+                ErrorBanner(message: error) { Task { await store.reload() } }
+            } else if store.isLoading && !store.hasLoadedOnce {
+                LoadingRow()
+            } else if store.pending.isEmpty {
                 Text(S.Finance.AI.pendingEmpty)
                     .font(VMFont.sm)
                     .foregroundStyle(c.textMuted)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(pendingMessages.enumerated()), id: \.element.id) { index, item in
+                    ForEach(Array(store.pending.enumerated()), id: \.element.id) { index, item in
                         if index > 0 {
                             Rectangle().fill(c.border).frame(height: 1)
                         }
@@ -177,7 +160,7 @@ struct AITransactionView: View {
     private func pendingRow(_ item: InboundMessage) -> some View {
         VStack(alignment: .leading, spacing: VMSpace.sm) {
             HStack(spacing: 6) {
-                Text(item.sender)
+                Text(item.chatName ?? item.sender)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(c.textFaint)
                     .lineLimit(1)
@@ -199,11 +182,11 @@ struct AITransactionView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: VMSpace.sm) {
-                VMButton(title: S.Finance.AI.analyze, disabled: parsing) {
-                    analyzeInbox(item)
+                VMButton(title: S.Finance.AI.analyze, disabled: store.isParsing) {
+                    Task { await store.analyze(message: item) }
                 }
                 VMButton(title: S.Finance.AI.pendingIgnore, variant: .outline) {
-                    ignore(item)
+                    Task { await store.ignore(item) }
                 }
                 Spacer(minLength: 0)
             }
@@ -213,17 +196,11 @@ struct AITransactionView: View {
 
     private var draftsSection: some View {
         VStack(alignment: .leading, spacing: VMSpace.md) {
-            HStack {
-                Text("\(S.Finance.AI.draftsHeading) (\(drafts.count))")
-                    .font(VMFont.semibold(14))
-                    .foregroundStyle(c.text)
-                Spacer()
-                VMButton(title: S.Finance.AI.draftsApprove, disabled: !canApprove) {
-                    approveAll()
-                }
-            }
+            Text("\(S.Finance.AI.draftsHeading) (\(store.drafts.count))")
+                .font(VMFont.semibold(14))
+                .foregroundStyle(c.text)
 
-            ForEach(drafts) { draft in
+            ForEach(store.drafts) { draft in
                 draftCard(draft)
             }
 
@@ -234,20 +211,21 @@ struct AITransactionView: View {
         }
     }
 
-    /// `TransactionDraftCard.svelte` karşılığı — özet hâl.
+    /// `TransactionDraftCard.svelte` karşılığı — özet hâl (onay formu ayrı iş).
     private func draftCard(_ draft: TransactionDraft) -> some View {
         VStack(alignment: .leading, spacing: VMSpace.sm) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(draft.title)
+                    Text(draft.displayTitle)
                         .font(VMFont.medium(14))
                         .foregroundStyle(c.text)
-                    Text(draft.contactDisplayName ?? "—")
+                    Text(draft.contactLabel ?? "—")
                         .font(VMFont.xs)
                         .foregroundStyle(c.textFaint)
                 }
                 Spacer(minLength: 0)
-                Text((draft.kind == .expense ? "−" : "") + VMFormat.money(draft.amount, currency: draft.currency))
+                Text((draft.kind == .expense ? "−" : "")
+                     + VMFormat.money(draft.amount, currency: draft.currency))
                     .font(VMFont.semibold(14))
                     .monospacedDigit()
                     .foregroundStyle(draft.kind == .income ? c.success : c.text)
@@ -263,9 +241,11 @@ struct AITransactionView: View {
                     StatusBadge(label: method, tone: .info)
                 }
                 Spacer(minLength: 0)
-                Text(VMFormat.day(draft.occurredOn))
-                    .font(VMFont.xs)
-                    .foregroundStyle(c.textFaint)
+                if let occurredOn = draft.occurredOn {
+                    Text(VMFormat.day(occurredOn))
+                        .font(VMFont.xs)
+                        .foregroundStyle(c.textFaint)
+                }
             }
         }
         .padding(VMSpace.lg)
@@ -273,80 +253,8 @@ struct AITransactionView: View {
         .vmCard(c)
     }
 
-    // MARK: Eylemler
-
     private func previewBody(_ item: InboundMessage) -> String {
         if let body = item.body?.trimmed, !body.isEmpty { return body }
         return item.hasMedia ? S.Finance.AI.pendingEmptyBody : "—"
-    }
-
-    /// Yapıştırılan metni "ayrıştırır". Sahte parser: bilinen mesajlarla eşleşirse
-    /// onların taslağını verir, aksi halde çıkarım yapılamadığını söyler.
-    private func analyzePasted() {
-        activeInboxId = nil
-        approvedNotice = nil
-        run {
-            let match = MockData.inboundMessages.first { ($0.body ?? "") == message.trimmed }
-            let result = match.map { MockData.drafts(for: $0.id) } ?? []
-            drafts = result
-            parseError = result.isEmpty ? S.Finance.AI.parseNone : nil
-        }
-    }
-
-    private func analyzeInbox(_ item: InboundMessage) {
-        activeInboxId = item.id
-        message = item.body ?? ""
-        approvedNotice = nil
-        run {
-            let result = MockData.drafts(for: item.id)
-            drafts = result
-            parseError = result.isEmpty
-                ? (item.hasMedia ? "Mesajda yalnız medya var; metin çıkarılamadı." : S.Finance.AI.parseNone)
-                : nil
-            messages = messages.map { row in
-                guard row.id == item.id else { return row }
-                return InboundMessage(id: row.id, sender: row.sender, body: row.body,
-                                      status: .parsed, hasMedia: row.hasMedia,
-                                      createdAt: row.createdAt)
-            }
-        }
-    }
-
-    private func ignore(_ item: InboundMessage) {
-        messages = messages.map { row in
-            guard row.id == item.id else { return row }
-            return InboundMessage(id: row.id, sender: row.sender, body: row.body,
-                                  status: .ignored, hasMedia: row.hasMedia,
-                                  createdAt: row.createdAt)
-        }
-        if activeInboxId == item.id {
-            activeInboxId = nil
-            drafts = []
-            message = ""
-        }
-    }
-
-    private func approveAll() {
-        guard let id = activeInboxId else { return }
-        messages = messages.map { row in
-            guard row.id == id else { return row }
-            return InboundMessage(id: row.id, sender: row.sender, body: row.body,
-                                  status: .approved, hasMedia: row.hasMedia,
-                                  createdAt: row.createdAt)
-        }
-        approvedNotice = "\(drafts.count) taslak onaylandı (mockup: sunucuya yazılmaz)."
-        drafts = []
-        message = ""
-        activeInboxId = nil
-    }
-
-    /// Ağ yok ama "analiz ediliyor" hâli görünür olsun diye kısa gecikme.
-    private func run(_ work: @escaping () -> Void) {
-        parsing = true
-        parseError = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            work()
-            parsing = false
-        }
     }
 }

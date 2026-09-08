@@ -5,23 +5,63 @@ import SwiftUI
 
  Web'deki mobil düzen (md: öncesi hâl):
    • Üst şerit `h-14` (56): marka `h-8` | dönem denetimi (esner) | arama ikonu.
-     Zil (Yenilikler) mockup'ta YOK — karşılığı olan ekran yok (bkz. README).
-   • Gövde: `p-4`, altta alt menü payı.
-   • Alt menü `h-14`, `fixed inset-x-0 bottom-0`, üstte border:
-     Finans · Kişiler · Randevular · Raporlar · Menü — sıra `mobileTabItems`.
-     Aktif sekme `text-brand`, diğerleri `text-text-muted`; ikon 20, etiket 10px.
-   • "Menü" düğmesi soldan çekmece açar (`w-[60vw] max-w-sm`), üstünde hesap
-     başlığı (avatar + ad + chevron), altında gruplu navigasyon.
-   • Hesap başlığına basınca hesap menüsü açılır.
+   • Gövde `p-4`; altta alt menü payı.
+   • Alt menü `h-14`: Finans · Kişiler · Randevular · Raporlar · Menü
+     (sıra `mobileTabItems`). Aktif sekme `text-brand`.
+   • "Menü" soldan çekmece açar; üstünde hesap başlığı (avatar + ad + chevron).
+
+ Bu turda eklenen: kabuk artık OTURUM KAPISI. Jeton yoksa giriş ekranı,
+ varsa panel. Açılışta saklı jeton `/v1/me` ile sınanır.
 */
 struct RootView: View {
     @State private var app = AppState()
+    @State private var session = SessionStore()
     @AppStorage("verimaya:theme") private var storedTheme = VMTheme.light.rawValue
 
     private var theme: VMTheme { VMTheme(rawValue: storedTheme) ?? .light }
     private var c: VMPalette { theme.palette }
 
     var body: some View {
+        Group {
+            switch session.phase {
+            case .restoring:
+                restoringView
+            case .signedOut:
+                LoginView()
+            case .signedIn:
+                panel
+            }
+        }
+        .environment(app)
+        .environment(session)
+        .environment(\.palette, c)
+        .preferredColorScheme(theme.colorScheme)
+        .task {
+            app.theme = theme
+            app.applyLaunchArguments()
+            await session.restore()
+        }
+        .onChange(of: session.tenant?.baseCurrency) { _, newValue in
+            app.baseCurrency = newValue ?? "TRY"
+        }
+    }
+
+    /// Açılışta saklı jeton sınanırken. Zaman aşımı 20 sn olduğu için bu ekran
+    /// en fazla o kadar sürer — sonsuza kadar dönmez (arşiv dersi #6).
+    private var restoringView: some View {
+        VStack(spacing: VMSpace.md) {
+            BrandMark()
+                .frame(width: 48, height: 48)
+            ProgressView()
+                .tint(c.brand)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(c.bg)
+    }
+
+    // MARK: Panel
+
+    private var panel: some View {
         ZStack(alignment: .leading) {
             c.bg.ignoresSafeArea()
 
@@ -44,9 +84,6 @@ struct RootView: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: app.menuOpen)
-        .environment(app)
-        .environment(\.palette, c)
-        .preferredColorScheme(theme.colorScheme)
         .sheet(isPresented: Binding(get: { app.searchOpen }, set: { app.searchOpen = $0 })) {
             SearchSheet()
                 .environment(app)
@@ -56,10 +93,6 @@ struct RootView: View {
             SupportSheet()
                 .environment(app)
                 .environment(\.palette, c)
-        }
-        .onAppear {
-            app.theme = theme
-            app.applyLaunchArguments()
         }
     }
 
@@ -166,6 +199,7 @@ struct RootView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("tab.\(tab.rawValue)")
         .accessibilityAddTraits(active ? [.isSelected] : [])
     }
 
@@ -184,6 +218,7 @@ struct RootView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("tab.menu")
         .accessibilityLabel(S.Shell.ariaMenu)
     }
 }
@@ -207,10 +242,11 @@ struct BrandMark: View {
 
 // MARK: - Menü çekmecesi
 
-/// Web'deki mobil `aside` — `w-[60vw] max-w-sm`, hesap başlığı + gruplu nav.
+/// Web'deki mobil `aside` — hesap başlığı + gruplu nav + footer.
 struct MenuDrawer: View {
     @Environment(\.palette) private var c
     @Environment(AppState.self) private var app
+    @Environment(SessionStore.self) private var session
 
     var body: some View {
         @Bindable var app = app
@@ -240,10 +276,11 @@ struct MenuDrawer: View {
             HStack {
                 Spacer()
                 VStack(spacing: 2) {
-                    Text(MockData.userEmail)
+                    Text(session.email)
                         .font(VMFont.xs)
                         .foregroundStyle(c.textMuted)
-                    Text("Verimaya · v0.1.0")
+                        .lineLimit(1)
+                    Text("Verimaya · v0.2.0")
                         .font(VMFont.xs)
                         .foregroundStyle(c.textFaint)
                 }
@@ -269,14 +306,14 @@ struct MenuDrawer: View {
                     app.accountMenuOpen.toggle()
                 } label: {
                     HStack(spacing: 10) {
-                        Text(VMFormat.initials(MockData.userDisplayName))
+                        Text(VMFormat.initials(session.displayName))
                             .font(VMFont.semibold(12))
                             .foregroundStyle(c.text)
                             .frame(width: 36, height: 36)
                             .background(c.surface2)
                             .clipShape(Circle())
                             .overlay(Circle().stroke(c.border, lineWidth: 1))
-                        Text(MockData.userDisplayName.split(separator: " ").first.map(String.init) ?? "")
+                        Text(session.displayName.split(separator: " ").first.map(String.init) ?? "…")
                             .font(VMFont.medium(16))
                             .foregroundStyle(c.text)
                             .lineLimit(1)
@@ -339,11 +376,12 @@ struct MenuDrawer: View {
 }
 
 /// Hesap menüsü — web'deki açılır menünün mobil (`spacious`) hâli.
-/// Web'de "Yenilikler", "Organizasyon değiştir" ve "Çıkış yap" da var;
-/// mockup'ta karşılığı olan ekran/oturum olmadığı için konmadı (bkz. README).
+/// "Yenilikler" yok (changelog ekranı yazılmadı); organizasyon değiştirme
+/// Profil ayarları kartında (birden çok organizasyon varsa).
 struct AccountMenu: View {
     @Environment(\.palette) private var c
     @Environment(AppState.self) private var app
+    @Environment(SessionStore.self) private var session
     @AppStorage("verimaya:theme") private var storedTheme = VMTheme.light.rawValue
 
     private var isDark: Bool { storedTheme == VMTheme.dark.rawValue }
@@ -353,12 +391,13 @@ struct AccountMenu: View {
 
         return VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(MockData.userDisplayName)
+                Text(session.displayName)
                     .font(VMFont.medium(16))
                     .foregroundStyle(c.text)
-                Text(MockData.userEmail)
+                Text(session.email)
                     .font(VMFont.sm)
                     .foregroundStyle(c.textFaint)
+                    .lineLimit(1)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -377,6 +416,10 @@ struct AccountMenu: View {
                 app.closeMenu()
                 app.supportOpen = true
             }
+            menuItem(S.Shell.signOut, icon: "rectangle.portrait.and.arrow.right", tone: .danger) {
+                app.closeMenu()
+                Task { await session.signOut() }
+            }
         }
         .background(c.surface)
         .clipShape(RoundedRectangle(cornerRadius: VMRadius.card, style: .continuous))
@@ -388,7 +431,14 @@ struct AccountMenu: View {
         .padding(.bottom, VMSpace.sm)
     }
 
-    private func menuItem(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+    private enum ItemTone { case normal, danger }
+
+    private func menuItem(
+        _ title: String,
+        icon: String,
+        tone: ItemTone = .normal,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: VMSpace.sm) {
                 Image(systemName: icon)
@@ -398,7 +448,7 @@ struct AccountMenu: View {
                     .font(VMFont.base)
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(c.textMuted)
+            .foregroundStyle(tone == .danger ? c.danger : c.textMuted)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .contentShape(Rectangle())

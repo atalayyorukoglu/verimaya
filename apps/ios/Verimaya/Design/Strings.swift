@@ -32,6 +32,8 @@ enum S {
         static let supportBody = "Sorun veya geri bildirim için destek ekibine yazın."
         static let supportClose = "Kapat"
         static let supportEmail = "destek@verimaya.com"
+        static let signOut = "Çıkış yap"
+        static let orgSwitch = "Organizasyon değiştir"
     }
 
     enum Theme {
@@ -46,6 +48,10 @@ enum S {
         static let edit = "Düzenle"
         static let apply = "Uygula"
         static let wait = "Bekleyin…"
+        static let save = "Kaydet"
+        static let delete = "Sil"
+        static let retry = "Yeniden dene"
+        static let saveFailed = "Kayıt başarısız"
     }
 
     enum Command {
@@ -139,6 +145,7 @@ enum S {
             static let fromQueue = "Onay Kuyruğu'ndan seçildi"
             static let pendingHeading = "Bekleyenler"
             static let pendingProcess = "Yeni mesajları işle"
+            static let pendingProcessing = "İşleniyor…"
             static let pendingEmpty = "Bekleyen mesaj yok."
             static let pendingMedia = "Medya"
             static let pendingIgnore = "Yoksay"
@@ -212,6 +219,20 @@ enum S {
             static let description = "Kategori / hasta / kişi seçimleri veya ödeme durumu tutarsız görünen işlemler."
             static let clean = "Tüm kayıtlar temiz görünüyor."
             static let badge = "{count} uyarı"
+
+            /// Sunucu `message_key` döner (`reports.consistency.<code>`); metin
+            /// katalogdan çözülür — sunucudan gelen metin ekrana basılmaz.
+            static let messages: [String: String] = [
+                "category_missing": "Kategori boş.",
+                "income_contact_missing": "Gelir kaydında kişi seçilmemiş.",
+                "expense_contact_missing": "Gider kaydında kişi/firma yok.",
+                "fx_missing": "Kur karşılığı yok (rapora dahil edilmedi).",
+                "paid_amount_mismatch": "Durum “ödendi” ama ödenen tutar kayıt tutarından farklı.",
+                "unpaid_with_payment": "Durum “ödenmedi” ama ödenen tutar sıfırdan büyük.",
+                "partial_amount_invalid": "Durum “kısmi” ama ödenen tutar boş, ≤0 veya tutara eşit/büyük.",
+                "contact_equals_responsible": "Kişi ve sorumlu aynı olamaz.",
+                "responsible_not_internal": "Sorumlu, şirket içi personel olmalı."
+            ]
         }
 
         enum Marketing {

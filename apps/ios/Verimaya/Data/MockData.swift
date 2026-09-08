@@ -1,13 +1,13 @@
 import Foundation
 
 /*
- Sahte örnek veri — TEK YER.
+ Örnek veri — SwiftUI önizlemeleri ve testler için.
 
- Bu teslimde ağ katmanı yok; ekranların tamamı buradan beslenir. Ağ katmanı
- gelince değişecek tek dosya budur: `MockData.contacts` yerine repository
- çağrısı konur, ekranlar aynı kalır.
+ Ekranlar artık bu dosyadan BESLENMİYOR: gerçek veri `/v1/…` uçlarından,
+ `Stores/` altındaki depolar üzerinden gelir. Burası silinmedi çünkü önizleme
+ ve birim testleri ağa çıkmadan gerçekçi kayıtlarla çalışabilsin.
 
- Tarihler "bugüne göre" üretilir; böylece "Bu ay" dönemi her zaman dolu görünür.
+ Tarihler "bugüne göre" üretilir.
 */
 enum MockData {
 
@@ -60,33 +60,47 @@ enum MockData {
     // MARK: Kişiler
 
     static let contacts: [Contact] = [
-        Contact(id: "c-01", displayName: "Sandra Whitfield", typeId: "ct-hasta",
+        Contact(id: "c-01", displayName: "Sandra Whitfield",
+                firstName: "Sandra", lastName: "Whitfield", typeId: "ct-hasta",
                 phone: "+44 7700 900112", email: "sandra.w@example.co.uk", status: .treated),
-        Contact(id: "c-02", displayName: "Ahmet Yıldırım", typeId: "ct-hasta",
+        Contact(id: "c-02", displayName: "Ahmet Yıldırım",
+                firstName: "Ahmet", lastName: "Yıldırım", typeId: "ct-hasta",
                 phone: "+90 532 415 88 20", email: "ahmet.yildirim@example.com", status: .scheduled),
-        Contact(id: "c-03", displayName: "Marek Kowalski", typeId: "ct-hasta",
+        Contact(id: "c-03", displayName: "Marek Kowalski",
+                firstName: "Marek", lastName: "Kowalski", typeId: "ct-hasta",
                 phone: "+48 601 224 118", email: nil, status: .arrived),
-        Contact(id: "c-04", displayName: "Fatima Al Rashid", typeId: "ct-hasta",
+        Contact(id: "c-04", displayName: "Fatima Al Rashid",
+                firstName: "Fatima", lastName: "Al Rashid", typeId: "ct-hasta",
                 phone: "+971 50 774 2210", email: "f.alrashid@example.ae", status: .follow_up),
-        Contact(id: "c-05", displayName: "Dmitri Sokolov", typeId: "ct-hasta",
+        Contact(id: "c-05", displayName: "Dmitri Sokolov",
+                firstName: "Dmitri", lastName: "Sokolov", typeId: "ct-hasta",
                 phone: "+7 916 220 4471", email: "d.sokolov@example.ru", status: .cancelled),
-        Contact(id: "c-06", displayName: "Elena Petrova", typeId: "ct-hasta",
+        Contact(id: "c-06", displayName: "Elena Petrova",
+                firstName: "Elena", lastName: "Petrova", typeId: "ct-hasta",
                 phone: "+7 903 118 6640", email: "elena.p@example.ru", status: .scheduled),
-        Contact(id: "c-07", displayName: "Estetik International Klinik", typeId: "ct-klinik",
+        Contact(id: "c-07", displayName: "Estetik International Klinik",
+                firstName: "Estetik", lastName: "International Klinik", typeId: "ct-klinik",
                 phone: "+90 212 344 10 90", email: "operasyon@estetikintl.com", status: nil),
-        Contact(id: "c-08", displayName: "Nişantaşı Dental Center", typeId: "ct-klinik",
+        Contact(id: "c-08", displayName: "Nişantaşı Dental Center",
+                firstName: "Nişantaşı", lastName: "Dental Center", typeId: "ct-klinik",
                 phone: "+90 212 231 44 05", email: "info@nsdental.com", status: nil),
-        Contact(id: "c-09", displayName: "Grand Levent Hotel", typeId: "ct-otel",
+        Contact(id: "c-09", displayName: "Grand Levent Hotel",
+                firstName: "Grand", lastName: "Levent Hotel", typeId: "ct-otel",
                 phone: "+90 212 270 33 00", email: "rezervasyon@grandlevent.com", status: nil),
-        Contact(id: "c-10", displayName: "Taksim Suites", typeId: "ct-otel",
+        Contact(id: "c-10", displayName: "Taksim Suites",
+                firstName: "Taksim", lastName: "Suites", typeId: "ct-otel",
                 phone: "+90 212 292 71 40", email: "front@taksimsuites.com", status: nil),
-        Contact(id: "c-11", displayName: "Mavi Transfer", typeId: "ct-transfer",
+        Contact(id: "c-11", displayName: "Mavi Transfer",
+                firstName: "Mavi", lastName: "Transfer", typeId: "ct-transfer",
                 phone: "+90 533 660 22 14", email: "operasyon@mavitransfer.com", status: nil),
-        Contact(id: "c-12", displayName: "VIP Yol Transfer", typeId: "ct-transfer",
+        Contact(id: "c-12", displayName: "VIP Yol Transfer",
+                firstName: "VIP", lastName: "Yol Transfer", typeId: "ct-transfer",
                 phone: "+90 542 118 09 77", email: nil, status: nil),
-        Contact(id: "c-13", displayName: "Medikal Sarf Deposu", typeId: "ct-tedarikci",
+        Contact(id: "c-13", displayName: "Medikal Sarf Deposu",
+                firstName: "Medikal", lastName: "Sarf Deposu", typeId: "ct-tedarikci",
                 phone: "+90 216 470 12 33", email: "satis@medikalsarf.com", status: nil),
-        Contact(id: "c-14", displayName: "Meta Ads", typeId: "ct-tedarikci",
+        Contact(id: "c-14", displayName: "Meta Ads",
+                firstName: "Meta", lastName: "Ads", typeId: "ct-tedarikci",
                 phone: nil, email: "billing@meta.com", status: nil)
     ]
 
@@ -98,68 +112,68 @@ enum MockData {
                     endsAt: date(day: 3, hour: 13, minute: 0),
                     status: .completed, appointmentType: "Yeni Hasta",
                     clinicName: "Estetik International Klinik", hotelName: "Grand Levent Hotel",
-                    transferNote: "Mavi Transfer", doctorName: "Dr. Kaan Ersoy"),
+                    transferNote: "Mavi Transfer"),
         Appointment(id: "a-02", contactId: "c-02", contactDisplayName: "Ahmet Yıldırım",
                     startsAt: date(day: 7, hour: 11, minute: 0),
                     endsAt: date(day: 7, hour: 12, minute: 0),
                     status: .confirmed, appointmentType: "Devam",
                     clinicName: "Nişantaşı Dental Center", hotelName: nil,
-                    transferNote: nil, doctorName: "Dr. Selin Aydın"),
+                    transferNote: nil),
         Appointment(id: "a-03", contactId: "c-03", contactDisplayName: "Marek Kowalski",
                     startsAt: date(day: 11, hour: 16, minute: 30),
                     endsAt: nil,
                     status: .scheduled, appointmentType: "RPT",
                     clinicName: "Estetik International Klinik", hotelName: "Taksim Suites",
-                    transferNote: "VIP Yol Transfer", doctorName: "Dr. Kaan Ersoy"),
+                    transferNote: "VIP Yol Transfer"),
         Appointment(id: "a-04", contactId: "c-04", contactDisplayName: "Fatima Al Rashid",
                     startsAt: date(day: 14, hour: 10, minute: 0),
                     endsAt: date(day: 14, hour: 11, minute: 30),
                     status: .completed, appointmentType: "Devam",
                     clinicName: "Nişantaşı Dental Center", hotelName: "Grand Levent Hotel",
-                    transferNote: "Mavi Transfer", doctorName: "Dr. Selin Aydın"),
+                    transferNote: "Mavi Transfer"),
         Appointment(id: "a-05", contactId: "c-05", contactDisplayName: "Dmitri Sokolov",
                     startsAt: date(day: 17, hour: 14, minute: 0),
                     endsAt: nil,
                     status: .cancelled, appointmentType: "Yeni Hasta",
                     clinicName: "Estetik International Klinik", hotelName: nil,
-                    transferNote: "Uçuş iptal edildi, yeniden planlanacak", doctorName: "Dr. Kaan Ersoy"),
+                    transferNote: "Uçuş iptal edildi, yeniden planlanacak"),
         Appointment(id: "a-06", contactId: "c-06", contactDisplayName: "Elena Petrova",
                     startsAt: date(day: 21, hour: 9, minute: 0),
                     endsAt: date(day: 21, hour: 15, minute: 0),
                     status: .scheduled, appointmentType: "Yeni Hasta",
                     clinicName: "Estetik International Klinik", hotelName: "Taksim Suites",
-                    transferNote: "Mavi Transfer", doctorName: "Dr. Melis Tunç"),
+                    transferNote: "Mavi Transfer"),
         Appointment(id: "a-07", contactId: "c-01", contactDisplayName: "Sandra Whitfield",
                     startsAt: date(day: 24, hour: 13, minute: 15),
                     endsAt: date(day: 24, hour: 14, minute: 0),
                     status: .no_show, appointmentType: "RPT",
                     clinicName: "Nişantaşı Dental Center", hotelName: nil,
-                    transferNote: nil, doctorName: "Dr. Selin Aydın"),
+                    transferNote: nil),
         Appointment(id: "a-08", contactId: "c-03", contactDisplayName: "Marek Kowalski",
                     startsAt: date(day: 27, hour: 12, minute: 0),
                     endsAt: date(day: 27, hour: 12, minute: 45),
                     status: .in_progress, appointmentType: "Devam",
                     clinicName: "Estetik International Klinik", hotelName: "Grand Levent Hotel",
-                    transferNote: "VIP Yol Transfer", doctorName: "Dr. Melis Tunç"),
+                    transferNote: "VIP Yol Transfer"),
         // Geçen ay — dönem seçici gerçekten süzsün diye.
         Appointment(id: "a-09", contactId: "c-04", contactDisplayName: "Fatima Al Rashid",
                     startsAt: date(monthOffset: -1, day: 12, hour: 10, minute: 30),
                     endsAt: date(monthOffset: -1, day: 12, hour: 12, minute: 0),
                     status: .completed, appointmentType: "Yeni Hasta",
                     clinicName: "Nişantaşı Dental Center", hotelName: "Grand Levent Hotel",
-                    transferNote: "Mavi Transfer", doctorName: "Dr. Selin Aydın"),
+                    transferNote: "Mavi Transfer"),
         Appointment(id: "a-10", contactId: "c-02", contactDisplayName: "Ahmet Yıldırım",
                     startsAt: date(monthOffset: -1, day: 19, hour: 15, minute: 0),
                     endsAt: nil,
                     status: .completed, appointmentType: "Devam",
                     clinicName: "Estetik International Klinik", hotelName: nil,
-                    transferNote: nil, doctorName: "Dr. Kaan Ersoy"),
+                    transferNote: nil),
         Appointment(id: "a-11", contactId: "c-06", contactDisplayName: "Elena Petrova",
                     startsAt: date(monthOffset: -1, day: 26, hour: 11, minute: 0),
                     endsAt: date(monthOffset: -1, day: 26, hour: 11, minute: 40),
                     status: .no_show, appointmentType: "RPT",
                     clinicName: "Estetik International Klinik", hotelName: "Taksim Suites",
-                    transferNote: "VIP Yol Transfer", doctorName: "Dr. Melis Tunç")
+                    transferNote: "VIP Yol Transfer")
     ]
 
     /// Randevu tipi sözlüğü (web'de tenant ayarlarından gelir).
@@ -310,21 +324,21 @@ enum MockData {
 
     /// `m-01` mesajından çıkarılan taslaklar (sahte AI çıktısı).
     static let draftsForFirstMessage: [TransactionDraft] = [
-        TransactionDraft(id: "d-01", kind: .income, amount: 290_000, currency: "GBP",
+        TransactionDraft(kind: .income, amount: 290_000, currency: "GBP",
                          title: "2. vizit ödemesi", category: "Tedavi geliri",
-                         contactDisplayName: "Sandra Whitfield",
+                         contactLabel: "Sandra Whitfield",
                          occurredOn: date(day: 3), paymentMethod: "Kart"),
-        TransactionDraft(id: "d-02", kind: .income, amount: 45_000, currency: "GBP",
+        TransactionDraft(kind: .income, amount: 45_000, currency: "GBP",
                          title: "T-base ücretleri", category: "Tedavi geliri",
-                         contactDisplayName: "Sandra Whitfield",
+                         contactLabel: "Sandra Whitfield",
                          occurredOn: date(day: 3), paymentMethod: "Kart")
     ]
 
     /// `m-02` mesajından çıkarılan taslak.
     static let draftsForSecondMessage: [TransactionDraft] = [
-        TransactionDraft(id: "d-03", kind: .expense, amount: 185_000, currency: "TRY",
+        TransactionDraft(kind: .expense, amount: 185_000, currency: "TRY",
                          title: "Otel → klinik transferi (3 adet)", category: "Transfer",
-                         contactDisplayName: "Mavi Transfer",
+                         contactLabel: "Mavi Transfer",
                          occurredOn: date(day: 4), paymentMethod: "Nakit")
     ]
 

@@ -1,26 +1,24 @@
 import SwiftUI
 
 /*
- `apps/web/src/routes/finance/+page.svelte` — mobil hâl.
+ `apps/web/src/routes/finance/+page.svelte` — mobil hâl, gerçek veriyle.
 
- Web mobil düzeni:
-   • `PageHeader`: "İşlemler" + sayaç açıklaması; eylemler sağda iki bağlantı —
-     "AI ile işlem" (kıvılcım ikonu + bekleyen sayısı rozeti) ve "Hakediş".
-     Mobilde ikisi de `h-11`, `rounded-[6px]`, `border`.
-   • `BalancesPanel collapsible` — özet şerit: "Borç: … - Alacak: …" + "Detay".
-   • Süzgeç formu: arama alanı tam genişlik (`h-11`), altında tür + durum
-     seçicileri ve kare "+" düğmesi. Kategori/tarih alanları `max-md:hidden`
-     (tarih kabuk başlığında).
-   • Liste (`md:hidden`): kart başına başlık (text-sm medium) + tarih (text-xs
-     faint) solda; sağda tutar (gider ise "−" öneki, gelir `text-success`),
-     altında baz para karşılığı; en altta durum rozeti.
+ Düzen mockup turundan değişmedi: başlık + "AI ile işlem" (bekleyen rozeti) +
+ "Hakediş", bakiye şeridi, arama + tür/durum seçicileri + kare "+", kart listesi.
+
+ SAYAÇ: `store.totalCount` (`total_count`).
+ SÜZGEÇ: `q`, `kind`, `status`, `from`, `to` — hepsi sunucuya gider. Arama
+ Enter'a basınca uygulanır: her tuşta istek atmak sunucuyu boşuna yorar ve
+ `q` boş kaldığında 400 döner (boş değer gönderilmiyor).
 */
 struct FinanceView: View {
     @Environment(\.palette) private var c
     @Environment(AppState.self) private var app
 
-    @State private var transactions = MockData.transactions
-    @State private var query = ""
+    @State private var store = TransactionsStore()
+    @State private var inbox = InboxStore()
+    @State private var searchText = ""
+    @State private var appliedSearch = ""
     @State private var kindFilter = ""
     @State private var statusFilter = ""
     @State private var formTarget: TransactionFormTarget?
@@ -28,34 +26,20 @@ struct FinanceView: View {
 
     private var period: Period { app.financePeriod }
 
-    private var pendingInboxCount: Int {
-        MockData.inboundMessages.filter { $0.status == .new }.count
-    }
-
-    private var filtersActive: Bool {
-        !query.trimmed.isEmpty || !kindFilter.isEmpty || !statusFilter.isEmpty
-            || period.range != nil
-    }
-
-    private var filtered: [Transaction] {
-        let term = query.trimmed.lowercased(with: VMFormat.locale)
-        return transactions
-            .filter { period.contains($0.occurredOn) }
-            .filter { kindFilter.isEmpty || $0.kind.rawValue == kindFilter }
-            .filter { statusFilter.isEmpty || $0.status.rawValue == statusFilter }
-            .filter { tx in
-                guard !term.isEmpty else { return true }
-                let haystack = [tx.derivedLabel, tx.contactDisplayName ?? "", tx.category ?? "", tx.subtitle ?? ""]
-                    .joined(separator: " ")
-                    .lowercased(with: VMFormat.locale)
-                return haystack.contains(term)
-            }
-            .sorted { $0.occurredOn > $1.occurredOn }
+    private var filters: TransactionsStore.Filters {
+        TransactionsStore.Filters(
+            query: appliedSearch.isEmpty ? nil : appliedSearch,
+            kind: kindFilter.isEmpty ? nil : kindFilter,
+            status: statusFilter.isEmpty ? nil : statusFilter,
+            from: period.apiFrom,
+            to: period.apiTo
+        )
     }
 
     private var listDescription: String {
-        let count = String(filtered.count)
-        return filtersActive
+        guard let total = store.totalCount else { return S.Finance.description }
+        let count = String(total)
+        return filters.isActive
             ? vmFill(S.Finance.totalFiltered, ["count": count])
             : vmFill(S.Finance.total, ["count": count])
     }
@@ -70,21 +54,25 @@ struct FinanceView: View {
             + TransactionStatus.allCases.map { (value: $0.rawValue, label: $0.label) }
     }
 
-    var body: some View {
-        @Bindable var app = app
+    private var baseCurrency: String { app.baseCurrency }
 
-        return ScrollView {
+    var body: some View {
+        ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
                 balancesStrip
-                filters
+                filterControls
 
-                if filtered.isEmpty {
+                if let error = store.errorMessage {
+                    ErrorBanner(message: error) { reload() }
+                } else if store.isLoading && !store.hasLoadedOnce {
+                    LoadingRow(label: S.Finance.loading)
+                } else if store.items.isEmpty {
                     EmptyStateCard {
-                        Text(filtersActive ? S.Finance.emptyFiltered : S.Finance.empty)
+                        Text(filters.isActive ? S.Finance.emptyFiltered : S.Finance.empty)
                             .font(VMFont.sm)
                             .foregroundStyle(c.textMuted)
-                        if !filtersActive {
+                        if !filters.isActive {
                             VMButton(title: S.Finance.new) {
                                 formTarget = TransactionFormTarget(transaction: nil)
                             }
@@ -92,8 +80,14 @@ struct FinanceView: View {
                     }
                 } else {
                     VStack(spacing: VMSpace.sm) {
-                        ForEach(filtered) { tx in
+                        ForEach(store.items) { tx in
                             row(tx)
+                        }
+                    }
+
+                    if store.canLoadMore {
+                        LoadMoreRow(title: S.Finance.loadMore, isLoading: store.isLoadingMore) {
+                            Task { await store.loadMore(filters) }
                         }
                     }
                 }
@@ -101,16 +95,26 @@ struct FinanceView: View {
             .padding(VMSpace.page)
         }
         .background(c.bg)
+        .refreshable {
+            await store.reload(filters)
+            await store.loadBalances()
+        }
+        .task(id: filters.key) { await store.reload(filters) }
+        .task {
+            await store.loadBalances()
+            await inbox.reload()
+        }
         .sheet(item: $formTarget) { target in
             TransactionFormSheet(
                 transaction: target.transaction,
-                onSave: save,
-                onDelete: target.transaction.map { existing in { delete(existing) } }
+                baseCurrency: baseCurrency,
+                onSave: { body, existing in try await save(body, existing: existing) },
+                onDelete: target.transaction.map { existing in { try await delete(existing) } }
             )
             .environment(\.palette, c)
         }
         .sheet(isPresented: $balancesOpen) {
-            BalancesSheet(open: $balancesOpen)
+            BalancesSheet(balances: store.balances, open: $balancesOpen)
                 .environment(\.palette, c)
         }
     }
@@ -126,12 +130,14 @@ struct FinanceView: View {
                 Text(listDescription)
                     .font(VMFont.sm)
                     .foregroundStyle(c.textMuted)
+                    .accessibilityIdentifier("finance.count")
             }
             actionLinks
         }
     }
 
     /// "AI ile işlem" + "Hakediş" — web'de başlık eylemleri.
+    /// Rozet sayısı gerçek kuyruktan (`status == new`).
     private var actionLinks: some View {
         @Bindable var app = app
 
@@ -144,8 +150,8 @@ struct FinanceView: View {
                         .font(.system(size: 14))
                     Text(S.Finance.aiLink)
                         .font(VMFont.medium(14))
-                    if pendingInboxCount > 0 {
-                        Text("\(pendingInboxCount)")
+                    if inbox.newCount > 0 {
+                        Text("\(inbox.newCount)")
                             .font(.system(size: 10, weight: .semibold))
                             .monospacedDigit()
                             .foregroundStyle(c.text)
@@ -182,15 +188,13 @@ struct FinanceView: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.bottom, VMSpace.md)
     }
 
-    // MARK: Bakiye şeridi
+    // MARK: Bakiye şeridi (`GET /v1/reports/balances`)
 
-    /// `BalancesPanel collapsible` — "Borç: … - Alacak: …" + "Detay".
     private var balancesStrip: some View {
-        let payable = MockData.balances.filter { $0.net < 0 }
-        let receivable = MockData.balances.filter { $0.net > 0 }
+        let payable = store.balances.filter { $0.net < 0 }
+        let receivable = store.balances.filter { $0.net > 0 }
 
         return HStack(spacing: VMSpace.md) {
             VStack(alignment: .leading, spacing: 4) {
@@ -232,6 +236,7 @@ struct FinanceView: View {
         .padding(.horizontal, VMSpace.lg)
         .padding(.vertical, VMSpace.md)
         .vmCard(c)
+        .padding(.top, VMSpace.md)
         .padding(.bottom, VMSpace.sm)
     }
 
@@ -244,9 +249,11 @@ struct FinanceView: View {
 
     // MARK: Süzgeçler
 
-    private var filters: some View {
+    private var filterControls: some View {
         VStack(spacing: VMSpace.sm) {
-            VMTextField(placeholder: S.Finance.Filter.qPlaceholder, text: $query)
+            VMTextField(placeholder: S.Finance.Filter.qPlaceholder, text: $searchText)
+                .onSubmit { appliedSearch = searchText.trimmed }
+                .submitLabel(.search)
 
             HStack(spacing: VMSpace.sm) {
                 VMSelect(options: kindOptions, selection: $kindFilter,
@@ -259,10 +266,11 @@ struct FinanceView: View {
                 .accessibilityLabel(S.Finance.new)
             }
 
-            if !query.trimmed.isEmpty || !kindFilter.isEmpty || !statusFilter.isEmpty {
+            if !appliedSearch.isEmpty || !kindFilter.isEmpty || !statusFilter.isEmpty {
                 HStack {
                     VMButton(title: S.Finance.Filter.clear, variant: .outline) {
-                        query = ""
+                        searchText = ""
+                        appliedSearch = ""
                         kindFilter = ""
                         statusFilter = ""
                     }
@@ -327,23 +335,29 @@ struct FinanceView: View {
 
     /// `baseLine` — yalnız işlem para birimi baz para biriminden farklıysa ve kur varsa.
     private func baseLine(_ tx: Transaction) -> String? {
-        guard tx.currency != MockData.baseCurrency, let base = tx.amountBase else { return nil }
+        guard tx.currency != baseCurrency, let base = tx.amountBase else { return nil }
         let sign = tx.kind == .expense ? "−" : ""
-        return sign + VMFormat.money(base, currency: MockData.baseCurrency)
+        return sign + VMFormat.money(base, currency: baseCurrency)
     }
 
-    private func save(_ tx: Transaction) {
-        if let index = transactions.firstIndex(where: { $0.id == tx.id }) {
-            transactions[index] = tx
+    private func reload() {
+        Task { await store.reload(filters) }
+    }
+
+    private func save(_ body: TransactionWrite, existing: Transaction?) async throws {
+        if let existing {
+            try await store.update(existing.id, body)
         } else {
-            transactions.insert(tx, at: 0)
+            try await store.create(body)
         }
-        formTarget = nil
+        await store.reload(filters)
+        await store.loadBalances()
     }
 
-    private func delete(_ tx: Transaction) {
-        transactions.removeAll { $0.id == tx.id }
-        formTarget = nil
+    private func delete(_ tx: Transaction) async throws {
+        try await store.delete(tx.id)
+        await store.reload(filters)
+        await store.loadBalances()
     }
 }
 
@@ -358,21 +372,25 @@ struct TransactionFormSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let transaction: Transaction?
-    let onSave: (Transaction) -> Void
-    let onDelete: (() -> Void)?
+    let baseCurrency: String
+    let onSave: (TransactionWrite, Transaction?) async throws -> Void
+    let onDelete: (() async throws -> Void)?
 
+    @State private var contacts: [Contact] = []
     @State private var kind = TransactionKind.income.rawValue
     @State private var status = TransactionStatus.paid.rawValue
     @State private var amountText = ""
     @State private var currency = "TRY"
     @State private var title = ""
     @State private var category = ""
-    @State private var contactName = ""
+    @State private var contactId = ""
     @State private var occurredOn = Date()
+    @State private var isSaving = false
+    @State private var errorMessage: String?
 
     private let currencies = ["TRY", "GBP", "EUR", "USD"]
 
-    private var canSave: Bool { parseMoneyInput(amountText) != nil }
+    private var canSave: Bool { parseMoneyInput(amountText) != nil && !isSaving }
 
     var body: some View {
         ScrollView {
@@ -388,6 +406,7 @@ struct TransactionFormSheet: View {
                 labelled("Tutar") {
                     HStack(spacing: VMSpace.sm) {
                         VMTextField(placeholder: "0,00", text: $amountText)
+                            .keyboardType(.decimalPad)
                         VMSelect(options: currencies.map { (value: $0, label: $0) },
                                  selection: $currency, accessibilityLabel: "Para birimi")
                             .frame(width: 110)
@@ -401,8 +420,8 @@ struct TransactionFormSheet: View {
                 labelled("Kategori") { VMTextField(placeholder: "Kategori", text: $category) }
                 labelled("Kişi") {
                     VMSelect(options: [(value: "", label: "—")]
-                                + MockData.contacts.map { (value: $0.displayName, label: $0.displayName) },
-                             selection: $contactName, accessibilityLabel: "Kişi")
+                                + contacts.map { (value: $0.id, label: $0.displayName) },
+                             selection: $contactId, accessibilityLabel: "Kişi")
                 }
                 labelled("Tarih") {
                     HStack {
@@ -416,17 +435,23 @@ struct TransactionFormSheet: View {
                     .vmCard(c, radius: VMRadius.control)
                 }
 
+                if let errorMessage {
+                    ErrorBanner(message: errorMessage)
+                }
+
                 HStack(spacing: VMSpace.sm) {
-                    VMButton(title: "Kaydet", fullWidth: true, disabled: !canSave) { submit() }
+                    VMButton(title: isSaving ? S.Common.wait : S.Common.save,
+                             fullWidth: true, disabled: !canSave) { submit() }
                     VMButton(title: S.Common.cancel, variant: .outline, fullWidth: true) { dismiss() }
                 }
                 .padding(.top, VMSpace.sm)
 
-                if let onDelete {
-                    Button("Sil", role: .destructive) { onDelete() }
+                if onDelete != nil {
+                    Button(S.Common.delete, role: .destructive) { remove() }
                         .font(VMFont.sm)
                         .foregroundStyle(c.danger)
                         .frame(maxWidth: .infinity)
+                        .disabled(isSaving)
                 }
             }
             .padding(VMSpace.lg)
@@ -434,7 +459,7 @@ struct TransactionFormSheet: View {
         .background(c.bg)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .onAppear(perform: hydrate)
+        .task { await loadPickers() }
     }
 
     private func labelled<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
@@ -446,8 +471,16 @@ struct TransactionFormSheet: View {
         }
     }
 
+    private func loadPickers() async {
+        contacts = (try? await APIClient.shared.listContacts(limit: 100))?.items ?? []
+        hydrate()
+    }
+
     private func hydrate() {
-        guard let transaction else { return }
+        guard let transaction else {
+            currency = baseCurrency
+            return
+        }
         kind = transaction.kind.rawValue
         status = transaction.status.rawValue
         amountText = String(format: "%.2f", Double(transaction.amount) / 100)
@@ -455,44 +488,68 @@ struct TransactionFormSheet: View {
         currency = transaction.currency
         title = transaction.title ?? ""
         category = transaction.category ?? ""
-        contactName = transaction.contactDisplayName ?? ""
+        contactId = transaction.contactId ?? ""
         occurredOn = transaction.occurredOn
     }
 
     private func submit() {
         guard let minor = parseMoneyInput(amountText) else { return }
-        let record = Transaction(
-            id: transaction?.id ?? "t-\(UUID().uuidString.prefix(6))",
-            kind: TransactionKind(rawValue: kind) ?? .income,
-            status: TransactionStatus(rawValue: status) ?? .paid,
+        let body = TransactionWrite(
+            kind: kind,
+            status: status,
             amount: minor,
             currency: currency,
-            amountBase: currency == MockData.baseCurrency ? minor : transaction?.amountBase,
-            occurredOn: occurredOn,
+            occurredOn: APIDate.dayKeyString(occurredOn),
             title: title.trimmed.isEmpty ? nil : title.trimmed,
             category: category.trimmed.isEmpty ? nil : category.trimmed,
-            subtitle: transaction?.subtitle,
-            contactDisplayName: contactName.isEmpty ? nil : contactName,
-            description: transaction?.description
+            contactId: contactId.isEmpty ? nil : contactId,
+            // Sunucu "ödendi"de tutarla eşleşen `paid_amount` bekler; "ödenmedi"de 0.
+            paidAmount: status == TransactionStatus.paid.rawValue ? minor
+                : (status == TransactionStatus.unpaid.rawValue ? 0 : nil)
         )
-        onSave(record)
-        dismiss()
+        Task {
+            isSaving = true
+            errorMessage = nil
+            do {
+                try await onSave(body, transaction)
+                dismiss()
+            } catch {
+                errorMessage = APIError.message(from: error)
+            }
+            isSaving = false
+        }
+    }
+
+    private func remove() {
+        guard let onDelete else { return }
+        Task {
+            isSaving = true
+            errorMessage = nil
+            do {
+                try await onDelete()
+                dismiss()
+            } catch {
+                errorMessage = APIError.message(from: error)
+            }
+            isSaving = false
+        }
     }
 }
 
-/// "Hakediş" / "Detay" — web'de `/finance/commissions` ve `/finance/balances`.
-/// Mockup'ta tek yüzey: bakiye listesi (borç/alacak süzgeciyle).
+/// "Hakediş" / "Detay" — `GET /v1/reports/balances`.
 struct BalancesSheet: View {
     @Environment(\.palette) private var c
+
+    let balances: [Balance]
     @Binding var open: Bool
 
     @State private var filter = "all"
 
     private var rows: [Balance] {
         switch filter {
-        case "payable": return MockData.balances.filter { $0.net < 0 }
-        case "receivable": return MockData.balances.filter { $0.net > 0 }
-        default: return MockData.balances
+        case "payable": return balances.filter { $0.net < 0 }
+        case "receivable": return balances.filter { $0.net > 0 }
+        default: return balances
         }
     }
 
@@ -517,7 +574,7 @@ struct BalancesSheet: View {
             )
 
             if rows.isEmpty {
-                Text(S.Finance.Balances.emptyFiltered)
+                Text(balances.isEmpty ? S.Finance.Balances.empty : S.Finance.Balances.emptyFiltered)
                     .font(VMFont.sm)
                     .foregroundStyle(c.textMuted)
             } else {
@@ -586,7 +643,8 @@ struct BalancesSheet: View {
                 if let days = row.oldestOpenDays {
                     Text(vmFill("En eski açık: {days} gün", ["days": String(days)]))
                         .font(VMFont.xs)
-                        .foregroundStyle(c.textFaint)
+                        // 90+ gün kırmızı, 60+ sarı — web ile aynı eşikler.
+                        .foregroundStyle(days > 90 ? c.danger : (days > 60 ? c.warning : c.textMuted))
                 }
             }
 

@@ -1,44 +1,39 @@
 import SwiftUI
 
 /*
- `apps/web/src/routes/appointments/+page.svelte` — mobil hâl.
+ `apps/web/src/routes/appointments/+page.svelte` — mobil hâl, gerçek veriyle.
 
- Web mobil düzeni:
-   • Başlık bloğu (`border-b pb-4`): "Randevular"; altında iki yana yaslı satır —
-     solda "{dönem} · {n} randevu", sağda "2026-09-01 > 2026-09-30".
-   • Dönem sekmeleri `max-md:hidden` → mobilde YOK; dönem kabuk başlığında.
-   • Süzgeç satırı: tür seçici + durum seçici + kare "+" düğmesi (mobilde
-     etiket gizli, `max-sm:w-11`).
-   • Kart (`rounded-xl border bg-surface p-4`, `space-y-2`):
-       – 48px baş harf dairesi + isim (text-base semibold)
-       – altında tip hapı: renkli nokta + tip adı + tarih·saat (tabular)
-       – en altta tek satır: "Klinik: … , Otel: … , Transfer: …"
-       – sağ üstte kalem düğmesi
-   • Hap rengi `typePillClass`: RPT → danger, "devam" → turuncu,
-     "yeni hasta" → yeşil, boşsa duruma göre.
+ Düzen mockup turundan değişmedi (kart `rounded-xl`, 48px baş harf dairesi,
+ renkli tip hapı, lojistik tek satır, sağ üstte kalem).
+
+ SAYAÇ: randevu zarfı `total_count` TAŞIMAZ; sayaç `status_counts` toplamıdır —
+ web de aynısını yapıyor. Yüklü satır sayısı değil.
+ SÜZGEÇ: tür/durum/dönem sunucuya `appointment_type` / `status` / `from` / `to`
+ olarak gider. Dönem kabuk başlığındaki denetimden gelir.
 */
 struct AppointmentsView: View {
     @Environment(\.palette) private var c
     @Environment(AppState.self) private var app
 
-    @State private var appointments = MockData.appointments
+    @State private var store = AppointmentsStore()
     @State private var typeFilter = ""
     @State private var statusFilter = ""
     @State private var formTarget: AppointmentFormTarget?
 
     private var period: Period { app.appointmentsPeriod }
 
-    private var filtered: [Appointment] {
-        appointments
-            .filter { period.contains($0.startsAt) }
-            .filter { typeFilter.isEmpty || ($0.appointmentType ?? "") == typeFilter }
-            .filter { statusFilter.isEmpty || $0.status.rawValue == statusFilter }
-            .sorted { $0.startsAt < $1.startsAt }
+    private var filters: AppointmentsStore.Filters {
+        AppointmentsStore.Filters(
+            type: typeFilter.isEmpty ? nil : typeFilter,
+            status: statusFilter.isEmpty ? nil : statusFilter,
+            from: period.apiFrom,
+            to: period.apiTo
+        )
     }
 
     private var typeOptions: [(value: String, label: String)] {
         [(value: "", label: S.Appointments.filterTypeAll)]
-            + MockData.appointmentTypeNames.map { (value: $0, label: $0) }
+            + store.appointmentTypes.map { (value: $0, label: $0) }
     }
 
     private var statusOptions: [(value: String, label: String)] {
@@ -46,12 +41,24 @@ struct AppointmentsView: View {
             + AppointmentStatus.allCases.map { (value: $0.rawValue, label: $0.label) }
     }
 
+    private var summaryText: String {
+        guard let total = store.totalCount else { return period.summaryLabel }
+        return vmFill(S.Appointments.periodSummary, [
+            "period": period.summaryLabel,
+            "count": String(total)
+        ])
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
 
-                if filtered.isEmpty {
+                if let error = store.errorMessage {
+                    ErrorBanner(message: error) { reload() }
+                } else if store.isLoading && !store.hasLoadedOnce {
+                    LoadingRow(label: S.Appointments.loading)
+                } else if store.items.isEmpty {
                     EmptyStateCard {
                         Text(S.Appointments.emptyTitle)
                             .font(VMFont.medium(14))
@@ -66,8 +73,14 @@ struct AppointmentsView: View {
                     }
                 } else {
                     VStack(spacing: VMSpace.sm) {
-                        ForEach(filtered) { appt in
+                        ForEach(store.items) { appt in
                             card(appt)
+                        }
+                    }
+
+                    if store.canLoadMore {
+                        LoadMoreRow(title: S.Appointments.loadMore, isLoading: store.isLoadingMore) {
+                            Task { await store.loadMore(filters) }
                         }
                     }
                 }
@@ -75,11 +88,15 @@ struct AppointmentsView: View {
             .padding(VMSpace.page)
         }
         .background(c.bg)
+        .refreshable { await store.reload(filters) }
+        .task { await store.loadTypesIfNeeded() }
+        .task(id: filters.key) { await store.reload(filters) }
         .sheet(item: $formTarget) { target in
             AppointmentFormSheet(
                 appointment: target.appointment,
-                onSave: save,
-                onDelete: target.appointment.map { existing in { delete(existing) } }
+                appointmentTypes: store.appointmentTypes,
+                onSave: { body, existing in try await save(body, existing: existing) },
+                onDelete: target.appointment.map { existing in { try await delete(existing) } }
             )
             .environment(\.palette, c)
         }
@@ -93,13 +110,11 @@ struct AppointmentsView: View {
                     .foregroundStyle(c.text)
 
                 HStack(alignment: .firstTextBaseline, spacing: VMSpace.sm) {
-                    Text(vmFill(S.Appointments.periodSummary, [
-                        "period": period.summaryLabel,
-                        "count": String(filtered.count)
-                    ]))
-                    .font(VMFont.sm)
-                    .foregroundStyle(c.textMuted)
-                    .lineLimit(1)
+                    Text(summaryText)
+                        .font(VMFont.sm)
+                        .foregroundStyle(c.textMuted)
+                        .lineLimit(1)
+                        .accessibilityIdentifier("appointments.count")
 
                     Spacer(minLength: 0)
 
@@ -279,18 +294,22 @@ struct AppointmentsView: View {
         }
     }
 
-    private func save(_ appointment: Appointment) {
-        if let index = appointments.firstIndex(where: { $0.id == appointment.id }) {
-            appointments[index] = appointment
-        } else {
-            appointments.append(appointment)
-        }
-        formTarget = nil
+    private func reload() {
+        Task { await store.reload(filters) }
     }
 
-    private func delete(_ appointment: Appointment) {
-        appointments.removeAll { $0.id == appointment.id }
-        formTarget = nil
+    private func save(_ body: AppointmentWrite, existing: Appointment?) async throws {
+        if let existing {
+            try await store.update(existing.id, body)
+        } else {
+            try await store.create(body)
+        }
+        await store.reload(filters)
+    }
+
+    private func delete(_ appointment: Appointment) async throws {
+        try await store.delete(appointment.id)
+        await store.reload(filters)
     }
 }
 
@@ -300,45 +319,41 @@ struct AppointmentFormTarget: Identifiable {
 }
 
 /// `AppointmentFormDialog.svelte` karşılığı.
+/// Hasta ve klinik/otel/transfer listeleri sunucudan (`/v1/contacts`) yüklenir.
 struct AppointmentFormSheet: View {
     @Environment(\.palette) private var c
     @Environment(\.dismiss) private var dismiss
 
     let appointment: Appointment?
-    let onSave: (Appointment) -> Void
-    let onDelete: (() -> Void)?
+    let appointmentTypes: [String]
+    let onSave: (AppointmentWrite, Appointment?) async throws -> Void
+    let onDelete: (() async throws -> Void)?
 
-    @State private var contactId = "c-01"
+    @State private var contacts: [Contact] = []
+    @State private var contactTypes: [ContactType] = []
+    @State private var contactId = ""
     @State private var startsAt = Date()
     @State private var status = AppointmentStatus.scheduled.rawValue
-    @State private var type = "Yeni Hasta"
+    @State private var type = ""
     @State private var clinic = ""
     @State private var hotel = ""
     @State private var transfer = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+
+    private func contacts(ofType name: String) -> [(value: String, label: String)] {
+        let typeId = contactTypes.first { $0.name == name }?.id
+        let rows = contacts.filter { $0.typeId == typeId }
+        return [(value: "", label: "—")] + rows.map { (value: $0.displayName, label: $0.displayName) }
+    }
 
     private var patientOptions: [(value: String, label: String)] {
-        MockData.contacts
-            .filter { $0.typeId == "ct-hasta" }
-            .map { (value: $0.id, label: $0.displayName) }
+        let typeId = contactTypes.first { $0.name == "Hasta" }?.id
+        let rows = typeId == nil ? contacts : contacts.filter { $0.typeId == typeId }
+        return rows.map { (value: $0.id, label: $0.displayName) }
     }
 
-    private var clinicOptions: [(value: String, label: String)] {
-        [(value: "", label: "—")]
-            + MockData.contacts.filter { $0.typeId == "ct-klinik" }
-                .map { (value: $0.displayName, label: $0.displayName) }
-    }
-
-    private var hotelOptions: [(value: String, label: String)] {
-        [(value: "", label: "—")]
-            + MockData.contacts.filter { $0.typeId == "ct-otel" }
-                .map { (value: $0.displayName, label: $0.displayName) }
-    }
-
-    private var transferOptions: [(value: String, label: String)] {
-        [(value: "", label: "—")]
-            + MockData.contacts.filter { $0.typeId == "ct-transfer" }
-                .map { (value: $0.displayName, label: $0.displayName) }
-    }
+    private var canSave: Bool { !contactId.isEmpty && !isSaving }
 
     var body: some View {
         ScrollView {
@@ -362,7 +377,8 @@ struct AppointmentFormSheet: View {
                     .vmCard(c, radius: VMRadius.control)
                 }
                 labelled("Tür") {
-                    VMSelect(options: MockData.appointmentTypeNames.map { (value: $0, label: $0) },
+                    VMSelect(options: [(value: "", label: "—")]
+                                + appointmentTypes.map { (value: $0, label: $0) },
                              selection: $type, accessibilityLabel: "Tür")
                 }
                 labelled("Durum") {
@@ -370,26 +386,35 @@ struct AppointmentFormSheet: View {
                              selection: $status, accessibilityLabel: "Durum")
                 }
                 labelled(S.Appointments.cardClinic) {
-                    VMSelect(options: clinicOptions, selection: $clinic, accessibilityLabel: S.Appointments.cardClinic)
+                    VMSelect(options: contacts(ofType: "Klinik"), selection: $clinic,
+                             accessibilityLabel: S.Appointments.cardClinic)
                 }
                 labelled(S.Appointments.cardHotel) {
-                    VMSelect(options: hotelOptions, selection: $hotel, accessibilityLabel: S.Appointments.cardHotel)
+                    VMSelect(options: contacts(ofType: "Otel"), selection: $hotel,
+                             accessibilityLabel: S.Appointments.cardHotel)
                 }
                 labelled(S.Appointments.cardTransfer) {
-                    VMSelect(options: transferOptions, selection: $transfer, accessibilityLabel: S.Appointments.cardTransfer)
+                    VMSelect(options: contacts(ofType: "Transfer"), selection: $transfer,
+                             accessibilityLabel: S.Appointments.cardTransfer)
+                }
+
+                if let errorMessage {
+                    ErrorBanner(message: errorMessage)
                 }
 
                 HStack(spacing: VMSpace.sm) {
-                    VMButton(title: "Kaydet", fullWidth: true) { submit() }
+                    VMButton(title: isSaving ? S.Common.wait : S.Common.save,
+                             fullWidth: true, disabled: !canSave) { submit() }
                     VMButton(title: S.Common.cancel, variant: .outline, fullWidth: true) { dismiss() }
                 }
                 .padding(.top, VMSpace.sm)
 
-                if let onDelete {
-                    Button("Sil", role: .destructive) { onDelete() }
+                if onDelete != nil {
+                    Button(S.Common.delete, role: .destructive) { remove() }
                         .font(VMFont.sm)
                         .foregroundStyle(c.danger)
                         .frame(maxWidth: .infinity)
+                        .disabled(isSaving)
                 }
             }
             .padding(VMSpace.lg)
@@ -397,7 +422,7 @@ struct AppointmentFormSheet: View {
         .background(c.bg)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .onAppear(perform: hydrate)
+        .task { await loadPickers() }
     }
 
     private func labelled<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -409,36 +434,69 @@ struct AppointmentFormSheet: View {
         }
     }
 
+    /// Seçici listeleri sunucudan. `limit` yüksek: bu bir seçicidir, sayfalama yok.
+    private func loadPickers() async {
+        async let contactsTask = try? await APIClient.shared.listContacts(limit: 100)
+        async let typesTask = try? await APIClient.shared.listContactTypes()
+        contacts = (await contactsTask)?.items ?? []
+        contactTypes = (await typesTask) ?? []
+        hydrate()
+    }
+
     private func hydrate() {
         guard let appointment else {
+            contactId = patientOptions.first?.value ?? ""
+            type = appointmentTypes.first ?? ""
             startsAt = Date()
             return
         }
         contactId = appointment.contactId
         startsAt = appointment.startsAt
         status = appointment.status.rawValue
-        type = appointment.appointmentType ?? "Yeni Hasta"
+        type = appointment.appointmentType ?? ""
         clinic = appointment.clinicName ?? ""
         hotel = appointment.hotelName ?? ""
         transfer = appointment.transferNote ?? ""
     }
 
     private func submit() {
-        let contactName = MockData.contacts.first { $0.id == contactId }?.displayName ?? "—"
-        let record = Appointment(
-            id: appointment?.id ?? "a-\(UUID().uuidString.prefix(6))",
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let body = AppointmentWrite(
             contactId: contactId,
-            contactDisplayName: contactName,
-            startsAt: startsAt,
-            endsAt: appointment?.endsAt,
-            status: AppointmentStatus(rawValue: status) ?? .scheduled,
-            appointmentType: type,
+            startsAt: formatter.string(from: startsAt),
+            endsAt: appointment?.endsAt.map { formatter.string(from: $0) },
+            status: status,
+            appointmentType: type.isEmpty ? nil : type,
             clinicName: clinic.isEmpty ? nil : clinic,
             hotelName: hotel.isEmpty ? nil : hotel,
-            transferNote: transfer.isEmpty ? nil : transfer,
-            doctorName: appointment?.doctorName
+            transferNote: transfer.isEmpty ? nil : transfer
         )
-        onSave(record)
-        dismiss()
+        Task {
+            isSaving = true
+            errorMessage = nil
+            do {
+                try await onSave(body, appointment)
+                dismiss()
+            } catch {
+                errorMessage = APIError.message(from: error)
+            }
+            isSaving = false
+        }
+    }
+
+    private func remove() {
+        guard let onDelete else { return }
+        Task {
+            isSaving = true
+            errorMessage = nil
+            do {
+                try await onDelete()
+                dismiss()
+            } catch {
+                errorMessage = APIError.message(from: error)
+            }
+            isSaving = false
+        }
     }
 }
