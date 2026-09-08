@@ -54,3 +54,6 @@ Screen Shot *.png
 # geçici script artıkları (`_usage.tmp.js` gibi)
 *.tmp.js
 *.tmp.ts
+
+# kesim yedekleri ve loglari (pg_dump ciktisi - asla commit edilmez)
+backups/
