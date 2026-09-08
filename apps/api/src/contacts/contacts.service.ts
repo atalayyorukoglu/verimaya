@@ -28,10 +28,13 @@ import { assertUploadMimeMatchesBytes } from './file-mime';
 import {
 	appointments,
 	caseNotes,
+	commissionEntries,
 	contactTitles,
 	contactTypes,
 	contacts,
 	files,
+	incentiveFiles,
+	incidents,
 	member,
 	tenants,
 	transactions
@@ -1061,6 +1064,25 @@ export class ContactsService {
 			})
 			.where(and(inArray(transactions.contactId, dropIds), isNull(transactions.deletedAt)));
 
+		// Aynı satırın vaka kişisi / sorumlusu da devredilmeli; yoksa birleştirmeden
+		// sonra bu alanlar silinmiş kişiyi gösterip boşalıyordu.
+		await db
+			.update(transactions)
+			.set({ caseContactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(inArray(transactions.caseContactId, dropIds), isNull(transactions.deletedAt))
+			);
+
+		await db
+			.update(transactions)
+			.set({ responsibleContactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(
+					inArray(transactions.responsibleContactId, dropIds),
+					isNull(transactions.deletedAt)
+				)
+			);
+
 		await db
 			.update(appointments)
 			.set({
@@ -1107,6 +1129,48 @@ export class ContactsService {
 			.update(caseNotes)
 			.set({ contactId: keep_id })
 			.where(inArray(caseNotes.contactId, dropIds));
+
+		await db
+			.update(commissionEntries)
+			.set({ beneficiaryContactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(
+					inArray(commissionEntries.beneficiaryContactId, dropIds),
+					isNull(commissionEntries.deletedAt)
+				)
+			);
+
+		await db
+			.update(commissionEntries)
+			.set({ caseContactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(
+					inArray(commissionEntries.caseContactId, dropIds),
+					isNull(commissionEntries.deletedAt)
+				)
+			);
+
+		await db
+			.update(incentiveFiles)
+			.set({ contactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(inArray(incentiveFiles.contactId, dropIds), isNull(incentiveFiles.deletedAt))
+			);
+
+		await db
+			.update(incidents)
+			.set({ contactId: keep_id, updatedAt: new Date() })
+			.where(and(inArray(incidents.contactId, dropIds), isNull(incidents.deletedAt)));
+
+		await db
+			.update(incidents)
+			.set({ responsibleContactId: keep_id, updatedAt: new Date() })
+			.where(
+				and(
+					inArray(incidents.responsibleContactId, dropIds),
+					isNull(incidents.deletedAt)
+				)
+			);
 
 		await db
 			.update(contacts)
