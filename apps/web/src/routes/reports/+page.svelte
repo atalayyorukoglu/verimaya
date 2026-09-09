@@ -644,60 +644,91 @@
 </svelte:head>
 
 <div class="mx-auto max-w-6xl min-w-0">
+	<!--
+		Sekmeler tek yerde tanımlı, iki yerden çağrılıyor (kullanıcı, 2026-09-09):
+		masaüstünde dönem denetimiyle aynı satırda sağda, mobilde başlığın altındaki
+		eylem satırında sağa yaslı. Boyut standarda döndü — `h-6 min-h-0 px-2` ile
+		küçültülmüştü, artık `size="sm"` ne diyorsa o (mobilde 44px dokunma hedefi
+		global kuraldan geliyor).
+	-->
+	{#snippet reportTabs(split = false)}
+		<!--
+			`split` mobilde: Özet solda, Kategori + Pazarlama sağda (kullanıcı,
+			2026-09-09). Masaüstünde üçü bitişik, dönem satırının sağında.
+		-->
+		<div class={split ? 'flex w-full flex-nowrap items-center gap-1.5' : 'flex flex-wrap gap-1.5'}>
+			<Button
+				type="button"
+				size="sm"
+				class={split ? 'me-auto' : undefined}
+				variant={tab === 'ozet' ? 'default' : 'outline'}
+				onclick={() => setTab('ozet')}
+			>
+				<LayoutGrid class="size-4" />
+				{t('reports.tab.summary')}
+			</Button>
+			<Button
+				type="button"
+				size="sm"
+				variant={tab === 'kategori' ? 'default' : 'outline'}
+				onclick={() => setTab('kategori')}
+			>
+				<FolderTree class="size-4" />
+				Kategori
+			</Button>
+			<Button
+				type="button"
+				size="sm"
+				variant={tab === 'pazarlama' ? 'default' : 'outline'}
+				onclick={() => setTab('pazarlama')}
+			>
+				<Megaphone class="size-4" />
+				Pazarlama
+			</Button>
+		</div>
+	{/snippet}
+
+	{#snippet compareToggle()}
+		<label
+			class="flex items-center gap-2 text-xs font-medium whitespace-nowrap text-text-muted {canCompare
+				? ''
+				: 'opacity-50'}"
+			title={canCompare ? undefined : t('reports.compare.disabledHint')}
+		>
+			<input
+				type="checkbox"
+				class="size-3.5 rounded-[4px] border-border accent-brand"
+				bind:checked={compareEnabled}
+				disabled={!canCompare}
+			/>
+			{t('reports.compare.label')}
+		</label>
+	{/snippet}
+
 	<PageHeader title={t('reports.title')}>
+		{#snippet titleTrailing()}
+			<!-- Mobilde başlığın sağında; masaüstünde dönem satırında duruyor. -->
+			<div class="md:hidden">{@render compareToggle()}</div>
+		{/snippet}
 		{#snippet actions()}
-			<div class="flex shrink-0 flex-wrap gap-1.5">
-				<Button
-					type="button"
-					size="sm"
-					class="h-6 min-h-0 gap-1 px-2 py-0 text-xs [&_svg]:!size-3.5"
-					variant={tab === 'ozet' ? 'default' : 'outline'}
-					onclick={() => setTab('ozet')}
-				>
-					<LayoutGrid class="size-3.5" />
-					{t('reports.tab.summary')}
-				</Button>
-				<Button
-					type="button"
-					size="sm"
-					class="h-6 min-h-0 gap-1 px-2 py-0 text-xs [&_svg]:!size-3.5"
-					variant={tab === 'kategori' ? 'default' : 'outline'}
-					onclick={() => setTab('kategori')}
-				>
-					<FolderTree class="size-3.5" />
-					Kategori
-				</Button>
-				<Button
-					type="button"
-					size="sm"
-					class="h-6 min-h-0 gap-1 px-2 py-0 text-xs [&_svg]:!size-3.5"
-					variant={tab === 'pazarlama' ? 'default' : 'outline'}
-					onclick={() => setTab('pazarlama')}
-				>
-					<Megaphone class="size-3.5" />
-					Pazarlama
-				</Button>
-			</div>
+			<!-- Masaüstünde dönem satırına taşındı; burada yalnız mobil. -->
+			<div class="w-full md:hidden">{@render reportTabs(true)}</div>
 		{/snippet}
 	</PageHeader>
 
 	<!-- Dönem seçici -->
-	<PeriodSelector bind:periodKey bind:customFrom bind:customTo {tenantTimezone}>
+	<PeriodSelector
+		bind:periodKey
+		bind:customFrom
+		bind:customTo
+		{tenantTimezone}
+		showPeriodText={false}
+	>
 		{#snippet summaryTrailing()}
-			<label
-				class="flex items-center gap-2 text-xs font-medium text-text-muted {canCompare
-					? ''
-					: 'opacity-50'}"
-				title={canCompare ? undefined : t('reports.compare.disabledHint')}
-			>
-				<input
-					type="checkbox"
-					class="size-3.5 rounded-[4px] border-border accent-brand"
-					bind:checked={compareEnabled}
-					disabled={!canCompare}
-				/>
-				{t('reports.compare.label')}
-			</label>
+			{@render compareToggle()}
+		{/snippet}
+		{#snippet controlTrailing()}
+			{@render reportTabs()}
 		{/snippet}
 	</PeriodSelector>
 

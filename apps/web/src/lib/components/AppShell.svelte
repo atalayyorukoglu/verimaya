@@ -16,6 +16,9 @@
 	import { canAccessPath, canSeeNav, DEFAULT_ROLE } from '$lib/rbac';
 	import { useQueryScope, resetQueryScope } from '$lib/query-scope.svelte';
 	import Bell from '@lucide/svelte/icons/bell';
+	import LifeBuoy from '@lucide/svelte/icons/life-buoy';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import UserRound from '@lucide/svelte/icons/user-round';
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import FlaskConical from '@lucide/svelte/icons/flask-conical';
@@ -57,6 +60,8 @@
 	let orgSwitching = $state(false);
 	let orgSwitchError = $state<string | null>(null);
 	let accountMenuOpen = $state(false);
+	/** Mobil üst şeritteki profil menüsü — çubuktakinden ayrı tutuluyor. */
+	let headerAccountOpen = $state(false);
 	let sidebarCollapsed = $state(
 		typeof localStorage !== 'undefined' && localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'
 	);
@@ -207,6 +212,7 @@
 	function closeMobile() {
 		mobileOpen = false;
 		accountMenuOpen = false;
+		headerAccountOpen = false;
 	}
 
 	function setSidebarCollapsed(next: boolean) {
@@ -339,6 +345,146 @@
 <div
 	class="flex h-dvh max-h-dvh min-h-0 w-full flex-col overflow-hidden bg-bg text-text md:flex-row"
 >
+	<!--
+		Hesap menüsünün gövdesi. İki yerden açılıyor: kenar çubuğu/çekmece başlığı
+		ve mobil üst şerit (zilin sağındaki profil düğmesi). Panelin konumu
+		çağırana bırakıldı — çubukta tam genişlik, üst şeritte sağa yaslı.
+	-->
+	{#snippet accountMenuPanel(opts: {
+		spacious?: boolean;
+		panelClass: string;
+		close: () => void;
+	})}
+		{@const spacious = Boolean(opts.spacious)}
+		{@const panelClass = opts.panelClass}
+		{@const close = opts.close}
+			<button
+				type="button"
+				class="fixed inset-0 z-40 cursor-default"
+				aria-label={t('common.close')}
+				onclick={close}
+			></button>
+			<div
+				class={cn(
+				'z-50 overflow-hidden rounded-[8px] border border-border bg-surface shadow-lg',
+				panelClass
+			)}
+				role="menu"
+			>
+				<div class={cn('border-b border-border', spacious ? 'px-3.5 py-3' : 'px-3 py-2.5')}>
+					<p class={cn('truncate font-medium text-text', spacious ? 'text-base' : 'text-sm')}>
+						{me?.display_name ?? ''}
+					</p>
+					<p class={cn('truncate text-text-faint', spacious ? 'text-sm' : 'text-xs')}>
+						{me?.email ?? ''}
+					</p>
+				</div>
+				{#if showOrgSwitcher}
+					<div class="border-b border-border py-1">
+						<p
+							class={cn(
+								'px-3 font-semibold tracking-wider text-text-faint uppercase',
+								spacious ? 'py-1.5 text-[11px]' : 'py-1 text-[10px]'
+							)}
+						>
+							{t('shell.orgs.switch')}
+						</p>
+						{#each orgs as org (org.id)}
+							<button
+								type="button"
+								role="menuitem"
+								class={cn(
+									'flex w-full items-center gap-2 px-3 text-left transition-colors hover:bg-surface-2',
+									spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm',
+									org.id === activeOrgId ? 'font-medium text-text' : 'text-text-muted'
+								)}
+								disabled={orgSwitching}
+								onclick={() => void switchOrganization(org.id)}
+							>
+								<span class="min-w-0 flex-1 truncate">{org.name}</span>
+								{#if org.id === activeOrgId}
+									<Check class="size-3.5 shrink-0 text-brand" aria-hidden="true" />
+								{/if}
+							</button>
+						{/each}
+						{#if orgSwitchError}
+							<p class="px-3 py-1 text-xs text-danger" role="alert">{orgSwitchError}</p>
+						{/if}
+					</div>
+				{/if}
+				<!--
+					Sıra kullanıcı kararı (2026-09-09): Profil ayarları · Koyu tema ·
+					Yenilikler · Destek · Çıkış. Tema ikonunu `ThemeToggle` kendi
+					çiziyor (güneş/ay), diğerleri burada.
+				-->
+				<div class="py-1">
+					<a
+						href="/account"
+						role="menuitem"
+						class={cn(
+							'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+						)}
+						onclick={() => {
+							close();
+							closeMobile();
+						}}
+					>
+						<UserRound class="size-4 shrink-0" aria-hidden="true" />
+						<span class="min-w-0 flex-1 truncate">{t('account.nav')}</span>
+					</a>
+					<!--
+						Koyu/açık tema. Menü kapanmıyor (`onToggle` tıklamayı yutuyor) —
+						değişimi anında görmek geri bildirimin kendisi.
+					-->
+					<ThemeToggle variant="menu" {spacious} />
+					<a
+						href="/changelog"
+						role="menuitem"
+						class={cn(
+							'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+						)}
+						onclick={() => {
+							close();
+							closeMobile();
+						}}
+					>
+						<Bell class="size-4 shrink-0" aria-hidden="true" />
+						<span class="min-w-0 flex-1 truncate">{t('nav.changelog')}</span>
+					</a>
+					<button
+						type="button"
+						role="menuitem"
+						class={cn(
+							'flex w-full items-center gap-2 px-3 text-left text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+						)}
+						onclick={() => {
+							close();
+							closeMobile();
+							supportOpen = true;
+						}}
+					>
+						<LifeBuoy class="size-4 shrink-0" aria-hidden="true" />
+						<span class="min-w-0 flex-1 truncate">{t('shell.support.title')}</span>
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						class={cn(
+							'flex w-full items-center gap-2 px-3 text-left text-danger transition-colors hover:bg-surface-2',
+							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+						)}
+						onclick={() => void signOut()}
+					>
+						<LogOut class="size-4 shrink-0" aria-hidden="true" />
+						<span class="min-w-0 flex-1 truncate">{t('shell.signOut')}</span>
+					</button>
+				</div>
+			</div>
+	{/snippet}
+
 	{#snippet sidebarAccountHeader(opts: { showCollapse?: boolean; showClose?: boolean })}
 		<!--
 			Cursor tarzı üst çubuk: avatar + ad + chevron | zil + panel (kullanıcı, 2026-09-04).
@@ -441,119 +587,11 @@
 			</div>
 
 			{#if accountMenuOpen}
-				<button
-					type="button"
-					class="fixed inset-0 z-40 cursor-default"
-					aria-label={t('common.close')}
-					onclick={() => (accountMenuOpen = false)}
-				></button>
-				<div
-					class="absolute top-full right-2 left-2 z-50 mt-1 overflow-hidden rounded-[8px] border border-border bg-surface shadow-lg"
-					role="menu"
-				>
-					<div class={cn('border-b border-border', spacious ? 'px-3.5 py-3' : 'px-3 py-2.5')}>
-						<p class={cn('truncate font-medium text-text', spacious ? 'text-base' : 'text-sm')}>
-							{me?.display_name ?? ''}
-						</p>
-						<p class={cn('truncate text-text-faint', spacious ? 'text-sm' : 'text-xs')}>
-							{me?.email ?? ''}
-						</p>
-					</div>
-					{#if showOrgSwitcher}
-						<div class="border-b border-border py-1">
-							<p
-								class={cn(
-									'px-3 font-semibold tracking-wider text-text-faint uppercase',
-									spacious ? 'py-1.5 text-[11px]' : 'py-1 text-[10px]'
-								)}
-							>
-								{t('shell.orgs.switch')}
-							</p>
-							{#each orgs as org (org.id)}
-								<button
-									type="button"
-									role="menuitem"
-									class={cn(
-										'flex w-full items-center gap-2 px-3 text-left transition-colors hover:bg-surface-2',
-										spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm',
-										org.id === activeOrgId ? 'font-medium text-text' : 'text-text-muted'
-									)}
-									disabled={orgSwitching}
-									onclick={() => void switchOrganization(org.id)}
-								>
-									<span class="min-w-0 flex-1 truncate">{org.name}</span>
-									{#if org.id === activeOrgId}
-										<Check class="size-3.5 shrink-0 text-brand" aria-hidden="true" />
-									{/if}
-								</button>
-							{/each}
-							{#if orgSwitchError}
-								<p class="px-3 py-1 text-xs text-danger" role="alert">{orgSwitchError}</p>
-							{/if}
-						</div>
-					{/if}
-					<div class="py-1">
-						<a
-							href="/account"
-							role="menuitem"
-							class={cn(
-								'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-								spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-							)}
-							onclick={() => {
-								accountMenuOpen = false;
-								closeMobile();
-							}}
-						>
-							{t('account.nav')}
-						</a>
-						<a
-							href="/changelog"
-							role="menuitem"
-							class={cn(
-								'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-								spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-							)}
-							onclick={() => {
-								accountMenuOpen = false;
-								closeMobile();
-							}}
-						>
-							{t('nav.changelog')}
-						</a>
-						<!--
-							Koyu/açık tema. Menü kapanmıyor (`onToggle` tıklamayı yutuyor) —
-							değişimi anında görmek geri bildirimin kendisi.
-						-->
-						<ThemeToggle variant="menu" {spacious} />
-						<button
-							type="button"
-							role="menuitem"
-							class={cn(
-								'flex w-full items-center gap-2 px-3 text-left text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-								spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-							)}
-							onclick={() => {
-								accountMenuOpen = false;
-								closeMobile();
-								supportOpen = true;
-							}}
-						>
-							{t('shell.support.title')}
-						</button>
-						<button
-							type="button"
-							role="menuitem"
-							class={cn(
-								'flex w-full items-center gap-2 px-3 text-left text-danger transition-colors hover:bg-surface-2',
-								spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-							)}
-							onclick={() => void signOut()}
-						>
-							{t('shell.signOut')}
-						</button>
-					</div>
-				</div>
+				{@render accountMenuPanel({
+					spacious,
+					panelClass: 'absolute top-full right-2 left-2 mt-1',
+					close: () => (accountMenuOpen = false)
+				})}
 			{/if}
 		</div>
 	{/snippet}
@@ -791,7 +829,12 @@
 					<CommandPalette bind:open={searchOpen} />
 				</div>
 
-				<div class="flex shrink-0 items-center justify-end md:hidden">
+				<!--
+					Mobilde arama ve zilin sağında profil menüsü (kullanıcı, 2026-09-09).
+					Kenar çubuğundakiyle aynı gövde; ayrı durum tutuluyor ki çekmece
+					açıkken iki menü birden render edilmesin.
+				-->
+				<div class="relative flex shrink-0 items-center justify-end md:hidden">
 					<a
 						href="/changelog"
 						class="relative flex size-11 items-center justify-center rounded-[6px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
@@ -804,6 +847,27 @@
 							></span>
 						{/if}
 					</a>
+
+					<button
+						type="button"
+						class="flex size-11 items-center justify-center rounded-[6px] transition-colors hover:bg-surface-2"
+						aria-haspopup="menu"
+						aria-expanded={headerAccountOpen}
+						aria-label={t('shell.aria.accountMenu')}
+						onclick={() => (headerAccountOpen = !headerAccountOpen)}
+					>
+						<span
+							class="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-[11px] font-semibold text-text"
+							aria-hidden="true"
+						>
+							{#if mePending}
+								<span class="size-3.5 animate-pulse rounded-full bg-surface-2"></span>
+							{:else}
+								{meInitials}
+							{/if}
+						</span>
+					</button>
+
 				</div>
 			</div>
 		</header>
@@ -870,6 +934,21 @@
 			</li>
 		</ul>
 	</nav>
+
+	<!--
+		Mobil üst şeritteki profil menüsü. Panel bilerek header'ın DIŞINDA duruyor:
+		header'da `backdrop-blur` var, bu `fixed` çocuklara kapsayıcı blok yaratıyor;
+		üstüne `overflow-y-auto` ile 56px'lik şeride kırpılıyordu — panel DOM'da
+		"görünür" oluyor ama hiç boyanmıyordu. Kök div'in içinde olmalı, çünkü
+		`accountMenuPanel` snippet'i orada tanımlı (dışarıda kapsam dışı kalır).
+	-->
+	{#if headerAccountOpen}
+		{@render accountMenuPanel({
+			spacious: true,
+			panelClass: 'fixed top-[3.75rem] right-3 w-[17rem] max-w-[calc(100vw-1.5rem)] md:hidden',
+			close: () => (headerAccountOpen = false)
+		})}
+	{/if}
 </div>
 
 <Dialog

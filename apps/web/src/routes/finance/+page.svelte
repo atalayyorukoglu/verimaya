@@ -9,6 +9,7 @@
 	import { monthRangeInTz, type PeriodKey } from '$lib/period-range';
 	import type {
 		ContractResponse,
+		FinanceCategory,
 		InboundMessage,
 		SupportedCurrency,
 		Tenant,
@@ -51,16 +52,21 @@
 	const caseContactFilterId = $derived(page.url.searchParams.get('case_contact'));
 
 	let qInput = $state('');
-	let categoryInput = $state('');
 	/*
 	 * Yazarken arar: Enter ve "Uygula" kalktı (kullanıcı, 2026-09-08). Tür/durum
-	 * seçicileri ve dönem zaten anında uygulanıyordu; iki metin alanı da 300ms
+	 * seçicileri ve dönem zaten anında uygulanıyordu; arama alanı da 300ms
 	 * gecikmeyle onlara katıldı, formda uygulanacak bir şey kalmadı.
 	 */
 	const q = debounced(() => qInput);
-	const category = debounced(() => categoryInput);
 	const appliedQ = $derived(q.value.trim());
-	const appliedCategory = $derived(category.value.trim());
+	/*
+	 * Kategori artık seçmeli (kullanıcı, 2026-09-09): tam adı elle yazmak
+	 * gerekiyordu, bir harf şaşınca sonuç boş dönüyordu. Sunucu süzgeci zaten
+	 * ada göre birebir eşleşme istiyor — listeden seçmek onu garanti ediyor.
+	 * Gecikmeye gerek yok, seçim anında uygulanır.
+	 */
+	let category = $state('');
+	const appliedCategory = $derived(category);
 	let kind = $state('');
 	let status = $state('');
 	let from = $state('');
@@ -70,6 +76,39 @@
 	let editing = $state<Transaction | null>(null);
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
+
+	const categoriesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.financeCategories(),
+		queryFn: () => apiGet<{ items: FinanceCategory[] }>(apiPaths.settingsFinanceCategories),
+		enabled: qs.ready
+	}));
+
+	/*
+	 * Tür seçiliyse yalnız o türün kategorileri listelenir — gelir süzgecinde
+	 * gider kategorisi seçmek boş liste demek. Adlar iki türde de geçebildiği
+	 * için tekilleştiriliyor; sunucu süzgeci ada bakıyor, id'ye değil.
+	 */
+	const categoryOptions = $derived(
+		[
+			...new Set(
+				(categoriesQuery.data?.items ?? [])
+					.filter((c) => !kind || c.kind === kind)
+					.toSorted((a, b) => a.sort_order - b.sort_order)
+					.map((c) => c.name)
+			)
+		]
+	);
+
+	/*
+	 * Filtre satırında seçiciler sağ yarımı paylaşır. Paylaşılan `filterFieldClass`
+	 * `lg:w-40 lg:flex-none` taşıyor; o sabit genişlik yüzünden üçü yarımın solunda
+	 * toplanıp 224px boşluk bırakıyordu (kullanıcı, 2026-09-09). Yarıçap da bu
+	 * satırdaki diğer yüzeylerle eşitlendi: 6px yerine 8px.
+	 */
+	const halfFilterFieldClass = filterFieldClass
+		.replace('lg:w-40', 'lg:w-auto')
+		.replace('lg:flex-none', 'lg:flex-1')
+		.replace('rounded-[6px]', 'rounded-[8px]');
 
 	const kindOptions = $derived(transactionKindSchema.options);
 	const statusOptions = $derived(transactionStatusSchema.options);
@@ -220,12 +259,16 @@
 				: t('finance.list.total', { count: String(totalCount) })
 	);
 
+	/* Tür değişince o türde olmayan kategori seçili kalmasın — liste boş dönerdi. */
+	$effect(() => {
+		if (category && !categoryOptions.includes(category)) category = '';
+	});
+
 	function clearFilters() {
 		qInput = '';
-		categoryInput = '';
-		// Bekleyen gecikmeli değerler sonradan gelip temizliği geri almasın.
+		category = '';
+		// Bekleyen gecikmeli değer sonradan gelip temizliği geri almasın.
 		q.reset('');
-		category.reset('');
 		kind = '';
 		status = '';
 		from = '';
@@ -296,16 +339,28 @@
 				Eşit pay (`flex-1`) verilmişti ama "AI ile işlem" ikon + rozetle birlikte
 				o genişliğe sığmayıp iki satıra kırılıyordu; ikisi de artık içeriği kadar.
 			-->
-			<div class="flex flex-row flex-wrap items-center justify-end gap-2">
+			<!--
+				Mobilde Randevular deseni (kullanıcı, 2026-09-09): başlık bloğu üstte,
+				düğmeler kendi satırında ve **soldan** başlar. `w-full` olmadan
+				PageHeader'ın `justify-between`'i düğmeleri sağa itiyordu.
+			-->
+			<div
+				class="flex w-full flex-row flex-wrap items-center justify-start gap-2 md:w-auto md:justify-end"
+			>
 				<a
 					href={resolve('/finance/ai-transaction')}
 					class="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium whitespace-nowrap text-text hover:bg-surface-2 sm:h-9 sm:px-4"
 				>
 					<Sparkles class="size-4" />
 					{t('finance.aiLink')}
+					<!--
+						Bekleyen sayısı gözden kaçıyordu (kullanıcı, 2026-09-09): sarı zemin
+						üstüne normal metin rengi, düğmenin kendi çerçevesiyle karışıyordu.
+						Kırmızı zemin + beyaz yazı: sayfadaki tek kırmızı bu, dikkat oraya gidiyor.
+					-->
 					{#if pendingCount > 0}
 						<span
-							class="rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-semibold text-text tabular-nums"
+							class="inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[11px] font-semibold text-white tabular-nums"
 						>
 							{pendingCount}
 						</span>
@@ -317,6 +372,25 @@
 				>
 					{t('finance.commissionsLink')}
 				</a>
+				<!--
+					"Yeni işlem" başlığa, Hakediş'in yanına alındı (kullanıcı, 2026-09-09).
+					2026-09-05'te filtre satırındaki "+" ikonuna indirilmişti; oradan
+					çıkınca mobil filtre satırında kategori seçicisine yer açıldı.
+				-->
+				<!--
+					`ms-auto`: mobilde satır tam genişlik olduğu için birincil eylem sağ
+					kenara yaslanır, AI/Hakediş solda kalır (kullanıcı, 2026-09-09).
+					Masaüstünde blok zaten sağda, etkisi yok.
+				-->
+				<Button
+					type="button"
+					class="ms-auto h-11 shrink-0 px-3 sm:h-9 sm:px-4"
+					aria-label={t('finance.new')}
+					onclick={openCreate}
+				>
+					<Plus class="size-4" />
+					<span>{t('finance.new')}</span>
+				</Button>
 			</div>
 		{/snippet}
 	</PageHeader>
@@ -367,21 +441,23 @@
 		Mobilde gizli: orada aynısı kabuk başlığında.
 	-->
 	<div class="flex min-w-0 items-start gap-2">
-		<PeriodControl period={localPeriod} class="-mt-3 shrink-0 max-md:hidden" />
-		<div class="min-w-0 flex-1">
+		<PeriodControl
+			period={localPeriod}
+			class="-mt-3 shrink-0 max-md:hidden lg:w-[calc(50%-4px)] lg:max-w-none lg:shrink-0"
+		/>
+		<div class="min-w-0 flex-1 lg:w-[calc(50%-4px)] lg:flex-none">
 			<BalancesPanel collapsible />
 		</div>
 	</div>
 
 	<!--
-		Mobilde Randevular ile aynı desen: tür + durum + "yeni" tek satırda, arama
-		üstte tam genişlik (Enter uygular). Kategori ve Uygula/Temizle masaüstünde
-		kalıyor — mobilde her biri bir satır yiyordu. Tüm filtreler anında uygulanır;
-		metin alanları 300ms gecikmeli.
+		Mobilde üç seçici tek satırda: tür + durum + kategori. Arama üstte tam
+		genişlik. "Yeni işlem" başlığa taşındığı için (2026-09-09) kategori buraya
+		sığdı. Tüm filtreler anında uygulanır; arama 300ms gecikmeli.
 	-->
 	<!-- Alttaki ayraç: filtreler ile liste birbirine giriyordu. -->
 	<div
-		class="mb-4 flex min-w-0 flex-col gap-2 border-b border-border pb-4 lg:flex-row lg:flex-wrap lg:items-end"
+		class="mb-4 flex min-w-0 flex-col gap-2 border-b border-border pb-4 lg:flex-row lg:flex-nowrap lg:items-end"
 	>
 		<!--
 			`flex-1` YALNIZ `lg`'de: form mobilde `flex-col`, orada `flex-1` ana ekseni
@@ -390,52 +466,51 @@
 			geçilen `lg`'de flex-1 yine genişliği paylaştırır.
 		-->
 		<input
-			class="box-border h-11 w-full min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-auto lg:min-w-[9rem] lg:flex-1 lg:text-sm"
+			class="box-border h-11 w-full min-w-0 rounded-[8px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 lg:h-9 lg:w-[calc(50%-4px)] lg:min-w-[9rem] lg:flex-none lg:text-sm"
 			placeholder={t('finance.filter.qPlaceholder')}
 			bind:value={qInput}
 		/>
-		<div class="flex min-w-0 flex-nowrap items-center gap-2 md:contents">
-			<select class={filterFieldClass} bind:value={kind}>
+		<!--
+			Masaüstünde satır iki eşit yarım (kullanıcı, 2026-09-09): solda arama,
+			sağda tür/durum/kategori + Temizle. Genişlik `calc(50% - 4px)` — düz
+			`w-1/2` iki yarım + 8px boşlukla %100'ü aşıyor, satırlardan biri 8px
+			kayıyordu. `md:contents` orta genişlikte eski davranışı korur;
+			`lg:flex` sarmalayıcıyı geri getirip yarımı kurar.
+		-->
+		<div
+			class="flex min-w-0 flex-nowrap items-center gap-2 md:contents lg:flex lg:w-[calc(50%-4px)] lg:flex-none lg:items-end"
+		>
+			<select class={halfFilterFieldClass} bind:value={kind}>
 				<option value="">{t('finance.filter.kindAll')}</option>
 				{#each kindOptions as k (k)}
 					<option value={k}>{transactionKindLabels[k]}</option>
 				{/each}
 			</select>
-			<select class={filterFieldClass} bind:value={status}>
+			<select class={halfFilterFieldClass} bind:value={status}>
 				<option value="">{t('finance.filter.statusAll')}</option>
 				{#each statusOptions as s (s)}
 					<option value={s}>{transactionStatusLabels[s]}</option>
 				{/each}
 			</select>
-			<!--
-				Tek "yeni islem" denetimi. Basliktaki buyuk buton kaldirildi (kullanici,
-				2026-09-05: "zaten + ikonu ile ekleniyor"); bu yuzden buton artik mobile
-				ozel degil. Masaustunde etiket acilir ve `md:order-last` ile satirin
-				sonuna, Uygula/Temizle'nin yanina gecer -- sarmalayici orada `contents`
-				oldugu icin `order` dogrudan forma uygulanir.
-			-->
-			<Button
-				type="button"
-				class="shrink-0 max-md:w-11 max-md:px-0 md:order-last md:px-4"
-				aria-label={t('finance.new')}
-				onclick={openCreate}
+			<select
+				class={halfFilterFieldClass}
+				aria-label={t('finance.filter.categoryPlaceholder')}
+				bind:value={category}
 			>
-				<Plus class="size-4" />
-				<span class="max-md:hidden">{t('finance.new')}</span>
-			</Button>
-		</div>
-		<input
-			class="h-11 min-w-0 rounded-[6px] border border-border bg-surface px-3 text-base text-text outline-none placeholder:text-text-faint focus:ring-2 focus:ring-brand/40 max-md:hidden lg:h-9 lg:w-40 lg:text-sm"
-			placeholder={t('finance.filter.categoryPlaceholder')}
-			bind:value={categoryInput}
-		/>
-		{#if appliedQ || appliedCategory || kind || status || from || to}
-			<div class="flex gap-2">
-				<Button class="min-h-11 lg:min-h-9" type="button" variant="outline" onclick={clearFilters}
-					>{t('finance.filter.clear')}</Button
+				<option value="">{t('finance.filter.categoryAll')}</option>
+				{#each categoryOptions as name (name)}
+					<option value={name}>{name}</option>
+				{/each}
+			</select>
+			{#if appliedQ || appliedCategory || kind || status || from || to}
+				<Button
+					class="min-h-11 shrink-0 lg:min-h-9"
+					type="button"
+					variant="outline"
+					onclick={clearFilters}>{t('finance.filter.clear')}</Button
 				>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 
 	{#if txQuery.isPending}

@@ -26,13 +26,22 @@
 		customFrom = $bindable(),
 		customTo = $bindable(),
 		tenantTimezone,
-		summaryTrailing
+		summaryTrailing,
+		controlTrailing,
+		showPeriodText = true
 	}: {
 		periodKey: PeriodKey;
 		customFrom: string;
 		customTo: string;
 		tenantTimezone: string;
 		summaryTrailing?: Snippet;
+		/** Dönem denetimiyle aynı satırda, sağa yaslı ek denetim. */
+		controlTrailing?: Snippet;
+		/**
+		 * Denetimin üstündeki dönem metni. Raporlar'da kapatıldı (kullanıcı,
+		 * 2026-09-09): denetim zaten aynı dönemi yazıyordu, satır tekrardı.
+		 */
+		showPeriodText?: boolean;
 	} = $props();
 
 	let customRangeHydrated = $state(false);
@@ -99,12 +108,24 @@
 </script>
 
 <section class="mb-4 border-b border-border pb-4 max-md:hidden">
-	<div class="mb-3.5 flex items-center justify-between gap-2 text-sm text-text-muted">
-		<span class="min-w-0 truncate">{periodText}</span>
+	{#if showPeriodText}
+		<div class="mb-3.5 flex items-center justify-between gap-2 text-sm text-text-muted">
+			<span class="min-w-0 truncate">{periodText}</span>
+		</div>
+	{/if}
+
+	<!--
+		Tek satır: dönem denetimi · (varsa) yanındaki denetim · sağda `controlTrailing`.
+		`summaryTrailing` eskiden üstteki dönem metninin yanındaydı; Raporlar'da o
+		satır kalkınca buraya, denetimin hemen sağına alındı (kullanıcı, 2026-09-09).
+	-->
+	<div class="flex flex-wrap items-center gap-3">
+		<PeriodControl period={localPeriod} class="sm:max-w-xs" />
 		{#if summaryTrailing}
 			<div class="shrink-0">{@render summaryTrailing()}</div>
 		{/if}
+		{#if controlTrailing}
+			<div class="ms-auto shrink-0">{@render controlTrailing()}</div>
+		{/if}
 	</div>
-
-	<PeriodControl period={localPeriod} class="sm:max-w-xs" />
 </section>

@@ -78,7 +78,7 @@
 		değiştirmek yerine burada 24px → 12px'e çekiliyor; alt boşluk da `mb-3`.
 	-->
 	<section
-		class="-mt-3 mb-2 flex min-h-11 min-w-0 items-center gap-3 rounded-lg border border-border bg-surface px-4"
+		class="-mt-3 mb-2 flex min-h-11 min-w-0 items-center gap-3 rounded-[8px] border border-border bg-surface px-4"
 	>
 		<!-- `py-1`: tek para biriminde `min-h-11` baskın, çok satırda satırlar sıkışmasın. -->
 		<div class="min-w-0 flex-1 py-1">

@@ -102,10 +102,11 @@ export function navGroupItems(group: NavGroup): NavItem[] {
  * Sıra: Finans, Kişiler, Randevular, Raporlar (+ Menü butonu AppShell’de).
  */
 /** Alt menü sekmeleri; son yuva "Menü" (rota değil, AppShell'de render edilir). */
+/* Sıra kullanıcı kararı (2026-09-09): Kişiler · Randevular · Finans · Raporlar. */
 export const mobileTabItems: NavItem[] = [
-	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
 	{ labelKey: 'nav.contacts', href: '/contacts', icon: Users },
 	{ labelKey: 'nav.appointments', href: '/appointments', icon: Calendar },
+	{ labelKey: 'nav.transactions', href: '/finance', icon: Wallet },
 	{ labelKey: 'nav.reports', href: '/reports', icon: ChartColumn }
 ];
 

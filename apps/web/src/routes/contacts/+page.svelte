@@ -147,10 +147,10 @@
 		<!-- Eylemler başlık hizasında; altındaki satır yalnız arama + tür filtresi. -->
 		<div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
 			<div class="min-w-0">
-				<h1 class="text-base font-semibold tracking-tight text-text sm:text-xl">
+				<h1 class="text-base leading-tight font-semibold tracking-tight text-text sm:text-xl">
 					{t('contacts.list.title')}
 				</h1>
-				<p class="mt-0.5 text-sm text-text-muted">{listDescription}</p>
+				<p class="mt-0.5 text-sm leading-tight text-text-muted">{listDescription}</p>
 			</div>
 			<div class="flex shrink-0 items-center gap-2">
 				<Button type="button" variant="outline" onclick={() => goto('/contacts/duplicates')}

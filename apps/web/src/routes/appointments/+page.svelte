@@ -329,10 +329,10 @@
 
 <div class="mx-auto w-full max-w-xl min-w-0">
 	<header class="mb-4 border-b border-border pb-4">
-		<h1 class="text-base font-semibold tracking-tight text-text sm:text-xl">
+		<h1 class="text-base leading-tight font-semibold tracking-tight text-text sm:text-xl">
 			{t('appointments.title')}
 		</h1>
-		<p class="mt-0.5 min-w-0 truncate text-sm text-text-muted">{periodSummary}</p>
+		<p class="mt-0.5 min-w-0 truncate text-sm leading-tight text-text-muted">{periodSummary}</p>
 
 		<!--
 			Sekme şeridi + özel aralık kutuları yerine tek denetim (kullanıcı,
