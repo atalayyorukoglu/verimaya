@@ -34,20 +34,20 @@
 	<div class="flex min-w-0 flex-1 items-center gap-3">
 		<div class="min-w-0">
 			<h1
-			class="flex items-center gap-1.5 text-base leading-tight font-semibold tracking-tight break-words text-text sm:text-xl"
-		>
-			<span class="min-w-0 break-words">{title}</span>
-			{#if helpTopic}
-				<button
-					type="button"
-					class="shrink-0 rounded-full p-1 text-text-faint hover:bg-surface-2 hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-					aria-label={t('help.open')}
-					onclick={() => (helpOpen = true)}
-				>
-					<Info class="size-4" />
-				</button>
-			{/if}
-		</h1>
+				class="flex items-center gap-1.5 text-base leading-tight font-semibold tracking-tight break-words text-text sm:text-xl"
+			>
+				<span class="min-w-0 break-words">{title}</span>
+				{#if helpTopic}
+					<button
+						type="button"
+						class="shrink-0 rounded-full p-1 text-text-faint hover:bg-surface-2 hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+						aria-label={t('help.open')}
+						onclick={() => (helpOpen = true)}
+					>
+						<Info class="size-4" />
+					</button>
+				{/if}
+			</h1>
 			{#if description}
 				<!--
 					Başlık ile açıklama arası sıkı (kullanıcı, 2026-09-09: "çok uzak").

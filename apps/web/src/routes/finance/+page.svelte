@@ -88,16 +88,14 @@
 	 * gider kategorisi seçmek boş liste demek. Adlar iki türde de geçebildiği
 	 * için tekilleştiriliyor; sunucu süzgeci ada bakıyor, id'ye değil.
 	 */
-	const categoryOptions = $derived(
-		[
-			...new Set(
-				(categoriesQuery.data?.items ?? [])
-					.filter((c) => !kind || c.kind === kind)
-					.toSorted((a, b) => a.sort_order - b.sort_order)
-					.map((c) => c.name)
-			)
-		]
-	);
+	const categoryOptions = $derived([
+		...new Set(
+			(categoriesQuery.data?.items ?? [])
+				.filter((c) => !kind || c.kind === kind)
+				.toSorted((a, b) => a.sort_order - b.sort_order)
+				.map((c) => c.name)
+		)
+	]);
 
 	/*
 	 * Filtre satırında seçiciler sağ yarımı paylaşır. Paylaşılan `filterFieldClass`

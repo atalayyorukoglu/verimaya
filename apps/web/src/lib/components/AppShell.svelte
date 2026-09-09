@@ -350,139 +350,135 @@
 		ve mobil üst şerit (zilin sağındaki profil düğmesi). Panelin konumu
 		çağırana bırakıldı — çubukta tam genişlik, üst şeritte sağa yaslı.
 	-->
-	{#snippet accountMenuPanel(opts: {
-		spacious?: boolean;
-		panelClass: string;
-		close: () => void;
-	})}
+	{#snippet accountMenuPanel(opts: { spacious?: boolean; panelClass: string; close: () => void })}
 		{@const spacious = Boolean(opts.spacious)}
 		{@const panelClass = opts.panelClass}
 		{@const close = opts.close}
-			<button
-				type="button"
-				class="fixed inset-0 z-40 cursor-default"
-				aria-label={t('common.close')}
-				onclick={close}
-			></button>
-			<div
-				class={cn(
+		<button
+			type="button"
+			class="fixed inset-0 z-40 cursor-default"
+			aria-label={t('common.close')}
+			onclick={close}
+		></button>
+		<div
+			class={cn(
 				'z-50 overflow-hidden rounded-[8px] border border-border bg-surface shadow-lg',
 				panelClass
 			)}
-				role="menu"
-			>
-				<div class={cn('border-b border-border', spacious ? 'px-3.5 py-3' : 'px-3 py-2.5')}>
-					<p class={cn('truncate font-medium text-text', spacious ? 'text-base' : 'text-sm')}>
-						{me?.display_name ?? ''}
+			role="menu"
+		>
+			<div class={cn('border-b border-border', spacious ? 'px-3.5 py-3' : 'px-3 py-2.5')}>
+				<p class={cn('truncate font-medium text-text', spacious ? 'text-base' : 'text-sm')}>
+					{me?.display_name ?? ''}
+				</p>
+				<p class={cn('truncate text-text-faint', spacious ? 'text-sm' : 'text-xs')}>
+					{me?.email ?? ''}
+				</p>
+			</div>
+			{#if showOrgSwitcher}
+				<div class="border-b border-border py-1">
+					<p
+						class={cn(
+							'px-3 font-semibold tracking-wider text-text-faint uppercase',
+							spacious ? 'py-1.5 text-[11px]' : 'py-1 text-[10px]'
+						)}
+					>
+						{t('shell.orgs.switch')}
 					</p>
-					<p class={cn('truncate text-text-faint', spacious ? 'text-sm' : 'text-xs')}>
-						{me?.email ?? ''}
-					</p>
-				</div>
-				{#if showOrgSwitcher}
-					<div class="border-b border-border py-1">
-						<p
+					{#each orgs as org (org.id)}
+						<button
+							type="button"
+							role="menuitem"
 							class={cn(
-								'px-3 font-semibold tracking-wider text-text-faint uppercase',
-								spacious ? 'py-1.5 text-[11px]' : 'py-1 text-[10px]'
+								'flex w-full items-center gap-2 px-3 text-left transition-colors hover:bg-surface-2',
+								spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm',
+								org.id === activeOrgId ? 'font-medium text-text' : 'text-text-muted'
 							)}
+							disabled={orgSwitching}
+							onclick={() => void switchOrganization(org.id)}
 						>
-							{t('shell.orgs.switch')}
-						</p>
-						{#each orgs as org (org.id)}
-							<button
-								type="button"
-								role="menuitem"
-								class={cn(
-									'flex w-full items-center gap-2 px-3 text-left transition-colors hover:bg-surface-2',
-									spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm',
-									org.id === activeOrgId ? 'font-medium text-text' : 'text-text-muted'
-								)}
-								disabled={orgSwitching}
-								onclick={() => void switchOrganization(org.id)}
-							>
-								<span class="min-w-0 flex-1 truncate">{org.name}</span>
-								{#if org.id === activeOrgId}
-									<Check class="size-3.5 shrink-0 text-brand" aria-hidden="true" />
-								{/if}
-							</button>
-						{/each}
-						{#if orgSwitchError}
-							<p class="px-3 py-1 text-xs text-danger" role="alert">{orgSwitchError}</p>
-						{/if}
-					</div>
-				{/if}
-				<!--
+							<span class="min-w-0 flex-1 truncate">{org.name}</span>
+							{#if org.id === activeOrgId}
+								<Check class="size-3.5 shrink-0 text-brand" aria-hidden="true" />
+							{/if}
+						</button>
+					{/each}
+					{#if orgSwitchError}
+						<p class="px-3 py-1 text-xs text-danger" role="alert">{orgSwitchError}</p>
+					{/if}
+				</div>
+			{/if}
+			<!--
 					Sıra kullanıcı kararı (2026-09-09): Profil ayarları · Koyu tema ·
 					Yenilikler · Destek · Çıkış. Tema ikonunu `ThemeToggle` kendi
 					çiziyor (güneş/ay), diğerleri burada.
 				-->
-				<div class="py-1">
-					<a
-						href="/account"
-						role="menuitem"
-						class={cn(
-							'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-						)}
-						onclick={() => {
-							close();
-							closeMobile();
-						}}
-					>
-						<UserRound class="size-4 shrink-0" aria-hidden="true" />
-						<span class="min-w-0 flex-1 truncate">{t('account.nav')}</span>
-					</a>
-					<!--
+			<div class="py-1">
+				<a
+					href="/account"
+					role="menuitem"
+					class={cn(
+						'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+						spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+					)}
+					onclick={() => {
+						close();
+						closeMobile();
+					}}
+				>
+					<UserRound class="size-4 shrink-0" aria-hidden="true" />
+					<span class="min-w-0 flex-1 truncate">{t('account.nav')}</span>
+				</a>
+				<!--
 						Koyu/açık tema. Menü kapanmıyor (`onToggle` tıklamayı yutuyor) —
 						değişimi anında görmek geri bildirimin kendisi.
 					-->
-					<ThemeToggle variant="menu" {spacious} />
-					<a
-						href="/changelog"
-						role="menuitem"
-						class={cn(
-							'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-						)}
-						onclick={() => {
-							close();
-							closeMobile();
-						}}
-					>
-						<Bell class="size-4 shrink-0" aria-hidden="true" />
-						<span class="min-w-0 flex-1 truncate">{t('nav.changelog')}</span>
-					</a>
-					<button
-						type="button"
-						role="menuitem"
-						class={cn(
-							'flex w-full items-center gap-2 px-3 text-left text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
-							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-						)}
-						onclick={() => {
-							close();
-							closeMobile();
-							supportOpen = true;
-						}}
-					>
-						<LifeBuoy class="size-4 shrink-0" aria-hidden="true" />
-						<span class="min-w-0 flex-1 truncate">{t('shell.support.title')}</span>
-					</button>
-					<button
-						type="button"
-						role="menuitem"
-						class={cn(
-							'flex w-full items-center gap-2 px-3 text-left text-danger transition-colors hover:bg-surface-2',
-							spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
-						)}
-						onclick={() => void signOut()}
-					>
-						<LogOut class="size-4 shrink-0" aria-hidden="true" />
-						<span class="min-w-0 flex-1 truncate">{t('shell.signOut')}</span>
-					</button>
-				</div>
+				<ThemeToggle variant="menu" {spacious} />
+				<a
+					href="/changelog"
+					role="menuitem"
+					class={cn(
+						'flex w-full items-center gap-2 px-3 text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+						spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+					)}
+					onclick={() => {
+						close();
+						closeMobile();
+					}}
+				>
+					<Bell class="size-4 shrink-0" aria-hidden="true" />
+					<span class="min-w-0 flex-1 truncate">{t('nav.changelog')}</span>
+				</a>
+				<button
+					type="button"
+					role="menuitem"
+					class={cn(
+						'flex w-full items-center gap-2 px-3 text-left text-text-muted transition-colors hover:bg-surface-2 hover:text-text',
+						spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+					)}
+					onclick={() => {
+						close();
+						closeMobile();
+						supportOpen = true;
+					}}
+				>
+					<LifeBuoy class="size-4 shrink-0" aria-hidden="true" />
+					<span class="min-w-0 flex-1 truncate">{t('shell.support.title')}</span>
+				</button>
+				<button
+					type="button"
+					role="menuitem"
+					class={cn(
+						'flex w-full items-center gap-2 px-3 text-left text-danger transition-colors hover:bg-surface-2',
+						spacious ? 'py-2.5 text-base' : 'py-1.5 text-sm'
+					)}
+					onclick={() => void signOut()}
+				>
+					<LogOut class="size-4 shrink-0" aria-hidden="true" />
+					<span class="min-w-0 flex-1 truncate">{t('shell.signOut')}</span>
+				</button>
 			</div>
+		</div>
 	{/snippet}
 
 	{#snippet sidebarAccountHeader(opts: { showCollapse?: boolean; showClose?: boolean })}
@@ -867,7 +863,6 @@
 							{/if}
 						</span>
 					</button>
-
 				</div>
 			</div>
 		</header>
