@@ -163,6 +163,24 @@ export const permissionMatrixSchema = z.object({
 });
 export type PermissionMatrix = z.infer<typeof permissionMatrixSchema>;
 
+/**
+ * Matristeki **etkin** izne bakar (kod varsayılanı ∩ kiracı kısıtlamaları).
+ *
+ * Arayüz "düzenleyebilir mi" kararını buradan vermeli, rolden değil: kiracı
+ * `admin`'in `settings:update` iznini kısıtladığında rol hâlâ `admin` kalıyor,
+ * sunucu ise 403 dönüyordu — kutular açık görünüp kayıt reddediliyordu
+ * (2026-09-09 denetimi). `effective` sunucunun uyguladığı kuralın aynısı.
+ */
+export function matrixAllows(
+	matrix: Pick<PermissionMatrix, 'effective'> | undefined | null,
+	role: UserRole | undefined | null,
+	resource: OrgPermissionResource,
+	action: OrgPermissionAction
+): boolean {
+	if (!matrix || !role) return false;
+	return (matrix.effective?.[role]?.[resource] ?? []).includes(action);
+}
+
 export function permissionDenyKey(
 	role: UserRole,
 	resource: OrgPermissionResource,

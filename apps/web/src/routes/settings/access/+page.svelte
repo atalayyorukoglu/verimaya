@@ -7,6 +7,7 @@
 		type PermissionMatrix,
 		type PermissionOverrideChange,
 		type UserRole,
+		matrixAllows,
 		userRoleLabels,
 		WRITE_ORG_PERMISSION_ACTIONS
 	} from '@verimaya/shared';
@@ -33,7 +34,16 @@
 		enabled: qs.ready
 	}));
 
-	const canEdit = $derived(meQuery.data?.role === 'owner' || meQuery.data?.role === 'admin');
+	/*
+	 * Düzenleme yetkisi ROLDEN değil, matristeki **etkin** izinden okunur.
+	 * Rol bakmak yanlıştı: kiracı admin'in `settings:update` iznini kısıtlarsa
+	 * rol hâlâ `admin` kalıyor, kutular açık görünüyor ama sunucu 403 dönüyordu
+	 * (2026-09-09 izin denetimi). Sunucu da aynı hücreye bakıyor.
+	 * Matris yüklenene kadar `false` — yüklenirken kutular açılmasın.
+	 */
+	const canEdit = $derived(
+		matrixAllows(matrixQuery.data, meQuery.data?.role, 'settings', 'update')
+	);
 	const matrix = $derived(matrixQuery.data);
 	let error = $state<string | null>(null);
 	let pendingKey = $state<string | null>(null);
