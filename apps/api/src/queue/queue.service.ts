@@ -265,9 +265,70 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 			);
 		}
 
-		this.logger.log(
-			`Registered schedulers for ${tenantRows.length} tenant(s) (ghl.reconcile + ad_metrics.sync 6h; files.sweep_pending 24h)`
+		const removed = await this.removeSchedulersForMissingTenants(
+			new Set(tenantRows.map((row) => row.id))
 		);
+
+		this.logger.log(
+			`Registered schedulers for ${tenantRows.length} tenant(s) (ghl.reconcile + ad_metrics.sync 6h; files.sweep_pending 24h)` +
+				(removed > 0 ? `; removed ${removed} scheduler(s) for deleted tenants` : '')
+		);
+	}
+
+	/**
+	 * Silinen kiracıların zamanlayıcılarını Redis'ten kaldırır.
+	 *
+	 * `upsertJobScheduler` yalnız ekler/günceller; kiracı silinince zamanlayıcısı
+	 * Redis'te kalıyordu. Her tetiklemede iş koşuyor, sonunda `jobs` ledger'ına
+	 * yazmaya çalışıyor ve `tenant_id` FK'sına takılıyordu — prod'da 2026-09-10'da
+	 * beş silinmiş kiracı için 195+ hata birikmişti (`tenant-sil.sql` ile silinenler).
+	 *
+	 * Açılışta çalışır: bir sonraki yeniden başlatma artıkları kendiliğinden temizler.
+	 * Yalnız `<jobType>:<tenantId>` desenindeki entegrasyon zamanlayıcılarına dokunur;
+	 * tanımadığı anahtarları bırakır.
+	 */
+	private async removeSchedulersForMissingTenants(knownTenantIds: Set<string>): Promise<number> {
+		if (!this.defaultQueue) return 0;
+
+		const managed = [
+			GHL_RECONCILE_JOB_TYPE,
+			AD_METRICS_SYNC_JOB_TYPE,
+			FILES_SWEEP_PENDING_JOB_TYPE
+		];
+
+		let schedulers: Awaited<ReturnType<Queue['getJobSchedulers']>>;
+		try {
+			schedulers = await this.defaultQueue.getJobSchedulers();
+		} catch (err) {
+			// Temizlik en iyi çabadır; okunamazsa açılışı düşürmeyiz.
+			this.logger.warn(
+				`Could not list job schedulers for cleanup: ${err instanceof Error ? err.message : String(err)}`
+			);
+			return 0;
+		}
+
+		let removed = 0;
+		for (const scheduler of schedulers) {
+			const key = scheduler?.key;
+			if (typeof key !== 'string') continue;
+
+			const jobType = managed.find((type) => key.startsWith(`${type}:`));
+			if (!jobType) continue;
+
+			const tenantId = key.slice(jobType.length + 1);
+			if (!tenantId || knownTenantIds.has(tenantId)) continue;
+
+			try {
+				await this.defaultQueue.removeJobScheduler(key);
+				removed++;
+				this.logger.log(`Removed scheduler ${key} (tenant no longer exists)`);
+			} catch (err) {
+				this.logger.warn(
+					`Could not remove scheduler ${key}: ${err instanceof Error ? err.message : String(err)}`
+				);
+			}
+		}
+		return removed;
 	}
 
 	private async handleExhaustedJob(job: Job<DefaultQueueJobData>, err: Error): Promise<void> {
