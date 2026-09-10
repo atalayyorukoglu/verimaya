@@ -52,7 +52,7 @@
 				{
 					href: '/settings/access',
 					title: t('settings.nav.access.title'),
-					description: 'Rol → izin matrisi (demo, salt okunur).',
+					description: 'Rol → izin matrisi; yetkiniz varsa buradan düzenlenir.',
 					icon: Lock
 				},
 				{
@@ -118,8 +118,7 @@
 					href: '/settings/import-export',
 					title: t('settings.nav.importExport.title'),
 					description: 'Toplu import-export (ETL).',
-					icon: FileSpreadsheet,
-					badge: 'Faz 8'
+					icon: FileSpreadsheet
 				}
 			]
 		},
@@ -159,22 +158,19 @@
 					href: '/settings/ai',
 					title: t('settings.nav.ai.title'),
 					description: t('settings.nav.ai.description'),
-					icon: Bot,
-					badge: 'Demo'
+					icon: Bot
 				},
 				{
 					href: '/settings/ai-learning',
 					title: t('settings.nav.aiLearning.title'),
 					description: t('settings.nav.aiLearning.description'),
-					icon: ChartColumn,
-					badge: 'Demo'
+					icon: ChartColumn
 				},
 				{
 					href: '/settings/data-quality',
 					title: 'Veri kalitesi',
 					description: t('settings.nav.dataQuality.description'),
-					icon: ShieldCheck,
-					badge: 'Demo'
+					icon: ShieldCheck
 				}
 			]
 		},
