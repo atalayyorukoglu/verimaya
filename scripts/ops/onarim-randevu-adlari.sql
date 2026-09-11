@@ -1,5 +1,10 @@
 -- Randevularda boş kalmış klinik/otel adlarını kimliklerinden doldurur.
 --
+-- GÖRÜNTÜLEME İÇİN ARTIK GEREKMİYOR (2026-09-11): API adı okuma anında kişiden
+-- join'le türetiyor, kolon boş olsa da kart doğru görünüyor. Bu script yalnız
+-- ARAMA için gerekli: randevu araması `clinic_name`/`hotel_name` kolonlarına
+-- bakıyor, kolon boşsa klinik adıyla arama o randevuyu bulamıyor.
+--
 -- Panel, adı yalnız ilk 500 kişilik listede arıyordu; seçili klinik/otel o sayfada
 -- olmayınca ad bulunamayıp null gönderiliyor ve kayıtlı ad siliniyordu. Kimlik
 -- yerinde kaldığı için veri kaybı yok, ad geri türetilebiliyor.

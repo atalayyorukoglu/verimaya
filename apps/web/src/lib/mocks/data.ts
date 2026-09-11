@@ -191,6 +191,7 @@ function makeAppointment(contact: Contact, overrides: Partial<Appointment> = {})
 		clinic_contact_id: null,
 		hotel_contact_id: null,
 		transfer_contact_id: null,
+		transfer_contact_name: null,
 		doctor_contact_id: null,
 		notes: null,
 		contact_info_incomplete: !contact.phone?.trim() && !contact.email?.trim(),
@@ -1301,6 +1302,9 @@ function makeAtalaySeed(contact: Contact): {
 			clinic_contact_id: CONTACT_KLINIK_ID,
 			hotel_contact_id: v.title === 'Tedavi günü' ? CONTACT_DEMO_HOTEL_ID : null,
 			transfer_contact_id: v.title === 'Tedavi günü' ? CONTACT_TRANSFER_ID : null,
+			// Sunucu adı join'le türetiyor; mock da aynısını yapsın ki kart gerçekte
+			// nasıl görünüyorsa demoda da öyle görünsün.
+			transfer_contact_name: v.title === 'Tedavi günü' ? 'Transfer Havaalanı' : null,
 			transfer_note: v.title === 'Tedavi günü' ? '08:30 havalimanı → otel → klinik' : null,
 			notes: v.status === 'completed' ? 'Ziyaret tamamlandı.' : 'Planlı takip.',
 			created_at: iso(new Date(start.getTime() - 3 * 86400_000)),

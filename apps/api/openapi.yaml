@@ -1130,6 +1130,11 @@ paths:
                           format: uuid
                           nullable: true
                           default: null
+                        transfer_contact_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
                         doctor_contact_id:
                           type: string
                           format: uuid
@@ -1284,6 +1289,11 @@ paths:
                   transfer_contact_id:
                     type: string
                     format: uuid
+                    nullable: true
+                    default: null
+                  transfer_contact_name:
+                    type: string
+                    maxLength: 255
                     nullable: true
                     default: null
                   doctor_contact_id:
@@ -3017,6 +3027,11 @@ paths:
                         transfer_contact_id:
                           type: string
                           format: uuid
+                          nullable: true
+                          default: null
+                        transfer_contact_name:
+                          type: string
+                          maxLength: 255
                           nullable: true
                           default: null
                         doctor_contact_id:

@@ -1,67 +1,75 @@
-import { z } from 'zod';
-import { cursorPageSchema, isoDateTime, uuid } from './common.js';
+import { z } from "zod";
+import { cursorPageSchema, isoDateTime, uuid } from "./common.js";
 
 export const appointmentStatusSchema = z.enum([
-	'scheduled',
-	'confirmed',
-	'in_progress',
-	'completed',
-	'cancelled',
-	'no_show'
+  "scheduled",
+  "confirmed",
+  "in_progress",
+  "completed",
+  "cancelled",
+  "no_show",
 ]);
 
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
 
 export const appointmentSchema = z.object({
-	id: uuid,
-	tenant_id: uuid,
-	contact_id: uuid,
-	/** Display name denormalized for list/calendar views */
-	contact_display_name: z.string().min(1).max(255),
-	title: z.string().min(1).max(255).nullable(),
-	appointment_type: z.string().max(128).nullable(),
-	status: appointmentStatusSchema.default('scheduled'),
-	starts_at: isoDateTime,
-	ends_at: isoDateTime.nullable(),
-	clinic_name: z.string().max(255).nullable(),
-	hotel_name: z.string().max(255).nullable(),
-	transfer_note: z.string().max(8000).nullable(),
-	/** Directory contacts for logistics parties (names denormalized above) */
-	clinic_contact_id: uuid.nullable().default(null),
-	hotel_contact_id: uuid.nullable().default(null),
-	transfer_contact_id: uuid.nullable().default(null),
-	/**
-	 * Hekim — `contacts` içinde ünvanı "Hekim" olan bir kişi (ayrı varlık değil, Karar 1(b)).
-	 * Denormalized isim yok; görünen ad her zaman ilgili `contacts.display_name`'den okunur.
-	 */
-	doctor_contact_id: uuid.nullable().default(null),
-	notes: z.string().max(8000).nullable(),
-	/**
-	 * Server-derived: linked contact has neither phone nor email (both blank).
-	 * Advisory only — never blocks create/update.
-	 */
-	contact_info_incomplete: z.boolean().default(false),
-	created_at: isoDateTime,
-	updated_at: isoDateTime
+  id: uuid,
+  tenant_id: uuid,
+  contact_id: uuid,
+  /** Display name denormalized for list/calendar views */
+  contact_display_name: z.string().min(1).max(255),
+  title: z.string().min(1).max(255).nullable(),
+  appointment_type: z.string().max(128).nullable(),
+  status: appointmentStatusSchema.default("scheduled"),
+  starts_at: isoDateTime,
+  ends_at: isoDateTime.nullable(),
+  clinic_name: z.string().max(255).nullable(),
+  hotel_name: z.string().max(255).nullable(),
+  transfer_note: z.string().max(8000).nullable(),
+  /** Directory contacts for logistics parties (names denormalized above) */
+  clinic_contact_id: uuid.nullable().default(null),
+  hotel_contact_id: uuid.nullable().default(null),
+  transfer_contact_id: uuid.nullable().default(null),
+  /**
+   * Transfer kişisinin adı. Klinik/otelden farklı olarak kolonu YOK; okuma anında
+   * `transfer_contact_id` üzerinden join'le türetilir, o yüzden hiç bayatlayamaz.
+   * Panel kartı bunu kullanır: kendi kişi listesi ilk sayfayla sınırlı olduğu için
+   * adı istemcide çözmek büyük tenantlarda "—" gösteriyordu.
+   */
+  transfer_contact_name: z.string().max(255).nullable().default(null),
+  /**
+   * Hekim — `contacts` içinde ünvanı "Hekim" olan bir kişi (ayrı varlık değil, Karar 1(b)).
+   * Denormalized isim yok; görünen ad her zaman ilgili `contacts.display_name`'den okunur.
+   */
+  doctor_contact_id: uuid.nullable().default(null),
+  notes: z.string().max(8000).nullable(),
+  /**
+   * Server-derived: linked contact has neither phone nor email (both blank).
+   * Advisory only — never blocks create/update.
+   */
+  contact_info_incomplete: z.boolean().default(false),
+  created_at: isoDateTime,
+  updated_at: isoDateTime,
 });
 
 export type Appointment = z.infer<typeof appointmentSchema>;
 
 /** True when both phone and email are blank/whitespace. */
 export function isContactInfoIncomplete(
-	phone: string | null | undefined,
-	email: string | null | undefined
+  phone: string | null | undefined,
+  email: string | null | undefined,
 ): boolean {
-	return !(phone?.trim()) && !(email?.trim());
+  return !phone?.trim() && !email?.trim();
 }
 
 export const appointmentCreateSchema = appointmentSchema.omit({
-	id: true,
-	tenant_id: true,
-	contact_display_name: true,
-	contact_info_incomplete: true,
-	created_at: true,
-	updated_at: true
+  id: true,
+  tenant_id: true,
+  contact_display_name: true,
+  transfer_contact_name: true,
+  contact_info_incomplete: true,
+  created_at: true,
+  updated_at: true,
 });
 
 export type AppointmentCreate = z.infer<typeof appointmentCreateSchema>;
@@ -76,9 +84,14 @@ export type AppointmentUpdate = z.infer<typeof appointmentUpdateSchema>;
  * `type_counts` keys are free-text `appointment_type` ("" for null/blank).
  * `status_counts` keys are appointmentStatusSchema values present in the filtered set.
  */
-export const appointmentListPageSchema = cursorPageSchema(appointmentSchema).extend({
-	type_counts: z.record(z.string(), z.number().int().nonnegative()),
-	status_counts: z.record(appointmentStatusSchema, z.number().int().nonnegative())
+export const appointmentListPageSchema = cursorPageSchema(
+  appointmentSchema,
+).extend({
+  type_counts: z.record(z.string(), z.number().int().nonnegative()),
+  status_counts: z.record(
+    appointmentStatusSchema,
+    z.number().int().nonnegative(),
+  ),
 });
 
 export type AppointmentListPage = z.infer<typeof appointmentListPageSchema>;

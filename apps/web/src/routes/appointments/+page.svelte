@@ -242,6 +242,10 @@
 	}
 
 	function transferLabel(appt: Appointment): string {
+		// Sunucudan gelen ad önce: `contactById` yalnız ilk 100 kişiyi tutuyor, seçili
+		// transfer kişisi o sayfada değilse kart boşuna "—" gösteriyordu.
+		const serverName = appt.transfer_contact_name?.trim();
+		if (serverName) return serverName;
 		if (appt.transfer_contact_id) {
 			const name = contactById.get(appt.transfer_contact_id)?.display_name;
 			if (name) return name;
