@@ -11,9 +11,9 @@
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
-	const title = 'Verimaya — Ne yapmanız gerektiğini söyleyen sistem';
+	const title = 'Verimaya · Sağlık turizmi operasyon sistemi';
 	const description =
-		'Kayıt tutan yazılım çok. Verimaya reklamdan tahsilata bütün zinciri okur, nerede para kaybettiğinizi bulur ve o ay ne yapılacağını önünüze koyar.';
+		'Reklamdan tahsilata bütün zinciri okur: hangi kampanya boş lead getiriyor, kime dönülmedi, kim ödemedi. Rapor vermekle kalmaz; tıkanan yeri gösterir ve o ay kimlerle ilgilenileceğini sıraya koyar.';
 	const canonical = `${PUBLIC_SITE_URL}/`;
 	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
 
@@ -73,7 +73,7 @@
 			no: '5',
 			ad: 'Aksiyon',
 			soru: 'Ne yapılmalı? Yapıldı mı? İşe yaradı mı?',
-			kim: 'sattığımız şey bu',
+			kim: 'sattığımız şey bu · birlikte yürütürüz',
 			bizde: true
 		}
 	] as const;
@@ -100,8 +100,8 @@
 			tarih: '20 Ağu'
 		},
 		{
-			baslik: '38 temassız hastayı ara — 12’si 60 günü geçti',
-			neden: 'Sıra çıkarıldı, sahipleri atandı',
+			baslik: '38 temassız hastayı ara · 12’si 60 günü geçti',
+			neden: 'Sıra çıkarıldı, sahipleri belirlendi',
 			kim: 'Operasyon',
 			tarih: '22 Ağu'
 		},
@@ -136,7 +136,7 @@
 			no: '03',
 			ad: 'Müdahale et',
 			not: 'O ay ne yapılacağına birlikte karar veririz.',
-			ornek: 'Örn. Temassız 38’i ara — sahipler atandı'
+			ornek: 'Örn. Temassız 38’i ara · sahipler belirlendi'
 		},
 		{
 			no: '04',
@@ -153,15 +153,15 @@
 		},
 		{
 			b: 'Model eğitimi',
-			t: 'Verileriniz yapay zekâ modeli eğitmek için kullanılmaz — ne bizim tarafımızdan, ne kullandığımız sağlayıcılar tarafından.'
+			t: 'Verileriniz yapay zekâ modeli eğitmek için kullanılmaz; ne bizim tarafımızdan, ne kullandığımız sağlayıcılar tarafından.'
 		},
 		{
 			b: 'Aksiyon izi',
-			t: 'Hangi öneriyi kimin onayladığı, neyin yapıldığı ve sonucunun ne olduğu geriye dönük izlenebilir.'
+			t: 'Hangi öneriyi kimin, ne zaman onayladığı ve kaydın nasıl değiştiği geriye dönük izlenebilir.'
 		},
 		{
 			b: 'Şeffaflık',
-			t: 'Aynı sektörde birden fazla firmayla çalışıyoruz — bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
+			t: 'Aynı sektörde birden fazla firmayla çalışıyoruz; bunu siz sormadan söylüyoruz. Destek için verinize erişirsek bu sizin denetim kaydınıza düşer; sessiz erişim yok.'
 		}
 	] as const;
 </script>
@@ -303,10 +303,11 @@
 			<div class="v4-hero-glow" aria-hidden="true"></div>
 			<div class="v4-hero-in">
 				<span class="v4-label">Sağlık turizmi operasyonları için</span>
-				<h1>Sisteminiz size <em>ne yapmanız gerektiğini</em> söylüyor mu?</h1>
+				<h1>Verimaya, <em>“bu ay neyi düzeltirsem para kazanırım”</em> sorusunu cevaplar.</h1>
 				<p>
-					Kayıt tutan yazılım çok. Verimaya reklamdan tahsilata bütün zinciri okur, nerede para
-					kaybettiğinizi bulur ve o ay ne yapılacağını önünüze koyar.
+					Reklamdan tahsilata bütün zinciri okur: hangi kampanya boş lead getiriyor, kime dönülmedi,
+					kim ödemedi. Rapor vermekle kalmaz; tıkanan yeri gösterir ve o ay kimlerle
+					ilgilenileceğini sıraya koyar.
 				</p>
 				<div class="v4-cta-row">
 					<a class="v4-btn" href="#gorusme">İlk bulgu raporu için görüşme isteyin</a>
@@ -344,8 +345,8 @@
 				<span class="v4-label">Teşhisin girdileri</span>
 				<h2>Zincirin her halkasına ayrı bakarız.</h2>
 				<p class="v4-lede">
-					Reklamı biz yönetmesek de kalitesini ölçeriz. Kontrol etmediğimiz halkayı da teşhis ederiz
-					— hasta gelmiyorsa nedeni muğlak değil; hangi halkada olduğu bellidir.
+					Reklamı biz yönetmesek de kalitesini ölçeriz. Kontrol etmediğimiz halkayı da teşhis
+					ederiz. Hasta gelmiyorsa nedeni muğlak değil; hangi halkada olduğu bellidir.
 				</p>
 
 				<div class="v4-reads">
@@ -366,11 +367,11 @@
 					<span class="v4-label">Çıktı</span>
 					<h2>Ay sonunda rapor değil, liste alırsınız.</h2>
 					<p class="v4-lede">
-						Her satırda üç şey vardır: ne yapılacak, neden, kim ve ne zaman. Ertesi ay ilk bakılan
+						Her satırda dört şey vardır: ne yapılacak, neden, kim ve ne zaman. Ertesi ay ilk bakılan
 						şey bu listenin ne kadarının kapandığıdır.
 					</p>
 					<p class="v4-note">
-						İlk teslimlerde bu listeyi sizinle birlikte biz çıkarıyoruz — bir panel ekranı
+						İlk teslimlerde bu listeyi sizinle birlikte biz çıkarıyoruz; bir panel ekranı
 						beklemenize gerek yok.
 					</p>
 				</div>
@@ -427,7 +428,7 @@
 						<span class="v4-chip">temsilî</span>
 					</div>
 					<div class="v4-q-item">
-						<p class="v4-q-who">Ahmet Yılmaz — Randevu tarihi</p>
+						<p class="v4-q-who">Ahmet Yılmaz · Randevu tarihi</p>
 						<p class="v4-diff">
 							<span class="v4-old">5 Eylül 2026</span>
 							<span class="v4-arrow">→</span>
@@ -443,11 +444,11 @@
 						</div>
 					</div>
 					<div class="v4-q-item v4-q-muted">
-						<span class="v4-q-who">Fatma Demir — Telefon</span>
+						<span class="v4-q-who">Fatma Demir · Telefon</span>
 						<span class="v4-chip">bekliyor</span>
 					</div>
 					<div class="v4-q-item v4-q-muted">
-						<span class="v4-q-who">Ali Kaya — Hasta durumu</span>
+						<span class="v4-q-who">Ali Kaya · Hasta durumu</span>
 						<span class="v4-chip">bekliyor</span>
 					</div>
 				</div>
@@ -517,7 +518,7 @@
 					<p>
 						Hastayı reklamla bulan, sürecini yürüten, parasını tahsil eden ve iş ortağının
 						hakedişini ödeyen taraf sizseniz doğru yerdesiniz. Kurum tipine göre ikiye ayrılmış iki
-						ayrı ürün yok — zincir aynı zincir.
+						ayrı ürün yok; zincir aynı zincir.
 					</p>
 					<p>
 						Lead, hasta, tahsilat ve hakediş aynı yerde. Hangi iş ortağının kazandırdığı, hangi
@@ -527,8 +528,8 @@
 				<aside>
 					<span class="v4-label">Ölçek</span>
 					<p>
-						Tek marka ile de çalışır, birden fazla şube ve iş ortağıyla da — hepsi tek hesapta.
-						Yanında ikinci bir tablo tutmanız gerekmez.
+						Tek marka ile de çalışır, birden fazla şube ve iş ortağıyla da. Hepsi tek hesapta;
+						yanında ikinci bir tablo tutmanız gerekmez.
 					</p>
 				</aside>
 			</div>
@@ -938,7 +939,7 @@
 			grid-template-columns: 1.05fr 0.95fr;
 		}
 	}
-	/* Tek sütuna inince başlık kartın üstüne geçsin — masaüstünde kart solda kalır. */
+	/* Tek sütuna inince başlık kartın üstüne geçsin; masaüstünde kart solda kalır. */
 	@media (max-width: 959.98px) {
 		.v4-two-rev > .v4-surface {
 			order: 2;
