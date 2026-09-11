@@ -73,7 +73,7 @@
 			no: '5',
 			ad: 'Aksiyon',
 			soru: 'Ne yapılmalı? Yapıldı mı? İşe yaradı mı?',
-			kim: 'sattığımız şey bu · birlikte yürütürüz',
+			kim: 'birlikte yürütürüz',
 			bizde: true
 		}
 	] as const;
