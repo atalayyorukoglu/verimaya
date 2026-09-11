@@ -57,3 +57,10 @@ Screen Shot *.png
 
 # kesim yedekleri ve loglari (pg_dump ciktisi - asla commit edilmez)
 backups/
+
+# WhatsApp dışa aktarımları — hasta adı, tedavi, fiyat ve dekont içerir.
+# Arşiv depo DIŞINDA durur: ~/Verimaya-WhatsApp-Arsiv
+# Bu satırlar yanlışlıkla repoya kopyalanırsa diye ağ görevi görüyor.
+docs/whatsapp/
+**/WhatsApp Chat - *
+*_chat.txt
