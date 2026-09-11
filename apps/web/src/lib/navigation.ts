@@ -9,6 +9,7 @@ import Settings from '@lucide/svelte/icons/settings';
 import UserCog from '@lucide/svelte/icons/user-cog';
 import Bot from '@lucide/svelte/icons/bot';
 
+import { PUBLIC_SITE_URL } from '$lib/env';
 import type { MessageKey } from '$lib/i18n/messages';
 
 /**
@@ -19,7 +20,7 @@ import type { MessageKey } from '$lib/i18n/messages';
  * Sidebar IA:
  *   Ürünler → Kişiler, Randevular, Finans, Raporlar
  *   Araçlar → /toolkit’ten açılan modüller (Temassız, Kohort, …)
- *   Kaynaklar → Maya Ai + Rehberler (/knowledge)
+ *   Kaynaklar → Maya Ai + Rehberler (siteye taşındı, yeni sekmede açılır)
  *   Sistem → Araçlar kataloğu, Ayarlar, Platform
  *   Yenilikler hesap menüsünde (Destek üstü).
  *
@@ -29,6 +30,8 @@ export type NavItem = {
 	labelKey: MessageKey;
 	href: string;
 	icon: Component;
+	/** Dış bağlantı: yeni sekmede açılır, aktiflik vurgusu almaz. */
+	external?: boolean;
 };
 
 export type NavGroup = {
@@ -55,7 +58,9 @@ export const coreProductNavItems: NavItem[] = [
 /** Kaynaklar grubu: Maya + Rehberler. */
 export const secondaryProductNavItems: NavItem[] = [
 	mayaNavItem,
-	{ labelKey: 'nav.guides', href: '/knowledge', icon: Library }
+	// Rehberler pazarlama sitesine taşındı (verimaya.com/guides). Panelde link
+	// kalıyor ama yeni sekmede ana domaini açıyor; içerik iki yerde durmasın.
+	{ labelKey: 'nav.guides', href: `${PUBLIC_SITE_URL}/guides/`, icon: Library, external: true }
 ];
 
 const systemNavItems: NavItem[] = [

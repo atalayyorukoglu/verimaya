@@ -6,7 +6,7 @@ export type KnowledgeGuide = {
 	descriptionKey: MessageKey;
 };
 
-/** Rehber listesi — `/knowledge` hub + `/knowledge/[slug]` detay. */
+/** Rehber listesi. Panelden pazarlama sitesine taşındı: `(public)/guides/`. */
 export const knowledgeGuides: KnowledgeGuide[] = [
 	{
 		slug: 'ai-prep-guide',

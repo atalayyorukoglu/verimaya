@@ -32,11 +32,9 @@
 			page.url.pathname.startsWith('/vitrin') ||
 			page.url.pathname.startsWith('/yapay-zeka-karnesi') ||
 			page.url.pathname.startsWith('/kvkk-aydinlatma') ||
-			page.url.pathname.startsWith('/features/') ||
-			page.url.pathname.startsWith('/operations/') ||
-			page.url.pathname.startsWith('/sales/') ||
 			page.url.pathname.startsWith('/tools/') ||
-			page.url.pathname.startsWith('/resources/')
+			page.url.pathname.startsWith('/case-study/') ||
+			page.url.pathname.startsWith('/guides/')
 	);
 
 	if (browser) initDemoChrome();

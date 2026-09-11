@@ -4,7 +4,7 @@
 	import LocaleToggle from '$lib/components/LocaleToggle.svelte';
 	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
-	import type { MessageKey } from '$lib/i18n/messages';
+	import { siteNavItems } from '$lib/site-nav';
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -13,7 +13,12 @@
 		title: string;
 		description: string;
 		href?: string;
+		/** Kart üstünde küçük etiket (ör. özellik durumu). */
+		badge?: string;
 	};
+
+	/** Modül başlığı altında toplanmış kartlar — Araçlar kataloğu için. */
+	type FeatureGroup = { label: string; features: FeatureItem[] };
 
 	type Cta = { label: string; href: string; external?: boolean };
 
@@ -26,6 +31,7 @@
 		problem,
 		outcome,
 		features,
+		groups,
 		primaryCta,
 		secondaryCta,
 		body
@@ -38,6 +44,7 @@
 		problem: string;
 		outcome: string;
 		features: FeatureItem[];
+		groups?: FeatureGroup[];
 		primaryCta: Cta;
 		secondaryCta?: Cta;
 		body?: string;
@@ -52,12 +59,7 @@
 	const ogImage = `${PUBLIC_SITE_URL}/og/vitrin.png`;
 	const appLoginUrl = `${PUBLIC_APP_URL}/login`;
 
-	const navItems = [
-		{ href: '/operations/', labelKey: 'hub.nav.webApp' as MessageKey },
-		{ href: '/sales/', labelKey: 'hub.nav.crm' as MessageKey },
-		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
-		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
-	] as const;
+	const navItems = siteNavItems;
 
 	const hasLinkedFeatures = $derived(features.some((f) => Boolean(f.href)));
 
@@ -254,6 +256,45 @@
 				{outcome}
 			</p>
 		</div>
+
+		{#if groups && groups.length > 0}
+			<div class="mx-auto mt-14 max-w-6xl space-y-12 text-left">
+				{#each groups as group (group.label)}
+					<section>
+						<h2 class="text-xs font-semibold tracking-[0.14em] text-text-muted uppercase">
+							{group.label}
+						</h2>
+						<ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{#each group.features as feature, i (feature.href ?? `${feature.title}-${i}`)}
+								<li>
+									<svelte:element
+										this={feature.href ? 'a' : 'div'}
+										href={feature.href}
+										class="block h-full rounded-xl border border-border bg-surface p-6 text-left {feature.href
+											? 'transition-colors hover:border-brand/40 hover:bg-surface-2'
+											: ''}"
+									>
+										<div class="flex items-start justify-between gap-3">
+											<h3 class="text-sm font-semibold text-text">{feature.title}</h3>
+											{#if feature.badge}
+												<span
+													class="shrink-0 rounded-full border border-border px-2 py-0.5 text-[0.625rem] text-text-muted"
+												>
+													{feature.badge}
+												</span>
+											{/if}
+										</div>
+										<p class="mt-2 text-xs leading-relaxed text-text-muted">
+											{feature.description}
+										</p>
+									</svelte:element>
+								</li>
+							{/each}
+						</ul>
+					</section>
+				{/each}
+			</div>
+		{/if}
 
 		{#if features.length > 0}
 			<div class="mx-auto mt-14 {hasLinkedFeatures ? 'max-w-6xl' : 'max-w-3xl'}">

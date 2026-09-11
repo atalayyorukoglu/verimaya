@@ -59,6 +59,48 @@ export function isFeatureNew(featureId: string, today: string): boolean {
 
 export const changelog: ChangelogEntry[] = [
 	{
+		version: '0.13.0',
+		date: '2026-09-11',
+		title: 'Özellik durumları gerçeğe çekildi',
+		changes: [
+			{
+				type: 'degisti',
+				module: 'Platform',
+				text: 'Araçlar sayfasındaki 31 özellik “Yakında” görünüyordu ama panelde çalışıyordu. Durumlar Ağustos’ta “pilot başlamadı” gerekçesiyle toplu olarak düşürülmüş, 8 Eylül’deki veri kesiminden sonra güncellenmemişti. Hepsi “Yayında” rozetine çekildi; WhatsApp kuyruğuna bağlı dört özellik ile n8n bilinçli olarak “Yakında” kaldı.'
+			},
+			{
+				type: 'degisti',
+				module: 'Entegrasyonlar',
+				text: 'Meta ve Google Ads bağlantısı “Sıradaki” görünüyordu; iki sağlayıcı da 13 Ağustos’ta bağlandı ve harcama verisi altı saatte bir akıyor. Rozet “Yayında” oldu.',
+				featureId: 'ads-connect'
+			},
+			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'Temassız Kişiler: son X gündür randevu, işlem veya not düşülmemiş kişileri listeler.',
+				featureId: 'untouched-contacts'
+			},
+			{
+				type: 'eklendi',
+				module: 'Raporlama',
+				text: 'Kohort görünümü: hasta giriş ayına göre kohortlarda gelir ve dönüşümün nasıl biriktiği.',
+				featureId: 'cohorts'
+			},
+			{
+				type: 'eklendi',
+				module: 'Finans',
+				text: 'Teşvik dosyaları: sağlık turizmi teşvik başvurusuna giren dosyaların hasta, tutar ve eksik belge takibi.',
+				featureId: 'incentive-files'
+			},
+			{
+				type: 'eklendi',
+				module: 'Pazarlama',
+				text: 'Kampanya asistanı: gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontroller tek hub’da.',
+				featureId: 'campaign-assistant'
+			}
+		]
+	},
+	{
 		version: '0.12.0',
 		date: '2026-08-24',
 		title: 'LLM maliyet takibi',

@@ -654,11 +654,13 @@
 							{/if}
 							<ul class="space-y-0">
 								{#each group.items as item (item.href)}
-									{@const active = isActive(item.href)}
+									{@const active = !item.external && isActive(item.href)}
 									{@const Icon = item.icon}
 									<li>
 										<a
 											href={item.href}
+											target={item.external ? '_blank' : undefined}
+											rel={item.external ? 'noreferrer' : undefined}
 											class={cn(
 												'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
 												active
@@ -721,11 +723,13 @@
 							{/if}
 							<ul class="space-y-1">
 								{#each group.items as item (item.href)}
-									{@const active = isActive(item.href)}
+									{@const active = !item.external && isActive(item.href)}
 									{@const Icon = item.icon}
 									<li>
 										<a
 											href={item.href}
+											target={item.external ? '_blank' : undefined}
+											rel={item.external ? 'noreferrer' : undefined}
 											onclick={closeMobile}
 											class={cn(
 												'flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-base font-medium transition-colors',

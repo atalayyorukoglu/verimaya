@@ -5,7 +5,7 @@
 	import HubI18nText from '$lib/components/HubI18nText.svelte';
 	import { PUBLIC_APP_URL, PUBLIC_CRM_URL, PUBLIC_SITE_URL } from '$lib/env';
 	import { t } from '$lib/i18n/locale.svelte';
-	import type { MessageKey } from '$lib/i18n/messages';
+	import { siteNavItems } from '$lib/site-nav';
 	import Menu from '@lucide/svelte/icons/menu';
 	import X from '@lucide/svelte/icons/x';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -29,12 +29,7 @@
 		description
 	};
 
-	const navItems = [
-		{ href: '/operations/', labelKey: 'hub.nav.webApp' as MessageKey },
-		{ href: '/sales/', labelKey: 'hub.nav.crm' as MessageKey },
-		{ href: '/tools/', labelKey: 'hub.nav.tools' as MessageKey },
-		{ href: '/resources/', labelKey: 'hub.nav.resources' as MessageKey }
-	] as const;
+	const navItems = siteNavItems;
 
 	function closeMenu() {
 		menuOpen = false;
@@ -562,12 +557,9 @@
 						<HubI18nText key="hub.footer.links" />
 					</p>
 					<ul class="mt-4 space-y-2">
-						<li><a href="/operations/"><HubI18nText key="hub.nav.webApp" /></a></li>
-						<li><a href="/sales/"><HubI18nText key="hub.nav.crm" /></a></li>
-						<li><a href="/tools/"><HubI18nText key="hub.nav.tools" /></a></li>
-						<li>
-							<a href="/resources/"><HubI18nText key="hub.nav.resources" /></a>
-						</li>
+						{#each navItems as item (item.href)}
+							<li><a href={item.href}><HubI18nText key={item.labelKey} /></a></li>
+						{/each}
 					</ul>
 				</div>
 				<div>
@@ -575,7 +567,6 @@
 						<HubI18nText key="hub.footer.resources" />
 					</p>
 					<ul class="mt-4 space-y-2">
-						<li><a href="/features/"><HubI18nText key="nav.features" /></a></li>
 						<li><a href="/changelog/"><HubI18nText key="nav.changelog" /></a></li>
 						<li>
 							<a href="/yapay-zeka-karnesi/"><HubI18nText key="hub.karne.title" /></a>
@@ -774,7 +765,9 @@
 	.v4-hero p {
 		margin: 1.6rem auto 0;
 		max-width: 40rem;
-		font-size: 1.08rem;
+		/* Omurga bölümündeki .v4-lede ile aynı boy — sayfa boyunca tek gövde ölçüsü. */
+		font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+		line-height: 1.55;
 		color: var(--ink-2);
 	}
 	.v4-cta-row {

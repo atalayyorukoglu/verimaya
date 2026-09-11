@@ -168,7 +168,7 @@ export const features: Feature[] = [
 		title: 'Bilgi bankası',
 		description:
 			'Hizmetler, fiyatlar, ödeme kuralları ve red gerekçeleri Ayarlar’dan giriliyor; WhatsApp ayrıştırması ve Maya bu bilgiden besleniyor. Değişiklikler sürümleniyor.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/settings/knowledge'
 	},
 	{
@@ -186,7 +186,7 @@ export const features: Feature[] = [
 		title: 'Operasyon alarmları',
 		description:
 			'Uçuş ve transfer gibi zaman kilitli kalemler için eşiğe gelindiğinde uyarı üretilir. Deterministik kod — yapay zekâ değil.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/appointments/alerts'
 	},
 	{
@@ -213,7 +213,7 @@ export const features: Feature[] = [
 		title: 'Temassız kişiler',
 		description:
 			'Son X gündür randevu, işlem veya not düşülmemiş kişileri listeler; takip borcu olanları görünür kılar.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/untouched'
 	},
 	{
@@ -222,7 +222,7 @@ export const features: Feature[] = [
 		title: 'Kohort görünümü',
 		description:
 			'Hasta giriş ayına göre kohortlar; olgunlaşma pencerelerinde gelir ve dönüşüm nasıl birikir.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/cohorts'
 	},
 	{
@@ -231,7 +231,7 @@ export const features: Feature[] = [
 		title: 'Maya canlı veri',
 		description:
 			'Maya bakiye, açık alacak, randevu, dönem özeti ve temassız kişiler sorularını canlı veriden cevaplar. Rakamı veritabanı verir, model yalnız hangi sorgunun çalışacağını seçer; izin araç başına kontrol edilir.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/maya'
 	},
 	{
@@ -240,7 +240,7 @@ export const features: Feature[] = [
 		title: 'LLM maliyet takibi',
 		description:
 			'Platform yöneticisi tenant başına LLM çağrı sayısı, token ve maliyeti görür; fallback oranı yüksekse renkli işaretle uyarır.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/dev'
 	},
 	{
@@ -249,7 +249,7 @@ export const features: Feature[] = [
 		title: 'Kişi ünvanları',
 		description:
 			'Hekim, koordinatör, satış, reklam uzmanı gibi görev etiketleri; liste Ayarlar’dan yönetilir. Ünvan tanımlayıcıdır, yetkiyi değiştirmez.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/settings/contact-titles'
 	},
 	{
@@ -258,7 +258,7 @@ export const features: Feature[] = [
 		title: 'Randevuda hekim',
 		description:
 			'Randevuya hekim atanır; randevu metrikleri hekim kırılımı ve hekim × randevu tipi çapraz sayımı döndürür (RPT oranı buradan hesaplanır).',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/appointments'
 	},
 	{
@@ -267,7 +267,7 @@ export const features: Feature[] = [
 		title: 'Olay kaydı',
 		description:
 			'Hasta dosyasından tek tıkla açılan sorun kaydı: revizyon gerekti, komplikasyon, süreç gecikmesi. Opsiyonel maliyet ve randevu bağı taşır, çözüldü olarak kapatılır. v1 yalnız klinik departmanı.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/settings/incident-types'
 	},
 	{
@@ -276,7 +276,7 @@ export const features: Feature[] = [
 		title: 'Referans değeri',
 		description:
 			'Kim kaç kişi getirdi, o kişilerden ne kazanıldı, referans verenin ünvanı ve koordinatörü kim. Rakamlar kişi kartındaki finans özetiyle aynı kaynaktan gelir.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/referrals'
 	},
 	{
@@ -285,7 +285,7 @@ export const features: Feature[] = [
 		title: 'Dönem karşılaştırması',
 		description:
 			'Özet ve randevu metrikleri önceki dönemle karşılaştırılır. Önceki dönem aynı gün sayısında ve hemen öncesinde biten penceredir; az kayda dayanan değişimde yüzde gösterilmez.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/reports'
 	},
 	{
@@ -294,7 +294,7 @@ export const features: Feature[] = [
 		title: 'Müdahale listesi',
 		description:
 			'Kötüleşen hekim oranları, düşen dönem geliri, çözülmemiş olaylar ve en değerli referanslar tek listede — sistem kimse sormadan işaretler. Cümleler şablon, rakamlar SQL; dil modeli hiçbir bulgu üretmez.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/interventions'
 	},
 	{
@@ -303,7 +303,7 @@ export const features: Feature[] = [
 		title: 'Kampanya Asistanı',
 		description:
 			'Pazarlama hub’ı — gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontrolleri tek yerde.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/marketing',
 		released_at: '2026-07-22',
 		version: '0.2.0'
@@ -314,7 +314,7 @@ export const features: Feature[] = [
 		title: 'Hasta listesi ve detay',
 		description:
 			'Lead ve hasta kayıtlarını listeleyin, durumlarını takip edin, not ve iletişim bilgilerine tek ekrandan ulaşın.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/contacts',
 		released_at: '2026-07-17',
 		version: '0.1.0'
@@ -325,7 +325,7 @@ export const features: Feature[] = [
 		title: 'Randevu takvimi',
 		description:
 			'Klinik, otel ve transfer notlarıyla birlikte randevuları gün/hafta görünümünde yönetin.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/appointments',
 		released_at: '2026-07-17',
 		version: '0.1.0'
@@ -336,7 +336,7 @@ export const features: Feature[] = [
 		title: 'Gelir-gider işlemleri',
 		description:
 			'Tahsilat ve ödemeleri hasta bağlantısı, ödeme durumu ve fatura bilgisiyle kaydedin.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/finance',
 		released_at: '2026-07-17',
 		version: '0.1.0'
@@ -347,7 +347,7 @@ export const features: Feature[] = [
 		title: 'Teşvik dosyaları',
 		description:
 			'Sağlık turizmi teşvik başvurusuna giren dosyaların takibi: hangi hasta, hangi tutar, hangi belge eksik.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/incentives'
 	},
 	{
@@ -367,7 +367,7 @@ export const features: Feature[] = [
 		title: 'GoHighLevel senkronu',
 		description:
 			'GHL lead ve fırsatlarını alan bazlı sahiplik kurallarıyla Verimaya ile eşleştirin.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/settings/connections/ghl'
 	},
 	{
@@ -376,7 +376,7 @@ export const features: Feature[] = [
 		title: 'Meta ve Google Ads metrikleri',
 		description:
 			'Reklam harcaması ve dönüşümleri günlük özet olarak panele çekin.',
-		status: 'harici-onay-bekliyor',
+		status: 'pilotta',
 		route: '/settings/connections/ads'
 	},
 	{
@@ -385,7 +385,7 @@ export const features: Feature[] = [
 		title: 'Meta & Google Ads bağlantısı',
 		description:
 			'Reklam hesabınızı bağlayın; kampanya harcaması günlük çekilir ve Gerçek ROAS raporunu besler.',
-		status: 'harici-onay-bekliyor',
+		status: 'pilotta',
 		route: '/settings/connections/ads'
 	},
 	{
@@ -405,7 +405,7 @@ export const features: Feature[] = [
 		title: 'Özet raporlar ve dashboard',
 		description:
 			'Lead, dönüşüm, tahsilat ve mesaj hacmini dönemsel kartlarda görün.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/reports',
 		released_at: '2026-07-20',
 		version: '0.1.0'
@@ -416,7 +416,7 @@ export const features: Feature[] = [
 		title: 'Gerçek ROAS raporu',
 		description:
 			'Reklam harcamanızı dönem tahsilatıyla kıyaslayın; hasta başına maliyet ve kaynak kırılımı.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/reports',
 		released_at: '2026-07-22',
 		version: '0.3.0'
@@ -427,7 +427,7 @@ export const features: Feature[] = [
 		title: 'Gerçek ROAS hesabı',
 		description:
 			'Platform ROAS’ını katkı payı ve maliyetlerle gerçek kâra çevirin; başabaş ve hasta başı reklam tavanını görün.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/marketing/calculator',
 		released_at: '2026-07-22',
 		version: '0.2.0'
@@ -438,7 +438,7 @@ export const features: Feature[] = [
 		title: 'Reklam matematiği simülatörü',
 		description:
 			'CPC, dönüşüm ve satış oranıyla satış başı maliyet, trafik ışığı ve ölçek tavanını hesaplayın.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/marketing/simulator',
 		released_at: '2026-07-22',
 		version: '0.2.0'
@@ -449,7 +449,7 @@ export const features: Feature[] = [
 		title: 'Reklam uyumluluk taraması',
 		description:
 			'Reklam veya landing metnindeki yasaklı / riskli sağlık vaatlerini tarayın.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/marketing/compliance',
 		released_at: '2026-07-22',
 		version: '0.2.0'
@@ -460,7 +460,7 @@ export const features: Feature[] = [
 		title: 'UTM ve bütçe şablonları',
 		description:
 			'UTM linki üretin; 3:2:2 kreatif ve 60/30/10 bütçe bölüşümünü hızlıca çıkarın.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/marketing/templates',
 		released_at: '2026-07-22',
 		version: '0.2.0'
@@ -471,7 +471,7 @@ export const features: Feature[] = [
 		title: 'Ölçüm olgunluğu (Trust Score)',
 		description:
 			'Consent, CAPI, enhanced conversions ve CRM geri bildirim checklist’iyle ölçüm skorunu görün.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/marketing/measurement',
 		released_at: '2026-07-22',
 		version: '0.2.0'
@@ -482,7 +482,7 @@ export const features: Feature[] = [
 		title: 'Yayın öncesi kontrol',
 		description:
 			'Kampanyayı yayınlamadan önce uyumluluk, birim ekonomi ve ölçüm eşiğini tek ekranda kontrol edin.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/marketing/pre-launch',
 		released_at: '2026-07-22',
 		version: '0.4.0'
@@ -493,7 +493,7 @@ export const features: Feature[] = [
 		title: 'Kişi ve hasta çift kayıt',
 		description:
 			'Telefon, e-posta veya ada göre mükerrerleri tarayın; kayıtları birleştirin.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/contacts/duplicates',
 		released_at: '2026-07-20',
 		version: '0.1.0'
@@ -504,7 +504,7 @@ export const features: Feature[] = [
 		title: 'Çok kiracılı organizasyon',
 		description:
 			'Her klinik/acente kendi verisini görür; ekip rolleriyle erişim sınırlanır.',
-		status: 'kod-hazir'
+		status: 'pilotta'
 	},
 	{
 		id: 'free-ai-scorecard',
@@ -522,7 +522,7 @@ export const features: Feature[] = [
 		title: 'Ürün içi yapay zeka karnesi',
 		description:
 			'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması — panel /scorecard.',
-		status: 'kod-hazir',
+		status: 'pilotta',
 		route: '/scorecard',
 		released_at: '2026-07-30',
 		version: '0.6.0'

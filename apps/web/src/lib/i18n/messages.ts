@@ -1131,6 +1131,8 @@ const tr = {
 	'hub.nav.crm': 'Maya Satış',
 	'hub.nav.resources': 'Kaynaklar',
 	'hub.nav.tools': 'Araçlar',
+	'hub.nav.case': 'Vaka',
+	'hub.nav.guides': 'Rehberler',
 	'hub.menu.open': 'Menüyü aç',
 	'hub.menu.close': 'Menüyü kapat',
 	'hub.login': 'Giriş',
@@ -1330,6 +1332,48 @@ const tr = {
 	'pillar.crm.f.ads.desc':
 		'Reklam hesaplarını bağlayın; harcama ve metrikler Gerçek ROAS raporunu besler.',
 
+	'pillar.case.metaTitle': 'Vaka · Verimaya',
+	'pillar.case.metaDesc':
+		'Temsilî bir sağlık turizmi kliniğinde üç ay: ilk gün ne bulundu, o ay ne yapıldı, ertesi ay ne değişti.',
+	'pillar.case.eyebrow': 'Vaka · temsilî',
+	'pillar.case.heading': 'Üç ayda ne oluyor, adım adım.',
+	'pillar.case.problem':
+		'Aşağıdaki klinik gerçek değil; rakamlar sahada en sık gördüğümüz büyüklüklerden kuruldu. Amaç sistemin ne yaptığını özellik listesiyle değil, bir ayın nasıl geçtiğiyle göstermek.',
+	'pillar.case.body':
+		'Klinik profili: saç ekimi ve diş, ayda ortalama 400 lead, altı satış temsilcisi, iki ortak klinik. Kayıtlar üç yerde duruyordu: CRM’de lead, Excel’de tahsilat, WhatsApp gruplarında geri kalan her şey.',
+	'pillar.case.outcome':
+		'Üç ayın sonunda değişen tek şey şu: “bu ay ne yapalım” sorusu artık toplantıda tartışılmıyor, listede yazıyor.',
+	'pillar.case.cta': 'İlk bulgu raporu için görüşme isteyin',
+	'pillar.case.ctaSecondary': 'Araçlara bakın ›',
+
+	'pillar.case.f.gun0.title': 'Gün 0 · Veri bağlanır',
+	'pillar.case.f.gun0.desc':
+		'Mevcut CRM, tahsilat tablosu ve WhatsApp geçmişi tek yere alınır ve doğrulanır. Klinikten istenen tek şey erişim; veri girişi yok.',
+	'pillar.case.f.gun3.title': 'Gün 3 · İlk bulgu raporu',
+	'pillar.case.f.gun3.desc':
+		'Veri dolar dolmaz dört şey görünür oldu: 51 mükerrer kayıt, 38 hastaya 60 günden uzun süredir dokunulmamış, 9 hastada toplam 214.000 TL tahsil edilmemiş bakiye, bir kampanya üç aydır ortalamanın altında.',
+	'pillar.case.f.ay1.title': 'Ay 1 · Müdahale listesi',
+	'pillar.case.f.ay1.desc':
+		'Bulgular dört maddeye indi ve klinikle birlikte sahibi ile tarihi yazıldı: kampanyayı durdur (Atalay), 38 hastayı ara (operasyon), bakiyeleri mutabakata bağla (finans), mükerrerleri birleştir (operasyon).',
+	'pillar.case.f.ay2.title': 'Ay 2 · Aynı listeye tekrar bakıldı',
+	'pillar.case.f.ay2.desc':
+		'Temassız hasta 38’den 11’e indi, bakiyenin 140.000 TL’si tahsil edildi, durdurulan kampanyanın bütçesi ölçülebilir olana kaydı. Mükerrer birleştirme yarım kalmıştı; listede kaldı.',
+	'pillar.case.f.ay3.title': 'Ay 3 · Sorunun yeri değişti',
+	'pillar.case.f.ay3.desc':
+		'İlk ayın dört maddesi kapandı; yerine daha ince iki madde geldi. Lead’e dönüş süresi ortalama altı saat, iki temsilcide 20 saat. Tıkanıklık artık tahsilatta değil, ilk temasta.',
+	'pillar.case.f.neyok.title': 'Bu vakada olmayanlar',
+	'pillar.case.f.neyok.desc':
+		'Sistem işi kimseye kendisi atamadı, “yapıldı” kutusunu kendisi işaretlemedi. Listeyi her ay klinikle birlikte biz çıkardık. Sistemin yaptığı iş, bakılacak yeri isim ve rakamla önümüze koymaktı.',
+	'pillar.guides.metaTitle': 'Rehberler · Verimaya',
+	'pillar.guides.metaDesc':
+		'Sağlık turizmi operasyonu için rehberler: yapay zekâya hazırlık, anahtar kelime seçimi, indirim kurgusu.',
+	'pillar.guides.eyebrow': 'Rehberler',
+	'pillar.guides.heading': 'Sistemi kurmadan önce işin kendisini konuşalım.',
+	'pillar.guides.problem':
+		'Yazılım, bozuk bir süreci hızlandırmaktan başka bir şey yapmaz. Bu rehberler operasyonun kendisine bakar: neyi ölçeceğinizi, hangi reklamı vereceğinizi, indirimi nasıl kurgulayacağınızı.',
+	'pillar.guides.outcome': 'Rehberlerin metinleri yazılıyor; yayına girdikçe burada listelenecek.',
+	'pillar.guides.cta': 'Ücretsiz yapay zekâ karnesi al',
+	'pillar.guides.ctaSecondary': 'Vakayı oku ›',
 	'pillar.resources.metaTitle': 'Kaynaklar — Verimaya',
 	'pillar.resources.metaDesc':
 		'Özellik rehberleri, platform dökümantasyonu ve sağlık turizmine özel reklam-satış taktikleri tek kütüphanede.',
@@ -1352,16 +1396,17 @@ const tr = {
 	'pillar.resources.f.changelog.title': 'Yenilikler',
 	'pillar.resources.f.changelog.desc': 'Sürüm notlarıyla panele neyin geldiğini takip edin.',
 
-	'pillar.tools.metaTitle': 'Araçlar — Verimaya',
+	'pillar.tools.metaTitle': 'Araçlar · Verimaya',
 	'pillar.tools.metaDesc':
-		'Reklama yatırmadan önce ROAS hesabı, simülatör, uyumluluk, şablon, ölçüm ve yayın öncesi kontrol.',
+		'Panelde ne var: hasta takibi, randevu, finans, WhatsApp, entegrasyonlar, raporlama, pazarlama ve platform araçlarının tam listesi.',
 	'pillar.tools.eyebrow': 'Araçlar',
-	'pillar.tools.heading': 'Reklama yatırmadan önce simüle edin ve doğrulayın.',
+	'pillar.tools.heading': 'Panelde ne varsa burada yazıyor.',
 	'pillar.tools.problem':
-		'Bütçeyi yayına almadan önce tahminlerle veya Excel ile mi riske atıyorsunuz?',
-	'pillar.tools.outcome': 'Sonuç: Deneme-yanılma ile bütçe yakmaya son; yayından önce netlik.',
+		'Aşağıdaki liste pazarlama için ayrıca yazılmadı; panelin kendi özellik kataloğu. Rozetler de aynı yerden geliyor, yani hangi özelliğin çalıştığını abartmadan görürsünüz.',
+	'pillar.tools.outcome':
+		'Yıldızlı altı araç üyeliksiz kullanılabilir; geri kalanı panelde, giriş yaptıktan sonra.',
 	'pillar.tools.cta': 'Gerçek ROAS hesabına git',
-	'pillar.tools.ctaSecondary': 'Maya App ›',
+	'pillar.tools.ctaSecondary': 'Vakayı oku ›',
 	'pillar.tools.f.templates.title': 'Kampanya asistanı',
 	'pillar.tools.f.templates.desc':
 		'UTM, 3:2:2 kreatif ve 60/30/10 bütçe şablonlarıyla lansmanı hazırlayın.',
@@ -1600,7 +1645,7 @@ const tr = {
 	'toolkit.feature.fallback.description': 'Açıklama yakında.',
 	'toolkit.feature.campaign-assistant.title': 'Kampanya Asistanı',
 	'toolkit.feature.campaign-assistant.description':
-		'Pazarlama hub’ı — gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontrolleri tek yerde.',
+		'Pazarlama hub’ı: gerçek ROAS hesabı, simülatör, uyumluluk taraması ve yayın öncesi kontrolleri tek yerde.',
 	'toolkit.feature.ai-knowledge-base.title': 'Bilgi Bankası',
 	'toolkit.feature.ai-knowledge-base.description':
 		'Hizmetler, fiyatlar, ödeme kuralları ve red gerekçeleri buradan girilir; WhatsApp ayrıştırması ve Maya bu bilgiden cevaplar. Değişiklikler sürümlenerek saklanır.',
@@ -1609,7 +1654,7 @@ const tr = {
 		'WhatsApp mesajından çıkan tarih değişikliği öneri olarak kuyruğa düşer. Her kart tek tek onaylanır; eşleşme belirsizse öneri üretilmez.',
 	'toolkit.feature.ai-operation-alerts.title': 'Operasyon Alarmları',
 	'toolkit.feature.ai-operation-alerts.description':
-		'Uçuş ve transfer gibi zaman kilitli kalemler eşiğe gelince uyarı üretir. Deterministik kod — yapay zekâ değil.',
+		'Uçuş ve transfer gibi zaman kilitli kalemler eşiğe gelince uyarı üretir. Deterministik kod, yapay zekâ değil.',
 	'toolkit.feature.ai-evidence.title': 'Taslakta Kaynak İzi',
 	'toolkit.feature.ai-evidence.description':
 		'Taslaktaki her alan hangi cümleden çıktığını taşır; rozete tıklayınca mesajda o alıntı vurgulanır. Uydurma alıntı sunucuda düşürülür.',
@@ -1646,7 +1691,7 @@ const tr = {
 	'toolkit.feature.interventions.title': 'Müdahale Listesi',
 	'toolkit.feature.interventions.description':
 		'Sistemin size söylediği yer: kalite düşüşü, açık olaylar, değerli referanslar. Eşiğin altındaki dalgalanma raporlanmaz.',
-	'toolkit.feature.maya-open-questions.title': 'Maya — Akla Gelen Her Soru',
+	'toolkit.feature.maya-open-questions.title': 'Maya · Akla Gelen Her Soru',
 	'toolkit.feature.maya-open-questions.description':
 		'Maya bugün beş sabit soruyu cevaplıyor; kısıtlı sorgu katmanıyla kayıtlarla ilgili serbest soruları da cevaplayacak.',
 	'toolkit.feature.ai-learning-loop.title': 'AI Öğrenme Döngüsü',
@@ -1661,7 +1706,7 @@ const tr = {
 	'toolkit.feature.multi-title.title': 'Çok Ünvanlı Kişi',
 	'toolkit.feature.multi-title.description':
 		'Bugün kişi başına tek ünvan var. Aynı kişinin birden çok görevi olabilmesi değerlendiriliyor.',
-	'toolkit.feature.incidents-departments.title': 'Olay Kaydı — Diğer Departmanlar',
+	'toolkit.feature.incidents-departments.title': 'Olay Kaydı · Diğer Departmanlar',
 	'toolkit.feature.incidents-departments.description':
 		'Bugün yalnız klinik sorunları kaydediliyor. Otel, transfer, satış ve reklam türlerinin eklenmesi, klinik döngüsü sahada çalıştıktan sonra değerlendirilecek.',
 	'toolkit.feature.maya-voice.title': "Maya'ya Sesli Soru",
@@ -1669,7 +1714,7 @@ const tr = {
 		'Maya bugün yazıyla soruluyor. Sesle sormak değerlendiriliyor; Türkçe ses tanıma kalitesi belirleyici olacak.',
 	'toolkit.feature.in-app-notifications.title': 'Panel İçi Bildirim',
 	'toolkit.feature.in-app-notifications.description':
-		'Alarmlar ve müdahale listesi bugün ilgili sayfaya girilince görülüyor. Uyarının kullanıcıyı bulması değerlendiriliyor — eşikler oturmadan açılmayacak.',
+		'Alarmlar ve müdahale listesi bugün ilgili sayfaya girilince görülüyor. Uyarının kullanıcıyı bulması değerlendiriliyor; eşikler oturmadan açılmayacak.',
 	'toolkit.feature.whats-new-surface.title': 'Ürün İçi Yenilikler',
 	'toolkit.feature.whats-new-surface.description':
 		'Panele girildiğinde son eklenenleri gösteren bir yüzey değerlendiriliyor.',
@@ -1738,7 +1783,7 @@ const tr = {
 		'Üyeliksiz 5 dakikalık karne: kliniğin yapay zeka hazırlığında kanıtı olmayan alanları net cümlelerle görün.',
 	'toolkit.feature.in-product-scorecard.title': 'Ürün İçi Yapay Zeka Karnesi',
 	'toolkit.feature.in-product-scorecard.description':
-		'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması — panel /scorecard.',
+		'Tenant ölçüm profili, 43 kriter, otomatik dolum ve ölçüm karşılaştırması; panel /scorecard.',
 
 	// knowledge (Kaynaklar rehberleri)
 	'knowledge.back': 'Rehberlere dön',
@@ -1747,7 +1792,7 @@ const tr = {
 	'knowledge.notFound.description': 'Bu rehber mevcut değil veya taşınmış olabilir.',
 	'knowledge.notFound.documentTitle': 'Rehber bulunamadı · Verimaya',
 	'knowledge.guide.documentTitle': '{title} · Verimaya',
-	'knowledge.guide.aiPrepGuide.title': 'Ai Hazırlık Rehberi',
+	'knowledge.guide.aiPrepGuide.title': 'Yapay zekâya hazırlık rehberi',
 	'knowledge.guide.aiPrepGuide.description':
 		'Klinik veya acentenizde AI operasyonuna geçiş için hazırlık adımları.',
 	'knowledge.guide.keywordSelection.title': 'Anahtar kelime seçiminde dikkat edilmesi gerekenler',
@@ -4078,6 +4123,8 @@ const en: Record<MessageKey, string> = {
 	'hub.nav.crm': 'Maya Sales',
 	'hub.nav.resources': 'Resources',
 	'hub.nav.tools': 'Tools',
+	'hub.nav.case': 'Case study',
+	'hub.nav.guides': 'Guides',
 	'hub.menu.open': 'Open menu',
 	'hub.menu.close': 'Close menu',
 	'hub.login': 'Sign in',
@@ -4265,6 +4312,49 @@ const en: Record<MessageKey, string> = {
 	'pillar.crm.f.ads.title': 'Meta & Google Ads connect',
 	'pillar.crm.f.ads.desc': 'Connect ad accounts; spend and metrics feed the Real ROAS report.',
 
+	'pillar.case.metaTitle': 'Case study · Verimaya',
+	'pillar.case.metaDesc':
+		'Three months at a representative health-tourism clinic: what was found on day one, what was done that month, what changed the next.',
+	'pillar.case.eyebrow': 'Case study · representative',
+	'pillar.case.heading': 'What happens in three months, step by step.',
+	'pillar.case.problem':
+		'The clinic below is not real; the numbers are built from the sizes we most often see in the field. The point is to show what the system does through one month of work, not a feature list.',
+	'pillar.case.body':
+		'Clinic profile: hair transplant and dental, around 400 leads a month, six sales reps, two partner clinics. Records lived in three places: leads in the CRM, collections in a spreadsheet, everything else in WhatsApp groups.',
+	'pillar.case.outcome':
+		'After three months one thing is different: “what should we do this month” is no longer argued in a meeting. It is written on a list.',
+	'pillar.case.cta': 'Request a first-findings call',
+	'pillar.case.ctaSecondary': 'See the tools ›',
+
+	'pillar.case.f.gun0.title': 'Day 0 · Data is connected',
+	'pillar.case.f.gun0.desc':
+		'The existing CRM, the collections spreadsheet and the WhatsApp history are pulled into one place and verified. All the clinic provides is access; no data entry.',
+	'pillar.case.f.gun3.title': 'Day 3 · First findings report',
+	'pillar.case.f.gun3.desc':
+		'As soon as the data landed, four things were visible: 51 duplicate records, 38 patients untouched for over 60 days, 214,000 TL uncollected across 9 patients, and one campaign below average for three months.',
+	'pillar.case.f.ay1.title': 'Month 1 · Intervention list',
+	'pillar.case.f.ay1.desc':
+		'The findings became four items, each given an owner and a date together with the clinic: stop the campaign (Atalay), call the 38 patients (operations), reconcile the balances (finance), merge the duplicates (operations).',
+	'pillar.case.f.ay2.title': 'Month 2 · The same list, revisited',
+	'pillar.case.f.ay2.desc':
+		'Untouched patients went from 38 to 11, 140,000 TL of the balance was collected, and the stopped campaign’s budget moved to something measurable. Duplicate merging was unfinished; it stayed on the list.',
+	'pillar.case.f.ay3.title': 'Month 3 · The problem moved',
+	'pillar.case.f.ay3.desc':
+		'The first month’s four items closed; two finer ones replaced them. Average lead response is six hours, but 20 hours for two reps. The bottleneck is no longer collections, it is first contact.',
+	'pillar.case.f.neyok.title': 'What this case does not claim',
+	'pillar.case.f.neyok.desc':
+		'The system did not assign the work to anyone by itself, and did not tick the “done” box by itself. We produced the list together with the clinic each month. What the system did was put the place to look in front of us, with names and numbers.',
+	'pillar.guides.metaTitle': 'Guides · Verimaya',
+	'pillar.guides.metaDesc':
+		'Guides for health-tourism operations: AI readiness, keyword selection, discount structuring.',
+	'pillar.guides.eyebrow': 'Guides',
+	'pillar.guides.heading': 'Before the software, talk about the work itself.',
+	'pillar.guides.problem':
+		'Software only speeds up a broken process. These guides look at the operation itself: what to measure, which ads to run, how to structure a discount.',
+	'pillar.guides.outcome':
+		'The guide texts are being written; each will be listed here as it goes live.',
+	'pillar.guides.cta': 'Get the free AI scorecard',
+	'pillar.guides.ctaSecondary': 'Read the case study ›',
 	'pillar.resources.metaTitle': 'Resources — Verimaya',
 	'pillar.resources.metaDesc':
 		'Feature guides, platform documentation, and health-tourism ad and sales tactics in one library.',
@@ -4286,17 +4376,17 @@ const en: Record<MessageKey, string> = {
 	'pillar.resources.f.changelog.title': 'What’s new',
 	'pillar.resources.f.changelog.desc': 'Follow release notes for what landed in the panel.',
 
-	'pillar.tools.metaTitle': 'Tools — Verimaya',
+	'pillar.tools.metaTitle': 'Tools · Verimaya',
 	'pillar.tools.metaDesc':
-		'Before you spend: ROAS calculator, simulator, compliance, templates, measurement, pre-launch.',
+		'What is in the panel: the full catalogue of patient, appointment, finance, WhatsApp, integration, reporting, marketing and platform tools.',
 	'pillar.tools.eyebrow': 'Tools',
-	'pillar.tools.heading': 'Simulate and validate before you spend on ads.',
+	'pillar.tools.heading': 'Whatever is in the panel is listed here.',
 	'pillar.tools.problem':
-		'Are you risking budget with guesses or messy spreadsheets before launch?',
+		'This list was not written separately for marketing; it is the panel’s own feature catalogue. The badges come from the same place, so you see what works without the padding.',
 	'pillar.tools.outcome':
-		'Outcome: stop burning budget on trial and error — clarity before go-live.',
-	'pillar.tools.cta': 'Go to Real ROAS calculator',
-	'pillar.tools.ctaSecondary': 'Maya App ›',
+		'The six starred tools need no account; the rest live in the panel, after you sign in.',
+	'pillar.tools.cta': 'Open the real ROAS calculator',
+	'pillar.tools.ctaSecondary': 'Read the case study ›',
 	'pillar.tools.f.templates.title': 'Campaign assistant',
 	'pillar.tools.f.templates.desc': 'UTM, 3:2:2 creative, and 60/30/10 budget templates for launch.',
 	'pillar.tools.f.simulator.title': 'Ad math simulator',
@@ -4524,7 +4614,7 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.fallback.description': 'Description coming soon.',
 	'toolkit.feature.campaign-assistant.title': 'Campaign Assistant',
 	'toolkit.feature.campaign-assistant.description':
-		'Marketing hub — real ROAS calculator, simulator, compliance scan, and pre-launch checks in one place.',
+		'Marketing hub: real ROAS calculator, simulator, compliance scan, and pre-launch checks in one place.',
 	'toolkit.feature.ai-knowledge-base.title': 'Knowledge Base',
 	'toolkit.feature.ai-knowledge-base.description':
 		'Services, prices, payment rules and rejection reasons live here; WhatsApp parsing and Maya answer from it. Changes are versioned.',
@@ -4533,7 +4623,7 @@ const en: Record<MessageKey, string> = {
 		'Date changes found in a WhatsApp message land in a queue. Every card is approved one by one; ambiguous matches produce nothing.',
 	'toolkit.feature.ai-operation-alerts.title': 'Operation Alerts',
 	'toolkit.feature.ai-operation-alerts.description':
-		'Time-locked items like flights and transfers raise a warning at the threshold. Deterministic code — not AI.',
+		'Time-locked items like flights and transfers raise a warning at the threshold. Deterministic code, not AI.',
 	'toolkit.feature.ai-evidence.title': 'Source Trail on Drafts',
 	'toolkit.feature.ai-evidence.description':
 		'Every draft field carries the sentence it came from; clicking the badge highlights that quote. Fabricated quotes are dropped server-side.',
@@ -4542,7 +4632,7 @@ const en: Record<MessageKey, string> = {
 		'How many drafts were approved untouched, which field is corrected most, and what Maya could not answer.',
 	'toolkit.feature.untouched-contacts.title': 'Untouched Contacts',
 	'toolkit.feature.untouched-contacts.description':
-		'Lists contacts with no appointment, transaction, or note in the last X days — follow-ups that need attention.',
+		'Lists contacts with no appointment, transaction, or note in the last X days; follow-ups that need attention.',
 	'toolkit.feature.cohorts.title': 'Cohort View',
 	'toolkit.feature.cohorts.description':
 		'Cohorts by patient intake month; how revenue and conversion accumulate across maturation windows.',
@@ -4570,7 +4660,7 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.interventions.title': 'Intervention List',
 	'toolkit.feature.interventions.description':
 		'Where the system speaks first: quality drops, open incidents, valuable referrers. Changes below the threshold are not reported.',
-	'toolkit.feature.maya-open-questions.title': 'Maya — Any Question',
+	'toolkit.feature.maya-open-questions.title': 'Maya · Any Question',
 	'toolkit.feature.maya-open-questions.description':
 		'Maya answers five fixed questions today; a constrained query layer will let it answer open questions about your records.',
 	'toolkit.feature.ai-learning-loop.title': 'AI Learning Loop',
@@ -4585,7 +4675,7 @@ const en: Record<MessageKey, string> = {
 	'toolkit.feature.multi-title.title': 'Multiple Titles per Contact',
 	'toolkit.feature.multi-title.description':
 		'One title per contact today. Letting one person hold several roles is under consideration.',
-	'toolkit.feature.incidents-departments.title': 'Incident Log — Other Departments',
+	'toolkit.feature.incidents-departments.title': 'Incident Log · Other Departments',
 	'toolkit.feature.incidents-departments.description':
 		'Only clinic problems are recorded today. Hotel, transfer, sales and marketing types will be considered once the clinic loop proves itself in the field.',
 	'toolkit.feature.maya-voice.title': 'Ask Maya by Voice',
@@ -4593,7 +4683,7 @@ const en: Record<MessageKey, string> = {
 		'Maya is asked in writing today. Voice input is under consideration; Turkish speech recognition quality will decide it.',
 	'toolkit.feature.in-app-notifications.title': 'In-App Notifications',
 	'toolkit.feature.in-app-notifications.description':
-		'Alerts and the intervention list are seen only when you open the page. Letting a warning find the user is under consideration — not before thresholds settle.',
+		'Alerts and the intervention list are seen only when you open the page. Letting a warning find the user is under consideration; not before thresholds settle.',
 	'toolkit.feature.whats-new-surface.title': "What's New Surface",
 	'toolkit.feature.whats-new-surface.description':
 		'A surface showing recent additions when you open the panel is under consideration.',
@@ -4662,7 +4752,7 @@ const en: Record<MessageKey, string> = {
 		'No-signup 5-minute scorecard: clear sentences on areas without AI-readiness evidence.',
 	'toolkit.feature.in-product-scorecard.title': 'In-Product AI Scorecard',
 	'toolkit.feature.in-product-scorecard.description':
-		'Tenant measurement profile, 43 criteria, auto-fill and comparison — panel /scorecard.',
+		'Tenant measurement profile, 43 criteria, auto-fill and comparison; panel /scorecard.',
 
 	'knowledge.back': 'Back to guides',
 	'knowledge.comingSoon': 'Content coming soon.',
