@@ -60,8 +60,24 @@ export function loadConfig(env = process.env) {
 	} catch {
 		throw new Error('VERIMAYA_WEBHOOK_URL geçerli bir URL değil');
 	}
+	// Virgülle ayrılmış sohbet kimlikleri. Boş bırakılırsa filtre YOK — bağlı
+	// numaranın her mesajı iletilir. Tek grup dinleniyorsa mutlaka doldurun.
+	const allowedRaw = env.RELAY_ALLOWED_CHATS?.trim();
+	const allowedChats = allowedRaw
+		? new Set(
+				allowedRaw
+					.split(',')
+					.map((chat) => chat.trim())
+					.filter(Boolean)
+			)
+		: null;
+	if (allowedChats && allowedChats.size === 0) {
+		throw new Error('RELAY_ALLOWED_CHATS verildi ama hiç sohbet kimliği içermiyor');
+	}
+
 	return {
 		port: Number(env.PORT?.trim() || 8080),
+		allowedChats,
 		webhookUrl: parsedUrl.toString(),
 		inboundToken: required('RELAY_INBOUND_TOKEN'),
 		sessions: parseSessions(required('RELAY_SESSIONS')),

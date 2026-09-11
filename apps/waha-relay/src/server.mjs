@@ -58,6 +58,19 @@ export function extractSession(payload) {
 	return 'default';
 }
 
+/**
+ * Mesajın geldiği sohbet izinli mi? WAHA olayında sohbet kimliği `payload.from`
+ * alanında durur (grup için `...@g.us`, birebir için `...@c.us`).
+ *
+ * Sohbet kimliği okunamıyorsa İLETİLMEZ: tanımadığımız bir olay şeklini
+ * geçirmektense düşürmek yeğdir — filtrenin amacı tam olarak bu.
+ */
+export function isAllowedChat(payload, allowed) {
+	const from = payload?.payload?.from ?? payload?.from;
+	if (typeof from !== 'string' || !from.trim()) return false;
+	return allowed.has(from.trim());
+}
+
 export async function handleRequest(req, res, config, fetchImpl = fetch) {
 	if (req.method === 'GET' && req.url === '/healthz') {
 		send(res, 200, { ok: true });
@@ -91,6 +104,15 @@ export async function handleRequest(req, res, config, fetchImpl = fetch) {
 	} catch {
 		log({ event: 'rejected', reason: 'invalid_json' });
 		send(res, 400, { error: 'invalid_json' });
+		return;
+	}
+
+	// Sohbet filtresi. WAHA bağlı numaranın BÜTÜN mesajlarını yollar; özel
+	// yazışmalar da dahil. RELAY_ALLOWED_CHATS verilmişse yalnız o sohbetler
+	// iletilir — geri kalanı sessizce düşer, Verimaya'ya hiç ulaşmaz.
+	if (config.allowedChats && !isAllowedChat(payload, config.allowedChats)) {
+		log({ event: 'skipped', reason: 'chat_not_allowed' });
+		send(res, 202, { ok: true, skipped: 'chat_not_allowed' });
 		return;
 	}
 

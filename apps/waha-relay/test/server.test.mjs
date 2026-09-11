@@ -179,3 +179,46 @@ test('RELAY_SESSIONS doğrulaması kötü değerleri reddeder', () => {
 	const ok = parseSessions(`{"a":{"tenantId":"${TENANT_A}","secret":"s"}}`);
 	assert.equal(ok.get('a').tenantId, TENANT_A);
 });
+
+test('sohbet filtresi: izinli olmayan sohbet iletilmez', async () => {
+	// WAHA bağlı numaranın BÜTÜN mesajlarını yollar; özel yazışma Verimaya'ya
+	// ulaşmamalı. Filtre varken yalnız izinli sohbet geçer.
+	const config = { ...CONFIG, allowedChats: new Set(['120363143271144447@g.us']) };
+	let forwarded = 0;
+	const fetchImpl = async () => {
+		forwarded += 1;
+		return { status: 202, text: async () => '{}' };
+	};
+
+	const ozelRes = fakeResponse();
+	await handleRequest(
+		fakeRequest({
+			headers: { 'x-webhook-token': 'inbound-token' },
+			body: JSON.stringify({
+				session: 'default',
+				payload: { from: '905551112233@c.us', body: 'özel' }
+			})
+		}),
+		ozelRes,
+		config,
+		fetchImpl
+	);
+	assert.equal(ozelRes.statusCode, 202);
+	assert.equal(forwarded, 0, 'özel mesaj iletilmemeliydi');
+
+	const grupRes = fakeResponse();
+	await handleRequest(
+		fakeRequest({
+			headers: { 'x-webhook-token': 'inbound-token' },
+			body: JSON.stringify({
+				session: 'default',
+				payload: { from: '120363143271144447@g.us', body: 'grup' }
+			})
+		}),
+		grupRes,
+		config,
+		fetchImpl
+	);
+	assert.equal(grupRes.statusCode, 202);
+	assert.equal(forwarded, 1, 'grup mesajı iletilmeliydi');
+});

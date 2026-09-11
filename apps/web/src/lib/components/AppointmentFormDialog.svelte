@@ -10,7 +10,8 @@
 		ContactType
 	} from '@verimaya/shared';
 	import { apiPaths, appointmentStatusLabels } from '@verimaya/shared';
-	import { apiGet, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
+	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
+	import { fetchAllPages } from '$lib/fetch-all';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -58,8 +59,11 @@
 	 * yedeği kimliği ad olarak basıyordu — panelde ad yerine UUID görünüyordu
 	 * (2026-09-02, OrbisMed taşımasından sonra 831 kişide ortaya çıktı).
 	 * Klinik/otel/transfer birer sözlük; tenant başına onlarca kayıt, tamamı çekilebilir.
+	 *
+	 * 2026-09-11: `limit: 500` sunucunun üst sınırını (100) aştığı için istek 400
+	 * dönüyor, seçicilerin HEPSİ boş kalıyordu — hasta değiştirilemiyor, hekim hiç
+	 * seçilemiyordu. Artık `fetchAllPages` tüm sayfaları cursor'la geziyor.
 	 */
-	const CONTACT_PAGE = 500;
 
 	const contactTypesQuery = createQuery(() => ({
 		queryKey: qs.keys.settings.contactTypes(),
@@ -80,10 +84,7 @@
 	function typedContactsQuery(typeId: () => string | undefined) {
 		return createQuery(() => ({
 			queryKey: qs.keys.contacts.list({ type_id: typeId() ?? '-', for: 'appt-form' }),
-			queryFn: () =>
-				apiGet<{ items: Contact[]; next_cursor: string | null }>(
-					listUrl('contacts', { type_id: typeId(), limit: CONTACT_PAGE })
-				),
+			queryFn: async () => (await fetchAllPages<Contact>('contacts', { type_id: typeId() })).items,
 			enabled: open && qs.ready && !!typeId()
 		}));
 	}
@@ -94,11 +95,8 @@
 
 	/** Hasta + hekim seçicileri tüm kişiler üzerinden çalışır; sayfa boyu türlerden büyük. */
 	const directoryQuery = createQuery(() => ({
-		queryKey: qs.keys.contacts.list({ limit: CONTACT_PAGE, for: 'appt-form' }),
-		queryFn: () =>
-			apiGet<{ items: Contact[]; next_cursor: string | null }>(
-				listUrl('contacts', { limit: CONTACT_PAGE })
-			),
+		queryKey: qs.keys.contacts.list({ for: 'appt-form-all' }),
+		queryFn: async () => (await fetchAllPages<Contact>('contacts')).items,
 		enabled: open && qs.ready
 	}));
 
@@ -108,11 +106,11 @@
 			.map((t) => t.name)
 	);
 
-	const directoryContacts = $derived(directoryQuery.data?.items ?? []);
+	const directoryContacts = $derived(directoryQuery.data ?? []);
 	const typedContacts = $derived([
-		...(clinicQuery.data?.items ?? []),
-		...(hotelQuery.data?.items ?? []),
-		...(transferQuery.data?.items ?? [])
+		...(clinicQuery.data ?? []),
+		...(hotelQuery.data ?? []),
+		...(transferQuery.data ?? [])
 	]);
 
 	function sortByDisplayName(list: Contact[]) {
@@ -139,9 +137,9 @@
 				: directoryContacts.filter((c) => c.contact_type_name === typeName)
 		);
 	}
-	const clinicContacts = $derived(byTypeOr(clinicQuery.data?.items, 'Klinik'));
-	const hotelContacts = $derived(byTypeOr(hotelQuery.data?.items, 'Otel'));
-	const transferContacts = $derived(byTypeOr(transferQuery.data?.items, 'Transfer'));
+	const clinicContacts = $derived(byTypeOr(clinicQuery.data, 'Klinik'));
+	const hotelContacts = $derived(byTypeOr(hotelQuery.data, 'Otel'));
+	const transferContacts = $derived(byTypeOr(transferQuery.data, 'Transfer'));
 
 	/**
 	 * Hekim seçici — BİLEREK ünvana göre filtrelenmiyor. `contact_titles` tenant'ın
