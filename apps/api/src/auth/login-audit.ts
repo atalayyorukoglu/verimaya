@@ -1,4 +1,4 @@
-import type { AuditActor } from "../common/audit-helper";
+import type { AuditActor } from '../common/audit-helper';
 
 /**
  * Giriş denetim kaydı.
@@ -13,15 +13,14 @@ import type { AuditActor } from "../common/audit-helper";
  * sayfa yenilemeleri kayıt üretmiyor. Firma değiştirmek de yeni satır yazar;
  * bu istenen davranış.
  */
-export const SET_ACTIVE_PATH = "/organization/set-active";
+export const SET_ACTIVE_PATH = '/organization/set-active';
 
 export type LoginAuditRow = { tenantId: string; actor: AuditActor };
 
 type Belki = Record<string, unknown> | null | undefined;
 const nesne = (v: unknown): Belki =>
-  v && typeof v === "object" ? (v as Record<string, unknown>) : null;
-const metin = (v: unknown): string | null =>
-  typeof v === "string" && v.trim() ? v.trim() : null;
+	v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+const metin = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
 
 /**
  * Hook bağlamından kaydı çıkarır. Şekil beklenenden farklıysa `null` döner —
@@ -29,22 +28,23 @@ const metin = (v: unknown): string | null =>
  * engellenmez.
  */
 export function buildLoginAuditRow(ctx: unknown): LoginAuditRow | null {
-  const c = nesne(ctx);
-  if (!c || metin(c.path) !== SET_ACTIVE_PATH) return null;
+	const c = nesne(ctx);
+	if (!c || metin(c.path) !== SET_ACTIVE_PATH) return null;
 
-  const inner = nesne(c.context);
-  const session = nesne(inner?.session);
-  const user = nesne(session?.user);
-  const returned = nesne(inner?.returned) ?? nesne(c.returned);
+	const inner = nesne(c.context);
+	// `set-active` oturumu tazeleyip `newSession` = {session, user} kuruyor; after
+	// hook'una gelen bağlamda `context.session` DOLU DEĞİL — ilk sürüm bu yüzden her
+	// kaydı "Bilinmeyen kullanıcı" diye yazdı. Önce newSession'a bakılır.
+	const user = nesne(nesne(inner?.newSession)?.user) ?? nesne(nesne(inner?.session)?.user);
+	const returned = nesne(inner?.returned) ?? nesne(c.returned);
 
-  // Aktif firma yanıtta döner; `set-active` null ile çağrılırsa (firmadan çıkış)
-  // kimlik olmaz ve kayıt yazılmaz.
-  const tenantId = metin(returned?.id);
-  if (!tenantId) return null;
+	// Aktif firma yanıtta döner; `set-active` null ile çağrılırsa (firmadan çıkış)
+	// kimlik olmaz ve kayıt yazılmaz.
+	const tenantId = metin(returned?.id);
+	if (!tenantId) return null;
 
-  const actorId = metin(user?.id);
-  const actorDisplayName =
-    metin(user?.name) ?? metin(user?.email) ?? "Bilinmeyen kullanıcı";
+	const actorId = metin(user?.id);
+	const actorDisplayName = metin(user?.name) ?? metin(user?.email) ?? 'Bilinmeyen kullanıcı';
 
-  return { tenantId, actor: { actorId, actorDisplayName } };
+	return { tenantId, actor: { actorId, actorDisplayName } };
 }
