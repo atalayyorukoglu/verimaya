@@ -1,6 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { betterAuth } from 'better-auth';
-import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
 import { eq, sql } from 'drizzle-orm';
 import {
@@ -77,29 +77,25 @@ export function createAuth() {
 					// RLS: `audit_logs` yalnız `app.current_tenant_id` kurulmuş bir işlem
 					// içinde yazılabiliyor. better-auth'un bağlantısı tenant bağlamı
 					// taşımıyor; ilk sürüm bu yüzden sessizce reddedildi, kayıt hiç düşmedi.
-					// Kullanıcı bağlamdan çıkmadıysa oturum anahtarından bulunur.
+					// Kullanıcıyı better-auth'un kendi çözücüsüyle buluyoruz.
+					//
+					// Üç deneme sonra buraya gelindi: `context.session` ve
+					// `context.newSession` after hook'unda boş; `Authorization: Bearer`
+					// ise panel çerez kullandığı için hiç gelmiyor. `getSessionFromCtx`
+					// çerez de bearer de olsa oturumu çözüyor — kimliği tahmin etmek
+					// yerine kütüphanenin kendi yolundan sormak doğrusu.
 					let actor = row.actor;
-					let kaynak = 'baglam';
-					if (!actor && row.sessionToken) {
-						const [found] = await db
-							.select({ id: user.id, name: user.name, email: user.email })
-							.from(session)
-							.innerJoin(user, eq(user.id, session.userId))
-							.where(eq(session.token, row.sessionToken))
-							.limit(1);
-						if (found) {
+					if (!actor) {
+						const resolved = await getSessionFromCtx(ctx).catch(() => null);
+						const u = resolved?.user;
+						if (u?.id) {
 							actor = {
-								actorId: found.id,
-								actorDisplayName: found.name?.trim() || found.email || 'Bilinmeyen kullanıcı'
+								actorId: u.id,
+								actorDisplayName: u.name?.trim() || u.email || 'Bilinmeyen kullanıcı'
 							};
-							kaynak = 'oturum-anahtari';
 						}
 					}
-					if (!actor) {
-						actor = { actorId: null, actorDisplayName: 'Bilinmeyen kullanıcı' };
-						kaynak = 'cozulemedi';
-					}
-					console.log(`[auth] giriş denetimi yazılıyor (kullanıcı kaynağı: ${kaynak})`);
+					if (!actor) actor = { actorId: null, actorDisplayName: 'Bilinmeyen kullanıcı' };
 
 					await db.transaction(async (tx) => {
 						await tx.execute(
