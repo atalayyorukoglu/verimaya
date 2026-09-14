@@ -77,14 +77,38 @@ export function createAuth() {
 					// RLS: `audit_logs` yalnız `app.current_tenant_id` kurulmuş bir işlem
 					// içinde yazılabiliyor. better-auth'un bağlantısı tenant bağlamı
 					// taşımıyor; ilk sürüm bu yüzden sessizce reddedildi, kayıt hiç düşmedi.
+					// Kullanıcı bağlamdan çıkmadıysa oturum anahtarından bulunur.
+					let actor = row.actor;
+					let kaynak = 'baglam';
+					if (!actor && row.sessionToken) {
+						const [found] = await db
+							.select({ id: user.id, name: user.name, email: user.email })
+							.from(session)
+							.innerJoin(user, eq(user.id, session.userId))
+							.where(eq(session.token, row.sessionToken))
+							.limit(1);
+						if (found) {
+							actor = {
+								actorId: found.id,
+								actorDisplayName: found.name?.trim() || found.email || 'Bilinmeyen kullanıcı'
+							};
+							kaynak = 'oturum-anahtari';
+						}
+					}
+					if (!actor) {
+						actor = { actorId: null, actorDisplayName: 'Bilinmeyen kullanıcı' };
+						kaynak = 'cozulemedi';
+					}
+					console.log(`[auth] giriş denetimi yazılıyor (kullanıcı kaynağı: ${kaynak})`);
+
 					await db.transaction(async (tx) => {
 						await tx.execute(
 							sql`select set_config('app.current_tenant_id', ${row.tenantId}, true)`
 						);
 						await tx.insert(auditLogs).values({
 							tenantId: row.tenantId,
-							actorId: row.actor.actorId,
-							actorDisplayName: row.actor.actorDisplayName,
+							actorId: actor.actorId,
+							actorDisplayName: actor.actorDisplayName,
 							action: 'login',
 							entityType: 'tenant',
 							entityLabel: null
@@ -134,13 +158,9 @@ export function createAuth() {
 					beforeDeleteOrganization: async ({ organization: org }) => {
 						// Defense if disableOrganizationDeletion is ever flipped off:
 						// soft-delete tenant, then refuse hard delete so restrict FKs hold.
-						await db
-							.update(tenants)
-							.set({ deletedAt: new Date() })
-							.where(eq(tenants.id, org.id));
+						await db.update(tenants).set({ deletedAt: new Date() }).where(eq(tenants.id, org.id));
 						throw new APIError('BAD_REQUEST', {
-							message:
-								'Organization hard-delete is disabled; tenant was soft-deleted instead'
+							message: 'Organization hard-delete is disabled; tenant was soft-deleted instead'
 						});
 					}
 				}

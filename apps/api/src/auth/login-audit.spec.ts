@@ -18,7 +18,8 @@ describe('buildLoginAuditRow', () => {
 	it('firma seçildiğinde kaydı çıkarır', () => {
 		expect(buildLoginAuditRow(ctx())).toEqual({
 			tenantId: TENANT,
-			actor: { actorId: 'u1', actorDisplayName: 'Gülçin' }
+			actor: { actorId: 'u1', actorDisplayName: 'Gülçin' },
+			sessionToken: null
 		});
 	});
 
@@ -51,13 +52,17 @@ describe('buildLoginAuditRow', () => {
 		expect(r?.actor).toEqual({ actorId: 'u3', actorDisplayName: 'Semih' });
 	});
 
-	it('kullanıcı hiç çözülemezse yine de kaydı yazar, adı bilinmeyen olur', () => {
-		// Kaydı düşürmektense "kim olduğu bilinmiyor" demek yeğdir.
+	it('kullanıcı bağlamdan çıkmazsa actor null döner, oturum anahtarı taşınır', () => {
+		// Çağıran taraf bu anahtarla kullanıcıyı veritabanından bulur.
+		const r = buildLoginAuditRow(
+			ctx({ context: { returned: { id: TENANT } }, headers: { authorization: 'Bearer abc123' } })
+		);
+		expect(r).toEqual({ tenantId: TENANT, actor: null, sessionToken: 'abc123' });
+	});
+
+	it('Bearer başlığı yoksa oturum anahtarı null', () => {
 		const r = buildLoginAuditRow(ctx({ context: { returned: { id: TENANT } } }));
-		expect(r).toEqual({
-			tenantId: TENANT,
-			actor: { actorId: null, actorDisplayName: 'Bilinmeyen kullanıcı' }
-		});
+		expect(r?.sessionToken).toBeNull();
 	});
 
 	it('beklenmedik şekilde çökmez', () => {

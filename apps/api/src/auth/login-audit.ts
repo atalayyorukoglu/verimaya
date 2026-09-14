@@ -15,7 +15,12 @@ import type { AuditActor } from '../common/audit-helper';
  */
 export const SET_ACTIVE_PATH = '/organization/set-active';
 
-export type LoginAuditRow = { tenantId: string; actor: AuditActor };
+export type LoginAuditRow = {
+	tenantId: string;
+	/** Bağlamdan çözülebildiyse dolu; değilse `sessionToken` ile aranır. */
+	actor: AuditActor | null;
+	sessionToken: string | null;
+};
 
 type Belki = Record<string, unknown> | null | undefined;
 const nesne = (v: unknown): Belki =>
@@ -44,7 +49,34 @@ export function buildLoginAuditRow(ctx: unknown): LoginAuditRow | null {
 	if (!tenantId) return null;
 
 	const actorId = metin(user?.id);
-	const actorDisplayName = metin(user?.name) ?? metin(user?.email) ?? 'Bilinmeyen kullanıcı';
+	const actorDisplayName = metin(user?.name) ?? metin(user?.email) ?? null;
 
-	return { tenantId, actor: { actorId, actorDisplayName } };
+	return {
+		tenantId,
+		actor: actorId
+			? { actorId, actorDisplayName: actorDisplayName ?? 'Bilinmeyen kullanıcı' }
+			: null,
+		// Bağlamdan kullanıcı çıkmazsa çağıran taraf bunu kullanıp veritabanından bulur.
+		sessionToken: bearerToken(c)
+	};
+}
+
+/**
+ * İstekteki `Authorization: Bearer <token>` değeri. Panel oturumu bearer ile
+ * taşıyor; `session.token` ile birebir eşleşiyor.
+ *
+ * Neden gerekiyor: kullanıcıyı hook bağlamından okumayı iki kez denedim
+ * (`context.session`, sonra `context.newSession`), ikisi de after hook'unda boş
+ * geldi ve kayıt "Bilinmeyen kullanıcı" olarak düştü. Üçüncü kez tahmin etmek
+ * yerine kimliği veritabanından çözüyoruz — orası kesin.
+ */
+export function bearerToken(ctx: unknown): string | null {
+	const c = nesne(ctx);
+	const headers = c?.headers;
+	const raw =
+		headers instanceof Headers
+			? headers.get('authorization')
+			: metin(nesne(headers)?.authorization);
+	const m = /^Bearer\s+(.+)$/i.exec(raw ?? '');
+	return m ? m[1]!.trim() : null;
 }
