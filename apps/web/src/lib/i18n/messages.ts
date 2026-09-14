@@ -613,7 +613,7 @@ const tr = {
 
 	// Ayarlar · Denetim kaydı (GAP-F09-13)
 	'settings.audit.title': 'Denetim kaydı',
-	'settings.audit.description': 'Tenant içindeki oluşturma, güncelleme ve silme olayları.',
+	'settings.audit.description': 'Firmadaki giriş, oluşturma, güncelleme ve silme olayları.',
 	'settings.audit.loading': 'Yükleniyor…',
 	'settings.audit.loadError': 'Denetim kaydı yüklenemedi.',
 	'settings.audit.empty': 'Henüz kayıt yok.',
@@ -3611,7 +3611,7 @@ const en: Record<MessageKey, string> = {
 
 	// Settings · Audit log (GAP-F09-13)
 	'settings.audit.title': 'Audit log',
-	'settings.audit.description': 'Create, update, and delete events within the tenant.',
+	'settings.audit.description': 'Sign-in, create, update, and delete events within the tenant.',
 	'settings.audit.loading': 'Loading…',
 	'settings.audit.loadError': 'Could not load the audit log.',
 	'settings.audit.empty': 'No entries yet.',
