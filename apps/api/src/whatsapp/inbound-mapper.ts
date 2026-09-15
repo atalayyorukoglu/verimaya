@@ -1,4 +1,5 @@
 import type { InboundMessage, TransactionDraft } from '@verimaya/shared';
+import { turleriBul } from './mesaj-turu';
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
 	if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -112,6 +113,7 @@ export function toInboundMessage(row: {
 }): InboundMessage {
 	const payload = asRecord(row.payload) ?? {};
 	const display = extractInboundDisplayFields(payload);
+	const turler = turleriBul(display.body);
 
 	return {
 		id: row.id,
@@ -127,6 +129,11 @@ export function toInboundMessage(row: {
 		parse_error: extractParseError(payload),
 		// Gruplama liste düzeyinde hesaplanır (groupInboundMessages); tek satır kendini bilemez.
 		group_id: null,
+		// Grubun görevi burada bilinmiyor (defter liste düzeyinde okunuyor); varsayılan
+		// `mixed` ile yalnız metne bakılır. Çağıran `listInbox` defteri uygulayıp
+		// gerekirse yeniden hesaplar.
+		message_kinds: turler.turler,
+		message_kind_signals: turler.isaretler,
 		created_at: row.createdAt.toISOString()
 	};
 }

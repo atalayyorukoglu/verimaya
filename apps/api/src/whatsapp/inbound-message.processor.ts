@@ -1,10 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { WhatsappChatPurpose } from '@verimaya/shared';
 import { eq } from 'drizzle-orm';
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { jobs } from '../db/schema/queue';
 import { RecordSuggestionsService } from '../record-suggestions/record-suggestions.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
+import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { asRecord, extractInboundDisplayFields } from './inbound-mapper';
+import { turleriBul } from './mesaj-turu';
 import { WhatsappService } from './whatsapp.service';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 
@@ -25,11 +28,12 @@ export class InboundMessageProcessor {
 	constructor(
 		private readonly tenantContext: TenantContextService,
 		private readonly whatsappService: WhatsappService,
-		private readonly recordSuggestionsService: RecordSuggestionsService
+		private readonly recordSuggestionsService: RecordSuggestionsService,
+		private readonly whatsappChats: WhatsappChatsService
 	) {}
 
 	async process(jobId: string, tenantId: string): Promise<void> {
-		const { inboundMessageId, messageBody } = await this.tenantContext.withTenant(
+		const { inboundMessageId, messageBody, turler } = await this.tenantContext.withTenant(
 			tenantId,
 			async ({ db }) => {
 				const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
@@ -57,8 +61,17 @@ export class InboundMessageProcessor {
 					.where(eq(inboundMessages.id, payload.inboundMessageId))
 					.limit(1);
 				const display = extractInboundDisplayFields(asRecord(msg?.payload) ?? {});
+				// Grubun görevi: `ignore` ise hiç işlenmez, diğerlerinde tür kararına girer.
+				const directory = await this.whatsappChats.directoryWithDb(db);
+				const purpose = (display.chat_id ? directory.get(display.chat_id)?.purpose : undefined) as
+					| WhatsappChatPurpose
+					| undefined;
 
-				return { inboundMessageId: payload.inboundMessageId, messageBody: display.body };
+				return {
+					inboundMessageId: payload.inboundMessageId,
+					messageBody: display.body,
+					turler: turleriBul(display.body, purpose ?? 'mixed').turler
+				};
 			}
 		);
 
@@ -68,7 +81,13 @@ export class InboundMessageProcessor {
 		);
 
 		// AI-08: skipped (zaten işlenmiş) satırda randevu ajanı da çalışmaz — mükerrer öneri üretmez.
-		if (outcome !== 'skipped' && messageBody?.trim()) {
+		//
+		// Ayrıca: randevu ajanı yalnız mesajda randevu işareti varsa çağrılır. Önceden
+		// HER mesaj için çağrılıyordu; muhasebe grubundaki 4.800 mesaj boşuna LLM
+		// çağrısı üretiyor ve ilgisiz öneri riski taşıyordu. Türü hiç anlaşılmayan
+		// mesajda yine çağrılır — bilmiyorsak elemek yanlış olur.
+		const randevuIhtimali = turler.length === 0 || turler.includes('appointment');
+		if (outcome !== 'skipped' && randevuIhtimali && messageBody?.trim()) {
 			try {
 				await this.recordSuggestionsService.parse(tenantId, messageBody);
 			} catch (err) {

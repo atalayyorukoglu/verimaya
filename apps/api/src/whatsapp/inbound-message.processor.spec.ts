@@ -103,7 +103,12 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 			recordSuggestionsSettingsStub,
 			new HeuristicLlmClient()
 		);
-		processor = new InboundMessageProcessor(tenantContext, whatsappService, recordSuggestionsService);
+		processor = new InboundMessageProcessor(
+			tenantContext,
+			whatsappService,
+			recordSuggestionsService,
+			new WhatsappChatsService(tenantContext)
+		);
 		integrationEventProcessor = new IntegrationEventProcessor(
 			tenantContext,
 			{ processInboundEvent: async () => ({ kind: 'noop' }) } as never
@@ -322,7 +327,11 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 			.spyOn(recordSuggestionsService, 'parse')
 			.mockRejectedValueOnce(new Error('boom: randevu ajanı çöktü'));
 
-		const { messageId, jobId } = await insertMessageAndJob('Elif Aydın 250 EUR tahsilat');
+		// Mesajda randevu işareti olmalı: ajan yalnız o zaman çağrılıyor (bkz. aşağıdaki
+		// "randevu işareti yoksa" testi). Çökme senaryosunu ölçmek için önce çağrılmalı.
+		const { messageId, jobId } = await insertMessageAndJob(
+			'Elif Aydın randevusu icin 250 EUR tahsilat'
+		);
 		await processor.process(jobId, tenantId);
 
 		const { sql } = getDb(databaseUrl);
@@ -340,6 +349,26 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 		});
 		expect(job?.status).toBe('completed');
 
+		expect(parseSpy).toHaveBeenCalledTimes(1);
+		parseSpy.mockRestore();
+	});
+
+	it('randevu işareti olmayan mesajda randevu ajanı hiç çağrılmaz', async () => {
+		// Muhasebe grubundaki binlerce ödeme mesajı için LLM çağrısı yapılmasın:
+		// metinde randevudan söz eden hiçbir kelime yok.
+		const parseSpy = vi.spyOn(recordSuggestionsService, 'parse');
+		const { jobId } = await insertMessageAndJob('Pound hesabina 600 gbp yatirildi.');
+		await processor.process(jobId, tenantId);
+		expect(parseSpy).not.toHaveBeenCalled();
+		parseSpy.mockRestore();
+	});
+
+	it('türü hiç anlaşılmayan mesajda randevu ajanı yine çağrılır', async () => {
+		// Bilmiyorsak elemeyiz: "Evet 31 dönüş" gibi tek başına anlamsız satırlar
+		// bölümün devamı olabilir.
+		const parseSpy = vi.spyOn(recordSuggestionsService, 'parse');
+		const { jobId } = await insertMessageAndJob('Evet 31 donus');
+		await processor.process(jobId, tenantId);
 		expect(parseSpy).toHaveBeenCalledTimes(1);
 		parseSpy.mockRestore();
 	});

@@ -7146,6 +7146,21 @@ paths:
                           format: uuid
                           nullable: true
                           default: null
+                        message_kinds:
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                              - finance
+                              - appointment
+                              - contact
+                          default: &a2 []
+                        message_kind_signals:
+                          type: array
+                          items:
+                            type: string
+                            maxLength: 64
+                          default: &a3 []
                         created_at:
                           type: string
                           format: date-time
@@ -7466,6 +7481,21 @@ paths:
                     format: uuid
                     nullable: true
                     default: null
+                  message_kinds:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                        - finance
+                        - appointment
+                        - contact
+                    default: *a2
+                  message_kind_signals:
+                    type: array
+                    items:
+                      type: string
+                      maxLength: 64
+                    default: *a3
                   created_at:
                     type: string
                     format: date-time
@@ -10184,7 +10214,7 @@ paths:
                       type: string
                       minLength: 1
                       maxLength: 128
-                    default: &a2 []
+                    default: &a4 []
                   created_at:
                     type: string
                     format: date-time
@@ -10599,7 +10629,7 @@ paths:
                             type: string
                             minLength: 1
                             maxLength: 128
-                          default: *a2
+                          default: *a4
                         created_at:
                           type: string
                           format: date-time
@@ -11935,7 +11965,7 @@ paths:
                         - readonly
                   defaults:
                     type: object
-                    required: &a4
+                    required: &a6
                       - owner
                       - admin
                       - manager
@@ -11945,7 +11975,7 @@ paths:
                     properties:
                       owner:
                         type: object
-                        required: &a3
+                        required: &a5
                           - contact
                           - finance
                           - settings
@@ -12030,7 +12060,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12107,7 +12137,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12184,7 +12214,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12261,7 +12291,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12338,7 +12368,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12458,11 +12488,11 @@ paths:
                       additionalProperties: false
                   effective:
                     type: object
-                    required: *a4
+                    required: *a6
                     properties:
                       owner:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12539,7 +12569,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12616,7 +12646,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12693,7 +12723,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12770,7 +12800,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -12847,7 +12877,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13003,11 +13033,11 @@ paths:
                         - readonly
                   defaults:
                     type: object
-                    required: *a4
+                    required: *a6
                     properties:
                       owner:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13084,7 +13114,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13161,7 +13191,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13238,7 +13268,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13315,7 +13345,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13392,7 +13422,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13512,11 +13542,11 @@ paths:
                       additionalProperties: false
                   effective:
                     type: object
-                    required: *a4
+                    required: *a6
                     properties:
                       owner:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13593,7 +13623,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13670,7 +13700,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13747,7 +13777,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13824,7 +13854,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -13901,7 +13931,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a3
+                        required: *a5
                         properties:
                           contact:
                             type: array
@@ -14167,7 +14197,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: &a5 []
+                          default: &a7 []
                       required:
                         - row_number
                         - action
@@ -14384,7 +14414,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: *a5
+                          default: *a7
                         sheet:
                           type: string
                           enum:

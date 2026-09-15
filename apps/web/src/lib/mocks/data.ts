@@ -292,7 +292,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		status: 'new',
 		parsed_records: null,
 		parse_error: null,
-		group_id: null
+		group_id: null,
+		message_kinds: [],
+		message_kind_signals: []
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -304,7 +306,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		status: 'new',
 		parsed_records: null,
 		parse_error: null,
-		group_id: null
+		group_id: null,
+		message_kinds: [],
+		message_kind_signals: []
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -316,7 +320,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		status: 'parsed',
 		parsed_records: null,
 		parse_error: null,
-		group_id: null
+		group_id: null,
+		message_kinds: [],
+		message_kind_signals: []
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -328,7 +334,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		status: 'new',
 		parsed_records: null,
 		parse_error: null,
-		group_id: null
+		group_id: null,
+		message_kinds: [],
+		message_kind_signals: []
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -340,7 +348,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		status: 'new',
 		parsed_records: null,
 		parse_error: null,
-		group_id: null
+		group_id: null,
+		message_kinds: [],
+		message_kind_signals: []
 	}
 ];
 

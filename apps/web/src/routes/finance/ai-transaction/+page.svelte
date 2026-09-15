@@ -8,6 +8,7 @@
 		ContactType,
 		FinanceCategory,
 		InboundMessage,
+		InboundMessageKind,
 		Tenant,
 		TransactionDraft,
 		TransactionEvidenceEntry
@@ -82,10 +83,39 @@
 	const categories = $derived(categoriesQuery.data?.items ?? []);
 	const contactTypes = $derived(contactTypesQuery.data?.items ?? []);
 	const baseCurrency = $derived(tenantQuery.data?.base_currency ?? 'TRY');
-	const pendingMessages = $derived(
+	const bekleyenler = $derived(
 		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new' || m.status === 'parsed')
 	);
-	const pendingCount = $derived(pendingMessages.filter((m) => m.status === 'new').length);
+	/**
+	 * Tür süzgeci. Tek gelen kutusu var (ekran çoğaltmak yerine): mesajlar
+	 * para / randevu / kişi diye etiketleniyor, süzgeç yalnız görünümü daraltıyor.
+	 * `null` = hepsi. Türü anlaşılmamış mesajlar ('other') ayrı seçenek — onlar
+	 * gözden kaçmasın.
+	 */
+	let kindFilter = $state<InboundMessageKind | 'other' | null>(null);
+
+	function kindsOf(m: { message_kinds?: InboundMessageKind[] }): InboundMessageKind[] {
+		return m.message_kinds ?? [];
+	}
+
+	const kindCounts = $derived.by(() => {
+		const out = { finance: 0, appointment: 0, contact: 0, other: 0 };
+		for (const m of bekleyenler) {
+			const kinds = kindsOf(m);
+			if (kinds.length === 0) out.other += 1;
+			for (const k of kinds) out[k] += 1;
+		}
+		return out;
+	});
+
+	const pendingMessages = $derived(
+		kindFilter === null
+			? bekleyenler
+			: kindFilter === 'other'
+				? bekleyenler.filter((m) => kindsOf(m).length === 0)
+				: bekleyenler.filter((m) => kindsOf(m).includes(kindFilter as InboundMessageKind))
+	);
+	const pendingCount = $derived(bekleyenler.filter((m) => m.status === 'new').length);
 
 	function initDrafts(records: TransactionDraft[]): DraftState[] {
 		return records.map((r) => {
@@ -454,6 +484,40 @@
 			</Button>
 		</div>
 
+		<!--
+			Tür süzgeci: tek gelen kutusu, üç konu. Ayrı ekran açmak yerine süzgeç,
+			çünkü çalışan mesaj gelmeden konusunu bilmiyor; üç ekranı gezmek zorunda
+			kalırsa biri unutulur.
+		-->
+		{#if bekleyenler.length > 0}
+			<div class="mb-3 flex flex-wrap items-center gap-1.5">
+				<button
+					type="button"
+					class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {kindFilter === null
+						? 'border-brand bg-brand-subtle text-text'
+						: 'border-border text-text-muted hover:text-text'}"
+					aria-pressed={kindFilter === null}
+					onclick={() => (kindFilter = null)}
+				>
+					{t('finance.ai.kindFilter.all')} ({bekleyenler.length})
+				</button>
+				{#each ['finance', 'appointment', 'contact', 'other'] as const as k (k)}
+					{#if kindCounts[k] > 0}
+						<button
+							type="button"
+							class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {kindFilter === k
+								? 'border-brand bg-brand-subtle text-text'
+								: 'border-border text-text-muted hover:text-text'}"
+							aria-pressed={kindFilter === k}
+							onclick={() => (kindFilter = k)}
+						>
+							{t(`finance.ai.kind.${k}`)} ({kindCounts[k]})
+						</button>
+					{/if}
+				{/each}
+			</div>
+		{/if}
+
 		{#if inboxQuery.isPending}
 			<p class="text-sm text-text-muted">{t('finance.ai.pending.loading')}</p>
 		{:else if pendingMessages.length === 0}
@@ -479,6 +543,12 @@
 									label={inboundMessageStatusLabels[item.status]}
 									tone={item.status === 'new' ? 'warning' : 'info'}
 								/>
+								{#each kindsOf(item) as k (k)}
+									<StatusBadge
+										label={t(`finance.ai.kind.${k}`)}
+										tone={k === 'finance' ? 'info' : k === 'appointment' ? 'warning' : 'neutral'}
+									/>
+								{/each}
 								{#if item.has_media}
 									<StatusBadge label={t('finance.ai.pending.media')} tone="neutral" />
 								{/if}

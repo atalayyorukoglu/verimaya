@@ -118,6 +118,10 @@ export const approveDraftsResponseSchema = z.object({
 });
 
 export type ApproveDraftsResponse = z.infer<typeof approveDraftsResponseSchema>;
+/** Mesajın konusu. `mesaj-turu.ts` üretir; sıra sabittir. */
+export const inboundMessageKindSchema = z.enum(['finance', 'appointment', 'contact']);
+export type InboundMessageKind = z.infer<typeof inboundMessageKindSchema>;
+
 export const inboundMessageSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
@@ -137,6 +141,15 @@ export const inboundMessageSchema = z.object({
 	 * Sunucu **birleştirmez** — kartta gösterir, kararı kullanıcı verir.
 	 */
 	group_id: uuid.nullable().default(null),
+	/**
+	 * Mesaj ne hakkında: para / randevu / kişi bilgisi. Birden fazla olabilir
+	 * ("randevusunu 15'ine alalım, 100 GBP ödeme alındı"). Kayıtta TUTULMAZ,
+	 * okuma anında metinden türetilir (`mesaj-turu.ts`) — kural düzelince eski
+	 * satırlar da düzelir. Boş dizi: "ne olduğu anlaşılmadı".
+	 */
+	message_kinds: z.array(inboundMessageKindSchema).default([]),
+	/** Türü hangi kelimenin tetiklediği; "bunu neden para saydın" sorusunun cevabı. */
+	message_kind_signals: z.array(z.string().max(64)).default([]),
 	created_at: isoDateTime
 });
 

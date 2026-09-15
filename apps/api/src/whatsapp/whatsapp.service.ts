@@ -9,7 +9,8 @@ import type {
 	InboundMessageStatus,
 	Contact,
 	TransactionDraft,
-	TransactionDraftSnapshot
+	TransactionDraftSnapshot,
+	WhatsappChatPurpose
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { aiCorrections } from '../db/schema/ai-corrections';
@@ -27,6 +28,7 @@ import {
 import { evidenceForApprovedDraft } from './evidence';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { groupInboundMessages } from './group-events';
+import { turleriBul } from './mesaj-turu';
 import {
 	asRecord,
 	extractInboundDisplayFields,
@@ -114,7 +116,16 @@ export class WhatsappService {
 			const named = page.items.map((row) => {
 				const message = toInboundMessage(row);
 				const entry = message.chat_id ? directory.get(message.chat_id) : undefined;
-				return entry ? { ...message, chat_name: entry.name } : message;
+				if (!entry) return message;
+				// Grubun görevi biliniyorsa tür yeniden hesaplanır: işaretsiz mesaj
+				// artık "anlaşılmadı" değil, grubun varsayılanı olur.
+				const turler = turleriBul(message.body, entry.purpose as WhatsappChatPurpose);
+				return {
+					...message,
+					chat_name: entry.name,
+					message_kinds: turler.turler,
+					message_kind_signals: turler.isaretler
+				};
 			});
 			return {
 				// AI-13: aynı olayı anlatan mesajlar `group_id` ile işaretlenir; kayıt değişmez.
