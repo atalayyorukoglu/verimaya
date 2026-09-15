@@ -32,6 +32,7 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 import { TransactionsService } from './transactions.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
+import { driveMirrorEnqueueStub } from '../test/drive-mirror-stub';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -193,8 +194,9 @@ describe('AI-09 kaynak izi — kalıcılık, sunucu sınırı, izolasyon', () =>
 				})
 			} as never,
 			new WhatsappChatsService(tenantContext),
-			new MessageContactsService(tenantContext),
-			new InboundMediaService(tenantContext, new LocalFileStorage()),
+			new MessageContactsService(tenantContext, driveMirrorEnqueueStub()),
+			new InboundMediaService(tenantContext, driveMirrorEnqueueStub(), new LocalFileStorage()),
+			driveMirrorEnqueueStub(),
 			new HeuristicLlmClient()
 		);
 	});

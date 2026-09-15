@@ -1052,6 +1052,10 @@ export class ContactsService {
 			.returning();
 
 		const dropIds = merge_ids;
+		const dropIdsSql = sql`(${sql.join(
+			dropIds.map((id) => sql`${id}::uuid`),
+			sql`, `
+		)})`;
 		const keepName = updatedKeep!.displayName;
 
 		await db
@@ -1183,6 +1187,27 @@ export class ContactsService {
 			.update(contacts)
 			.set({ deletedAt: new Date(), updatedAt: new Date() })
 			.where(inArray(contacts.id, dropIds));
+
+		/*
+		 * KISI-01: WhatsApp mesaj bağları da devredilir — yoksa birleştirmeden sonra
+		 * mesajlar silinmiş kişide kalır, Kişi Akışı boşalır ve Drive aynası yeni
+		 * ekleri yanlış klasöre yazar. Aynı mesaj ikisine de bağlıysa devretmek
+		 * `(tenant, message, contact)` tekilliğini bozar: önce fazlalık silinir.
+		 */
+		await db.execute(sql`
+			delete from inbound_message_contacts a
+			where a.contact_id in ${dropIdsSql}
+				and exists (
+					select 1 from inbound_message_contacts b
+					where b.inbound_message_id = a.inbound_message_id
+						and b.contact_id = ${keep_id}
+				)
+		`);
+		await db.execute(sql`
+			update inbound_message_contacts
+			set contact_id = ${keep_id}
+			where contact_id in ${dropIdsSql}
+		`);
 
 		await writeAuditLog(db, tenantId, actor, 'update', 'contact', keepName);
 

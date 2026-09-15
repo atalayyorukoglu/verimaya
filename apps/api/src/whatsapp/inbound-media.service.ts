@@ -11,6 +11,7 @@ import type { Readable } from 'node:stream';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { InboundMessageMedia } from '@verimaya/shared';
 import { inboundMessageMedia } from '../db/schema/inbound-message-media';
+import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { FILE_STORAGE, MAX_UPLOAD_BYTES, type FileStoragePort } from '../storage/storage.types';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -31,6 +32,7 @@ const ALLOWED_MIME =
 export class InboundMediaService {
 	constructor(
 		private readonly tenantContext: TenantContextService,
+		private readonly driveMirror: DriveMirrorEnqueueService,
 		@Inject(FILE_STORAGE) private readonly storage: FileStoragePort
 	) {}
 
@@ -103,6 +105,9 @@ export class InboundMediaService {
 					target: [inboundMessageMedia.tenantId, inboundMessageMedia.inboundMessageId],
 					set: values
 				});
+			// DRIVE-01: ek geldi — mesaj bir kişiye bağlıysa Drive aynasına gitsin.
+			// Bağ henüz kurulmamışsa iş boşa koşar, bağ kurulunca ikinci kez atılır.
+			await this.driveMirror.enqueueSync(db, tenantId, msg.id);
 			return { duplicate: false, inboundMessageId: msg.id, mediaId };
 		});
 	}

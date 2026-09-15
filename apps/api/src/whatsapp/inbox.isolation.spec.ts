@@ -12,6 +12,7 @@ import type { TenantContextService } from '../tenant/tenant-context.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { WhatsappService } from './whatsapp.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
+import { driveMirrorEnqueueStub } from '../test/drive-mirror-stub';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -104,8 +105,9 @@ describe('inbound_messages RLS isolation', () => {
 				})
 			} as never,
 			new WhatsappChatsService(tenantContext),
-			new MessageContactsService(tenantContext),
-			new InboundMediaService(tenantContext, new LocalFileStorage()),
+			new MessageContactsService(tenantContext, driveMirrorEnqueueStub()),
+			new InboundMediaService(tenantContext, driveMirrorEnqueueStub(), new LocalFileStorage()),
+			driveMirrorEnqueueStub(),
 			new HeuristicLlmClient()
 		);
 	});

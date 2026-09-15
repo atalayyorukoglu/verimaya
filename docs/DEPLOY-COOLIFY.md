@@ -224,9 +224,47 @@ API CORS / auth:
 | `GHL_CLIENT_SECRET` | GHL Marketplace uygulamasından; boşsa GHL OAuth bağlantısı kurulamaz |
 | `GHL_USER_TYPE` | `Company` = ajans seviyesi; boş/diğer = `Location` (alt hesap, varsayılan) |
 | `GHL_OAUTH_REDIRECT_BASE` | Yoksa `ADS_OAUTH_REDIRECT_BASE`'e düşer. Marketplace'e kaydedilecek redirect URI: `{redirect base}/v1/integrations/crm/callback` — yol bilerek `ghl` içermez (Marketplace marka kısıtı: Highlevel/ghl referansı reddedilir) |
+| `GOOGLE_DRIVE_CLIENT_ID` | DRIVE-01 Google Drive aynası. Boşsa `GOOGLE_ADS_CLIENT_ID`'ye düşer (aynı Google Cloud projesindeki tek OAuth istemcisi yeniden kullanılabilir) |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | Aynı; boşsa `GOOGLE_ADS_CLIENT_SECRET` |
+| `OAUTH_REDIRECT_BASE` | Drive callback tabanı; yoksa `ADS_OAUTH_REDIRECT_BASE`'e düşer. Kayıtlı redirect URI: `{redirect base}/v1/settings/drive/callback` |
 
 Opsiyonel: `LLM_*`, Ads OAuth (`META_*`, `GOOGLE_ADS_*`).
 Meta Ads canlı: `docs/ADS-META-GOLIVE.md` (redirect URI = `{ADS_OAUTH_REDIRECT_BASE}/v1/integrations/ads/meta/callback`).
+
+### Google Drive aynası (DRIVE-01)
+
+WhatsApp'tan gelen hasta belgeleri firmanın **kendi** Google Drive'ına kopyalanır.
+Ana kayıt Verimaya'nın deposunda kalır; Drive tek yönlü aynadır.
+
+**Google Cloud tarafı (bir kez, Verimaya'nın projesinde):**
+
+1. **Google Drive API'yi aç** — Cloud Console › APIs & Services › Library › "Google
+   Drive API" › Enable. (Ads istemcisi yeniden kullanılıyorsa bile bu ayrı bir
+   API'dir; açılmazsa jeton alınır ama her Drive çağrısı 403 döner.)
+2. **OAuth onay ekranına scope ekle** — OAuth consent screen › Scopes ›
+   `https://www.googleapis.com/auth/drive.file`. Bu scope uygulamanın **yalnız
+   kendi oluşturduğu** dosya ve klasörleri görmesine izin verir; firmanın Drive'ının
+   geri kalanı bize kapalıdır. `drive` (tam erişim) istenmez — doğrulama süreci
+   ağırlaşır ve gereksizdir.
+3. **Yönlendirme adresi (redirect URI) ekle** — Credentials › OAuth 2.0 Client ID ›
+   Authorized redirect URIs: `https://api.verimaya.com/v1/settings/drive/callback`
+   (lokal: `http://localhost:3000/v1/settings/drive/callback`). Adres birebir
+   eşleşmeli; sondaki `/` bile fark yaratır.
+4. Uygulama "Testing" modundaysa bağlanacak Google hesaplarını test kullanıcısı
+   olarak ekle, yoksa onay ekranı hesabı reddeder.
+
+**Coolify tarafı:** yukarıdaki üç değişken. Ads OAuth istemcisi yeniden
+kullanılacaksa yalnız `OAUTH_REDIRECT_BASE` yeterlidir (zaten
+`ADS_OAUTH_REDIRECT_BASE` varsa o da yeter) — istemci id/secret boş bırakılabilir.
+
+**Panel tarafı (firma kullanıcısı):** Ayarlar › Google Drive › **"Google ile bağla"**
+› Google hesabıyla giriş › izin ver. Dönüşte bağlı hesabın e-postası ve kök klasör
+bağlantısı görünür. Kök klasör `Verimaya Hastalar`, altında kişi adıyla klasörler.
+Geçmiş belgeler için aynı sayfadaki **"Şimdiye kadarkileri gönder"**.
+
+**Sınırlar:** kişiye bağlanmamış belge Drive'a gitmez (klasör adı kişi adıdır).
+Kişi veri silme isteği yürütülünce o kişinin Drive klasörü de silinir; kişi
+birleştirmede dosyalar hayatta kalanın klasörüne taşınır.
 
 ### Outbox DLQ (AUDIT-F09-05)
 

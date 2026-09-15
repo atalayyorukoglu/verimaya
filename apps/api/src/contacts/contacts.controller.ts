@@ -41,6 +41,7 @@ import { RequireOrgPermission } from '../common/require-org-permission.decorator
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { MAX_UPLOAD_BYTES } from '../storage/storage.types';
 import { ContactDataSubjectService } from './contact-data-subject.service';
+import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
 import { ContactSummaryService } from './contact-summary.service';
 import { ContactsService } from './contacts.service';
 
@@ -86,8 +87,31 @@ export class ContactsController {
 		private readonly contactDataSubject: ContactDataSubjectService,
 		private readonly contactSummary: ContactSummaryService,
 		private readonly idempotency: IdempotencyService,
-		private readonly webhookSubscriptions: WebhookSubscriptionsService
+		private readonly webhookSubscriptions: WebhookSubscriptionsService,
+		private readonly driveMirror: DriveMirrorEnqueueService
 	) {}
+
+	/**
+	 * DRIVE-01 — birleştirme + aynanın takibi aynı transaction'da.
+	 *
+	 * `mergeWithDb` WhatsApp bağlarını hayatta kalana devrediyor; Drive'daki
+	 * dosyaların da onun klasörüne taşınması gerekir. Taşıma ağ işi olduğu için
+	 * kuyruğa atılır — birleştirmeyi bekletmez ve Drive hatası birleştirmeyi
+	 * geri almaz. Enjeksiyon serviste değil burada: `ContactsService` çok sayıda
+	 * testte elle kurulan saf bir servis, kuyruk bağımlılığı oraya sızmasın.
+	 */
+	private async mergeAndMirror(
+		db: Parameters<Parameters<IdempotencyService['run']>[4]>[0],
+		tenantId: string,
+		input: Parameters<ContactsService['mergeWithDb']>[2],
+		actor: Parameters<ContactsService['mergeWithDb']>[3]
+	) {
+		const merged = await this.contactsService.mergeWithDb(db, tenantId, input, actor);
+		for (const dropId of input.merge_ids) {
+			await this.driveMirror.enqueueMoveContact(db, tenantId, dropId, input.keep_id);
+		}
+		return merged;
+	}
 
 	@Get()
 	@RequireOrgPermission('contact', 'read')
@@ -120,7 +144,7 @@ export class ContactsController {
 			'/v1/contacts/merge',
 			async (db) => ({
 				statusCode: 200,
-				body: await this.contactsService.mergeWithDb(db, tenantId, input, actor)
+				body: await this.mergeAndMirror(db, tenantId, input, actor)
 			})
 		);
 		reply.status(result.statusCode);

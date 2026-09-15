@@ -2,6 +2,7 @@ import { Global, Module, forwardRef } from '@nestjs/common';
 import { AdMetricsModule } from '../ad-metrics/ad-metrics.module';
 import { CommonModule } from '../common/common.module';
 import { GhlModule } from '../integrations/ghl/ghl.module';
+import { GoogleDriveModule } from '../integrations/google-drive/google-drive.module';
 import { StorageModule } from '../storage/storage.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { IntegrationEventProcessor } from './integration-event.processor';
@@ -13,6 +14,7 @@ import { QueueService } from './queue.service';
 @Module({
 	imports: [
 		GhlModule,
+		GoogleDriveModule,
 		AdMetricsModule,
 		CommonModule,
 		StorageModule,

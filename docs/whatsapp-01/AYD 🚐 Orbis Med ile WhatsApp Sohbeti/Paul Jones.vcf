@@ -1,0 +1,7 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Jones;Paul;;;
+FN:Paul Jones
+item1.TEL;waid=447742479329:+44 7742 479329
+item1.X-ABLabel:Mobil
+END:VCARD

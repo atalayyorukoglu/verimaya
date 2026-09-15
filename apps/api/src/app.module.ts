@@ -26,6 +26,7 @@ import { ReportsModule } from "./reports/reports.module";
 import { WebhookSubscriptionsModule } from "./webhook-subscriptions/webhook-subscriptions.module";
 import { AdsModule } from "./integrations/ads/ads.module";
 import { GhlModule } from "./integrations/ghl/ghl.module";
+import { GoogleDriveModule } from "./integrations/google-drive/google-drive.module";
 import { KarneModule } from "./karne/karne.module";
 import { ScorecardModule } from "./scorecard/scorecard.module";
 import { StorageModule } from "./storage/storage.module";
@@ -67,6 +68,7 @@ import { DataDeleteModule } from "./data-delete/data-delete.module";
     AuditLogsModule,
     AdsModule,
     GhlModule,
+    GoogleDriveModule,
     AdMetricsModule,
     ApiKeysModule,
     ReportsModule,

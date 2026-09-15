@@ -8,6 +8,7 @@ import { AdMetricsSyncService } from '../ad-metrics/ad-metrics.sync.service';
 import { DbService } from '../db/db.service';
 import { jobs, tenants } from '../db/schema';
 import { GhlReconcileService } from '../integrations/ghl/ghl.reconcile.service';
+import { DriveMirrorService } from '../integrations/google-drive/drive-mirror.service';
 import {
 	FILES_SWEEP_EVERY_MS,
 	FILES_SWEEP_PENDING_JOB_TYPE,
@@ -17,6 +18,7 @@ import { TenantContextService } from '../tenant/tenant-context.service';
 import { InboundMessageProcessor } from '../whatsapp/inbound-message.processor';
 import { IntegrationEventProcessor } from './integration-event.processor';
 import { OutboxProcessor } from './outbox.processor';
+import { DRIVE_MIRROR_JOB_PREFIX } from './drive-mirror.constants';
 import {
 	AD_METRICS_SYNC_JOB_TYPE,
 	DEFAULT_QUEUE_JOB_OPTIONS,
@@ -51,6 +53,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 		private readonly ghlReconcileService: GhlReconcileService,
 		private readonly adMetricsSyncService: AdMetricsSyncService,
 		private readonly inboundMessageProcessor: InboundMessageProcessor,
+		private readonly driveMirrorService: DriveMirrorService,
 		private readonly filesSweepService: FilesSweepService
 	) {}
 
@@ -86,6 +89,12 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 				}
 				if (job.data.jobType === OUTBOX_DELIVER_JOB_TYPE) {
 					await this.outboxProcessor.deliver(job.data.jobId, job.data.tenantId);
+					return { ok: true };
+				}
+				// DRIVE-01: drive_mirror.sync / .backfill / .purge_contact / .move_contact
+				// tek işlemciye gider; ayrım iş satırındaki `job_type`'ta.
+				if (job.data.jobType.startsWith(DRIVE_MIRROR_JOB_PREFIX)) {
+					await this.driveMirrorService.process(job.data.jobId, job.data.tenantId);
 					return { ok: true };
 				}
 				if (job.data.jobType === FILES_SWEEP_PENDING_JOB_TYPE) {

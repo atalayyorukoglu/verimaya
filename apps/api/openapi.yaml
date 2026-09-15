@@ -4920,6 +4920,144 @@ paths:
                     - mixed
                     - ignore
               additionalProperties: false
+  /settings/drive:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connected:
+                    type: boolean
+                  account_email:
+                    type: string
+                    nullable: true
+                  root_folder_id:
+                    type: string
+                    nullable: true
+                  root_folder_url:
+                    type: string
+                    nullable: true
+                  key_version:
+                    type: integer
+                    nullable: true
+                  folder_count:
+                    type: integer
+                    minimum: 0
+                  mirrored_file_count:
+                    type: integer
+                    minimum: 0
+                  pending_count:
+                    type: integer
+                    minimum: 0
+                  last_run_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  last_run_sent:
+                    type: integer
+                    minimum: 0
+                  last_run_skipped:
+                    type: integer
+                    minimum: 0
+                  last_run_failed:
+                    type: integer
+                    minimum: 0
+                required:
+                  - connected
+                  - account_email
+                  - root_folder_id
+                  - root_folder_url
+                  - key_version
+                  - folder_count
+                  - mirrored_file_count
+                  - pending_count
+                  - last_run_at
+                  - last_run_sent
+                  - last_run_skipped
+                  - last_run_failed
+                additionalProperties: false
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connected:
+                    type: boolean
+                  account_email:
+                    type: string
+                    nullable: true
+                  root_folder_id:
+                    type: string
+                    nullable: true
+                  root_folder_url:
+                    type: string
+                    nullable: true
+                  key_version:
+                    type: integer
+                    nullable: true
+                  folder_count:
+                    type: integer
+                    minimum: 0
+                  mirrored_file_count:
+                    type: integer
+                    minimum: 0
+                  pending_count:
+                    type: integer
+                    minimum: 0
+                  last_run_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  last_run_sent:
+                    type: integer
+                    minimum: 0
+                  last_run_skipped:
+                    type: integer
+                    minimum: 0
+                  last_run_failed:
+                    type: integer
+                    minimum: 0
+                required:
+                  - connected
+                  - account_email
+                  - root_folder_id
+                  - root_folder_url
+                  - key_version
+                  - folder_count
+                  - mirrored_file_count
+                  - pending_count
+                  - last_run_at
+                  - last_run_sent
+                  - last_run_skipped
+                  - last_run_failed
+                additionalProperties: false
+  /settings/drive/sync:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queued:
+                    type: boolean
+                  job_id:
+                    type: string
+                    nullable: true
+                required:
+                  - queued
+                  - job_id
+                additionalProperties: false
   /settings/organizations:
     get:
       responses:

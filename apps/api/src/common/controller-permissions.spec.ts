@@ -112,6 +112,11 @@ const INTENTIONAL_PERMISSION_LOCKS: Array<{
 		reason: 'GET starts OAuth connect flow — write-class despite verb'
 	},
 	{
+		key: 'DriveSettingsController.authorize',
+		permission: { resource: 'settings', action: 'update' },
+		reason: 'GET starts OAuth connect flow — write-class despite verb (DRIVE-01)'
+	},
+	{
 		key: 'ContactsController.merge',
 		permission: { resource: 'contact', action: 'delete' },
 		reason: 'POST merge destroys the loser patient record'

@@ -9,6 +9,7 @@ import { LocalFileStorage } from '../storage/local-file.storage';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { InboundMediaService } from './inbound-media.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
+import { driveMirrorEnqueueStub } from '../test/drive-mirror-stub';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -64,7 +65,7 @@ describe('inbound_message_media', () => {
 				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
 			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
 		} as TenantContextService;
-		service = new InboundMediaService(tenantContext, new LocalFileStorage());
+		service = new InboundMediaService(tenantContext, driveMirrorEnqueueStub(), new LocalFileStorage());
 	});
 
 	afterAll(async () => {

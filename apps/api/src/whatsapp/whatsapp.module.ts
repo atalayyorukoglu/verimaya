@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { LlmModule } from '../integrations/llm';
+import { GoogleDriveModule } from '../integrations/google-drive/google-drive.module';
 import { RecordSuggestionsModule } from '../record-suggestions/record-suggestions.module';
 import { SettingsModule } from '../settings/settings.module';
 import { SettingsService } from '../settings/settings.service';
@@ -24,6 +25,7 @@ import { WhatsappService } from './whatsapp.service';
 		AuthModule,
 		CommonModule,
 		ContactsModule,
+		GoogleDriveModule,
 		LlmModule,
 		RecordSuggestionsModule,
 		SettingsModule,

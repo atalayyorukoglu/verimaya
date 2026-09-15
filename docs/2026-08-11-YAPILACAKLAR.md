@@ -722,6 +722,54 @@ Türkçe binlik/ondalık, tarih/saat/kimlik dışlama, para kelimesi yoksa çıp
 
 ---
 
+## DRIVE-01 — WhatsApp belgeleri firmanın Google Drive'ına aynalansın (2026-09-15, kullanıcı)
+
+> **Karar (kullanıcı):** eski sistemdeki gibi firma kendi Google Workspace'ini bağlasın,
+> sistem Drive'da **kişi adıyla klasör açıp** belgeleri oraya kopyalasın. Drive **AYNADIR**:
+> ana kayıt Verimaya'nın deposudur (`inbound_message_media` + FILE_STORAGE), Drive tek yönlü
+> kopyadır. Kişiye bağlanmamış belge Drive'a gitmez; bir mesaj iki kişiye bağlıysa iki
+> klasöre de kopyalanır.
+
+- [x] **1. Bağlantı.** Ayarlar › Google Drive: "Google ile bağla" (OAuth, scope
+  `drive.file` — uygulama yalnız kendi açtığı dosyaları görür), bağlı hesap e-postası,
+  kök klasör bağlantısı, "Bağlantıyı kes". Kimlik `tenant_credentials`'a şifreli
+  (`provider = 'google_drive'`), yenileme jetonuyla erişim tazelenir. Callback kamuya
+  açık; tenant imzalı tek kullanımlık state'ten çözülür (Ads/GHL kalıbı).
+- [x] **2. Klasör ve ad kuralı.** Kök `Verimaya Hastalar` › `<Kişi görünen adı>` › dosya.
+  Dosya adı `YYYY-AA-GG-SSDD-<açıklama-slug>.<uzantı>`, tenant saat diliminde; açıklama =
+  gövde/caption'ın ilk 60 karakteri, yoksa `whatsapp-gorsel` / `whatsapp-belge`. Türkçe
+  karakterler ASCII'ye (`drive-names.ts`, saf + testli).
+- [x] **3. Tetik.** Mesaj bir kişiye bağlanınca (`MessageContactsService.linkWithDb`,
+  `linkMediaByContextWithDb`, `createContactFromMessageWithDb`) ve mesaja ek gelince
+  (`InboundMediaService.store`) kuyruğa `drive_mirror.sync`. Tenant bağlı değilse iş
+  sessizce biter; gönderilmiş dosya (`drive_mirror_files`) atlanır.
+- [x] **4. Geriye dönük.** `POST /v1/settings/drive/sync` (settings:update) tek
+  `drive_mirror.backfill` işi atar; iş kişiye bağlı tüm ekleri dolaşır ve son durumu
+  (gönderilen/atlanan/hata + zaman) `tenant_settings`'e yazar. Panelde "Şimdiye kadarkileri
+  gönder" düğmesi ve sayaçlar.
+- [x] **5. KVKK ve birleştirme.** Kişi veri silme isteği yürütülünce `drive_mirror.purge_contact`:
+  kişinin Drive dosyaları ve klasörü kalıcı silinir. Kişi birleştirmede
+  `drive_mirror.move_contact`: dosyalar hayatta kalanın klasörüne taşınır; aynı geçişte
+  `inbound_message_contacts` bağları da hayatta kalana devredilir (yoksa yeni ekler
+  silinmiş kişinin klasörüne giderdi).
+- [x] **6. Tablolar.** `drive_mirror_folders` (tenant, contact unique) ve `drive_mirror_files`
+  (unique `(tenant, media, contact)`) — 0076, RLS + FORCE RLS + policy + açık GRANT.
+
+**Boyut: L** · **Kabul:** bağlantı kurulur ve e-posta görünür · kişi klasörü açılır · aynı ek
+ikinci kez yüklenmez · kişisiz ek gitmez · A, B'nin defterini göremez (izolasyon testi) ·
+gerçek ağ yok (sahte istemci).
+
+**Görüş (2026-09-15):** Drive istemcisi `integrations/google-drive/` altında port +
+adaptör (AGENTS ilke 5); domain kodu fetch'i görmez. Bilinçli bırakılanlar: (a) toplu
+gönderim **tek iş** olarak koşar (mesaj başına iş değil) — tur başına en fazla 2000 çift,
+kalan bir sonraki turda; (b) Drive'da elle silinen dosya geri getirilmez, defterde satırı
+durur — kullanıcının kendi klasöründe yaptığı düzenlemeyi ezmek aynanın işi değil;
+(c) taşıma Drive'da başarısız olursa defter satırı yine hayatta kalana geçer: dosya eski
+klasörde kalır ama ikinci kez yüklenmez; (d) kişi adı sonradan değişirse klasör adı
+değişmez (yalnız klasör kaybolduysa yeniden açılır).
+
+---
+
 ## Yarına bırakılanlar (2026-08-23 akşamı, kullanıcı)
 
 Gün sonunda konuşulup ertesi güne bırakılan üç başlık. Kalem değil, **oturum gündemi**.

@@ -25,6 +25,7 @@ import type { KisiAdayi } from './kisi-eslestir';
 import { buildKnowledgeContext } from '@verimaya/shared';
 import { type AuditActor } from '../common/audit-helper';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
+import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -81,6 +82,7 @@ export class WhatsappService {
 		private readonly whatsappChats: WhatsappChatsService,
 		private readonly messageContacts: MessageContactsService,
 		private readonly inboundMedia: InboundMediaService,
+		private readonly driveMirror: DriveMirrorEnqueueService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
@@ -371,6 +373,8 @@ export class WhatsappService {
 			})
 			.onConflictDoNothing();
 		const media = await this.messageContacts.linkMediaByContextWithDb(db, tenantId, null);
+		// DRIVE-01: kişi bu mesajdan açıldı — mesajın eki varsa yeni klasöre kopyalansın.
+		await this.driveMirror.enqueueSync(db, tenantId, row.id);
 		return { contact, linked_messages: 1 + media };
 	}
 

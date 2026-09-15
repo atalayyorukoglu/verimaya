@@ -22,6 +22,7 @@ import {
 	tenants,
 	transactions
 } from '../db/schema';
+import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 const ANONYMIZED_FIRST_NAME = 'Anonymized';
@@ -46,7 +47,10 @@ function toContactDeletionRequest(
  */
 @Injectable()
 export class ContactDataSubjectService {
-	constructor(private readonly tenantContext: TenantContextService) {}
+	constructor(
+		private readonly tenantContext: TenantContextService,
+		private readonly driveMirror: DriveMirrorEnqueueService
+	) {}
 
 	async exportData(tenantId: string, contactId: string): Promise<ContactDataExport> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
@@ -226,6 +230,15 @@ export class ContactDataSubjectService {
 				'contact',
 				`data-deletion-request:${row!.id}:anonymized`
 			);
+
+			/*
+			 * DRIVE-01 / KVKK: kişinin belgeleri firmanın Drive'ına da kopyalanmış
+			 * olabilir. Burada isim maskeleniyor ama Drive'daki klasörün adı hâlâ
+			 * kişinin adı ve dosyalar duruyor — silme isteği yürütülünce onlar da
+			 * kalıcı silinir. Kuyruğa atılır: Drive çağrısı silme işlemini bekletmez
+			 * ve ağ hatası anonimleştirmeyi geri almaz.
+			 */
+			await this.driveMirror.enqueuePurgeContact(db, tenantId, contactId);
 
 			return toContactDeletionRequest(row!);
 		});

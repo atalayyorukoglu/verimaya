@@ -1157,6 +1157,27 @@ function unprocessable(message: string) {
 /** Demo: Meta connected so disconnect UI is exercisable under MSW. */
 const mswAdsConnected = new Set<string>(['meta']);
 
+/** DRIVE-01 — demo/MSW'de Drive bağlı gelir; "Bağlantıyı kes" durumu sıfırlar. */
+let mswDriveConnected = true;
+function mswDriveStatus() {
+	return {
+		connected: mswDriveConnected,
+		account_email: mswDriveConnected ? 'ops@demo-klinik.com' : null,
+		root_folder_id: mswDriveConnected ? 'msw-root-folder' : null,
+		root_folder_url: mswDriveConnected
+			? 'https://drive.google.com/drive/folders/msw-root-folder'
+			: null,
+		key_version: mswDriveConnected ? 1 : null,
+		folder_count: mswDriveConnected ? 12 : 0,
+		mirrored_file_count: mswDriveConnected ? 47 : 0,
+		pending_count: mswDriveConnected ? 3 : 0,
+		last_run_at: mswDriveConnected ? new Date().toISOString() : null,
+		last_run_sent: mswDriveConnected ? 9 : 0,
+		last_run_skipped: mswDriveConnected ? 38 : 0,
+		last_run_failed: 0
+	};
+}
+
 export const handlers = [
 	http.get('/v1/me', () => HttpResponse.json(demoUser)),
 
@@ -2043,6 +2064,20 @@ export const handlers = [
 		const to = url.searchParams.get('to');
 		const provider = url.searchParams.get('provider');
 		return HttpResponse.json(buildMarketingReport(store, from, to, provider));
+	}),
+
+	// DRIVE-01 — Drive aynası; MSW'de bağlantı bellekte tutulur.
+	http.get('/v1/settings/drive', () => {
+		return HttpResponse.json(mswDriveStatus());
+	}),
+
+	http.delete('/v1/settings/drive', () => {
+		mswDriveConnected = false;
+		return HttpResponse.json(mswDriveStatus());
+	}),
+
+	http.post('/v1/settings/drive/sync', () => {
+		return HttpResponse.json({ queued: true, job_id: 'msw-drive-backfill' });
 	}),
 
 	http.get('/v1/integrations/ads/status', ({ request }) => {

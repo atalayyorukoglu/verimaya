@@ -4,6 +4,7 @@ import type { InboundMessageContactRef } from '@verimaya/shared';
 import { contacts } from '../db/schema/contacts';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
 import { inboundMessages } from '../db/schema/inbound-messages';
+import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { asRecord, extractInboundDisplayFields } from './inbound-mapper';
 import { kisiBul, type KisiAdayi, type KisiEslesme } from './kisi-eslestir';
@@ -17,7 +18,10 @@ import { kisiBul, type KisiAdayi, type KisiEslesme } from './kisi-eslestir';
  */
 @Injectable()
 export class MessageContactsService {
-	constructor(private readonly tenantContext: TenantContextService) {}
+	constructor(
+		private readonly tenantContext: TenantContextService,
+		private readonly driveMirror: DriveMirrorEnqueueService
+	) {}
 
 	/** Kiracının silinmemiş tüm kişileri — eşleştirme bir kez yüklenip yeniden kullanılır. */
 	async directoryWithDb(db: TenantDb): Promise<KisiAdayi[]> {
@@ -35,13 +39,20 @@ export class MessageContactsService {
 		return rows;
 	}
 
-	/** Tek mesajı bağlar; aynı bağ ikinci kez yazılmaz (unique + do nothing). */
+	/**
+	 * Tek mesajı bağlar; aynı bağ ikinci kez yazılmaz (unique + do nothing).
+	 *
+	 * DRIVE-01: bağ kurulunca mesajın ekleri kişinin Drive klasörüne kopyalansın
+	 * diye iş atılır. Toplu yeniden bağlamada (`relinkAll`) binlerce iş çıkmasın
+	 * diye `enqueueDrive: false` ile çağrılır; orada tek toplu iş atılır.
+	 */
 	async linkWithDb(
 		db: TenantDb,
 		tenantId: string,
 		messageId: string,
 		body: string | null,
-		adaylar: KisiAdayi[]
+		adaylar: KisiAdayi[],
+		opts: { enqueueDrive?: boolean } = {}
 	): Promise<KisiEslesme[]> {
 		const eslesmeler = kisiBul(body, adaylar);
 		if (eslesmeler.length === 0) return [];
@@ -63,6 +74,9 @@ export class MessageContactsService {
 					inboundMessageContacts.contactId
 				]
 			});
+		if (opts.enqueueDrive !== false) {
+			await this.driveMirror.enqueueSync(db, tenantId, messageId);
+		}
 		return eslesmeler;
 	}
 
@@ -125,7 +139,14 @@ export class MessageContactsService {
 				)
 			on conflict (tenant_id, inbound_message_id, contact_id) do nothing
 		`);
-		return Number((result as unknown as { count?: number }).count ?? 0);
+		const linked = Number((result as unknown as { count?: number }).count ?? 0);
+		// DRIVE-01: yeni bağ kuruldu → aynalama. Tek mesajlıksa o mesaj, küme
+		// işiyse tek toplu iş (hangi mesajların bağlandığını SQL geri vermiyor).
+		if (linked > 0) {
+			if (messageId) await this.driveMirror.enqueueSync(db, tenantId, messageId);
+			else await this.driveMirror.enqueueBackfill(db, tenantId);
+		}
+		return linked;
 	}
 
 	/** Liste yanıtı için: mesaj id → bahsedilen kişiler (tek sorgu). */
@@ -194,13 +215,17 @@ export class MessageContactsService {
 				for (const row of rows) {
 					const display = extractInboundDisplayFields(asRecord(row.payload) ?? {});
 					processed++;
-					const es = await this.linkWithDb(db, tenantId, row.id, display.body, adaylar);
+					const es = await this.linkWithDb(db, tenantId, row.id, display.body, adaylar, {
+						enqueueDrive: false
+					});
 					linked += es.length;
 				}
 				afterId = rows[rows.length - 1].id;
 			}
 			// Metinsiz görsel/dosya mesajları: bağlamdan, tek küme işi.
 			linked += await this.linkMediaByContextWithDb(db, tenantId, null);
+			// DRIVE-01: bağlar sıfırdan kuruldu — aynayı tek toplu işle tara.
+			await this.driveMirror.enqueueBackfill(db, tenantId);
 			return { processed, linked };
 		});
 	}

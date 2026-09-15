@@ -21,6 +21,9 @@ import {
   AdsOAuthCallbackController,
 } from "../integrations/ads/ads.controller";
 import {
+  DriveOAuthCallbackController,
+} from "../integrations/google-drive/google-drive.controller";
+import {
   GhlController,
   GhlOAuthCallbackController,
 } from "../integrations/ghl/ghl.controller";
@@ -63,6 +66,8 @@ const PUBLIC_ROUTE_ALLOWLIST: Record<string, string> = {
     "WAHA inbound webhook — same queue-first public surface",
   "WebhooksController.ingestWahaMedia":
     "WAHA-01 media webhook — same HMAC signature gate as ingestWaha, tenant resolved from identity",
+  "DriveOAuthCallbackController.callback":
+    "DRIVE-01 public OAuth callback — Google redirects the browser here with code+state; tenant recovered from the signed, single-use OAuth state (same split as Ads/GHL)",
   "MeController.me":
     "Session-only own profile; not an org-scoped resource (no OrgPermissionGuard)",
   "MeController.listOrganizations":
@@ -246,6 +251,15 @@ describe("AUDIT-F09-18: class-level guard is the dominant / required pattern for
       Reflect.getMetadata(
         GUARDS_METADATA,
         GhlOAuthCallbackController.prototype.callback,
+      ),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(GUARDS_METADATA, DriveOAuthCallbackController),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        DriveOAuthCallbackController.prototype.callback,
       ),
     ).toBeUndefined();
   });

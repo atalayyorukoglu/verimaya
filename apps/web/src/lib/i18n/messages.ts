@@ -814,6 +814,40 @@ const tr = {
 	'settings.dataQuality.duplicatesNav.patients': 'Hastalarda tara →',
 	'settings.dataQuality.reportsLink': 'Raporlar → tutarlılık',
 
+	'settings.drive.title': 'Google Drive',
+	'settings.drive.description':
+		'WhatsApp\u2019tan gelen hasta belgeleri firmanın kendi Google Drive\u2019ına, kişi adıyla açılan klasörlere kopyalanır.',
+	'settings.drive.nav.description': 'Hasta belgelerini kendi Drive\u2019ınıza aynalayın.',
+	'settings.drive.card.name': 'Google Drive aynası',
+	'settings.drive.card.description':
+		'Ana kayıt Verimaya\u2019da kalır; Drive tek yönlü kopyadır. Kişiye bağlanmamış belge gönderilmez.',
+	'settings.drive.connect': 'Google ile bağla',
+	'settings.drive.flash': 'Google Drive bağlantısı tamamlandı.',
+	'settings.drive.loading': 'Yükleniyor…',
+	'settings.drive.loadError': 'Durum okunamadı.',
+	'settings.drive.statusLabel': 'Durum',
+	'settings.drive.statusConnected': 'Bağlı',
+	'settings.drive.statusDisconnected': 'Bağlı değil',
+	'settings.drive.accountLabel': 'Hesap',
+	'settings.drive.folderCountLabel': 'Kişi klasörü',
+	'settings.drive.fileCountLabel': 'Gönderilen belge',
+	'settings.drive.pendingLabel': 'Bekleyen',
+	'settings.drive.rootFolderLink': 'Kök klasörü Drive\u2019da aç',
+	'settings.drive.disconnectError': 'Bağlantı kesilemedi.',
+	'settings.drive.syncHint':
+		'Şimdiye kadar kişiye bağlanmış tüm belgeleri Drive\u2019a gönderir. Gönderilmiş olanlar atlanır.',
+	'settings.drive.sync': 'Şimdiye kadarkileri gönder',
+	'settings.drive.syncing': 'Kuyruğa alınıyor…',
+	'settings.drive.syncQueued':
+		'Toplu gönderim kuyruğa alındı. Birkaç dakika sonra sayaçlar güncellenir.',
+	'settings.drive.syncError': 'Toplu gönderim başlatılamadı.',
+	'settings.drive.lastRunHeading': 'Son toplu gönderim',
+	'settings.drive.lastRunNever': 'Henüz toplu gönderim yapılmadı.',
+	'settings.drive.lastRunSummary': '{when} — {sent} gönderildi, {skipped} atlandı, {failed} hata.',
+	'settings.drive.note.heading': 'Nasıl çalışır',
+	'settings.drive.note.body':
+		'Kök klasör “Verimaya Hastalar”, altında her kişi için bir klasör açılır. Dosya adı YYYY-AA-GG-SSDD-açıklama biçimindedir. Kişi silme isteği yürütülünce o kişinin Drive klasörü de silinir; kişi birleştirmede dosyalar hayatta kalan kişinin klasörüne taşınır.',
+
 	'settings.ads.title': 'Reklamlar',
 	'settings.ads.description':
 		'Meta ve Google Ads harcama/lead verisi — kampanya bazında maliyet raporları için.',
@@ -3886,6 +3920,39 @@ const en: Record<MessageKey, string> = {
 	'settings.dataQuality.duplicatesNav.contacts': 'Scan contacts →',
 	'settings.dataQuality.duplicatesNav.patients': 'Scan patients →',
 	'settings.dataQuality.reportsLink': 'Reports → consistency',
+
+	'settings.drive.title': 'Google Drive',
+	'settings.drive.description':
+		'Patient documents arriving from WhatsApp are copied into the company\u2019s own Google Drive, in folders named after each contact.',
+	'settings.drive.nav.description': 'Mirror patient documents into your own Drive.',
+	'settings.drive.card.name': 'Google Drive mirror',
+	'settings.drive.card.description':
+		'The system of record stays in Verimaya; Drive is a one-way copy. Documents not linked to a contact are never sent.',
+	'settings.drive.connect': 'Connect with Google',
+	'settings.drive.flash': 'Google Drive connection completed.',
+	'settings.drive.loading': 'Loading…',
+	'settings.drive.loadError': 'Could not read status.',
+	'settings.drive.statusLabel': 'Status',
+	'settings.drive.statusConnected': 'Connected',
+	'settings.drive.statusDisconnected': 'Not connected',
+	'settings.drive.accountLabel': 'Account',
+	'settings.drive.folderCountLabel': 'Contact folders',
+	'settings.drive.fileCountLabel': 'Documents sent',
+	'settings.drive.pendingLabel': 'Pending',
+	'settings.drive.rootFolderLink': 'Open root folder in Drive',
+	'settings.drive.disconnectError': 'Could not disconnect.',
+	'settings.drive.syncHint':
+		'Sends every document already linked to a contact. Anything already sent is skipped.',
+	'settings.drive.sync': 'Send everything so far',
+	'settings.drive.syncing': 'Queueing…',
+	'settings.drive.syncQueued': 'Bulk send queued. Counters update in a few minutes.',
+	'settings.drive.syncError': 'Could not start the bulk send.',
+	'settings.drive.lastRunHeading': 'Last bulk send',
+	'settings.drive.lastRunNever': 'No bulk send yet.',
+	'settings.drive.lastRunSummary': '{when} — {sent} sent, {skipped} skipped, {failed} failed.',
+	'settings.drive.note.heading': 'How it works',
+	'settings.drive.note.body':
+		'The root folder is “Verimaya Hastalar”, with one folder per contact underneath. File names follow YYYY-MM-DD-HHMM-description. When a contact deletion request is executed, that contact\u2019s Drive folder is deleted too; on contact merge, files move into the surviving contact\u2019s folder.',
 
 	'settings.ads.title': 'Ads',
 	'settings.ads.description':

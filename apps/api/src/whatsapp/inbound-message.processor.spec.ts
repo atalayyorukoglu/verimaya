@@ -20,6 +20,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { InboundMessageProcessor } from './inbound-message.processor';
 import { WhatsappService } from './whatsapp.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
+import { driveMirrorEnqueueStub } from '../test/drive-mirror-stub';
 
 const recordSuggestionsSettingsStub = {
 	getAiPrompt: async () => ({
@@ -95,8 +96,9 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 				})
 			} as never,
 			new WhatsappChatsService(tenantContext),
-			new MessageContactsService(tenantContext),
-			new InboundMediaService(tenantContext, new LocalFileStorage()),
+			new MessageContactsService(tenantContext, driveMirrorEnqueueStub()),
+			new InboundMediaService(tenantContext, driveMirrorEnqueueStub(), new LocalFileStorage()),
+			driveMirrorEnqueueStub(),
 			new HeuristicLlmClient()
 		);
 		const operationAlertsService = new OperationAlertsService(tenantContext);

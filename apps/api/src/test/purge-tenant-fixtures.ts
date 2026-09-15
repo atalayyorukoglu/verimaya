@@ -17,6 +17,9 @@ export async function purgeTenantFixtures(sql: Sql, tenantIds: string[]): Promis
 			await tx`delete from scorecard_answers where tenant_id = ${tenantId}`;
 			await tx`delete from scorecard_assessments where tenant_id = ${tenantId}`;
 			await tx`delete from scorecard_profiles where tenant_id = ${tenantId}`;
+			// DRIVE-01: contacts + inbound_message_media'dan önce (FK cascade'e güvenilmiyor).
+			await tx`delete from drive_mirror_files where tenant_id = ${tenantId}`;
+			await tx`delete from drive_mirror_folders where tenant_id = ${tenantId}`;
 			await tx`delete from files where tenant_id = ${tenantId}`;
 			await tx`delete from case_notes where tenant_id = ${tenantId}`;
 			await tx`delete from incidents where tenant_id = ${tenantId}`;

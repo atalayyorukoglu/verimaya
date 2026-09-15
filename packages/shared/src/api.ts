@@ -121,6 +121,11 @@ export const apiPaths = {
 	settingsImportBundleExport: `${API_V1_PREFIX}/settings/import-export/bundle/export.xlsx`,
 	settingsImportBundleDryRun: `${API_V1_PREFIX}/settings/import-export/bundle/import/dry-run`,
 	settingsImportBundleCommit: `${API_V1_PREFIX}/settings/import-export/bundle/import/commit`,
+	/** DRIVE-01 — firmanın Google Drive aynası. */
+	settingsDrive: `${API_V1_PREFIX}/settings/drive`,
+	settingsDriveSync: `${API_V1_PREFIX}/settings/drive/sync`,
+	/** Tarayıcı buraya yönlendirilir (302 → Google); sözleşmede değil. */
+	settingsDriveAuthorize: `${API_V1_PREFIX}/settings/drive/authorize`,
 	settingsDataDeletePreview: `${API_V1_PREFIX}/settings/data-delete/preview`,
 	settingsDataDeleteExecute: `${API_V1_PREFIX}/settings/data-delete/execute`,
 	integrationsGhlStatus: `${API_V1_PREFIX}/integrations/ghl/status`,
@@ -354,6 +359,7 @@ import { contactCaseNoteCreateSchema, contactCaseNoteSchema } from './case-note.
 import { contactDuplicateGroupsResponseSchema, mergeRecordsSchema } from './duplicate.js';
 import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-category.js';
 import { settingsReorderResultSchema, settingsReorderSchema } from './settings-reorder.js';
+import { driveConnectionStatus, driveSyncResponse } from './drive-connection.js';
 import { tenantSchema } from './tenant.js';
 import {
 	membershipUserSchema,
@@ -651,6 +657,15 @@ export const apiContract = {
 	'PATCH /v1/settings/whatsapp-chats/:id': {
 		body: whatsappChatUpdateSchema,
 		response: whatsappChatSchema
+	},
+	'GET /v1/settings/drive': {
+		response: driveConnectionStatus
+	},
+	'DELETE /v1/settings/drive': {
+		response: driveConnectionStatus
+	},
+	'POST /v1/settings/drive/sync': {
+		response: driveSyncResponse
 	},
 	'GET /v1/settings/organizations': {
 		response: z.object({ items: z.array(organizationSchema) })

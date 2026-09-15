@@ -4,6 +4,7 @@ import { closeDb, getDb } from '../db/client';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { MessageContactsService } from './message-contacts.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
+import { driveMirrorEnqueueStub } from '../test/drive-mirror-stub';
 
 const databaseUrl =
 	process.env.DATABASE_URL_APP ??
@@ -86,7 +87,7 @@ describe('inbound_message_contacts', () => {
 				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
 			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
 		} as TenantContextService;
-		service = new MessageContactsService(tenantContext);
+		service = new MessageContactsService(tenantContext, driveMirrorEnqueueStub());
 	});
 
 	afterAll(async () => {

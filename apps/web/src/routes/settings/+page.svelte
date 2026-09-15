@@ -20,6 +20,7 @@
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import Megaphone from '@lucide/svelte/icons/megaphone';
 	import Webhook from '@lucide/svelte/icons/webhook';
+	import HardDrive from '@lucide/svelte/icons/hard-drive';
 	import ClipboardList from '@lucide/svelte/icons/clipboard-list';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
 
@@ -137,6 +138,12 @@
 					title: 'Reklamlar',
 					description: 'Meta ve Google Ads harcama / lead.',
 					icon: Megaphone
+				},
+				{
+					href: '/settings/drive',
+					title: t('settings.drive.title'),
+					description: t('settings.drive.nav.description'),
+					icon: HardDrive
 				},
 				{
 					href: '/settings/connections/api',

@@ -9,6 +9,7 @@ import { transactions } from '../db/schema/transactions';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 import { ContactDataSubjectService } from './contact-data-subject.service';
+import { driveMirrorEnqueueStub } from '../test/drive-mirror-stub';
 
 /**
  * AUDIT-F09-07b: contact data-export + data-deletion-request.
@@ -123,7 +124,7 @@ describe('AUDIT-F09-07b contact data-subject rights isolation', () => {
 			) => withTenantSession(tenantId, (tdb) => fn({ db: tdb }))
 		} as TenantContextService;
 
-		service = new ContactDataSubjectService(tenantContext);
+		service = new ContactDataSubjectService(tenantContext, driveMirrorEnqueueStub());
 	});
 
 	afterAll(async () => {

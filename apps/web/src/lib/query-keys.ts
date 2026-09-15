@@ -96,6 +96,7 @@ export function queryKeys(scope: QueryScope) {
 		},
 		integrations: {
 			adsStatus: () => k('integrations', 'ads', 'status'),
+			driveStatus: () => k('settings', 'drive'),
 			ghlStatus: () => k('integrations', 'ghl', 'status')
 		},
 		auditLogs: {
