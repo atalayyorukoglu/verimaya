@@ -2215,6 +2215,30 @@ export const handlers = [
 		return HttpResponse.json({ messages });
 	}),
 
+	// KISI-01 adım 3: demo verisinde özet yok; kart "kayıt yok" der.
+	http.get('/v1/contacts/:id/summary', ({ params }) => {
+		return HttpResponse.json({
+			contact_id: params.id,
+			sentences: [],
+			generated_at: null,
+			stale: false,
+			heuristic: true,
+			model: null,
+			input_count: 0
+		});
+	}),
+	http.post('/v1/contacts/:id/summary/refresh', ({ params }) => {
+		return HttpResponse.json({
+			contact_id: params.id,
+			sentences: [],
+			generated_at: null,
+			stale: false,
+			heuristic: true,
+			model: null,
+			input_count: 0
+		});
+	}),
+
 	// KISI-01: kişinin adı geçen mesajlar. Demo verisinde bağ yok; boş liste döner
 	// ki kişi kartı hata değil "kayıt yok" görsün.
 	http.get('/v1/whatsapp/inbox/by-contact/:contactId', ({ params, request }) => {

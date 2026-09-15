@@ -1,4 +1,8 @@
 export type {
+	ContactSummaryContext,
+	ContactSummaryItem,
+	ContactSummaryResult,
+	ContactSummarySentenceDraft,
 	LlmClient,
 	LlmParseContext,
 	LlmParsePath,

@@ -26,7 +26,12 @@ import {
 	contactUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { ActiveOrgGuard, getActiveOrgId, getActorFromRequest, getIdempotencyKey } from '../common/active-org.guard';
+import {
+	ActiveOrgGuard,
+	getActiveOrgId,
+	getActorFromRequest,
+	getIdempotencyKey
+} from '../common/active-org.guard';
 import { AuthOrApiKeyGuard } from '../common/auth-or-api-key.guard';
 import { Idempotent, IdempotencyExempt } from '../common/idempotent.decorator';
 import { IdempotencyService } from '../common/idempotency.service';
@@ -36,16 +41,20 @@ import { RequireOrgPermission } from '../common/require-org-permission.decorator
 import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-subscriptions.service';
 import { MAX_UPLOAD_BYTES } from '../storage/storage.types';
 import { ContactDataSubjectService } from './contact-data-subject.service';
+import { ContactSummaryService } from './contact-summary.service';
 import { ContactsService } from './contacts.service';
 
 type MultipartRequest = FastifyRequest & {
 	isMultipart?: () => boolean;
-	file: () => Promise<{
-		filename: string;
-		mimetype: string;
-		toBuffer: () => Promise<Buffer>;
-		fields?: Record<string, unknown>;
-	} | undefined>;
+	file: () => Promise<
+		| {
+				filename: string;
+				mimetype: string;
+				toBuffer: () => Promise<Buffer>;
+				fields?: Record<string, unknown>;
+		  }
+		| undefined
+	>;
 };
 
 function multipartFieldString(field: unknown): string | null {
@@ -56,17 +65,16 @@ function multipartFieldString(field: unknown): string | null {
 }
 
 /** RFC 6266 + RFC 5987 filename* for non-ASCII / quotes. */
-function contentDispositionHeader(
-	disposition: 'inline' | 'attachment',
-	filename: string
-): string {
+function contentDispositionHeader(disposition: 'inline' | 'attachment', filename: string): string {
 	const asciiFallback = filename
 		.replace(/[^\x20-\x7E]/g, '_')
 		.replace(/["\\]/g, '_')
 		.slice(0, 180);
 	const safeAscii = asciiFallback.length > 0 ? asciiFallback : 'file';
-	const encoded = encodeURIComponent(filename)
-		.replace(/['()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+	const encoded = encodeURIComponent(filename).replace(
+		/['()]/g,
+		(c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+	);
 	return `${disposition}; filename="${safeAscii}"; filename*=UTF-8''${encoded}`;
 }
 
@@ -76,6 +84,7 @@ export class ContactsController {
 	constructor(
 		private readonly contactsService: ContactsService,
 		private readonly contactDataSubject: ContactDataSubjectService,
+		private readonly contactSummary: ContactSummaryService,
 		private readonly idempotency: IdempotencyService,
 		private readonly webhookSubscriptions: WebhookSubscriptionsService
 	) {}
@@ -117,7 +126,6 @@ export class ContactsController {
 		reply.status(result.statusCode);
 		return result.body;
 	}
-
 
 	@Patch('bulk-type')
 	@RequireOrgPermission('contact', 'update')
@@ -201,11 +209,7 @@ export class ContactsController {
 		@Param('fileId') fileId: string,
 		@Res() reply: FastifyReply
 	) {
-		const download = await this.contactsService.openFileDownload(
-			getActiveOrgId(req),
-			id,
-			fileId
-		);
+		const download = await this.contactsService.openFileDownload(getActiveOrgId(req), id, fileId);
 		reply.header('Content-Type', download.mimeType);
 		reply.header('Content-Disposition', contentDispositionHeader('attachment', download.filename));
 		reply.header('X-Content-Type-Options', 'nosniff');
@@ -223,11 +227,7 @@ export class ContactsController {
 		@Param('fileId') fileId: string,
 		@Res() reply: FastifyReply
 	) {
-		const preview = await this.contactsService.openFilePreview(
-			getActiveOrgId(req),
-			id,
-			fileId
-		);
+		const preview = await this.contactsService.openFilePreview(getActiveOrgId(req), id, fileId);
 		reply.header('Content-Type', preview.mimeType);
 		reply.header(
 			'Content-Disposition',
@@ -244,6 +244,25 @@ export class ContactsController {
 	@RequireOrgPermission('finance', 'read')
 	financeSummary(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.contactsService.financeSummary(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * KISI-01 adım 3 — kişi özeti. Önbellekten döner; kaynak veri değiştiyse ve
+	 * soğuma süresi geçtiyse açılışta yeniden yazılır (LLM çağrısı).
+	 */
+	@Get(':id/summary')
+	@RequireOrgPermission('contact', 'read')
+	summary(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.contactSummary.get(getActiveOrgId(req), id, { refresh: false });
+	}
+
+	@Post(':id/summary/refresh')
+	@RequireOrgPermission('contact', 'read')
+	@IdempotencyExempt(
+		'Regenerates a derived cache row (one per contact, upsert); a retry rewrites the same row with the same inputs — nothing to duplicate.'
+	)
+	refreshSummary(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.contactSummary.get(getActiveOrgId(req), id, { refresh: true });
 	}
 
 	/**
@@ -332,16 +351,9 @@ export class ContactsController {
 				}
 			});
 		}
-		const contentType = typeof req.headers['content-type'] === 'string'
-			? req.headers['content-type']
-			: undefined;
-		return this.contactsService.putFileContent(
-			getActiveOrgId(req),
-			id,
-			fileId,
-			data,
-			contentType
-		);
+		const contentType =
+			typeof req.headers['content-type'] === 'string' ? req.headers['content-type'] : undefined;
+		return this.contactsService.putFileContent(getActiveOrgId(req), id, fileId, data, contentType);
 	}
 
 	@Post(':id/files/:fileId/confirm')
@@ -387,13 +399,7 @@ export class ContactsController {
 			'/v1/contacts/:id/files/:fileId',
 			async (db) => ({
 				statusCode: 200,
-				body: await this.contactsService.softDeleteFileWithDb(
-					db,
-					tenantId,
-					id,
-					fileId,
-					actor
-				)
+				body: await this.contactsService.softDeleteFileWithDb(db, tenantId, id, fileId, actor)
 			})
 		);
 		reply.status(result.statusCode);

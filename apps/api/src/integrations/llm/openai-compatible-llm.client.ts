@@ -21,6 +21,9 @@ import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/
 import { verifyDraftEvidence } from '../../whatsapp/evidence';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type {
+	ContactSummaryContext,
+	ContactSummaryResult,
+	ContactSummarySentenceDraft,
 	LlmClient,
 	LlmParseContext,
 	LlmParseResult,
@@ -121,7 +124,8 @@ export function buildWhatsappExtractionSystemPrompt(
 		'',
 		'Worked example — message: "Yılmaz bey için Ada Klinik\'e 2.900 GBP ödendi"',
 		'{"records":[{"kind":"expense","amount":290000,"currency":"GBP","title":"Ada Klinik ödemesi",' +
-			`"occurred_on":"${today}",` + '"contact_id":null,"contact_label":"Ada Klinik","category":null,' +
+			`"occurred_on":"${today}",` +
+			'"contact_id":null,"contact_label":"Ada Klinik","category":null,' +
 			'"payment_method":null,"description":"Yılmaz bey için Ada Klinik\'e 2.900 GBP ödendi",' +
 			'"evidence":{"amount":{"quote":"2.900","start":24,"confidence":"high"},' +
 			'"currency":{"quote":"GBP","start":30,"confidence":"high"},' +
@@ -255,7 +259,10 @@ function stripPlaceholders(records: TransactionDraft[]): TransactionDraft[] {
 	const placeholder = /\[(TELEFON|EPOSTA|TCKN|IBAN|KART|HASTA)\]|\bKISI_\d+\b/g;
 	const clean = (value: string | null | undefined): string | null => {
 		if (!value) return null;
-		const stripped = value.replace(placeholder, '').replace(/\s{2,}/g, ' ').trim();
+		const stripped = value
+			.replace(placeholder, '')
+			.replace(/\s{2,}/g, ' ')
+			.trim();
 		return stripped.length > 0 ? stripped : null;
 	};
 	return records.map((record) => ({
@@ -324,6 +331,128 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 	constructor(private readonly config: OpenAiCompatibleLlmConfig) {
 		this.fetchFn = config.fetchFn ?? fetch;
 		this.timeoutMs = config.timeoutMs ?? 15_000;
+	}
+
+	/**
+	 * KISI-01 adım 3 — kişi özeti. Model yalnız maskeli kayıtları görür (isim yok),
+	 * cümle + ref listesi döner. Ref'i kayıtta olmayan cümle düşürülür: model
+	 * kaynağı gösteremiyorsa o cümle özete girmez (tahmin kapısı). Hata/geçersiz
+	 * çıktıda boş liste döner; çağıran taraf kural tabanlı özete düşer.
+	 */
+	async summarizeContact(ctx: ContactSummaryContext): Promise<ContactSummaryResult> {
+		const failed = (error: string | null): ContactSummaryResult => ({
+			sentences: [],
+			heuristic: false,
+			usage: {
+				provider: providerLabel(this.config.baseUrl),
+				model: null,
+				requestedModel: this.config.model,
+				promptTokens: null,
+				completionTokens: null,
+				totalTokens: null,
+				estimatedCostUsdMicros: null,
+				path: 'openai_compatible_fallback',
+				error
+			}
+		});
+		if (ctx.items.length === 0) return failed('no_items');
+
+		const base = this.config.baseUrl.replace(/\/$/, '');
+		const system = [
+			'Sağlık turizmi operasyonunda çalışan bir asistansın. Sana BİR KİŞİYE ait kayıtlar verilecek:',
+			'[W…] WhatsApp grup mesajı, [R…] randevu, [P…] para işlemi, [N…] çalışan notu. Kişi metinde',
+			`"${ctx.subjectToken}" olarak geçer; başka kişilerin adları da geçebilir, onlar özne değildir.`,
+			'',
+			'GÖREV: kişinin hikâyesini KRONOLOJİK, kısa, Türkçe özetle — ilk temas, gelişler, tedavi,',
+			'ödemeler, açık konular. En fazla 8 cümle. Her cümle yalnız kayıtlarda AÇIKÇA yazan bilgiyi',
+			'taşısın; tahmin, tamamlama, yorum yok. Emin olmadığın şeyi yazma. Para tutarlarını',
+			"kayıttaki gibi yaz. Her cümleye dayandığı kayıt ref'lerini ekle (en az bir).",
+			'',
+			'Yalnız JSON dön: {"sentences":[{"text":"…","refs":["W12","P3"]}]}'
+		].join('\n');
+		const user = ctx.items.map((i) => `[${i.ref}] ${i.at.slice(0, 10)} · ${i.text}`).join('\n');
+
+		try {
+			const response = await this.fetchFn(`${base}/chat/completions`, {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${this.config.apiKey}`
+				},
+				body: JSON.stringify({
+					model: this.config.model,
+					temperature: 0,
+					response_format: { type: 'json_object' },
+					messages: [
+						{ role: 'system', content: system },
+						{ role: 'user', content: user }
+					]
+				}),
+				// Özet girdisi ayrıştırmadan uzun; iki katı süre.
+				signal: AbortSignal.timeout(this.timeoutMs * 2)
+			});
+			if (!response.ok) {
+				this.logger.warn(`contact summary LLM HTTP ${response.status}`);
+				return failed(`http_${response.status}`);
+			}
+			const json = (await response.json()) as ChatCompletionResponse;
+			const content = json.choices?.[0]?.message?.content;
+			if (!content || typeof content !== 'string') return failed('missing_content');
+
+			let parsed: unknown;
+			try {
+				parsed = JSON.parse(content);
+			} catch {
+				return failed('invalid_json');
+			}
+			const known = new Set(ctx.items.map((i) => i.ref));
+			const raw = (parsed as { sentences?: unknown }).sentences;
+			const sentences: ContactSummarySentenceDraft[] = [];
+			if (Array.isArray(raw)) {
+				for (const s of raw) {
+					const text =
+						typeof (s as { text?: unknown }).text === 'string'
+							? (s as { text: string }).text.trim()
+							: '';
+					const refs = Array.isArray((s as { refs?: unknown }).refs)
+						? (s as { refs: unknown[] }).refs.filter(
+								(r): r is string => typeof r === 'string' && known.has(r)
+							)
+						: [];
+					if (text && refs.length > 0) sentences.push({ text: text.slice(0, 600), refs });
+					if (sentences.length >= 8) break;
+				}
+			}
+
+			const promptTokens = json.usage?.prompt_tokens ?? null;
+			const completionTokens = json.usage?.completion_tokens ?? null;
+			return {
+				sentences,
+				heuristic: false,
+				usage: {
+					provider: providerLabel(this.config.baseUrl),
+					model:
+						typeof json.model === 'string' && json.model.trim()
+							? json.model.trim()
+							: this.config.model,
+					requestedModel: this.config.model,
+					promptTokens,
+					completionTokens,
+					totalTokens:
+						json.usage?.total_tokens ??
+						(promptTokens != null && completionTokens != null
+							? promptTokens + completionTokens
+							: null),
+					estimatedCostUsdMicros: estimateCostUsdMicros(promptTokens, completionTokens),
+					path: 'openai_compatible',
+					error: sentences.length === 0 ? 'empty_sentences' : null
+				}
+			};
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			this.logger.warn(`contact summary LLM call failed: ${message}`);
+			return failed(message);
+		}
 	}
 
 	async parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult> {
@@ -624,9 +753,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		const completionTokens = json.usage?.completion_tokens ?? null;
 		const totalTokens =
 			json.usage?.total_tokens ??
-			(promptTokens != null && completionTokens != null
-				? promptTokens + completionTokens
-				: null);
+			(promptTokens != null && completionTokens != null ? promptTokens + completionTokens : null);
 		const actualModel =
 			typeof json.model === 'string' && json.model.trim() ? json.model.trim() : this.config.model;
 
@@ -702,9 +829,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		const completionTokens = json.usage?.completion_tokens ?? null;
 		const totalTokens =
 			json.usage?.total_tokens ??
-			(promptTokens != null && completionTokens != null
-				? promptTokens + completionTokens
-				: null);
+			(promptTokens != null && completionTokens != null ? promptTokens + completionTokens : null);
 
 		// Ledger uses the response `model` field (provider truth), not env request.
 		const actualModel =
@@ -773,9 +898,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		const completionTokens = json.usage?.completion_tokens ?? null;
 		const totalTokens =
 			json.usage?.total_tokens ??
-			(promptTokens != null && completionTokens != null
-				? promptTokens + completionTokens
-				: null);
+			(promptTokens != null && completionTokens != null ? promptTokens + completionTokens : null);
 		const actualModel =
 			typeof json.model === 'string' && json.model.trim() ? json.model.trim() : this.config.model;
 
@@ -846,9 +969,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		const completionTokens = json.usage?.completion_tokens ?? null;
 		const totalTokens =
 			json.usage?.total_tokens ??
-			(promptTokens != null && completionTokens != null
-				? promptTokens + completionTokens
-				: null);
+			(promptTokens != null && completionTokens != null ? promptTokens + completionTokens : null);
 
 		const actualModel =
 			typeof json.model === 'string' && json.model.trim() ? json.model.trim() : this.config.model;

@@ -24,6 +24,7 @@
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import ContactTimeline from '$lib/components/ContactTimeline.svelte';
+	import ContactSummaryCard from '$lib/components/ContactSummaryCard.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import IncidentFormDialog from '$lib/components/IncidentFormDialog.svelte';
@@ -417,6 +418,10 @@
 
 		{#if activeTab === 'flow'}
 			<div class="flex min-h-0 flex-1 flex-col">
+				<!-- KISI-01 adım 3: model özeti akışın üstünde; notlar akışta kalır. -->
+				<div class="tl-measure mt-4 shrink-0">
+					<ContactSummaryCard contactId={contact.id} />
+				</div>
 				<ContactTimeline
 					contactId={contact.id}
 					{appointments}

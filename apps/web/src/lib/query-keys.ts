@@ -70,6 +70,7 @@ export function queryKeys(scope: QueryScope) {
 			list: (params: Params = {}) => k('contacts', params),
 			detail: (id: string) => k('contacts', id),
 			financeSummary: (id: string) => k('contacts', id, 'finance-summary'),
+			summary: (id: string) => k('contacts', id, 'summary'),
 			files: (id: string) => k('contacts', id, 'files'),
 			caseNotes: (id: string) => k('contacts', id, 'case-notes'),
 			duplicateGroups: () => k('contacts', 'duplicate-groups')

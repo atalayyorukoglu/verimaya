@@ -26,10 +26,7 @@ export type LlmParseContext = {
 };
 
 /** Path taken for a single parse call — written to `jobs` ledger (Adım 25). */
-export type LlmParsePath =
-	| 'heuristic'
-	| 'openai_compatible'
-	| 'openai_compatible_fallback';
+export type LlmParsePath = 'heuristic' | 'openai_compatible' | 'openai_compatible_fallback';
 
 export type LlmUsageLedger = {
 	provider: string;
@@ -134,8 +131,43 @@ export type MayaToolSelectionResult = {
 	usage: LlmUsageLedger;
 };
 
+/**
+ * KISI-01 adım 3 — kişi özeti girdisi. Her kayıt `ref` ile anılır (W12, R2, P7, N3);
+ * model cümleye dayandığı ref'leri ekler. Metinler MASKELİ gelir: kişinin adı
+ * `[HASTA]`, telefon/e-posta/IBAN yer tutucu (pii-mask). Model isim görmez.
+ */
+export type ContactSummaryItem = {
+	ref: string;
+	kind: 'whatsapp' | 'appointment' | 'transaction' | 'note';
+	/** ISO tarih; sıralama ve "ne zaman" için. */
+	at: string;
+	text: string;
+};
+
+export type ContactSummaryContext = {
+	items: ContactSummaryItem[];
+	/** Yer tutucu; çıktıda geri açılır. */
+	subjectToken: string;
+};
+
+export type ContactSummarySentenceDraft = {
+	text: string;
+	refs: string[];
+};
+
+export type ContactSummaryResult = {
+	sentences: ContactSummarySentenceDraft[];
+	heuristic: boolean;
+	usage: LlmUsageLedger;
+};
+
 /** Domain-facing LLM adapter — WhatsApp parse goes through this, not raw HTTP. */
 export interface LlmClient {
+	/**
+	 * Kişinin akışından kronolojik, kısa, kaynaklı özet. Boş `sentences` = model
+	 * yazamadı; çağıran taraf kural tabanlı özete düşer.
+	 */
+	summarizeContact(ctx: ContactSummaryContext): Promise<ContactSummaryResult>;
 	parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult>;
 	/** AI-02: appointment.starts_at reschedule drafts — empty when match or date is ambiguous. */
 	suggestAppointmentReschedule(ctx: LlmRescheduleContext): Promise<LlmRescheduleResult>;

@@ -4,7 +4,10 @@ import { heuristicRouteMayaTool } from '../../maya/heuristic-tool-route';
 import { heuristicSuggestAppointmentLogistics } from '../../record-suggestions/heuristic-logistics-parse';
 import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
+import { heuristicSummarizeContact } from '../../contacts/heuristic-contact-summary';
 import type {
+	ContactSummaryContext,
+	ContactSummaryResult,
 	LlmClient,
 	LlmParseContext,
 	LlmParseResult,
@@ -37,6 +40,24 @@ function mayaAnswerUsage(): LlmUsageLedger {
 /** Deterministic regex/heuristic parser used when no LLM_API_KEY is set. */
 @Injectable()
 export class HeuristicLlmClient implements LlmClient {
+	async summarizeContact(ctx: ContactSummaryContext): Promise<ContactSummaryResult> {
+		return {
+			sentences: heuristicSummarizeContact(ctx),
+			heuristic: true,
+			usage: {
+				provider: 'heuristic',
+				model: 'heuristic-contact-summary',
+				requestedModel: null,
+				promptTokens: 0,
+				completionTokens: 0,
+				totalTokens: 0,
+				estimatedCostUsdMicros: 0,
+				path: 'heuristic',
+				error: null
+			}
+		};
+	}
+
 	async parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult> {
 		const records = heuristicParseWhatsappMessage(ctx.message, ctx.patients);
 		return {

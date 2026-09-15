@@ -68,6 +68,7 @@ class ScriptedLlm implements LlmClient {
 
 	parseTransactionDrafts = vi.fn();
 	suggestAppointmentReschedule = vi.fn();
+	summarizeContact = vi.fn();
 
 	async answerFromKnowledge() {
 		return { answer: this.knowledgeAnswer, heuristic: true, usage: usage() };

@@ -683,9 +683,13 @@ testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
   **Görüş (2026-09-15):** `ContactTimeline`'a `whatsapp` türü; ilk 100 mesaj, sayfalama yok.
   İlk canlı ölçümde tek-soyad kuralı kapatıldı (2.000 yanlış bağ; kayıttaki soyad alanı
   güvenilmez — "Sarah Jennifer", "Taksi Ücreti"). Yeniden bağlama kural bağlarını sıfırdan kurar.
-- [ ] **3. Özet.** Kişinin tüm akışından model yazar; her cümle kaynak mesaja bağlı
-  (`evidence-highlight` kalıbı); yeni bağlı veri gelince yenilenir, elle düzenlenmez.
-  Çalışan notları ayrı kalır. PII kapısı (`pii-mask.ts`) aynı; Mistral-AB kararı geçerli.
+- [x] **3. Özet.** Kişinin tüm akışından model yazar; her cümle kaynak kayda bağlı;
+  kaynak değişince bayatlar ve (5 dk soğuma sonrası) açılışta yenilenir, elle düzenlenmez.
+  Çalışan notları ayrı kalır. PII: kişinin adı `[HASTA]`, telefon/e-posta/IBAN maskeli.
+  **Görüş (2026-09-15):** `contact_summaries` (0073), `ContactSummaryService`,
+  `GET/POST /contacts/:id/summary[/refresh]`, LLM `summarizeContact` (ref'i olmayan cümle
+  düşer), kural tabanlı yedek. Kişi sayfasında Akış'ın üstünde kart; kaynak rozetleri
+  W/R/P/N + tarih, üstüne gelince alıntı. Sonraki: rozetten akıştaki satıra atlama.
 - [ ] **4. Para/randevu onayı kişi altında.** Kuyruk "Claire · 5 yeni mesaj · 2 para satırı"
   diye kişiye göre gruplanır; kişisiz mesajlar (kira, taksit) ayrı kümede.
 - [ ] **5. Geçmiş yükleme.** `docs/whatsapp/` dışa aktarımları (2022→, ~15.000 mesaj)

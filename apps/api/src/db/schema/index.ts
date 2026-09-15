@@ -27,6 +27,7 @@ export * from './ad-sync-status';
 export * from './api-keys';
 export * from './inbound-messages';
 export * from './inbound-message-contacts';
+export * from './contact-summaries';
 export * from './webhook-subscriptions';
 export * from './ai-corrections';
 export * from './tenant-settings';

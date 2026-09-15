@@ -512,6 +512,13 @@
       "when": 1757930000000,
       "tag": "0072_inbound_message_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1757940000000,
+      "tag": "0073_contact_summaries",
+      "breakpoints": true
     }
   ]
 }

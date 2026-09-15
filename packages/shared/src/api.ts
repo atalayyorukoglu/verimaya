@@ -48,6 +48,8 @@ export const apiPaths = {
 	contacts: `${API_V1_PREFIX}/contacts`,
 	contact: (id: string) => `${API_V1_PREFIX}/contacts/${id}`,
 	contactFinanceSummary: (id: string) => `${API_V1_PREFIX}/contacts/${id}/finance-summary`,
+	contactSummary: (id: string) => `${API_V1_PREFIX}/contacts/${id}/summary`,
+	contactSummaryRefresh: (id: string) => `${API_V1_PREFIX}/contacts/${id}/summary/refresh`,
 	contactDataExport: (id: string) => `${API_V1_PREFIX}/contacts/${id}/data-export`,
 	contactDataDeletionRequest: (id: string) =>
 		`${API_V1_PREFIX}/contacts/${id}/data-deletion-request`,
@@ -280,6 +282,7 @@ import {
 	organizationSchema,
 	organizationUpdateSchema
 } from './contact.js';
+import { contactSummarySchema } from './contact-summary.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import {
 	operationAlertCreateSchema,
@@ -546,6 +549,12 @@ export const apiContract = {
 	},
 	'GET /v1/contacts/:id/finance-summary': {
 		response: contactFinanceSummarySchema
+	},
+	'GET /v1/contacts/:id/summary': {
+		response: contactSummarySchema
+	},
+	'POST /v1/contacts/:id/summary/refresh': {
+		response: contactSummarySchema
 	},
 	'GET /v1/contacts/:id/data-export': {
 		response: contactDataExportSchema
