@@ -36,6 +36,7 @@ export async function purgeTenantFixtures(sql: Sql, tenantIds: string[]): Promis
 			await tx`delete from audit_logs where tenant_id = ${tenantId}`;
 			await tx`delete from api_keys where tenant_id = ${tenantId}`;
 			await tx`delete from ai_corrections where tenant_id = ${tenantId}`;
+			await tx`delete from inbound_message_media where tenant_id = ${tenantId}`;
 			await tx`delete from inbound_message_contacts where tenant_id = ${tenantId}`;
 			await tx`delete from contact_summaries where tenant_id = ${tenantId}`;
 			await tx`delete from inbound_messages where tenant_id = ${tenantId}`;

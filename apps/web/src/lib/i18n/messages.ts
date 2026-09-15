@@ -2017,6 +2017,7 @@ const tr = {
 	'contacts.timeline.whatsappAttachment': 'ek var',
 	'contacts.timeline.whatsappMediaOnly':
 		'Görsel ya da dosya (metin yok) — az önceki mesajdan bu kişiye bağlandı',
+	'contacts.timeline.openAttachment': 'Eki aç',
 	'contacts.summary.title': 'Özet',
 	'contacts.summary.loading': 'Özet hazırlanıyor…',
 	'contacts.summary.empty': 'Özet çıkarılacak kayıt yok.',
@@ -5045,6 +5046,7 @@ const en: Record<MessageKey, string> = {
 	'contacts.timeline.whatsappAttachment': 'has attachment',
 	'contacts.timeline.whatsappMediaOnly':
 		'Image or file (no text) — linked to this person from the previous message',
+	'contacts.timeline.openAttachment': 'Open attachment',
 	'contacts.summary.title': 'Summary',
 	'contacts.summary.loading': 'Preparing summary…',
 	'contacts.summary.empty': 'Nothing to summarize yet.',

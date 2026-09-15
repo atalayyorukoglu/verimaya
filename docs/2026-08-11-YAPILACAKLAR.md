@@ -695,9 +695,18 @@ testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
   tek kümede. Mesaj iki kişiden bahsediyorsa ikisinin altında da görünür.
   **Görüş (2026-09-15):** yalnız panel; kümeler son mesaja göre sıralı, tıklayınca açılır,
   "Kişi sayfası" bağlantısı. Onay/yoksay satırı düşürünce kümeden de düşer.
-- [ ] **5. Geçmiş yükleme.** `docs/whatsapp/` dışa aktarımları (2022→, ~15.000 mesaj)
-  `inbound_messages`'a `export:` kimliğiyle; Muhasebe 1–12 Eylül parçası zaten yüklendi.
-  Kullanıcı onayı var (2026-09-15).
+- [x] **5. Geçmiş yükleme.** `docs/whatsapp/` dışa aktarımları (2022→) `inbound_messages`'a
+  `export:` kimliği ve `archived` durumuyla yüklendi (11.664 satır, 2026-09-15). Evrak ve
+  Dentgroup grupları hatta olmadığından sentetik sohbet kimliğiyle.
+- [x] **6. Ekler (WAHA-01'in Verimaya yarısı).** WAHA görseli zaten indiriyor ve webhook'ta
+  `media.url` + mesajın içinde `jpegThumbnail` veriyor. Relay dosyayı WAHA'dan alıp
+  `POST /v1/webhooks/waha/media`'ya imzalı (aynı kanon) base64 ile taşır; API
+  `inbound_message_media` (0075) + depo (R2/yerel); `GET /whatsapp/inbox/:id/media` akıtır.
+  Önizleme payload'daki thumbnail'den — ek indirilmemiş olsa bile görünür.
+  Kurulum: relay'e `WAHA_BASE_URL` + `WAHA_API_KEY`; ikisi yoksa ek iletimi kapalı, mesajlar
+  yine geçer. `main.ts` yalnız bu rotaya 36 MB gövde sınırı (genel 1 MB kapağı duruyor).
+  **Görüş (2026-09-15):** Ekin işleme iliştirilmesi (AI-13) ve modele okutulması (LEG-02)
+  hâlâ ayrı; burada yalnız kişinin akışında görünür ve açılır.
 
 **Kapatıldı (2026-09-15):** tarih ("15.09.26"), saat ve @bahsetme kimliği para
 ayrıştırıcısında tutar sanılıyordu; model de "18.200"ü 182 okuyordu. `tutar.ts` tek kural:

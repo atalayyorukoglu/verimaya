@@ -12,6 +12,7 @@ import { TransactionsModule } from '../transactions/transactions.module';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { InboundMessageProcessor } from './inbound-message.processor';
 import { MessageContactsService } from './message-contacts.service';
+import { InboundMediaService } from './inbound-media.service';
 import { DisclosingOutboundMessagePort } from './outbound/disclosing-outbound.port';
 import { OUTBOUND_MESSAGE_PORT } from './outbound/outbound.port';
 import { StubOutboundMessagePort } from './outbound/outbound.stub';
@@ -34,6 +35,7 @@ import { WhatsappService } from './whatsapp.service';
 		WhatsappService,
 		AiCorrectionsService,
 		MessageContactsService,
+		InboundMediaService,
 		InboundMessageProcessor,
 		StubOutboundMessagePort,
 		{
@@ -46,6 +48,6 @@ import { WhatsappService } from './whatsapp.service';
 			inject: [StubOutboundMessagePort, SettingsService, TenantContextService]
 		}
 	],
-	exports: [OUTBOUND_MESSAGE_PORT, WhatsappService, InboundMessageProcessor]
+	exports: [OUTBOUND_MESSAGE_PORT, WhatsappService, InboundMessageProcessor, InboundMediaService]
 })
 export class WhatsappModule {}

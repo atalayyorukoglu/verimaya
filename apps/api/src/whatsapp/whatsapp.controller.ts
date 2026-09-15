@@ -25,6 +25,7 @@ import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappService } from './whatsapp.service';
+import { InboundMediaService } from './inbound-media.service';
 
 @Controller('whatsapp')
 @UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
@@ -34,7 +35,8 @@ export class WhatsappController {
 		private readonly aiCorrectionsService: AiCorrectionsService,
 		private readonly contactsService: ContactsService,
 		private readonly settingsService: SettingsService,
-		private readonly idempotency: IdempotencyService
+		private readonly idempotency: IdempotencyService,
+		private readonly inboundMedia: InboundMediaService
 	) {}
 
 	@Post('parse')
@@ -72,6 +74,25 @@ export class WhatsappController {
 	)
 	processInbox(@Req() req: FastifyRequest) {
 		return this.whatsappService.processInbox(getActiveOrgId(req));
+	}
+
+	/** WAHA-01: mesajın ekini akıt (görsel/PDF). Tarayıcı blob'a alıp gösterir. */
+	@Get('inbox/:id/media')
+	@RequireOrgPermission('contact', 'read')
+	async inboxMedia(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Res() reply: FastifyReply
+	) {
+		const media = await this.inboundMedia.open(getActiveOrgId(req), id);
+		reply.header('Content-Type', media.mimeType);
+		reply.header(
+			'Content-Disposition',
+			`inline; filename="${media.filename.replace(/["\\]/g, '_')}"`
+		);
+		reply.header('X-Content-Type-Options', 'nosniff');
+		if (media.sizeBytes > 0) reply.header('Content-Length', String(media.sizeBytes));
+		return reply.send(media.stream);
 	}
 
 	@Post('inbox/link-contacts')

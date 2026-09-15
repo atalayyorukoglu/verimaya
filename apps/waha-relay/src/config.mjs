@@ -29,7 +29,9 @@ export function parseSessions(raw) {
 		throw new Error('RELAY_SESSIONS geçerli JSON değil');
 	}
 	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-		throw new Error('RELAY_SESSIONS bir nesne olmalı: {"oturum": {"tenantId": "...", "secret": "..."}}');
+		throw new Error(
+			'RELAY_SESSIONS bir nesne olmalı: {"oturum": {"tenantId": "...", "secret": "..."}}'
+		);
 	}
 	const sessions = new Map();
 	for (const [session, value] of Object.entries(parsed)) {
@@ -75,8 +77,27 @@ export function loadConfig(env = process.env) {
 		throw new Error('RELAY_ALLOWED_CHATS verildi ama hiç sohbet kimliği içermiyor');
 	}
 
+	/*
+	 * WAHA-01 — ek iletimi. WAHA medyayı kendi diskine indirip webhook'ta
+	 * `media.url` veriyor (`http://localhost:3000/api/files/…`). Relay o dosyayı
+	 * WAHA'dan (iç ağ adresi + API anahtarı) alıp Verimaya'ya imzalı gönderir.
+	 * İkisi de boşsa ek iletimi KAPALI: mesajlar yine geçer, yalnız "ek var" kalır.
+	 */
+	const wahaBaseUrl = env.WAHA_BASE_URL?.trim().replace(/\/$/, '') || null;
+	const wahaApiKey = env.WAHA_API_KEY?.trim() || null;
+	if ((wahaBaseUrl && !wahaApiKey) || (!wahaBaseUrl && wahaApiKey)) {
+		throw new Error('WAHA_BASE_URL ve WAHA_API_KEY birlikte verilmeli (ya ikisi ya hiçbiri)');
+	}
+	const mediaWebhookUrl =
+		env.VERIMAYA_MEDIA_WEBHOOK_URL?.trim() || `${parsedUrl.toString().replace(/\/$/, '')}/media`;
+
 	return {
 		port: Number(env.PORT?.trim() || 8080),
+		wahaBaseUrl,
+		wahaApiKey,
+		mediaWebhookUrl,
+		maxMediaBytes: Number(env.RELAY_MAX_MEDIA_BYTES?.trim() || 25 * 1024 * 1024),
+		mediaTimeoutMs: Number(env.RELAY_MEDIA_TIMEOUT_MS?.trim() || 20_000),
 		allowedChats,
 		webhookUrl: parsedUrl.toString(),
 		inboundToken: required('RELAY_INBOUND_TOKEN'),

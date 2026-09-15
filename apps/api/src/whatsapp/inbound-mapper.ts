@@ -37,8 +37,7 @@ function pickBoolean(source: Record<string, unknown> | null, keys: string[]): bo
 export function extractChatId(payload: Record<string, unknown>): string | null {
 	const inner = asRecord(payload.payload) ?? payload;
 	return (
-		pickString(inner, ['chatId', 'chat_id', 'from']) ??
-		pickString(payload, ['chatId', 'chat_id'])
+		pickString(inner, ['chatId', 'chat_id', 'from']) ?? pickString(payload, ['chatId', 'chat_id'])
 	);
 }
 
@@ -63,6 +62,24 @@ export function extractInboundDisplayFields(payload: Record<string, unknown>): {
 		has_media: pickBoolean(inner, ['hasMedia', 'has_media']),
 		media_path: pickString(inner, ['mediaPath', 'media_path', 'mediaUrl', 'media_url'])
 	};
+}
+
+/**
+ * WAHA-01: WhatsApp görsel/video/belge mesajıyla birlikte küçük bir JPEG önizleme
+ * gönderir (`_data.message.<tür>Message.jpegThumbnail`, base64). Ek indirilmemiş
+ * olsa bile var; arayüz "(boş mesaj)" yerine bunu gösterir. Data URL döner.
+ */
+export function extractMediaThumbnail(payload: Record<string, unknown>): string | null {
+	const inner = asRecord(payload.payload) ?? payload;
+	const message = asRecord(asRecord(inner._data)?.message);
+	if (!message) return null;
+	for (const key of ['imageMessage', 'videoMessage', 'documentMessage', 'stickerMessage']) {
+		const thumb = asRecord(message[key])?.jpegThumbnail;
+		if (typeof thumb === 'string' && thumb.length > 0 && thumb.length <= 150_000) {
+			return `data:image/jpeg;base64,${thumb}`;
+		}
+	}
+	return null;
 }
 
 export function extractWahaExternalId(
@@ -136,6 +153,9 @@ export function toInboundMessage(row: {
 		message_kind_signals: turler.isaretler,
 		// KISI-01: bağlar ayrı tabloda; liste düzeyinde tek sorguyla eklenir.
 		contacts: [],
+		// WAHA-01: ek künyesi ayrı tabloda (liste düzeyinde); önizleme payload'da.
+		media: null,
+		media_thumbnail: extractMediaThumbnail(payload),
 		created_at: row.createdAt.toISOString()
 	};
 }

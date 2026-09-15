@@ -7437,6 +7437,35 @@ paths:
                               - method
                             additionalProperties: false
                           default: &a4 []
+                        media:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            filename:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            mime_type:
+                              type: string
+                              maxLength: 120
+                            size_bytes:
+                              type: integer
+                              minimum: 0
+                          required:
+                            - id
+                            - filename
+                            - mime_type
+                            - size_bytes
+                          additionalProperties: false
+                          nullable: true
+                          default: null
+                        media_thumbnail:
+                          type: string
+                          maxLength: 200000
+                          nullable: true
+                          default: null
                         created_at:
                           type: string
                           format: date-time
@@ -7799,6 +7828,35 @@ paths:
                         - method
                       additionalProperties: false
                     default: *a4
+                  media:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      filename:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      mime_type:
+                        type: string
+                        maxLength: 120
+                      size_bytes:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - id
+                      - filename
+                      - mime_type
+                      - size_bytes
+                    additionalProperties: false
+                    nullable: true
+                    default: null
+                  media_thumbnail:
+                    type: string
+                    maxLength: 200000
+                    nullable: true
+                    default: null
                   created_at:
                     type: string
                     format: date-time
@@ -7863,6 +7921,20 @@ paths:
                   - processed
                   - linked
                 additionalProperties: false
+  /whatsapp/inbox/{id}/media:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /whatsapp/inbox/by-contact/{contactId}:
     get:
       responses:
@@ -8209,6 +8281,35 @@ paths:
                               - method
                             additionalProperties: false
                           default: *a4
+                        media:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            filename:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            mime_type:
+                              type: string
+                              maxLength: 120
+                            size_bytes:
+                              type: integer
+                              minimum: 0
+                          required:
+                            - id
+                            - filename
+                            - mime_type
+                            - size_bytes
+                          additionalProperties: false
+                          nullable: true
+                          default: null
+                        media_thumbnail:
+                          type: string
+                          maxLength: 200000
+                          nullable: true
+                          default: null
                         created_at:
                           type: string
                           format: date-time

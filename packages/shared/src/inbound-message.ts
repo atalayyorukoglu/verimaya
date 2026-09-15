@@ -159,6 +159,34 @@ export type InboundMessageLinkContactsResponse = z.infer<
 	typeof inboundMessageLinkContactsResponseSchema
 >;
 
+/** WAHA-01: mesajın eki — künye; baytlar `GET /whatsapp/inbox/:id/media`. */
+export const inboundMessageMediaSchema = z.object({
+	id: uuid,
+	filename: z.string().max(255).nullable(),
+	mime_type: z.string().max(120),
+	size_bytes: z.number().int().nonnegative()
+});
+export type InboundMessageMedia = z.infer<typeof inboundMessageMediaSchema>;
+
+/**
+ * WAHA-01: relay'in gönderdiği ek. `external_id` WAHA mesaj kimliği (inbound_messages
+ * satırıyla eşleşir), `data_base64` dosyanın kendisi. En fazla 25 MB (base64 öncesi).
+ */
+export const wahaMediaWebhookSchema = z.object({
+	external_id: z.string().min(1).max(512),
+	filename: z.string().max(255).nullable().optional(),
+	mimetype: z.string().min(3).max(120),
+	data_base64: z.string().min(1)
+});
+export type WahaMediaWebhook = z.infer<typeof wahaMediaWebhookSchema>;
+
+export const wahaMediaWebhookResponseSchema = z.object({
+	accepted: z.literal(true),
+	duplicate: z.boolean(),
+	inbound_message_id: uuid,
+	media_id: uuid
+});
+
 export const inboundMessageSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
@@ -193,6 +221,13 @@ export const inboundMessageSchema = z.object({
 	 * bulunamadı (kira, kredi taksidi gibi kişisiz mesajlar).
 	 */
 	contacts: z.array(inboundMessageContactRefSchema).default([]),
+	/** WAHA-01: ek geldiyse künyesi. */
+	media: inboundMessageMediaSchema.nullable().default(null),
+	/**
+	 * WhatsApp'ın mesajla birlikte gönderdiği küçük önizleme (data URL). Ek
+	 * indirilmemiş olsa bile var; "(boş mesaj)" yerine görseli gösterir.
+	 */
+	media_thumbnail: z.string().max(200_000).nullable().default(null),
 	created_at: isoDateTime
 });
 

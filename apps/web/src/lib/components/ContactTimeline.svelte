@@ -421,6 +421,25 @@
 		}
 	}
 
+	/** WAHA-01: mesaj ekini yeni sekmede aç (çerezli fetch → blob; <img src> çerez taşımaz). */
+	async function openWhatsappMedia(message: InboundMessage) {
+		if (!message.media) return;
+		error = null;
+		try {
+			const res = await fetch(resolveApiUrl(apiPaths.whatsappInboxMedia(message.id)), {
+				credentials: 'include'
+			});
+			if (!res.ok) {
+				throw new Error(t('contacts.files.downloadFailedStatus', { status: String(res.status) }));
+			}
+			const url = URL.createObjectURL(await res.blob());
+			window.open(url, '_blank', 'noopener');
+			setTimeout(() => URL.revokeObjectURL(url), 60_000);
+		} catch (err) {
+			error = err instanceof Error ? err.message : t('contacts.files.previewFailed');
+		}
+	}
+
 	async function previewFile(file: ContactFile) {
 		error = null;
 		try {
@@ -766,13 +785,53 @@
 											<p class={BUBBLE}>{transactionDetail(item.transaction)}</p>
 										{/if}
 									{:else if item.kind === 'whatsapp'}
-										<p
-											class="{BUBBLE} whitespace-pre-wrap {item.message.body
-												? ''
-												: 'text-text-faint'}"
-										>
-											{item.message.body || t('contacts.timeline.whatsappMediaOnly')}
-										</p>
+										{#if item.message.body}
+											<p class="{BUBBLE} whitespace-pre-wrap">{item.message.body}</p>
+										{/if}
+										<!--
+											WAHA-01: önizleme mesajın içinden (WhatsApp küçük JPEG gönderiyor),
+											tam dosya relay ile geldiyse tıklayınca açılır; gelmediyse yalnız önizleme.
+										-->
+										{#if item.message.media_thumbnail || item.message.media}
+											<div class="mt-1.5 flex items-center gap-2">
+												{#if item.message.media_thumbnail}
+													<button
+														type="button"
+														class="overflow-hidden rounded-md border border-border disabled:cursor-default"
+														disabled={!item.message.media}
+														aria-label={t('contacts.timeline.openAttachment')}
+														onclick={() => void openWhatsappMedia(item.message)}
+													>
+														<img
+															src={item.message.media_thumbnail}
+															alt=""
+															class="max-h-40 max-w-[240px] object-cover"
+														/>
+													</button>
+												{/if}
+												{#if item.message.media}
+													<button
+														type="button"
+														class="inline-flex items-center gap-1 rounded-[6px] border border-border bg-surface px-2 py-1 text-xs font-medium text-text-muted transition-colors hover:text-text"
+														onclick={() => void openWhatsappMedia(item.message)}
+													>
+														<Paperclip class="size-3.5" />
+														{t('contacts.timeline.openAttachment')}
+														{#if item.message.media.filename}
+															<span class="text-text-faint">· {item.message.media.filename}</span>
+														{/if}
+													</button>
+												{:else if !item.message.body}
+													<span class="text-xs text-text-faint"
+														>{t('contacts.timeline.whatsappMediaOnly')}</span
+													>
+												{/if}
+											</div>
+										{:else if !item.message.body}
+											<p class="{BUBBLE} text-text-faint">
+												{t('contacts.timeline.whatsappMediaOnly')}
+											</p>
+										{/if}
 									{:else}
 										<!--
 										Dosya eki ayrı kart. Mobilde üç ikon gizli: karta dokunmak önizlemeyi

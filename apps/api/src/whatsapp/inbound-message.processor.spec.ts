@@ -6,6 +6,7 @@ import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { MessageContactsService } from './message-contacts.service';
+import { InboundMediaService } from './inbound-media.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { OperationAlertsService } from '../operation-alerts/operation-alerts.service';
@@ -95,6 +96,7 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 			} as never,
 			new WhatsappChatsService(tenantContext),
 			new MessageContactsService(tenantContext),
+			new InboundMediaService(tenantContext, new LocalFileStorage()),
 			new HeuristicLlmClient()
 		);
 		const operationAlertsService = new OperationAlertsService(tenantContext);

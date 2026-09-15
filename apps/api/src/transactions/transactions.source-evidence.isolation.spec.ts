@@ -25,6 +25,7 @@ import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { MessageContactsService } from '../whatsapp/message-contacts.service';
+import { InboundMediaService } from '../whatsapp/inbound-media.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -193,6 +194,7 @@ describe('AI-09 kaynak izi — kalıcılık, sunucu sınırı, izolasyon', () =>
 			} as never,
 			new WhatsappChatsService(tenantContext),
 			new MessageContactsService(tenantContext),
+			new InboundMediaService(tenantContext, new LocalFileStorage()),
 			new HeuristicLlmClient()
 		);
 	});

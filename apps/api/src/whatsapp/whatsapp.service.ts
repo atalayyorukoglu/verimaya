@@ -18,6 +18,7 @@ import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
 import { MessageContactsService } from './message-contacts.service';
+import { InboundMediaService } from './inbound-media.service';
 import type { KisiAdayi } from './kisi-eslestir';
 import { buildKnowledgeContext } from '@verimaya/shared';
 import { type AuditActor } from '../common/audit-helper';
@@ -77,6 +78,7 @@ export class WhatsappService {
 		private readonly settings: SettingsService,
 		private readonly whatsappChats: WhatsappChatsService,
 		private readonly messageContacts: MessageContactsService,
+		private readonly inboundMedia: InboundMediaService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
@@ -132,14 +134,14 @@ export class WhatsappService {
 	 */
 	private async decorateWithDb(db: TenantDb, rows: InboundMessageRow[]): Promise<InboundMessage[]> {
 		const directory = await this.whatsappChats.directoryWithDb(db);
-		const links = await this.messageContacts.contactsForMessagesWithDb(
-			db,
-			rows.map((r) => r.id)
-		);
+		const ids = rows.map((r) => r.id);
+		const links = await this.messageContacts.contactsForMessagesWithDb(db, ids);
+		const media = await this.inboundMedia.forMessagesWithDb(db, ids);
 		return rows.map((row) => {
 			const message: InboundMessage = {
 				...toInboundMessage(row),
-				contacts: links.get(row.id) ?? []
+				contacts: links.get(row.id) ?? [],
+				media: media.get(row.id) ?? null
 			};
 			const entry = message.chat_id ? directory.get(message.chat_id) : undefined;
 			if (!entry) return message;

@@ -295,7 +295,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		group_id: null,
 		message_kinds: [],
 		message_kind_signals: [],
-		contacts: []
+		contacts: [],
+		media: null,
+		media_thumbnail: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -310,7 +312,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		group_id: null,
 		message_kinds: [],
 		message_kind_signals: [],
-		contacts: []
+		contacts: [],
+		media: null,
+		media_thumbnail: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -325,7 +329,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		group_id: null,
 		message_kinds: [],
 		message_kind_signals: [],
-		contacts: []
+		contacts: [],
+		media: null,
+		media_thumbnail: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -340,7 +346,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		group_id: null,
 		message_kinds: [],
 		message_kind_signals: [],
-		contacts: []
+		contacts: [],
+		media: null,
+		media_thumbnail: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -355,7 +363,9 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		group_id: null,
 		message_kinds: [],
 		message_kind_signals: [],
-		contacts: []
+		contacts: [],
+		media: null,
+		media_thumbnail: null
 	}
 ];
 

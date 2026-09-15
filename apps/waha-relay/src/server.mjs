@@ -71,6 +71,103 @@ export function isAllowedChat(payload, allowed) {
 	return allowed.has(from.trim());
 }
 
+/**
+ * WAHA-01 — ekin kendisini Verimaya'ya taşır.
+ *
+ * WAHA'nın verdiği adres WAHA'nın kendi bakış açısından (`localhost:3000`); iç ağda
+ * relay oraya `WAHA_BASE_URL` ile ulaşır, yolu aynen kullanır. Dosya bayt olarak
+ * alınır, base64 + künye JSON'a konur ve mesaj webhook'uyla AYNI kanonla imzalanır.
+ * Mesaj zaten kabul edildi; ek iletimi başarısız olursa yalnız loglanır — mesaj
+ * kaybolmaz, ek sonradan "Kişi bağlarını güncelle" gibi bir yolla değil, WAHA'nın
+ * yeniden denemesiyle gelir (o yüzden 5xx döndürmüyoruz, WAHA mesajı tekrarlar).
+ */
+export async function forwardMedia(payload, mapping, config, fetchImpl = fetch) {
+	const inner = payload?.payload;
+	const mediaUrl = inner?.media?.url;
+	const externalId = inner?.id;
+	if (!config.wahaBaseUrl || !config.wahaApiKey) return { skipped: 'media_disabled' };
+	if (typeof mediaUrl !== 'string' || !mediaUrl || typeof externalId !== 'string') {
+		return { skipped: 'no_media_url' };
+	}
+
+	let source;
+	try {
+		const original = new URL(mediaUrl);
+		source = `${config.wahaBaseUrl}${original.pathname}${original.search}`;
+	} catch {
+		return { skipped: 'invalid_media_url' };
+	}
+
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), config.mediaTimeoutMs);
+	try {
+		const download = await fetchImpl(source, {
+			headers: { 'x-api-key': config.wahaApiKey },
+			signal: controller.signal
+		});
+		if (!download.ok) {
+			log({ event: 'media_download_failed', status: download.status });
+			return { skipped: `download_${download.status}` };
+		}
+		const bytes = Buffer.from(await download.arrayBuffer());
+		if (bytes.length === 0 || bytes.length > config.maxMediaBytes) {
+			log({
+				event: 'media_skipped',
+				reason: bytes.length === 0 ? 'empty' : 'too_large',
+				bytes: bytes.length
+			});
+			return { skipped: bytes.length === 0 ? 'empty' : 'too_large' };
+		}
+
+		const mimetype =
+			(typeof inner.media?.mimetype === 'string' && inner.media.mimetype) ||
+			download.headers?.get?.('content-type') ||
+			'application/octet-stream';
+		const filename =
+			(typeof inner.media?.filename === 'string' && inner.media.filename) ||
+			decodeURIComponent(new URL(source).pathname.split('/').pop() || '') ||
+			null;
+		const body = JSON.stringify({
+			external_id: externalId,
+			filename,
+			mimetype,
+			data_base64: bytes.toString('base64')
+		});
+		const timestamp = Math.floor(Date.now() / 1000);
+		const signature = signWebhookPayload(
+			timestamp,
+			PROVIDER,
+			mapping.tenantId,
+			body,
+			mapping.secret
+		);
+		const upstream = await fetchImpl(config.mediaWebhookUrl, {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				'x-tenant-id': mapping.tenantId,
+				'x-webhook-timestamp': String(timestamp),
+				'x-webhook-signature': signature
+			},
+			body,
+			signal: controller.signal
+		});
+		log({
+			event: 'media_forwarded',
+			tenantId: mapping.tenantId,
+			status: upstream.status,
+			bytes: bytes.length
+		});
+		return { status: upstream.status, bytes: bytes.length };
+	} catch (error) {
+		const aborted = error instanceof Error && error.name === 'AbortError';
+		log({ event: 'media_forward_failed', reason: aborted ? 'timeout' : 'network_error' });
+		return { skipped: aborted ? 'timeout' : 'network_error' };
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
 export async function handleRequest(req, res, config, fetchImpl = fetch) {
 	if (req.method === 'GET' && req.url === '/healthz') {
 		send(res, 200, { ok: true });
@@ -155,9 +252,14 @@ export async function handleRequest(req, res, config, fetchImpl = fetch) {
 			tenantId: mapping.tenantId,
 			status: upstream.status
 		});
+		// Mesaj kabul edildiyse ve ek varsa ekin kendisi de gider (WAHA-01).
+		let media;
+		if (upstream.status >= 200 && upstream.status < 300 && payload?.payload?.hasMedia === true) {
+			media = await forwardMedia(payload, mapping, config, fetchImpl);
+		}
 		// Yukarıdan gelen durumu aynen döndürüyoruz ki WAHA kendi yeniden deneme
 		// mantığını doğru çalıştırsın (401/4xx'te tekrar denemesin, 5xx'te denesin).
-		send(res, upstream.status, { forwarded: true, status: upstream.status });
+		send(res, upstream.status, { forwarded: true, status: upstream.status, media });
 	} catch (error) {
 		const aborted = error instanceof Error && error.name === 'AbortError';
 		log({

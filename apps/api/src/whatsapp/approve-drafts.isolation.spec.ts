@@ -14,6 +14,7 @@ import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { MessageContactsService } from './message-contacts.service';
+import { InboundMediaService } from './inbound-media.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -104,6 +105,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			} as never,
 			new WhatsappChatsService(tenantContext),
 			new MessageContactsService(tenantContext),
+			new InboundMediaService(tenantContext, new LocalFileStorage()),
 			new HeuristicLlmClient()
 		);
 	});

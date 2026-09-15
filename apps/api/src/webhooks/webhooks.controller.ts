@@ -1,12 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import {
-	BadRequestException,
-	Controller,
-	HttpCode,
-	Param,
-	Post,
-	Req
-} from '@nestjs/common';
+import { BadRequestException, Controller, HttpCode, Param, Post, Req } from '@nestjs/common';
 import { and, eq, sql as drizzleSql } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
 import { IdempotencyExempt } from '../common/idempotent.decorator';
@@ -18,6 +11,8 @@ import { DEFAULT_QUEUE_NAME, QueueService } from '../queue/queue.service';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { extractWahaExternalId } from '../whatsapp/inbound-mapper';
+import { InboundMediaService } from '../whatsapp/inbound-media.service';
+import { wahaMediaWebhookSchema } from '@verimaya/shared';
 import { extractRawBody, type WebhookRequestWithRawBody } from './webhooks.signature';
 import {
 	resolveTenantFromWebhook,
@@ -145,7 +140,8 @@ export class WebhooksController {
 	constructor(
 		private readonly db: DbService,
 		private readonly tenantContext: TenantContextService,
-		private readonly queue: QueueService
+		private readonly queue: QueueService,
+		private readonly inboundMedia: InboundMediaService
 	) {}
 
 	@Post('waha')
@@ -157,6 +153,43 @@ export class WebhooksController {
 		}
 		const { kind, ...waha } = result;
 		return wahaResponse(waha);
+	}
+
+	/**
+	 * WAHA-01: mesajın eki. Relay, mesaj webhook'u 2xx aldıktan sonra WAHA'dan
+	 * dosyayı indirip buraya base64 ile getirir; imza kanonu mesajınkiyle aynı.
+	 * Gövde 1 MB genel sınırının üstünde olabilir — `main.ts` bu rotaya özel
+	 * daha geniş `bodyLimit` verir.
+	 */
+	@Post('waha/media')
+	@HttpCode(202)
+	async ingestWahaMedia(@Req() request: FastifyRequest) {
+		const rawBody = extractRawBody(request as WebhookRequestWithRawBody);
+		const resolved = await resolveTenantFromWebhook({
+			db: this.db,
+			provider: 'waha',
+			rawBody,
+			signatureHeader: signatureHeaderValue(request),
+			timestampHeader: timestampHeaderValue(request),
+			claimedTenantId: tenantHeaderValue(request)
+		});
+		const parsed = wahaMediaWebhookSchema.safeParse(parseJsonPayload(rawBody));
+		if (!parsed.success) {
+			throw new BadRequestException('Invalid media payload');
+		}
+		const buf = Buffer.from(parsed.data.data_base64, 'base64');
+		const result = await this.inboundMedia.store(resolved.tenantId, {
+			externalId: parsed.data.external_id,
+			mimetype: parsed.data.mimetype,
+			filename: parsed.data.filename ?? null,
+			buf
+		});
+		return {
+			accepted: true as const,
+			duplicate: result.duplicate,
+			inbound_message_id: result.inboundMessageId,
+			media_id: result.mediaId
+		};
 	}
 
 	@Post(':provider')

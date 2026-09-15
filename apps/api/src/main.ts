@@ -98,9 +98,7 @@ async function mountBetterAuth(app: NestFastifyApplication) {
 			};
 			if (hasBody) {
 				init.body =
-					typeof request.body === 'string'
-						? request.body
-						: JSON.stringify(request.body ?? {});
+					typeof request.body === 'string' ? request.body : JSON.stringify(request.body ?? {});
 				if (!headers.has('content-type')) {
 					headers.set('content-type', 'application/json');
 				}
@@ -255,6 +253,17 @@ async function bootstrap() {
 
 	app.setGlobalPrefix('v1');
 	registerWebhookRawBodyHook(app);
+	// WAHA-01: ek webhook'u base64 gövde taşır (25 MB dosya ≈ 34 MB JSON). Genel
+	// 1 MB kapağı (AUDIT-03) yerinde kalır; yalnız bu rota geniş. İmza doğrulaması
+	// gövde okunduktan sonra çalışır, o yüzden sınır yine var: 36 MB.
+	app
+		.getHttpAdapter()
+		.getInstance()
+		.addHook('onRoute', (routeOptions) => {
+			if (routeOptions.url === '/v1/webhooks/waha/media' && routeOptions.method === 'POST') {
+				routeOptions.bodyLimit = 36 * 1024 * 1024;
+			}
+		});
 	await mountBetterAuth(app);
 
 	// AUDIT-03: production mounts docs only when API_DOCS_TOKEN is set.

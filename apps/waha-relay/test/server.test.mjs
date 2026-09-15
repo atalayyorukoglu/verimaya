@@ -172,10 +172,7 @@ test('RELAY_SESSIONS doğrulaması kötü değerleri reddeder', () => {
 	assert.throws(() => parseSessions('[]'), /nesne olmalı/);
 	assert.throws(() => parseSessions('{}'), /boş/);
 	assert.throws(() => parseSessions('{"a":{"tenantId":"x","secret":"s"}}'), /uuid değil/);
-	assert.throws(
-		() => parseSessions(`{"a":{"tenantId":"${TENANT_A}","secret":""}}`),
-		/secret boş/
-	);
+	assert.throws(() => parseSessions(`{"a":{"tenantId":"${TENANT_A}","secret":""}}`), /secret boş/);
 	const ok = parseSessions(`{"a":{"tenantId":"${TENANT_A}","secret":"s"}}`);
 	assert.equal(ok.get('a').tenantId, TENANT_A);
 });
@@ -221,4 +218,94 @@ test('sohbet filtresi: izinli olmayan sohbet iletilmez', async () => {
 	);
 	assert.equal(grupRes.statusCode, 202);
 	assert.equal(forwarded, 1, 'grup mesajı iletilmeliydi');
+});
+
+test('WAHA-01: ekli mesajda dosya WAHA’dan alınıp imzalı olarak ek ucuna gider', async () => {
+	const config = {
+		...CONFIG,
+		wahaBaseUrl: 'http://waha:3000',
+		wahaApiKey: 'waha-key',
+		mediaWebhookUrl: 'https://api.example.test/v1/webhooks/waha/media',
+		maxMediaBytes: 1024 * 1024,
+		mediaTimeoutMs: 1000
+	};
+	const calls = [];
+	const fetchImpl = async (url, init = {}) => {
+		calls.push({ url, init });
+		if (url === 'http://waha:3000/api/files/default/ABC.jpeg') {
+			return {
+				ok: true,
+				status: 200,
+				headers: { get: () => 'image/jpeg' },
+				arrayBuffer: async () => Uint8Array.from(Buffer.from('jpegbytes')).buffer
+			};
+		}
+		return { ok: true, status: 202, text: async () => '{}' };
+	};
+	const res = fakeResponse();
+	await handleRequest(
+		fakeRequest({
+			headers: { 'x-webhook-token': 'inbound-token' },
+			body: JSON.stringify({
+				session: 'default',
+				payload: {
+					id: 'false_1@g.us_ABC',
+					from: '120363143271144447@g.us',
+					body: null,
+					hasMedia: true,
+					media: {
+						url: 'http://localhost:3000/api/files/default/ABC.jpeg',
+						mimetype: 'image/jpeg',
+						filename: null
+					}
+				}
+			})
+		}),
+		res,
+		config,
+		fetchImpl
+	);
+	assert.equal(res.statusCode, 202);
+	assert.equal(calls.length, 3, 'mesaj + WAHA indirme + ek ucu');
+	// WAHA adresi iç ağa çevrildi, API anahtarı gitti.
+	assert.equal(calls[1].url, 'http://waha:3000/api/files/default/ABC.jpeg');
+	assert.equal(calls[1].init.headers['x-api-key'], 'waha-key');
+	// Ek ucu imzalı ve base64 gövdeli.
+	assert.equal(calls[2].url, config.mediaWebhookUrl);
+	assert.equal(calls[2].init.headers['x-tenant-id'], TENANT_A);
+	assert.match(calls[2].init.headers['x-webhook-signature'], /^v1=[0-9a-f]{64}$/);
+	const sent = JSON.parse(calls[2].init.body);
+	assert.equal(sent.external_id, 'false_1@g.us_ABC');
+	assert.equal(sent.mimetype, 'image/jpeg');
+	assert.equal(sent.filename, 'ABC.jpeg');
+	assert.equal(Buffer.from(sent.data_base64, 'base64').toString(), 'jpegbytes');
+});
+
+test('WAHA-01: WAHA_BASE_URL yoksa ek iletimi kapalı, mesaj yine geçer', async () => {
+	let calls = 0;
+	const fetchImpl = async () => {
+		calls += 1;
+		return { ok: true, status: 202, text: async () => '{}' };
+	};
+	const res = fakeResponse();
+	await handleRequest(
+		fakeRequest({
+			headers: { 'x-webhook-token': 'inbound-token' },
+			body: JSON.stringify({
+				session: 'default',
+				payload: {
+					id: 'x',
+					from: '1@g.us',
+					body: null,
+					hasMedia: true,
+					media: { url: 'http://localhost:3000/api/files/default/x.jpeg' }
+				}
+			})
+		}),
+		res,
+		{ ...CONFIG, wahaBaseUrl: null, wahaApiKey: null },
+		fetchImpl
+	);
+	assert.equal(res.statusCode, 202);
+	assert.equal(calls, 1, 'yalnız mesaj iletilmeli');
 });
