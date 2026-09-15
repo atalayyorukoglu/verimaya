@@ -34,6 +34,7 @@
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, listUrl, resolveApiUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { openInboundMedia } from '$lib/whatsapp/media';
 	import {
 		formatBytes,
 		formatDateTime,
@@ -421,20 +422,11 @@
 		}
 	}
 
-	/** WAHA-01: mesaj ekini yeni sekmede aç (çerezli fetch → blob; <img src> çerez taşımaz). */
+	/** WAHA-01: ek (tam dosya ya da yalnız önizleme) yeni sekmede. */
 	async function openWhatsappMedia(message: InboundMessage) {
-		if (!message.media) return;
 		error = null;
 		try {
-			const res = await fetch(resolveApiUrl(apiPaths.whatsappInboxMedia(message.id)), {
-				credentials: 'include'
-			});
-			if (!res.ok) {
-				throw new Error(t('contacts.files.downloadFailedStatus', { status: String(res.status) }));
-			}
-			const url = URL.createObjectURL(await res.blob());
-			window.open(url, '_blank', 'noopener');
-			setTimeout(() => URL.revokeObjectURL(url), 60_000);
+			await openInboundMedia(message);
 		} catch (err) {
 			error = err instanceof Error ? err.message : t('contacts.files.previewFailed');
 		}
@@ -797,9 +789,11 @@
 												{#if item.message.media_thumbnail}
 													<button
 														type="button"
-														class="overflow-hidden rounded-md border border-border disabled:cursor-default"
-														disabled={!item.message.media}
+														class="overflow-hidden rounded-md border border-border"
 														aria-label={t('contacts.timeline.openAttachment')}
+														title={item.message.media
+															? t('contacts.timeline.openAttachment')
+															: t('contacts.timeline.previewOnly')}
 														onclick={() => void openWhatsappMedia(item.message)}
 													>
 														<img

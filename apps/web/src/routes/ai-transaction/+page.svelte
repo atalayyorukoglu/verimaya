@@ -20,6 +20,7 @@
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { fetchAllInbox } from '$lib/whatsapp/inbox';
+	import { openInboundMedia } from '$lib/whatsapp/media';
 	import { formatDateTime } from '$lib/format';
 	import { locateEvidenceQuote } from '$lib/finance/evidence-highlight';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -756,11 +757,16 @@
 					</div>
 					<p class="mt-1 line-clamp-2 text-sm text-text">{previewBody(item)}</p>
 					{#if item.media_thumbnail}
-						<img
-							src={item.media_thumbnail}
-							alt=""
-							class="mt-1 max-h-24 rounded-md border border-border object-cover"
-						/>
+						<button
+							type="button"
+							class="mt-1 overflow-hidden rounded-md border border-border"
+							title={item.media
+								? t('contacts.timeline.openAttachment')
+								: t('contacts.timeline.previewOnly')}
+							onclick={() => void openInboundMedia(item)}
+						>
+							<img src={item.media_thumbnail} alt="" class="max-h-24 object-cover" />
+						</button>
 					{/if}
 					{#if item.contact_hint && item.contacts.length === 0}
 						{#if newContactFor === item.id}
