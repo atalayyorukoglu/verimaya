@@ -33,9 +33,8 @@ export class InboundMessageProcessor {
 	) {}
 
 	async process(jobId: string, tenantId: string): Promise<void> {
-		const { inboundMessageId, messageBody, turler } = await this.tenantContext.withTenant(
-			tenantId,
-			async ({ db }) => {
+		const { inboundMessageId, messageBody, turler, okunmasin } =
+			await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 				const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
 				if (!job) {
 					throw new Error(`Job ${jobId} not found`);
@@ -64,16 +63,31 @@ export class InboundMessageProcessor {
 				// Grubun görevi: `ignore` ise hiç işlenmez, diğerlerinde tür kararına girer.
 				const directory = await this.whatsappChats.directoryWithDb(db);
 				const purpose = (display.chat_id ? directory.get(display.chat_id)?.purpose : undefined) as
-					| WhatsappChatPurpose
-					| undefined;
+					WhatsappChatPurpose | undefined;
 
 				return {
 					inboundMessageId: payload.inboundMessageId,
 					messageBody: display.body,
-					turler: turleriBul(display.body, purpose ?? 'mixed').turler
+					turler: turleriBul(display.body, purpose ?? 'mixed').turler,
+					okunmasin: purpose === 'ignore'
 				};
-			}
-		);
+			});
+
+		/*
+		 * "Okunmayacak grup": ne para ayrıştırıcısı ne randevu ajanı çalışır; satır
+		 * kuyruğa düşmeden `ignored` olur. Eskiden görev yalnız rozeti boşaltıyordu,
+		 * ikisi de yine koşuyordu (2026-09-15) — ayarın adı ile yaptığı örtüşmüyordu.
+		 * Kişi bağı yine kurulur: kural tabanlı, modele gitmez; Kişi Akışı'nda
+		 * "bu grupta da adı geçti" bilgisi kaybolmasın.
+		 */
+		if (okunmasin) {
+			await this.whatsappService.markIgnoredAndLink(tenantId, inboundMessageId);
+			await this.completeJob(tenantId, jobId);
+			this.logger.debug(
+				`inbound_message.process job=${jobId} message=${inboundMessageId} outcome=ignored-by-chat-purpose`
+			);
+			return;
+		}
 
 		const outcome = await this.whatsappService.processInboundMessage(tenantId, inboundMessageId);
 		this.logger.debug(
@@ -99,6 +113,10 @@ export class InboundMessageProcessor {
 			}
 		}
 
+		await this.completeJob(tenantId, jobId);
+	}
+
+	private async completeJob(tenantId: string, jobId: string): Promise<void> {
 		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const now = new Date();
 			await db

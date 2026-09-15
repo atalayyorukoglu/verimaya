@@ -111,10 +111,9 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 			recordSuggestionsService,
 			new WhatsappChatsService(tenantContext)
 		);
-		integrationEventProcessor = new IntegrationEventProcessor(
-			tenantContext,
-			{ processInboundEvent: async () => ({ kind: 'noop' }) } as never
-		);
+		integrationEventProcessor = new IntegrationEventProcessor(tenantContext, {
+			processInboundEvent: async () => ({ kind: 'noop' })
+		} as never);
 	});
 
 	afterAll(async () => {
@@ -222,6 +221,65 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 		const payload = msg?.payload as { parsed_records?: unknown[] };
 		expect(Array.isArray(payload.parsed_records)).toBe(true);
 		expect((payload.parsed_records ?? []).length).toBeGreaterThan(0);
+
+		const [job] = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`select status from jobs where id = ${jobId}::uuid`;
+		});
+		expect(job?.status).toBe('completed');
+	});
+
+	it('"okunmayacak grup": ayrıştırma yok, satır ignored, job completed', async () => {
+		const chatId = `1203630000${Date.now()}@g.us`;
+		const messageId = randomUUID();
+		const jobId = randomUUID();
+		const { sql } = getDb(databaseUrl);
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			await tx`
+				insert into whatsapp_chats (tenant_id, chat_id, name, purpose)
+				values (${tenantId}::uuid, ${chatId}, 'Özel sohbet', 'ignore')
+			`;
+			await tx`
+				insert into inbound_messages (id, tenant_id, provider, external_id, payload, status)
+				values (
+					${messageId}::uuid,
+					${tenantId}::uuid,
+					'waha',
+					${`ext-${messageId.slice(0, 8)}`},
+					${JSON.stringify({
+						event: 'message',
+						payload: {
+							id: `ext-${messageId.slice(0, 8)}`,
+							from: chatId,
+							body: 'Sandra 2900 GBP ödeme alındı'
+						}
+					})}::jsonb,
+					'new'
+				)
+			`;
+			await tx`
+				insert into jobs (id, tenant_id, queue, job_type, payload, status)
+				values (
+					${jobId}::uuid,
+					${tenantId}::uuid,
+					${DEFAULT_QUEUE_NAME},
+					${INBOUND_MESSAGE_PROCESS_JOB_TYPE},
+					${JSON.stringify({ inboundMessageId: messageId })}::jsonb,
+					'pending'
+				)
+			`;
+		});
+
+		await processor.process(jobId, tenantId);
+
+		const [msg] = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`select status, payload from inbound_messages where id = ${messageId}::uuid`;
+		});
+		expect(msg?.status).toBe('ignored');
+		// Para ayrıştırıcısı hiç koşmadı: taslak yok.
+		expect((msg?.payload as { parsed_records?: unknown }).parsed_records).toBeUndefined();
 
 		const [job] = await sql.begin(async (tx) => {
 			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;

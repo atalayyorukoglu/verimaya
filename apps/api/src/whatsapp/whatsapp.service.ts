@@ -451,6 +451,28 @@ export class WhatsappService {
 	}
 
 	/**
+	 * "Okunmayacak grup"tan gelen mesaj: ayrıştırma yok, satır `ignored`; yalnız
+	 * kişi bağı kurulur (kural tabanlı, modele gitmez). Zaten işlenmiş satıra dokunmaz.
+	 */
+	async markIgnoredAndLink(tenantId: string, inboundMessageId: string): Promise<void> {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const row = await this.findRow(db, inboundMessageId);
+			if (row.status === 'new') {
+				await db
+					.update(inboundMessages)
+					.set({ status: 'ignored' })
+					.where(eq(inboundMessages.id, row.id));
+			}
+			await this.linkContactsSafely(
+				db,
+				tenantId,
+				row,
+				await this.messageContacts.directoryWithDb(db)
+			);
+		});
+	}
+
+	/**
 	 * Shared parse path for a `new` row. Media-only → parsed with error text (worker must complete).
 	 */
 	private async processNewInboundRow(
