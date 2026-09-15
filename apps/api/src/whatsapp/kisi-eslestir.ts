@@ -6,13 +6,19 @@ import { sadelestir } from './mesaj-turu';
  * KURAL TABANLI, MODEL YOK — `mesaj-turu.ts` ile aynı gerekçe: her mesajda
  * çalışır, yanılınca neden yanıldığı görülür, kural düzelince geçmiş de düzelir.
  *
- * Üç ders `scripts/ops/whatsapp-cikar.mjs` ölçümünden:
+ * Dersler (`scripts/ops/whatsapp-cikar.mjs` ölçümü + 2026-09-15 canlı ölçüm,
+ * 11.777 mesaj):
  *  1. Ekip ad çekimli yazıyor: "Stephen McLeoda", "Karen O'Donnellden",
  *     "Aynur Tasman icin". Tam kelime eşleşmesi çoğunu kaçırır → ÖNEK eşleşmesi.
- *  2. Soyad tek başına ad'dan daha ayırt edici ("Tasman" tek kişi; "Aynur" değil).
- *     Ama yalnız kiracıda o soyadlı TEK kişi varsa güvenilir.
- *  3. Otel/klinik/personel adı hasta sanılmasın: tür bilgisi taşınır; tek kelimelik
- *     görünen ad yalnız kurumlarda (TNC, Dumos) kabul edilir, hastada değil.
+ *  2. Kayıttaki soyad alanı güvenilmez: Tracker'dan gelen kişilerde "Sarah Jennifer",
+ *     "Francesca Karen", "Taksi Ücreti" gibi satırlar var; soyad tek başına
+ *     eşleştirilince 2.000 bağın çoğu yanlış çıktı ("Jennifer Severino" → Sarah
+ *     Jennifer). Tek-soyad kuralı bu yüzden YOK; ad + soyad ikisi de aranır.
+ *  3. Kişi türü de güvenilmez ("Taksi Ücreti" Hasta). Ad+soyad kuralı yine de
+ *     yalnız kişi türlerinde (Hasta, Personel) çalışır; kurum adları (otel, klinik,
+ *     banka) ancak AYNEN geçerse bağlanır — "Yapı Kredi bankası" mesajı "Banka -
+ *     İş Bankası"ne bağlanmasın.
+ *  4. Çok kelimeli soyad ("Jane Carter") — herhangi bir kelimesi yeter, sondaki önce.
  */
 export type KisiAdayi = {
 	id: string;
@@ -23,7 +29,7 @@ export type KisiAdayi = {
 	isInternal: boolean;
 };
 
-export type EslesmeYontemi = 'exact' | 'name' | 'surname';
+export type EslesmeYontemi = 'exact' | 'name';
 
 export type KisiEslesme = {
 	contactId: string;
@@ -31,11 +37,10 @@ export type KisiEslesme = {
 	matchedText: string;
 };
 
-const YONTEM_SIRASI: Record<EslesmeYontemi, number> = {
-	exact: 0,
-	name: 1,
-	surname: 2
-};
+const YONTEM_SIRASI: Record<EslesmeYontemi, number> = { exact: 0, name: 1 };
+
+/** Ad+soyad kuralının çalıştığı türler; gerisi kurum sayılır. */
+const KISI_TURLERI = new Set(['hasta', 'personel']);
 
 /** Kesme işaretini birleştir ("O'Donnell" → "odonnell"), kalan noktalamayı boşluğa çevir. */
 export function kelimeler(metin: string): string[] {
@@ -76,8 +81,8 @@ function herhangiYerdeGeciyor(aranan: string, metin: string[]): string | null {
 	return null;
 }
 
-function hastaMi(a: KisiAdayi): boolean {
-	return sadelestir(a.contactTypeName) === 'hasta';
+function kisiMi(a: KisiAdayi): boolean {
+	return KISI_TURLERI.has(sadelestir(a.contactTypeName));
 }
 
 /** Ad/soyad kelimeleri: alanlar doluysa onlardan, yoksa görünen addan türetilir. */
@@ -95,14 +100,6 @@ export function kisiBul(body: string | null | undefined, adaylar: KisiAdayi[]): 
 	const metin = kelimeler(body);
 	if (metin.length === 0) return [];
 
-	// Soyad tek başına ancak kiracıda o soyadlı tek kişi varsa güvenilir.
-	const soyadSayisi = new Map<string, number>();
-	for (const a of adaylar) {
-		const { soyad } = adSoyad(a);
-		const anahtar = soyad.join(' ');
-		if (anahtar) soyadSayisi.set(anahtar, (soyadSayisi.get(anahtar) ?? 0) + 1);
-	}
-
 	const sonuc = new Map<string, KisiEslesme>();
 	const kaydet = (e: KisiEslesme) => {
 		const eski = sonuc.get(e.contactId);
@@ -112,35 +109,31 @@ export function kisiBul(body: string | null | undefined, adaylar: KisiAdayi[]): 
 	for (const a of adaylar) {
 		const gorunen = kelimeler(a.displayName);
 		if (gorunen.length === 0) continue;
-		const hasta = hastaMi(a);
+		const kisi = kisiMi(a);
 
 		// 1) Görünen ad aynen (tek kelimelik ad yalnız kurumlarda: "TNC", "Dumos").
-		if (gorunen.length >= 2 || (!hasta && gorunen[0].length >= 3)) {
+		if (gorunen.length >= 2 || (!kisi && gorunen[0].length >= 3)) {
 			const parca = ardArdaGeciyor(gorunen, metin);
 			if (parca) {
 				kaydet({ contactId: a.id, method: 'exact', matchedText: parca });
 				continue;
 			}
 		}
+		if (!kisi) continue;
 
+		// 2) Ad ve soyad ikisi de geçiyor, sıra/yer serbest ("Aynur hnm ... Tasman",
+		//    "Tracey Carter" ↔ soyad "Jane Carter").
 		const { ad, soyad } = adSoyad(a);
 		if (ad.length === 0 || soyad.length === 0) continue;
-
-		// 2) Ad ve soyad ikisi de geçiyor, sıra/yer serbest ("Aynur hnm ... Tasman").
-		const adParca = ad.length > 0 && ad[0].length >= 3 ? herhangiYerdeGeciyor(ad[0], metin) : null;
-		const soyadParca = soyad[0].length >= 3 ? herhangiYerdeGeciyor(soyad[0], metin) : null;
-		if (adParca && soyadParca) {
-			kaydet({
-				contactId: a.id,
-				method: 'name',
-				matchedText: `${adParca} ${soyadParca}`
-			});
-			continue;
-		}
-
-		// 3) Yalnız soyad — ≥ 5 harf, kiracıda tek, ve kişi hasta.
-		if (hasta && soyadParca && soyad[0].length >= 5 && soyadSayisi.get(soyad.join(' ')) === 1) {
-			kaydet({ contactId: a.id, method: 'surname', matchedText: soyadParca });
+		const adParca = ad[0].length >= 3 ? herhangiYerdeGeciyor(ad[0], metin) : null;
+		if (!adParca) continue;
+		for (const s of [...soyad].reverse()) {
+			if (s.length < 3) continue;
+			const soyadParca = herhangiYerdeGeciyor(s, metin);
+			if (soyadParca) {
+				kaydet({ contactId: a.id, method: 'name', matchedText: `${adParca} ${soyadParca}` });
+				break;
+			}
 		}
 	}
 

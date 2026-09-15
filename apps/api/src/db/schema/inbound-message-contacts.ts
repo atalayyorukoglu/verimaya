@@ -10,7 +10,7 @@ import { tenants } from './tenants';
  * fark etmez) buraya bağlanır. `method` bağı hangi kuralın kurduğunu söyler:
  *   exact   — görünen ad metinde aynen geçiyor
  *   name    — ad ve soyad ikisi de geçiyor (ek almış hâli dahil: "McLeoda")
- *   surname — yalnız soyad geçiyor ve kiracıda o soyadlı tek kişi var
+ *   surname — yalnız soyad (KAPALI: kayıttaki soyad alanı güvenilmez çıktı, 2026-09-15)
  *   model   — LLM bağladı (henüz kullanılmıyor)
  *   manual  — kullanıcı bağladı / düzeltti
  */

@@ -24,11 +24,15 @@ const adaylar: KisiAdayi[] = [
 	hasta('stephen', 'Stephen', 'McLeod'),
 	hasta('karen', 'Karen', "O'Donnell"),
 	hasta('aynur', 'Aynur', 'Taşman'),
-	hasta('tracey', 'Tracey Jane', 'Carter'),
+	hasta('tracey', 'Tracey', 'Jane Carter'),
 	hasta('ali', 'Ali', 'Can'),
+	// Tracker'dan gelen bozuk satırlar — soyad alanı aslında ad, tür yanlış.
+	hasta('sarah', 'Sarah', 'Jennifer'),
+	hasta('taksi', 'Taksi', 'Ücreti'),
 	kurum('tnc', 'TNC', 'Klinik'),
 	kurum('dumos', 'Dumos', 'Otel'),
 	kurum('self', 'Self', 'Otel'),
+	kurum('isbank', 'Banka - İş Bankası', 'Banka'),
 	{
 		id: 'gulcin',
 		displayName: 'Gülçin Özer',
@@ -92,29 +96,34 @@ describe('kisiBul — ad + soyad ayrı yerlerde', () => {
 		expect(e).toMatchObject({ contactId: 'aynur', method: 'name' });
 	});
 
-	it('çok kelimeli adın ilk kelimesi yeter', () => {
-		expect(idler('Tracey icin Carter ailesi Aska Lara.')).toEqual(['tracey']);
+	it('çok kelimeli soyadın herhangi bir kelimesi yeter ("Jane Carter" ↔ "Tracey Carter")', () => {
+		expect(idler('Tracey Carter, alt çenesine 9 kron yapılacak.')).toEqual(['tracey']);
+	});
+
+	it('personel de bağlanır — maaş mesajı kişinin akışına düşmeli', () => {
+		expect(idler('Gulcin Ozer Agustos 2026 Maas hakedisi odendi. 90.000 tl')).toEqual(['gulcin']);
 	});
 });
 
-describe('kisiBul — yalnız soyad', () => {
-	it('kiracıda tek olan soyad bağlar', () => {
-		const [e] = kisiBul('Tasman klinik costu 2.261,42 Gbp kadar edecek.', adaylar);
-		expect(e).toMatchObject({ contactId: 'aynur', method: 'surname' });
+describe('kisiBul — yanlış pozitif kapıları', () => {
+	it('yalnız soyad bağlamaz — kayıttaki soyad alanı güvenilmez', () => {
+		expect(idler('Tasman klinik costu 2.261,42 Gbp kadar edecek.')).toEqual([]);
+		expect(idler('Jennifer Severino Cedrus Hotel konaklama faturasi 21.526,49 tl.')).toEqual([]);
+		expect(idler('90.000 tl + 16,76 tl islem ucreti.')).toEqual([]);
 	});
 
 	it('iki kişide olan soyad tek başına bağlamaz (McLeod)', () => {
 		expect(idler('McLeod borcumuzdan dusulecektir.')).toEqual([]);
 	});
 
-	it('kısa soyad tek başına bağlamaz', () => {
-		expect(idler('Can gelmedi.')).toEqual([]);
-	});
-});
-
-describe('kisiBul — yanlış pozitif kapıları', () => {
 	it('kısa ad başka kelimenin içinde sayılmaz ("ali" ≠ "alindi")', () => {
 		expect(idler('4100 gbp nakit alindi. Yanlis yazildi.')).toEqual([]);
+		expect(idler('Can gelmedi.')).toEqual([]);
+	});
+
+	it('kurum adı yalnız aynen geçince bağlanır ("Yapı Kredi bankası" ≠ İş Bankası)', () => {
+		expect(idler('Yapı kredi bankası kart ödemesi')).toEqual([]);
+		expect(idler('Banka - İş Bankası kredi kartına 14.650 tl ödendi')).toEqual(['isbank']);
 	});
 
 	it('hasta olmayan tek kelimelik ad İngilizce cümlede yakalanmaz ("Self")', () => {
@@ -124,9 +133,5 @@ describe('kisiBul — yanlış pozitif kapıları', () => {
 	it('boş ve medya-only mesajda boş döner', () => {
 		expect(kisiBul('', adaylar)).toEqual([]);
 		expect(kisiBul(null, adaylar)).toEqual([]);
-	});
-
-	it('personel de bağlanır — maaş mesajı kişinin akışına düşmeli', () => {
-		expect(idler('Gulcin Ozer Agustos 2026 Maas hakedisi odendi. 90.000 tl')).toEqual(['gulcin']);
 	});
 });

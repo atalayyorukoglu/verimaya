@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, asc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNull, ne, sql } from 'drizzle-orm';
 import type { InboundMessageContactRef } from '@verimaya/shared';
 import { contacts } from '../db/schema/contacts';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
@@ -103,12 +103,16 @@ export class MessageContactsService {
 
 	/**
 	 * Geçmişi tarar: kiracının tüm mesajlarını (durumu ne olursa olsun) yeniden
-	 * eşleştirir. Yeni kişi eklenince ya da kural düzelince koşturulur; var olan
-	 * bağlara dokunmaz, yalnız eksikleri ekler. Bellek için 500'lük sayfalar.
+	 * eşleştirir. Yeni kişi eklenince ya da kural düzelince koşturulur.
+	 *
+	 * Kural bağları TÜRETİLMİŞ veridir: önce silinir, sonra baştan kurulur — kural
+	 * sıkılaşınca eski yanlış bağlar da gitsin (ilk ölçümde 2.000 soyad bağının
+	 * çoğu yanlıştı). Elle kurulan (`manual`) bağa dokunulmaz. 500'lük sayfalar.
 	 */
 	async relinkAll(tenantId: string): Promise<{ processed: number; linked: number }> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const adaylar = await this.directoryWithDb(db);
+			await db.delete(inboundMessageContacts).where(ne(inboundMessageContacts.method, 'manual'));
 			let processed = 0;
 			let linked = 0;
 			// Sayfalama yalnız id ile: created_at üzerinden gidince Postgres'in
