@@ -39,6 +39,10 @@ export const appointments = pgTable(
 			onDelete: 'set null'
 		}),
 		notes: text('notes'),
+		/** Kaydı açan kişinin adı. Kullanıcı kimliğine bağlı değil: kullanıcı
+		 *  silinse de "kim yaptı" cevabı kalsın (case_notes ile aynı karar).
+		 *  0069 öncesi kayıtlarda boş. */
+		createdByDisplayName: text('created_by_display_name'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()

@@ -176,6 +176,7 @@ export function toAppointment(
     doctor_contact_id: row.doctorContactId,
     notes: row.notes,
     contact_info_incomplete: extras?.contact_info_incomplete ?? false,
+    created_by_display_name: row.createdByDisplayName ?? null,
     created_at: toIsoDateTime(row.createdAt),
     updated_at: toIsoDateTime(row.updatedAt),
   };
@@ -312,6 +313,7 @@ export function toTransaction(
     description: row.description,
     source_inbound_message_id: row.sourceInboundMessageId,
     source_evidence: row.sourceEvidence ?? null,
+    created_by_display_name: row.createdByDisplayName ?? null,
     created_at: toIsoDateTime(row.createdAt),
     updated_at: toIsoDateTime(row.updatedAt),
   };

@@ -175,6 +175,7 @@ function makeAppointment(contact: Contact, overrides: Partial<Appointment> = {})
 		tenant_id: DEMO_TENANT_ID,
 		contact_id: contact.id,
 		contact_display_name: contact.display_name,
+		created_by_display_name: null,
 		title: faker.helpers.arrayElement([
 			'Saç ekimi konsultasyonu',
 			'Diş implant muayenesi',
@@ -231,6 +232,7 @@ function makeTransaction(
 		id: faker.string.uuid(),
 		tenant_id: DEMO_TENANT_ID,
 		kind,
+		created_by_display_name: null,
 		title:
 			kind === 'income'
 				? faker.helpers.arrayElement(['Hasta tahsilatı', 'Depozito', 'Paket ödemesi'])

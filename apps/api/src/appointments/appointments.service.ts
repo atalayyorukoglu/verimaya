@@ -195,7 +195,13 @@ export class AppointmentsService {
     });
   }
 
-  async createWithDb(db: TenantDb, tenantId: string, input: AppointmentCreate) {
+  async createWithDb(
+    db: TenantDb,
+    tenantId: string,
+    input: AppointmentCreate,
+    // Opsiyonel: testler ve iç akışlar aktör olmadan da kayıt açabiliyor.
+    actor?: AuditActor,
+  ) {
     const contact = await this.requireContact(db, input.contact_id);
     const clinicNameFromId = await this.contactNameById(
       db,
@@ -224,6 +230,7 @@ export class AppointmentsService {
         transferContactId: input.transfer_contact_id ?? null,
         doctorContactId: input.doctor_contact_id ?? null,
         notes: input.notes ?? null,
+        createdByDisplayName: actor?.actorDisplayName ?? null,
       })
       .returning();
     await this.operationAlerts.ensureForAppointmentWithDb(
@@ -232,6 +239,18 @@ export class AppointmentsService {
       row!.id,
       row!.startsAt,
     );
+    // Silme zaten iz bırakıyordu, oluşturma bırakmıyordu — Ayarlar > Denetim'de
+    // randevunun nereden geldiği görünmüyordu.
+    if (actor) {
+      await writeAuditLog(
+        db,
+        tenantId,
+        actor,
+        "create",
+        "appointment",
+        row!.title ?? row!.contactDisplayName,
+      );
+    }
     return toAppointment(row!, {
       contact_info_incomplete: isContactInfoIncomplete(
         contact.phone,

@@ -170,6 +170,8 @@ export const transactionSchema = z.object({
 	source_inbound_message_id: uuid.nullable().default(null),
 	/** AI-09 — alan başına doğrulanmış kaynak izi. **Salt okunur** (yukarıdaki gibi). */
 	source_evidence: transactionEvidenceSchema.nullable().default(null),
+	/** Kaydı açan kişinin adı, oluşturulurken kopyalanır. 0069 öncesi kayıtlarda null. */
+	created_by_display_name: z.string().max(255).nullable().default(null),
 	created_at: isoDateTime,
 	updated_at: isoDateTime
 });
@@ -246,6 +248,7 @@ export function deriveTransactionLabel(input: {
 export const transactionCreateSchema = transactionSchema.omit({
 	id: true,
 	tenant_id: true,
+	created_by_display_name: true,
 	contact_display_name: true,
 	case_contact_display_name: true,
 	source_inbound_message_id: true,

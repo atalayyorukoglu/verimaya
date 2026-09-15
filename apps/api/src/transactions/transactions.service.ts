@@ -143,6 +143,7 @@ export class TransactionsService {
 				caseContactId: input.case_contact_id ?? null,
 				responsibleContactId: input.responsible_contact_id ?? null,
 				description: input.description ?? null,
+				createdByDisplayName: actor.actorDisplayName,
 				sourceInboundMessageId: source?.inboundMessageId ?? null,
 				sourceEvidence: source?.evidence ?? null
 			})

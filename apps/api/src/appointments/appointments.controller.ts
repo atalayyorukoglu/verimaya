@@ -58,6 +58,7 @@ export class AppointmentsController {
 	) {
 		const input = parseBody(appointmentCreateSchema, body, req);
 		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
 		const result = await this.idempotency.run(
 			tenantId,
 			getIdempotencyKey(req),
@@ -65,7 +66,7 @@ export class AppointmentsController {
 			'/v1/appointments',
 			async (db) => ({
 				statusCode: 201,
-				body: await this.appointmentsService.createWithDb(db, tenantId, input)
+				body: await this.appointmentsService.createWithDb(db, tenantId, input, actor)
 			})
 		);
 		if (!result.replayed) {

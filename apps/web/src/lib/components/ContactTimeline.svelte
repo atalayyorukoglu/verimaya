@@ -459,10 +459,21 @@
 	const BUBBLE = 'mt-1.5 text-base leading-6 text-text';
 
 	/* Figma'da randevu/işlem satırı da balonlu; detay tek satırda " · " ile birleşir. */
+	/**
+	 * Kaydı kimin açtığı. 0069 öncesi kayıtlarda alan boş — o satırlarda hiç
+	 * gösterilmez, "bilinmiyor" yazmaktansa susmak yeğ.
+	 */
+	function createdBy(name: string | null): string | null {
+		const trimmed = name?.trim();
+		return trimmed ? `${t('contacts.timeline.createdBy')} ${trimmed}` : null;
+	}
+
 	function appointmentDetail(appointment: Appointment): string {
 		const parts: string[] = [formatTime(appointment.starts_at)];
 		if (appointment.clinic_name) parts.push(appointment.clinic_name);
 		if (appointment.hotel_name) parts.push(appointment.hotel_name);
+		const author = createdBy(appointment.created_by_display_name);
+		if (author) parts.push(author);
 		return parts.join(' · ');
 	}
 
@@ -470,6 +481,8 @@
 		const parts: string[] = [];
 		if (transaction.category) parts.push(transaction.category);
 		if (transaction.subtitle) parts.push(transaction.subtitle);
+		const author = createdBy(transaction.created_by_display_name);
+		if (author) parts.push(author);
 		return parts.join(' · ');
 	}
 </script>

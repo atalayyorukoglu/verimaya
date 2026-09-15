@@ -1147,6 +1147,11 @@ paths:
                         contact_info_incomplete:
                           type: boolean
                           default: false
+                        created_by_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
                         created_at:
                           type: string
                           format: date-time
@@ -1308,6 +1313,11 @@ paths:
                   contact_info_incomplete:
                     type: boolean
                     default: false
+                  created_by_display_name:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                    default: null
                   created_at:
                     type: string
                     format: date-time
@@ -3046,6 +3056,11 @@ paths:
                         contact_info_incomplete:
                           type: boolean
                           default: false
+                        created_by_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
                         created_at:
                           type: string
                           format: date-time
@@ -4905,6 +4920,11 @@ paths:
                           additionalProperties: false
                           nullable: true
                           default: null
+                        created_by_display_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
                         created_at:
                           type: string
                           format: date-time
@@ -5243,6 +5263,11 @@ paths:
                           - confidence
                         additionalProperties: false
                     additionalProperties: false
+                    nullable: true
+                    default: null
+                  created_by_display_name:
+                    type: string
+                    maxLength: 255
                     nullable: true
                     default: null
                   created_at:
@@ -7861,6 +7886,11 @@ paths:
                                 - confidence
                               additionalProperties: false
                           additionalProperties: false
+                          nullable: true
+                          default: null
+                        created_by_display_name:
+                          type: string
+                          maxLength: 255
                           nullable: true
                           default: null
                         created_at:

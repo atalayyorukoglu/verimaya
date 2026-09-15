@@ -56,6 +56,10 @@ export const transactions = pgTable(
 		),
 		/** AI-09 — alan başına doğrulanmış kaynak izi (`TransactionEvidence`). */
 		sourceEvidence: jsonb('source_evidence').$type<TransactionEvidence>(),
+		/** Kaydı açan kişinin adı. Kullanıcı kimliğine bağlı değil: kullanıcı
+		 *  silinse de "kim yaptı" cevabı kalsın (case_notes ile aynı karar).
+		 *  0069 öncesi kayıtlarda boş. */
+		createdByDisplayName: text('created_by_display_name'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
 			.notNull()

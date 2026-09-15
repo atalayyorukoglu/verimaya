@@ -48,6 +48,8 @@ export const appointmentSchema = z.object({
    * Advisory only — never blocks create/update.
    */
   contact_info_incomplete: z.boolean().default(false),
+  /** Kaydı açan kişinin adı, oluşturulurken kopyalanır. 0069 öncesi kayıtlarda null. */
+  created_by_display_name: z.string().max(255).nullable().default(null),
   created_at: isoDateTime,
   updated_at: isoDateTime,
 });
@@ -65,6 +67,7 @@ export function isContactInfoIncomplete(
 export const appointmentCreateSchema = appointmentSchema.omit({
   id: true,
   tenant_id: true,
+  created_by_display_name: true,
   contact_display_name: true,
   transfer_contact_name: true,
   contact_info_incomplete: true,

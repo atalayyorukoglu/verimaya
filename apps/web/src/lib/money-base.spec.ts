@@ -11,6 +11,7 @@ function tx(
 		id: '00000000-0000-0000-0000-000000000001',
 		tenant_id: '00000000-0000-0000-0000-000000000002',
 		kind: 'income',
+		created_by_display_name: null,
 		title: 't',
 		subtitle: null,
 		case_contact_display_name: null,
