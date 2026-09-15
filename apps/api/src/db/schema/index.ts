@@ -39,3 +39,4 @@ export * from './tenant-permission-overrides';
 export * from './fx-rates';
 export * from './csp-reports';
 export * from './maya-questions';
+export * from './whatsapp-chats';

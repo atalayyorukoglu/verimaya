@@ -94,6 +94,7 @@ export const apiPaths = {
 	settingsContactTitlesReorder: `${API_V1_PREFIX}/settings/contact-titles/reorder`,
 	settingsContactTitle: (id: string) => `${API_V1_PREFIX}/settings/contact-titles/${id}`,
 	settingsIncidentTypes: `${API_V1_PREFIX}/settings/incident-types`,
+	settingsWhatsappChats: `${API_V1_PREFIX}/settings/whatsapp-chats`,
 	settingsIncidentTypesReorder: `${API_V1_PREFIX}/settings/incident-types/reorder`,
 	settingsIncidentType: (id: string) => `${API_V1_PREFIX}/settings/incident-types/${id}`,
 	settingsOrganizations: `${API_V1_PREFIX}/settings/organizations`,
@@ -291,6 +292,12 @@ import {
 	incidentTypeSchema,
 	incidentTypeUpdateSchema
 } from './incident.js';
+import {
+	whatsappChatCreateSchema,
+	whatsappChatListResponseSchema,
+	whatsappChatSchema,
+	whatsappChatUpdateSchema
+} from './whatsapp-chat.js';
 import {
 	recordUpdateSuggestionListPageSchema,
 	recordUpdateSuggestionParseRequestSchema,
@@ -628,6 +635,17 @@ export const apiContract = {
 	'PATCH /v1/settings/incident-types/:id': {
 		body: incidentTypeUpdateSchema,
 		response: incidentTypeSchema
+	},
+	'GET /v1/settings/whatsapp-chats': {
+		response: whatsappChatListResponseSchema
+	},
+	'POST /v1/settings/whatsapp-chats': {
+		body: whatsappChatCreateSchema,
+		response: whatsappChatSchema
+	},
+	'PATCH /v1/settings/whatsapp-chats/:id': {
+		body: whatsappChatUpdateSchema,
+		response: whatsappChatSchema
 	},
 	'GET /v1/settings/organizations': {
 		response: z.object({ items: z.array(organizationSchema) })

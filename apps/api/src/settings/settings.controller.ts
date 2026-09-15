@@ -35,7 +35,9 @@ import {
 	knowledgeUpdateSchema,
 	operationAlertSettingsUpdateSchema,
 	whatsappAiPromptUpdateSchema,
-	incentiveDeadlineSettingsUpdateSchema
+	incentiveDeadlineSettingsUpdateSchema,
+	whatsappChatCreateSchema,
+	whatsappChatUpdateSchema
 } from '@verimaya/shared';
 import { SessionGuard } from '../auth/session.guard';
 import { PermissionOverridesService } from '../auth/permission-overrides.service';
@@ -51,15 +53,63 @@ import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
 import { SettingsService } from './settings.service';
+import { WhatsappChatsService } from './whatsapp-chats.service';
 
 @Controller('settings')
 @UseGuards(SessionGuard, ActiveOrgGuard, OrgPermissionGuard)
 export class SettingsController {
 	constructor(
 		private readonly settingsService: SettingsService,
+		private readonly whatsappChats: WhatsappChatsService,
 		private readonly permissionOverrides: PermissionOverridesService,
 		private readonly idempotency: IdempotencyService
 	) {}
+
+	/**
+	 * WhatsApp sohbet defteri. `unnamed` alanı gelen kutusunda görülmüş ama henüz
+	 * adlandırılmamış sohbetleri döner — kullanıcı kimliği elle kopyalamasın.
+	 */
+	@Get('whatsapp-chats')
+	@RequireOrgPermission('settings', 'read')
+	listWhatsappChats(@Req() req: FastifyRequest) {
+		return this.whatsappChats.list(getActiveOrgId(req));
+	}
+
+	@Post('whatsapp-chats')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async createWhatsappChat(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(whatsappChatCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/settings/whatsapp-chats',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.whatsappChats.createWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Patch('whatsapp-chats/:id')
+	@RequireOrgPermission('settings', 'update')
+	@IdempotencyExempt('PATCH tek satır günceller; tekrar aynı sonucu verir.')
+	updateWhatsappChat(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown
+	) {
+		const input = parseBody(whatsappChatUpdateSchema, body, req);
+		return this.whatsappChats.update(getActiveOrgId(req), id, input);
+	}
 
 	@Get('finance-categories')
 	@RequireOrgPermission('settings', 'read')

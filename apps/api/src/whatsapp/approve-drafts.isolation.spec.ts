@@ -12,6 +12,7 @@ import { closeDb, getDb } from '../db/client';
 import { IdempotencyService } from '../common/idempotency.service';
 import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
+import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -93,6 +94,7 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			tenantContext,
 			new TransactionsService(tenantContext),
 			{ getAiPrompt: async () => ({ text: '', is_default: true, updated_by: null, updated_at: null }) } as never,
+			new WhatsappChatsService(tenantContext),
 			new HeuristicLlmClient()
 		);
 	});

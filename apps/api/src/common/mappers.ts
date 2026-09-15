@@ -3,6 +3,7 @@ import type { FastifyRequest } from "fastify";
 import type {
   AdMetric,
   AiCorrection,
+  WhatsappChat,
   ApiKey,
   Appointment,
   AppointmentTypeSetting,
@@ -52,6 +53,7 @@ import type { FinanceCategoryRow } from "../db/schema/finance-categories";
 import type { IncentiveFileRow } from "../db/schema/incentive-files";
 import type { IncidentRow } from "../db/schema/incidents";
 import type { IncidentTypeRow } from "../db/schema/incident-types";
+import type { WhatsappChatRow } from "../db/schema/whatsapp-chats";
 import type { OperationAlertRow } from "../db/schema/operation-alerts";
 import type { RecordUpdateSuggestionRow } from "../db/schema/record-update-suggestions";
 import type { OrganizationRow } from "../db/schema/organizations";
@@ -353,6 +355,22 @@ export function toContactTitle(
     sort_order: row.sortOrder,
     usage_count: usageCount,
     created_at: toIsoDateTime(row.createdAt),
+  };
+}
+
+export function toWhatsappChat(
+  row: WhatsappChatRow,
+  messageCount = 0,
+): WhatsappChat {
+  return {
+    id: row.id,
+    tenant_id: row.tenantId,
+    chat_id: row.chatId,
+    name: row.name,
+    purpose: row.purpose as WhatsappChat["purpose"],
+    message_count: messageCount,
+    created_at: toIsoDateTime(row.createdAt),
+    updated_at: toIsoDateTime(row.updatedAt),
   };
 }
 

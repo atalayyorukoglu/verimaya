@@ -25,6 +25,7 @@ import {
 	type TransactionSource
 } from '../transactions/transactions.service';
 import { evidenceForApprovedDraft } from './evidence';
+import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { groupInboundMessages } from './group-events';
 import {
 	asRecord,
@@ -69,6 +70,7 @@ export class WhatsappService {
 		private readonly tenantContext: TenantContextService,
 		private readonly transactionsService: TransactionsService,
 		private readonly settings: SettingsService,
+		private readonly whatsappChats: WhatsappChatsService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
@@ -105,9 +107,18 @@ export class WhatsappService {
 				.limit(params.limit + 1);
 
 			const page = buildCursorPage(rows, params.limit);
+			// Grup adı webhook gövdesinde gelmiyor (WAHA NOWEB); Ayarlar'daki sohbet
+			// defterinden okunur. Defterde yoksa `chat_name` null kalır ve arayüz
+			// kimliği gösterir — uydurma ad yazmaktansa.
+			const directory = await this.whatsappChats.directoryWithDb(db);
+			const named = page.items.map((row) => {
+				const message = toInboundMessage(row);
+				const entry = message.chat_id ? directory.get(message.chat_id) : undefined;
+				return entry ? { ...message, chat_name: entry.name } : message;
+			});
 			return {
 				// AI-13: aynı olayı anlatan mesajlar `group_id` ile işaretlenir; kayıt değişmez.
-				messages: groupInboundMessages(page.items.map(toInboundMessage)),
+				messages: groupInboundMessages(named),
 				next_cursor: page.next_cursor
 			};
 		});

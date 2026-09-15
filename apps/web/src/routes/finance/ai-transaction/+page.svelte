@@ -466,7 +466,15 @@
 					>
 						<div class="min-w-0 flex-1">
 							<div class="flex flex-wrap items-center gap-2">
-								<span class="truncate font-mono text-xs text-text-faint">{item.sender}</span>
+								<!--
+									Grup adı varsa ad, yoksa gönderen kimliği. Ad Ayarlar > WhatsApp
+									gruplarından gelir; WAHA webhook'ta göndermiyor.
+								-->
+								{#if item.chat_name}
+									<span class="truncate text-xs font-medium text-text-muted">{item.chat_name}</span>
+								{:else}
+									<span class="truncate font-mono text-xs text-text-faint">{item.sender}</span>
+								{/if}
 								<StatusBadge
 									label={inboundMessageStatusLabels[item.status]}
 									tone={item.status === 'new' ? 'warning' : 'info'}

@@ -79,6 +79,7 @@ export function queryKeys(scope: QueryScope) {
 			contactTypes: () => k('settings', 'contact-types'),
 			contactTitles: () => k('settings', 'contact-titles'),
 			incidentTypes: (params: Params = {}) => k('settings', 'incident-types', params),
+			whatsappChats: () => k('settings', 'whatsapp-chats'),
 			organizations: () => k('settings', 'organizations'),
 			financeCategories: () => k('settings', 'finance-categories'),
 			aiDisclosure: () => k('settings', 'ai-disclosure'),

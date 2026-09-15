@@ -21,6 +21,7 @@
 	import Megaphone from '@lucide/svelte/icons/megaphone';
 	import Webhook from '@lucide/svelte/icons/webhook';
 	import ClipboardList from '@lucide/svelte/icons/clipboard-list';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
 
 	type Card = {
 		href: string;
@@ -153,6 +154,12 @@
 					title: t('settings.nav.knowledge.title'),
 					description: t('settings.nav.knowledge.description'),
 					icon: BookOpen
+				},
+				{
+					href: '/settings/whatsapp-groups',
+					title: t('settings.nav.whatsappGroups.title'),
+					description: t('settings.nav.whatsappGroups.description'),
+					icon: MessageSquare
 				},
 				{
 					href: '/settings/ai',

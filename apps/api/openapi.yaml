@@ -4433,6 +4433,241 @@ paths:
               required:
                 - name
               additionalProperties: false
+  /settings/whatsapp-chats:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        chat_id:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        name:
+                          type: string
+                          minLength: 1
+                          maxLength: 128
+                        purpose:
+                          type: string
+                          enum:
+                            - finance
+                            - operations
+                            - mixed
+                            - ignore
+                        message_count:
+                          type: integer
+                          minimum: 0
+                          default: 0
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - chat_id
+                        - name
+                        - purpose
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                  unnamed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        chat_id:
+                          type: string
+                          minLength: 1
+                          maxLength: 255
+                        message_count:
+                          type: integer
+                          minimum: 0
+                        last_body:
+                          type: string
+                          maxLength: 280
+                          nullable: true
+                        last_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - chat_id
+                        - message_count
+                        - last_body
+                        - last_at
+                      additionalProperties: false
+                required:
+                  - items
+                  - unnamed
+                additionalProperties: false
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  chat_id:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                  purpose:
+                    type: string
+                    enum:
+                      - finance
+                      - operations
+                      - mixed
+                      - ignore
+                  message_count:
+                    type: integer
+                    minimum: 0
+                    default: 0
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - chat_id
+                  - name
+                  - purpose
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chat_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                purpose:
+                  type: string
+                  enum:
+                    - finance
+                    - operations
+                    - mixed
+                    - ignore
+                  default: mixed
+              required:
+                - chat_id
+                - name
+              additionalProperties: false
+  /settings/whatsapp-chats/{id}:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  chat_id:
+                    type: string
+                    minLength: 1
+                    maxLength: 255
+                  name:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                  purpose:
+                    type: string
+                    enum:
+                      - finance
+                      - operations
+                      - mixed
+                      - ignore
+                  message_count:
+                    type: integer
+                    minimum: 0
+                    default: 0
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - chat_id
+                  - name
+                  - purpose
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                purpose:
+                  type: string
+                  enum:
+                    - finance
+                    - operations
+                    - mixed
+                    - ignore
+              additionalProperties: false
   /settings/organizations:
     get:
       responses:
