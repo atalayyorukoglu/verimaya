@@ -72,14 +72,33 @@ jobs:
             exit 0
           fi
 
-          # Taban = bu workflow'un son başarılı koşusunun head_sha'sı.
-          if ! API_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-api.yml/runs?status=success&per_page=1" 2>/dev/null); then
-            echo "HATAYA AÇIL: gh api başarısız — dağıt"
-            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Taban = GERÇEKTEN dağıtılan son commit: `api-deployed` etiketi (deploy işi
+          # sonunda basılır). "Son başarılı koşunun head_sha'sı" iki yerden yanılıyordu
+          # (2026-09-15, 73d26c3 canlıya çıkmadı): workflow_run koşusunun head_sha'sı o
+          # andaki main ucudur, tetikleyen CI'ın commit'i değil; kapının "atla" dediği
+          # koşu da conclusion=success sayılıp taban oluyordu.
+          PREV_SHA=""
+          if git fetch -q origin '+refs/tags/api-deployed:refs/tags/api-deployed' 2>/dev/null; then
+            PREV_SHA=$(git rev-parse -q --verify 'refs/tags/api-deployed^{commit}' 2>/dev/null)
+            echo "Taban api-deployed etiketinden: ${PREV_SHA:-<yok>}"
           fi
-          PREV_SHA=$(printf '%s' "$API_JSON" | jq -r '.workflow_runs[0].head_sha // empty')
-          echo "Karşılaştırma: deploy_sha=${DEPLOY_SHA} ↔ önceki_başarılı=${PREV_SHA:-<yok>}"
+          if [ -z "$PREV_SHA" ]; then
+            if ! API_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-api.yml/runs?status=success&per_page=10" 2>/dev/null); then
+              echo "HATAYA AÇIL: gh api başarısız — dağıt"
+              echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            for run_id in $(printf '%s' "$API_JSON" | jq -r '.workflow_runs[].id'); do
+              built=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" 2>/dev/null \
+                | jq -r '.jobs[] | select(.name == "deploy") | .conclusion')
+              if [ "$built" = "success" ]; then
+                PREV_SHA=$(printf '%s' "$API_JSON" | jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id == $id) | .head_sha')
+                echo "Taban gerçekten dağıtan son koşudan (${run_id}): ${PREV_SHA}"
+                break
+              fi
+            done
+          fi
+          echo "Karşılaştırma: deploy_sha=${DEPLOY_SHA} ↔ taban=${PREV_SHA:-<yok>}"
 
           if [ -z "$PREV_SHA" ]; then
             echo "HATAYA AÇIL: önceki başarılı koşu yok — dağıt"
@@ -113,7 +132,14 @@ jobs:
     needs: gate
     if: needs.gate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      # write: iş sonunda `api-deployed` etiketi basılır (kapının karşılaştırma tabanı).
+      contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.deploy_sha }}
+
       - name: Trigger Coolify redeploy
         env:
           WEBHOOK: ${{ secrets.COOLIFY_API_DEPLOY_WEBHOOK }}
@@ -140,3 +166,15 @@ jobs:
           done
           echo "Kanca GET ve POST için de başarısız — Coolify arayüzünden elle dağıt"
           exit 1
+
+      # Dağıtılan commit'i etiketle: bir sonraki kapı diff'i buradan alır. Etiket
+      # yazılamazsa (izin kısıtı) dağıtım başarısız sayılmaz; kapı API yoluna düşer.
+      - name: Record deployed SHA
+        if: success()
+        continue-on-error: true
+        env:
+          DEPLOY_SHA: ${{ needs.gate.outputs.deploy_sha }}
+        run: |
+          git tag -f api-deployed "$DEPLOY_SHA"
+          git push -f origin refs/tags/api-deployed
+          echo "api-deployed → $DEPLOY_SHA"
