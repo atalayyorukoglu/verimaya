@@ -814,7 +814,7 @@
 			şeffaf spacer menü yüksekliği kadar (`h-14` + safe-area).
 		-->
 		<div
-			class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border bg-surface"
+			class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border-strong bg-surface"
 		>
 			<div class="tl-measure flex w-full flex-col justify-center gap-1.5">
 				{#if asIncident}
@@ -874,7 +874,7 @@
 				solda çıplak +, sağda muted daire gönder — ayrı kenarlıklı kabuk yok.
 			-->
 				<div
-					class="flex items-center gap-1 rounded-lg border border-border bg-surface px-1.5 py-1 shadow-xs focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/30"
+					class="flex items-center gap-1 rounded-lg border border-border-strong bg-surface px-1.5 py-1 shadow-xs focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/30"
 				>
 					<input
 						bind:this={fileInput}
@@ -888,7 +888,7 @@
 						<button
 							type="button"
 							data-compact
-							class="inline-flex size-8 items-center justify-center rounded-md text-text-muted transition-colors hover:text-text disabled:opacity-40"
+							class="inline-flex size-8 items-center justify-center rounded-md text-text transition-colors hover:bg-surface-2 disabled:opacity-40"
 							aria-haspopup="menu"
 							aria-expanded={addMenuOpen}
 							aria-label={t('contacts.timeline.add')}
@@ -982,7 +982,7 @@
 					</div>
 					<input
 						bind:this={composerInput}
-						class="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-base leading-6 text-text outline-none placeholder:text-text-faint"
+						class="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 text-base leading-6 text-text outline-none placeholder:text-text-muted"
 						placeholder={asIncident
 							? t('contacts.timeline.incidentPlaceholder')
 							: t('contacts.timeline.placeholder')}
@@ -995,7 +995,7 @@
 						data-compact
 						class="inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-30 {draft.trim()
 							? 'bg-text text-bg'
-							: 'bg-surface-2 text-text-faint'}"
+							: 'border border-border-strong bg-surface-2 text-text-muted'}"
 						aria-label={t('contacts.notes.sendAria')}
 						disabled={sending || uploading || !draft.trim()}
 						onclick={() => void send()}

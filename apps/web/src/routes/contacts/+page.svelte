@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import {
+	createInfiniteQuery,
+	createQuery,
+	keepPreviousData,
+	useQueryClient
+} from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
 	import type {
 		Contact,
@@ -66,6 +71,14 @@
 			),
 		initialPageParam: null as string | null,
 		getNextPageParam: (last: ContactsPage) => last.next_cursor,
+		/*
+		 * Harf başına liste kaybolup geri gelmesin (kullanıcı, 2026-09-15: "ekran
+		 * göz kırpıyormuş gibi oluyor"). Her tuşta sorgu anahtarı değişiyor, yeni
+		 * anahtarın önbelleği boş olduğu için liste `isPending`'e düşüp tek satırlık
+		 * "Yükleniyor"a iniyordu: sayfa boyu çöküp tekrar açılıyordu. Önceki sonuç
+		 * ekranda kalır, yenisi gelince yerine geçer.
+		 */
+		placeholderData: keepPreviousData,
 		enabled: qs.ready
 	}));
 
