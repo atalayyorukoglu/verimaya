@@ -20,6 +20,7 @@ import Share2 from '@lucide/svelte/icons/share-2';
 import ListChecks from '@lucide/svelte/icons/list-checks';
 import Target from '@lucide/svelte/icons/target';
 import FileBadge from '@lucide/svelte/icons/file-badge';
+import Sparkles from '@lucide/svelte/icons/sparkles';
 
 import { apiPaths, apiSend } from '$lib/api';
 import type { MessageKey } from '$lib/i18n/messages';
@@ -34,9 +35,21 @@ export type ProductModule = {
 	icon: Component;
 	/** Matches `Feature.module` / Araçlar section heading. */
 	department: FeatureModule;
+	/**
+	 * Tercihten bağımsız her zaman menüde (kullanıcı kararı, 2026-09-15: "AI ile İşlem
+	 * Araçlar'ın en üstünde dursun"). Kaydedilmiş eski tercih satırında id yoksa da görünür.
+	 */
+	alwaysOn?: boolean;
 };
 
 const CATALOG_BY_ID: Record<ProductModuleId, Omit<ProductModule, 'id'>> = {
+	'whatsapp-import': {
+		labelKey: 'nav.aiTransaction',
+		href: '/ai-transaction',
+		icon: Sparkles,
+		department: 'Finans',
+		alwaysOn: true
+	},
 	'campaign-assistant': {
 		labelKey: 'nav.campaignAssistant',
 		href: '/marketing',
@@ -125,6 +138,7 @@ export function applyServerProductModules(ids: readonly string[]): void {
 }
 
 export function isProductModuleEnabled(id: string): boolean {
+	if (CATALOG_BY_ID[id as ProductModuleId]?.alwaysOn) return true;
 	return enabledIds.includes(id as ProductModuleId);
 }
 
@@ -174,7 +188,7 @@ export function productModuleForFeatureId(featureId: string): ProductModule | un
 
 /** Nav items for enabled tools — reactive when read inside `$derived`. */
 export function getEnabledProductNavItems(): NavItem[] {
-	return PRODUCT_MODULE_CATALOG.filter((m) => enabledIds.includes(m.id)).map((m) => ({
+	return PRODUCT_MODULE_CATALOG.filter((m) => m.alwaysOn || enabledIds.includes(m.id)).map((m) => ({
 		labelKey: m.labelKey,
 		href: m.href,
 		icon: m.icon

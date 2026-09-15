@@ -357,7 +357,7 @@ export const features: Feature[] = [
 		description:
 			'Grup mesajını yapıştırın veya WAHA kuyruğundan seçin; AI işlemleri ayrıştırır, onay sonrası kayıt açılır.',
 		status: 'kod-hazir',
-		route: '/finance/ai-transaction',
+		route: '/ai-transaction',
 		released_at: '2026-07-20',
 		version: '0.1.0'
 	},

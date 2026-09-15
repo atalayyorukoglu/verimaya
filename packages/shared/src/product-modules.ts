@@ -5,6 +5,8 @@ import { z } from 'zod';
  * Shared by API validation and the web catalog — keep in sync with UI entries.
  */
 export const PRODUCT_MODULE_IDS = [
+	// Araçlar'ın en üstü; kullanıcı kararı (2026-09-15). Kapatılamaz (alwaysOn).
+	'whatsapp-import',
 	'campaign-assistant',
 	'untouched-contacts',
 	'cohorts',
@@ -34,6 +36,7 @@ export type UserUiPreferencesUpdate = z.infer<typeof userUiPreferencesUpdateSche
 
 /** Default-on tools in the Araçlar sidebar (until the user changes preferences). */
 export const DEFAULT_ENABLED_PRODUCT_MODULE_IDS: readonly ProductModuleId[] = [
+	'whatsapp-import',
 	'untouched-contacts',
 	'referral-value',
 	// Finans başlığındaki sabit bağlantıdan taşındı (2026-09-05). Varsayılan AÇIK:

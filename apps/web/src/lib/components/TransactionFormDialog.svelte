@@ -690,7 +690,7 @@
 				<div class="min-w-0 rounded-[6px] border border-border bg-surface-2 px-3 py-2">
 					<a
 						class="inline-flex items-center gap-1 text-xs font-medium text-brand underline-offset-2 hover:underline"
-						href="/finance/ai-transaction?inbox={transaction.source_inbound_message_id}"
+						href="/ai-transaction?inbox={transaction.source_inbound_message_id}"
 					>
 						{t('finance.ai.source.link')}
 						<ArrowRight class="size-3" />

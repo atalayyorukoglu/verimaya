@@ -359,7 +359,7 @@
 				class="flex w-full flex-row flex-wrap items-center justify-start gap-2 md:w-auto md:justify-end"
 			>
 				<a
-					href={resolve('/finance/ai-transaction')}
+					href={resolve('/ai-transaction')}
 					class="inline-flex h-11 items-center justify-center gap-2 rounded-[6px] border border-border bg-transparent px-3 text-sm font-medium whitespace-nowrap text-text hover:bg-surface-2 sm:h-9 sm:px-4"
 				>
 					<Sparkles class="size-4" />

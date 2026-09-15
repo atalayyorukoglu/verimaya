@@ -276,7 +276,7 @@
 											type="button"
 											role="switch"
 											aria-checked={enabled}
-											disabled={preferenceSavingId === productModule.id}
+											disabled={preferenceSavingId === productModule.id || productModule.alwaysOn}
 											class="inline-flex items-center gap-2 rounded-[6px] border border-border px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-text disabled:opacity-60"
 											onclick={() => void onToggleProductModule(productModule.id, !enabled)}
 										>

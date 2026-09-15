@@ -44,6 +44,7 @@ const tr = {
 	'nav.reports': 'Raporlar',
 	'nav.scorecard': 'AI Karne',
 	'nav.tools': 'Araçlar',
+	'nav.aiTransaction': 'AI ile İşlem',
 	'nav.tools.documentTitle': 'Araçlar · Verimaya',
 	'nav.tools.title': 'Araçlar',
 	'nav.tools.description': 'Modül yetenekleri, durumları ve Araçlar menüsünde gösterme tercihleri.',
@@ -3116,6 +3117,7 @@ const en: Record<MessageKey, string> = {
 
 	'nav.group.products': 'Products',
 	'nav.group.tools': 'Tools',
+	'nav.aiTransaction': 'AI transactions',
 	'nav.group.resources': 'Resources',
 	'nav.group.system': 'System',
 
