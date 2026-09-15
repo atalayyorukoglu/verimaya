@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
-import { contactCreateSchema } from './contact.js';
+import { contactCreateSchema, contactSchema } from './contact.js';
 import { financeCategoryCreateSchema } from './finance-category.js';
 import {
 	transactionEvidenceSchema,
@@ -187,6 +187,24 @@ export const wahaMediaWebhookResponseSchema = z.object({
 	media_id: uuid
 });
 
+/** "Kişi bilgisi" mesajından çıkan ipucu — yeni kişi formunu doldurur, kayıt açmaz. */
+export const inboundMessageContactHintSchema = z.object({
+	first_name: z.string().max(255).nullable(),
+	last_name: z.string().max(255).nullable(),
+	email: z.string().max(255).nullable(),
+	phone: z.string().max(64).nullable()
+});
+export type InboundMessageContactHint = z.infer<typeof inboundMessageContactHintSchema>;
+
+export const inboundMessageCreateContactResponseSchema = z.object({
+	contact: contactSchema,
+	/** Bu mesaj + bağlamdan bağlanan görsel/dosya mesajı sayısı. */
+	linked_messages: z.number().int().nonnegative()
+});
+export type InboundMessageCreateContactResponse = z.infer<
+	typeof inboundMessageCreateContactResponseSchema
+>;
+
 export const inboundMessageSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
@@ -228,6 +246,8 @@ export const inboundMessageSchema = z.object({
 	 * indirilmemiş olsa bile var; "(boş mesaj)" yerine görseli gösterir.
 	 */
 	media_thumbnail: z.string().max(200_000).nullable().default(null),
+	/** E-posta/telefon geçen mesajda kişi formu ipucu; yoksa null. */
+	contact_hint: inboundMessageContactHintSchema.nullable().default(null),
 	created_at: isoDateTime
 });
 

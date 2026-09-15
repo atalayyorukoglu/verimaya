@@ -9,6 +9,7 @@
 		FinanceCategory,
 		InboundMessage,
 		InboundMessageKind,
+		InboundMessageCreateContactResponse,
 		InboundMessageLinkContactsResponse,
 		Tenant,
 		TransactionDraft,
@@ -334,6 +335,69 @@
 		}
 	}
 
+	/*
+	 * "Kişi bilgisi" mesajından yeni kişi. Model yalnız formu doldurur (ad / e-posta /
+	 * telefon mesajdan); kişiyi insan açar. Kaydedince mesaj ve 3 dk içindeki görselleri
+	 * kişiye bağlanır — bilet görselleri akışa düşer.
+	 */
+	let newContactFor = $state<string | null>(null);
+	let newContact = $state({ first_name: '', last_name: '', email: '', phone: '' });
+	let creatingFromMessage = $state(false);
+	let newContactError = $state<string | null>(null);
+	let newContactDone = $state<string | null>(null);
+
+	function openNewContact(item: InboundMessage) {
+		newContactFor = item.id;
+		newContactError = null;
+		newContact = {
+			first_name: item.contact_hint?.first_name ?? '',
+			last_name: item.contact_hint?.last_name ?? '',
+			email: item.contact_hint?.email ?? '',
+			phone: item.contact_hint?.phone ?? ''
+		};
+	}
+
+	async function submitNewContact(item: InboundMessage) {
+		const type =
+			contactTypes.find((ct) => ct.name.trim().toLocaleLowerCase('tr') === 'hasta') ??
+			contactTypes[0];
+		if (!type) {
+			newContactError = t('finance.ai.pending.createContactNoType');
+			return;
+		}
+		if (!newContact.first_name.trim()) {
+			newContactError = t('finance.ai.pending.createContactNeedName');
+			return;
+		}
+		creatingFromMessage = true;
+		newContactError = null;
+		try {
+			const r = await apiSend<InboundMessageCreateContactResponse>(
+				apiPaths.whatsappInboxCreateContact(item.id),
+				'POST',
+				{
+					first_name: newContact.first_name.trim(),
+					last_name: newContact.last_name.trim() || null,
+					contact_type_id: type.id,
+					email: newContact.email.trim() || null,
+					phone: newContact.phone.trim() || null
+				}
+			);
+			newContactDone = t('finance.ai.pending.createContactDone', {
+				name: r.contact.display_name,
+				count: r.linked_messages
+			});
+			newContactFor = null;
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.whatsapp.inbox() });
+		} catch (err) {
+			newContactError =
+				err instanceof Error ? err.message : t('finance.ai.pending.createContactFailed');
+		} finally {
+			creatingFromMessage = false;
+		}
+	}
+
 	/**
 	 * Sunucu cevap verdi; listeyi yeniden çekmeyi beklemeden satırı düşür.
 	 * Yeniden çekme 5 sayfaya kadar istek atıyor, o sürede satır yerinde
@@ -592,6 +656,9 @@
 		{#if linkResult}
 			<p class="mb-3 text-xs text-text-muted">{linkResult}</p>
 		{/if}
+		{#if newContactDone}
+			<p class="mb-3 text-xs text-text-muted">{newContactDone}</p>
+		{/if}
 
 		<!--
 			Tür süzgeci: tek gelen kutusu, üç konu. Ayrı ekran açmak yerine süzgeç,
@@ -694,6 +761,68 @@
 							alt=""
 							class="mt-1 max-h-24 rounded-md border border-border object-cover"
 						/>
+					{/if}
+					{#if item.contact_hint && item.contacts.length === 0}
+						{#if newContactFor === item.id}
+							<form
+								class="mt-2 rounded-md border border-border bg-surface-2 p-2"
+								onsubmit={(e) => {
+									e.preventDefault();
+									void submitNewContact(item);
+								}}
+							>
+								<p class="mb-2 text-xs text-text-muted">
+									{t('finance.ai.pending.createContactHint')}
+								</p>
+								<div class="grid gap-2 sm:grid-cols-2">
+									<input
+										class="h-8 rounded-[6px] border border-border bg-surface px-2 text-sm"
+										placeholder={t('finance.ai.pending.field.firstName')}
+										bind:value={newContact.first_name}
+									/>
+									<input
+										class="h-8 rounded-[6px] border border-border bg-surface px-2 text-sm"
+										placeholder={t('finance.ai.pending.field.lastName')}
+										bind:value={newContact.last_name}
+									/>
+									<input
+										class="h-8 rounded-[6px] border border-border bg-surface px-2 text-sm"
+										placeholder={t('finance.ai.pending.field.email')}
+										bind:value={newContact.email}
+									/>
+									<input
+										class="h-8 rounded-[6px] border border-border bg-surface px-2 text-sm"
+										placeholder={t('finance.ai.pending.field.phone')}
+										bind:value={newContact.phone}
+									/>
+								</div>
+								<div class="mt-2 flex items-center gap-2">
+									<Button size="sm" type="submit" disabled={creatingFromMessage}>
+										{creatingFromMessage
+											? t('finance.ai.pending.createContactSaving')
+											: t('finance.ai.pending.createContactSave')}
+									</Button>
+									<Button
+										size="sm"
+										variant="ghost"
+										type="button"
+										onclick={() => (newContactFor = null)}
+									>
+										{t('finance.ai.pending.createContactCancel')}
+									</Button>
+									{#if newContactError}<span class="text-xs text-danger">{newContactError}</span
+										>{/if}
+								</div>
+							</form>
+						{:else}
+							<button
+								type="button"
+								class="mt-1 text-xs font-medium text-brand hover:underline"
+								onclick={() => openNewContact(item)}
+							>
+								{t('finance.ai.pending.createContact')}
+							</button>
+						{/if}
 					{/if}
 					{#if item.media_thumbnail}
 						<img

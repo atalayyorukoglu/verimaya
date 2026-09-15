@@ -707,6 +707,13 @@ testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
   yine geçer. `main.ts` yalnız bu rotaya 36 MB gövde sınırı (genel 1 MB kapağı duruyor).
   **Görüş (2026-09-15):** Ekin işleme iliştirilmesi (AI-13) ve modele okutulması (LEG-02)
   hâlâ ayrı; burada yalnız kişinin akışında görünür ve açılır.
+- [x] **7. Mesajdan yeni kişi.** "Kişi bilgisi" mesajı (ad + e-posta/telefon: "Haydn Wright
+  wrighthaydn@aol.com +44…") kayıtlı kişiye denk gelmiyorsa kartta "Yeni kişi oluştur":
+  form mesajdan dolu gelir, kaydedince kişi açılır, mesaj `manual` bağlanır, 3 dk içindeki
+  görselleri de bağlamdan bağlanır. `kisi-bilgisi.ts` (kural, tahmin yok: ad ancak metin
+  düz addan ibaretse), `POST /whatsapp/inbox/:id/create-contact` (Idempotent).
+  **Görüş (2026-09-15):** kullanıcı "bu mesajları analiz edip onaylayacak mıyım?" diye sordu;
+  para dışı mesajın eylemi yoktu. Şimdi kişi bilgisi → kişi; randevu → öneri; para → taslak.
 
 **Kapatıldı (2026-09-15):** tarih ("15.09.26"), saat ve @bahsetme kimliği para
 ayrıştırıcısında tutar sanılıyordu; model de "18.200"ü 182 okuyordu. `tutar.ts` tek kural:

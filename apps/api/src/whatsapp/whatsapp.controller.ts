@@ -95,6 +95,32 @@ export class WhatsappController {
 		return reply.send(media.stream);
 	}
 
+	/** "Kişi bilgisi" mesajından kişi aç + mesajı ve görsellerini ona bağla. */
+	@Post('inbox/:id/create-contact')
+	@RequireOrgPermission('contact', 'create')
+	@Idempotent()
+	async createContactFromMessage(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(whatsappCreateContactSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/whatsapp/inbox/:id/create-contact',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.whatsappService.createContactFromMessageWithDb(db, tenantId, id, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
 	@Post('inbox/link-contacts')
 	@RequireOrgPermission('contact', 'update')
 	@IdempotencyExempt(

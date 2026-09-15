@@ -7,11 +7,13 @@ import type {
 	InboundMessage,
 	InboundMessageActionResponse,
 	InboundMessageProcessResponse,
+	InboundMessageCreateContactResponse,
 	InboundMessageStatus,
 	Contact,
 	TransactionDraft,
 	TransactionDraftSnapshot,
-	WhatsappChatPurpose
+	WhatsappChatPurpose,
+	WhatsappCreateContact
 } from '@verimaya/shared';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { aiCorrections } from '../db/schema/ai-corrections';
@@ -342,6 +344,34 @@ export class WhatsappService {
 
 			return { processed, parsed, error };
 		});
+	}
+
+	/**
+	 * "Kişi bilgisi" mesajından yeni kişi: kayıt açılır, bu mesaj ona `manual`
+	 * bağlanır, ardından aynı yazarın 3 dk içindeki görsel/dosya mesajları da
+	 * bağlamdan bağlanır (bilet görselleri). Kişi açmak insan onayıdır; model
+	 * yalnız formu doldurmuştu.
+	 */
+	async createContactFromMessageWithDb(
+		db: TenantDb,
+		tenantId: string,
+		inboundMessageId: string,
+		input: WhatsappCreateContact
+	): Promise<InboundMessageCreateContactResponse> {
+		const row = await this.findRow(db, inboundMessageId);
+		const contact = await this.contactsService.createWithDb(db, tenantId, input);
+		await db
+			.insert(inboundMessageContacts)
+			.values({
+				tenantId,
+				inboundMessageId: row.id,
+				contactId: contact.id,
+				method: 'manual',
+				matchedText: 'kişi bu mesajdan açıldı'
+			})
+			.onConflictDoNothing();
+		const media = await this.messageContacts.linkMediaByContextWithDb(db, tenantId, null);
+		return { contact, linked_messages: 1 + media };
 	}
 
 	/** Marks inbox item approved only — does not auto-create transactions (POST /v1/transactions). */

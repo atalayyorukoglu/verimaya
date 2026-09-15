@@ -151,6 +151,8 @@ export const apiPaths = {
 	whatsappInboxProcess: `${API_V1_PREFIX}/whatsapp/inbox/process`,
 	whatsappInboxLinkContacts: `${API_V1_PREFIX}/whatsapp/inbox/link-contacts`,
 	whatsappInboxMedia: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/media`,
+	whatsappInboxCreateContact: (id: string) =>
+		`${API_V1_PREFIX}/whatsapp/inbox/${id}/create-contact`,
 	whatsappInboxByContact: (contactId: string) =>
 		`${API_V1_PREFIX}/whatsapp/inbox/by-contact/${contactId}`,
 	whatsappInboxParse: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/parse`,
@@ -341,6 +343,7 @@ import {
 	inboundMessageActionResponseSchema,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
+	inboundMessageCreateContactResponseSchema,
 	inboundMessageLinkContactsResponseSchema,
 	inboundMessageProcessResponseSchema,
 	inboundMessageSchema,
@@ -721,6 +724,10 @@ export const apiContract = {
 	},
 	'POST /v1/whatsapp/inbox/link-contacts': {
 		response: inboundMessageLinkContactsResponseSchema
+	},
+	'POST /v1/whatsapp/inbox/:id/create-contact': {
+		request: whatsappCreateContactSchema,
+		response: inboundMessageCreateContactResponseSchema
 	},
 	'GET /v1/whatsapp/inbox/:id/media': {
 		/** Binary stream — not a JSON zod body */

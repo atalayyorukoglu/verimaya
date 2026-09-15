@@ -1,5 +1,6 @@
 import type { InboundMessage, TransactionDraft } from '@verimaya/shared';
 import { turleriBul } from './mesaj-turu';
+import { kisiBilgisiCikar } from './kisi-bilgisi';
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
 	if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -156,6 +157,7 @@ export function toInboundMessage(row: {
 		// WAHA-01: ek künyesi ayrı tabloda (liste düzeyinde); önizleme payload'da.
 		media: null,
 		media_thumbnail: extractMediaThumbnail(payload),
+		contact_hint: kisiBilgisiCikar(display.body),
 		created_at: row.createdAt.toISOString()
 	};
 }

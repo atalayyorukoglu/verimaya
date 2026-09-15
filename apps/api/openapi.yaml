@@ -7466,6 +7466,33 @@ paths:
                           maxLength: 200000
                           nullable: true
                           default: null
+                        contact_hint:
+                          type: object
+                          properties:
+                            first_name:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            last_name:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            email:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            phone:
+                              type: string
+                              maxLength: 64
+                              nullable: true
+                          required:
+                            - first_name
+                            - last_name
+                            - email
+                            - phone
+                          additionalProperties: false
+                          nullable: true
+                          default: null
                         created_at:
                           type: string
                           format: date-time
@@ -7857,6 +7884,33 @@ paths:
                     maxLength: 200000
                     nullable: true
                     default: null
+                  contact_hint:
+                    type: object
+                    properties:
+                      first_name:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      last_name:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      email:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      phone:
+                        type: string
+                        maxLength: 64
+                        nullable: true
+                    required:
+                      - first_name
+                      - last_name
+                      - email
+                      - phone
+                    additionalProperties: false
+                    nullable: true
+                    default: null
                   created_at:
                     type: string
                     format: date-time
@@ -7921,6 +7975,148 @@ paths:
                   - processed
                   - linked
                 additionalProperties: false
+  /whatsapp/inbox/{id}/create-contact:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contact:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      tenant_id:
+                        type: string
+                        format: uuid
+                      contact_type_id:
+                        type: string
+                        format: uuid
+                      contact_type_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 128
+                      title_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      title_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 128
+                        nullable: true
+                        default: null
+                      first_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 255
+                      last_name:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      display_name:
+                        type: string
+                        minLength: 1
+                        maxLength: 255
+                      phone:
+                        type: string
+                        maxLength: 64
+                        nullable: true
+                      email:
+                        type: string
+                        format: email
+                        maxLength: 255
+                        nullable: true
+                      notes:
+                        type: string
+                        maxLength: 8000
+                        nullable: true
+                      organization_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      status:
+                        type: string
+                        enum:
+                          - scheduled
+                          - arrived
+                          - treated
+                          - follow_up
+                          - cancelled
+                        nullable: true
+                        default: null
+                      assigned_user_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      source:
+                        type: string
+                        maxLength: 128
+                        nullable: true
+                        default: null
+                      medium:
+                        type: string
+                        maxLength: 128
+                        nullable: true
+                        default: null
+                      campaign:
+                        type: string
+                        maxLength: 128
+                        nullable: true
+                        default: null
+                      referred_by_contact_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      is_internal:
+                        type: boolean
+                        default: false
+                      usage_count:
+                        type: integer
+                        minimum: 0
+                        default: 0
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                    required:
+                      - id
+                      - tenant_id
+                      - contact_type_id
+                      - contact_type_name
+                      - first_name
+                      - last_name
+                      - display_name
+                      - phone
+                      - email
+                      - notes
+                      - created_at
+                      - updated_at
+                    additionalProperties: false
+                  linked_messages:
+                    type: integer
+                    minimum: 0
+                required:
+                  - contact
+                  - linked_messages
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /whatsapp/inbox/{id}/media:
     get:
       responses:
@@ -8308,6 +8504,33 @@ paths:
                         media_thumbnail:
                           type: string
                           maxLength: 200000
+                          nullable: true
+                          default: null
+                        contact_hint:
+                          type: object
+                          properties:
+                            first_name:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            last_name:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            email:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            phone:
+                              type: string
+                              maxLength: 64
+                              nullable: true
+                          required:
+                            - first_name
+                            - last_name
+                            - email
+                            - phone
+                          additionalProperties: false
                           nullable: true
                           default: null
                         created_at:
