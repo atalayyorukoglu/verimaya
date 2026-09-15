@@ -15,7 +15,6 @@
 	import type {
 		ContractResponse,
 		FinanceCategory,
-		InboundMessage,
 		SupportedCurrency,
 		Tenant,
 		Transaction,
@@ -35,6 +34,7 @@
 	} from '@verimaya/shared';
 	import { apiGet, apiSend, filterFieldClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { fetchAllInbox } from '$lib/whatsapp/inbox';
 	import { formatDate, formatMoney } from '$lib/format';
 	import { amountInBase } from '$lib/money-base';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -245,7 +245,7 @@
 
 	const inboxQuery = createQuery(() => ({
 		queryKey: qs.keys.whatsapp.inbox(),
-		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox),
+		queryFn: fetchAllInbox,
 		enabled: qs.ready
 	}));
 

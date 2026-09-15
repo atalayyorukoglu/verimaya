@@ -17,6 +17,7 @@
 	import { resolve } from '$app/paths';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { fetchAllInbox } from '$lib/whatsapp/inbox';
 	import { formatDateTime } from '$lib/format';
 	import { locateEvidenceQuote } from '$lib/finance/evidence-highlight';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -52,7 +53,7 @@
 
 	const inboxQuery = createQuery(() => ({
 		queryKey: qs.keys.whatsapp.inbox(),
-		queryFn: () => apiGet<{ messages: InboundMessage[] }>(apiPaths.whatsappInbox),
+		queryFn: fetchAllInbox,
 		enabled: qs.ready
 	}));
 
