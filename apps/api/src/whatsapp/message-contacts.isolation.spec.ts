@@ -162,4 +162,23 @@ describe('inbound_message_contacts', () => {
 		]);
 		expect(links.get(uzak)).toBeUndefined();
 	});
+
+	it('görsel ÖNCE, metin sonra gelse de (ekip 4 bileti atıp altına yazıyor) bağlanır', async () => {
+		const { sql } = getDb(databaseUrl);
+		const once = randomUUID();
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`
+				insert into inbound_messages (id, tenant_id, provider, external_id, payload, status, created_at)
+				values (${once}, ${tenantA}, 'waha', ${`mc-media-0-${tenantA.slice(0, 8)}`},
+					${JSON.stringify({ payload: { from: '1@g.us', author: 'gulcin', body: '', hasMedia: true } })}::jsonb,
+					'new', '2026-09-14T11:59:00Z')
+			`;
+		});
+		await service.relinkAll(tenantA);
+		const links = await tenantContext.withTenant(tenantA, ({ db }) =>
+			service.contactsForMessagesWithDb(db, [once])
+		);
+		expect(links.get(once)?.map((c) => c.method)).toEqual(['context']);
+	});
 });

@@ -68,8 +68,9 @@ export class MessageContactsService {
 
 	/**
 	 * Metinsiz (görsel/dosya) mesajı bağlamdan bağlar: aynı sohbette, aynı yazarın
-	 * 3 dakika içindeki son METİNLİ mesajı hangi kişilere bağlıysa bu mesaj da ona.
-	 * Ekip böyle yazıyor: "Dawit Abraham Alp paşa hotel" + bilet görseli.
+	 * ±3 dakika içindeki EN YAKIN metinli mesajı hangi kişilere bağlıysa bu mesaj da ona.
+	 * Ekip iki türlü yazıyor: "Dawit Abraham Alp paşa hotel" + bilet görseli, ya da
+	 * önce 4 bilet görseli sonra "Haydn Wright … rezervasyon rica ederim".
 	 *
 	 * Tek SQL, küme işi: `messageId` verilirse yalnız o mesaj (canlı akış), verilmezse
 	 * kiracının tüm metinsiz mesajları (yeniden bağlama). Zaten bağı olan mesaja dokunmaz;
@@ -107,10 +108,10 @@ export class MessageContactsService {
 				where p.tenant_id = m.tenant_id
 					and ${chatId('p')} = ${chatId('m')}
 					and ${author('p')} = ${author('m')}
-					and p.created_at < m.created_at
-					and p.created_at > m.created_at - interval '3 minutes'
+					and p.id <> m.id
+					and abs(extract(epoch from (p.created_at - m.created_at))) <= 180
 					and ${body('p')} is not null
-				order by p.created_at desc
+				order by abs(extract(epoch from (p.created_at - m.created_at))) asc
 				limit 1
 			) prev on true
 			join inbound_message_contacts l

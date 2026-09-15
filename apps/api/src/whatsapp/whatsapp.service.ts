@@ -484,6 +484,16 @@ export class WhatsappService {
 		return this.setStatus(tenantId, id, 'ignored');
 	}
 
+	/** Kuyruk temizliği: insanın yapacağı işi olmayan satır; akışta kalır, kuyrukta değil. */
+	async archiveInboxItem(tenantId: string, id: string): Promise<void> {
+		await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			await db
+				.update(inboundMessages)
+				.set({ status: 'archived' })
+				.where(and(eq(inboundMessages.id, id), eq(inboundMessages.status, 'parsed')));
+		});
+	}
+
 	/**
 	 * "Okunmayacak grup"tan gelen mesaj: ayrıştırma yok, satır `ignored`; yalnız
 	 * kişi bağı kurulur (kural tabanlı, modele gitmez). Zaten işlenmiş satıra dokunmaz.

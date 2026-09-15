@@ -290,6 +290,17 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 		expect(job?.status).toBe('completed');
 	});
 
+	it('sohbet mesajı (para/randevu/kişi yok) kuyruğa düşmez: archived', async () => {
+		const { messageId, jobId } = await insertMessageAndJob('Tamam cok tesekkur ederim.');
+		await processor.process(jobId, tenantId);
+		const { sql } = getDb(databaseUrl);
+		const [msg] = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`select status from inbound_messages where id = ${messageId}::uuid`;
+		});
+		expect(msg?.status).toBe('archived');
+	});
+
 	it('idempotent: second process skips parse (single result)', async () => {
 		const { messageId, jobId } = await insertMessageAndJob('Ahmet 100 EUR tahsilat');
 		await processor.process(jobId, tenantId);

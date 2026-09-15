@@ -8,6 +8,7 @@ import { TenantContextService } from '../tenant/tenant-context.service';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { asRecord, extractInboundDisplayFields } from './inbound-mapper';
 import { turleriBul } from './mesaj-turu';
+import { kisiBilgisiCikar } from './kisi-bilgisi';
 import { WhatsappService } from './whatsapp.service';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 
@@ -101,9 +102,11 @@ export class InboundMessageProcessor {
 		// çağrısı üretiyor ve ilgisiz öneri riski taşıyordu. Türü hiç anlaşılmayan
 		// mesajda yine çağrılır — bilmiyorsak elemek yanlış olur.
 		const randevuIhtimali = turler.length === 0 || turler.includes('appointment');
+		let oneriSayisi = 0;
 		if (outcome !== 'skipped' && randevuIhtimali && messageBody?.trim()) {
 			try {
-				await this.recordSuggestionsService.parse(tenantId, messageBody);
+				const r = await this.recordSuggestionsService.parse(tenantId, messageBody);
+				oneriSayisi = r.items.length;
 			} catch (err) {
 				this.logger.warn(
 					`inbound_message.process job=${jobId} message=${inboundMessageId} record-suggestions failed: ${
@@ -111,6 +114,20 @@ export class InboundMessageProcessor {
 					}`
 				);
 			}
+		}
+
+		/*
+		 * Kuyruk temizliği (2026-09-15, kullanıcı: "bunları tek tek yoksay mı diyeceğim?"):
+		 * para taslağı çıkmadı, randevu önerisi doğmadı, insanın yapacağı bir şey yok
+		 * (kişi bilgisi / randevu işareti de yok) → satır kuyruğa düşmez, `archived`.
+		 * Kişi bağı ve Kişi Akışı etkilenmez; medya-only mesajlar da böyle gider.
+		 */
+		const insanIsiVar =
+			turler.includes('appointment') ||
+			turler.includes('contact') ||
+			kisiBilgisiCikar(messageBody) !== null;
+		if (outcome === 'error' && oneriSayisi === 0 && !insanIsiVar) {
+			await this.whatsappService.archiveInboxItem(tenantId, inboundMessageId);
 		}
 
 		await this.completeJob(tenantId, jobId);

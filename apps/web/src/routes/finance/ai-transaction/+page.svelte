@@ -824,13 +824,6 @@
 							</button>
 						{/if}
 					{/if}
-					{#if item.media_thumbnail}
-						<img
-							src={item.media_thumbnail}
-							alt=""
-							class="mt-1 max-h-24 rounded-md border border-border object-cover"
-						/>
-					{/if}
 					{#if item.group_id}
 						<p class="mt-1 text-xs text-warning">
 							{t('finance.ai.pending.sameEventHint')}
