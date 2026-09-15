@@ -32,11 +32,12 @@ describe('product-modules / user UI preferences contract', () => {
 		).toEqual(['campaign-assistant', 'ai-accuracy']);
 	});
 
-	it('emptyUserUiPreferences defaults Temassız Kişiler + Referans Değeri on', () => {
+	it('emptyUserUiPreferences defaults AI ile İşlem + Temassız Kişiler + Referans Değeri on', () => {
 		expect(emptyUserUiPreferences()).toEqual({
 			enabled_product_modules: [...DEFAULT_ENABLED_PRODUCT_MODULE_IDS]
 		});
 		expect(DEFAULT_ENABLED_PRODUCT_MODULE_IDS).toEqual([
+			'whatsapp-import',
 			'untouched-contacts',
 			'referral-value',
 			'incentive-files'
