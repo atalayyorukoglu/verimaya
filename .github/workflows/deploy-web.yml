@@ -75,15 +75,39 @@ jobs:
 
           # Baseline = head_sha of this workflow's most recent successful run
           # ("from last deploy evaluation to now", not HEAD^).
+          # Karşılaştırma tabanı = GERÇEKTEN basılan son commit. Kaynağı `web-deployed`
+          # etiketi (build-and-push sonunda yazılır). Eskiden "son başarılı koşunun
+          # head_sha'sı" alınıyordu; iki delik vardı (2026-09-15, 2467adf canlıya çıkmadı):
+          #  1. workflow_run koşusunun head_sha'sı tetikleyen CI'ın değil, o andaki main
+          #     ucunun sha'sı — sonradan push'lanan commit "zaten deploy edilmiş" sayılıyor.
+          #  2. Kapının "atla" dediği koşu da conclusion=success; bir sonraki kapı onu
+          #     "son deploy" sanıp diff'i boş buluyor.
           PREV_SHA=""
-          API_JSON=""
-          if ! API_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-web.yml/runs?status=success&per_page=1" 2>/dev/null); then
-            echo "FAIL-OPEN: gh api failed — deploy"
-            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if git fetch -q origin '+refs/tags/web-deployed:refs/tags/web-deployed' 2>/dev/null; then
+            PREV_SHA=$(git rev-parse -q --verify 'refs/tags/web-deployed^{commit}' 2>/dev/null)
+            echo "Base from web-deployed tag: ${PREV_SHA:-<none>}"
           fi
-          PREV_SHA=$(printf '%s' "$API_JSON" | jq -r '.workflow_runs[0].head_sha // empty')
-          echo "Comparing deploy_sha=${DEPLOY_SHA} against previous_successful_run_sha=${PREV_SHA:-<none>}"
+
+          if [ -z "$PREV_SHA" ]; then
+            # Etiket yoksa (ilk koşu / push izni yok): yalnız build-and-push işi
+            # gerçekten koşmuş koşuları say; kapının atladığı koşu taban olamaz.
+            API_JSON=""
+            if ! API_JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-web.yml/runs?status=success&per_page=10" 2>/dev/null); then
+              echo "FAIL-OPEN: gh api failed — deploy"
+              echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            for run_id in $(printf '%s' "$API_JSON" | jq -r '.workflow_runs[].id'); do
+              built=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" 2>/dev/null \
+                | jq -r '.jobs[] | select(.name == "build-and-push") | .conclusion')
+              if [ "$built" = "success" ]; then
+                PREV_SHA=$(printf '%s' "$API_JSON" | jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id == $id) | .head_sha')
+                echo "Base from last run that actually built (run ${run_id}): ${PREV_SHA}"
+                break
+              fi
+            done
+          fi
+          echo "Comparing deploy_sha=${DEPLOY_SHA} against base=${PREV_SHA:-<none>}"
 
           if [ -z "$PREV_SHA" ]; then
             echo "FAIL-OPEN: no previous successful run — deploy"
@@ -143,7 +167,8 @@ jobs:
     if: needs.gate.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # write: iş sonunda `web-deployed` etiketi basılır (kapının karşılaştırma tabanı).
+      contents: write
       packages: write
     env:
       DEPLOY_SHA: ${{ needs.gate.outputs.deploy_sha }}
@@ -207,3 +232,13 @@ jobs:
           done
           echo "Coolify webhook failed for both GET and POST — image is pushed; redeploy from Coolify UI"
           exit 1
+
+      # Basılan commit'i etiketle: bir sonraki kapı diff'i buradan alır. Etiket
+      # yazılamazsa (izin kısıtı) deploy başarısız sayılmaz; kapı API yoluna düşer.
+      - name: Record deployed SHA
+        if: success()
+        continue-on-error: true
+        run: |
+          git tag -f web-deployed "$DEPLOY_SHA"
+          git push -f origin refs/tags/web-deployed
+          echo "web-deployed → $DEPLOY_SHA"
