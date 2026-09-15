@@ -10,7 +10,14 @@ import {
 } from './transaction.js';
 
 /** WAHA webhook ile gelen grup mesajı durumu. */
-export const inboundMessageStatusSchema = z.enum(['new', 'parsed', 'approved', 'ignored']);
+/** `archived`: geçmişten yüklendi (KISI-01); kuyruğa düşmez, kişi bağı ve Kişi Akışı için okunur. */
+export const inboundMessageStatusSchema = z.enum([
+	'new',
+	'parsed',
+	'approved',
+	'ignored',
+	'archived'
+]);
 export type InboundMessageStatus = z.infer<typeof inboundMessageStatusSchema>;
 
 /**
@@ -50,7 +57,9 @@ export type TransactionDraft = z.infer<typeof transactionDraftSchema>;
  * için zod istekten gelen değeri sessizce düşürür; ayrıca `original_parsed` ile
  * `corrected` karşılaştırması iz yüzünden yanlışlıkla "değişti" demez.
  */
-export const transactionDraftSnapshotSchema = transactionDraftSchema.omit({ evidence: true });
+export const transactionDraftSnapshotSchema = transactionDraftSchema.omit({
+	evidence: true
+});
 
 export type TransactionDraftSnapshot = z.infer<typeof transactionDraftSnapshotSchema>;
 
@@ -122,6 +131,32 @@ export type ApproveDraftsResponse = z.infer<typeof approveDraftsResponseSchema>;
 export const inboundMessageKindSchema = z.enum(['finance', 'appointment', 'contact']);
 export type InboundMessageKind = z.infer<typeof inboundMessageKindSchema>;
 
+/** KISI-01: bağı hangi kural kurdu (`kisi-eslestir.ts`). */
+export const inboundMessageContactMethodSchema = z.enum([
+	'exact',
+	'name',
+	'surname',
+	'model',
+	'manual'
+]);
+export type InboundMessageContactMethod = z.infer<typeof inboundMessageContactMethodSchema>;
+
+/** Mesajın bahsettiği kişi — Kişi Akışı'nın ham maddesi. */
+export const inboundMessageContactRefSchema = z.object({
+	id: uuid,
+	display_name: z.string().max(255),
+	method: inboundMessageContactMethodSchema
+});
+export type InboundMessageContactRef = z.infer<typeof inboundMessageContactRefSchema>;
+
+export const inboundMessageLinkContactsResponseSchema = z.object({
+	processed: z.number().int().nonnegative(),
+	linked: z.number().int().nonnegative()
+});
+export type InboundMessageLinkContactsResponse = z.infer<
+	typeof inboundMessageLinkContactsResponseSchema
+>;
+
 export const inboundMessageSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
@@ -150,6 +185,12 @@ export const inboundMessageSchema = z.object({
 	message_kinds: z.array(inboundMessageKindSchema).default([]),
 	/** Türü hangi kelimenin tetiklediği; "bunu neden para saydın" sorusunun cevabı. */
 	message_kind_signals: z.array(z.string().max(64)).default([]),
+	/**
+	 * KISI-01: mesajın bahsettiği kişiler (`inbound_message_contacts`). Hangi
+	 * gruptan geldiği fark etmez; Kişi Akışı buradan beslenir. Boş dizi: kimse
+	 * bulunamadı (kira, kredi taksidi gibi kişisiz mesajlar).
+	 */
+	contacts: z.array(inboundMessageContactRefSchema).default([]),
 	created_at: isoDateTime
 });
 

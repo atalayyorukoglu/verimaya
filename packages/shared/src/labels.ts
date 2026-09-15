@@ -50,7 +50,8 @@ export const inboundMessageStatusLabels: Record<InboundMessageStatus, string> = 
 	new: 'Yeni',
 	parsed: 'Ayrıştırıldı',
 	approved: 'Onaylandı',
-	ignored: 'Yoksayıldı'
+	ignored: 'Yoksayıldı',
+	archived: 'Arşiv'
 };
 
 /**

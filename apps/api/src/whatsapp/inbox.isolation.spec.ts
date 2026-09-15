@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb, getDb } from '../db/client';
 import { HeuristicLlmClient } from '../integrations/llm';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
+import { MessageContactsService } from './message-contacts.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import type { TenantContextService } from '../tenant/tenant-context.service';
@@ -93,8 +94,16 @@ describe('inbound_messages RLS isolation', () => {
 			new ContactsService(tenantContext, new LocalFileStorage()),
 			tenantContext,
 			new TransactionsService(tenantContext),
-			{ getAiPrompt: async () => ({ text: '', is_default: true, updated_by: null, updated_at: null }) } as never,
+			{
+				getAiPrompt: async () => ({
+					text: '',
+					is_default: true,
+					updated_by: null,
+					updated_at: null
+				})
+			} as never,
 			new WhatsappChatsService(tenantContext),
+			new MessageContactsService(tenantContext),
 			new HeuristicLlmClient()
 		);
 	});

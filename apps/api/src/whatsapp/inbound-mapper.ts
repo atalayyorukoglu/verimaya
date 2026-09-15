@@ -134,6 +134,8 @@ export function toInboundMessage(row: {
 		// gerekirse yeniden hesaplar.
 		message_kinds: turler.turler,
 		message_kind_signals: turler.isaretler,
+		// KISI-01: bağlar ayrı tabloda; liste düzeyinde tek sorguyla eklenir.
+		contacts: [],
 		created_at: row.createdAt.toISOString()
 	};
 }

@@ -1,9 +1,10 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { desc, eq } from 'drizzle-orm';
+import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { and, desc, eq } from 'drizzle-orm';
 import type {
 	ApproveDraftItem,
 	ApproveDraftsRequest,
 	ApproveDraftsResponse,
+	InboundMessage,
 	InboundMessageActionResponse,
 	InboundMessageProcessResponse,
 	InboundMessageStatus,
@@ -15,16 +16,16 @@ import type {
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
+import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
+import { MessageContactsService } from './message-contacts.service';
+import type { KisiAdayi } from './kisi-eslestir';
 import { buildKnowledgeContext } from '@verimaya/shared';
 import { type AuditActor } from '../common/audit-helper';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
-import {
-	TransactionsService,
-	type TransactionSource
-} from '../transactions/transactions.service';
+import { TransactionsService, type TransactionSource } from '../transactions/transactions.service';
 import { evidenceForApprovedDraft } from './evidence';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { groupInboundMessages } from './group-events';
@@ -67,12 +68,15 @@ function toDraftSnapshot(item: ApproveDraftItem): TransactionDraftSnapshot {
 
 @Injectable()
 export class WhatsappService {
+	private readonly logger = new Logger(WhatsappService.name);
+
 	constructor(
 		private readonly contactsService: ContactsService,
 		private readonly tenantContext: TenantContextService,
 		private readonly transactionsService: TransactionsService,
 		private readonly settings: SettingsService,
 		private readonly whatsappChats: WhatsappChatsService,
+		private readonly messageContacts: MessageContactsService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
@@ -109,24 +113,7 @@ export class WhatsappService {
 				.limit(params.limit + 1);
 
 			const page = buildCursorPage(rows, params.limit);
-			// Grup adı webhook gövdesinde gelmiyor (WAHA NOWEB); Ayarlar'daki sohbet
-			// defterinden okunur. Defterde yoksa `chat_name` null kalır ve arayüz
-			// kimliği gösterir — uydurma ad yazmaktansa.
-			const directory = await this.whatsappChats.directoryWithDb(db);
-			const named = page.items.map((row) => {
-				const message = toInboundMessage(row);
-				const entry = message.chat_id ? directory.get(message.chat_id) : undefined;
-				if (!entry) return message;
-				// Grubun görevi biliniyorsa tür yeniden hesaplanır: işaretsiz mesaj
-				// artık "anlaşılmadı" değil, grubun varsayılanı olur.
-				const turler = turleriBul(message.body, entry.purpose as WhatsappChatPurpose);
-				return {
-					...message,
-					chat_name: entry.name,
-					message_kinds: turler.turler,
-					message_kind_signals: turler.isaretler
-				};
-			});
+			const named = await this.decorateWithDb(db, page.items);
 			return {
 				// AI-13: aynı olayı anlatan mesajlar `group_id` ile işaretlenir; kayıt değişmez.
 				messages: groupInboundMessages(named),
@@ -135,16 +122,116 @@ export class WhatsappService {
 		});
 	}
 
+	/**
+	 * Satırdan API mesajına: grup adı + tür + bahsedilen kişiler.
+	 *
+	 * Grup adı webhook gövdesinde gelmiyor (WAHA NOWEB); Ayarlar'daki sohbet
+	 * defterinden okunur. Defterde yoksa `chat_name` null kalır ve arayüz
+	 * kimliği gösterir — uydurma ad yazmaktansa. Kişi bağları (KISI-01) ayrı
+	 * tabloda; sayfa başına tek sorguyla eklenir.
+	 */
+	private async decorateWithDb(db: TenantDb, rows: InboundMessageRow[]): Promise<InboundMessage[]> {
+		const directory = await this.whatsappChats.directoryWithDb(db);
+		const links = await this.messageContacts.contactsForMessagesWithDb(
+			db,
+			rows.map((r) => r.id)
+		);
+		return rows.map((row) => {
+			const message: InboundMessage = {
+				...toInboundMessage(row),
+				contacts: links.get(row.id) ?? []
+			};
+			const entry = message.chat_id ? directory.get(message.chat_id) : undefined;
+			if (!entry) return message;
+			// Grubun görevi biliniyorsa tür yeniden hesaplanır: işaretsiz mesaj
+			// artık "anlaşılmadı" değil, grubun varsayılanı olur.
+			const turler = turleriBul(message.body, entry.purpose as WhatsappChatPurpose);
+			return {
+				...message,
+				chat_name: entry.name,
+				message_kinds: turler.turler,
+				message_kind_signals: turler.isaretler
+			};
+		});
+	}
+
+	/**
+	 * KISI-01: kişinin adı geçen mesajlar, gruptan bağımsız, yeniden eskiye.
+	 * Kişi Akışı'nın WhatsApp satırları buradan gelir.
+	 */
+	async listInboxByContact(
+		tenantId: string,
+		contactId: string,
+		params: { cursor?: string; limit: number }
+	) {
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const cursorCond = createdAtCursorCondition(
+				inboundMessages.createdAt,
+				inboundMessages.id,
+				params.cursor
+			);
+			const rows = await db
+				.select({
+					id: inboundMessages.id,
+					tenantId: inboundMessages.tenantId,
+					provider: inboundMessages.provider,
+					externalId: inboundMessages.externalId,
+					payload: inboundMessages.payload,
+					status: inboundMessages.status,
+					createdAt: inboundMessages.createdAt
+				})
+				.from(inboundMessages)
+				.innerJoin(
+					inboundMessageContacts,
+					eq(inboundMessageContacts.inboundMessageId, inboundMessages.id)
+				)
+				.where(and(eq(inboundMessageContacts.contactId, contactId), cursorCond))
+				.orderBy(desc(inboundMessages.createdAt), desc(inboundMessages.id))
+				.limit(params.limit + 1);
+
+			const page = buildCursorPage(rows, params.limit);
+			return {
+				messages: await this.decorateWithDb(db, page.items),
+				next_cursor: page.next_cursor
+			};
+		});
+	}
+
+	/** KISI-01: geçmişi yeniden eşleştir (yeni kişi eklendi / kural düzeldi). */
+	relinkContacts(tenantId: string) {
+		return this.messageContacts.relinkAll(tenantId);
+	}
+
+	/** Bağ kurmak ana işi düşürmez: hata yalnız loglanır. */
+	private async linkContactsSafely(
+		db: TenantDb,
+		tenantId: string,
+		row: InboundMessageRow,
+		adaylar: KisiAdayi[]
+	): Promise<void> {
+		try {
+			const display = extractInboundDisplayFields(asRecord(row.payload) ?? {});
+			await this.messageContacts.linkWithDb(db, tenantId, row.id, display.body, adaylar);
+		} catch (err) {
+			this.logger.warn(
+				`contact link failed message=${row.id}: ${err instanceof Error ? err.message : String(err)}`
+			);
+		}
+	}
+
 	async getInboxItem(tenantId: string, id: string) {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, id);
-			return toInboundMessage(row);
+			const [message] = await this.decorateWithDb(db, [row]);
+			return message;
 		});
 	}
 
 	/** LLM/heuristic parse of a single inbox item; stashes drafts (or an error) into `payload`. */
 	async parseInboxItem(tenantId: string, id: string): Promise<{ records: TransactionDraft[] }> {
-		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
+		const { items: patients } = await this.contactsService.list(tenantId, {
+			limit: 100
+		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		const knowledge = await this.resolveKnowledge(tenantId);
 
@@ -185,7 +272,9 @@ export class WhatsappService {
 		tenantId: string,
 		inboundMessageId: string
 	): Promise<ProcessInboundOutcome> {
-		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
+		const { items: patients } = await this.contactsService.list(tenantId, {
+			limit: 100
+		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		const knowledge = await this.resolveKnowledge(tenantId);
 
@@ -194,25 +283,39 @@ export class WhatsappService {
 			if (row.status !== 'new') {
 				return 'skipped';
 			}
-			return this.processNewInboundRow(db, row, patients, tenantPromptNote, knowledge);
+			const outcome = await this.processNewInboundRow(
+				db,
+				row,
+				patients,
+				tenantPromptNote,
+				knowledge
+			);
+			// KISI-01: para ayrıştırması ne derse desin, mesaj bahsettiği kişilere bağlanır.
+			await this.linkContactsSafely(
+				db,
+				tenantId,
+				row,
+				await this.messageContacts.directoryWithDb(db)
+			);
+			return outcome;
 		});
 	}
 
 	/** Parse every `new` message with text; skips media-only messages. Does not create transactions. */
 	async processInbox(tenantId: string): Promise<InboundMessageProcessResponse> {
-		const { items: patients } = await this.contactsService.list(tenantId, { limit: 100 });
+		const { items: patients } = await this.contactsService.list(tenantId, {
+			limit: 100
+		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		const knowledge = await this.resolveKnowledge(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
-			const rows = await db
-				.select()
-				.from(inboundMessages)
-				.where(eq(inboundMessages.status, 'new'));
+			const rows = await db.select().from(inboundMessages).where(eq(inboundMessages.status, 'new'));
 
 			let processed = 0;
 			let parsed = 0;
 			let error = 0;
+			const adaylar = await this.messageContacts.directoryWithDb(db);
 
 			for (const row of rows) {
 				const payload = asRecord(row.payload) ?? {};
@@ -230,6 +333,7 @@ export class WhatsappService {
 				);
 				if (outcome === 'parsed') parsed++;
 				else if (outcome === 'error') error++;
+				await this.linkContactsSafely(db, tenantId, row, adaylar);
 			}
 
 			return { processed, parsed, error };
@@ -259,7 +363,10 @@ export class WhatsappService {
 		// oraya takılmaz ve aynı gideri ikinci kez yazardı.
 		if (inboxRow.status === 'approved') {
 			throw new ConflictException({
-				error: { code: 'conflict', message: 'Inbound message already approved' }
+				error: {
+					code: 'conflict',
+					message: 'Inbound message already approved'
+				}
 			});
 		}
 
@@ -274,32 +381,36 @@ export class WhatsappService {
 		for (const [index, draft] of input.drafts.entries()) {
 			const source: TransactionSource = {
 				inboundMessageId: inboxId,
-				evidence: alignedDrafts
-					? evidenceForApprovedDraft(alignedDrafts[index], draft)
-					: null
+				evidence: alignedDrafts ? evidenceForApprovedDraft(alignedDrafts[index], draft) : null
 			};
-			const tx = await this.transactionsService.createWithDb(db, tenantId, {
-				kind: draft.kind,
-				title: draft.title.trim(),
-				subtitle: null,
-				category: draft.category ?? null,
-				occurred_on: draft.occurred_on,
-				status: draft.status,
-				invoice_status: 'none',
-				payment_method: draft.payment_method ?? null,
-				amount: draft.amount,
-				paid_amount: draft.paid_amount,
-				currency: draft.currency,
-				contact_id: draft.contact_id ?? null,
-				contact_label: draft.contact_label ?? null,
-				case_contact_id: null,
-				responsible_contact_id: null,
-				amount_base: draft.amount_base,
-				base_currency: null,
-				fx_rate: draft.fx_rate,
-				fx_dated: draft.occurred_on,
-				description: draft.description ?? null
-			}, actor, source);
+			const tx = await this.transactionsService.createWithDb(
+				db,
+				tenantId,
+				{
+					kind: draft.kind,
+					title: draft.title.trim(),
+					subtitle: null,
+					category: draft.category ?? null,
+					occurred_on: draft.occurred_on,
+					status: draft.status,
+					invoice_status: 'none',
+					payment_method: draft.payment_method ?? null,
+					amount: draft.amount,
+					paid_amount: draft.paid_amount,
+					currency: draft.currency,
+					contact_id: draft.contact_id ?? null,
+					contact_label: draft.contact_label ?? null,
+					case_contact_id: null,
+					responsible_contact_id: null,
+					amount_base: draft.amount_base,
+					base_currency: null,
+					fx_rate: draft.fx_rate,
+					fx_dated: draft.occurred_on,
+					description: draft.description ?? null
+				},
+				actor,
+				source
+			);
 			created.push(tx);
 		}
 
@@ -405,7 +516,10 @@ export class WhatsappService {
 		db: TenantDb,
 		id: string,
 		payload: Record<string, unknown>,
-		patch: { parsed_records: TransactionDraft[] | null; parse_error: string | null }
+		patch: {
+			parsed_records: TransactionDraft[] | null;
+			parse_error: string | null;
+		}
 	) {
 		await db
 			.update(inboundMessages)
@@ -414,7 +528,11 @@ export class WhatsappService {
 	}
 
 	private async findRow(db: TenantDb, id: string): Promise<InboundMessageRow> {
-		const [row] = await db.select().from(inboundMessages).where(eq(inboundMessages.id, id)).limit(1);
+		const [row] = await db
+			.select()
+			.from(inboundMessages)
+			.where(eq(inboundMessages.id, id))
+			.limit(1);
 
 		if (!row) {
 			throw new NotFoundException('Inbound message not found');

@@ -664,6 +664,36 @@ testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
 
 ---
 
+## KISI-01 — Kişi-merkezli WhatsApp: mesajı kişiye bağla, Kişi Akışı'nda özetle (2026-09-15, kullanıcı)
+
+> **Karar (kullanıcı):** kuyruk mesaj ya da zaman penceresi başına değil, **kişi** başına
+> anlamlandırılacak. "Claire bilet attı, 3 ay sonra geldi, tedavi oldu, ödedi" — tüm
+> gruplardan gelen veri kişiye bağlanır; Kişi Akışı'nda çalışan notlarından ayrı, sürekli
+> güncellenen bir model özeti durur. Ara adım olarak önerilen "gürültüyü gizle / olay kartı"
+> yerine bu yön seçildi. Zaman penceresi (dk) anlamsız; çapa kişi.
+
+- [x] **1. Mesaj → kişi bağı.** `inbound_message_contacts` (0072); kural tabanlı eşleştirme
+  `kisi-eslestir.ts` (tam ad / ad+soyad ekli hâliyle / tek soyad); her gelen mesajda ve
+  `POST /whatsapp/inbox/link-contacts` ile geçmişte koşar. Kuyruk kartında kişi rozeti,
+  `GET /whatsapp/inbox/by-contact/:id` kişi tarafı için hazır.
+  **Görüş (2026-09-15):** 12 birim + 3 izolasyon testi. Model adımı ('model') yerinde
+  bırakıldı, henüz çağrılmıyor — önce kuralın ne kadarını yakaladığı ölçülecek.
+- [ ] **2. Kişi Akışı'na WhatsApp satırları.** `by-contact` listesi kişi sayfasında; grup adı,
+  tarih, metin, ek sayısı. Randevu/işlem/not satırlarıyla aynı zaman çizgisinde.
+- [ ] **3. Özet.** Kişinin tüm akışından model yazar; her cümle kaynak mesaja bağlı
+  (`evidence-highlight` kalıbı); yeni bağlı veri gelince yenilenir, elle düzenlenmez.
+  Çalışan notları ayrı kalır. PII kapısı (`pii-mask.ts`) aynı; Mistral-AB kararı geçerli.
+- [ ] **4. Para/randevu onayı kişi altında.** Kuyruk "Claire · 5 yeni mesaj · 2 para satırı"
+  diye kişiye göre gruplanır; kişisiz mesajlar (kira, taksit) ayrı kümede.
+- [ ] **5. Geçmiş yükleme.** `docs/whatsapp/` dışa aktarımları (2022→, ~15.000 mesaj)
+  `inbound_messages`'a `export:` kimliğiyle; Muhasebe 1–12 Eylül parçası zaten yüklendi.
+  Kullanıcı onayı var (2026-09-15).
+
+**Bilinen açık (bu işten bağımsız):** tarih ("15.09.26") ve @bahsetme kimliği para
+ayrıştırıcısında tutar sanılıyor; canlı akışta tekrar ediyor.
+
+---
+
 ## Yarına bırakılanlar (2026-08-23 akşamı, kullanıcı)
 
 Gün sonunda konuşulup ertesi güne bırakılan üç başlık. Kalem değil, **oturum gündemi**.

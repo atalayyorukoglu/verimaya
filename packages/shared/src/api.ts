@@ -147,6 +147,9 @@ export const apiPaths = {
 	whatsappInbox: `${API_V1_PREFIX}/whatsapp/inbox`,
 	whatsappInboxItem: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}`,
 	whatsappInboxProcess: `${API_V1_PREFIX}/whatsapp/inbox/process`,
+	whatsappInboxLinkContacts: `${API_V1_PREFIX}/whatsapp/inbox/link-contacts`,
+	whatsappInboxByContact: (contactId: string) =>
+		`${API_V1_PREFIX}/whatsapp/inbox/by-contact/${contactId}`,
 	whatsappInboxParse: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/parse`,
 	whatsappInboxApprove: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/approve`,
 	whatsappInboxApproveDrafts: (id: string) =>
@@ -334,20 +337,15 @@ import {
 	inboundMessageActionResponseSchema,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
+	inboundMessageLinkContactsResponseSchema,
 	inboundMessageProcessResponseSchema,
 	inboundMessageSchema,
 	transactionDraftSchema
 } from './inbound-message.js';
 import { contactFileCreateSchema, contactFileSchema } from './file.js';
 import { contactCaseNoteCreateSchema, contactCaseNoteSchema } from './case-note.js';
-import {
-	contactDuplicateGroupsResponseSchema,
-	mergeRecordsSchema
-} from './duplicate.js';
-import {
-	financeCategorySchema,
-	appointmentTypeSettingSchema
-} from './finance-category.js';
+import { contactDuplicateGroupsResponseSchema, mergeRecordsSchema } from './duplicate.js';
+import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-category.js';
 import { settingsReorderResultSchema, settingsReorderSchema } from './settings-reorder.js';
 import { tenantSchema } from './tenant.js';
 import {
@@ -368,10 +366,7 @@ import {
 	platformTenantSchema,
 	platformTenantUpdateSchema
 } from './platform.js';
-import {
-	userUiPreferencesSchema,
-	userUiPreferencesUpdateSchema
-} from './product-modules.js';
+import { userUiPreferencesSchema, userUiPreferencesUpdateSchema } from './product-modules.js';
 import { auditLogSchema } from './audit.js';
 import { dataDeletionRequestSchema, dataExportSchema } from './data-subject.js';
 import {
@@ -409,14 +404,8 @@ import {
 	aiCorrectionSchema,
 	aiCorrectionsReportSchema
 } from './ai-correction.js';
-import {
-	whatsappAiPromptSchema,
-	whatsappAiPromptUpdateSchema
-} from './ai-prompt.js';
-import {
-	permissionMatrixPatchSchema,
-	permissionMatrixSchema
-} from './permission-matrix.js';
+import { whatsappAiPromptSchema, whatsappAiPromptUpdateSchema } from './ai-prompt.js';
+import { permissionMatrixPatchSchema, permissionMatrixSchema } from './permission-matrix.js';
 import {
 	importBundleCommitResultSchema,
 	importBundleDryRunResultSchema,
@@ -431,7 +420,10 @@ import {
 	dataDeletePreviewBodySchema,
 	dataDeletePreviewResultSchema
 } from './data-delete.js';
-import { webhookSubscriptionCreateSchema, webhookSubscriptionSchema } from './webhook-subscription.js';
+import {
+	webhookSubscriptionCreateSchema,
+	webhookSubscriptionSchema
+} from './webhook-subscription.js';
 
 /**
  * API contract sketch for /v1 routes.
@@ -717,6 +709,15 @@ export const apiContract = {
 	'POST /v1/whatsapp/inbox/process': {
 		response: inboundMessageProcessResponseSchema
 	},
+	'POST /v1/whatsapp/inbox/link-contacts': {
+		response: inboundMessageLinkContactsResponseSchema
+	},
+	'GET /v1/whatsapp/inbox/by-contact/:contactId': {
+		response: z.object({
+			messages: z.array(inboundMessageSchema),
+			next_cursor: z.string().nullable()
+		})
+	},
 	'POST /v1/whatsapp/inbox/:id/parse': {
 		response: z.object({ records: z.array(transactionDraftSchema) })
 	},
@@ -966,6 +967,4 @@ export const apiContract = {
 export type ApiContract = typeof apiContract;
 
 /** Helper to type a response from the contract map. */
-export type ContractResponse<K extends keyof ApiContract> = z.infer<
-	ApiContract[K]['response']
->;
+export type ContractResponse<K extends keyof ApiContract> = z.infer<ApiContract[K]['response']>;

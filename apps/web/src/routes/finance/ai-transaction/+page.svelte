@@ -9,6 +9,7 @@
 		FinanceCategory,
 		InboundMessage,
 		InboundMessageKind,
+		InboundMessageLinkContactsResponse,
 		Tenant,
 		TransactionDraft,
 		TransactionEvidenceEntry
@@ -271,6 +272,28 @@
 	}
 
 	/**
+	 * KISI-01: geçmiş mesajları kişilere yeniden bağla. Yeni mesaj gelirken bağ
+	 * zaten kuruluyor; bu düğme yeni kişi eklendiğinde ya da kural düzeldiğinde
+	 * geçmişi taramak için.
+	 */
+	let linking = $state(false);
+	let linkResult = $state<string | null>(null);
+	async function linkContacts() {
+		linking = true;
+		linkResult = null;
+		try {
+			const r = await apiSend<InboundMessageLinkContactsResponse>(
+				apiPaths.whatsappInboxLinkContacts,
+				'POST'
+			);
+			linkResult = t('finance.ai.pending.linked', { processed: r.processed, linked: r.linked });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.whatsapp.inbox() });
+		} finally {
+			linking = false;
+		}
+	}
+
+	/**
 	 * Sunucu cevap verdi; listeyi yeniden çekmeyi beklemeden satırı düşür.
 	 * Yeniden çekme 5 sayfaya kadar istek atıyor, o sürede satır yerinde
 	 * duruyor ve "Yoksay basıldı ama gitmedi" gibi görünüyordu.
@@ -520,8 +543,14 @@
 				>
 					{processing ? t('finance.ai.pending.processing') : t('finance.ai.pending.process')}
 				</Button>
+				<Button variant="ghost" size="sm" type="button" disabled={linking} onclick={linkContacts}>
+					{linking ? t('finance.ai.pending.linking') : t('finance.ai.pending.linkContacts')}
+				</Button>
 			</div>
 		</div>
+		{#if linkResult}
+			<p class="mb-3 text-xs text-text-muted">{linkResult}</p>
+		{/if}
 
 		<!--
 			Tür süzgeci: tek gelen kutusu, üç konu. Ayrı ekran açmak yerine süzgeç,
@@ -594,6 +623,16 @@
 								{#if item.group_id}
 									<StatusBadge label={t('finance.ai.pending.sameEvent')} tone="warning" />
 								{/if}
+								<!-- KISI-01: mesajın bahsettiği kişiler; tıklayınca kişi sayfası. -->
+								{#each item.contacts as c (c.id)}
+									<a
+										href={resolve('/contacts/[id]', { id: c.id })}
+										class="rounded-full border border-brand/40 bg-brand-subtle px-2 py-0.5 text-xs text-text hover:underline"
+										title={c.method}
+									>
+										{c.display_name}
+									</a>
+								{/each}
 								<time
 									class="ml-auto text-xs whitespace-nowrap text-text-faint"
 									datetime={item.created_at}

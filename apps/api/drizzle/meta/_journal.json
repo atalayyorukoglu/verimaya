@@ -505,6 +505,13 @@
       "when": 1757920000000,
       "tag": "0071_record_suggestions_logistics",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1757930000000,
+      "tag": "0072_inbound_message_contacts",
+      "breakpoints": true
     }
   ]
 }

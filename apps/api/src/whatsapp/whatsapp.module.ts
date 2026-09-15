@@ -11,6 +11,7 @@ import { TenantContextService } from '../tenant/tenant-context.service';
 import { TransactionsModule } from '../transactions/transactions.module';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { InboundMessageProcessor } from './inbound-message.processor';
+import { MessageContactsService } from './message-contacts.service';
 import { DisclosingOutboundMessagePort } from './outbound/disclosing-outbound.port';
 import { OUTBOUND_MESSAGE_PORT } from './outbound/outbound.port';
 import { StubOutboundMessagePort } from './outbound/outbound.stub';
@@ -32,6 +33,7 @@ import { WhatsappService } from './whatsapp.service';
 	providers: [
 		WhatsappService,
 		AiCorrectionsService,
+		MessageContactsService,
 		InboundMessageProcessor,
 		StubOutboundMessagePort,
 		{

@@ -6975,6 +6975,7 @@ paths:
                             - parsed
                             - approved
                             - ignored
+                            - archived
                           default: new
                         parsed_records:
                           type: array
@@ -7242,6 +7243,31 @@ paths:
                             type: string
                             maxLength: 64
                           default: &a3 []
+                        contacts:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              display_name:
+                                type: string
+                                maxLength: 255
+                              method:
+                                type: string
+                                enum:
+                                  - exact
+                                  - name
+                                  - surname
+                                  - model
+                                  - manual
+                            required:
+                              - id
+                              - display_name
+                              - method
+                            additionalProperties: false
+                          default: &a4 []
                         created_at:
                           type: string
                           format: date-time
@@ -7310,6 +7336,7 @@ paths:
                       - parsed
                       - approved
                       - ignored
+                      - archived
                     default: new
                   parsed_records:
                     type: array
@@ -7577,6 +7604,31 @@ paths:
                       type: string
                       maxLength: 64
                     default: *a3
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        display_name:
+                          type: string
+                          maxLength: 255
+                        method:
+                          type: string
+                          enum:
+                            - exact
+                            - name
+                            - surname
+                            - model
+                            - manual
+                      required:
+                        - id
+                        - display_name
+                        - method
+                      additionalProperties: false
+                    default: *a4
                   created_at:
                     type: string
                     format: date-time
@@ -7621,6 +7673,398 @@ paths:
                   - parsed
                   - error
                 additionalProperties: false
+  /whatsapp/inbox/link-contacts:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed:
+                    type: integer
+                    minimum: 0
+                  linked:
+                    type: integer
+                    minimum: 0
+                required:
+                  - processed
+                  - linked
+                additionalProperties: false
+  /whatsapp/inbox/by-contact/{contactId}:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        chat_name:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        chat_id:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
+                        sender:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        body:
+                          type: string
+                          maxLength: 16000
+                          nullable: true
+                        has_media:
+                          type: boolean
+                          default: false
+                        media_path:
+                          type: string
+                          maxLength: 1024
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                            - new
+                            - parsed
+                            - approved
+                            - ignored
+                            - archived
+                          default: new
+                        parsed_records:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - income
+                                  - expense
+                              amount:
+                                type: integer
+                                exclusiveMinimum: true
+                                minimum: 0
+                              currency:
+                                type: string
+                                enum:
+                                  - TRY
+                                  - GBP
+                                  - EUR
+                                  - USD
+                                default: TRY
+                              counterparty_amount:
+                                type: integer
+                                minimum: 0
+                                nullable: true
+                              title:
+                                type: string
+                                minLength: 1
+                                maxLength: 255
+                              category:
+                                type: string
+                                maxLength: 128
+                                nullable: true
+                              subcategory:
+                                type: string
+                                maxLength: 128
+                                nullable: true
+                              contact_id:
+                                type: string
+                                format: uuid
+                                nullable: true
+                              contact_display_name:
+                                type: string
+                                maxLength: 255
+                                nullable: true
+                              contact_label:
+                                type: string
+                                maxLength: 255
+                                nullable: true
+                              occurred_on:
+                                type: string
+                                pattern: ^\d{4}-\d{2}-\d{2}$
+                              payment_method:
+                                type: string
+                                maxLength: 64
+                                nullable: true
+                              description:
+                                type: string
+                                maxLength: 8000
+                                nullable: true
+                              evidence:
+                                type: object
+                                required: *a1
+                                properties:
+                                  amount:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  currency:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  kind:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  occurred_on:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  contact_id:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  contact_label:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  payment_method:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                  category:
+                                    type: object
+                                    properties:
+                                      quote:
+                                        type: string
+                                        maxLength: 200
+                                      start:
+                                        type: integer
+                                        minimum: 0
+                                        nullable: true
+                                      confidence:
+                                        type: string
+                                        enum:
+                                          - high
+                                          - medium
+                                          - low
+                                    required:
+                                      - quote
+                                      - start
+                                      - confidence
+                                    additionalProperties: false
+                                additionalProperties: false
+                                nullable: true
+                            required:
+                              - kind
+                              - amount
+                              - title
+                              - occurred_on
+                            additionalProperties: false
+                          nullable: true
+                        parse_error:
+                          type: string
+                          maxLength: 2000
+                          nullable: true
+                        group_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
+                        message_kinds:
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                              - finance
+                              - appointment
+                              - contact
+                          default: *a2
+                        message_kind_signals:
+                          type: array
+                          items:
+                            type: string
+                            maxLength: 64
+                          default: *a3
+                        contacts:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              display_name:
+                                type: string
+                                maxLength: 255
+                              method:
+                                type: string
+                                enum:
+                                  - exact
+                                  - name
+                                  - surname
+                                  - model
+                                  - manual
+                            required:
+                              - id
+                              - display_name
+                              - method
+                            additionalProperties: false
+                          default: *a4
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - chat_name
+                        - sender
+                        - body
+                        - media_path
+                        - parsed_records
+                        - parse_error
+                        - created_at
+                      additionalProperties: false
+                  next_cursor:
+                    type: string
+                    nullable: true
+                required:
+                  - messages
+                  - next_cursor
+                additionalProperties: false
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
   /whatsapp/inbox/{id}/parse:
     post:
       responses:
@@ -7905,6 +8349,7 @@ paths:
                       - parsed
                       - approved
                       - ignored
+                      - archived
                 required:
                   - success
                   - id
@@ -8469,6 +8914,7 @@ paths:
                       - parsed
                       - approved
                       - ignored
+                      - archived
                 required:
                   - success
                   - id
@@ -10295,7 +10741,7 @@ paths:
                       type: string
                       minLength: 1
                       maxLength: 128
-                    default: &a4 []
+                    default: &a5 []
                   created_at:
                     type: string
                     format: date-time
@@ -10710,7 +11156,7 @@ paths:
                             type: string
                             minLength: 1
                             maxLength: 128
-                          default: *a4
+                          default: *a5
                         created_at:
                           type: string
                           format: date-time
@@ -12046,7 +12492,7 @@ paths:
                         - readonly
                   defaults:
                     type: object
-                    required: &a6
+                    required: &a7
                       - owner
                       - admin
                       - manager
@@ -12056,7 +12502,7 @@ paths:
                     properties:
                       owner:
                         type: object
-                        required: &a5
+                        required: &a6
                           - contact
                           - finance
                           - settings
@@ -12141,7 +12587,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12218,7 +12664,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12295,7 +12741,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12372,7 +12818,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12449,7 +12895,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12569,11 +13015,11 @@ paths:
                       additionalProperties: false
                   effective:
                     type: object
-                    required: *a6
+                    required: *a7
                     properties:
                       owner:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12650,7 +13096,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12727,7 +13173,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12804,7 +13250,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12881,7 +13327,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -12958,7 +13404,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13114,11 +13560,11 @@ paths:
                         - readonly
                   defaults:
                     type: object
-                    required: *a6
+                    required: *a7
                     properties:
                       owner:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13195,7 +13641,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13272,7 +13718,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13349,7 +13795,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13426,7 +13872,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13503,7 +13949,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13623,11 +14069,11 @@ paths:
                       additionalProperties: false
                   effective:
                     type: object
-                    required: *a6
+                    required: *a7
                     properties:
                       owner:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13704,7 +14150,7 @@ paths:
                         additionalProperties: false
                       admin:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13781,7 +14227,7 @@ paths:
                         additionalProperties: false
                       manager:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13858,7 +14304,7 @@ paths:
                         additionalProperties: false
                       agent:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -13935,7 +14381,7 @@ paths:
                         additionalProperties: false
                       finance:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -14012,7 +14458,7 @@ paths:
                         additionalProperties: false
                       readonly:
                         type: object
-                        required: *a5
+                        required: *a6
                         properties:
                           contact:
                             type: array
@@ -14278,7 +14724,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: &a7 []
+                          default: &a8 []
                       required:
                         - row_number
                         - action
@@ -14495,7 +14941,7 @@ paths:
                           items:
                             type: string
                             maxLength: 500
-                          default: *a7
+                          default: *a8
                         sheet:
                           type: string
                           enum:

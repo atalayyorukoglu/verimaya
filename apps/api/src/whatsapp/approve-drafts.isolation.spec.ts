@@ -13,6 +13,7 @@ import { IdempotencyService } from '../common/idempotency.service';
 import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
+import { MessageContactsService } from './message-contacts.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import { TenantContextService } from '../tenant/tenant-context.service';
@@ -93,8 +94,16 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			new ContactsService(tenantContext, new LocalFileStorage()),
 			tenantContext,
 			new TransactionsService(tenantContext),
-			{ getAiPrompt: async () => ({ text: '', is_default: true, updated_by: null, updated_at: null }) } as never,
+			{
+				getAiPrompt: async () => ({
+					text: '',
+					is_default: true,
+					updated_by: null,
+					updated_at: null
+				})
+			} as never,
 			new WhatsappChatsService(tenantContext),
+			new MessageContactsService(tenantContext),
 			new HeuristicLlmClient()
 		);
 	});
@@ -178,7 +187,9 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 			return row!.id as string;
 		});
 
-		const input: ApproveDraftsRequest = { drafts: [draftPayload({ title: 'AI-13 dup' })] };
+		const input: ApproveDraftsRequest = {
+			drafts: [draftPayload({ title: 'AI-13 dup' })]
+		};
 		const run = (key: string) =>
 			idempotency.run(
 				tenantId,
@@ -187,7 +198,13 @@ describe('approve-drafts atomicity + idempotency (MONEY-01)', () => {
 				'/v1/whatsapp/inbox/:id/approve-drafts',
 				async (db) => ({
 					statusCode: 201,
-					body: await whatsappService.approveDraftsWithDb(db, tenantId, freshInbox, input, testActor)
+					body: await whatsappService.approveDraftsWithDb(
+						db,
+						tenantId,
+						freshInbox,
+						input,
+						testActor
+					)
 				})
 			);
 

@@ -1,14 +1,4 @@
-import {
-	Body,
-	Controller,
-	Get,
-	Param,
-	Post,
-	Query,
-	Req,
-	Res,
-	UseGuards
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import {
 	aiCorrectionCreateSchema,
 	aiCorrectionsReportParamsSchema,
@@ -84,10 +74,32 @@ export class WhatsappController {
 		return this.whatsappService.processInbox(getActiveOrgId(req));
 	}
 
+	@Post('inbox/link-contacts')
+	@RequireOrgPermission('contact', 'update')
+	@IdempotencyExempt(
+		'KISI-01 backfill: re-links every inbox row by name matching; existing links are kept (unique + do nothing), so re-running only adds what is missing.'
+	)
+	linkContacts(@Req() req: FastifyRequest) {
+		return this.whatsappService.relinkContacts(getActiveOrgId(req));
+	}
+
+	/** KISI-01: kişinin adı geçen mesajlar — Kişi Akışı'nın WhatsApp satırları. */
+	@Get('inbox/by-contact/:contactId')
+	@RequireOrgPermission('contact', 'read')
+	listInboxByContact(
+		@Req() req: FastifyRequest,
+		@Param('contactId') contactId: string,
+		@Query('cursor') cursor?: string,
+		@Query('limit') limit?: string
+	) {
+		const params = cursorPageParams.parse({ cursor, limit });
+		return this.whatsappService.listInboxByContact(getActiveOrgId(req), contactId, params);
+	}
+
 	@Post('inbox/:id/parse')
 	@RequireOrgPermission('contact', 'update')
 	@IdempotencyExempt(
-		'Re-parse overwrites the same inbox row\'s payload.parsed_records in place — no new resource is created, so a retry cannot duplicate anything (it can only re-run the LLM call).'
+		"Re-parse overwrites the same inbox row's payload.parsed_records in place — no new resource is created, so a retry cannot duplicate anything (it can only re-run the LLM call)."
 	)
 	parseInboxItem(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.whatsappService.parseInboxItem(getActiveOrgId(req), id);
@@ -125,13 +137,7 @@ export class WhatsappController {
 			'/v1/whatsapp/inbox/:id/approve-drafts',
 			async (db) => ({
 				statusCode: 201,
-				body: await this.whatsappService.approveDraftsWithDb(
-					db,
-					tenantId,
-					id,
-					input,
-					actor
-				)
+				body: await this.whatsappService.approveDraftsWithDb(db, tenantId, id, input, actor)
 			})
 		);
 		reply.status(result.statusCode);
