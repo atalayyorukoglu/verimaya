@@ -137,7 +137,9 @@ export const inboundMessageContactMethodSchema = z.enum([
 	'name',
 	'surname',
 	'model',
-	'manual'
+	'manual',
+	/** Metinsiz (görsel/dosya) mesaj, aynı yazarın az önceki metinli mesajının kişilerine bağlandı. */
+	'context'
 ]);
 export type InboundMessageContactMethod = z.infer<typeof inboundMessageContactMethodSchema>;
 

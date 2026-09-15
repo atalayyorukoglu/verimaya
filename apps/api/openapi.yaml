@@ -7430,6 +7430,7 @@ paths:
                                   - surname
                                   - model
                                   - manual
+                                  - context
                             required:
                               - id
                               - display_name
@@ -7791,6 +7792,7 @@ paths:
                             - surname
                             - model
                             - manual
+                            - context
                       required:
                         - id
                         - display_name
@@ -8200,6 +8202,7 @@ paths:
                                   - surname
                                   - model
                                   - manual
+                                  - context
                             required:
                               - id
                               - display_name

@@ -13,6 +13,8 @@ import { tenants } from './tenants';
  *   surname — yalnız soyad (KAPALI: kayıttaki soyad alanı güvenilmez çıktı, 2026-09-15)
  *   model   — LLM bağladı (henüz kullanılmıyor)
  *   manual  — kullanıcı bağladı / düzeltti
+ *   context — metinsiz (görsel/dosya) mesaj; aynı sohbette aynı yazarın 3 dk içindeki
+ *             metinli mesajının kişilerine bağlandı (bilet görseli örneği)
  */
 export const inboundMessageContacts = pgTable(
 	'inbound_message_contacts',

@@ -128,4 +128,38 @@ describe('inbound_message_contacts', () => {
 		);
 		expect(n).toBe(0);
 	});
+	it('metinsiz görsel mesajı, aynı yazarın 3 dk önceki metinli mesajının kişisine bağlanır', async () => {
+		const { sql } = getDb(databaseUrl);
+		const yakin = randomUUID();
+		const uzak = randomUUID();
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			// Metinli kaynak mesajın zamanı sabit: 12:00. Görseller 12:01 (yakın) ve 12:20 (uzak).
+			await tx`update inbound_messages set created_at = '2026-09-14T12:00:00Z' where id = ${msgA}`;
+			await tx`
+				insert into inbound_messages (id, tenant_id, provider, external_id, payload, status, created_at)
+				values
+					(${yakin}, ${tenantA}, 'waha', ${`mc-media-1-${tenantA.slice(0, 8)}`},
+					 ${JSON.stringify({ payload: { from: '1@g.us', author: 'gulcin', body: '', hasMedia: true } })}::jsonb,
+					 'new', '2026-09-14T12:01:00Z'),
+					(${uzak}, ${tenantA}, 'waha', ${`mc-media-2-${tenantA.slice(0, 8)}`},
+					 ${JSON.stringify({ payload: { from: '1@g.us', author: 'gulcin', body: '', hasMedia: true } })}::jsonb,
+					 'new', '2026-09-14T12:20:00Z')
+			`;
+			await tx`
+				update inbound_messages
+				set payload = jsonb_set(payload, '{payload,author}', '"gulcin"')
+				where id = ${msgA}
+			`;
+		});
+
+		await service.relinkAll(tenantA);
+		const links = await tenantContext.withTenant(tenantA, ({ db }) =>
+			service.contactsForMessagesWithDb(db, [yakin, uzak])
+		);
+		expect(links.get(yakin)).toEqual([
+			{ id: claireA, display_name: 'Claire McLeod', method: 'context' }
+		]);
+		expect(links.get(uzak)).toBeUndefined();
+	});
 });

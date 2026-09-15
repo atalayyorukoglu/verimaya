@@ -212,6 +212,8 @@ export class WhatsappService {
 		try {
 			const display = extractInboundDisplayFields(asRecord(row.payload) ?? {});
 			await this.messageContacts.linkWithDb(db, tenantId, row.id, display.body, adaylar);
+			// Metinsiz görsel/dosya: az önceki metinli mesajın kişilerine (bağlam).
+			await this.messageContacts.linkMediaByContextWithDb(db, tenantId, row.id);
 		} catch (err) {
 			this.logger.warn(
 				`contact link failed message=${row.id}: ${err instanceof Error ? err.message : String(err)}`

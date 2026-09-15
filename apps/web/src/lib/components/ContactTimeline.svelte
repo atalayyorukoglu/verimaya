@@ -766,7 +766,13 @@
 											<p class={BUBBLE}>{transactionDetail(item.transaction)}</p>
 										{/if}
 									{:else if item.kind === 'whatsapp'}
-										<p class="{BUBBLE} whitespace-pre-wrap">{item.message.body}</p>
+										<p
+											class="{BUBBLE} whitespace-pre-wrap {item.message.body
+												? ''
+												: 'text-text-faint'}"
+										>
+											{item.message.body || t('contacts.timeline.whatsappMediaOnly')}
+										</p>
 									{:else}
 										<!--
 										Dosya eki ayrı kart. Mobilde üç ikon gizli: karta dokunmak önizlemeyi
