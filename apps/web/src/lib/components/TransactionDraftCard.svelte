@@ -1,16 +1,26 @@
 <script lang="ts">
+	import { createQuery } from '@tanstack/svelte-query';
 	import type {
 		Contact,
 		ContactType,
 		FinanceCategory,
+		FxRateResponse,
 		TransactionDraft,
 		TransactionEvidenceEntry,
 		TransactionStatus
 	} from '@verimaya/shared';
-	import { transactionKindLabels, transactionStatusLabels } from '@verimaya/shared';
-	import { fieldClass, labelClass, textareaClass } from '$lib/api';
+	import {
+		apiPaths,
+		SUPPORTED_CURRENCIES,
+		TRANSACTION_PAYMENT_METHODS,
+		transactionKindLabels,
+		transactionStatusLabels
+	} from '@verimaya/shared';
+	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
+	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
+	import type { MessageKey } from '$lib/i18n/messages';
 	import EvidenceBadge from '$lib/components/EvidenceBadge.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -60,7 +70,32 @@
 
 	const kinds = Object.keys(transactionKindLabels) as TransactionDraft['kind'][];
 	const statuses = Object.keys(transactionStatusLabels) as TransactionStatus[];
-	const currencies = ['TRY', 'GBP', 'USD', 'EUR'] as const;
+	const currencies = SUPPORTED_CURRENCIES;
+	const qs = useQueryScope();
+
+	/** Finans "Yeni işlem" formundaki ödeme yöntemi listesiyle aynı; model başka bir
+	 *  değer yazdıysa (ör. "Havale") listeye eklenir ki seçim kaybolmasın. */
+	const paymentMethodMessageKeys = {
+		Nakit: 'finance.form.paymentMethod.cash',
+		'Kredi Kartı': 'finance.form.paymentMethod.creditCard',
+		'Banka Havalesi/EFT': 'finance.form.paymentMethod.bankTransfer',
+		Çek: 'finance.form.paymentMethod.cheque',
+		Senet: 'finance.form.paymentMethod.promissoryNote',
+		Diğer: 'finance.form.paymentMethod.other'
+	} as const satisfies Record<(typeof TRANSACTION_PAYMENT_METHODS)[number], MessageKey>;
+	const paymentMethodOptions = $derived.by(() => {
+		const options: string[] = [...TRANSACTION_PAYMENT_METHODS];
+		if (draft.payment_method && !options.includes(draft.payment_method)) {
+			options.push(draft.payment_method);
+		}
+		return options;
+	});
+	function paymentMethodLabel(value: string): string {
+		if (value in paymentMethodMessageKeys) {
+			return t(paymentMethodMessageKeys[value as keyof typeof paymentMethodMessageKeys]);
+		}
+		return value;
+	}
 
 	const amountMajor = $derived(String(draft.amount / 100));
 	const paidMajor = $derived(draft.paid_amount == null ? '' : String(draft.paid_amount / 100));
@@ -69,6 +104,42 @@
 	);
 	const saved = $derived(draft._status === 'saved');
 	const sameCurrency = $derived(draft.currency === baseCurrency);
+	const needsFx = $derived(!sameCurrency);
+
+	/**
+	 * Finans formuyla aynı: para birimi bazdan farklıysa ECB kuru otomatik çekilir ve
+	 * baz tutar hesaplanır. Kullanıcı kuru/baz tutarı elle yazdıysa (fx_rate dolu) üstüne
+	 * yazılmaz; para birimi değişince fx_rate sıfırlanır ve kur yeniden gelir.
+	 */
+	const fxQuery = createQuery(() => ({
+		queryKey: qs.keys.fx.rate({ from: draft.currency, to: baseCurrency, on: draft.occurred_on }),
+		queryFn: () =>
+			apiGet<FxRateResponse>(
+				apiPaths.fxRate({ from: draft.currency, to: baseCurrency, on: draft.occurred_on })
+			),
+		enabled: qs.ready && needsFx && !!draft.occurred_on && !saved,
+		retry: 1,
+		staleTime: 60_000
+	}));
+	const fxFetching = $derived(needsFx && draft.fx_rate == null && fxQuery.isFetching);
+	const fxError = $derived(needsFx && draft.fx_rate == null && fxQuery.isError);
+	let fxDated = $state<string | null>(null);
+
+	$effect(() => {
+		if (!needsFx || saved || draft.fx_rate != null || !fxQuery.isSuccess) return;
+		const info = fxQuery.data;
+		if (draft.amount_base != null && draft.amount > 0) {
+			// Model karşı tutarı mesajdan okuduysa ("= 1.200 GBP") o esas; kur ondan türetilir.
+			onchange({ fx_rate: Math.round((draft.amount_base / draft.amount) * 10000) / 10000 });
+			fxDated = null;
+			return;
+		}
+		fxDated = info.date;
+		onchange({
+			fx_rate: info.rate,
+			amount_base: Math.round((draft.amount / 100) * info.rate * 100)
+		});
+	});
 	const instanceId = crypto.randomUUID();
 	const fieldId = (name: string) => `draft-${instanceId}-${name}`;
 
@@ -104,6 +175,9 @@
 		const patch: Partial<DraftApprovalState> = { amount };
 		if (draft.status === 'paid') patch.paid_amount = amount;
 		if (sameCurrency) patch.amount_base = amount;
+		else if (draft.fx_rate != null) {
+			patch.amount_base = Math.round((amount / 100) * draft.fx_rate * 100);
+		}
 		onchange(patch);
 	}
 
@@ -138,6 +212,7 @@
 
 	function onCurrencyChange(currency: (typeof currencies)[number]) {
 		const patch: Partial<DraftApprovalState> = { currency };
+		fxDated = null;
 		if (currency === baseCurrency) {
 			patch.fx_rate = 1;
 			patch.amount_base = draft.amount;
@@ -147,6 +222,21 @@
 		}
 		onchange(patch);
 	}
+
+	function onDateChange(occurred_on: string) {
+		const patch: Partial<DraftApprovalState> = { occurred_on };
+		// Tarih değişince kur da o güne göre yeniden gelsin (elle girilmediyse zaten yeniden hesaplanır).
+		if (needsFx && fxDated != null) {
+			patch.fx_rate = null;
+			patch.amount_base = null;
+			fxDated = null;
+		}
+		onchange(patch);
+	}
+
+	const subcategoryOptions = $derived(
+		categoryOptions.find((c) => c.name === draft.category)?.subcategories ?? []
+	);
 
 	function resetCreateForms() {
 		showNewContact = false;
@@ -230,7 +320,9 @@
 
 		<div>
 			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('amount')}>{t('finance.ai.draft.amount')}</label>
+				<label class={labelClass} for={fieldId('amount')}
+					>{t('finance.form.amount', { currency: draft.currency })}</label
+				>
 				<EvidenceBadge entry={draft.evidence?.amount} onselect={onEvidence} />
 			</div>
 			<input
@@ -274,20 +366,64 @@
 				type="date"
 				disabled={saved}
 				value={draft.occurred_on}
-				onchange={(e) => onchange({ occurred_on: e.currentTarget.value })}
+				onchange={(e) => onDateChange(e.currentTarget.value)}
 			/>
 		</div>
 
-		<div class="sm:col-span-2">
-			<label class={labelClass} for={fieldId('title')}>{t('finance.ai.draft.title')}</label>
-			<input
-				id={fieldId('title')}
-				class={fieldClass}
-				disabled={saved}
-				value={draft.title}
-				oninput={(e) => onchange({ title: e.currentTarget.value })}
-			/>
-		</div>
+		{#if needsFx}
+			<div
+				class="grid min-w-0 gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:col-span-2 sm:grid-cols-2"
+			>
+				<div class="min-w-0">
+					<label class={labelClass} for={fieldId('base')}
+						>{t('finance.form.baseAmount', { currency: baseCurrency })}</label
+					>
+					<input
+						id={fieldId('base')}
+						class={fieldClass}
+						type="number"
+						min="0"
+						step="0.01"
+						disabled={saved}
+						value={amountBaseMajor}
+						aria-busy={fxFetching}
+						oninput={(e) => onAmountBaseInput(e.currentTarget.value)}
+					/>
+					{#if fxFetching}
+						<p class="mt-1 min-w-0 text-[11px] break-words text-text-faint">
+							{t('finance.form.fxLoading')}
+						</p>
+					{:else if fxError}
+						<p class="mt-1 min-w-0 text-[11px] break-words text-warning">
+							{t('finance.form.fxError')}
+						</p>
+					{:else if fxDated}
+						<p class="mt-1 min-w-0 text-[11px] break-words text-text-faint">
+							{t('finance.form.fxDated', { date: fxDated })}
+						</p>
+					{:else}
+						<p class="mt-1 min-w-0 text-[11px] break-words text-text-faint">
+							{t('finance.form.fxLocked')}
+						</p>
+					{/if}
+				</div>
+				<div class="min-w-0">
+					<label class={labelClass} for={fieldId('fx')}
+						>{t('finance.form.fxRate', { currency: draft.currency, base: baseCurrency })}</label
+					>
+					<input
+						id={fieldId('fx')}
+						class={fieldClass}
+						type="number"
+						min="0"
+						step="0.0001"
+						disabled={saved}
+						value={draft.fx_rate ?? ''}
+						oninput={(e) => onFxInput(e.currentTarget.value)}
+					/>
+				</div>
+			</div>
+		{/if}
 
 		<div>
 			<div class="flex items-center justify-between gap-2">
@@ -354,19 +490,54 @@
 		</div>
 
 		<div>
+			<label class={labelClass} for={fieldId('subcategory')}>{t('finance.form.subcategory')}</label>
+			{#if subcategoryOptions.length > 0}
+				<select
+					id={fieldId('subcategory')}
+					class={fieldClass}
+					disabled={saved}
+					value={draft.subcategory ?? ''}
+					onchange={(e) => onchange({ subcategory: e.currentTarget.value || null })}
+				>
+					<option value="">{t('finance.form.none')}</option>
+					{#each subcategoryOptions as s (s)}
+						<option value={s}>{s}</option>
+					{/each}
+					{#if draft.subcategory && !subcategoryOptions.includes(draft.subcategory)}
+						<option value={draft.subcategory}>{draft.subcategory}</option>
+					{/if}
+				</select>
+			{:else}
+				<input
+					id={fieldId('subcategory')}
+					class={fieldClass}
+					disabled={saved}
+					maxlength={128}
+					value={draft.subcategory ?? ''}
+					oninput={(e) => onchange({ subcategory: e.currentTarget.value || null })}
+				/>
+			{/if}
+		</div>
+
+		<div>
 			<div class="flex items-center justify-between gap-2">
 				<label class={labelClass} for={fieldId('method')}
 					>{t('finance.ai.draft.paymentMethod')}</label
 				>
 				<EvidenceBadge entry={draft.evidence?.payment_method} onselect={onEvidence} />
 			</div>
-			<input
+			<select
 				id={fieldId('method')}
 				class={fieldClass}
 				disabled={saved}
 				value={draft.payment_method ?? ''}
-				oninput={(e) => onchange({ payment_method: e.currentTarget.value || null })}
-			/>
+				onchange={(e) => onchange({ payment_method: e.currentTarget.value || null })}
+			>
+				<option value="">{t('finance.form.paymentMethodNone')}</option>
+				{#each paymentMethodOptions as method (method)}
+					<option value={method}>{paymentMethodLabel(method)}</option>
+				{/each}
+			</select>
 		</div>
 
 		<div>
@@ -389,47 +560,23 @@
 			</select>
 		</div>
 
-		<div>
-			<label class={labelClass} for={fieldId('paid')}>{t('finance.ai.draft.paidAmount')}</label>
-			<input
-				id={fieldId('paid')}
-				class={fieldClass}
-				type="number"
-				min="0"
-				step="0.01"
-				disabled={saved || draft.status === 'paid' || draft.status === 'unpaid'}
-				value={paidMajor}
-				oninput={(e) => onPaidInput(e.currentTarget.value)}
-			/>
-		</div>
-
-		<div>
-			<label class={labelClass} for={fieldId('fx')}>{t('finance.ai.draft.fxRate')}</label>
-			<input
-				id={fieldId('fx')}
-				class={fieldClass}
-				type="number"
-				min="0"
-				step="0.0001"
-				disabled={saved || sameCurrency}
-				value={draft.fx_rate ?? ''}
-				oninput={(e) => onFxInput(e.currentTarget.value)}
-			/>
-		</div>
-
-		<div>
-			<label class={labelClass} for={fieldId('base')}>{t('finance.ai.draft.amountBase')}</label>
-			<input
-				id={fieldId('base')}
-				class={fieldClass}
-				type="number"
-				min="0"
-				step="0.01"
-				disabled={saved || sameCurrency}
-				value={amountBaseMajor}
-				oninput={(e) => onAmountBaseInput(e.currentTarget.value)}
-			/>
-		</div>
+		{#if draft.status === 'partial'}
+			<div>
+				<label class={labelClass} for={fieldId('paid')}
+					>{t('finance.form.paidAmount', { currency: draft.currency })}</label
+				>
+				<input
+					id={fieldId('paid')}
+					class={fieldClass}
+					type="number"
+					min="0"
+					step="0.01"
+					disabled={saved}
+					value={paidMajor}
+					oninput={(e) => onPaidInput(e.currentTarget.value)}
+				/>
+			</div>
+		{/if}
 
 		<div>
 			<div class="flex items-center justify-between gap-2">
