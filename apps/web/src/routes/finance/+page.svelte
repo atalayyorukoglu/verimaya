@@ -1,10 +1,10 @@
 <script lang="ts">
 	import {
-	createInfiniteQuery,
-	createQuery,
-	keepPreviousData,
-	useQueryClient
-} from '@tanstack/svelte-query';
+		createInfiniteQuery,
+		createQuery,
+		keepPreviousData,
+		useQueryClient
+	} from '@tanstack/svelte-query';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { bridgePeriod, type PeriodRegistration } from '$lib/period-bridge.svelte';

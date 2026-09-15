@@ -1,10 +1,10 @@
 <script lang="ts">
 	import {
-	createInfiniteQuery,
-	createQuery,
-	keepPreviousData,
-	useQueryClient
-} from '@tanstack/svelte-query';
+		createInfiniteQuery,
+		createQuery,
+		keepPreviousData,
+		useQueryClient
+	} from '@tanstack/svelte-query';
 	import { goto } from '$app/navigation';
 	import type {
 		Contact,
