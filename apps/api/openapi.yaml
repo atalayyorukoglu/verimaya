@@ -75,6 +75,7 @@ paths:
                         items:
                           type: string
                           enum:
+                            - whatsapp-import
                             - campaign-assistant
                             - untouched-contacts
                             - cohorts
@@ -145,6 +146,7 @@ paths:
                     items:
                       type: string
                       enum:
+                        - whatsapp-import
                         - campaign-assistant
                         - untouched-contacts
                         - cohorts
@@ -167,6 +169,7 @@ paths:
                   items:
                     type: string
                     enum:
+                      - whatsapp-import
                       - campaign-assistant
                       - untouched-contacts
                       - cohorts
