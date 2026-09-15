@@ -270,8 +270,20 @@
 		}
 	}
 
+	/**
+	 * Sunucu cevap verdi; listeyi yeniden çekmeyi beklemeden satırı düşür.
+	 * Yeniden çekme 5 sayfaya kadar istek atıyor, o sürede satır yerinde
+	 * duruyor ve "Yoksay basıldı ama gitmedi" gibi görünüyordu.
+	 */
+	function dropFromInboxCache(id: string) {
+		queryClient.setQueryData<{ messages: InboundMessage[] }>(qs.keys.whatsapp.inbox(), (old) =>
+			old ? { messages: old.messages.filter((m) => m.id !== id) } : old
+		);
+	}
+
 	async function ignoreInbox(id: string) {
 		await apiSend(apiPaths.whatsappInboxIgnore(id), 'POST');
+		dropFromInboxCache(id);
 		if (activeInboxId === id) {
 			activeInboxId = null;
 			message = '';
@@ -369,6 +381,7 @@
 			);
 			drafts = drafts.map((d) => ({ ...d, _status: 'saved', _error: null }));
 			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
+			dropFromInboxCache(activeInboxId);
 			await queryClient.invalidateQueries({ queryKey: qs.keys.whatsapp.inbox() });
 			activeInboxId = null;
 			message = '';
