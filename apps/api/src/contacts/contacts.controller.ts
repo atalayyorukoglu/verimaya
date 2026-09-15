@@ -257,7 +257,7 @@ export class ContactsController {
 	}
 
 	@Post(':id/summary/refresh')
-	@RequireOrgPermission('contact', 'read')
+	@RequireOrgPermission('contact', 'update')
 	@IdempotencyExempt(
 		'Regenerates a derived cache row (one per contact, upsert); a retry rewrites the same row with the same inputs — nothing to duplicate.'
 	)
