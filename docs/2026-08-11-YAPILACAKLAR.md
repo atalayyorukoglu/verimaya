@@ -678,8 +678,11 @@ testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
   `GET /whatsapp/inbox/by-contact/:id` kişi tarafı için hazır.
   **Görüş (2026-09-15):** 12 birim + 3 izolasyon testi. Model adımı ('model') yerinde
   bırakıldı, henüz çağrılmıyor — önce kuralın ne kadarını yakaladığı ölçülecek.
-- [ ] **2. Kişi Akışı'na WhatsApp satırları.** `by-contact` listesi kişi sayfasında; grup adı,
-  tarih, metin, ek sayısı. Randevu/işlem/not satırlarıyla aynı zaman çizgisinde.
+- [x] **2. Kişi Akışı'na WhatsApp satırları.** `by-contact` listesi kişi sayfasında; grup adı,
+  tarih, metin, ek rozeti. Randevu/işlem/not satırlarıyla aynı zaman çizgisinde.
+  **Görüş (2026-09-15):** `ContactTimeline`'a `whatsapp` türü; ilk 100 mesaj, sayfalama yok.
+  İlk canlı ölçümde tek-soyad kuralı kapatıldı (2.000 yanlış bağ; kayıttaki soyad alanı
+  güvenilmez — "Sarah Jennifer", "Taksi Ücreti"). Yeniden bağlama kural bağlarını sıfırdan kurar.
 - [ ] **3. Özet.** Kişinin tüm akışından model yazar; her cümle kaynak mesaja bağlı
   (`evidence-highlight` kalıbı); yeni bağlı veri gelince yenilenir, elle düzenlenmez.
   Çalışan notları ayrı kalır. PII kapısı (`pii-mask.ts`) aynı; Mistral-AB kararı geçerli.

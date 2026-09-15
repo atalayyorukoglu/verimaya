@@ -2215,6 +2215,16 @@ export const handlers = [
 		return HttpResponse.json({ messages });
 	}),
 
+	// KISI-01: kişinin adı geçen mesajlar. Demo verisinde bağ yok; boş liste döner
+	// ki kişi kartı hata değil "kayıt yok" görsün.
+	http.get('/v1/whatsapp/inbox/by-contact/:contactId', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const messages = store.inboundMessages
+			.filter((m) => m.contacts.some((c) => c.id === params.contactId))
+			.sort((a, b) => b.created_at.localeCompare(a.created_at));
+		return HttpResponse.json({ messages, next_cursor: null });
+	}),
+
 	http.get('/v1/whatsapp/inbox/:id', ({ params, request }) => {
 		const store = getStore(scenarioFrom(request));
 		const item = store.inboundMessages.find((m) => m.id === params.id);

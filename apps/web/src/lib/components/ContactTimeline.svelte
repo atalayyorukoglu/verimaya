@@ -27,6 +27,7 @@
 		type ContactCaseNote,
 		type ContactFile,
 		type ContactFilePresignResponse,
+		type InboundMessage,
 		type Incident,
 		type IncidentType,
 		type Transaction
@@ -53,6 +54,7 @@
 	import Wallet from '@lucide/svelte/icons/wallet';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Pencil from '@lucide/svelte/icons/pencil';
+	import MessageCircle from '@lucide/svelte/icons/message-circle';
 
 	let {
 		contactId,
@@ -110,7 +112,22 @@
 		enabled: qs.ready
 	}));
 
+	/*
+	 * KISI-01: kişinin adı geçen WhatsApp mesajları — hangi gruptan geldiği fark
+	 * etmez. Bağı sunucu kurar (`inbound_message_contacts`); burası yalnız okur.
+	 * İlk 100 mesaj; kişi başına bundan fazlası nadir, sayfalama sonraki iş.
+	 */
+	const whatsappQuery = createQuery(() => ({
+		queryKey: qs.keys.whatsapp.byContact(contactId),
+		queryFn: () =>
+			apiGet<{ messages: InboundMessage[]; next_cursor: string | null }>(
+				listUrl(`whatsapp/inbox/by-contact/${contactId}`, { limit: 100 })
+			),
+		enabled: qs.ready
+	}));
+
 	type TimelineItem =
+		| { kind: 'whatsapp'; id: string; at: string; message: InboundMessage }
 		| { kind: 'note'; id: string; at: string; note: ContactCaseNote }
 		| { kind: 'file'; id: string; at: string; file: ContactFile }
 		| { kind: 'incident'; id: string; at: string; incident: Incident }
@@ -159,6 +176,13 @@
 				id: transaction.id,
 				at: transaction.occurred_on,
 				transaction
+			})),
+			// WhatsApp satırı yazıldığı anla sıralanır; geçmiş yüklemede de o an korunur.
+			...(whatsappQuery.data?.messages ?? []).map((message): TimelineItem => ({
+				kind: 'whatsapp',
+				id: message.id,
+				at: message.created_at,
+				message
 			}))
 		];
 		// En yeni üstte (tasarım kararı, 2026-09-03): hasta kartı açılınca son durum görünür.
@@ -171,8 +195,14 @@
 		transaction: 'bg-tl-transaction-soft text-tl-transaction',
 		note: 'bg-tl-note-soft text-tl-note',
 		file: 'bg-tl-file-soft text-tl-file',
-		incident: 'bg-tl-incident-soft text-tl-incident'
+		incident: 'bg-tl-incident-soft text-tl-incident',
+		whatsapp: 'bg-tl-whatsapp-soft text-tl-whatsapp'
 	};
+
+	/** WhatsApp satır başlığı: grup adı; ad yoksa gönderen kimliği; o da yoksa "WhatsApp". */
+	function whatsappLabel(message: InboundMessage): string {
+		return message.chat_name || message.sender || t('contacts.timeline.whatsapp');
+	}
 
 	function dayKey(iso: string): string {
 		return new Date(iso).toLocaleDateString('en-CA');
@@ -591,6 +621,8 @@
 										<Wallet class="size-[14px]" />
 									{:else if item.kind === 'file'}
 										<Paperclip class="size-[14px]" />
+									{:else if item.kind === 'whatsapp'}
+										<MessageCircle class="size-[14px]" />
 									{:else}
 										<span class="text-[10px] font-semibold"
 											>{initialsOf(item.note.author_display_name)}</span
@@ -615,6 +647,8 @@
 														t('contacts.timeline.filterTransactions')}
 												{:else if item.kind === 'file'}
 													{item.file.uploaded_by_display_name || t('contacts.timeline.filterFiles')}
+												{:else if item.kind === 'whatsapp'}
+													{whatsappLabel(item.message)}
 												{:else}
 													{item.note.author_display_name}
 												{/if}
@@ -658,6 +692,14 @@
 														item.transaction.amount,
 														item.transaction.currency
 													)}
+												</span>
+											{:else if item.kind === 'whatsapp'}
+												<span
+													class="shrink-0 rounded-full bg-tl-whatsapp-soft px-1.5 py-px text-[10px] font-medium text-tl-whatsapp"
+												>
+													{t('contacts.timeline.whatsapp')}{item.message.has_media
+														? ` · ${t('contacts.timeline.whatsappAttachment')}`
+														: ''}
 												</span>
 											{/if}
 										</span>
@@ -723,6 +765,8 @@
 										{#if transactionDetail(item.transaction)}
 											<p class={BUBBLE}>{transactionDetail(item.transaction)}</p>
 										{/if}
+									{:else if item.kind === 'whatsapp'}
+										<p class="{BUBBLE} whitespace-pre-wrap">{item.message.body}</p>
 									{:else}
 										<!--
 										Dosya eki ayrı kart. Mobilde üç ikon gizli: karta dokunmak önizlemeyi

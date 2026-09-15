@@ -59,6 +59,8 @@
 	--tl-file-soft: rgba(138, 92, 198, 0.13);
 	--tl-incident: #b7791f;
 	--tl-incident-soft: rgba(183, 121, 31, 0.14);
+	--tl-whatsapp: #128c7e;
+	--tl-whatsapp-soft: rgba(18, 140, 126, 0.13);
 
 	/*
 	  Akış geometrisi — Figma "iPhone 16 & 17 Pro Max - 1"
@@ -162,6 +164,8 @@
 	--tl-file-soft: rgba(183, 149, 230, 0.18);
 	--tl-incident: #d4a017;
 	--tl-incident-soft: rgba(212, 160, 23, 0.18);
+	--tl-whatsapp: #4fd1c5;
+	--tl-whatsapp-soft: rgba(79, 209, 197, 0.18);
 
 	--primary-foreground: #ffffff;
 	--popover: var(--surface-2);
@@ -202,6 +206,8 @@
 	--color-tl-file-soft: var(--tl-file-soft);
 	--color-tl-incident: var(--tl-incident);
 	--color-tl-incident-soft: var(--tl-incident-soft);
+	--color-tl-whatsapp: var(--tl-whatsapp);
+	--color-tl-whatsapp-soft: var(--tl-whatsapp-soft);
 
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
