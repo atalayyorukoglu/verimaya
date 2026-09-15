@@ -690,8 +690,11 @@ testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
   `GET/POST /contacts/:id/summary[/refresh]`, LLM `summarizeContact` (ref'i olmayan cümle
   düşer), kural tabanlı yedek. Kişi sayfasında Akış'ın üstünde kart; kaynak rozetleri
   W/R/P/N + tarih, üstüne gelince alıntı. Sonraki: rozetten akıştaki satıra atlama.
-- [ ] **4. Para/randevu onayı kişi altında.** Kuyruk "Claire · 5 yeni mesaj · 2 para satırı"
-  diye kişiye göre gruplanır; kişisiz mesajlar (kira, taksit) ayrı kümede.
+- [x] **4. Para/randevu onayı kişi altında.** Kuyruk "Claire · 5 mesaj · 2 para" diye kişiye
+  göre gruplanır (varsayılan), "Liste" görünümü kalır; kişisiz mesajlar (kira, taksit) en sonda
+  tek kümede. Mesaj iki kişiden bahsediyorsa ikisinin altında da görünür.
+  **Görüş (2026-09-15):** yalnız panel; kümeler son mesaja göre sıralı, tıklayınca açılır,
+  "Kişi sayfası" bağlantısı. Onay/yoksay satırı düşürünce kümeden de düşer.
 - [ ] **5. Geçmiş yükleme.** `docs/whatsapp/` dışa aktarımları (2022→, ~15.000 mesaj)
   `inbound_messages`'a `export:` kimliğiyle; Muhasebe 1–12 Eylül parçası zaten yüklendi.
   Kullanıcı onayı var (2026-09-15).

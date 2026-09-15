@@ -29,6 +29,7 @@
 	} from '$lib/components/TransactionDraftCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 
 	type ContactsPage = { items: Contact[]; next_cursor: string | null };
@@ -128,6 +129,46 @@
 				: bekleyenler.filter((m) => kindsOf(m).includes(kindFilter as InboundMessageKind))
 	);
 	const pendingCount = $derived(bekleyenler.filter((m) => m.status === 'new').length);
+
+	/*
+	 * KISI-01 adım 4: kuyruk kişiye göre. Kullanıcı kararı (2026-09-15): çapa kişi.
+	 * Mesaj birden fazla kişiden bahsediyorsa her birinin altında görünür; kişisiz
+	 * mesajlar (kira, taksit, sohbet) en sonda tek kümede. Kümeler son mesaja göre
+	 * sıralı: en taze konu üstte. Onay/yoksay satırı düşürünce kümeden de düşer.
+	 */
+	type KisiKumesi = {
+		key: string;
+		name: string;
+		contactId: string | null;
+		items: InboundMessage[];
+		finance: number;
+		newest: string;
+	};
+	let groupMode = $state<'contact' | 'flat'>('contact');
+	let expandedGroups = $state<Set<string>>(new Set());
+	function toggleGroup(key: string) {
+		const next = new Set(expandedGroups);
+		if (next.has(key)) next.delete(key);
+		else next.add(key);
+		expandedGroups = next;
+	}
+	const contactGroups = $derived.by((): KisiKumesi[] => {
+		const map = new Map<string, KisiKumesi>();
+		const push = (key: string, name: string, contactId: string | null, m: InboundMessage) => {
+			const g = map.get(key) ?? { key, name, contactId, items: [], finance: 0, newest: '' };
+			g.items.push(m);
+			if (kindsOf(m).includes('finance')) g.finance += 1;
+			if (m.created_at > g.newest) g.newest = m.created_at;
+			map.set(key, g);
+		};
+		for (const m of pendingMessages) {
+			if (m.contacts.length === 0) push('__none', t('finance.ai.group.noContact'), null, m);
+			else for (const c of m.contacts) push(c.id, c.display_name, c.id, m);
+		}
+		const list = [...map.values()].sort((a, b) => b.newest.localeCompare(a.newest));
+		const none = list.find((g) => g.key === '__none');
+		return none ? [...list.filter((g) => g !== none), none] : list;
+	});
 
 	function initDrafts(records: TransactionDraft[]): DraftState[] {
 		return records.map((r) => {
@@ -583,97 +624,149 @@
 						</button>
 					{/if}
 				{/each}
+				<span class="ml-auto flex items-center gap-1">
+					{#each [['contact', 'finance.ai.group.byContact'], ['flat', 'finance.ai.group.flat']] as const as [mode, key] (mode)}
+						<button
+							type="button"
+							class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {groupMode === mode
+								? 'border-brand bg-brand-subtle text-text'
+								: 'border-border text-text-muted hover:text-text'}"
+							aria-pressed={groupMode === mode}
+							onclick={() => (groupMode = mode)}
+						>
+							{t(key)}
+						</button>
+					{/each}
+				</span>
 			</div>
 		{/if}
+
+		{#snippet mesajKarti(item: InboundMessage)}
+			<li class="flex min-w-0 flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start">
+				<div class="min-w-0 flex-1">
+					<div class="flex flex-wrap items-center gap-2">
+						<!--
+									Grup adı varsa ad, yoksa gönderen kimliği. Ad Ayarlar > WhatsApp
+									gruplarından gelir; WAHA webhook'ta göndermiyor.
+								-->
+						{#if item.chat_name}
+							<span class="truncate text-xs font-medium text-text-muted">{item.chat_name}</span>
+						{:else}
+							<span class="truncate font-mono text-xs text-text-faint">{item.sender}</span>
+						{/if}
+						<StatusBadge
+							label={inboundMessageStatusLabels[item.status]}
+							tone={item.status === 'new' ? 'warning' : 'info'}
+						/>
+						{#each kindsOf(item) as k (k)}
+							<StatusBadge
+								label={t(`finance.ai.kind.${k}`)}
+								tone={k === 'finance' ? 'info' : k === 'appointment' ? 'warning' : 'neutral'}
+							/>
+						{/each}
+						{#if item.has_media}
+							<StatusBadge label={t('finance.ai.pending.media')} tone="neutral" />
+						{/if}
+						{#if item.group_id}
+							<StatusBadge label={t('finance.ai.pending.sameEvent')} tone="warning" />
+						{/if}
+						<!-- KISI-01: mesajın bahsettiği kişiler; tıklayınca kişi sayfası. -->
+						{#each item.contacts as c (c.id)}
+							<a
+								href={resolve('/contacts/[id]', { id: c.id })}
+								class="rounded-full border border-brand/40 bg-brand-subtle px-2 py-0.5 text-xs text-text hover:underline"
+								title={c.method}
+							>
+								{c.display_name}
+							</a>
+						{/each}
+						<time
+							class="ml-auto text-xs whitespace-nowrap text-text-faint"
+							datetime={item.created_at}
+						>
+							{formatDateTime(item.created_at)}
+						</time>
+					</div>
+					<p class="mt-1 line-clamp-2 text-sm text-text">{previewBody(item)}</p>
+					{#if item.group_id}
+						<p class="mt-1 text-xs text-warning">
+							{t('finance.ai.pending.sameEventHint')}
+						</p>
+					{/if}
+					{#if item.has_media && item.media_path}
+						<p class="mt-1 flex items-center gap-1 text-xs text-info">
+							<Paperclip class="size-3" />
+							{t('finance.ai.pending.mediaDemo')}
+						</p>
+					{/if}
+				</div>
+				<div class="flex shrink-0 gap-2">
+					<Button size="sm" type="button" disabled={parsing} onclick={() => analyzeInboxItem(item)}>
+						{t('finance.ai.analyze')}
+					</Button>
+					<Button size="sm" variant="outline" type="button" onclick={() => ignoreInbox(item.id)}>
+						{t('finance.ai.pending.ignore')}
+					</Button>
+				</div>
+			</li>
+		{/snippet}
 
 		{#if inboxQuery.isPending}
 			<p class="text-sm text-text-muted">{t('finance.ai.pending.loading')}</p>
 		{:else if pendingMessages.length === 0}
 			<p class="text-sm text-text-muted">{t('finance.ai.pending.empty')}</p>
 		{:else}
-			<ul class="divide-y divide-border">
-				{#each pendingMessages as item (item.id)}
-					<li
-						class="flex min-w-0 flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start"
-					>
-						<div class="min-w-0 flex-1">
-							<div class="flex flex-wrap items-center gap-2">
-								<!--
-									Grup adı varsa ad, yoksa gönderen kimliği. Ad Ayarlar > WhatsApp
-									gruplarından gelir; WAHA webhook'ta göndermiyor.
-								-->
-								{#if item.chat_name}
-									<span class="truncate text-xs font-medium text-text-muted">{item.chat_name}</span>
-								{:else}
-									<span class="truncate font-mono text-xs text-text-faint">{item.sender}</span>
-								{/if}
-								<StatusBadge
-									label={inboundMessageStatusLabels[item.status]}
-									tone={item.status === 'new' ? 'warning' : 'info'}
-								/>
-								{#each kindsOf(item) as k (k)}
-									<StatusBadge
-										label={t(`finance.ai.kind.${k}`)}
-										tone={k === 'finance' ? 'info' : k === 'appointment' ? 'warning' : 'neutral'}
-									/>
-								{/each}
-								{#if item.has_media}
-									<StatusBadge label={t('finance.ai.pending.media')} tone="neutral" />
-								{/if}
-								{#if item.group_id}
-									<StatusBadge label={t('finance.ai.pending.sameEvent')} tone="warning" />
-								{/if}
-								<!-- KISI-01: mesajın bahsettiği kişiler; tıklayınca kişi sayfası. -->
-								{#each item.contacts as c (c.id)}
-									<a
-										href={resolve('/contacts/[id]', { id: c.id })}
-										class="rounded-full border border-brand/40 bg-brand-subtle px-2 py-0.5 text-xs text-text hover:underline"
-										title={c.method}
-									>
-										{c.display_name}
-									</a>
-								{/each}
-								<time
-									class="ml-auto text-xs whitespace-nowrap text-text-faint"
-									datetime={item.created_at}
+			{#if groupMode === 'contact'}
+				<div class="divide-y divide-border">
+					{#each contactGroups as g (g.key)}
+						{@const open = expandedGroups.has(g.key)}
+						<div class="py-2">
+							<div class="flex items-center gap-2">
+								<button
+									type="button"
+									class="flex min-w-0 flex-1 items-center gap-2 text-left"
+									aria-expanded={open}
+									onclick={() => toggleGroup(g.key)}
 								>
-									{formatDateTime(item.created_at)}
-								</time>
+									<ChevronRight
+										class="size-4 shrink-0 text-text-faint transition-transform {open
+											? 'rotate-90'
+											: ''}"
+									/>
+									<span class="truncate text-sm font-semibold text-text">{g.name}</span>
+									<span class="shrink-0 text-xs text-text-muted">
+										{t('finance.ai.group.counts', { messages: g.items.length, finance: g.finance })}
+									</span>
+									<time class="ml-auto shrink-0 text-xs text-text-faint" datetime={g.newest}>
+										{formatDateTime(g.newest)}
+									</time>
+								</button>
+								{#if g.contactId}
+									<a
+										href={resolve('/contacts/[id]', { id: g.contactId })}
+										class="shrink-0 text-xs text-brand hover:underline"
+									>
+										{t('finance.ai.group.openContact')}
+									</a>
+								{/if}
 							</div>
-							<p class="mt-1 line-clamp-2 text-sm text-text">{previewBody(item)}</p>
-							{#if item.group_id}
-								<p class="mt-1 text-xs text-warning">
-									{t('finance.ai.pending.sameEventHint')}
-								</p>
-							{/if}
-							{#if item.has_media && item.media_path}
-								<p class="mt-1 flex items-center gap-1 text-xs text-info">
-									<Paperclip class="size-3" />
-									{t('finance.ai.pending.mediaDemo')}
-								</p>
+							{#if open}
+								<ul class="mt-2 divide-y divide-border border-l border-border pl-3 sm:pl-6">
+									{#each g.items as item (item.id)}
+										{@render mesajKarti(item)}
+									{/each}
+								</ul>
 							{/if}
 						</div>
-						<div class="flex shrink-0 gap-2">
-							<Button
-								size="sm"
-								type="button"
-								disabled={parsing}
-								onclick={() => analyzeInboxItem(item)}
-							>
-								{t('finance.ai.analyze')}
-							</Button>
-							<Button
-								size="sm"
-								variant="outline"
-								type="button"
-								onclick={() => ignoreInbox(item.id)}
-							>
-								{t('finance.ai.pending.ignore')}
-							</Button>
-						</div>
-					</li>
-				{/each}
-			</ul>
+					{/each}
+				</div>
+			{:else}
+				<ul class="divide-y divide-border">
+					{#each pendingMessages as item (item.id)}
+						{@render mesajKarti(item)}
+					{/each}
+				</ul>
+			{/if}
 		{/if}
 	</section>
 
