@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { MAYA_UNKNOWN_TOKEN } from '@verimaya/shared';
 import { heuristicRouteMayaTool } from '../../maya/heuristic-tool-route';
+import { heuristicSuggestAppointmentLogistics } from '../../record-suggestions/heuristic-logistics-parse';
 import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import type {
 	LlmClient,
 	LlmParseContext,
 	LlmParseResult,
+	LlmLogisticsContext,
+	LlmLogisticsResult,
 	LlmRescheduleContext,
 	LlmRescheduleResult,
 	MayaAskContext,
@@ -60,6 +63,25 @@ export class HeuristicLlmClient implements LlmClient {
 			usage: {
 				provider: 'heuristic',
 				model: 'heuristic-reschedule',
+				requestedModel: null,
+				promptTokens: 0,
+				completionTokens: 0,
+				totalTokens: 0,
+				estimatedCostUsdMicros: 0,
+				path: 'heuristic',
+				error: null
+			}
+		};
+	}
+
+	async suggestAppointmentLogistics(ctx: LlmLogisticsContext): Promise<LlmLogisticsResult> {
+		const parsed = heuristicSuggestAppointmentLogistics(ctx.message, ctx.appointments);
+		return {
+			suggestions: parsed.drafts,
+			skipped_reason: parsed.skipped_reason,
+			usage: {
+				provider: 'heuristic',
+				model: 'heuristic-logistics',
 				requestedModel: null,
 				promptTokens: 0,
 				completionTokens: 0,

@@ -11,7 +11,13 @@ import { TenantContextService, type TenantDb } from '../tenant/tenant-context.se
 import { RecordSuggestionsService } from './record-suggestions.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 import { HeuristicLlmClient } from '../integrations/llm/heuristic-llm.client';
-import type { LlmClient, LlmRescheduleContext, LlmRescheduleResult } from '../integrations/llm/llm.types';
+import type {
+	LlmClient,
+	LlmLogisticsContext,
+	LlmLogisticsResult,
+	LlmRescheduleContext,
+	LlmRescheduleResult
+} from '../integrations/llm/llm.types';
 import { LLM_CLIENT } from '../integrations/llm';
 import { SettingsService } from '../settings/settings.service';
 import { operationAlertDueAt } from '@verimaya/shared';
@@ -43,6 +49,24 @@ class EmptyRescheduleLlm implements LlmClient {
 	answerFromKnowledge = vi.fn();
 	selectMayaTool = vi.fn();
 	async suggestAppointmentReschedule(_ctx: LlmRescheduleContext): Promise<LlmRescheduleResult> {
+		return {
+			suggestions: [],
+			skipped_reason: null,
+			usage: {
+				provider: 'test',
+				model: 'empty',
+				requestedModel: null,
+				promptTokens: 0,
+				completionTokens: 0,
+				totalTokens: 0,
+				estimatedCostUsdMicros: 0,
+				path: 'heuristic',
+				error: null
+			}
+		};
+	}
+
+	async suggestAppointmentLogistics(_ctx: LlmLogisticsContext): Promise<LlmLogisticsResult> {
 		return {
 			suggestions: [],
 			skipped_reason: null,
@@ -248,6 +272,77 @@ describe('record-suggestions tenant isolation + Madde 6.2 approval gate (AI-02)'
 			return appointmentsService.updateWithDb(tdb, appointmentA, {});
 		});
 		expect(appt.starts_at).toBe(row.suggested_value);
+	});
+
+	/**
+	 * Lojistik (0071): WhatsApp'tan gelen en yaygın güncelleme "hastanın oteli
+	 * değişti". Kuyruk bunu taşıyabiliyor mu ve onay randevuya YAZIYOR mu?
+	 */
+	describe('lojistik önerisi (klinik / otel / transfer)', () => {
+		it('otel önerisi onaylanınca randevunun oteli değişir', async () => {
+			const parsed = await recordSuggestionsService.parse(tenantA, 'Ayse Yilmaz Alp pasa hotel');
+			const oneri = parsed.items.find((i) => i.field === 'hotel');
+			expect(oneri, 'otel önerisi açılmalıydı').toBeTruthy();
+			expect(oneri!.suggested_text).toBe('Alp pasa hotel');
+			// Alan hiç doldurulmamıştı: mevcut değer null kalmalı, uydurulmamalı.
+			expect(oneri!.current_text).toBeNull();
+			expect(oneri!.current_value).toBeNull();
+
+			// Onaydan ÖNCE randevuya dokunulmamış olmalı (Madde 6.2).
+			const oncesi = await withTenantSession(tenantA, (tdb) =>
+				appointmentsService.updateWithDb(tdb, appointmentA, {})
+			);
+			expect(oncesi.hotel_name).toBeNull();
+
+			const approved = await withTenantSession(tenantA, (tdb) =>
+				recordSuggestionsService.approveWithDb(tdb, oneri!.id, actor)
+			);
+			expect(approved.status).toBe('approved');
+
+			const sonrasi = await withTenantSession(tenantA, (tdb) =>
+				appointmentsService.updateWithDb(tdb, appointmentA, {})
+			);
+			expect(sonrasi.hotel_name).toBe('Alp pasa hotel');
+		});
+
+		it('öneri açıldıktan sonra otel elle değiştiyse onay 409 verir', async () => {
+			// Önce yeni bir öneri aç (önceki test oteli doldurdu, o yüzden başka ad).
+			const parsed = await recordSuggestionsService.parse(tenantA, 'Ayse Yilmaz Rixos hotel');
+			const oneri = parsed.items.find((i) => i.field === 'hotel');
+			expect(oneri).toBeTruthy();
+
+			// Kullanıcı aynı anda eliyle başka bir şey yazdı.
+			await withTenantSession(tenantA, (tdb) =>
+				appointmentsService.updateWithDb(tdb, appointmentA, { hotel_name: 'Elle yazildi' })
+			);
+
+			await expect(
+				withTenantSession(tenantA, (tdb) =>
+					recordSuggestionsService.approveWithDb(tdb, oneri!.id, actor)
+				)
+			).rejects.toBeInstanceOf(ConflictException);
+
+			const appt = await withTenantSession(tenantA, (tdb) =>
+				appointmentsService.updateWithDb(tdb, appointmentA, {})
+			);
+			expect(appt.hotel_name, 'insanın yazdığı ezilmemeli').toBe('Elle yazildi');
+		});
+
+		it('başka kiracı lojistik önerisini onaylayamaz', async () => {
+			// Yeni öneri açmıyoruz: bir önceki testin önerisi hâlâ bekliyor (409 aldı,
+			// düşmedi) ve aynı alan için ikinci bir bekleyen satır zaten açılmıyor.
+			const bekleyen = await recordSuggestionsService.list(tenantA, {
+				limit: 25,
+				status: 'pending'
+			});
+			const oneri = bekleyen.items.find((i) => i.field === 'hotel');
+			expect(oneri).toBeTruthy();
+			await expect(
+				withTenantSession(tenantB, (tdb) =>
+					recordSuggestionsService.approveWithDb(tdb, oneri!.id, actor)
+				)
+			).rejects.toBeInstanceOf(NotFoundException);
+		});
 	});
 
 	it('approve endpoint accepts a single id only (no bulk path)', () => {

@@ -4,10 +4,29 @@ import { cursorPageParams, cursorPageSchema, isoDateTime, uuid } from './common.
 /**
  * AI-02 — record update approval queue.
  * Contract Madde 6.2: no suggestion is applied without human approval.
- * Scope (this release): appointments.starts_at only.
+ *
+ * Kapsam: randevunun tarihi (`starts_at`) ve lojistiği (klinik / otel / transfer).
+ * Lojistik 2026-09-15'te eklendi: WhatsApp'tan en sık gelen güncelleme "hastanın
+ * oteli değişti" biçiminde ve bunun gideceği hiçbir yer yoktu.
+ *
+ * Tarih alanı zaman damgası, lojistik alanları metin taşır — ikisi ayrı sütun
+ * çiftinde durur (`current_value`/`suggested_value` vs `current_text`/`suggested_text`),
+ * tek sütunda string'e çevirmek yerine: tarih karşılaştırması zaman damgası olarak
+ * yapılmalı, yoksa "aynı an, farklı yazım" çakışma sanılır.
  */
 
-export const recordUpdateSuggestionFieldSchema = z.literal('starts_at');
+export const recordUpdateSuggestionFieldSchema = z.enum([
+	'starts_at',
+	'clinic',
+	'hotel',
+	'transfer'
+]);
+
+/** Metin taşıyan alanlar — `starts_at` dışındakiler. */
+export const recordUpdateSuggestionTextFieldSchema = z.enum(['clinic', 'hotel', 'transfer']);
+export type RecordUpdateSuggestionTextField = z.infer<
+	typeof recordUpdateSuggestionTextFieldSchema
+>;
 export type RecordUpdateSuggestionField = z.infer<typeof recordUpdateSuggestionFieldSchema>;
 
 export const recordUpdateSuggestionConfidenceSchema = z.enum(['high', 'medium']);
@@ -24,8 +43,17 @@ export const recordUpdateSuggestionSchema = z.object({
 	appointment_id: uuid,
 	contact_display_name: z.string().min(1).max(255),
 	field: recordUpdateSuggestionFieldSchema,
-	current_value: isoDateTime,
-	suggested_value: isoDateTime,
+	/** `starts_at` için dolu, metin alanlarında null. */
+	current_value: isoDateTime.nullable(),
+	suggested_value: isoDateTime.nullable(),
+	/** Metin alanları için. `current_text` null olabilir: otel hiç girilmemiş olabilir. */
+	current_text: z.string().max(255).nullable().default(null),
+	suggested_text: z.string().max(255).nullable().default(null),
+	/**
+	 * Önerilen otel/klinik kayıtlı bir kişiye denk geldiyse onun kimliği. Onayda
+	 * hem ad hem bağ yazılır; denk gelmediyse yalnız ad yazılır (serbest metin).
+	 */
+	suggested_contact_id: uuid.nullable().default(null),
 	source_text: z.string().min(1).max(4000),
 	confidence: recordUpdateSuggestionConfidenceSchema,
 	status: recordUpdateSuggestionStatusSchema,
@@ -55,7 +83,9 @@ export type RecordUpdateSuggestionParseRequest = z.infer<
 export const recordUpdateSuggestionSkippedReasonSchema = z.enum([
 	'ambiguous_contact',
 	'no_date',
-	'no_change'
+	'no_change',
+	/** Lojistik: mesajda otel/klinik/transfer adı okunamadı. */
+	'no_value'
 ]);
 export type RecordUpdateSuggestionSkippedReason = z.infer<
 	typeof recordUpdateSuggestionSkippedReasonSchema
@@ -102,3 +132,14 @@ export const appointmentRescheduleDraftSchema = z.object({
 });
 
 export type AppointmentRescheduleDraft = z.infer<typeof appointmentRescheduleDraftSchema>;
+
+/** Lojistik güncellemesi — LLM/heuristic çıktısı, henüz kaydedilmemiş. */
+export const appointmentLogisticsDraftSchema = z.object({
+	appointment_id: uuid,
+	field: recordUpdateSuggestionTextFieldSchema,
+	suggested_text: z.string().min(1).max(255),
+	confidence: recordUpdateSuggestionConfidenceSchema,
+	reason: z.string().min(1).max(4000)
+});
+
+export type AppointmentLogisticsDraft = z.infer<typeof appointmentLogisticsDraftSchema>;

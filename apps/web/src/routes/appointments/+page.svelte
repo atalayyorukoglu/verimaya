@@ -154,6 +154,18 @@
 		enabled: qs.ready
 	}));
 
+	/**
+	 * Onay bekleyen kayıt önerileri (WhatsApp'tan gelen tarih/otel/klinik/transfer
+	 * değişiklikleri). Yalnız sayısı gerekiyor; ayrıntı öneriler ekranında.
+	 */
+	const suggestionsQuery = createQuery(() => ({
+		queryKey: qs.keys.recordUpdateSuggestions.list({ status: 'pending', for: 'badge' }),
+		queryFn: () =>
+			apiGet<{ items: unknown[] }>(listUrl('record-suggestions', { status: 'pending', limit: 50 })),
+		enabled: qs.ready
+	}));
+	const pendingSuggestionCount = $derived(suggestionsQuery.data?.items.length ?? 0);
+
 	const contactById = $derived(new Map((contactsQuery.data?.items ?? []).map((c) => [c.id, c])));
 
 	const filterContact = $derived(contactFilterId ? contactById.get(contactFilterId) : null);
@@ -337,6 +349,20 @@
 			{t('appointments.title')}
 		</h1>
 		<p class="mt-0.5 min-w-0 truncate text-sm leading-tight text-text-muted">{periodSummary}</p>
+
+		<!--
+			Onay kuyruğu buradan görünsün: WhatsApp'tan gelen tarih/otel değişiklikleri
+			oraya düşüyor ama ekranın hiçbir yerinden bağlantısı yoktu (yalnız eski
+			`appointments-v1` sayfasında kalmıştı), kimse kullanmıyordu.
+		-->
+		{#if pendingSuggestionCount > 0}
+			<a
+				href={resolve('/appointments/suggestions')}
+				class="mt-2 inline-flex items-center gap-2 rounded-[6px] border border-warning/40 bg-warning/10 px-2.5 py-1 text-sm font-medium text-text hover:bg-warning/15"
+			>
+				{t('appointments.suggestionsPending', { count: String(pendingSuggestionCount) })}
+			</a>
+		{/if}
 
 		<!--
 			Sekme şeridi + özel aralık kutuları yerine tek denetim (kullanıcı,

@@ -1,6 +1,7 @@
 import type { Contact, MayaContactRef } from '@verimaya/shared';
 import type {
 	LlmParseContext,
+	LlmLogisticsContext,
 	LlmRescheduleContext,
 	MayaToolSelectionContext
 } from './llm.types';
@@ -43,6 +44,24 @@ export type MaskedRescheduleAppointmentHint = {
 export type MaskedReschedulePayload = {
 	message: string;
 	appointments: MaskedRescheduleAppointmentHint[];
+};
+
+/**
+ * Lojistik gövdesi. Erteleme gövdesinden farkı: mevcut klinik/otel/transfer
+ * değerleri de gider — model "zaten aynı" durumunu görsün. Bunlar KURUM adı
+ * (otel/klinik), hasta adı değil; PII sayılmaz ve maskelenmez.
+ */
+export type MaskedLogisticsAppointmentHint = {
+	appointment_ref: string;
+	starts_at: string;
+	clinic: string | null;
+	hotel: string | null;
+	transfer: string | null;
+};
+
+export type MaskedLogisticsPayload = {
+	message: string;
+	appointments: MaskedLogisticsAppointmentHint[];
 };
 
 /** AI-11a — Maya araç seçici için modele giden tek gövde. İsim/telefon içermez. */
@@ -190,6 +209,29 @@ export function buildMaskedMayaToolPayload(
 		contacts: ctx.contacts
 			.slice(0, 20)
 			.map((c) => ({ token: c.token, contact_ref: c.contact_ref }))
+	};
+}
+
+/** Lojistik gövdesinin tek çıkış noktası — hasta adı dışarı çıkmaz. */
+export function buildMaskedLogisticsPayload(ctx: LlmLogisticsContext): MaskedLogisticsPayload {
+	let message = ctx.message;
+	for (const appt of ctx.appointments) {
+		message = maskPatientNamesInMessage(message, [
+			{
+				id: appt.appointment_id,
+				display_name: appt.contact_display_name
+			} as Contact
+		]);
+	}
+	return {
+		message: maskMessagePii(message),
+		appointments: ctx.appointments.slice(0, 80).map((a) => ({
+			appointment_ref: a.appointment_id,
+			starts_at: a.starts_at,
+			clinic: a.clinic,
+			hotel: a.hotel,
+			transfer: a.transfer
+		}))
 	};
 }
 

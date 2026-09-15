@@ -2092,12 +2092,32 @@ paths:
                           type: string
                           enum:
                             - starts_at
+                            - clinic
+                            - hotel
+                            - transfer
                         current_value:
                           type: string
                           format: date-time
+                          nullable: true
                         suggested_value:
                           type: string
                           format: date-time
+                          nullable: true
+                        current_text:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
+                        suggested_text:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
+                        suggested_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         source_text:
                           type: string
                           minLength: 1
@@ -2190,12 +2210,32 @@ paths:
                           type: string
                           enum:
                             - starts_at
+                            - clinic
+                            - hotel
+                            - transfer
                         current_value:
                           type: string
                           format: date-time
+                          nullable: true
                         suggested_value:
                           type: string
                           format: date-time
+                          nullable: true
+                        current_text:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
+                        suggested_text:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                          default: null
+                        suggested_contact_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         source_text:
                           type: string
                           minLength: 1
@@ -2252,6 +2292,7 @@ paths:
                       - ambiguous_contact
                       - no_date
                       - no_change
+                      - no_value
                     nullable: true
                 required:
                   - items
@@ -2298,12 +2339,32 @@ paths:
                     type: string
                     enum:
                       - starts_at
+                      - clinic
+                      - hotel
+                      - transfer
                   current_value:
                     type: string
                     format: date-time
+                    nullable: true
                   suggested_value:
                     type: string
                     format: date-time
+                    nullable: true
+                  current_text:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                    default: null
+                  suggested_text:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                    default: null
+                  suggested_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
                   source_text:
                     type: string
                     minLength: 1
@@ -2387,12 +2448,32 @@ paths:
                     type: string
                     enum:
                       - starts_at
+                      - clinic
+                      - hotel
+                      - transfer
                   current_value:
                     type: string
                     format: date-time
+                    nullable: true
                   suggested_value:
                     type: string
                     format: date-time
+                    nullable: true
+                  current_text:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                    default: null
+                  suggested_text:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                    default: null
+                  suggested_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
                   source_text:
                     type: string
                     minLength: 1

@@ -1,4 +1,5 @@
 import type {
+	AppointmentLogisticsDraft,
 	AppointmentRescheduleDraft,
 	Contact,
 	MayaContactRef,
@@ -53,6 +54,33 @@ export type LlmRescheduleAppointmentHint = {
 	appointment_id: string;
 	contact_display_name: string;
 	starts_at: string;
+};
+
+/**
+ * Lojistik önerisi için randevu ipucu. Erteleme ipucundan farkı: mevcut
+ * klinik/otel/transfer değerlerini de taşır — "zaten aynı" durumunu okuyucu
+ * görebilsin, boş yere öneri açılmasın.
+ */
+export type LlmLogisticsAppointmentHint = {
+	appointment_id: string;
+	contact_display_name: string;
+	starts_at: string;
+	clinic: string | null;
+	hotel: string | null;
+	transfer: string | null;
+};
+
+export type LlmLogisticsContext = {
+	message: string;
+	appointments: LlmLogisticsAppointmentHint[];
+	tenantPromptNote?: string | null;
+	knowledge?: string | null;
+};
+
+export type LlmLogisticsResult = {
+	suggestions: AppointmentLogisticsDraft[];
+	skipped_reason: RecordUpdateSuggestionSkippedReason | null;
+	usage: LlmUsageLedger;
 };
 
 export type LlmRescheduleContext = {
@@ -111,6 +139,11 @@ export interface LlmClient {
 	parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult>;
 	/** AI-02: appointment.starts_at reschedule drafts — empty when match or date is ambiguous. */
 	suggestAppointmentReschedule(ctx: LlmRescheduleContext): Promise<LlmRescheduleResult>;
+	/**
+	 * Randevunun kliniği / oteli / transferi değişti mi? Boş dizi = okunamadı;
+	 * `skipped_reason` nedenini söyler (tahmin üretilmez).
+	 */
+	suggestAppointmentLogistics(ctx: LlmLogisticsContext): Promise<LlmLogisticsResult>;
 	/** Maya soru-cevap. Yalnız bilgi bankasından cevaplar; bilmiyorsa unknown token döner. */
 	answerFromKnowledge(ctx: MayaAskContext): Promise<MayaAskResult>;
 	/**

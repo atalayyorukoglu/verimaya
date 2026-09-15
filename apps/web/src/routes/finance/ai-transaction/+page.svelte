@@ -14,6 +14,7 @@
 		TransactionEvidenceEntry
 	} from '@verimaya/shared';
 	import { apiPaths, approveDraftItemSchema, inboundMessageStatusLabels } from '@verimaya/shared';
+	import { resolve } from '$app/paths';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDateTime } from '$lib/format';
@@ -83,6 +84,15 @@
 	const categories = $derived(categoriesQuery.data?.items ?? []);
 	const contactTypes = $derived(contactTypesQuery.data?.items ?? []);
 	const baseCurrency = $derived(tenantQuery.data?.base_currency ?? 'TRY');
+	/** Onay bekleyen kayıt önerisi sayısı — köprü bağlantısı için. */
+	const suggestionsQuery = createQuery(() => ({
+		queryKey: qs.keys.recordUpdateSuggestions.list({ status: 'pending', for: 'badge' }),
+		queryFn: () =>
+			apiGet<{ items: unknown[] }>(listUrl('record-suggestions', { status: 'pending', limit: 50 })),
+		enabled: qs.ready
+	}));
+	const pendingSuggestionCount = $derived(suggestionsQuery.data?.items.length ?? 0);
+
 	const bekleyenler = $derived(
 		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new' || m.status === 'parsed')
 	);
@@ -473,15 +483,30 @@
 					<span class="font-normal text-text-muted">({pendingCount})</span>
 				{/if}
 			</h2>
-			<Button
-				variant="outline"
-				size="sm"
-				type="button"
-				disabled={processing}
-				onclick={processNewMessages}
-			>
-				{processing ? t('finance.ai.pending.processing') : t('finance.ai.pending.process')}
-			</Button>
+			<div class="flex flex-wrap items-center gap-2">
+				<!--
+					Randevu/otel önerileri bu ekranda onaylanmıyor: randevu formuna
+					düşüyorlar. Kuyruk boş değilse bağlantı görünür — iki ekran arasında
+					köprü yoktu, öneriler kimsenin bakmadığı yerde birikiyordu.
+				-->
+				{#if pendingSuggestionCount > 0}
+					<a
+						href={resolve('/appointments/suggestions')}
+						class="inline-flex h-9 items-center rounded-[6px] border border-warning/40 bg-warning/10 px-3 text-sm font-medium text-text hover:bg-warning/15"
+					>
+						{t('appointments.suggestionsPending', { count: String(pendingSuggestionCount) })}
+					</a>
+				{/if}
+				<Button
+					variant="outline"
+					size="sm"
+					type="button"
+					disabled={processing}
+					onclick={processNewMessages}
+				>
+					{processing ? t('finance.ai.pending.processing') : t('finance.ai.pending.process')}
+				</Button>
+			</div>
 		</div>
 
 		<!--

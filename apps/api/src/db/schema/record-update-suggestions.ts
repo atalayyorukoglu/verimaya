@@ -1,6 +1,7 @@
 import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { appointments } from './appointments';
+import { contacts } from './contacts';
 import { tenants } from './tenants';
 
 export const recordUpdateSuggestions = pgTable(
@@ -13,9 +14,18 @@ export const recordUpdateSuggestions = pgTable(
 		appointmentId: uuid('appointment_id')
 			.notNull()
 			.references(() => appointments.id, { onDelete: 'cascade' }),
+		/** 'starts_at' | 'clinic' | 'hotel' | 'transfer' (0071 check kısıtı). */
 		field: text('field').notNull(),
-		currentValue: timestamp('current_value', { withTimezone: true, mode: 'date' }).notNull(),
-		suggestedValue: timestamp('suggested_value', { withTimezone: true, mode: 'date' }).notNull(),
+		/** Yalnız `starts_at` için dolu. */
+		currentValue: timestamp('current_value', { withTimezone: true, mode: 'date' }),
+		suggestedValue: timestamp('suggested_value', { withTimezone: true, mode: 'date' }),
+		/** Metin alanları için. `currentText` null olabilir: otel hiç girilmemiş olabilir. */
+		currentText: text('current_text'),
+		suggestedText: text('suggested_text'),
+		/** Önerilen otel/klinik kayıtlı bir kişiye denk geldiyse. */
+		suggestedContactId: uuid('suggested_contact_id').references(() => contacts.id, {
+			onDelete: 'set null'
+		}),
 		sourceText: text('source_text').notNull(),
 		confidence: text('confidence').notNull(),
 		status: text('status').notNull().default('pending'),

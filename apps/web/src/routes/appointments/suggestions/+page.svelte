@@ -37,7 +37,8 @@
 	> = {
 		ambiguous_contact: 'appointments.suggestions.skipped.ambiguousContact',
 		no_date: 'appointments.suggestions.skipped.noDate',
-		no_change: 'appointments.suggestions.skipped.noChange'
+		no_change: 'appointments.suggestions.skipped.noChange',
+		no_value: 'appointments.suggestions.skipped.noValue'
 	};
 
 	const listQuery = createQuery(() => ({
@@ -187,11 +188,25 @@
 							{t(confidenceKey[item.confidence])}
 						</span>
 					</div>
+					<!--
+						İki tür öneri var: tarih (erteleme) ve lojistik (klinik/otel/transfer).
+						Lojistikte mevcut değer çoğu zaman BOŞ — alan hiç doldurulmamış olur;
+						o durumda "—" yazılır, uydurma bir eski değer gösterilmez.
+					-->
 					<p class="mb-3 text-sm text-text">
-						<span class="text-text-muted">{t('appointments.suggestions.current')}:</span>
-						{formatDateTime(item.current_value)}
-						<span class="mx-2 text-text-muted">→</span>
-						<span class="font-medium">{formatDateTime(item.suggested_value)}</span>
+						<span class="text-text-muted">{t(`appointments.suggestions.field.${item.field}`)}:</span
+						>
+						{#if item.field === 'starts_at'}
+							{item.current_value ? formatDateTime(item.current_value) : '—'}
+							<span class="mx-2 text-text-muted">→</span>
+							<span class="font-medium"
+								>{item.suggested_value ? formatDateTime(item.suggested_value) : '—'}</span
+							>
+						{:else}
+							{item.current_text || '—'}
+							<span class="mx-2 text-text-muted">→</span>
+							<span class="font-medium">{item.suggested_text}</span>
+						{/if}
 					</p>
 					<div class="flex flex-wrap gap-2">
 						<Button

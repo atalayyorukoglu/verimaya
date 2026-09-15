@@ -1714,6 +1714,9 @@ export const handlers = [
 			appointment_id: appointment.id,
 			contact_display_name: appointment.contact_display_name,
 			field: 'starts_at',
+			current_text: null,
+			suggested_text: null,
+			suggested_contact_id: null,
 			current_value: appointment.starts_at,
 			suggested_value: target.toISOString(),
 			source_text: parsed.data.message.slice(0, 4000),
@@ -1742,6 +1745,11 @@ export const handlers = [
 			return conflict('conflict', 'Appointment was modified since this suggestion was created');
 		}
 		const now = nowIso();
+		// Mock yalnız tarih önerisini uygular: lojistik onayı API tarafında
+		// (`record-suggestions.service.ts`) yaşıyor ve MSW'de karşılığı yok.
+		if (!suggestion.suggested_value) {
+			return conflict('conflict', 'Suggestion is missing its date values');
+		}
 		store.appointments[apptIdx] = {
 			...store.appointments[apptIdx]!,
 			starts_at: suggestion.suggested_value,

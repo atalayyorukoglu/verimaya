@@ -1,5 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { buildKnowledgeContext } from '@verimaya/shared';
 import type {
 	RecordUpdateSuggestionListQuery,
@@ -9,7 +9,7 @@ import { AppointmentsService } from '../appointments/appointments.service';
 import type { AuditActor } from '../common/audit-helper';
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { toRecordUpdateSuggestion } from '../common/mappers';
-import { appointments, recordUpdateSuggestions } from '../db/schema';
+import { appointments, contacts, recordUpdateSuggestions } from '../db/schema';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
@@ -32,7 +32,10 @@ export class RecordSuggestionsService {
 				.select({
 					id: appointments.id,
 					contactDisplayName: appointments.contactDisplayName,
-					startsAt: appointments.startsAt
+					startsAt: appointments.startsAt,
+					clinicName: appointments.clinicName,
+					hotelName: appointments.hotelName,
+					transferNote: appointments.transferNote
 				})
 				.from(appointments)
 				.where(isNull(appointments.deletedAt))
@@ -43,6 +46,15 @@ export class RecordSuggestionsService {
 				appointment_id: row.id,
 				contact_display_name: row.contactDisplayName,
 				starts_at: row.startsAt.toISOString()
+			}));
+
+			const logisticsHints = activeAppointments.map((row) => ({
+				appointment_id: row.id,
+				contact_display_name: row.contactDisplayName,
+				starts_at: row.startsAt.toISOString(),
+				clinic: row.clinicName,
+				hotel: row.hotelName,
+				transfer: row.transferNote
 			}));
 
 			const result = await this.llm.suggestAppointmentReschedule({
@@ -94,11 +106,97 @@ export class RecordSuggestionsService {
 				}
 			}
 
+			// Lojistik: klinik / otel / transfer. Erteleme ile AYNI çağrıda değil —
+			// iki ayrı çıkarım işi, tek prompt'a sıkıştırmak ikisini de bozuyor
+			// (model tarihi bulunca otele bakmayı bırakıyor).
+			const logistics = await this.llm.suggestAppointmentLogistics({
+				message,
+				appointments: logisticsHints,
+				tenantPromptNote,
+				knowledge
+			});
+			await writeLlmParseLedger(db, tenantId, logistics.usage);
+
+			for (const draft of logistics.suggestions) {
+				const appt = activeAppointments.find((a) => a.id === draft.appointment_id);
+				if (!appt) continue;
+
+				const mevcut =
+					draft.field === 'clinic'
+						? appt.clinicName
+						: draft.field === 'hotel'
+							? appt.hotelName
+							: appt.transferNote;
+				// Zaten aynıysa öneri açma: kuyruk "karar bekleyen" listesi olmalı.
+				if ((mevcut ?? '').trim().toLocaleLowerCase('tr') === draft.suggested_text.trim().toLocaleLowerCase('tr')) {
+					continue;
+				}
+
+				const existingPending = await db
+					.select({ id: recordUpdateSuggestions.id })
+					.from(recordUpdateSuggestions)
+					.where(
+						and(
+							eq(recordUpdateSuggestions.appointmentId, draft.appointment_id),
+							eq(recordUpdateSuggestions.field, draft.field),
+							eq(recordUpdateSuggestions.status, 'pending'),
+							isNull(recordUpdateSuggestions.deletedAt)
+						)
+					)
+					.limit(1);
+				if (existingPending.length > 0) continue;
+
+				const [row] = await db
+					.insert(recordUpdateSuggestions)
+					.values({
+						tenantId,
+						appointmentId: draft.appointment_id,
+						field: draft.field,
+						currentText: mevcut ?? null,
+						suggestedText: draft.suggested_text,
+						// Önerilen ad kayıtlı bir kişiye denk geliyorsa bağı da kur.
+						suggestedContactId:
+							draft.field === 'transfer'
+								? null
+								: await this.contactIdByName(db, draft.suggested_text),
+						sourceText: draft.reason,
+						confidence: draft.confidence,
+						status: 'pending'
+					})
+					.returning();
+
+				if (row) created.push(toRecordUpdateSuggestion(row, appt.contactDisplayName));
+			}
+
 			return {
 				items: created,
-				skipped_reason: created.length > 0 ? null : (result.skipped_reason ?? null)
+				skipped_reason:
+					created.length > 0
+						? null
+						: (result.skipped_reason ?? logistics.skipped_reason ?? null)
 			};
 		});
+	}
+
+	/**
+	 * Otel/klinik adı kayıtlı bir kişiye denk geliyor mu? Tam ad eşleşmesi (büyük-
+	 * küçük harf duyarsız) arar; benzerini bulmaya çalışmaz — yanlış otele
+	 * bağlamaktansa yalnız adı yazmak yeğdir, ad zaten serbest metin olarak tutuluyor.
+	 */
+	private async contactIdByName(db: TenantDb, name: string): Promise<string | null> {
+		const aranan = name.trim();
+		if (!aranan) return null;
+		const [row] = await db
+			.select({ id: contacts.id })
+			.from(contacts)
+			.where(
+				and(
+					sql`lower(${contacts.displayName}) = lower(${aranan})`,
+					isNull(contacts.deletedAt)
+				)
+			)
+			.limit(1);
+		return row?.id ?? null;
 	}
 
 	async list(tenantId: string, params: RecordUpdateSuggestionListQuery) {
@@ -155,7 +253,12 @@ export class RecordSuggestionsService {
 		}
 
 		const [appt] = await db
-			.select({ startsAt: appointments.startsAt })
+			.select({
+				startsAt: appointments.startsAt,
+				clinicName: appointments.clinicName,
+				hotelName: appointments.hotelName,
+				transferNote: appointments.transferNote
+			})
 			.from(appointments)
 			.where(and(eq(appointments.id, existing.appointmentId), isNull(appointments.deletedAt)))
 			.limit(1);
@@ -165,18 +268,59 @@ export class RecordSuggestionsService {
 			});
 		}
 
-		if (appt.startsAt.getTime() !== existing.currentValue.getTime()) {
+		const catisma = () => {
 			throw new ConflictException({
 				error: {
 					code: 'conflict',
 					message: 'Appointment was modified since this suggestion was created'
 				}
 			});
-		}
+		};
 
-		await this.appointmentsService.updateWithDb(db, existing.appointmentId, {
-			starts_at: existing.suggestedValue.toISOString()
-		});
+		if (existing.field === 'starts_at') {
+			if (!existing.currentValue || !existing.suggestedValue) {
+				throw new ConflictException({
+					error: { code: 'conflict', message: 'Suggestion is missing its date values' }
+				});
+			}
+			if (appt.startsAt.getTime() !== existing.currentValue.getTime()) catisma();
+			await this.appointmentsService.updateWithDb(db, existing.appointmentId, {
+				starts_at: existing.suggestedValue.toISOString()
+			});
+		} else {
+			// Lojistik: öneri açıldığından beri alan elle değiştiyse yazma — insanın
+			// yazdığını modelin önerisiyle ezmek en kötü sonuç.
+			const simdiki =
+				existing.field === 'clinic'
+					? appt.clinicName
+					: existing.field === 'hotel'
+						? appt.hotelName
+						: appt.transferNote;
+			if ((simdiki ?? null) !== (existing.currentText ?? null)) catisma();
+			if (!existing.suggestedText) {
+				throw new ConflictException({
+					error: { code: 'conflict', message: 'Suggestion is missing its value' }
+				});
+			}
+
+			const yama =
+				existing.field === 'clinic'
+					? {
+							clinic_name: existing.suggestedText,
+							...(existing.suggestedContactId
+								? { clinic_contact_id: existing.suggestedContactId }
+								: {})
+						}
+					: existing.field === 'hotel'
+						? {
+								hotel_name: existing.suggestedText,
+								...(existing.suggestedContactId
+									? { hotel_contact_id: existing.suggestedContactId }
+									: {})
+							}
+						: { transfer_note: existing.suggestedText };
+			await this.appointmentsService.updateWithDb(db, existing.appointmentId, yama);
+		}
 
 		const [row] = await db
 			.update(recordUpdateSuggestions)

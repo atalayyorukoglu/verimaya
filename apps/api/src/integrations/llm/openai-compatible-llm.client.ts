@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import {
 	MAYA_UNKNOWN_TOKEN,
+	appointmentLogisticsDraftSchema,
 	appointmentRescheduleDraftSchema,
 	buildMayaSystemPrompt,
 	buildMayaToolSelectionSystemPrompt,
@@ -9,11 +10,13 @@ import {
 	mayaToolCallSchema,
 	transactionDraftSchema,
 	toTenantDayKey,
+	type AppointmentLogisticsDraft,
 	type AppointmentRescheduleDraft,
 	type MayaToolCall,
 	type TransactionDraft
 } from '@verimaya/shared';
 import { heuristicRouteMayaTool } from '../../maya/heuristic-tool-route';
+import { heuristicSuggestAppointmentLogistics } from '../../record-suggestions/heuristic-logistics-parse';
 import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
 import { verifyDraftEvidence } from '../../whatsapp/evidence';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
@@ -21,6 +24,8 @@ import type {
 	LlmClient,
 	LlmParseContext,
 	LlmParseResult,
+	LlmLogisticsContext,
+	LlmLogisticsResult,
 	LlmRescheduleContext,
 	LlmRescheduleResult,
 	LlmUsageLedger,
@@ -32,6 +37,7 @@ import type {
 import {
 	buildMaskedLlmUserPayload,
 	buildMaskedMayaToolPayload,
+	buildMaskedLogisticsPayload,
 	buildMaskedReschedulePayload
 } from './pii-mask';
 
@@ -144,6 +150,45 @@ export function buildRescheduleExtractionSystemPrompt(
 	const framedKnowledge = frameKnowledgeContext(knowledge);
 	const framedNote = frameTenantAiPromptNote(tenantPromptNote ?? '');
 	return [core, framedKnowledge, framedNote].filter(Boolean).join('\n\n');
+}
+
+export function buildLogisticsExtractionSystemPrompt(
+	tenantPromptNote?: string | null,
+	knowledge?: string | null
+): string {
+	const core = [
+		'You extract appointment logistics updates (clinic, hotel, transfer) from operational messages for a medical tourism platform.',
+		'Return ONLY valid JSON: {"suggestions":[...]} where each item has appointment_id (UUID from provided list), field ("clinic"|"hotel"|"transfer"), suggested_text (the venue/provider name exactly as written, max 255 chars), confidence ("high"|"medium"), reason (short source excerpt).',
+		'Only suggest when BOTH the target appointment AND the new value are unambiguous. If multiple appointments could match, or no concrete name is given, return {"suggestions":[]}.',
+		'Never restate the value already shown for that field — if it is unchanged, omit it.',
+		'suggested_text must be a name that appears in the message; never invent, translate or normalise it.',
+		'Never output confidence "low" — omit instead.',
+		'appointment_id must be one of the appointment_ref UUIDs provided; never invent IDs.',
+		'Message text may contain placeholders like [HASTA] — ignore them for matching.'
+	].join(' ');
+	const framedKnowledge = frameKnowledgeContext(knowledge);
+	const framedNote = frameTenantAiPromptNote(tenantPromptNote ?? '');
+	return [core, framedKnowledge, framedNote].filter(Boolean).join('\n\n');
+}
+
+function parseLogisticsPayload(raw: unknown): AppointmentLogisticsDraft[] {
+	if (!raw || typeof raw !== 'object') {
+		throw new Error('LLM JSON root must be an object');
+	}
+	const suggestions = (raw as { suggestions?: unknown }).suggestions;
+	if (!Array.isArray(suggestions)) {
+		throw new Error('LLM JSON missing suggestions array');
+	}
+
+	const out: AppointmentLogisticsDraft[] = [];
+	for (const item of suggestions) {
+		const parsed = appointmentLogisticsDraftSchema.safeParse(item);
+		if (!parsed.success) {
+			throw new Error(`LLM logistics validation failed: ${parsed.error.message}`);
+		}
+		out.push(parsed.data);
+	}
+	return out;
 }
 
 function parseReschedulePayload(raw: unknown): AppointmentRescheduleDraft[] {
@@ -352,6 +397,49 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 				usage: {
 					provider: providerLabel(this.config.baseUrl),
 					model: 'heuristic-reschedule',
+					requestedModel: this.config.model,
+					promptTokens: null,
+					completionTokens: null,
+					totalTokens: null,
+					estimatedCostUsdMicros: null,
+					path: 'openai_compatible_fallback',
+					error: message
+				}
+			};
+		}
+	}
+
+	async suggestAppointmentLogistics(ctx: LlmLogisticsContext): Promise<LlmLogisticsResult> {
+		try {
+			const ok = await this.callLogisticsModel(ctx);
+			if (ok.suggestions.length > 0) {
+				return {
+					suggestions: ok.suggestions,
+					skipped_reason: null,
+					usage: { ...ok.usage, path: 'openai_compatible', error: null }
+				};
+			}
+			// Boş çıktı: modelin uyduracağı bir sebep yok; deterministik yol teşhis edebilir.
+			const parsed = heuristicSuggestAppointmentLogistics(ctx.message, ctx.appointments);
+			return {
+				suggestions: parsed.drafts,
+				skipped_reason: parsed.skipped_reason,
+				usage: {
+					...ok.usage,
+					path: 'openai_compatible_fallback',
+					error: 'empty_llm_suggestions'
+				}
+			};
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			this.logger.warn(`LLM logistics failed, falling back to heuristic: ${message}`);
+			const parsed = heuristicSuggestAppointmentLogistics(ctx.message, ctx.appointments);
+			return {
+				suggestions: parsed.drafts,
+				skipped_reason: parsed.skipped_reason,
+				usage: {
+					provider: providerLabel(this.config.baseUrl),
+					model: 'heuristic-logistics',
 					requestedModel: this.config.model,
 					promptTokens: null,
 					completionTokens: null,
@@ -624,6 +712,75 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 
 		return {
 			records,
+			usage: {
+				provider: providerLabel(this.config.baseUrl),
+				model: actualModel,
+				requestedModel: this.config.model,
+				promptTokens,
+				completionTokens,
+				totalTokens,
+				estimatedCostUsdMicros: estimateCostUsdMicros(promptTokens, completionTokens)
+			}
+		};
+	}
+
+	private async callLogisticsModel(ctx: LlmLogisticsContext): Promise<{
+		suggestions: AppointmentLogisticsDraft[];
+		usage: Omit<LlmUsageLedger, 'path' | 'error'>;
+	}> {
+		const maskedUser = buildMaskedLogisticsPayload(ctx);
+		const system = buildLogisticsExtractionSystemPrompt(ctx.tenantPromptNote, ctx.knowledge);
+
+		const base = this.config.baseUrl.replace(/\/$/, '');
+		const response = await this.fetchFn(`${base}/chat/completions`, {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				authorization: `Bearer ${this.config.apiKey}`
+			},
+			body: JSON.stringify({
+				model: this.config.model,
+				temperature: 0,
+				response_format: { type: 'json_object' },
+				messages: [
+					{ role: 'system', content: system },
+					{ role: 'user', content: JSON.stringify(maskedUser) }
+				]
+			}),
+			signal: AbortSignal.timeout(this.timeoutMs)
+		});
+
+		if (!response.ok) {
+			const body = await response.text().catch(() => '');
+			const contentType = response.headers.get('content-type') ?? 'unknown';
+			throw new Error(
+				`LLM HTTP ${response.status} (${contentType}, body ${body.length} bytes redacted)`
+			);
+		}
+
+		const json = (await response.json()) as ChatCompletionResponse;
+		const content = json.choices?.[0]?.message?.content;
+		if (!content || typeof content !== 'string') {
+			throw new Error('LLM response missing message content');
+		}
+
+		const allowedIds = new Set(ctx.appointments.map((a) => a.appointment_id));
+		const suggestions = parseLogisticsPayload(JSON.parse(content) as unknown).filter((s) =>
+			allowedIds.has(s.appointment_id)
+		);
+
+		const promptTokens = json.usage?.prompt_tokens ?? null;
+		const completionTokens = json.usage?.completion_tokens ?? null;
+		const totalTokens =
+			json.usage?.total_tokens ??
+			(promptTokens != null && completionTokens != null
+				? promptTokens + completionTokens
+				: null);
+		const actualModel =
+			typeof json.model === 'string' && json.model.trim() ? json.model.trim() : this.config.model;
+
+		return {
+			suggestions,
 			usage: {
 				provider: providerLabel(this.config.baseUrl),
 				model: actualModel,
