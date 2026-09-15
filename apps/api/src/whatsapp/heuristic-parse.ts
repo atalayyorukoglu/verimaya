@@ -6,23 +6,29 @@ import type {
 } from '@verimaya/shared';
 import { toTenantDayKey } from '@verimaya/shared';
 import { evidenceEntry } from './evidence';
+import { paraBaglamiVar, parseTutar, tutarDegil } from './tutar';
 
-const CURRENCY_PATTERN = /\b(\d[\d.,]*)\s*(TRY|GBP|EUR|USD|₺|£|€|\$)\b/gi;
+/**
+ * Tutar + para birimi. Ekip para birimini Türkçe ve küçük harfle yazıyor
+ * ("18.200 tl", "1400 gbp", "2900 euro", "600 pound"); sembol ve ISO kodu tek
+ * başına yetmiyordu, o mesajlar para birimsiz sanılıp "herhangi bir sayı"
+ * yoluna düşüyordu.
+ */
+const CURRENCY_PATTERN =
+	/(?<![\d.,])(\d[\d.,]*)\s*(TRY|GBP|EUR|USD|₺|£|€|\$|tl|lira|euro|avro|pound|sterlin|dolar)(?![a-zçğıöşü])/gi;
 const INCOME_HINTS = /alındı|tahsilat|ödeme alındı|received|deposit|gelir/i;
 const EXPENSE_HINTS = /ödeme yapıldı|harcama|gider|paid to|ödendi|komisyon/i;
 
 function parseAmount(raw: string): number {
-	const normalized = raw.replace(/\./g, '').replace(',', '.');
-	const n = Number.parseFloat(normalized);
-	return Number.isFinite(n) ? n : 0;
+	return parseTutar(raw) ?? 0;
 }
 
 function normalizeCurrency(token: string): SupportedCurrency {
 	const t = token.toUpperCase();
-	if (t === '₺' || t === 'TRY') return 'TRY';
-	if (t === '£' || t === 'GBP') return 'GBP';
-	if (t === '€' || t === 'EUR') return 'EUR';
-	if (t === '$' || t === 'USD') return 'USD';
+	if (t === '₺' || t === 'TRY' || t === 'TL' || t === 'LIRA') return 'TRY';
+	if (t === '£' || t === 'GBP' || t === 'POUND' || t === 'STERLIN') return 'GBP';
+	if (t === '€' || t === 'EUR' || t === 'EURO' || t === 'AVRO') return 'EUR';
+	if (t === '$' || t === 'USD' || t === 'DOLAR') return 'USD';
 	return 'TRY';
 }
 
@@ -119,9 +125,20 @@ export function heuristicParseWhatsappMessage(
 	const text = message.trim();
 	if (!text) return [];
 
-	const matches = [...text.matchAll(CURRENCY_PATTERN)];
+	const matches = [...text.matchAll(CURRENCY_PATTERN)].filter(
+		(m) => !tutarDegil(m[1], text, m.index ?? null)
+	);
 	if (matches.length === 0) {
-		const fallback = text.match(/(\d[\d.,]+)/);
+		/*
+		 * Para birimi yok. Eskiden metindeki İLK sayı tutar sayılıyordu: "15.09.26
+		 * 12:00 zaid waldu" 15 milyon TRY, "@1854…" 185 trilyon TRY oldu. Şimdi:
+		 * mesajda para kelimesi yoksa taslak yok; varsa tarih/saat/kimlik olmayan
+		 * ilk sayı alınır.
+		 */
+		if (!paraBaglamiVar(text)) return [];
+		const fallback = [...text.matchAll(/(\d[\d.,]*)/g)].find(
+			(m) => !tutarDegil(m[1], text, m.index ?? null) && (parseTutar(m[1]) ?? 0) > 0
+		);
 		if (!fallback) return [];
 		const amount = Math.round(parseAmount(fallback[1]) * 100);
 		const { kind, hint: kindHint } = guessKind(text);

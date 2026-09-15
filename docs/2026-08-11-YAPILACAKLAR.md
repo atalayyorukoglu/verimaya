@@ -699,8 +699,10 @@ testi) · PDF işleme iliştirilmiş · hiçbir belge modele gitmemiş (test).
   `inbound_messages`'a `export:` kimliğiyle; Muhasebe 1–12 Eylül parçası zaten yüklendi.
   Kullanıcı onayı var (2026-09-15).
 
-**Bilinen açık (bu işten bağımsız):** tarih ("15.09.26") ve @bahsetme kimliği para
-ayrıştırıcısında tutar sanılıyor; canlı akışta tekrar ediyor.
+**Kapatıldı (2026-09-15):** tarih ("15.09.26"), saat ve @bahsetme kimliği para
+ayrıştırıcısında tutar sanılıyordu; model de "18.200"ü 182 okuyordu. `tutar.ts` tek kural:
+Türkçe binlik/ondalık, tarih/saat/kimlik dışlama, para kelimesi yoksa çıplak sayı taslak
+üretmez; LLM taslağının tutarı alıntısına göre düzeltilir, alıntı tarih/kimlikse taslak düşer.
 
 ---
 

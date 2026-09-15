@@ -20,6 +20,7 @@ import { heuristicSuggestAppointmentLogistics } from '../../record-suggestions/h
 import { heuristicSuggestAppointmentReschedule } from '../../record-suggestions/heuristic-reschedule-parse';
 import { verifyDraftEvidence } from '../../whatsapp/evidence';
 import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
+import { tutarlariDuzelt } from '../../whatsapp/tutar';
 import type {
 	ContactSummaryContext,
 	ContactSummaryResult,
@@ -821,8 +822,13 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		const parsedJson: unknown = JSON.parse(content);
 		// AI-09: atıf doğrulaması maskeli metne karşı — model yalnız onu gördü.
 		// `start` ham metne göre yeniden hesaplanır (vurgulama orada yapılıyor).
-		const records = stripPlaceholders(
-			verifyDraftEvidence(parseDraftsPayload(parsedJson), maskedUser.message, ctx.message)
+		// Tutar bekçisi: model alıntıyı doğru kopyalıyor ama sayıya çevirirken
+		// yanılabiliyor ("18.200" → 182); alıntı tarih/kimlikse taslak düşer (tutar.ts).
+		const records = tutarlariDuzelt(
+			stripPlaceholders(
+				verifyDraftEvidence(parseDraftsPayload(parsedJson), maskedUser.message, ctx.message)
+			),
+			ctx.message
 		);
 
 		const promptTokens = json.usage?.prompt_tokens ?? null;
