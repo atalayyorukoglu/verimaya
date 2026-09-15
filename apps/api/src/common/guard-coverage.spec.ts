@@ -61,6 +61,8 @@ const PUBLIC_ROUTE_ALLOWLIST: Record<string, string> = {
     "Inbound webhook — signature/API-key verified in-handler, queue-first",
   "WebhooksController.ingestWaha":
     "WAHA inbound webhook — same queue-first public surface",
+  "WebhooksController.ingestWahaMedia":
+    "WAHA-01 media webhook — same HMAC signature gate as ingestWaha, tenant resolved from identity",
   "MeController.me":
     "Session-only own profile; not an org-scoped resource (no OrgPermissionGuard)",
   "MeController.listOrganizations":
