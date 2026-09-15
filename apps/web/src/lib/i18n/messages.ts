@@ -1070,6 +1070,7 @@ const tr = {
 	'finance.ai.drafts.heading': 'Taslaklar',
 	'finance.ai.drafts.approve': 'Onayla ve kaydet',
 	'finance.ai.drafts.approving': 'Onaylanıyor…',
+	'finance.ai.drafts.removeLine': 'Bu satırı çıkar (kayıt açılmaz)',
 	'finance.ai.drafts.needInbox':
 		'Atomik onay için kuyruktan bir mesaj seçin. Manuel yapıştırma için önce kuyruğa alın.',
 	'finance.ai.drafts.footnote':
@@ -4099,6 +4100,7 @@ const en: Record<MessageKey, string> = {
 	'finance.ai.drafts.heading': 'Drafts',
 	'finance.ai.drafts.approve': 'Approve and save',
 	'finance.ai.drafts.approving': 'Approving…',
+	'finance.ai.drafts.removeLine': 'Remove this line (no record is created)',
 	'finance.ai.drafts.needInbox':
 		'Pick a queue message for atomic approval. Manual paste must go through the queue first.',
 	'finance.ai.drafts.footnote':

@@ -648,18 +648,33 @@
 			{/if}
 
 			{#each drafts as draft, i (i)}
-				<TransactionDraftCard
-					{draft}
-					{contacts}
-					{categories}
-					{contactTypes}
-					{baseCurrency}
-					creating={creatingInline}
-					onchange={(patch) => updateDraft(i, patch)}
-					onCreateContact={(input) => createContactInline(i, input)}
-					onCreateCategory={(input) => createCategoryInline(i, input)}
-					onEvidence={(entry) => (evidenceHighlight = entry)}
-				/>
+				<div class="space-y-1">
+					<TransactionDraftCard
+						{draft}
+						{contacts}
+						{categories}
+						{contactTypes}
+						{baseCurrency}
+						creating={creatingInline}
+						onchange={(patch) => updateDraft(i, patch)}
+						onCreateContact={(input) => createContactInline(i, input)}
+						onCreateCategory={(input) => createCategoryInline(i, input)}
+						onEvidence={(entry) => (evidenceHighlight = entry)}
+					/>
+					<!-- Model bir mesajdan fazla satır çıkarabiliyor ("50.000'i avanstan ödendi"
+					     ayrı gider değil, kaynak). Satırı düzeltmek yerine çıkarmak gerek; onay
+					     yalnız kalan satırları yazar. -->
+					{#if drafts.length > 1 && draft._status !== 'saved'}
+						<button
+							type="button"
+							class="cursor-pointer text-xs text-text-muted underline-offset-2 hover:underline"
+							disabled={approving}
+							onclick={() => (drafts = drafts.filter((_, j) => j !== i))}
+						>
+							{t('finance.ai.drafts.removeLine')}
+						</button>
+					{/if}
+				</div>
 			{/each}
 
 			<p class="text-xs text-text-faint">{t('finance.ai.drafts.footnote')}</p>
