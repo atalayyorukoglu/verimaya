@@ -30,6 +30,7 @@ export * from './data-subject.js';
 export * from './contact-data-subject.js';
 export * from './contact-summary.js';
 export * from './contact-visit.js';
+export * from './contact-visit-ledger.js';
 export * from './media-doc.js';
 export * from './patient-checklist.js';
 export * from './api.js';

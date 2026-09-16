@@ -13,14 +13,27 @@ import {
 	type TransactionUpdate
 } from '@verimaya/shared';
 import { contacts, tenants, transactions } from '../db/schema';
+import { contactVisits } from '../db/schema/contact-visits';
 import { writeAuditLog, type AuditActor } from '../common/audit-helper';
 import { buildOccurredOnCursorPage, occurredOnCursorCondition } from '../common/list-query';
 import { toTransaction } from '../common/mappers';
 import { textSearchCondition } from '../common/search';
+import { tarihtenVizitSec } from '../common/visit-window';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 
 const HASTA_TYPE = DEFAULT_CONTACT_TYPE_NAMES[0];
 const PERSONEL_TYPE = DEFAULT_CONTACT_TYPE_NAMES[4];
+
+/**
+ * PARA-01 — `contact_visit_id` yazma yolunda **üç değerlidir**, iki değil:
+ * `string` (bu vizit), `null` (bilerek boş), `undefined` (hiç söylenmedi → sunucu
+ * tarihten eşleştirsin). Zod şeması `.default(null)` verdiği için HTTP gövdesinden
+ * `undefined` gelemez; onay akışı (`WhatsappService`) bu farkı kullanarak otomatik
+ * eşlemeyi açar.
+ */
+export type TransactionCreateInput = Omit<TransactionCreate, 'contact_visit_id'> & {
+	contact_visit_id?: string | null;
+};
 
 /** AI-09 — sunucu tarafından üretilen kaynak izi; istek gövdesinden gelmez. */
 export type TransactionSource = {
@@ -121,7 +134,7 @@ export class TransactionsService {
 	async createWithDb(
 		db: TenantDb,
 		tenantId: string,
-		input: TransactionCreate,
+		input: TransactionCreateInput,
 		actor: AuditActor,
 		source?: TransactionSource
 	) {
@@ -132,6 +145,7 @@ export class TransactionsService {
 			PERSONEL_TYPE,
 			'responsible_contact_id'
 		);
+		const contactVisitId = await this.resolveVisit(db, input, input.contact_visit_id);
 		const denorm = await this.resolveDenormalized(db, tenantId, input);
 		const [row] = await db
 			.insert(transactions)
@@ -157,6 +171,7 @@ export class TransactionsService {
 				contactLabel: denorm.contactLabel,
 				caseContactId: input.case_contact_id ?? null,
 				responsibleContactId: input.responsible_contact_id ?? null,
+				contactVisitId,
 				description: input.description ?? null,
 				createdByDisplayName: actor.actorDisplayName,
 				sourceInboundMessageId: source?.inboundMessageId ?? null,
@@ -222,6 +237,8 @@ export class TransactionsService {
 				input.responsible_contact_id !== undefined
 					? input.responsible_contact_id
 					: existing.responsibleContactId,
+			contact_visit_id:
+				input.contact_visit_id !== undefined ? input.contact_visit_id : existing.contactVisitId,
 			description: input.description !== undefined ? input.description : existing.description
 		} satisfies TransactionCreate;
 
@@ -233,6 +250,12 @@ export class TransactionsService {
 			'responsible_contact_id'
 		);
 
+		/*
+		 * Güncellemede otomatik eşleme YOK: `merged.contact_visit_id` ya kullanıcının
+		 * gönderdiği değer ya da satırın mevcut hâli. Kullanıcı viziti bilerek
+		 * boşalttıysa kaydetmek onu geri koymamalı.
+		 */
+		const contactVisitId = await this.resolveVisit(db, merged, merged.contact_visit_id ?? null);
 		const denorm = await this.resolveDenormalized(db, tenantId, merged);
 
 		const [row] = await db
@@ -258,6 +281,7 @@ export class TransactionsService {
 				contactLabel: denorm.contactLabel,
 				caseContactId: merged.case_contact_id,
 				responsibleContactId: merged.responsible_contact_id,
+				contactVisitId,
 				description: merged.description,
 				updatedAt: new Date()
 			})
@@ -319,12 +343,7 @@ export class TransactionsService {
 				const [contact] = await db
 					.select({ isInternal: contacts.isInternal })
 					.from(contacts)
-					.where(
-						and(
-							eq(contacts.id, input.responsible_contact_id),
-							isNull(contacts.deletedAt)
-						)
-					)
+					.where(and(eq(contacts.id, input.responsible_contact_id), isNull(contacts.deletedAt)))
 					.limit(1);
 				responsible_is_internal = contact?.isInternal ?? null;
 			}
@@ -336,6 +355,63 @@ export class TransactionsService {
 				)
 			};
 		});
+	}
+
+	/**
+	 * PARA-01 — satırın viziti.
+	 *
+	 * Üç durum:
+	 *  - Vizit verilmiş → **doğrulanır**: silinmemiş olmalı ve satırın hastasına
+	 *    (`case_contact_id`) ya da karşı tarafına (`contact_id`) ait olmalı. Başka
+	 *    kişinin viziti kabul edilirse bir hastanın tahsilatı başka hastanın kârında
+	 *    görünürdü.
+	 *  - Alan hiç gönderilmemiş (`undefined`) → tarih penceresinden **tek** uyan vizit
+	 *    seçilir (geliş − 2 … dönüş + 2). Birden fazla uyarsa boş kalır.
+	 *  - Açıkça `null` → boş bırakılır; kullanıcı "belirsiz" demiştir.
+	 */
+	private async resolveVisit(
+		db: TenantDb,
+		row: { case_contact_id?: string | null; contact_id?: string | null; occurred_on: string },
+		requested: string | null | undefined
+	): Promise<string | null> {
+		const sahipler = [row.case_contact_id, row.contact_id].filter(
+			(x): x is string => typeof x === 'string' && x.length > 0
+		);
+
+		if (requested) {
+			const [visit] = await db
+				.select({ id: contactVisits.id, contactId: contactVisits.contactId })
+				.from(contactVisits)
+				.where(and(eq(contactVisits.id, requested), isNull(contactVisits.deletedAt)))
+				.limit(1);
+			if (!visit || !sahipler.includes(visit.contactId)) {
+				throw new BadRequestException({
+					error: {
+						code: 'validation_error',
+						message: 'contact_visit_id must be a visit of the linked patient or contact'
+					}
+				});
+			}
+			return visit.id;
+		}
+		if (requested === null || sahipler.length === 0) return null;
+
+		const adaylar = await db
+			.select({
+				id: contactVisits.id,
+				arrivalAt: contactVisits.arrivalAt,
+				departureAt: contactVisits.departureAt
+			})
+			.from(contactVisits)
+			.where(
+				and(
+					sahipler.length === 1
+						? eq(contactVisits.contactId, sahipler[0]!)
+						: or(...sahipler.map((id) => eq(contactVisits.contactId, id)))!,
+					isNull(contactVisits.deletedAt)
+				)
+			);
+		return tarihtenVizitSec(row.occurred_on, adaylar);
 	}
 
 	/** `case_contact_id`'nin görünen adı — yazma yollarının dönüşü listeyle aynı şekli taşısın. */
@@ -393,12 +469,7 @@ export class TransactionsService {
 		tenantId: string,
 		input: Pick<
 			TransactionCreate,
-			| 'contact_id'
-			| 'contact_label'
-			| 'currency'
-			| 'amount'
-			| 'amount_base'
-			| 'base_currency'
+			'contact_id' | 'contact_label' | 'currency' | 'amount' | 'amount_base' | 'base_currency'
 		>
 	) {
 		let contactDisplayName: string | null = null;

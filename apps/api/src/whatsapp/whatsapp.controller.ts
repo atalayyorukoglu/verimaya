@@ -40,6 +40,7 @@ import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappService } from './whatsapp.service';
 import { InboundMediaService } from './inbound-media.service';
 import { MediaClassifyService } from './media-classify.service';
+import { VisitReprocessService } from './visit-reprocess.service';
 
 @Controller('whatsapp')
 @UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
@@ -52,6 +53,7 @@ export class WhatsappController {
 		private readonly idempotency: IdempotencyService,
 		private readonly inboundMedia: InboundMediaService,
 		private readonly mediaClassify: MediaClassifyService,
+		private readonly visitReprocess: VisitReprocessService,
 		private readonly contactMedia: ContactMediaService
 	) {}
 
@@ -297,6 +299,35 @@ export class WhatsappController {
 			async (db) => ({
 				statusCode: 200,
 				body: await this.mediaClassify.classifyWithDb(db, null)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	/**
+	 * PARA-01 / VIZIT-01 — geçmiş mesajlardan vizit önerisi (tek seferlik tarama).
+	 *
+	 * `media/reclassify` ile aynı kalıp: saf çıkarım, tenant'ın TÜM mesajları
+	 * (`archived` dahil), mükerrer öneriyi kısmi tekil indeks engelliyor. Ayarlar ›
+	 * AI & kalite altında bir düğme olarak duruyor; ikinci çalıştırma `suggested: 0`.
+	 */
+	@Post('reprocess/visits')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async reprocessVisits(
+		@Req() req: FastifyRequest,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/whatsapp/reprocess/visits',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.visitReprocess.reprocessWithDb(db, tenantId)
 			})
 		);
 		reply.status(result.statusCode);

@@ -47,6 +47,7 @@ import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mi
 import { ContactMediaService } from './contact-media.service';
 import { ContactSummaryService } from './contact-summary.service';
 import { PatientChecklistService } from './patient-checklist.service';
+import { ContactVisitLedgerService } from './contact-visit-ledger.service';
 import { ContactVisitsService } from './contact-visits.service';
 import { ContactsService } from './contacts.service';
 
@@ -92,6 +93,7 @@ export class ContactsController {
 		private readonly contactDataSubject: ContactDataSubjectService,
 		private readonly contactSummary: ContactSummaryService,
 		private readonly contactVisits: ContactVisitsService,
+		private readonly visitLedger: ContactVisitLedgerService,
 		private readonly contactMedia: ContactMediaService,
 		private readonly patientChecklist: PatientChecklistService,
 		private readonly idempotency: IdempotencyService,
@@ -193,6 +195,19 @@ export class ContactsController {
 	@RequireOrgPermission('contact', 'read')
 	checklist(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.patientChecklist.get(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * PARA-01 — vizit bazlı para mutabakatı ve hasta başı kâr.
+	 *
+	 * İzin `finance:read`, `contact:read` değil: satırlar tutar, gider kırılımı ve
+	 * kâr taşıyor. Kişi kartını görebilen herkesin hasta başı kârı görmesi, Finans
+	 * sayfasını kapalı tutmayı anlamsız kılardı (`finance-summary` ucu ile aynı kural).
+	 */
+	@Get(':id/visit-ledger')
+	@RequireOrgPermission('finance', 'read')
+	visitLedgerFor(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.visitLedger.get(getActiveOrgId(req), id);
 	}
 
 	@Get(':id/case-notes')

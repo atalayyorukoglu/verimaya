@@ -474,6 +474,14 @@ export class WhatsappService {
 					contact_label: draft.contact_label ?? null,
 					case_contact_id: draft.case_contact_id ?? null,
 					responsible_contact_id: draft.responsible_contact_id ?? null,
+					/*
+					 * PARA-01 — vizit bağı. Kullanıcı kartta seçtiyse o; seçmediyse
+					 * `undefined` geçilir ve `TransactionsService.createWithDb` tarihten
+					 * (geliş − 2 … dönüş + 2) tek uyan viziti kendisi bağlar. `null`
+					 * geçilseydi otomatik eşleme kapanırdı — kart alanı boş bırakmakla
+					 * "vizit yok" demek aynı şey değil.
+					 */
+					contact_visit_id: draft.contact_visit_id ?? undefined,
 					amount_base: draft.amount_base,
 					base_currency: null,
 					fx_rate: draft.fx_rate,

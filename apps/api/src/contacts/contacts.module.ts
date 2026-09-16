@@ -11,6 +11,7 @@ import { ContactMediaService } from './contact-media.service';
 import { ContactSummaryService } from './contact-summary.service';
 import { ContactVisitSuggestionsController } from './contact-visit-suggestions.controller';
 import { ContactVisitSuggestionsService } from './contact-visit-suggestions.service';
+import { ContactVisitLedgerService } from './contact-visit-ledger.service';
 import { ContactVisitsService } from './contact-visits.service';
 import { PatientChecklistService } from './patient-checklist.service';
 
@@ -23,6 +24,7 @@ import { PatientChecklistService } from './patient-checklist.service';
 		ContactMediaService,
 		ContactSummaryService,
 		ContactVisitsService,
+		ContactVisitLedgerService,
 		ContactVisitSuggestionsService,
 		PatientChecklistService
 	],
@@ -30,6 +32,7 @@ import { PatientChecklistService } from './patient-checklist.service';
 		ContactsService,
 		ContactMediaService,
 		ContactVisitsService,
+		ContactVisitLedgerService,
 		ContactVisitSuggestionsService,
 		PatientChecklistService
 	]

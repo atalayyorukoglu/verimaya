@@ -15,6 +15,7 @@ import { InboundMessageProcessor } from './inbound-message.processor';
 import { MessageContactsService } from './message-contacts.service';
 import { InboundMediaService } from './inbound-media.service';
 import { MediaClassifyService } from './media-classify.service';
+import { VisitReprocessService } from './visit-reprocess.service';
 import { DisclosingOutboundMessagePort } from './outbound/disclosing-outbound.port';
 import { OUTBOUND_MESSAGE_PORT } from './outbound/outbound.port';
 import { StubOutboundMessagePort } from './outbound/outbound.stub';
@@ -40,6 +41,7 @@ import { WhatsappService } from './whatsapp.service';
 		MessageContactsService,
 		InboundMediaService,
 		MediaClassifyService,
+		VisitReprocessService,
 		InboundMessageProcessor,
 		StubOutboundMessagePort,
 		{
@@ -57,7 +59,8 @@ import { WhatsappService } from './whatsapp.service';
 		WhatsappService,
 		InboundMessageProcessor,
 		InboundMediaService,
-		MediaClassifyService
+		MediaClassifyService,
+		VisitReprocessService
 	]
 })
 export class WhatsappModule {}

@@ -28,6 +28,7 @@
 	import ContactSummaryCard from '$lib/components/ContactSummaryCard.svelte';
 	import ContactVisitsPanel from '$lib/components/ContactVisitsPanel.svelte';
 	import ContactDocsPanel from '$lib/components/ContactDocsPanel.svelte';
+	import ContactVisitLedgerTable from '$lib/components/ContactVisitLedgerTable.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import TransactionList from '$lib/components/TransactionList.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
@@ -245,6 +246,7 @@
 			}
 			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
 			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.financeSummary(id) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.visitLedger(id) });
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {
@@ -262,6 +264,7 @@
 			await apiSend(apiPaths.transaction(editingTx.id), 'DELETE');
 			await queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() });
 			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.financeSummary(id) });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.visitLedger(id) });
 			txFormOpen = false;
 			editingTx = null;
 		} catch (err) {
@@ -352,7 +355,8 @@
 					: t('contacts.finance.autoLinkNone');
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: qs.keys.transactions.all() }),
-				queryClient.invalidateQueries({ queryKey: qs.keys.contacts.financeSummary(id) })
+				queryClient.invalidateQueries({ queryKey: qs.keys.contacts.financeSummary(id) }),
+				queryClient.invalidateQueries({ queryKey: qs.keys.contacts.visitLedger(id) })
 			]);
 		} catch (err) {
 			autoLinkError = err instanceof Error ? err.message : t('contacts.finance.autoLinkFailed');
@@ -655,6 +659,14 @@
 						{/if}
 					{/if}
 				</section>
+
+				<!--
+					PARA-01 — özet kartı ile işlem listesinin arasında vizit bazlı mutabakat.
+					Yalnız hasta türünde: otelin viziti olmaz, tablo boş çıkardı.
+				-->
+				{#if isPatient && canSeeTransactions}
+					<ContactVisitLedgerTable contactId={contact.id} {baseCurrency} />
+				{/if}
 
 				<!--
 					Finans özet kartının hemen altında o kişiye ait işlemler (kullanıcı,

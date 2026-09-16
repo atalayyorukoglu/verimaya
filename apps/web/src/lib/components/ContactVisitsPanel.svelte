@@ -55,6 +55,8 @@
 		await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.visits(contactId) });
 		// Özet vizitleri veri olarak okuyor; vizit değişince bayatlar.
 		await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.summary(contactId) });
+		// PARA-01 — vizit mutabakatı satırları ve teklif toplamı buradan besleniyor.
+		await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.visitLedger(contactId) });
 	}
 
 	async function save(data: ContactVisitCreate) {

@@ -3,6 +3,8 @@
 	import type {
 		Contact,
 		ContactType,
+		ContactVisit,
+		ContactVisitList,
 		FinanceCategory,
 		FxRateResponse,
 		InvoiceStatus,
@@ -12,7 +14,10 @@
 	} from '@verimaya/shared';
 	import {
 		apiPaths,
+		contactVisitDateRangeLabel,
+		contactVisitTypeLabels,
 		invoiceStatusLabels,
+		matchVisitByDate,
 		SUPPORTED_CURRENCIES,
 		TRANSACTION_PAYMENT_METHODS,
 		transactionKindLabels,
@@ -43,6 +48,8 @@
 		contact_id: string | null;
 		case_contact_id: string | null;
 		responsible_contact_id: string | null;
+		/** PARA-01 — onayda yazılacak vizit; boş = sunucu tarihten eşleştirsin. */
+		contact_visit_id: string | null;
 		invoice_status: InvoiceStatus;
 		_status: 'idle' | 'saving' | 'saved' | 'error';
 		_error: string | null;
@@ -182,6 +189,39 @@
 	const searchAllContacts = (q: string) => searchContactOptions(q);
 	const searchPatients = (q: string) =>
 		searchContactOptions(q, { typeId: hastaTypeId, typeName: HASTA_TURU });
+
+	/*
+	 * PARA-01 — vizit kutusu. Vizitler hastaya ait: önce `case_contact_id`, o boşsa
+	 * karşı taraf. Hasta yoksa kutu hiç görünmez.
+	 */
+	const visitOwnerId = $derived(draft.case_contact_id ?? draft.contact_id ?? '');
+
+	const visitsQuery = createQuery(() => ({
+		queryKey: qs.keys.contacts.visits(visitOwnerId),
+		queryFn: () => apiGet<ContactVisitList>(apiPaths.contactVisits(visitOwnerId)),
+		enabled: qs.ready && visitOwnerId.length > 0
+	}));
+
+	const visitOptions = $derived<ContactVisit[]>(visitsQuery.data?.items ?? []);
+
+	function visitLabel(visit: ContactVisit): string {
+		const range = contactVisitDateRangeLabel(visit);
+		const type = contactVisitTypeLabels[visit.visit_type] ?? visit.visit_type;
+		return range ? `${type} · ${range}` : type;
+	}
+
+	/*
+	 * İşlem günü tek bir vizitin (geliş − 2 … dönüş + 2) aralığına düşüyorsa kutu
+	 * kendiliğinden dolar. Kaydedilmiş kartta (`saved`) dokunulmaz.
+	 */
+	$effect(() => {
+		if (saved || draft.contact_visit_id) return;
+		const day = draft.occurred_on;
+		const list = visitOptions;
+		if (!day || list.length === 0) return;
+		const match = matchVisitByDate(day, list);
+		if (match) onchange({ contact_visit_id: match.id });
+	});
 
 	/*
 	 * Seçili kişinin etiketi: sunucu araması listeyi değiştirdiğinde seçili kayıt
@@ -800,6 +840,25 @@
 				/>
 			</div>
 		</div>
+
+		{#if visitOwnerId && visitOptions.length > 0}
+			<div class="min-w-0">
+				<label class={labelClass} for={fieldId('visit')}>{t('finance.form.visit')}</label>
+				<select
+					id={fieldId('visit')}
+					class={fieldClass}
+					disabled={saved}
+					value={draft.contact_visit_id ?? ''}
+					onchange={(e) => onchange({ contact_visit_id: e.currentTarget.value || null })}
+				>
+					<option value="">{t('finance.form.visitNone')}</option>
+					{#each visitOptions as visit (visit.id)}
+						<option value={visit.id}>{visitLabel(visit)}</option>
+					{/each}
+				</select>
+				<p class="mt-1 text-xs text-text-faint">{t('finance.form.visitHint')}</p>
+			</div>
+		{/if}
 
 		<div class="min-w-0">
 			<label class={labelClass} for={fieldId('invoice')}>{t('finance.form.invoice')}</label>

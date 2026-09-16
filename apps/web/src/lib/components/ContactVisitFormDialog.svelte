@@ -4,9 +4,11 @@
 		ContactVisitCreate,
 		ContactVisitHotelCoveredBy,
 		ContactVisitStatus,
-		ContactVisitType
+		ContactVisitType,
+		SupportedCurrency
 	} from '@verimaya/shared';
 	import {
+		SUPPORTED_CURRENCIES,
 		contactVisitHotelCoveredByLabels,
 		contactVisitHotelCoveredBySchema,
 		contactVisitStatusLabels,
@@ -60,6 +62,13 @@
 	let clinic = $state('');
 	let doctor = $state('');
 	let treatment_plan = $state('');
+	/**
+	 * PARA-01 — teklif toplamı major birimde girilir (8260), minor'a çevrilip
+	 * gönderilir. Boş bırakılırsa `null` gider ve "Kalan" satırı hiç çıkmaz:
+	 * hesaplanamayan kalanı uydurmaktansa göstermemek doğru.
+	 */
+	let quotedMajor = $state('');
+	let quotedCurrency = $state<SupportedCurrency>('GBP');
 	let status = $state<ContactVisitStatus>('planned');
 	let notes = $state('');
 
@@ -99,6 +108,8 @@
 		clinic = v?.clinic ?? '';
 		doctor = v?.doctor ?? '';
 		treatment_plan = v?.treatment_plan ?? '';
+		quotedMajor = v?.quoted_total_minor != null ? String(v.quoted_total_minor / 100) : '';
+		quotedCurrency = (v?.quoted_currency ?? 'GBP') as SupportedCurrency;
 		status = v?.status ?? 'planned';
 		notes = v?.notes ?? '';
 	});
@@ -106,6 +117,17 @@
 	function bos(s: string): string | null {
 		const x = s.trim();
 		return x.length > 0 ? x : null;
+	}
+
+	/** Teklif toplamı + para birimi; tutar boşsa ikisi de temizlenir. */
+	function teklif(): Pick<ContactVisitCreate, 'quoted_total_minor' | 'quoted_currency'> {
+		const raw = quotedMajor.trim().replace(',', '.');
+		if (raw.length === 0) return { quoted_total_minor: null, quoted_currency: null };
+		const minor = Math.round(Number.parseFloat(raw) * 100);
+		if (!Number.isFinite(minor) || minor < 0) {
+			return { quoted_total_minor: null, quoted_currency: null };
+		}
+		return { quoted_total_minor: minor, quoted_currency: quotedCurrency };
 	}
 
 	async function handleSubmit(e: Event) {
@@ -128,6 +150,7 @@
 			clinic: bos(clinic),
 			doctor: bos(doctor),
 			treatment_plan: bos(treatment_plan),
+			...teklif(),
 			status,
 			notes: bos(notes)
 		});
@@ -300,6 +323,31 @@
 			<textarea id="visit-plan" class={textareaClass} bind:value={treatment_plan} maxlength={4000}
 			></textarea>
 		</div>
+
+		<div class="grid gap-3 sm:grid-cols-2">
+			<div>
+				<label class={labelClass} for="visit-quoted">{t('contacts.visits.quotedTotal')}</label>
+				<input
+					id="visit-quoted"
+					class={fieldClass}
+					type="text"
+					inputmode="decimal"
+					bind:value={quotedMajor}
+					placeholder={t('contacts.visits.quotedTotalPlaceholder')}
+				/>
+			</div>
+			<div>
+				<label class={labelClass} for="visit-quoted-currency"
+					>{t('contacts.visits.quotedCurrency')}</label
+				>
+				<select id="visit-quoted-currency" class={fieldClass} bind:value={quotedCurrency}>
+					{#each SUPPORTED_CURRENCIES as c (c)}
+						<option value={c}>{c}</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+		<p class="text-xs text-text-faint">{t('contacts.visits.quotedHint')}</p>
 		<div>
 			<label class={labelClass} for="visit-notes">{t('contacts.visits.notes')}</label>
 			<textarea id="visit-notes" class={textareaClass} bind:value={notes} maxlength={4000}

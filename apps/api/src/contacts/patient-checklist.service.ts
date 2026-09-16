@@ -54,7 +54,18 @@ const GUN_MS = 24 * 60 * 60 * 1000;
 const KAPANIS_PAYI_MS = GUN_MS;
 
 type MediaKanit = { docType: string | null; visitId: string | null };
-type ParaKanit = { occurredOn: string; kind: string };
+/**
+ * PARA-01 — para kanıtı artık vizit bağını da taşıyor. `visitId` doluysa tarih
+ * penceresine hiç bakılmaz: kullanıcının (ya da onay akışının) kurduğu bağ,
+ * tarihten yapılan tahminden üstündür.
+ */
+type ParaKanit = {
+	occurredOn: string;
+	kind: string;
+	visitId: string | null;
+	currency: string | null;
+	amount: number;
+};
 
 /** Vizitin zaman durumu — madde aşaması buna göre değerlendirilir. */
 type VizitEvresi = 'not_started' | 'running' | 'closed';
@@ -209,14 +220,28 @@ export class PatientChecklistService {
 		} else if (auto.kind === 'visit_field') {
 			count = this.vizitAlaniDolu(visit, auto.field) ? 1 : 0;
 		} else {
-			const pencere = this.vizitPencere(visit);
-			count = para.filter(
-				(p) =>
-					p.kind === auto.direction && pencere !== null && this.gunIcinde(p.occurredOn, pencere)
-			).length;
+			const eslesen = para.filter((p) => p.kind === auto.direction && this.paraVizitte(p, visit));
+			count = eslesen.length;
+
+			/*
+			 * PARA-01 "Kalan ödeme": madde sayıya değil TEKLİFE bakar. Teklif yoksa
+			 * sistem karar vermez (`na`) — belgede § 6.4'teki kural: kalan ancak
+			 * "toplam bedel" yazılıysa hesaplanır, tahmin edilmez.
+			 */
+			if (auto.settle_quote) {
+				const teklif = visit.quotedTotalMinor;
+				if (teklif == null || visit.quotedCurrency == null) return bos('na', count);
+				const tahsil = eslesen
+					.filter((p) => p.currency === visit.quotedCurrency)
+					.reduce((sum, p) => sum + p.amount, 0);
+				if (tahsil >= teklif) return bos('done', count);
+				return bos(evre === 'closed' ? 'missing' : 'na', count);
+			}
 		}
 
-		if (count > 0) return bos('done', count);
+		if (count >= (auto.kind === 'transaction' ? (auto.min_count ?? 1) : 1)) {
+			return bos('done', count);
+		}
 		// Vizit sürüyor: maddenin vakti henüz gelmemiş olabilir.
 		if (evre === 'running') return bos('na');
 		// Hekim onayı kapanıştan sonra 30 gün beklenir.
@@ -270,6 +295,17 @@ export class PatientChecklistService {
 		return typeof value === 'string' ? value.trim().length > 0 : true;
 	}
 
+	/**
+	 * Para satırı bu vizite mi ait? Önce açık bağ (`transactions.contact_visit_id`),
+	 * sonra tarih penceresi. Bağ BAŞKA bir viziti gösteriyorsa tarih penceresine
+	 * düşse bile sayılmaz — yoksa aynı tutar iki vizitte birden "tamam" derdi.
+	 */
+	private paraVizitte(p: ParaKanit, visit: ContactVisitRow): boolean {
+		if (p.visitId !== null) return p.visitId === visit.id;
+		const pencere = this.vizitPencere(visit);
+		return pencere !== null && this.gunIcinde(p.occurredOn, pencere);
+	}
+
 	private vizitPencere(visit: ContactVisitRow): { start: string; end: string } | null {
 		const arrival = visit.arrivalAt ?? visit.departureAt;
 		const departure = visit.departureAt ?? visit.arrivalAt;
@@ -303,7 +339,13 @@ export class PatientChecklistService {
 	/** Kişiye bağlı para işlemleri — kişi, hasta ve sorumlu rollerinin hepsi. */
 	private async paraKanitlari(db: TenantDb, contactId: string): Promise<ParaKanit[]> {
 		const rows = await db
-			.select({ occurredOn: transactions.occurredOn, kind: transactions.kind })
+			.select({
+				occurredOn: transactions.occurredOn,
+				kind: transactions.kind,
+				visitId: transactions.contactVisitId,
+				currency: transactions.currency,
+				amount: transactions.amount
+			})
 			.from(transactions)
 			.where(
 				and(
@@ -311,7 +353,13 @@ export class PatientChecklistService {
 					isNull(transactions.deletedAt)
 				)
 			);
-		return rows.map((r) => ({ occurredOn: String(r.occurredOn), kind: r.kind }));
+		return rows.map((r) => ({
+			occurredOn: String(r.occurredOn),
+			kind: r.kind,
+			visitId: r.visitId ?? null,
+			currency: r.currency ?? null,
+			amount: r.amount
+		}));
 	}
 
 	/** `ContactSummaryService.hastaAkisiOku` ile aynı sözleşme. */

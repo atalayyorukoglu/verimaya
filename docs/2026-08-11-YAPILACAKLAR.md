@@ -857,9 +857,81 @@ edilmiyor.
 geçmiş ekler etiketsiz yazıldı, bir kez koşturulmalı. Yeniden çalıştırmak zararsız
 (aynı girdi → aynı sonuç, `updated: 0`).
 
-**Kalan:** `files` (elle yüklenen belgeler) ve `transactions` hâlâ vizite bağlanmıyor —
-belge Bölüm 6.4 (hasta başı para mutabakatı) ile birlikte yapılacak. Sınıflandırıcıda
-tanınmayan %4,9 başlık `other` kalır; kullanıcı Dosyalar sekmesinden düzeltir.
+**Kalan:** `files` (elle yüklenen belgeler) hâlâ vizite bağlanmıyor. `transactions` PARA-01'de
+bağlandı. Sınıflandırıcıda tanınmayan %4,9 başlık `other` kalır; kullanıcı Dosyalar
+sekmesinden düzeltir.
+
+---
+
+## PARA-01 — Vizit bazlı para mutabakatı ve hasta başı kâr (2026-09-16, kullanıcı)
+
+> **Karar (kullanıcı):** Finans Özet kişinin bütün para satırlarını tek torbada topluyordu;
+> oysa akış vizit başına ilerliyor ("1. vizit 4.030 alındı, 2. vizit kalan 3.950"). Hasta
+> başı kâr ancak tahsilat ve gider vizite bağlanınca okunur. Kaynak:
+> `docs/2026-09-16-HASTA-AKISI.md` Bölüm 3.6, 3.7, 5.x ve 6.4.
+
+- [x] **İşlem ↔ vizit bağı.** `transactions.contact_visit_id` (0080, FK `contact_visits`
+  ON DELETE SET NULL + `transactions_tenant_visit_idx`). Shared `transactionCreate/Update`
+  ve `approveDraftItem` opsiyonel alanı taşır. Alan **üç değerli**: `string` (bu vizit),
+  `null` (bilerek boş), `undefined` (sunucu tarihten eşleştirsin). Eşleme kuralı tek yerde:
+  `apps/api/src/common/visit-window.ts` (geliş − 2 gün … dönüş + 2 gün; birden fazla vizit
+  uyarsa BOŞ) — evrak eşlemesi de artık buradan okuyor, iki kopya kalmadı. Verilen vizit
+  **doğrulanır**: silinmemiş olmalı ve satırın hastasına ya da karşı tarafına ait olmalı.
+  Arayüzde: `TransactionFormDialog` ve AI taslak kartında "Vizit" kutusu, işlem tarihi bir
+  vizitin aralığına düşüyorsa kendiliğinden dolar (`matchVisitByDate`, sunucuyla aynı kural).
+  WhatsApp onayında kullanıcı seçmediyse sunucu aynı pencereden bağlar.
+- [x] **Teklif toplamı.** `contact_visits.quoted_total_minor` (bigint) + `quoted_currency`
+  (0080; tutar varsa para birimi zorunlu — CHECK). Vizit formunda "Teklif toplamı".
+  Kalan **native** tutarla hesaplanır (teklif GBP ise GBP tahsilat sayılır); baz para
+  birimine çevirip karşılaştırmak kur oynamasını "eksik tahsilat" gibi gösterirdi.
+- [x] **Vizit mutabakatı tablosu.** `GET /v1/contacts/:id/visit-ledger` (**finance:read**,
+  `contact:read` değil: satırlar tutar, gider kırılımı ve kâr taşıyor — kişi kartını
+  görebilen herkes hasta başı kârı görmemeli; `finance-summary` ucu ile aynı kural).
+  Servis `apps/api/src/contacts/contact-visit-ledger.service.ts`. Her vizit (ve "Vizit
+  belirsiz") için: hasta ödemeleri · hasta giderleri (kategori kırılımıyla) · kâr; altta
+  toplam. **Ödeme/gider ayrımı asimetrik:** ödeme `contact_id` VEYA `case_contact_id`
+  hastayı gösterince sayılır (tahsilat bazen eşin adına yazılıyor); gider yalnız
+  `case_contact_id` (otel faturasının karşı tarafı oteldir). Kur yalnız `amount_base`
+  anlık görüntüsünden; çevrilemeyen satır toplama girmez, `unconverted_count` ile
+  bildirilir. Panel: Kişi › Finans Özet'te özet kartının altında, işlem listesinin üstünde
+  (`ContactVisitLedgerTable.svelte`, tablo `overflow-x-auto` — 400px'te yatay taşma yok).
+- [x] **Kontrol listesi para maddeleri.** `patient_flow` `auto: {kind:'transaction',
+  direction, min_count?, settle_quote?}`. **Alan adı `direction` kaldı** (`role` değil):
+  EVRAK-01'de kaydedilmiş tenant şablonları bu adı taşıyor, yeniden adlandırmak onları
+  doğrulamada düşürürdü. Varsayılan şablon: p14 "Bu vizit tahsilatı" (income ≥ 1), p20
+  "Hasta giderleri" (expense ≥ 1), p18 "Kalan ödeme" (`settle_quote` — teklif varsa ve
+  tahsilat teklifin altındaysa ve vizit kapandıysa `missing`; teklif yoksa `na`, sistem
+  uydurmaz). Kanıt eşlemesi önce **açık bağa**, yoksa tarih penceresine bakar; bağ başka
+  viziti gösteriyorsa pencereye düşse bile sayılmaz.
+- [x] **Geçmiş tarama.** `POST /v1/whatsapp/reprocess/visits` (settings:update, Idempotent)
+  — tenant'ın **tüm** mesajlarını (`archived` dahil, çünkü kuyruk temizliği vizit kalıbı
+  taşıyan rezervasyon mesajlarının çoğunu oraya düşürüyor) `vizitCikar` ile tarar ve bağlı
+  **hasta** kişiler için öneri açar. Model çağrısı yok; kısmi tekil indeks mükerreri
+  engellediği için tekrar tekrar çalıştırılabilir. Dönüş `{scanned, suggested}`.
+- [x] **Ayarlar › AI & kalite.** İki düğme: "Geçmiş mesajlardan vizit öner"
+  (`reprocess/visits`) ve "Evrakları yeniden sınıflandır" (`media/reclassify`), sonuç
+  sayılarıyla. Sıra önemli: önce vizit öner → kuyrukta onayla → sonra evrak sınıflandır.
+- [x] **Bekçiler.** idempotency-coverage sayacı 138 → 139 + yeni enforced uç; üç yeni spec:
+  `contact-visit-ledger.isolation.spec.ts` (tenant izolasyonu, ödeme/gider ayrımı, teklif
+  kalanı, "Vizit belirsiz"), `transactions.visit-link.isolation.spec.ts` (otomatik eşleme,
+  açık `null`, pencere dışı, başka kişinin viziti reddedilir),
+  `visit-reprocess.isolation.spec.ts` (arşivli mesaj taranır, ikinci koşu öneri açmaz,
+  tenant izolasyonu); `patient-checklist.isolation.spec.ts`'e para maddeleri eklendi.
+
+**Prod'da tek seferlik adımlar (bu sırayla):**
+1. Migration: `pnpm --filter @verimaya/api db:migrate` (0080).
+2. Ayarlar › AI & kalite › **"Geçmiş mesajlardan vizit öner"** — vizit önerilerini üretir.
+3. Kuyruktaki vizit öneri kartlarını onayla (vizitler doğsun).
+4. Ayarlar › AI & kalite › **"Evrakları yeniden sınıflandır"** — ekler yeni vizitlere bağlanır.
+5. Hastaların vizitlerine Kişi › Vizitler'den **"Teklif toplamı"** gir (kalan ödeme uyarısı
+   ancak teklif yazılıysa çıkar).
+
+Geçmiş para satırları yeniden kaydedilmeden de tabloya düşer: `contact_visit_id` boş olan
+satır, günü tek bir vizitin penceresine düşüyorsa o vizite sayılır.
+
+**Kalan:** Operasyon + Muhasebe çift kaydının tek işleme indirgenmesi (aynı tutar + aynı
+gün + aynı kişi) henüz yok — mutabakat tablosu bugün iki satırı da sayar. `files` (elle
+yüklenen belgeler) hâlâ vizite bağlanmıyor.
 
 ---
 

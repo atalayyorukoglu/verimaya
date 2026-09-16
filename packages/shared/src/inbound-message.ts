@@ -94,7 +94,16 @@ export const approveDraftItemSchema = transactionDraftSnapshotSchema
 		 */
 		case_contact_id: uuid.nullable().default(null),
 		responsible_contact_id: uuid.nullable().default(null),
-		invoice_status: invoiceStatusSchema.default('none')
+		invoice_status: invoiceStatusSchema.default('none'),
+		/**
+		 * PARA-01 — kullanıcının taslak kartında seçtiği vizit. `null` gelirse sunucu
+		 * tarihe bakıp tek uyan viziti kendisi bağlar (`whatsapp.service` onayı).
+		 *
+		 * `transactionDraftSnapshotSchema`'ya eklenmedi: anlık görüntü modelin ürettiği
+		 * alanların diff'idir; vizit seçimi kullanıcı kararıdır, `ai_corrections`
+		 * kaydını "model yanıldı" diye kirletmemeli.
+		 */
+		contact_visit_id: uuid.nullable().default(null)
 	})
 	.superRefine((item, ctx) => {
 		const hasCounterparty = item.contact_id != null || Boolean(item.contact_label?.trim());

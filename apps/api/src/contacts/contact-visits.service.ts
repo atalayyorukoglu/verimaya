@@ -32,6 +32,8 @@ export function toContactVisit(row: ContactVisitRow): ContactVisit {
 		clinic: row.clinic,
 		doctor: row.doctor,
 		treatment_plan: row.treatmentPlan,
+		quoted_total_minor: row.quotedTotalMinor,
+		quoted_currency: (row.quotedCurrency as ContactVisit['quoted_currency']) ?? null,
 		status: row.status as ContactVisitStatus,
 		notes: row.notes,
 		source_inbound_message_id: row.sourceInboundMessageId,
@@ -54,6 +56,29 @@ function zaman(value: string | null | undefined): Date | null | undefined {
 	if (value === null) return null;
 	const d = new Date(value);
 	return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * PARA-01 — teklif toplamı ve para birimi birlikte yazılır.
+ *
+ * Tutar boşaltılırsa para birimi de boşalır (`null` + `null`): 0080'deki CHECK
+ * yalnız "tutar varsa para birimi olsun" diyor, ama para birimi olmadan kalan bir
+ * `quoted_currency` hiçbir şey anlatmaz ve sonraki düzenlemede yanlış teklif
+ * kurmaya zemin hazırlar. Verilmeyen alanlar hiç dokunulmaz.
+ */
+function teklif(input: {
+	quoted_total_minor?: number | null;
+	quoted_currency?: string | null;
+}): Partial<typeof contactVisits.$inferInsert> {
+	const patch: Partial<typeof contactVisits.$inferInsert> = {};
+	if (input.quoted_total_minor !== undefined) {
+		patch.quotedTotalMinor = input.quoted_total_minor;
+		if (input.quoted_total_minor === null) patch.quotedCurrency = null;
+	}
+	if (input.quoted_currency !== undefined && patch.quotedCurrency === undefined) {
+		patch.quotedCurrency = input.quoted_currency;
+	}
+	return patch;
 }
 
 /**
@@ -116,6 +141,7 @@ export class ContactVisitsService {
 				clinic: metin(input.clinic) ?? null,
 				doctor: metin(input.doctor) ?? null,
 				treatmentPlan: metin(input.treatment_plan) ?? null,
+				...teklif(input),
 				status: input.status ?? 'planned',
 				notes: metin(input.notes) ?? null,
 				sourceInboundMessageId: input.source_inbound_message_id ?? null,
@@ -156,6 +182,7 @@ export class ContactVisitsService {
 		if (input.clinic !== undefined) patch.clinic = metin(input.clinic)!;
 		if (input.doctor !== undefined) patch.doctor = metin(input.doctor)!;
 		if (input.treatment_plan !== undefined) patch.treatmentPlan = metin(input.treatment_plan)!;
+		Object.assign(patch, teklif(input));
 		if (input.status !== undefined) patch.status = input.status;
 		if (input.notes !== undefined) patch.notes = metin(input.notes)!;
 

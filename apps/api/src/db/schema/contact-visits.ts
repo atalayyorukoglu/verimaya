@@ -1,4 +1,5 @@
 import {
+	bigint,
 	boolean,
 	index,
 	integer,
@@ -51,6 +52,14 @@ export const contactVisits = pgTable(
 		clinic: text('clinic'),
 		doctor: text('doctor'),
 		treatmentPlan: text('treatment_plan'),
+		/**
+		 * PARA-01 — vizitin **teklif toplamı** (minor units, `quotedCurrency`).
+		 * `treatmentPlan` metnin kendisi; bu ikisi o metindeki sayının makinece
+		 * okunabilir hâli. "Kalan = teklif − tahsilat" satırının tek dayanağı.
+		 */
+		quotedTotalMinor: bigint('quoted_total_minor', { mode: 'number' }),
+		/** Teklifin para birimi; tutar doluysa 0080'deki CHECK zorunlu kılar. */
+		quotedCurrency: text('quoted_currency'),
 		/** planned | in_progress | completed | cancelled. */
 		status: text('status').notNull().default('planned'),
 		notes: text('notes'),

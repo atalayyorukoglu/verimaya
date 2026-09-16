@@ -50,7 +50,23 @@ export const patientFlowAutoSchema = z.discriminatedUnion('kind', [
 			.max(64)
 			.regex(/^[a-z_]+$/, 'alan adı yalnız küçük harf ve _ içerebilir')
 	}),
-	z.object({ kind: z.literal('transaction'), direction: z.enum(['income', 'expense']) })
+	z.object({
+		kind: z.literal('transaction'),
+		direction: z.enum(['income', 'expense']),
+		/**
+		 * PARA-01 — kaç satır kanıt sayılır. Varsayılan 1: "bu vizitte en az bir
+		 * tahsilat var mı". Alan adı `direction`, `role` değil — 0077'den beri
+		 * kayıtlı tenant şablonları bu adı taşıyor, yeniden adlandırmak onları
+		 * doğrulamada düşürürdü.
+		 */
+		min_count: z.number().int().min(1).max(20).optional(),
+		/**
+		 * PARA-01 — "Kalan ödeme". Açıksa madde sayıya değil **teklife** bakar:
+		 * vizitte `quoted_total_minor` varsa ve tahsilat teklifin altındaysa ve
+		 * vizit kapandıysa `missing`; teklif yoksa `na` (sistem uydurmaz).
+		 */
+		settle_quote: z.boolean().optional()
+	})
 ]);
 export type PatientFlowAuto = z.infer<typeof patientFlowAutoSchema>;
 
@@ -277,7 +293,7 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		evidence: 'Operasyon / Muhasebe grubunda tahsilat satırı',
 		when: 'Cerrahi günü',
 		warning: 'Tahsilat kaydı yok',
-		auto: { kind: 'transaction', direction: 'income' }
+		auto: { kind: 'transaction', direction: 'income', min_count: 1 }
 	},
 	{
 		id: 'p15',
@@ -315,7 +331,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Kalan ödeme + 2. vizit planı',
 		evidence: 'Operasyon grubunda "ikinci vizit … kalan …" satırı',
 		when: 'Bitim günü',
-		warning: '2. vizit planı veya kalan tutar yok'
+		warning: '2. vizit planı veya kalan tutar yok',
+		auto: { kind: 'transaction', direction: 'income', settle_quote: true }
 	},
 	{
 		id: 'p19',
@@ -331,7 +348,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Hasta giderleri (otel, klinik, hekim, hastane, transfer)',
 		evidence: 'Muhasebe grubunda hastaya bağlanmış gider satırları',
 		when: 'Vizit kapanışı',
-		warning: 'Otel/klinik faturası hastaya bağlanmadı'
+		warning: 'Otel/klinik faturası hastaya bağlanmadı',
+		auto: { kind: 'transaction', direction: 'expense', min_count: 1 }
 	},
 	{
 		id: 'p21',

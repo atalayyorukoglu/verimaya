@@ -11,6 +11,7 @@ import {
 	uuid
 } from 'drizzle-orm/pg-core';
 import { contacts } from './contacts';
+import { contactVisits } from './contact-visits';
 import { inboundMessages } from './inbound-messages';
 import { tenants } from './tenants';
 
@@ -45,15 +46,21 @@ export const transactions = pgTable(
 		responsibleContactId: uuid('responsible_contact_id').references(() => contacts.id, {
 			onDelete: 'set null'
 		}),
+		/**
+		 * PARA-01 — satırın ait olduğu vizit. Vizit silinirse tutar kaybolmaz,
+		 * "Vizit belirsiz" grubuna düşer (0080, 0079 ile aynı karar).
+		 */
+		contactVisitId: uuid('contact_visit_id').references(() => contactVisits.id, {
+			onDelete: 'set null'
+		}),
 		description: text('description'),
 		/**
 		 * AI-09 — satırın çıktığı WhatsApp mesajı. Yalnız sunucu doldurur
 		 * (onay akışı); `TransactionCreate` şemasında karşılığı yoktur.
 		 */
-		sourceInboundMessageId: uuid('source_inbound_message_id').references(
-			() => inboundMessages.id,
-			{ onDelete: 'set null' }
-		),
+		sourceInboundMessageId: uuid('source_inbound_message_id').references(() => inboundMessages.id, {
+			onDelete: 'set null'
+		}),
 		/** AI-09 — alan başına doğrulanmış kaynak izi (`TransactionEvidence`). */
 		sourceEvidence: jsonb('source_evidence').$type<TransactionEvidence>(),
 		/** Kaydı açan kişinin adı. Kullanıcı kimliğine bağlı değil: kullanıcı
@@ -61,9 +68,7 @@ export const transactions = pgTable(
 		 *  0069 öncesi kayıtlarda boş. */
 		createdByDisplayName: text('created_by_display_name'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
-			.notNull()
-			.defaultNow(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
 			.notNull()
 			.defaultNow()
@@ -73,11 +78,7 @@ export const transactions = pgTable(
 		index('transactions_tenant_id_created_at_idx').on(table.tenantId, table.createdAt),
 		index('transactions_tenant_id_deleted_at_idx').on(table.tenantId, table.deletedAt),
 		index('transactions_tenant_id_occurred_on_idx').on(table.tenantId, table.occurredOn),
-		index('transactions_tenant_occurred_on_id_idx').on(
-			table.tenantId,
-			table.occurredOn,
-			table.id
-		),
+		index('transactions_tenant_occurred_on_id_idx').on(table.tenantId, table.occurredOn, table.id),
 		index('transactions_tenant_id_contact_id_created_at_idx').on(
 			table.tenantId,
 			table.contactId,
@@ -94,10 +95,8 @@ export const transactions = pgTable(
 			table.tenantId,
 			table.responsibleContactId
 		),
-		index('transactions_tenant_source_msg_idx').on(
-			table.tenantId,
-			table.sourceInboundMessageId
-		)
+		index('transactions_tenant_source_msg_idx').on(table.tenantId, table.sourceInboundMessageId),
+		index('transactions_tenant_visit_idx').on(table.tenantId, table.contactVisitId)
 	]
 );
 

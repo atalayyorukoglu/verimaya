@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDateTime, uuid } from './common.js';
+import { isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
 
 /**
  * VIZIT-01 — kişi başına **vizit** kaydı (`docs/2026-09-16-HASTA-AKISI.md` § 6.2).
@@ -88,6 +88,15 @@ export const contactVisitSchema = z.object({
 	clinic: shortText.nullable(),
 	doctor: shortText.nullable(),
 	treatment_plan: longText.nullable(),
+	/**
+	 * PARA-01 — vizit için verilen **teklif toplamı** (minor units, `quoted_currency`).
+	 * Tedavi planının yanında durur çünkü aynı cümleden çıkar ("All on 6 + plak,
+	 * Toplam 8.260 GBP"). Vizit mutabakatında "Kalan = teklif − tahsilat" satırının
+	 * tek dayanağıdır; boşsa kalan hesaplanmaz (uydurulmaz).
+	 */
+	quoted_total_minor: moneyMinor.nonnegative().nullable(),
+	/** Teklifin para birimi; `quoted_total_minor` doluysa zorunlu. */
+	quoted_currency: supportedCurrencySchema.nullable(),
 	status: contactVisitStatusSchema,
 	notes: longText.nullable(),
 	/** Vizit bir WhatsApp mesajından önerildiyse kaynağı. */
@@ -114,6 +123,8 @@ export const contactVisitCreateSchema = z
 		clinic: shortText.nullable().optional(),
 		doctor: shortText.nullable().optional(),
 		treatment_plan: longText.nullable().optional(),
+		quoted_total_minor: moneyMinor.nonnegative().nullable().optional(),
+		quoted_currency: supportedCurrencySchema.nullable().optional(),
 		status: contactVisitStatusSchema.optional(),
 		notes: longText.nullable().optional(),
 		source_inbound_message_id: uuid.nullable().optional()
@@ -253,4 +264,55 @@ export function contactVisitDateRangeLabel(visit: {
 	const b = fmt(visit.departure_at, visit.departure_time_known);
 	if (a && b) return `${a} → ${b}`;
 	return a ?? b ?? '';
+}
+
+/* ------------------------------------------------- geçmiş tarama (PARA-01) */
+
+/**
+ * `POST /v1/whatsapp/reprocess/visits` sonucu.
+ *
+ * Vizit çıkarımı VIZIT-01 ile geldi; ondan önce alınmış mesajlar hiç taranmadı.
+ * Bu uç tenant'ın **tüm** mesajlarını (kuyruktan düşmüş `archived` satırlar dahil)
+ * `vizitCikar` ile bir kez daha okur. Mükerrer öneriyi kısmi tekil indeks engeller,
+ * bu yüzden uç tekrar tekrar çalıştırılabilir.
+ */
+export const visitReprocessResultSchema = z.object({
+	/** Taranan mesaj sayısı (gövdesi olan, kişiye bağlı hastası olanlar). */
+	scanned: z.number().int().nonnegative(),
+	/** Yeni açılan öneri sayısı — zaten var olanlar sayılmaz. */
+	suggested: z.number().int().nonnegative()
+});
+export type VisitReprocessResult = z.infer<typeof visitReprocessResultSchema>;
+
+/* ----------------------------------------------- tarihten vizit (PARA-01) */
+
+/** Vizit penceresinin iki ucuna eklenen pay (gün) — sunucudaki kuralın aynısı. */
+export const VISIT_DATE_MATCH_PADDING_DAYS = 2;
+
+/**
+ * Bir gün anahtarı (YYYY-MM-DD) hangi vizite düşer?
+ *
+ * Tek aday varsa onu döner; sıfır ya da **birden fazla** adayda `null`. Belirsizlikte
+ * boş bırakmak bilinçli: yanlış vizite bağlanmış tutar, bağlanmamış tutardan kötüdür.
+ *
+ * Arayüz (işlem formu, taslak kartı) ile sunucu (`common/visit-window.ts`) aynı
+ * kuralı kullansın diye burada: kullanıcının kartta gördüğü öneri ile onayda
+ * sunucunun kurduğu bağ aynı vizit olmalı.
+ */
+export function matchVisitByDate<
+	T extends { id: string; arrival_at: string | null; departure_at: string | null }
+>(occurredOn: string, visits: T[]): T | null {
+	const at = Date.parse(`${occurredOn}T12:00:00.000Z`);
+	if (Number.isNaN(at)) return null;
+	const padding = VISIT_DATE_MATCH_PADDING_DAYS * 24 * 60 * 60 * 1000;
+
+	const uyanlar = visits.filter((v) => {
+		const a = v.arrival_at ? Date.parse(v.arrival_at) : NaN;
+		const d = v.departure_at ? Date.parse(v.departure_at) : NaN;
+		const start = Number.isNaN(a) ? d : a;
+		const end = Number.isNaN(d) ? a : d;
+		if (Number.isNaN(start) || Number.isNaN(end)) return false;
+		return at >= start - padding && at <= end + padding;
+	});
+	return uyanlar.length === 1 ? uyanlar[0]! : null;
 }

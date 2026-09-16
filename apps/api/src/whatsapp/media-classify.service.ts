@@ -5,7 +5,15 @@ import { contactVisits } from '../db/schema/contact-visits';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
 import { inboundMessageMedia } from '../db/schema/inbound-message-media';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+/**
+ * PARA-01 — pencere ve seçim kuralı `common/visit-window.ts`'e taşındı: para
+ * satırı da aynı kuralla vizite bağlanıyor, iki kopya olmasın. Buradan yeniden
+ * dışa veriliyor çünkü mevcut testler ve çağıranlar bu modülden alıyordu.
+ */
+import { tekVizitSec, vizitPenceresi, type VizitAdayi } from '../common/visit-window';
 import { evrakSiniflaKaynaklardan } from './evrak-sinifla';
+
+export { tekVizitSec, vizitPenceresi };
 
 /**
  * EVRAK-01 — eki sınıflandırır ve vizite bağlar.
@@ -24,10 +32,6 @@ import { evrakSiniflaKaynaklardan } from './evrak-sinifla';
  * yanlış viziti "tamam" işaretler). Kullanıcı Dosyalar sekmesinden elle düzeltir.
  */
 
-/** Vizit penceresinin iki ucuna eklenen pay (gün). */
-const VIZIT_PENCERE_GUN = 2;
-const GUN_MS = 24 * 60 * 60 * 1000;
-
 type SiniflandirmaGirdisi = {
 	mediaId: string;
 	messageId: string;
@@ -40,21 +44,6 @@ type SiniflandirmaGirdisi = {
 	contactVisitId: string | null;
 };
 
-type VizitAdayi = { id: string; arrivalAt: Date | null; departureAt: Date | null };
-
-/** `contact_visits` satırından ekin düşebileceği zaman aralığı. */
-export function vizitPenceresi(v: {
-	arrivalAt: Date | null;
-	departureAt: Date | null;
-}): { start: number; end: number } | null {
-	const arrival = v.arrivalAt?.getTime() ?? null;
-	const departure = v.departureAt?.getTime() ?? null;
-	if (arrival === null && departure === null) return null;
-	const start = (arrival ?? departure)! - VIZIT_PENCERE_GUN * GUN_MS;
-	const end = (departure ?? arrival)! + VIZIT_PENCERE_GUN * GUN_MS;
-	return { start, end };
-}
-
 /**
  * WAHA damgası (saniye ya da milisaniye) varsa o, yoksa satırın `created_at`'i.
  * `extractMessageSentAt` ile aynı kural; burada SQL'den metin olarak geliyor.
@@ -66,16 +55,6 @@ export function mesajZamani(sentTs: unknown, createdAt: unknown): Date {
 		if (!Number.isNaN(d.getTime())) return d;
 	}
 	return createdAt instanceof Date ? createdAt : new Date(String(createdAt));
-}
-
-/** Tek aday varsa onu döner; sıfır ya da birden fazla adayda `null`. */
-export function tekVizitSec(at: Date, adaylar: VizitAdayi[]): string | null {
-	const t = at.getTime();
-	const uyanlar = adaylar.filter((v) => {
-		const p = vizitPenceresi(v);
-		return p !== null && t >= p.start && t <= p.end;
-	});
-	return uyanlar.length === 1 ? uyanlar[0]!.id : null;
 }
 
 @Injectable()

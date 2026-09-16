@@ -30,6 +30,7 @@ function tx(
 		contact_label: null,
 		case_contact_id: null,
 		responsible_contact_id: null,
+		contact_visit_id: null,
 		description: null,
 		source_inbound_message_id: null,
 		source_evidence: null,

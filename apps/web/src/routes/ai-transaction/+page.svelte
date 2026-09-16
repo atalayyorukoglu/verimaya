@@ -327,6 +327,12 @@
 				contact_id: r.contact_id ?? null,
 				case_contact_id: r.case_contact_id ?? null,
 				responsible_contact_id: r.responsible_contact_id ?? null,
+				/*
+				 * PARA-01 — vizit taslakta yok, kart kendi önerir (işlem günü tek bir
+				 * vizitin penceresine düşüyorsa). Boş bırakılırsa onayda sunucu aynı
+				 * kuralla eşleştirir.
+				 */
+				contact_visit_id: null,
 				invoice_status: 'none' as const,
 				_status: 'idle' as const,
 				_error: null
@@ -366,6 +372,7 @@
 			amount_base: d.amount_base,
 			case_contact_id: d.case_contact_id,
 			responsible_contact_id: d.responsible_contact_id,
+			contact_visit_id: d.contact_visit_id,
 			invoice_status: d.invoice_status
 		};
 		return approveDraftItemSchema.safeParse(item).success;
@@ -602,6 +609,7 @@
 			amount_base: d.amount_base,
 			case_contact_id: d.case_contact_id,
 			responsible_contact_id: d.responsible_contact_id,
+			contact_visit_id: d.contact_visit_id,
 			invoice_status: d.invoice_status
 		});
 		return parsed;

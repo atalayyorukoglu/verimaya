@@ -3,6 +3,8 @@
 	import type {
 		Contact,
 		ContactType,
+		ContactVisit,
+		ContactVisitList,
 		FinanceCategory,
 		FxRateResponse,
 		InvoiceStatus,
@@ -19,7 +21,10 @@
 	} from '@verimaya/shared';
 	import {
 		apiPaths,
+		contactVisitDateRangeLabel,
+		contactVisitTypeLabels,
 		deriveTransactionLabel,
+		matchVisitByDate,
 		invoiceStatusLabels,
 		SUPPORTED_CURRENCIES,
 		toTenantDayKey,
@@ -119,6 +124,10 @@
 	let contact_label = $state('');
 	let case_contact_id = $state('');
 	let responsible_contact_id = $state('');
+	/** PARA-01 — satırın viziti. Boş = "Vizit belirsiz". */
+	let contact_visit_id = $state('');
+	/** Kullanıcı vizit kutusuna dokunduysa tarihe göre öneri onu ezmez. */
+	let visitTouched = $state(false);
 	let payment_method = $state('');
 	let description = $state('');
 	let deletePhase = $state<DeleteConfirmPhase>('form');
@@ -156,6 +165,50 @@
 	const searchAllContacts = (q: string) => searchContactOptions(q);
 	const searchPatients = (q: string) =>
 		searchContactOptions(q, { typeId: hastaTypeId, typeName: HASTA_TURU });
+
+	/*
+	 * PARA-01 — vizit kutusu. Vizitler HASTAYA ait: önce `case_contact_id`, o boşsa
+	 * `contact_id` (hasta kartından açılan işlemde karşı taraf hastanın kendisidir).
+	 * Hasta seçili değilse kutu hiç görünmez — otelin viziti olmaz.
+	 */
+	const visitOwnerId = $derived(case_contact_id || contact_id || '');
+
+	const visitsQuery = createQuery(() => ({
+		queryKey: qs.keys.contacts.visits(visitOwnerId),
+		queryFn: () => apiGet<ContactVisitList>(apiPaths.contactVisits(visitOwnerId)),
+		enabled: open && qs.ready && visitOwnerId.length > 0
+	}));
+
+	const visitOptions = $derived<ContactVisit[]>(visitsQuery.data?.items ?? []);
+
+	function visitLabel(visit: ContactVisit): string {
+		const range = contactVisitDateRangeLabel(visit);
+		const type = contactVisitTypeLabels[visit.visit_type] ?? visit.visit_type;
+		return range ? `${type} · ${range}` : type;
+	}
+
+	/*
+	 * Tarihten öneri: işlem günü tek bir vizitin (geliş − 2 … dönüş + 2) aralığına
+	 * düşüyorsa kutu kendiliğinden dolar. Kullanıcı kutuya dokunduysa (`visitTouched`)
+	 * bir daha karışılmaz — seçimini geri almak, hiç önermemekten kötüdür.
+	 */
+	$effect(() => {
+		if (!open || visitTouched) return;
+		if (contact_visit_id) return;
+		const day = occurred_on;
+		const list = visitOptions;
+		if (!day || list.length === 0) return;
+		const match = matchVisitByDate(day, list);
+		if (match) contact_visit_id = match.id;
+	});
+
+	/** Hasta değişince eski vizit seçimi geçersiz — sessizce düşürülür. */
+	$effect(() => {
+		const list = visitOptions;
+		if (!open || !contact_visit_id) return;
+		if (visitsQuery.isPending) return;
+		if (!list.some((v) => v.id === contact_visit_id)) contact_visit_id = '';
+	});
 
 	/** Düzenlenen kayıttaki kişi ilk sayfada olmayabilir; adı tek tek çözülür. */
 	const labels = createContactLabelCache(() => loadedContacts);
@@ -220,6 +273,8 @@
 		contact_label = transaction?.contact_label ?? '';
 		case_contact_id = transaction?.case_contact_id ?? '';
 		responsible_contact_id = transaction?.responsible_contact_id ?? '';
+		contact_visit_id = transaction?.contact_visit_id ?? '';
+		visitTouched = !!transaction?.contact_visit_id;
 		payment_method = transaction?.payment_method ?? '';
 		description = transaction?.description ?? '';
 		deletePhase = 'form';
@@ -449,6 +504,7 @@
 			})(),
 			case_contact_id: case_contact_id || null,
 			responsible_contact_id: responsible_contact_id || null,
+			contact_visit_id: contact_visit_id || null,
 			description: description.trim() || null
 		};
 		await onsubmit(payload);
@@ -683,6 +739,23 @@
 					/>
 				</div>
 			</div>
+			{#if visitOwnerId && visitOptions.length > 0}
+				<div class="min-w-0">
+					<label class={labelClass} for="tx-visit">{t('finance.form.visit')}</label>
+					<select
+						id="tx-visit"
+						class={fieldClass}
+						bind:value={contact_visit_id}
+						onchange={() => (visitTouched = true)}
+					>
+						<option value="">{t('finance.form.visitNone')}</option>
+						{#each visitOptions as visit (visit.id)}
+							<option value={visit.id}>{visitLabel(visit)}</option>
+						{/each}
+					</select>
+					<p class="mt-1 text-xs text-text-faint">{t('finance.form.visitHint')}</p>
+				</div>
+			{/if}
 			<div class="min-w-0">
 				<label class={labelClass} for="tx-invoice">{t('finance.form.invoice')}</label>
 				<select id="tx-invoice" class={fieldClass} bind:value={invoice_status}>

@@ -4170,6 +4170,171 @@ paths:
           required: true
           schema:
             type: string
+  /contacts/{id}/visit-ledger:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contact_id:
+                    type: string
+                    format: uuid
+                  is_patient:
+                    type: boolean
+                  base_currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        visit_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        visit_type:
+                          type: string
+                          enum:
+                            - consultation
+                            - visit_1
+                            - visit_2
+                            - visit_3
+                            - rpt
+                            - other
+                          nullable: true
+                        visit_status:
+                          type: string
+                          enum:
+                            - planned
+                            - in_progress
+                            - completed
+                            - cancelled
+                          nullable: true
+                        visit_label:
+                          type: string
+                          maxLength: 200
+                        arrival_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        income_base:
+                          type: integer
+                        expense_base:
+                          type: integer
+                        profit_base:
+                          type: integer
+                        expense_by_category:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              category:
+                                type: string
+                                maxLength: 128
+                                nullable: true
+                              amount_base:
+                                type: integer
+                              count:
+                                type: integer
+                                minimum: 0
+                            required:
+                              - category
+                              - amount_base
+                              - count
+                            additionalProperties: false
+                        quoted_total_minor:
+                          type: integer
+                          minimum: 0
+                          nullable: true
+                        quoted_currency:
+                          type: string
+                          enum:
+                            - TRY
+                            - GBP
+                            - EUR
+                            - USD
+                          nullable: true
+                        collected_quoted_minor:
+                          type: integer
+                          nullable: true
+                        remaining_quoted_minor:
+                          type: integer
+                          nullable: true
+                        other_currency_income_count:
+                          type: integer
+                          minimum: 0
+                        transaction_count:
+                          type: integer
+                          minimum: 0
+                        unconverted_count:
+                          type: integer
+                          minimum: 0
+                      required:
+                        - visit_id
+                        - visit_type
+                        - visit_status
+                        - visit_label
+                        - arrival_at
+                        - income_base
+                        - expense_base
+                        - profit_base
+                        - expense_by_category
+                        - quoted_total_minor
+                        - quoted_currency
+                        - collected_quoted_minor
+                        - remaining_quoted_minor
+                        - other_currency_income_count
+                        - transaction_count
+                        - unconverted_count
+                      additionalProperties: false
+                  totals:
+                    type: object
+                    properties:
+                      income_base:
+                        type: integer
+                      expense_base:
+                        type: integer
+                      profit_base:
+                        type: integer
+                      transaction_count:
+                        type: integer
+                        minimum: 0
+                      unconverted_count:
+                        type: integer
+                        minimum: 0
+                    required:
+                      - income_base
+                      - expense_base
+                      - profit_base
+                      - transaction_count
+                      - unconverted_count
+                    additionalProperties: false
+                  generated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - contact_id
+                  - is_patient
+                  - base_currency
+                  - rows
+                  - totals
+                  - generated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
   /contacts/{id}/visits:
     get:
       responses:
@@ -4254,6 +4419,18 @@ paths:
                           type: string
                           maxLength: 4000
                           nullable: true
+                        quoted_total_minor:
+                          type: integer
+                          minimum: 0
+                          nullable: true
+                        quoted_currency:
+                          type: string
+                          enum:
+                            - TRY
+                            - GBP
+                            - EUR
+                            - USD
+                          nullable: true
                         status:
                           type: string
                           enum:
@@ -4297,6 +4474,8 @@ paths:
                         - clinic
                         - doctor
                         - treatment_plan
+                        - quoted_total_minor
+                        - quoted_currency
                         - status
                         - notes
                         - source_inbound_message_id
@@ -4391,6 +4570,18 @@ paths:
                     type: string
                     maxLength: 4000
                     nullable: true
+                  quoted_total_minor:
+                    type: integer
+                    minimum: 0
+                    nullable: true
+                  quoted_currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                    nullable: true
                   status:
                     type: string
                     enum:
@@ -4434,6 +4625,8 @@ paths:
                   - clinic
                   - doctor
                   - treatment_plan
+                  - quoted_total_minor
+                  - quoted_currency
                   - status
                   - notes
                   - source_inbound_message_id
@@ -4513,6 +4706,18 @@ paths:
                 treatment_plan:
                   type: string
                   maxLength: 4000
+                  nullable: true
+                quoted_total_minor:
+                  type: integer
+                  minimum: 0
+                  nullable: true
+                quoted_currency:
+                  type: string
+                  enum:
+                    - TRY
+                    - GBP
+                    - EUR
+                    - USD
                   nullable: true
                 status:
                   type: string
@@ -4611,6 +4816,18 @@ paths:
                     type: string
                     maxLength: 4000
                     nullable: true
+                  quoted_total_minor:
+                    type: integer
+                    minimum: 0
+                    nullable: true
+                  quoted_currency:
+                    type: string
+                    enum:
+                      - TRY
+                      - GBP
+                      - EUR
+                      - USD
+                    nullable: true
                   status:
                     type: string
                     enum:
@@ -4654,6 +4871,8 @@ paths:
                   - clinic
                   - doctor
                   - treatment_plan
+                  - quoted_total_minor
+                  - quoted_currency
                   - status
                   - notes
                   - source_inbound_message_id
@@ -4738,6 +4957,18 @@ paths:
                 treatment_plan:
                   type: string
                   maxLength: 4000
+                  nullable: true
+                quoted_total_minor:
+                  type: integer
+                  minimum: 0
+                  nullable: true
+                quoted_currency:
+                  type: string
+                  enum:
+                    - TRY
+                    - GBP
+                    - EUR
+                    - USD
                   nullable: true
                 status:
                   type: string
@@ -5137,6 +5368,18 @@ paths:
                     treatment_plan:
                       type: string
                       maxLength: 4000
+                      nullable: true
+                    quoted_total_minor:
+                      type: integer
+                      minimum: 0
+                      nullable: true
+                    quoted_currency:
+                      type: string
+                      enum:
+                        - TRY
+                        - GBP
+                        - EUR
+                        - USD
                       nullable: true
                     status:
                       type: string
@@ -6769,6 +7012,11 @@ paths:
                           format: uuid
                           nullable: true
                           default: null
+                        contact_visit_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         description:
                           type: string
                           maxLength: 8000
@@ -7118,6 +7366,11 @@ paths:
                     nullable: true
                     default: null
                   responsible_contact_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    default: null
+                  contact_visit_id:
                     type: string
                     format: uuid
                     nullable: true
@@ -10608,6 +10861,11 @@ paths:
                           format: uuid
                           nullable: true
                           default: null
+                        contact_visit_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          default: null
                         description:
                           type: string
                           maxLength: 8000
@@ -10939,6 +11197,11 @@ paths:
                           - issued
                           - not_issued
                         default: none
+                      contact_visit_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
                     required:
                       - kind
                       - amount
@@ -11239,6 +11502,26 @@ paths:
                   - scanned
                   - updated
                   - linked_to_visit
+                additionalProperties: false
+  /whatsapp/reprocess/visits:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scanned:
+                    type: integer
+                    minimum: 0
+                  suggested:
+                    type: integer
+                    minimum: 0
+                required:
+                  - scanned
+                  - suggested
                 additionalProperties: false
   /whatsapp/corrections:
     post:
@@ -13907,6 +14190,12 @@ paths:
                                   enum:
                                     - income
                                     - expense
+                                min_count:
+                                  type: integer
+                                  minimum: 1
+                                  maximum: 20
+                                settle_quote:
+                                  type: boolean
                               required:
                                 - kind
                                 - direction
@@ -14022,6 +14311,12 @@ paths:
                                   enum:
                                     - income
                                     - expense
+                                min_count:
+                                  type: integer
+                                  minimum: 1
+                                  maximum: 20
+                                settle_quote:
+                                  type: boolean
                               required:
                                 - kind
                                 - direction
@@ -14135,6 +14430,12 @@ paths:
                                 enum:
                                   - income
                                   - expense
+                              min_count:
+                                type: integer
+                                minimum: 1
+                                maximum: 20
+                              settle_quote:
+                                type: boolean
                             required:
                               - kind
                               - direction

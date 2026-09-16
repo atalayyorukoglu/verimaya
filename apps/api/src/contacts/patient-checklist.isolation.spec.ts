@@ -130,6 +130,30 @@ describe('EVRAK-01 evrak sınıflandırma + kontrol listesi', () => {
 			`;
 		});
 
+		/*
+		 * PARA-01 — vizitin teklifi ve bu vizite düşen para satırları.
+		 * Tahsilat teklifin altında: "Kalan ödeme" (p18) eksik çıkmalı.
+		 */
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`
+				update contact_visits
+				set quoted_total_minor = 640000, quoted_currency = 'GBP'
+				where id = ${visitA}
+			`;
+			await tx`
+				insert into transactions (
+					tenant_id, kind, title, category, occurred_on, status, amount, amount_base,
+					paid_amount, currency, contact_id, case_contact_id, contact_visit_id
+				)
+				values
+					(${tenantA}, 'income', 'Visit 1 tahsilat', 'Tahsilat', '2026-03-04', 'paid',
+						310000, 310000, 310000, 'GBP', ${contactA}, null, ${visitA}),
+					(${tenantA}, 'expense', 'Otel', 'Otel', '2026-03-05', 'paid',
+						2026100, 2026100, 2026100, 'TRY', null, ${contactA}, ${visitA})
+			`;
+		});
+
 		await ekYaz(tenantA, msgA, contactA, 'Claire Mccubbin visit 1 passport', 'IMG-0001.jpg');
 		await ekYaz(tenantB, msgB, contactB, 'Claire Mccubbin visit 1 passport', 'IMG-0002.jpg');
 
@@ -191,6 +215,18 @@ describe('EVRAK-01 evrak sınıflandırma + kontrol listesi', () => {
 		expect(byId.get('p13')?.status).toBe('missing');
 		// p01'in `auto` eşlemesi yok → sistem karar vermez.
 		expect(byId.get('p01')?.status).toBe('na');
+	});
+
+	it('para maddeleri: tahsilat ve gider işaretli, kalan ödeme eksik', async () => {
+		const result = await checklist.get(tenantA, contactA);
+		const vizit = result.visits.find((v) => v.visit_id === visitA)!;
+		const byId = new Map(vizit.items.map((i) => [i.item_id, i]));
+		// p14 = bu vizit tahsilatı (income ≥ 1).
+		expect(byId.get('p14')).toMatchObject({ status: 'done', evidence_count: 1 });
+		// p20 = hasta giderleri (expense ≥ 1, yalnız case_contact_id üzerinden).
+		expect(byId.get('p20')).toMatchObject({ status: 'done', evidence_count: 1 });
+		// p18 = kalan ödeme: teklif 6.400 GBP, tahsil 3.100 GBP, vizit kapandı.
+		expect(byId.get('p18')?.status).toBe('missing');
 	});
 
 	it("B'nin kontrol listesi A'nın evrakını görmez", async () => {

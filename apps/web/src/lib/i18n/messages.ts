@@ -465,6 +465,22 @@ const tr = {
 	'settings.ai.prompt.footnote':
 		'Not bozuk JSON ürettirse çıkarım güvenli şekilde heuristiğe düşer; taslak akışı bozulmaz.',
 
+	// Ayarlar · AI — geçmişi yeniden tara (PARA-01 / EVRAK-01)
+	'settings.ai.rescan.heading': 'Geçmişi yeniden tara',
+	'settings.ai.rescan.why':
+		'Vizit çıkarımı ve evrak sınıflandırması sonradan geldi; eski mesajlar hiç taranmadı. Bu iki tarama model çağırmaz, tekrar tekrar çalıştırılabilir.',
+	'settings.ai.rescan.visits': 'Geçmiş mesajlardan vizit öner',
+	'settings.ai.rescan.visitsRunning': 'Taranıyor…',
+	'settings.ai.rescan.visitsDone':
+		'{scanned} mesaj tarandı, {suggested} yeni vizit önerisi açıldı.',
+	'settings.ai.rescan.media': 'Evrakları yeniden sınıflandır',
+	'settings.ai.rescan.mediaRunning': 'Sınıflandırılıyor…',
+	'settings.ai.rescan.mediaDone':
+		'{scanned} ek tarandı, {updated} güncellendi, {linked} vizite bağlandı.',
+	'settings.ai.rescan.error': 'Tarama başarısız.',
+	'settings.ai.rescan.footnote':
+		'Önce viziti öner, kuyrukta onayla; sonra evrakı sınıflandır — ekler o vizitlere bağlansın.',
+
 	// Ayarlar · AI öğrenme (GAP-F09-15)
 	'settings.aiLearning.title': 'AI öğrenme raporu',
 	'settings.aiLearning.description':
@@ -1984,6 +2000,23 @@ const tr = {
 	'contacts.finance.transactionsTitle': 'İşlemler',
 	'contacts.finance.transactionsNew': 'Yeni işlem',
 	'contacts.finance.transactionsEmpty': 'Henüz işlem yok.',
+
+	// Kişi · Vizit mutabakatı (PARA-01)
+	'contacts.visitLedger.title': 'Vizit mutabakatı',
+	'contacts.visitLedger.why':
+		'Her vizit için hasta ödemeleri, hasta giderleri ve kâr. Tutarlar baz para biriminde.',
+	'contacts.visitLedger.col.visit': 'Vizit',
+	'contacts.visitLedger.col.income': 'Hasta ödemeleri',
+	'contacts.visitLedger.col.expense': 'Hasta giderleri',
+	'contacts.visitLedger.col.profit': 'Kâr',
+	'contacts.visitLedger.total': 'Toplam',
+	'contacts.visitLedger.noCategory': 'Kategorisiz',
+	'contacts.visitLedger.empty': 'Bu hastaya bağlı para satırı yok.',
+	'contacts.visitLedger.loadError': 'Vizit mutabakatı yüklenemedi.',
+	'contacts.visitLedger.remaining': 'Teklif {quoted} · tahsil {collected} · kalan {remaining}',
+	'contacts.visitLedger.otherCurrency':
+		'{count} ödeme teklif para biriminden farklı — kalan hesabına girmedi.',
+	'contacts.visitLedger.unconverted': '{count} satır baz para birimine çevrilemedi.',
 	'contacts.finance.transactionsError': 'İşlemler yüklenemedi.',
 	'contacts.detail.documentTitle': '{name} · Verimaya',
 	'contacts.detail.fallbackName': 'Kişi',
@@ -2171,6 +2204,11 @@ const tr = {
 	'contacts.visits.clinic': 'Klinik',
 	'contacts.visits.doctor': 'Hekim',
 	'contacts.visits.treatmentPlan': 'Tedavi planı',
+	'contacts.visits.quotedTotal': 'Teklif toplamı',
+	'contacts.visits.quotedTotalPlaceholder': 'ör. 8260',
+	'contacts.visits.quotedCurrency': 'Teklif para birimi',
+	'contacts.visits.quotedHint':
+		'Tedavinin toplam bedeli. Yazılırsa Finans Özet\'te "Kalan = teklif − tahsilat" satırı çıkar.',
 	'contacts.visits.notes': 'Not',
 	'contacts.visits.save': 'Kaydet',
 	'contacts.visits.saving': 'Kaydediliyor…',
@@ -3236,6 +3274,9 @@ const tr = {
 	'finance.form.caseSearchPlaceholder': 'Hasta ara',
 	'finance.form.caseEmpty': 'Eşleşen hasta yok.',
 	'finance.form.caseClear': 'Hasta seçimini kaldır',
+	'finance.form.visit': 'Vizit',
+	'finance.form.visitNone': 'Vizit belirsiz',
+	'finance.form.visitHint': 'İşlem tarihi bir vizitin aralığına düşüyorsa kendiliğinden seçilir.',
 	'finance.form.responsible': 'Sorumlu',
 	'finance.form.responsibleSearchPlaceholder': 'Sorumlu ara',
 	'finance.form.responsibleEmpty': 'Eşleşen personel yok.',
@@ -3702,6 +3743,21 @@ const en: Record<MessageKey, string> = {
 	'settings.ai.prompt.loadError': 'Could not load prompt.',
 	'settings.ai.prompt.footnote':
 		'If the note causes invalid JSON, extraction safely falls back to the heuristic; the draft flow stays intact.',
+
+	// Settings · AI — rescan history (PARA-01 / EVRAK-01)
+	'settings.ai.rescan.heading': 'Rescan history',
+	'settings.ai.rescan.why':
+		'Visit extraction and document classification arrived later; older messages were never scanned. Neither scan calls a model, and both can be re-run safely.',
+	'settings.ai.rescan.visits': 'Suggest visits from past messages',
+	'settings.ai.rescan.visitsRunning': 'Scanning…',
+	'settings.ai.rescan.visitsDone': '{scanned} messages scanned, {suggested} new visit suggestions.',
+	'settings.ai.rescan.media': 'Reclassify documents',
+	'settings.ai.rescan.mediaRunning': 'Classifying…',
+	'settings.ai.rescan.mediaDone':
+		'{scanned} attachments scanned, {updated} updated, {linked} linked to a visit.',
+	'settings.ai.rescan.error': 'Scan failed.',
+	'settings.ai.rescan.footnote':
+		'Suggest visits first and approve them in the queue, then reclassify documents so attachments land on those visits.',
 
 	// Settings · AI learning (GAP-F09-15)
 	'settings.aiLearning.title': 'AI learning report',
@@ -5184,6 +5240,24 @@ const en: Record<MessageKey, string> = {
 	'contacts.finance.transactionsTitle': 'Transactions',
 	'contacts.finance.transactionsNew': 'New transaction',
 	'contacts.finance.transactionsEmpty': 'No transactions yet.',
+
+	// Contact · Visit ledger (PARA-01)
+	'contacts.visitLedger.title': 'Visit ledger',
+	'contacts.visitLedger.why':
+		'Patient payments, patient costs and profit per visit. Amounts in the base currency.',
+	'contacts.visitLedger.col.visit': 'Visit',
+	'contacts.visitLedger.col.income': 'Patient payments',
+	'contacts.visitLedger.col.expense': 'Patient costs',
+	'contacts.visitLedger.col.profit': 'Profit',
+	'contacts.visitLedger.total': 'Total',
+	'contacts.visitLedger.noCategory': 'Uncategorised',
+	'contacts.visitLedger.empty': 'No money rows linked to this patient.',
+	'contacts.visitLedger.loadError': 'Could not load the visit ledger.',
+	'contacts.visitLedger.remaining':
+		'Quote {quoted} · collected {collected} · remaining {remaining}',
+	'contacts.visitLedger.otherCurrency':
+		'{count} payment(s) in another currency — not counted towards the remaining balance.',
+	'contacts.visitLedger.unconverted': '{count} row(s) could not be converted to the base currency.',
 	'contacts.finance.transactionsError': 'Could not load transactions.',
 	'contacts.detail.documentTitle': '{name} · Verimaya',
 	'contacts.detail.fallbackName': 'Contact',
@@ -5371,6 +5445,11 @@ const en: Record<MessageKey, string> = {
 	'contacts.visits.clinic': 'Clinic',
 	'contacts.visits.doctor': 'Doctor',
 	'contacts.visits.treatmentPlan': 'Treatment plan',
+	'contacts.visits.quotedTotal': 'Quoted total',
+	'contacts.visits.quotedTotalPlaceholder': 'e.g. 8260',
+	'contacts.visits.quotedCurrency': 'Quote currency',
+	'contacts.visits.quotedHint':
+		'Total treatment price. When set, the finance tab shows "Remaining = quote − collected".',
 	'contacts.visits.notes': 'Note',
 	'contacts.visits.save': 'Save',
 	'contacts.visits.saving': 'Saving…',
@@ -6406,6 +6485,9 @@ const en: Record<MessageKey, string> = {
 	'finance.form.caseSearchPlaceholder': 'Search patients',
 	'finance.form.caseEmpty': 'No matching patient.',
 	'finance.form.caseClear': 'Clear patient',
+	'finance.form.visit': 'Visit',
+	'finance.form.visitNone': 'Visit unknown',
+	'finance.form.visitHint': 'Picked automatically when the date falls inside one visit.',
 	'finance.form.responsible': 'Responsible',
 	'finance.form.responsibleSearchPlaceholder': 'Search responsible',
 	'finance.form.responsibleEmpty': 'No matching staff.',

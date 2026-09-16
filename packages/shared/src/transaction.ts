@@ -1,11 +1,5 @@
 import { z } from 'zod';
-import {
-	isoDate,
-	isoDateTime,
-	moneyMinor,
-	supportedCurrencySchema,
-	uuid
-} from './common.js';
+import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from './common.js';
 
 /**
  * Amounts are minor units (integer). Legacy used Decimal — corrected here per AGENTS.md.
@@ -162,6 +156,15 @@ export const transactionSchema = z.object({
 	 * Staff member who spent / owns the expense (Personel). Optional.
 	 */
 	responsible_contact_id: uuid.nullable().default(null),
+	/**
+	 * PARA-01 — satırın ait olduğu **vizit** (`contact_visits.id`).
+	 *
+	 * Hasta akışı vizit başına ilerliyor; "2. vizit ödemesi alınmadı" ya da "bu
+	 * vizitin kârı" ancak para satırı vizite bağlıysa çıkar. Opsiyonel ve
+	 * `ON DELETE SET NULL`: işlem kesin kayıttır, vizit sonradan düzeltilebilen
+	 * bir çerçevedir — vizit silinince tutar kaybolmaz, "Vizit belirsiz"e düşer.
+	 */
+	contact_visit_id: uuid.nullable().default(null),
 	description: z.string().max(8000).nullable(),
 	/**
 	 * AI-09 — satırın çıktığı WhatsApp mesajı (varsa). **Salt okunur:**
@@ -229,8 +232,7 @@ export function deriveTransactionLabel(input: {
 	if (category) return category;
 	if (subtitle) return subtitle;
 
-	const contact =
-		input.contact_display_name?.trim() || input.contact_label?.trim() || '';
+	const contact = input.contact_display_name?.trim() || input.contact_label?.trim() || '';
 	if (contact) return contact;
 
 	const firstLine = input.description?.split(/\r?\n/, 1)[0]?.trim() ?? '';

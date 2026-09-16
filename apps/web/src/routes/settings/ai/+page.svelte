@@ -4,6 +4,8 @@
 		apiPaths,
 		DEFAULT_WHATSAPP_AI_DISCLOSURE_TEXT,
 		WHATSAPP_AI_PROMPT_MAX_LENGTH,
+		type MediaReclassifyResult,
+		type VisitReprocessResult,
 		type WhatsappAiDisclosure,
 		type WhatsappAiPrompt
 	} from '@verimaya/shared';
@@ -28,6 +30,23 @@
 	let promptSavedOk = $state(false);
 	let promptError = $state<string | null>(null);
 	let promptHydrated = $state(false);
+
+	/**
+	 * PARA-01 / EVRAK-01 — geçmişi bir kez tara.
+	 *
+	 * İki uç da saf çıkarım (LLM yok), tenant'ın TÜM mesaj/eklerini okur ve tekrar
+	 * tekrar çalıştırılabilir: vizit önerisinde kısmi tekil indeks, evrak
+	 * sınıflandırmasında "değişmediyse yazma" kuralı mükerreri engelliyor.
+	 * Sıra önemli: **önce vizit önerileri** (onaylanınca vizit doğar), sonra evrak
+	 * (eki o vizitlere bağlar).
+	 */
+	let visitScanning = $state(false);
+	let visitScanResult = $state<VisitReprocessResult | null>(null);
+	let visitScanError = $state<string | null>(null);
+
+	let mediaScanning = $state(false);
+	let mediaScanResult = $state<MediaReclassifyResult | null>(null);
+	let mediaScanError = $state<string | null>(null);
 
 	const queryClient = useQueryClient();
 	const qs = useQueryScope();
@@ -96,6 +115,41 @@
 			promptError = err instanceof Error ? err.message : t('settings.ai.prompt.error');
 		} finally {
 			promptSaving = false;
+		}
+	}
+
+	async function scanVisits() {
+		visitScanning = true;
+		visitScanError = null;
+		visitScanResult = null;
+		try {
+			visitScanResult = await apiSend<VisitReprocessResult>(
+				apiPaths.whatsappReprocessVisits,
+				'POST'
+			);
+			// Kuyruktaki öneri kartları ve kişi kartındaki vizit listeleri bayatladı.
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+		} catch (err) {
+			visitScanError = err instanceof Error ? err.message : t('settings.ai.rescan.error');
+		} finally {
+			visitScanning = false;
+		}
+	}
+
+	async function scanMedia() {
+		mediaScanning = true;
+		mediaScanError = null;
+		mediaScanResult = null;
+		try {
+			mediaScanResult = await apiSend<MediaReclassifyResult>(
+				apiPaths.whatsappMediaReclassify,
+				'POST'
+			);
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+		} catch (err) {
+			mediaScanError = err instanceof Error ? err.message : t('settings.ai.rescan.error');
+		} finally {
+			mediaScanning = false;
 		}
 	}
 
@@ -223,5 +277,59 @@
 			{/if}
 		</div>
 		<p class="mt-3 text-xs text-text-faint">{t('settings.ai.prompt.footnote')}</p>
+	</section>
+
+	<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
+		<h2 class="text-sm font-semibold text-text">{t('settings.ai.rescan.heading')}</h2>
+		<p class="mt-1 text-sm text-text-muted">{t('settings.ai.rescan.why')}</p>
+
+		<div class="mt-4 flex flex-wrap items-center gap-2">
+			<Button
+				type="button"
+				variant="outline"
+				class="min-h-11"
+				onclick={scanVisits}
+				disabled={visitScanning || mediaScanning}
+			>
+				{visitScanning ? t('settings.ai.rescan.visitsRunning') : t('settings.ai.rescan.visits')}
+			</Button>
+			{#if visitScanResult}
+				<span class="text-sm text-success">
+					{t('settings.ai.rescan.visitsDone', {
+						scanned: String(visitScanResult.scanned),
+						suggested: String(visitScanResult.suggested)
+					})}
+				</span>
+			{/if}
+			{#if visitScanError}
+				<span class="text-sm text-danger">{visitScanError}</span>
+			{/if}
+		</div>
+
+		<div class="mt-3 flex flex-wrap items-center gap-2">
+			<Button
+				type="button"
+				variant="outline"
+				class="min-h-11"
+				onclick={scanMedia}
+				disabled={visitScanning || mediaScanning}
+			>
+				{mediaScanning ? t('settings.ai.rescan.mediaRunning') : t('settings.ai.rescan.media')}
+			</Button>
+			{#if mediaScanResult}
+				<span class="text-sm text-success">
+					{t('settings.ai.rescan.mediaDone', {
+						scanned: String(mediaScanResult.scanned),
+						updated: String(mediaScanResult.updated),
+						linked: String(mediaScanResult.linked_to_visit)
+					})}
+				</span>
+			{/if}
+			{#if mediaScanError}
+				<span class="text-sm text-danger">{mediaScanError}</span>
+			{/if}
+		</div>
+
+		<p class="mt-3 text-xs text-text-faint">{t('settings.ai.rescan.footnote')}</p>
 	</section>
 </div>

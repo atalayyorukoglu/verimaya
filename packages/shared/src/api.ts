@@ -70,6 +70,7 @@ export const apiPaths = {
 	contactCaseNotes: (id: string) => `${API_V1_PREFIX}/contacts/${id}/case-notes`,
 	contactMedia: (id: string) => `${API_V1_PREFIX}/contacts/${id}/media`,
 	contactChecklist: (id: string) => `${API_V1_PREFIX}/contacts/${id}/checklist`,
+	contactVisitLedger: (id: string) => `${API_V1_PREFIX}/contacts/${id}/visit-ledger`,
 	contactVisits: (id: string) => `${API_V1_PREFIX}/contacts/${id}/visits`,
 	contactVisit: (contactId: string, visitId: string) =>
 		`${API_V1_PREFIX}/contacts/${contactId}/visits/${visitId}`,
@@ -169,6 +170,7 @@ export const apiPaths = {
 	whatsappInboxMedia: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/media`,
 	whatsappMedia: (id: string) => `${API_V1_PREFIX}/whatsapp/media/${id}`,
 	whatsappMediaReclassify: `${API_V1_PREFIX}/whatsapp/media/reclassify`,
+	whatsappReprocessVisits: `${API_V1_PREFIX}/whatsapp/reprocess/visits`,
 	whatsappInboxCreateContact: (id: string) =>
 		`${API_V1_PREFIX}/whatsapp/inbox/${id}/create-contact`,
 	whatsappInboxByContact: (contactId: string) =>
@@ -387,8 +389,10 @@ import {
 	contactVisitSuggestionListSchema,
 	contactVisitSuggestionRejectSchema,
 	contactVisitSuggestionSchema,
-	contactVisitUpdateSchema
+	contactVisitUpdateSchema,
+	visitReprocessResultSchema
 } from './contact-visit.js';
+import { contactVisitLedgerSchema } from './contact-visit-ledger.js';
 import { contactDuplicateGroupsResponseSchema, mergeRecordsSchema } from './duplicate.js';
 import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-category.js';
 import { settingsReorderResultSchema, settingsReorderSchema } from './settings-reorder.js';
@@ -643,6 +647,9 @@ export const apiContract = {
 	'GET /v1/contacts/:id/checklist': {
 		response: patientChecklistSchema
 	},
+	'GET /v1/contacts/:id/visit-ledger': {
+		response: contactVisitLedgerSchema
+	},
 	'GET /v1/contacts/:id/visits': {
 		response: contactVisitListSchema
 	},
@@ -838,6 +845,9 @@ export const apiContract = {
 	},
 	'POST /v1/whatsapp/media/reclassify': {
 		response: mediaReclassifyResultSchema
+	},
+	'POST /v1/whatsapp/reprocess/visits': {
+		response: visitReprocessResultSchema
 	},
 	'POST /v1/whatsapp/corrections': {
 		body: aiCorrectionCreateSchema,
