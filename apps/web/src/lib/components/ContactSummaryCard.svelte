@@ -29,6 +29,16 @@
 	let refreshing = $state(false);
 	let error = $state<string | null>(null);
 
+	/** Kart varsayılan olarak daraltık: ilk COLLAPSED_COUNT cümle + aç/kapa düğmesi
+	 *  (kullanıcı geri bildirimi, 2026-09-16 — mobilde 6+ cümlelik özet ekranı
+	 *  kaplayıp altındaki akışı sıkıştırıyordu). Kişi değişince yeniden daralt. */
+	const COLLAPSED_COUNT = 2;
+	let expanded = $state(false);
+	$effect(() => {
+		void contactId;
+		expanded = false;
+	});
+
 	async function refresh() {
 		if (refreshing) return;
 		refreshing = true;
@@ -103,8 +113,11 @@
 		{#if s.sentences.length === 0}
 			<p class="mt-1.5 text-sm text-text-faint">{t('contacts.summary.empty')}</p>
 		{:else}
+			{@const collapsible = s.sentences.length > COLLAPSED_COUNT}
+			{@const visibleSentences =
+				expanded || !collapsible ? s.sentences : s.sentences.slice(0, COLLAPSED_COUNT)}
 			<ol class="mt-1.5 space-y-1">
-				{#each s.sentences as sentence, i (i)}
+				{#each visibleSentences as sentence, i (i)}
 					<li class="text-sm leading-6 text-text">
 						{sentence.text}
 						{#each sentence.sources as src (src.kind + src.id)}
@@ -120,6 +133,16 @@
 					</li>
 				{/each}
 			</ol>
+			{#if collapsible}
+				<button
+					type="button"
+					class="mt-1.5 text-xs font-medium text-brand hover:underline"
+					aria-expanded={expanded}
+					onclick={() => (expanded = !expanded)}
+				>
+					{expanded ? t('contacts.summary.showLess') : t('contacts.summary.showAll')}
+				</button>
+			{/if}
 		{/if}
 		{#if error}
 			<p class="mt-1.5 text-xs text-danger">{error}</p>

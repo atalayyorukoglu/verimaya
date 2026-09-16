@@ -5,18 +5,21 @@
 		ContactType,
 		FinanceCategory,
 		FxRateResponse,
+		InvoiceStatus,
 		TransactionDraft,
 		TransactionEvidenceEntry,
 		TransactionStatus
 	} from '@verimaya/shared';
 	import {
 		apiPaths,
+		invoiceStatusLabels,
 		SUPPORTED_CURRENCIES,
 		TRANSACTION_PAYMENT_METHODS,
 		transactionKindLabels,
 		transactionStatusLabels
 	} from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -25,12 +28,20 @@
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 
+	/**
+	 * Kart, Finans "Yeni işlem" formuyla (TransactionFormDialog) alan alan aynıdır.
+	 * Taslakta olmayan ama formda olan alanlar (hasta / sorumlu / fatura durumu)
+	 * burada tutulur ve onay isteğiyle birlikte gider.
+	 */
 	export type DraftApprovalState = TransactionDraft & {
 		status: TransactionStatus | null;
 		paid_amount: number | null;
 		fx_rate: number | null;
 		amount_base: number | null;
 		contact_id: string | null;
+		case_contact_id: string | null;
+		responsible_contact_id: string | null;
+		invoice_status: InvoiceStatus;
 		_status: 'idle' | 'saving' | 'saved' | 'error';
 		_error: string | null;
 	};
@@ -70,6 +81,7 @@
 
 	const kinds = Object.keys(transactionKindLabels) as TransactionDraft['kind'][];
 	const statuses = Object.keys(transactionStatusLabels) as TransactionStatus[];
+	const invoiceStatuses = Object.keys(invoiceStatusLabels) as InvoiceStatus[];
 	const currencies = SUPPORTED_CURRENCIES;
 	const qs = useQueryScope();
 
@@ -147,6 +159,17 @@
 		categories
 			.filter((c) => c.kind === draft.kind)
 			.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+	);
+
+	// Finans formuyla aynı kural: hasta listesi "Hasta" tipiyle sınırlı, sorumlu
+	// listesi kısıtsız (Tracker'da personel dışı kişiler de sorumlu olabiliyor).
+	const caseContactOptions = $derived(
+		contacts
+			.filter((c) => c.contact_type_name === 'Hasta')
+			.map((c) => ({ value: c.id, label: c.display_name, description: c.contact_type_name }))
+	);
+	const responsibleContactOptions = $derived(
+		contacts.map((c) => ({ value: c.id, label: c.display_name, description: c.contact_type_name }))
 	);
 
 	let showNewContact = $state(false);
@@ -299,80 +322,111 @@
 		{/if}
 	</div>
 
-	<div class="grid gap-3 sm:grid-cols-2">
-		<div>
-			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('kind')}>{t('finance.ai.draft.kind')}</label>
-				<EvidenceBadge entry={draft.evidence?.kind} onselect={onEvidence} />
-			</div>
-			<select
-				id={fieldId('kind')}
-				class={fieldClass}
-				disabled={saved}
-				value={draft.kind}
-				onchange={(e) => onchange({ kind: e.currentTarget.value as TransactionDraft['kind'] })}
-			>
-				{#each kinds as k (k)}
-					<option value={k}>{transactionKindLabels[k]}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div>
-			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('amount')}
-					>{t('finance.form.amount', { currency: draft.currency })}</label
+	<!--
+		Alan sırası ve etiketleri Finans › "Yeni işlem" formuyla (TransactionFormDialog)
+		birebir aynı: Tür / Durum, Para birimi / Tutar / Tarih, kur kutusu, Kısmi'de
+		ödenen, Kategori / Alt kategori, Kişi / Etiket, Hasta / Sorumlu, Fatura,
+		Ödeme yöntemi, Açıklama. Formda olmayan hiçbir alan (ör. Başlık) burada yok.
+	-->
+	<div class="min-w-0 space-y-3">
+		<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+			<div class="min-w-0">
+				<div class="flex items-center justify-between gap-2">
+					<label class={labelClass} for={fieldId('kind')}>{t('finance.form.kind')}</label>
+					<EvidenceBadge entry={draft.evidence?.kind} onselect={onEvidence} />
+				</div>
+				<select
+					id={fieldId('kind')}
+					class={fieldClass}
+					disabled={saved}
+					value={draft.kind}
+					onchange={(e) => onchange({ kind: e.currentTarget.value as TransactionDraft['kind'] })}
 				>
-				<EvidenceBadge entry={draft.evidence?.amount} onselect={onEvidence} />
+					{#each kinds as k (k)}
+						<option value={k}>{transactionKindLabels[k]}</option>
+					{/each}
+				</select>
 			</div>
-			<input
-				id={fieldId('amount')}
-				class={fieldClass}
-				type="number"
-				min="0"
-				step="0.01"
-				disabled={saved}
-				value={amountMajor}
-				oninput={(e) => onAmountInput(e.currentTarget.value)}
-			/>
+
+			<div class="min-w-0">
+				<label class={labelClass} for={fieldId('status')}>{t('finance.form.status')}</label>
+				<select
+					id={fieldId('status')}
+					class={fieldClass}
+					disabled={saved}
+					value={draft.status ?? ''}
+					onchange={(e) => {
+						const v = e.currentTarget.value;
+						if (v) onStatusChange(v as TransactionStatus);
+						else onchange({ status: null, paid_amount: null });
+					}}
+				>
+					<!-- Formdan tek fark: durum seçilmeden onay verilemez, o yüzden boş seçenek kalır. -->
+					<option value="">{t('finance.ai.draft.statusNone')}</option>
+					{#each statuses as s (s)}
+						<option value={s}>{transactionStatusLabels[s]}</option>
+					{/each}
+				</select>
+			</div>
 		</div>
 
-		<div>
-			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('currency')}>{t('finance.ai.draft.currency')}</label>
-				<EvidenceBadge entry={draft.evidence?.currency} onselect={onEvidence} />
+		<div class="grid min-w-0 gap-3 sm:grid-cols-3">
+			<div class="min-w-0">
+				<div class="flex items-center justify-between gap-2">
+					<label class={labelClass} for={fieldId('currency')}>{t('finance.form.currency')}</label>
+					<EvidenceBadge entry={draft.evidence?.currency} onselect={onEvidence} />
+				</div>
+				<select
+					id={fieldId('currency')}
+					class={fieldClass}
+					disabled={saved}
+					value={draft.currency}
+					onchange={(e) => onCurrencyChange(e.currentTarget.value as (typeof currencies)[number])}
+				>
+					{#each currencies as c (c)}
+						<option value={c}>{c}</option>
+					{/each}
+				</select>
 			</div>
-			<select
-				id={fieldId('currency')}
-				class={fieldClass}
-				disabled={saved}
-				value={draft.currency}
-				onchange={(e) => onCurrencyChange(e.currentTarget.value as (typeof currencies)[number])}
-			>
-				{#each currencies as c (c)}
-					<option value={c}>{c}</option>
-				{/each}
-			</select>
-		</div>
 
-		<div>
-			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('date')}>{t('finance.ai.draft.date')}</label>
-				<EvidenceBadge entry={draft.evidence?.occurred_on} onselect={onEvidence} />
+			<div class="min-w-0">
+				<div class="flex items-center justify-between gap-2">
+					<label class={labelClass} for={fieldId('amount')}
+						>{t('finance.form.amount', { currency: draft.currency })}</label
+					>
+					<EvidenceBadge entry={draft.evidence?.amount} onselect={onEvidence} />
+				</div>
+				<input
+					id={fieldId('amount')}
+					class={fieldClass}
+					type="number"
+					min="0"
+					step="0.01"
+					disabled={saved}
+					value={amountMajor}
+					oninput={(e) => onAmountInput(e.currentTarget.value)}
+				/>
 			</div>
-			<input
-				id={fieldId('date')}
-				class={fieldClass}
-				type="date"
-				disabled={saved}
-				value={draft.occurred_on}
-				onchange={(e) => onDateChange(e.currentTarget.value)}
-			/>
+
+			<div class="min-w-0">
+				<div class="flex items-center justify-between gap-2">
+					<label class={labelClass} for={fieldId('date')}>{t('finance.form.date')}</label>
+					<EvidenceBadge entry={draft.evidence?.occurred_on} onselect={onEvidence} />
+				</div>
+				<input
+					id={fieldId('date')}
+					class={fieldClass}
+					type="date"
+					disabled={saved}
+					value={draft.occurred_on}
+					onchange={(e) => onDateChange(e.currentTarget.value)}
+				/>
+			</div>
 		</div>
 
 		{#if needsFx}
 			<div
-				class="grid min-w-0 gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:col-span-2 sm:grid-cols-2"
+				class="grid min-w-0 gap-3 rounded-[6px] border border-warning/40 bg-warning/10 p-3 sm:grid-cols-2"
 			>
 				<div class="min-w-0">
 					<label class={labelClass} for={fieldId('base')}
@@ -425,143 +479,8 @@
 			</div>
 		{/if}
 
-		<div>
-			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('category')}>{t('finance.ai.draft.category')}</label>
-				<EvidenceBadge entry={draft.evidence?.category} onselect={onEvidence} />
-			</div>
-			<select
-				id={fieldId('category')}
-				class={fieldClass}
-				disabled={saved || creating}
-				value={showNewCategory ? NEW : (draft.category ?? '')}
-				onchange={(e) => {
-					const v = e.currentTarget.value;
-					if (v === NEW) {
-						showNewCategory = true;
-						createError = null;
-						return;
-					}
-					showNewCategory = false;
-					onchange({ category: v || null });
-				}}
-			>
-				<option value="">{t('finance.ai.draft.categoryNone')}</option>
-				{#each categoryOptions as c (c.id)}
-					<option value={c.name}>{c.name}</option>
-				{/each}
-				{#if draft.category && !categoryOptions.some((c) => c.name === draft.category)}
-					<option value={draft.category}>{draft.category}</option>
-				{/if}
-				<option value={NEW}>{t('finance.ai.draft.categoryNew')}</option>
-			</select>
-			{#if showNewCategory}
-				<div class="mt-2 space-y-2 rounded-[6px] border border-border bg-surface-2 p-3">
-					<label class={labelClass} for={fieldId('new-cat-name')}
-						>{t('finance.ai.create.categoryName')}</label
-					>
-					<input
-						id={fieldId('new-cat-name')}
-						class={fieldClass}
-						disabled={creating}
-						bind:value={newCategoryName}
-					/>
-					<div class="flex flex-wrap gap-2">
-						<Button
-							size="sm"
-							type="button"
-							disabled={creating || !newCategoryName.trim()}
-							onclick={() => void submitNewCategory()}
-						>
-							{creating ? t('finance.ai.create.saving') : t('finance.ai.create.save')}
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							type="button"
-							disabled={creating}
-							onclick={resetCreateForms}
-						>
-							{t('finance.ai.create.cancel')}
-						</Button>
-					</div>
-				</div>
-			{/if}
-		</div>
-
-		<div>
-			<label class={labelClass} for={fieldId('subcategory')}>{t('finance.form.subcategory')}</label>
-			{#if subcategoryOptions.length > 0}
-				<select
-					id={fieldId('subcategory')}
-					class={fieldClass}
-					disabled={saved}
-					value={draft.subcategory ?? ''}
-					onchange={(e) => onchange({ subcategory: e.currentTarget.value || null })}
-				>
-					<option value="">{t('finance.form.none')}</option>
-					{#each subcategoryOptions as s (s)}
-						<option value={s}>{s}</option>
-					{/each}
-					{#if draft.subcategory && !subcategoryOptions.includes(draft.subcategory)}
-						<option value={draft.subcategory}>{draft.subcategory}</option>
-					{/if}
-				</select>
-			{:else}
-				<input
-					id={fieldId('subcategory')}
-					class={fieldClass}
-					disabled={saved}
-					maxlength={128}
-					value={draft.subcategory ?? ''}
-					oninput={(e) => onchange({ subcategory: e.currentTarget.value || null })}
-				/>
-			{/if}
-		</div>
-
-		<div>
-			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('method')}
-					>{t('finance.ai.draft.paymentMethod')}</label
-				>
-				<EvidenceBadge entry={draft.evidence?.payment_method} onselect={onEvidence} />
-			</div>
-			<select
-				id={fieldId('method')}
-				class={fieldClass}
-				disabled={saved}
-				value={draft.payment_method ?? ''}
-				onchange={(e) => onchange({ payment_method: e.currentTarget.value || null })}
-			>
-				<option value="">{t('finance.form.paymentMethodNone')}</option>
-				{#each paymentMethodOptions as method (method)}
-					<option value={method}>{paymentMethodLabel(method)}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div>
-			<label class={labelClass} for={fieldId('status')}>{t('finance.ai.draft.status')}</label>
-			<select
-				id={fieldId('status')}
-				class={fieldClass}
-				disabled={saved}
-				value={draft.status ?? ''}
-				onchange={(e) => {
-					const v = e.currentTarget.value;
-					if (v) onStatusChange(v as TransactionStatus);
-					else onchange({ status: null, paid_amount: null });
-				}}
-			>
-				<option value="">{t('finance.ai.draft.statusNone')}</option>
-				{#each statuses as s (s)}
-					<option value={s}>{transactionStatusLabels[s]}</option>
-				{/each}
-			</select>
-		</div>
-
 		{#if draft.status === 'partial'}
-			<div>
+			<div class="min-w-0">
 				<label class={labelClass} for={fieldId('paid')}
 					>{t('finance.form.paidAmount', { currency: draft.currency })}</label
 				>
@@ -578,126 +497,299 @@
 			</div>
 		{/if}
 
-		<div>
-			<div class="flex items-center justify-between gap-2">
-				<label class={labelClass} for={fieldId('contact')}>{t('finance.ai.draft.contact')}</label>
-				<EvidenceBadge entry={draft.evidence?.contact_id} onselect={onEvidence} />
-			</div>
-			<select
-				id={fieldId('contact')}
-				class={fieldClass}
-				disabled={saved || creating}
-				value={showNewContact ? NEW : (draft.contact_id ?? '')}
-				onchange={(e) => {
-					const v = e.currentTarget.value;
-					if (v === NEW) {
-						showNewContact = true;
-						createError = null;
-						return;
-					}
-					showNewContact = false;
-					if (!v) {
-						onchange({ contact_id: null, contact_display_name: null });
-						return;
-					}
-					const contact = contacts.find((c) => c.id === v);
-					onchange({
-						contact_id: v,
-						contact_display_name: contact?.display_name ?? draft.contact_display_name,
-						contact_label: contact?.display_name ?? draft.contact_label
-					});
-				}}
-			>
-				<option value="">{t('finance.ai.draft.contactNone')}</option>
-				{#each contacts as c (c.id)}
-					<option value={c.id}>{c.display_name}</option>
-				{/each}
-				<option value={NEW}>{t('finance.ai.draft.contactNew')}</option>
-			</select>
-			{#if showNewContact}
-				<div class="mt-2 space-y-2 rounded-[6px] border border-border bg-surface-2 p-3">
-					<label class={labelClass} for={fieldId('new-contact-name')}
-						>{t('finance.ai.create.fullName')}</label
-					>
-					<input
-						id={fieldId('new-contact-name')}
-						class={fieldClass}
-						disabled={creating}
-						bind:value={newContactName}
-					/>
-					<label class={labelClass} for={fieldId('new-contact-type')}
-						>{t('finance.ai.create.contactType')}</label
-					>
-					<select
-						id={fieldId('new-contact-type')}
-						class={fieldClass}
-						disabled={creating}
-						bind:value={newContactTypeId}
-					>
-						<option value="">{t('finance.ai.create.contactTypeNone')}</option>
-						{#each contactTypes as ct (ct.id)}
-							<option value={ct.id}>{ct.name}</option>
-						{/each}
-					</select>
-					<label class={labelClass} for={fieldId('new-contact-phone')}
-						>{t('finance.ai.create.phone')}</label
-					>
-					<input
-						id={fieldId('new-contact-phone')}
-						class={fieldClass}
-						disabled={creating}
-						bind:value={newContactPhone}
-					/>
-					<label class={labelClass} for={fieldId('new-contact-email')}
-						>{t('finance.ai.create.email')}</label
-					>
-					<input
-						id={fieldId('new-contact-email')}
-						class={fieldClass}
-						type="email"
-						disabled={creating}
-						bind:value={newContactEmail}
-					/>
-					<div class="flex flex-wrap gap-2">
-						<Button
-							size="sm"
-							type="button"
-							disabled={creating || !newContactName.trim() || !newContactTypeId}
-							onclick={() => void submitNewContact()}
-						>
-							{creating ? t('finance.ai.create.saving') : t('finance.ai.create.save')}
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							type="button"
-							disabled={creating}
-							onclick={resetCreateForms}
-						>
-							{t('finance.ai.create.cancel')}
-						</Button>
-					</div>
+		<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+			<div class="min-w-0">
+				<div class="flex items-center justify-between gap-2">
+					<label class={labelClass} for={fieldId('category')}>{t('finance.form.category')}</label>
+					<EvidenceBadge entry={draft.evidence?.category} onselect={onEvidence} />
 				</div>
-			{:else if !draft.contact_id}
-				<label class={`${labelClass} mt-2`} for={fieldId('contact-label')}
-					>{t('finance.ai.draft.contactLabel')}</label
+				<select
+					id={fieldId('category')}
+					class={fieldClass}
+					disabled={saved || creating}
+					value={showNewCategory ? NEW : (draft.category ?? '')}
+					onchange={(e) => {
+						const v = e.currentTarget.value;
+						if (v === NEW) {
+							showNewCategory = true;
+							createError = null;
+							return;
+						}
+						showNewCategory = false;
+						onchange({ category: v || null });
+					}}
 				>
+					<option value="">{t('finance.form.none')}</option>
+					{#each categoryOptions as c (c.id)}
+						<option value={c.name}>{c.name}</option>
+					{/each}
+					{#if draft.category && !categoryOptions.some((c) => c.name === draft.category)}
+						<option value={draft.category}>{draft.category}</option>
+					{/if}
+					<option value={NEW}>{t('finance.ai.draft.categoryNew')}</option>
+				</select>
+				{#if showNewCategory}
+					<div class="mt-2 space-y-2 rounded-[6px] border border-border bg-surface-2 p-3">
+						<label class={labelClass} for={fieldId('new-cat-name')}
+							>{t('finance.ai.create.categoryName')}</label
+						>
+						<input
+							id={fieldId('new-cat-name')}
+							class={fieldClass}
+							disabled={creating}
+							bind:value={newCategoryName}
+						/>
+						<div class="flex flex-wrap gap-2">
+							<Button
+								size="sm"
+								type="button"
+								disabled={creating || !newCategoryName.trim()}
+								onclick={() => void submitNewCategory()}
+							>
+								{creating ? t('finance.ai.create.saving') : t('finance.ai.create.save')}
+							</Button>
+							<Button
+								size="sm"
+								variant="outline"
+								type="button"
+								disabled={creating}
+								onclick={resetCreateForms}
+							>
+								{t('finance.ai.create.cancel')}
+							</Button>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<div class="min-w-0">
+				<label class={labelClass} for={fieldId('subcategory')}
+					>{t('finance.form.subcategory')}</label
+				>
+				{#if subcategoryOptions.length > 0}
+					<select
+						id={fieldId('subcategory')}
+						class={fieldClass}
+						disabled={saved}
+						value={draft.subcategory ?? ''}
+						onchange={(e) => onchange({ subcategory: e.currentTarget.value || null })}
+					>
+						<option value="">{t('finance.form.none')}</option>
+						{#each subcategoryOptions as s (s)}
+							<option value={s}>{s}</option>
+						{/each}
+						{#if draft.subcategory && !subcategoryOptions.includes(draft.subcategory)}
+							<option value={draft.subcategory}>{draft.subcategory}</option>
+						{/if}
+					</select>
+				{:else}
+					<input
+						id={fieldId('subcategory')}
+						class={fieldClass}
+						disabled={saved}
+						maxlength={128}
+						value={draft.subcategory ?? ''}
+						oninput={(e) => onchange({ subcategory: e.currentTarget.value || null })}
+					/>
+				{/if}
+			</div>
+		</div>
+
+		<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+			<div class="min-w-0">
+				<div class="flex items-center justify-between gap-2">
+					<label class={labelClass} for={fieldId('contact')}>{t('finance.form.contact')}</label>
+					<EvidenceBadge entry={draft.evidence?.contact_id} onselect={onEvidence} />
+				</div>
+				<select
+					id={fieldId('contact')}
+					class={fieldClass}
+					disabled={saved || creating}
+					value={showNewContact ? NEW : (draft.contact_id ?? '')}
+					onchange={(e) => {
+						const v = e.currentTarget.value;
+						if (v === NEW) {
+							showNewContact = true;
+							createError = null;
+							return;
+						}
+						showNewContact = false;
+						if (!v) {
+							onchange({ contact_id: null, contact_display_name: null });
+							return;
+						}
+						const contact = contacts.find((c) => c.id === v);
+						onchange({
+							contact_id: v,
+							contact_display_name: contact?.display_name ?? draft.contact_display_name,
+							contact_label: contact?.display_name ?? draft.contact_label
+						});
+					}}
+				>
+					<option value="">{t('finance.ai.draft.contactNone')}</option>
+					{#each contacts as c (c.id)}
+						<option value={c.id}>{c.display_name}</option>
+					{/each}
+					<option value={NEW}>{t('finance.ai.draft.contactNew')}</option>
+				</select>
+				{#if showNewContact}
+					<div class="mt-2 space-y-2 rounded-[6px] border border-border bg-surface-2 p-3">
+						<label class={labelClass} for={fieldId('new-contact-name')}
+							>{t('finance.ai.create.fullName')}</label
+						>
+						<input
+							id={fieldId('new-contact-name')}
+							class={fieldClass}
+							disabled={creating}
+							bind:value={newContactName}
+						/>
+						<label class={labelClass} for={fieldId('new-contact-type')}
+							>{t('finance.ai.create.contactType')}</label
+						>
+						<select
+							id={fieldId('new-contact-type')}
+							class={fieldClass}
+							disabled={creating}
+							bind:value={newContactTypeId}
+						>
+							<option value="">{t('finance.ai.create.contactTypeNone')}</option>
+							{#each contactTypes as ct (ct.id)}
+								<option value={ct.id}>{ct.name}</option>
+							{/each}
+						</select>
+						<label class={labelClass} for={fieldId('new-contact-phone')}
+							>{t('finance.ai.create.phone')}</label
+						>
+						<input
+							id={fieldId('new-contact-phone')}
+							class={fieldClass}
+							disabled={creating}
+							bind:value={newContactPhone}
+						/>
+						<label class={labelClass} for={fieldId('new-contact-email')}
+							>{t('finance.ai.create.email')}</label
+						>
+						<input
+							id={fieldId('new-contact-email')}
+							class={fieldClass}
+							type="email"
+							disabled={creating}
+							bind:value={newContactEmail}
+						/>
+						<div class="flex flex-wrap gap-2">
+							<Button
+								size="sm"
+								type="button"
+								disabled={creating || !newContactName.trim() || !newContactTypeId}
+								onclick={() => void submitNewContact()}
+							>
+								{creating ? t('finance.ai.create.saving') : t('finance.ai.create.save')}
+							</Button>
+							<Button
+								size="sm"
+								variant="outline"
+								type="button"
+								disabled={creating}
+								onclick={resetCreateForms}
+							>
+								{t('finance.ai.create.cancel')}
+							</Button>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<div class="min-w-0">
+				<div class="flex items-center justify-between gap-2">
+					<label class={labelClass} for={fieldId('contact-label')}
+						>{t('finance.form.contactFallback')}</label
+					>
+					<EvidenceBadge entry={draft.evidence?.contact_label} onselect={onEvidence} />
+				</div>
 				<input
 					id={fieldId('contact-label')}
 					class={fieldClass}
-					disabled={saved}
+					maxlength={255}
+					placeholder={t('finance.form.contactFreePlaceholder')}
+					disabled={saved || !!draft.contact_id}
 					value={draft.contact_label ?? ''}
 					oninput={(e) => onchange({ contact_label: e.currentTarget.value || null })}
 				/>
-			{/if}
+			</div>
 		</div>
 
-		<div class="sm:col-span-2">
-			<label class={labelClass} for={fieldId('desc')}>{t('finance.ai.draft.description')}</label>
+		<div class="grid min-w-0 gap-3 sm:grid-cols-2">
+			<div class="min-w-0">
+				<label class={labelClass} for={fieldId('case')}>{t('finance.form.case')}</label>
+				<Combobox
+					id={fieldId('case')}
+					value={draft.case_contact_id ?? ''}
+					options={caseContactOptions}
+					disabled={saved}
+					placeholder={t('finance.form.caseSearchPlaceholder')}
+					emptyText={t('finance.form.caseEmpty')}
+					clearLabel={t('finance.form.caseClear')}
+					onselect={(option) => onchange({ case_contact_id: option?.value ?? null })}
+				/>
+			</div>
+			<div class="min-w-0">
+				<label class={labelClass} for={fieldId('responsible')}
+					>{t('finance.form.responsible')}</label
+				>
+				<Combobox
+					id={fieldId('responsible')}
+					value={draft.responsible_contact_id ?? ''}
+					options={responsibleContactOptions}
+					disabled={saved}
+					placeholder={t('finance.form.responsibleSearchPlaceholder')}
+					emptyText={t('finance.form.responsibleEmpty')}
+					clearLabel={t('finance.form.responsibleClear')}
+					onselect={(option) => onchange({ responsible_contact_id: option?.value ?? null })}
+				/>
+			</div>
+		</div>
+
+		<div class="min-w-0">
+			<label class={labelClass} for={fieldId('invoice')}>{t('finance.form.invoice')}</label>
+			<select
+				id={fieldId('invoice')}
+				class={fieldClass}
+				disabled={saved}
+				value={draft.invoice_status}
+				onchange={(e) => onchange({ invoice_status: e.currentTarget.value as InvoiceStatus })}
+			>
+				{#each invoiceStatuses as s (s)}
+					<option value={s}>{invoiceStatusLabels[s]}</option>
+				{/each}
+			</select>
+		</div>
+
+		<div class="min-w-0">
+			<div class="flex items-center justify-between gap-2">
+				<label class={labelClass} for={fieldId('method')}>{t('finance.form.paymentMethod')}</label>
+				<EvidenceBadge entry={draft.evidence?.payment_method} onselect={onEvidence} />
+			</div>
+			<select
+				id={fieldId('method')}
+				class={fieldClass}
+				disabled={saved}
+				value={draft.payment_method ?? ''}
+				onchange={(e) => onchange({ payment_method: e.currentTarget.value || null })}
+			>
+				<option value="">{t('finance.form.paymentMethodNone')}</option>
+				{#each paymentMethodOptions as method (method)}
+					<option value={method}>{paymentMethodLabel(method)}</option>
+				{/each}
+			</select>
+		</div>
+
+		<div class="min-w-0">
+			<label class={labelClass} for={fieldId('desc')}>{t('finance.form.descriptionLabel')}</label>
 			<textarea
 				id={fieldId('desc')}
 				class={textareaClass}
 				rows={3}
+				maxlength={8000}
 				disabled={saved}
 				value={draft.description ?? ''}
 				oninput={(e) => onchange({ description: e.currentTarget.value || null })}></textarea>

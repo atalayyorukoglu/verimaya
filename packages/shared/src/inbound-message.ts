@@ -3,6 +3,7 @@ import { isoDate, isoDateTime, moneyMinor, supportedCurrencySchema, uuid } from 
 import { contactCreateSchema, contactSchema } from './contact.js';
 import { financeCategoryCreateSchema } from './finance-category.js';
 import {
+	invoiceStatusSchema,
 	transactionEvidenceSchema,
 	transactionKindSchema,
 	transactionSchema,
@@ -75,7 +76,16 @@ export const approveDraftItemSchema = transactionDraftSnapshotSchema
 		fx_rate: z.number().positive(),
 		/** Amount in tenant base currency (minor units). */
 		amount_base: moneyMinor.nonnegative(),
-		contact_id: uuid.nullable().default(null)
+		contact_id: uuid.nullable().default(null),
+		/**
+		 * Taslak kartı Finans "Yeni işlem" formuyla aynı alanları taşır; bu üçü
+		 * eskiden onay isteğinde yoktu ve kullanıcının kartta seçtiği hasta /
+		 * sorumlu / fatura durumu sessizce düşüyordu. Varsayılanlar eski
+		 * istemcileri bozmaz.
+		 */
+		case_contact_id: uuid.nullable().default(null),
+		responsible_contact_id: uuid.nullable().default(null),
+		invoice_status: invoiceStatusSchema.default('none')
 	})
 	.superRefine((item, ctx) => {
 		const hasCounterparty = item.contact_id != null || Boolean(item.contact_label?.trim());

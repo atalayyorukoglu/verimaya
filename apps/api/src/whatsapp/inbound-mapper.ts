@@ -103,6 +103,31 @@ export function extractWahaExternalId(
 	return payloadHash;
 }
 
+/**
+ * Mesajın yazıldığı an. WAHA gövdesinde saniye cinsinden `timestamp` gelir
+ * (bazı sürümlerde `messageTimestamp` / `t`, bazen milisaniye). Taslağın işlem
+ * tarihi buradan çıkar; yoksa çağıran taraf satırın `created_at`'ine düşer.
+ */
+export function extractMessageSentAt(payload: Record<string, unknown>): Date | null {
+	const inner = asRecord(payload.payload) ?? payload;
+	const data = asRecord(inner._data);
+	for (const source of [inner, payload, data]) {
+		if (!source) continue;
+		for (const key of ['timestamp', 'messageTimestamp', 't']) {
+			const raw = source[key];
+			const value =
+				typeof raw === 'number' ? raw : typeof raw === 'string' ? Number.parseFloat(raw) : NaN;
+			if (!Number.isFinite(value) || value <= 0) continue;
+			// 10 haneli → saniye, 13 haneli → milisaniye.
+			const ms = value > 1e12 ? value : value * 1000;
+			const date = new Date(ms);
+			if (Number.isNaN(date.getTime())) continue;
+			return date;
+		}
+	}
+	return null;
+}
+
 export function extractParsedRecords(payload: Record<string, unknown>): TransactionDraft[] | null {
 	const value = payload.parsed_records;
 	if (!Array.isArray(value)) return null;

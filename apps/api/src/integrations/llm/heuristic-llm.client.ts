@@ -59,7 +59,7 @@ export class HeuristicLlmClient implements LlmClient {
 	}
 
 	async parseTransactionDrafts(ctx: LlmParseContext): Promise<LlmParseResult> {
-		const records = heuristicParseWhatsappMessage(ctx.message, ctx.patients);
+		const records = heuristicParseWhatsappMessage(ctx.message, ctx.patients, ctx.messageDate);
 		return {
 			records,
 			usage: {

@@ -18,11 +18,12 @@ import type {
 import { buildCursorPage, createdAtCursorCondition } from '../common/list-query';
 import { aiCorrections } from '../db/schema/ai-corrections';
 import { inboundMessages, type InboundMessageRow } from '../db/schema/inbound-messages';
+import { tenants } from '../db/schema/tenants';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
 import { MessageContactsService } from './message-contacts.service';
 import { InboundMediaService } from './inbound-media.service';
 import type { KisiAdayi } from './kisi-eslestir';
-import { buildKnowledgeContext } from '@verimaya/shared';
+import { DEFAULT_TENANT_TIMEZONE, buildKnowledgeContext, toTenantDayKey } from '@verimaya/shared';
 import { type AuditActor } from '../common/audit-helper';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
 import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
@@ -37,6 +38,7 @@ import { turleriBul } from './mesaj-turu';
 import {
 	asRecord,
 	extractInboundDisplayFields,
+	extractMessageSentAt,
 	extractParsedRecords,
 	mergeParsedPayload,
 	toInboundMessage
@@ -97,7 +99,9 @@ export class WhatsappService {
 				message,
 				patients,
 				tenantPromptNote,
-				knowledge
+				knowledge,
+				// Yapıştırılan metnin mesaj tarihi yok; tenant saat diliminde bugün.
+				messageDate: toTenantDayKey(new Date(), await this.tenantTimezoneWithDb(db, tenantId))
 			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
 			return result.records;
@@ -260,7 +264,8 @@ export class WhatsappService {
 				message: display.body,
 				patients,
 				tenantPromptNote,
-				knowledge
+				knowledge,
+				messageDate: await this.messageDayKeyWithDb(db, tenantId, row)
 			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
 			const records = result.records;
@@ -427,19 +432,21 @@ export class WhatsappService {
 				{
 					kind: draft.kind,
 					title: draft.title.trim(),
-					subtitle: null,
+					// Taslaktaki "Alt kategori" işlemin `subtitle` alanıdır; eskiden null
+					// yazılıyordu ve kullanıcının kartta seçtiği alt kategori kayboluyordu.
+					subtitle: draft.subcategory?.trim() || null,
 					category: draft.category ?? null,
 					occurred_on: draft.occurred_on,
 					status: draft.status,
-					invoice_status: 'none',
+					invoice_status: draft.invoice_status,
 					payment_method: draft.payment_method ?? null,
 					amount: draft.amount,
 					paid_amount: draft.paid_amount,
 					currency: draft.currency,
 					contact_id: draft.contact_id ?? null,
 					contact_label: draft.contact_label ?? null,
-					case_contact_id: null,
-					responsible_contact_id: null,
+					case_contact_id: draft.case_contact_id ?? null,
+					responsible_contact_id: draft.responsible_contact_id ?? null,
 					amount_base: draft.amount_base,
 					base_currency: null,
 					fx_rate: draft.fx_rate,
@@ -545,7 +552,8 @@ export class WhatsappService {
 			message: display.body,
 			patients,
 			tenantPromptNote,
-			knowledge
+			knowledge,
+			messageDate: await this.messageDayKeyWithDb(db, row.tenantId, row)
 		});
 		await writeLlmParseLedger(db, row.tenantId, result.usage);
 		const records = result.records;
@@ -555,6 +563,33 @@ export class WhatsappService {
 			parse_error: isError ? PARSE_ERROR_NO_MATCH : null
 		});
 		return isError ? 'error' : 'parsed';
+	}
+
+	/**
+	 * Taslağın işlem tarihi varsayılanı: mesajın yazıldığı gün, tenant saat diliminde.
+	 *
+	 * Mesaj gövdesinde WAHA zaman damgası varsa o, yoksa satırın `created_at`'i.
+	 * Analiz anı kullanılmaz: kuyrukta üç gün bekleyen mesaj, analiz edildiği güne
+	 * değil geldiği güne yazılır.
+	 */
+	private async messageDayKeyWithDb(
+		db: TenantDb,
+		tenantId: string,
+		row: InboundMessageRow
+	): Promise<string> {
+		const payload = asRecord(row.payload) ?? {};
+		const sentAt = extractMessageSentAt(payload) ?? row.createdAt;
+		const timezone = await this.tenantTimezoneWithDb(db, tenantId);
+		return toTenantDayKey(sentAt, timezone);
+	}
+
+	private async tenantTimezoneWithDb(db: TenantDb, tenantId: string): Promise<string> {
+		const [row] = await db
+			.select({ timezone: tenants.timezone })
+			.from(tenants)
+			.where(eq(tenants.id, tenantId))
+			.limit(1);
+		return row?.timezone ?? DEFAULT_TENANT_TIMEZONE;
 	}
 
 	/** AI-01: dolu bölümlerden tek bağlam metni; bilgi bankası boşsa null (prompt'a hiçbir şey eklenmez). */

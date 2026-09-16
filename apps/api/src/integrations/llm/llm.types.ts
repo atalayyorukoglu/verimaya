@@ -23,6 +23,12 @@ export type LlmParseContext = {
 	 * boşsa null gelir ve prompt'a hiçbir şey eklenmez.
 	 */
 	knowledge?: string | null;
+	/**
+	 * Mesajın geldiği gün (YYYY-MM-DD, tenant saat dilimi). Mesajda tarih yazmıyorsa
+	 * taslağın `occurred_on` varsayılanı budur — analizin yapıldığı gün değil.
+	 * Yapıştırılan serbest metinde bilinmiyor; o zaman bugüne düşülür.
+	 */
+	messageDate?: string | null;
 };
 
 /** Path taken for a single parse call — written to `jobs` ledger (Adım 25). */

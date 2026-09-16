@@ -15,7 +15,13 @@
 		TransactionDraft,
 		TransactionEvidenceEntry
 	} from '@verimaya/shared';
-	import { apiPaths, approveDraftItemSchema, inboundMessageStatusLabels } from '@verimaya/shared';
+	import {
+		apiPaths,
+		approveDraftItemSchema,
+		DEFAULT_TENANT_TIMEZONE,
+		inboundMessageStatusLabels,
+		toTenantDayKey
+	} from '@verimaya/shared';
 	import { resolve } from '$app/paths';
 	import { apiGet, apiSend, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
@@ -89,6 +95,7 @@
 	const categories = $derived(categoriesQuery.data?.items ?? []);
 	const contactTypes = $derived(contactTypesQuery.data?.items ?? []);
 	const baseCurrency = $derived(tenantQuery.data?.base_currency ?? 'TRY');
+	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? DEFAULT_TENANT_TIMEZONE);
 	/** Onay bekleyen kayıt önerisi sayısı — köprü bağlantısı için. */
 	const suggestionsQuery = createQuery(() => ({
 		queryKey: qs.keys.recordUpdateSuggestions.list({ status: 'pending', for: 'badge' }),
@@ -172,25 +179,40 @@
 		return none ? [...list.filter((g) => g !== none), none] : list;
 	});
 
-	function initDrafts(records: TransactionDraft[]): DraftState[] {
+	/**
+	 * Taslağın işlem tarihi boş gelirse mesajın günü yazılır — analizin yapıldığı
+	 * gün değil. Sunucu da aynı varsayılanı üretir; bu, eski (tarihi boş yazılmış)
+	 * taslaklar için ikinci ağdır.
+	 */
+	function initDrafts(records: TransactionDraft[], messageDate: string): DraftState[] {
 		return records.map((r) => {
 			const same = r.currency === baseCurrency;
 			return {
 				...r,
+				occurred_on: r.occurred_on?.trim() ? r.occurred_on : messageDate,
 				status: null,
 				paid_amount: null,
 				fx_rate: same ? 1 : null,
 				amount_base: same ? r.amount : (r.counterparty_amount ?? null),
 				contact_id: null,
+				case_contact_id: null,
+				responsible_contact_id: null,
+				invoice_status: 'none' as const,
 				_status: 'idle' as const,
 				_error: null
 			};
 		});
 	}
 
-	function setDrafts(records: TransactionDraft[]) {
+	/** Mesajın günü (tenant saat dilimi); serbest metin yapıştırıldıysa bugün. */
+	function messageDayKey(item?: InboundMessage | null): string {
+		const at = item?.created_at ? new Date(item.created_at) : new Date();
+		return toTenantDayKey(Number.isNaN(at.getTime()) ? new Date() : at, tenantTimezone);
+	}
+
+	function setDrafts(records: TransactionDraft[], item?: InboundMessage | null) {
 		originalDrafts = records;
-		drafts = initDrafts(records);
+		drafts = initDrafts(records, messageDayKey(item));
 	}
 
 	function draftReady(d: DraftState): boolean {
@@ -211,7 +233,10 @@
 			status: d.status,
 			paid_amount: d.paid_amount,
 			fx_rate: d.fx_rate,
-			amount_base: d.amount_base
+			amount_base: d.amount_base,
+			case_contact_id: d.case_contact_id,
+			responsible_contact_id: d.responsible_contact_id,
+			invoice_status: d.invoice_status
 		};
 		return approveDraftItemSchema.safeParse(item).success;
 	}
@@ -245,7 +270,7 @@
 		activeInboxId = inboxId;
 		message = item.body ?? '';
 		if (item.parsed_records && item.parsed_records.length > 0) {
-			setDrafts(item.parsed_records);
+			setDrafts(item.parsed_records, item);
 		} else {
 			originalDrafts = [];
 			drafts = [];
@@ -290,7 +315,7 @@
 				apiPaths.whatsappInboxParse(item.id),
 				'POST'
 			);
-			setDrafts(res.records);
+			setDrafts(res.records, item);
 			if (res.records.length === 0) {
 				parseError = item.has_media ? t('finance.ai.parse.media') : t('finance.ai.parse.none');
 			}
@@ -444,7 +469,10 @@
 			status: d.status,
 			paid_amount: d.paid_amount,
 			fx_rate: d.fx_rate,
-			amount_base: d.amount_base
+			amount_base: d.amount_base,
+			case_contact_id: d.case_contact_id,
+			responsible_contact_id: d.responsible_contact_id,
+			invoice_status: d.invoice_status
 		});
 		return parsed;
 	}

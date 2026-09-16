@@ -45,3 +45,33 @@ describe('heuristicParseWhatsappMessage — tutar bekçisi', () => {
 		expect(heuristicParseWhatsappMessage('grand park lara resort 2 kisi 1 oda')).toEqual([]);
 	});
 });
+
+describe('heuristicParseWhatsappMessage — tarih ve açıklama', () => {
+	it('işlem tarihi mesajın günüdür, analiz günü değil', () => {
+		const [r] = heuristicParseWhatsappMessage(
+			'18.200 tl personel yemekleri odendi.',
+			[],
+			'2026-09-12'
+		);
+		expect(r.occurred_on).toBe('2026-09-12');
+		const [p] = heuristicParseWhatsappMessage(
+			"Sudenaz Karatas'a 2600 prim verildi.",
+			[],
+			'2026-09-12'
+		);
+		expect(p.occurred_on).toBe('2026-09-12');
+	});
+
+	it('mesaj günü verilmezse bugüne düşülür', () => {
+		const [r] = heuristicParseWhatsappMessage('18.200 tl personel yemekleri odendi.');
+		expect(r.occurred_on).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+	});
+
+	it('not alanı mesaj metnidir ve 8000 karakterle sınırlıdır', () => {
+		const [r] = heuristicParseWhatsappMessage('18.200 tl personel yemekleri odendi.');
+		expect(r.description).toBe('18.200 tl personel yemekleri odendi.');
+		const uzun = `1400 Gbp odendi. ${'a'.repeat(9000)}`;
+		const [u] = heuristicParseWhatsappMessage(uzun);
+		expect(u.description?.length).toBe(8000);
+	});
+});

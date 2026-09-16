@@ -4,7 +4,7 @@ import type {
 	TransactionDraft,
 	TransactionEvidence
 } from '@verimaya/shared';
-import { toTenantDayKey } from '@verimaya/shared';
+import { DEFAULT_TENANT_TIMEZONE, toTenantDayKey } from '@verimaya/shared';
 import { evidenceEntry } from './evidence';
 import { paraBaglamiVar, parseTutar, tutarDegil } from './tutar';
 
@@ -33,7 +33,17 @@ function normalizeCurrency(token: string): SupportedCurrency {
 }
 
 function today(): string {
-	return toTenantDayKey(new Date(), 'Europe/Istanbul');
+	return toTenantDayKey(new Date(), DEFAULT_TENANT_TIMEZONE);
+}
+
+/**
+ * Not/açıklama: model yoksa mesajın kendisi açıklamadır. Şema 8000 karakterle
+ * sınırlı — uzun mesajda taslak tamamen düşmesin diye burada kırpılır.
+ */
+function aciklama(text: string): string | null {
+	const trimmed = text.trim();
+	if (!trimmed) return null;
+	return trimmed.length > 8000 ? trimmed.slice(0, 8000) : trimmed;
 }
 
 /**
@@ -120,10 +130,17 @@ function extractContactLabel(text: string): string | null {
  */
 export function heuristicParseWhatsappMessage(
 	message: string,
-	contacts: Contact[] = []
+	contacts: Contact[] = [],
+	/**
+	 * İşlem tarihi varsayılanı: mesajın geldiği gün (tenant saat dilimine göre).
+	 * Eskiden her zaman "bugün" yazılıyordu; kuyrukta bekleyen üç günlük mesaj
+	 * analiz edildiği güne kaydediliyordu.
+	 */
+	messageDate?: string | null
 ): TransactionDraft[] {
 	const text = message.trim();
 	if (!text) return [];
+	const varsayilanTarih = messageDate?.trim() ? messageDate.trim() : today();
 
 	const matches = [...text.matchAll(CURRENCY_PATTERN)].filter(
 		(m) => !tutarDegil(m[1], text, m.index ?? null)
@@ -162,9 +179,9 @@ export function heuristicParseWhatsappMessage(
 				contact_id: contact?.id ?? null,
 				contact_display_name: contact?.display_name ?? null,
 				contact_label: null,
-				occurred_on: today(),
+				occurred_on: varsayilanTarih,
 				payment_method: null,
-				description: text,
+				description: aciklama(text),
 				evidence
 			}
 		];
@@ -204,9 +221,9 @@ export function heuristicParseWhatsappMessage(
 			contact_id: contact?.id ?? null,
 			contact_display_name: contact?.display_name ?? null,
 			contact_label: extractContactLabel(text),
-			occurred_on: today(),
+			occurred_on: varsayilanTarih,
 			payment_method: payment.value,
-			description: text,
+			description: aciklama(text),
 			evidence
 		});
 	}

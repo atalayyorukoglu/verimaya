@@ -98,9 +98,10 @@ export function buildWhatsappExtractionSystemPrompt(
 		'- amount: positive integer in MINOR units (kuruş/cents). "2.900 GBP" → 290000. "1500 euro" → 150000.',
 		'- currency: one of TRY|GBP|EUR|USD. Turkish words map as: lira/TL→TRY, euro/avro→EUR, dolar→USD, sterlin/pound→GBP.',
 		'- title: a SHORT human label for the row, max 80 chars, in the message language. Example: "Ada Klinik ödemesi".',
-		`- occurred_on: date in YYYY-MM-DD. If the message states no date, use TODAY = ${today}. NEVER null.`,
+		`- occurred_on: date in YYYY-MM-DD. Read the date FROM THE MESSAGE when it states one ("dün", "14 Eylül", "15.09" → that day). If the message states no date, use the MESSAGE DATE = ${today} (the day the message was written). NEVER null, NEVER a different day.`,
+		'- description: a note for the row. Copy the sentence(s) of the message this record came from, verbatim, max 8000 chars. If you cannot pick a sentence, copy the whole message. NEVER null.',
 		'',
-		'OPTIONAL fields: category, subcategory, payment_method, description, contact_id, contact_display_name, contact_label.',
+		'OPTIONAL fields: category, subcategory, payment_method, contact_id, contact_display_name, contact_label.',
 		'- contact_id: the patient_ref UUID whose token appears in the message, or null.',
 		'  The message uses tokens like KISI_1, KISI_2 in place of real names, and "patients"',
 		'  pairs each token with its patient_ref. If the message contains KISI_2 and that person',
@@ -272,6 +273,21 @@ function stripPlaceholders(records: TransactionDraft[]): TransactionDraft[] {
 		contact_display_name: clean(record.contact_display_name),
 		title: clean(record.title) ?? record.title,
 		description: record.description ?? null
+	}));
+}
+
+/**
+ * Model bir alanı hiç yazmadıysa taslak onsuz kalmasın.
+ *
+ * `description` sözleşmede opsiyonel; model çoğu mesajda atlıyordu ve Finans
+ * formundaki "Açıklama" boş geliyordu. Not yoksa mesajın kendisi nottur —
+ * şema sınırı 8000 karakter, uzun mesaj kırpılır.
+ */
+function withDraftFallbacks(records: TransactionDraft[], message: string): TransactionDraft[] {
+	const fallback = message.trim().slice(0, 8000);
+	return records.map((record) => ({
+		...record,
+		description: record.description?.trim() ? record.description : fallback || null
 	}));
 }
 
@@ -466,7 +482,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 				};
 			}
 			// Empty LLM result — still ledger the call, then heuristic for UX.
-			const records = heuristicParseWhatsappMessage(ctx.message, ctx.patients);
+			const records = heuristicParseWhatsappMessage(ctx.message, ctx.patients, ctx.messageDate);
 			return {
 				records,
 				usage: {
@@ -478,7 +494,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			this.logger.warn(`LLM parse failed, falling back to heuristic: ${message}`);
-			const records = heuristicParseWhatsappMessage(ctx.message, ctx.patients);
+			const records = heuristicParseWhatsappMessage(ctx.message, ctx.patients, ctx.messageDate);
 			return {
 				records,
 				usage: {
@@ -775,7 +791,13 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 	private async callModel(ctx: LlmParseContext): Promise<CallModelOk> {
 		const maskedUser = buildMaskedLlmUserPayload(ctx);
 
-		const system = buildWhatsappExtractionSystemPrompt(ctx.tenantPromptNote, ctx.knowledge);
+		// Tarih varsayılanı mesajın günü — analizin yapıldığı gün değil. Kuyrukta üç
+		// gün bekleyen mesaj, analiz gününe değil geldiği güne yazılır.
+		const system = buildWhatsappExtractionSystemPrompt(
+			ctx.tenantPromptNote,
+			ctx.knowledge,
+			ctx.messageDate?.trim() ? ctx.messageDate.trim() : undefined
+		);
 
 		const user = JSON.stringify(maskedUser);
 
@@ -824,9 +846,12 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		// `start` ham metne göre yeniden hesaplanır (vurgulama orada yapılıyor).
 		// Tutar bekçisi: model alıntıyı doğru kopyalıyor ama sayıya çevirirken
 		// yanılabiliyor ("18.200" → 182); alıntı tarih/kimlikse taslak düşer (tutar.ts).
-		const records = tutarlariDuzelt(
-			stripPlaceholders(
-				verifyDraftEvidence(parseDraftsPayload(parsedJson), maskedUser.message, ctx.message)
+		const records = withDraftFallbacks(
+			tutarlariDuzelt(
+				stripPlaceholders(
+					verifyDraftEvidence(parseDraftsPayload(parsedJson), maskedUser.message, ctx.message)
+				),
+				ctx.message
 			),
 			ctx.message
 		);
