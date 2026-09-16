@@ -34,7 +34,6 @@
 	// Yazarken arar: Enter ve "Ara" düğmesi kalktı (kullanıcı, 2026-09-08).
 	const q = debounced(() => qInput);
 	const appliedQ = $derived(q.value.trim());
-	let defaultTypeApplied = $state(false);
 	let formOpen = $state(false);
 	let editing = $state<Contact | null>(null);
 	let saving = $state(false);
@@ -47,13 +46,6 @@
 	}));
 
 	const contactTypes = $derived(typesQuery.data?.items ?? []);
-
-	$effect(() => {
-		if (defaultTypeApplied || contactTypes.length === 0) return;
-		const hasta = contactTypes.find((ct) => ct.name === 'Hasta');
-		if (hasta) typeId = hasta.id;
-		defaultTypeApplied = true;
-	});
 
 	const contactsQuery = createInfiniteQuery(() => ({
 		queryKey: qs.keys.contacts.list({
