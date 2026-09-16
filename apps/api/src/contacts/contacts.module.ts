@@ -7,10 +7,12 @@ import { WebhookSubscriptionsModule } from '../webhook-subscriptions/webhook-sub
 import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
 import { ContactDataSubjectService } from './contact-data-subject.service';
+import { ContactMediaService } from './contact-media.service';
 import { ContactSummaryService } from './contact-summary.service';
 import { ContactVisitSuggestionsController } from './contact-visit-suggestions.controller';
 import { ContactVisitSuggestionsService } from './contact-visit-suggestions.service';
 import { ContactVisitsService } from './contact-visits.service';
+import { PatientChecklistService } from './patient-checklist.service';
 
 @Module({
 	imports: [AuthModule, CommonModule, GoogleDriveModule, LlmModule, WebhookSubscriptionsModule],
@@ -18,10 +20,18 @@ import { ContactVisitsService } from './contact-visits.service';
 	providers: [
 		ContactsService,
 		ContactDataSubjectService,
+		ContactMediaService,
 		ContactSummaryService,
 		ContactVisitsService,
-		ContactVisitSuggestionsService
+		ContactVisitSuggestionsService,
+		PatientChecklistService
 	],
-	exports: [ContactsService, ContactVisitsService, ContactVisitSuggestionsService]
+	exports: [
+		ContactsService,
+		ContactMediaService,
+		ContactVisitsService,
+		ContactVisitSuggestionsService,
+		PatientChecklistService
+	]
 })
 export class ContactsModule {}

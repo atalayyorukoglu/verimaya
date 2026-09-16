@@ -8,6 +8,7 @@ import { closeDb, getDb } from '../db/client';
 import { LocalFileStorage } from '../storage/local-file.storage';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { InboundMediaService } from './inbound-media.service';
+import { MediaClassifyService } from './media-classify.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 import { driveMirrorEnqueueStub } from '../test/drive-mirror-stub';
 
@@ -65,7 +66,12 @@ describe('inbound_message_media', () => {
 				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
 			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
 		} as TenantContextService;
-		service = new InboundMediaService(tenantContext, driveMirrorEnqueueStub(), new LocalFileStorage());
+		service = new InboundMediaService(
+			tenantContext,
+			driveMirrorEnqueueStub(),
+			new MediaClassifyService(tenantContext),
+			new LocalFileStorage()
+		);
 	});
 
 	afterAll(async () => {

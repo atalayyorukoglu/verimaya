@@ -27,6 +27,7 @@
 	import ContactTimeline from '$lib/components/ContactTimeline.svelte';
 	import ContactSummaryCard from '$lib/components/ContactSummaryCard.svelte';
 	import ContactVisitsPanel from '$lib/components/ContactVisitsPanel.svelte';
+	import ContactDocsPanel from '$lib/components/ContactDocsPanel.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import TransactionList from '$lib/components/TransactionList.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
@@ -63,7 +64,7 @@
 	 * Kişi kartı sekmeleri; hasta açılınca akış karşılar.
 	 * VIZIT-01 — "Vizitler" yalnız hasta türündeki kişilerde var (otelin viziti olmaz).
 	 */
-	type ContactTab = 'flow' | 'visits' | 'finance' | 'info';
+	type ContactTab = 'flow' | 'visits' | 'docs' | 'finance' | 'info';
 	let activeTab = $state<ContactTab>('flow');
 
 	let autoLinking = $state(false);
@@ -428,18 +429,23 @@
 					</div>
 				</div>
 
+				<!--
+					EVRAK-01: beşinci sekme (Dosyalar) gelince 400px'te sıkışıyordu.
+					`flex-wrap` + taban genişlik: dar ekranda ikinci satıra düşerler,
+					sığdırmak için okunmaz genişliğe inmezler. Yatay taşma yok.
+				-->
 				<div
-					class="flex gap-0.5 rounded-md border border-border bg-surface-2"
+					class="flex flex-wrap gap-0.5 rounded-md border border-border bg-surface-2"
 					role="tablist"
 					aria-label={t('contacts.detail.tabsAria')}
 				>
-					{#each [{ id: 'flow', label: t('contacts.detail.tabFlow') }, ...(isPatient ? [{ id: 'visits', label: t('contacts.detail.tabVisits') }] : []), { id: 'finance', label: t('contacts.detail.tabFinance') }, { id: 'info', label: t('contacts.detail.tabInfo') }] as tab (tab.id)}
+					{#each [{ id: 'flow', label: t('contacts.detail.tabFlow') }, ...(isPatient ? [{ id: 'visits', label: t('contacts.detail.tabVisits') }] : []), { id: 'docs', label: t('contacts.detail.tabDocs') }, { id: 'finance', label: t('contacts.detail.tabFinance') }, { id: 'info', label: t('contacts.detail.tabInfo') }] as tab (tab.id)}
 						<button
 							type="button"
 							role="tab"
 							data-compact
 							aria-selected={activeTab === tab.id}
-							class="flex-1 rounded-md border px-2 py-1.5 text-xs leading-4 font-semibold transition-colors {activeTab ===
+							class="min-w-[4.5rem] flex-1 rounded-md border px-2 py-1.5 text-xs leading-4 font-semibold transition-colors {activeTab ===
 							tab.id
 								? 'border-border bg-surface text-text shadow-xs'
 								: 'border-transparent text-text-faint hover:text-text'}"
@@ -475,6 +481,15 @@
 		{:else if activeTab === 'visits'}
 			<div class="tl-measure mt-6 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">
 				<ContactVisitsPanel contactId={contact.id} />
+			</div>
+		{:else if activeTab === 'docs'}
+			<!--
+				EVRAK-01 — WhatsApp evrakları. Vizit sekmesinden ayrı: vizit "ne oldu",
+				Dosyalar "elimizde ne var". Hasta olmayan kişide de var, çünkü otelin
+				faturası ya da kliniğin sözleşmesi de WhatsApp'tan geliyor.
+			-->
+			<div class="tl-measure mt-6 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">
+				<ContactDocsPanel contactId={contact.id} />
 			</div>
 		{:else if activeTab === 'finance'}
 			<div class="tl-measure pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">

@@ -19,6 +19,8 @@ import {
 	DRIVE_MIRROR_SYNC_JOB_TYPE
 } from '../../queue/drive-mirror.constants';
 import { driveFileNameFor, folderNameFor } from './drive-names';
+import { mediaDocTypeSlugs, mediaVisitHintSlugs } from '@verimaya/shared';
+import type { MediaDocType, MediaVisitHint } from '@verimaya/shared';
 import {
 	DRIVE_CLIENT,
 	DRIVE_CREDENTIAL_PROVIDER,
@@ -48,6 +50,9 @@ type MirrorPair = {
 	mimeType: string;
 	sizeBytes: number;
 	storageKey: string;
+	/** EVRAK-01 — dosya adına yazılacak tür/vizit etiketi (yoksa null). */
+	docType: MediaDocType | null;
+	visitHint: MediaVisitHint | null;
 };
 
 /** Toplu gönderimde tek turda işlenecek en fazla çift — iş sonsuza koşmasın. */
@@ -383,7 +388,11 @@ export class DriveMirrorService {
 					timezone,
 					body: display.body,
 					mimeType: pair.mimeType,
-					filename: pair.filename
+					filename: pair.filename,
+					// `other` etiket sayılmaz: adı serbest başlıktan kurmak daha bilgilidir.
+					docTypeSlug:
+						pair.docType && pair.docType !== 'other' ? mediaDocTypeSlugs[pair.docType] : null,
+					visitSlug: pair.visitHint ? mediaVisitHintSlugs[pair.visitHint] : null
 				});
 				const uploaded = await this.drive.uploadFile({
 					refreshToken: secret.refreshToken,
@@ -450,7 +459,9 @@ export class DriveMirrorService {
 					filename: inboundMessageMedia.filename,
 					mimeType: inboundMessageMedia.mimeType,
 					sizeBytes: inboundMessageMedia.sizeBytes,
-					storageKey: inboundMessageMedia.storageKey
+					storageKey: inboundMessageMedia.storageKey,
+					docType: inboundMessageMedia.docType,
+					visitHint: inboundMessageMedia.visitHint
 				})
 				.from(inboundMessageMedia)
 				.innerJoin(inboundMessages, eq(inboundMessages.id, inboundMessageMedia.inboundMessageId))

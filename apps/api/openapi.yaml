@@ -2967,6 +2967,11 @@ paths:
                         note:
                           type: string
                           maxLength: 300
+                        visit_label:
+                          type: string
+                          maxLength: 200
+                          nullable: true
+                          default: null
                       required:
                         - item_id
                         - label
@@ -3076,6 +3081,11 @@ paths:
                         note:
                           type: string
                           maxLength: 300
+                        visit_label:
+                          type: string
+                          maxLength: 200
+                          nullable: true
+                          default: null
                       required:
                         - item_id
                         - label
@@ -3940,6 +3950,222 @@ paths:
           schema:
             type: string
         - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/media:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        inbound_message_id:
+                          type: string
+                          format: uuid
+                        filename:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        mime_type:
+                          type: string
+                          maxLength: 120
+                        size_bytes:
+                          type: integer
+                          minimum: 0
+                        doc_type:
+                          type: string
+                          enum:
+                            - passport
+                            - stamp
+                            - registration_form
+                            - consent_form
+                            - xray_before
+                            - xray_after_surgery
+                            - xray_after
+                            - invoice
+                            - satisfaction_form
+                            - certificate
+                            - after_care_guidelines
+                            - temporary_crown_guidelines
+                            - post_operative_instructions
+                            - doctor_approval
+                            - lab_results
+                            - tooth_shade_note
+                            - other
+                          nullable: true
+                        doc_subtype:
+                          type: string
+                          enum:
+                            - visit
+                            - treatment
+                            - general_anesthesia
+                            - local_anesthesia
+                            - extraction
+                            - implant_surgery
+                            - final_prosthesis
+                            - media_release
+                            - clinic_policy
+                            - tnc_form
+                          nullable: true
+                        visit_hint:
+                          type: string
+                          enum:
+                            - consultation
+                            - visit_1
+                            - visit_2
+                            - visit_3
+                            - rpt
+                          nullable: true
+                        contact_visit_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        caption:
+                          type: string
+                          maxLength: 400
+                          nullable: true
+                        thumbnail:
+                          type: string
+                          maxLength: 200000
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - inbound_message_id
+                        - filename
+                        - mime_type
+                        - size_bytes
+                        - doc_type
+                        - doc_subtype
+                        - visit_hint
+                        - contact_visit_id
+                        - caption
+                        - thumbnail
+                        - created_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /contacts/{id}/checklist:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contact_id:
+                    type: string
+                    format: uuid
+                  is_patient:
+                    type: boolean
+                  visits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        visit_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        visit_type:
+                          type: string
+                          enum:
+                            - consultation
+                            - visit_1
+                            - visit_2
+                            - visit_3
+                            - rpt
+                            - other
+                          nullable: true
+                        visit_label:
+                          type: string
+                          maxLength: 200
+                        arrival_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        items:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              item_id:
+                                type: string
+                                maxLength: 64
+                              stage:
+                                type: string
+                                maxLength: 120
+                              label:
+                                type: string
+                                maxLength: 200
+                              warning:
+                                type: string
+                                maxLength: 200
+                              status:
+                                type: string
+                                enum:
+                                  - done
+                                  - missing
+                                  - na
+                              evidence_count:
+                                type: integer
+                                minimum: 0
+                              doc_types:
+                                type: array
+                                items:
+                                  type: string
+                                  maxLength: 64
+                            required:
+                              - item_id
+                              - stage
+                              - label
+                              - warning
+                              - status
+                              - evidence_count
+                              - doc_types
+                            additionalProperties: false
+                      required:
+                        - visit_id
+                        - visit_type
+                        - visit_label
+                        - arrival_at
+                        - items
+                      additionalProperties: false
+                  generated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - contact_id
+                  - is_patient
+                  - visits
+                  - generated_at
+                additionalProperties: false
+      parameters:
+        - name: id
           in: path
           required: true
           schema:
@@ -10838,6 +11064,182 @@ paths:
           required: true
           schema:
             type: string
+  /whatsapp/media/{id}:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  inbound_message_id:
+                    type: string
+                    format: uuid
+                  filename:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  mime_type:
+                    type: string
+                    maxLength: 120
+                  size_bytes:
+                    type: integer
+                    minimum: 0
+                  doc_type:
+                    type: string
+                    enum:
+                      - passport
+                      - stamp
+                      - registration_form
+                      - consent_form
+                      - xray_before
+                      - xray_after_surgery
+                      - xray_after
+                      - invoice
+                      - satisfaction_form
+                      - certificate
+                      - after_care_guidelines
+                      - temporary_crown_guidelines
+                      - post_operative_instructions
+                      - doctor_approval
+                      - lab_results
+                      - tooth_shade_note
+                      - other
+                    nullable: true
+                  doc_subtype:
+                    type: string
+                    enum:
+                      - visit
+                      - treatment
+                      - general_anesthesia
+                      - local_anesthesia
+                      - extraction
+                      - implant_surgery
+                      - final_prosthesis
+                      - media_release
+                      - clinic_policy
+                      - tnc_form
+                    nullable: true
+                  visit_hint:
+                    type: string
+                    enum:
+                      - consultation
+                      - visit_1
+                      - visit_2
+                      - visit_3
+                      - rpt
+                    nullable: true
+                  contact_visit_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  caption:
+                    type: string
+                    maxLength: 400
+                    nullable: true
+                  thumbnail:
+                    type: string
+                    maxLength: 200000
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - inbound_message_id
+                  - filename
+                  - mime_type
+                  - size_bytes
+                  - doc_type
+                  - doc_subtype
+                  - visit_hint
+                  - contact_visit_id
+                  - caption
+                  - thumbnail
+                  - created_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                doc_type:
+                  type: string
+                  enum:
+                    - passport
+                    - stamp
+                    - registration_form
+                    - consent_form
+                    - xray_before
+                    - xray_after_surgery
+                    - xray_after
+                    - invoice
+                    - satisfaction_form
+                    - certificate
+                    - after_care_guidelines
+                    - temporary_crown_guidelines
+                    - post_operative_instructions
+                    - doctor_approval
+                    - lab_results
+                    - tooth_shade_note
+                    - other
+                  nullable: true
+                doc_subtype:
+                  type: string
+                  enum:
+                    - visit
+                    - treatment
+                    - general_anesthesia
+                    - local_anesthesia
+                    - extraction
+                    - implant_surgery
+                    - final_prosthesis
+                    - media_release
+                    - clinic_policy
+                    - tnc_form
+                  nullable: true
+                contact_visit_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+              additionalProperties: false
+  /whatsapp/media/reclassify:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scanned:
+                    type: integer
+                    minimum: 0
+                  updated:
+                    type: integer
+                    minimum: 0
+                  linked_to_visit:
+                    type: integer
+                    minimum: 0
+                required:
+                  - scanned
+                  - updated
+                  - linked_to_visit
+                additionalProperties: false
   /whatsapp/corrections:
     post:
       responses:
@@ -13459,6 +13861,56 @@ paths:
                           type: string
                           minLength: 1
                           maxLength: 200
+                        auto:
+                          anyOf:
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                    - doc
+                                doc_types:
+                                  type: array
+                                  items:
+                                    type: string
+                                    minLength: 1
+                                    maxLength: 64
+                                  minItems: 1
+                                  maxItems: 12
+                              required:
+                                - kind
+                                - doc_types
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                    - visit_field
+                                field:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 64
+                                  pattern: ^[a-z_]+$
+                              required:
+                                - kind
+                                - field
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                    - transaction
+                                direction:
+                                  type: string
+                                  enum:
+                                    - income
+                                    - expense
+                              required:
+                                - kind
+                                - direction
+                              additionalProperties: false
                       required:
                         - id
                         - stage
@@ -13524,6 +13976,56 @@ paths:
                           type: string
                           minLength: 1
                           maxLength: 200
+                        auto:
+                          anyOf:
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                    - doc
+                                doc_types:
+                                  type: array
+                                  items:
+                                    type: string
+                                    minLength: 1
+                                    maxLength: 64
+                                  minItems: 1
+                                  maxItems: 12
+                              required:
+                                - kind
+                                - doc_types
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                    - visit_field
+                                field:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 64
+                                  pattern: ^[a-z_]+$
+                              required:
+                                - kind
+                                - field
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                    - transaction
+                                direction:
+                                  type: string
+                                  enum:
+                                    - income
+                                    - expense
+                              required:
+                                - kind
+                                - direction
+                              additionalProperties: false
                       required:
                         - id
                         - stage
@@ -13587,6 +14089,56 @@ paths:
                         type: string
                         minLength: 1
                         maxLength: 200
+                      auto:
+                        anyOf:
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - doc
+                              doc_types:
+                                type: array
+                                items:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 64
+                                minItems: 1
+                                maxItems: 12
+                            required:
+                              - kind
+                              - doc_types
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - visit_field
+                              field:
+                                type: string
+                                minLength: 1
+                                maxLength: 64
+                                pattern: ^[a-z_]+$
+                            required:
+                              - kind
+                              - field
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              kind:
+                                type: string
+                                enum:
+                                  - transaction
+                              direction:
+                                type: string
+                                enum:
+                                  - income
+                                  - expense
+                            required:
+                              - kind
+                              - direction
+                            additionalProperties: false
                     required:
                       - id
                       - stage

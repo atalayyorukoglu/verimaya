@@ -44,7 +44,13 @@ export const contactSummaryMissingSchema = z.object({
 	item_id: z.string().max(64),
 	label: z.string().max(200),
 	warning: z.string().max(200),
-	note: z.string().max(300)
+	note: z.string().max(300),
+	/**
+	 * EVRAK-01 — eksiğin hangi vizitte olduğu ("2. vizit · 13 Eyl 2026 → 19 Eyl 2026").
+	 * Hesaplanan eksiklerde dolu, modelin kendi bildirdiklerinde null (model vizit
+	 * ayırt edemez). Kart bu alana göre gruplar.
+	 */
+	visit_label: z.string().max(200).nullable().default(null)
 });
 export type ContactSummaryMissing = z.infer<typeof contactSummaryMissingSchema>;
 

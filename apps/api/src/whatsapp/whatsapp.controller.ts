@@ -1,8 +1,20 @@
-import { Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	Param,
+	Patch,
+	Post,
+	Query,
+	Req,
+	Res,
+	UseGuards
+} from '@nestjs/common';
 import {
 	aiCorrectionCreateSchema,
 	aiCorrectionsReportParamsSchema,
 	approveDraftsRequestSchema,
+	contactMediaUpdateSchema,
 	cursorPageParams,
 	whatsappCreateCategorySchema,
 	whatsappCreateContactSchema,
@@ -21,11 +33,13 @@ import { IdempotencyService } from '../common/idempotency.service';
 import { parseBody, parseQuery } from '../common/mappers';
 import { OrgPermissionGuard } from '../common/org-permission.guard';
 import { RequireOrgPermission } from '../common/require-org-permission.decorator';
+import { ContactMediaService } from '../contacts/contact-media.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { SettingsService } from '../settings/settings.service';
 import { AiCorrectionsService } from './ai-corrections.service';
 import { WhatsappService } from './whatsapp.service';
 import { InboundMediaService } from './inbound-media.service';
+import { MediaClassifyService } from './media-classify.service';
 
 @Controller('whatsapp')
 @UseGuards(AuthOrApiKeyGuard, ActiveOrgGuard, OrgPermissionGuard)
@@ -36,7 +50,9 @@ export class WhatsappController {
 		private readonly contactsService: ContactsService,
 		private readonly settingsService: SettingsService,
 		private readonly idempotency: IdempotencyService,
-		private readonly inboundMedia: InboundMediaService
+		private readonly inboundMedia: InboundMediaService,
+		private readonly mediaClassify: MediaClassifyService,
+		private readonly contactMedia: ContactMediaService
 	) {}
 
 	@Post('parse')
@@ -251,6 +267,62 @@ export class WhatsappController {
 			async (db) => ({
 				statusCode: 201,
 				body: await this.settingsService.createFinanceCategoryWithDb(db, tenantId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	/**
+	 * EVRAK-01 — geçmiş ekleri yeniden etiketle (tek seferlik/ara sıra).
+	 *
+	 * Sınıflandırma ek gelirken yapılıyor; ama ek geldiğinde kişi bağı ve vizit
+	 * kaydı henüz olmayabiliyor (bağ sonradan `link-contacts` ile, vizit sonradan
+	 * öneri onayıyla doğuyor). Bu uç tenant'ın TÜM eklerini baştan etiketler —
+	 * 5.000 eki yeniden okumak bedava, çünkü sınıflandırıcı saf fonksiyon.
+	 */
+	@Post('media/reclassify')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async reclassifyMedia(
+		@Req() req: FastifyRequest,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/whatsapp/media/reclassify',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.mediaClassify.classifyWithDb(db, null)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	/** EVRAK-01 — ekin türünü/vizitini elle düzelt (Kişi › Dosyalar). */
+	@Patch('media/:id')
+	@RequireOrgPermission('contact', 'update')
+	@Idempotent()
+	async updateMedia(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(contactMediaUpdateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'PATCH',
+			'/v1/whatsapp/media/:id',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.contactMedia.updateClassificationWithDb(db, id, input)
 			})
 		);
 		reply.status(result.statusCode);

@@ -2,6 +2,7 @@ import {
 	BadRequestException,
 	Inject,
 	Injectable,
+	Logger,
 	NotFoundException,
 	PayloadTooLargeException,
 	UnsupportedMediaTypeException
@@ -15,6 +16,7 @@ import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mi
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { FILE_STORAGE, MAX_UPLOAD_BYTES, type FileStoragePort } from '../storage/storage.types';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
+import { MediaClassifyService } from './media-classify.service';
 
 /** WhatsApp'ta gelen ve saklamaya değer türler; başkası reddedilir (yürütülebilir vb.). */
 const ALLOWED_MIME =
@@ -30,9 +32,12 @@ const ALLOWED_MIME =
  */
 @Injectable()
 export class InboundMediaService {
+	private readonly logger = new Logger(InboundMediaService.name);
+
 	constructor(
 		private readonly tenantContext: TenantContextService,
 		private readonly driveMirror: DriveMirrorEnqueueService,
+		private readonly classify: MediaClassifyService,
 		@Inject(FILE_STORAGE) private readonly storage: FileStoragePort
 	) {}
 
@@ -105,6 +110,18 @@ export class InboundMediaService {
 					target: [inboundMessageMedia.tenantId, inboundMessageMedia.inboundMessageId],
 					set: values
 				});
+			/*
+			 * EVRAK-01: başlıktan belge türü + vizit. Sınıflandırma ana işi DÜŞÜRMEZ:
+			 * ek saklandı, künye yazıldı; etiket çıkmazsa `other` kalır ve yeniden
+			 * sınıflandırma ucu sonra düzeltir. Bu yüzden try/catch içinde.
+			 */
+			try {
+				await this.classify.classifyWithDb(db, [mediaId]);
+			} catch (err) {
+				this.logger.warn(
+					`ek sınıflandırılamadı (${mediaId}): ${err instanceof Error ? err.message : String(err)}`
+				);
+			}
 			// DRIVE-01: ek geldi — mesaj bir kişiye bağlıysa Drive aynasına gitsin.
 			// Bağ henüz kurulmamışsa iş boşa koşar, bağ kurulunca ikinci kez atılır.
 			await this.driveMirror.enqueueSync(db, tenantId, msg.id);

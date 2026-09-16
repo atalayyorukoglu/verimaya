@@ -745,10 +745,9 @@ Türkçe binlik/ondalık, tarih/saat/kimlik dışlama, para kelimesi yoksa çıp
   **Hasta akışı**: anlatı için textarea, kontrol listesi için düzenlenebilir tablo
   (satır ekle/sil, mobilde yatay kayan kutu), "Varsayılana dön", Kaydet.
 
-**Kalan (sıradaki adımlar, belge Bölüm 6.3–6.4):** evrak sınıflandırma (Evrak grubu
-başlığından tür + vizit çıkarımı, kontrol listesinin kendini işaretlemesi) · hasta başı para
-mutabakatı (Operasyon + Muhasebe çift kaydının tek işleme indirgenmesi, vizit bazlı kalan ve
-kâr). Vizit kaydının kendisi VIZIT-01'de yapıldı.
+**Kalan (belge Bölüm 6.4):** hasta başı para mutabakatı (Operasyon + Muhasebe çift kaydının
+tek işleme indirgenmesi, vizit bazlı kalan ve kâr). Vizit kaydı VIZIT-01'de, evrak
+sınıflandırma ve kontrol listesinin kendini işaretlemesi EVRAK-01'de yapıldı.
 
 ---
 
@@ -790,9 +789,77 @@ değer çifti üzerine kurulu. Vizit önerisi bir **kişiye** ait ve tek seferde
 taşıyor; oraya sığdırmak appointment_id'yi nullable yapmayı, kısmi tekillik kısıtını bozmayı
 ve mevcut onay yolunu dallandırmayı gerektirirdi.
 
-**Kalan:** evrak/tahsilat/gider henüz vizite bağlanmıyor (`files`, `transactions` tarafında
-`visit_id` yok) — belge Bölüm 6.3 ve 6.4 ile birlikte yapılacak. Vizit türü ipucu yoksa
-öneri `Diğer` ile gelir; tahmin edilmiyor.
+**Kalan:** WhatsApp ekleri EVRAK-01'de vizite bağlandı (`inbound_message_media.contact_visit_id`);
+elle yüklenen belgeler (`files`) ve tahsilat/gider (`transactions`) hâlâ bağlanmıyor — belge
+Bölüm 6.4 ile birlikte yapılacak. Vizit türü ipucu yoksa öneri `Diğer` ile gelir; tahmin
+edilmiyor.
+
+---
+
+## EVRAK-01 — Evrak sınıflandırma + kontrol listesinin kendini işaretlemesi (2026-09-16, kullanıcı)
+
+> **Karar (kullanıcı):** Evrak grubundaki başlıklar zaten standart
+> (`Ad Soyad + belge türü + visit N/rpt`); tür ve vizit oradan **sözlükle** çıkarılsın,
+> kontrol listesi kendini işaretlesin. Kaynak: `docs/2026-09-16-HASTA-AKISI.md` Bölüm 3.5,
+> Bölüm 4 ve 6.3.
+
+- [x] **Sınıflandırıcı (saf fonksiyon, LLM YOK).** `apps/api/src/whatsapp/evrak-sinifla.ts`:
+  16 belge türü + onam formunun 10 alt türü + vizit ipucu (`visit 1/2/3`, `2nd visit`,
+  `1.visit`, `rpt`, `konsültasyon`). Sıralı kural listesi — sıra veridir: "post operative
+  instructions all on X final prosthesis" yönerge, "all on X final prosthesis consent form"
+  onamdır. Türkçe-İngilizce karışık, yazım toleranslı (`xray` / `x-ray` / `X-Rat`,
+  `ameliyat sonrası`, `bitim`, `ilk röntgen`). Neden model değil: kalıp sabit olunca sözlük
+  hem daha ucuz hem kararlı, 5.000 eki yeniden etiketlemek bedava.
+  **Ölçüm:** arşivdeki 4.956 farklı gerçek başlıkta %95,1'i türlenir (242 tanınmayan;
+  çoğu sohbet cümlesi, çıplak isim ve "Page2" gibi sayfa notu), 2.390'ında vizit ipucu
+  çıkar. Test 62 gerçek başlıkla (`evrak-sinifla.spec.ts`).
+- [x] **Veri.** `inbound_message_media` + `doc_type` / `doc_subtype` / `visit_hint` /
+  `contact_visit_id` (0079, FK `contact_visits` ON DELETE SET NULL + iki indeks).
+  Tür sözlüğü ürün kararıyla büyüdüğü için DB'de CHECK kısıtı YOK — doğrulama şemada
+  (`packages/shared/src/media-doc.ts`). Ek gelince `InboundMediaService.store` sınıflandırır;
+  başlık mesajın kendi metninden, yoksa **bağlam metninden** gelir (aynı sohbette aynı
+  yazarın ±180 sn içindeki en yakın metinli mesajı — `method='context'` kuralının aynısı),
+  o da yoksa dosya adından. Vizit eşlemesi: ekin **yazıldığı an** (WAHA damgası, `created_at`
+  değil) bir vizitin geliş−2 gün … dönüş+2 gün aralığındaysa bağlanır; birden fazla vizit
+  uyarsa BOŞ bırakılır (yanlış vizite bağlı evrak, bağlanmamış evraktan kötüdür).
+- [x] **Uçlar.** `POST /v1/whatsapp/media/reclassify` (settings:update, Idempotent) —
+  tenant'ın tüm eklerini baştan etiketler; ek geldiğinde kişi bağı/vizit henüz olmayabildiği
+  için gerekli. `PATCH /v1/whatsapp/media/:id` (contact:update, Idempotent) — tür/alt
+  tür/vizit elle düzeltilir. `GET /v1/contacts/:id/media` ve `GET /v1/contacts/:id/checklist`
+  (contact:read).
+- [x] **Kişi › Dosyalar.** Kişi kartında beşinci sekme: WhatsApp ekleri **vizit › tür**
+  gruplu, küçük önizlemeli (WhatsApp'ın `jpegThumbnail`'ı — tam dosya indirilmiyor),
+  tıklayınca ek açılır, "Düzelt" ile tür ve vizit değiştirilir. Vizite bağlanamayanlar
+  "Vizit belirsiz" grubunda görünür, gizlenmez.
+- [x] **Drive adı.** `driveFileNameFor` tür etiketi yazar:
+  `2026-09-14-1141-visit2-consent-form.jpg`. Yalnız yeni aynalananlarda — aynalanmış
+  dosyalar yeniden adlandırılmaz (Drive AYNADIR, kullanıcının klasörü ezilmez).
+- [x] **Kontrol listesi kendini işaretliyor.** `patient_flow` maddelerine opsiyonel `auto`
+  (`doc` / `visit_field` / `transaction`); varsayılan şablonda evrak maddeleri (p11 pasaport
+  + damga, p12 consent + before x-ray, p13 ameliyat sonrası x-ray, p15 invoice + satisfaction
+  + guidelines, p16 sertifika, p17 hekim onay), vizit alanları (p03 geliş, p04 otel, p06
+  klinik) ve tahsilat (p14) eşlendi. `PatientChecklistService` vizit başına `done|missing|na`
+  hesaplar. **Zaman kuralı:** vizit başlamadıysa her madde `na`; sürüyorsa kanıt varsa `done`
+  yoksa `na`; kapandıysa kanıt yoksa `missing`; Hekim Onay kapanıştan 30 gün sonra sorulur.
+  Vizitsiz kanıtlar ayrı grupta ve orada asla `missing` denmez.
+- [x] **Özet.** Hesaplanan durum modele **veri** olarak gider ("bu maddeler sistemde
+  var/yok"); `missing` çıktısı öncelikle hesaptan gelir. Üç kural: hesap `missing` dediyse
+  listeye girer · hesap `done` dediyse model "yok" dese bile GİRMEZ · hesabın karar
+  veremediği maddede modelin sözü geçer. Kural tabanlı (LLM'siz) yolda da eksik listesi
+  artık dolu. `ContactSummaryCard` "Eksik" bloğunu vizit adıyla gruplar
+  (`contact_summary.missing.visit_label`).
+- [x] **Bekçiler.** idempotency-coverage sayacı 136 → 138 + iki yeni enforced uç;
+  yeni izolasyon spec'i `patient-checklist.isolation.spec.ts` (A'nın eki A'nın vizitine
+  bağlanır, B'nin kontrol listesi A'nın evrakını görmez, ikinci reclassify hiçbir şeyi
+  değiştirmez, başka kiracının viziti PATCH'te reddedilir).
+
+**Prod'da tek seferlik adım:** `POST /v1/whatsapp/media/reclassify` (settings:update) —
+geçmiş ekler etiketsiz yazıldı, bir kez koşturulmalı. Yeniden çalıştırmak zararsız
+(aynı girdi → aynı sonuç, `updated: 0`).
+
+**Kalan:** `files` (elle yüklenen belgeler) ve `transactions` hâlâ vizite bağlanmıyor —
+belge Bölüm 6.4 (hasta başı para mutabakatı) ile birlikte yapılacak. Sınıflandırıcıda
+tanınmayan %4,9 başlık `other` kalır; kullanıcı Dosyalar sekmesinden düzeltir.
 
 ---
 

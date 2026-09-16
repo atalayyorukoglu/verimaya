@@ -174,6 +174,12 @@ export type ContactSummaryItem = {
 export type ContactSummaryPatientFlow = {
 	narrative: string;
 	checklist: PatientFlowChecklistItem[];
+	/**
+	 * EVRAK-01 — sistemin HESAPLADIĞI madde durumları (vizit başına). Modele veri
+	 * olarak verilir ki "pasaport yok" diye yazmasın: sistem pasaportu görüyor.
+	 * Model yalnız hesabın karar veremediği (`na`) maddeler için `missing` yazabilir.
+	 */
+	computed?: Array<{ item_id: string; visit_label: string; status: 'done' | 'missing' }>;
 };
 
 export type ContactSummaryContext = {

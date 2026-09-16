@@ -38,6 +38,7 @@ import { maskMessagePii } from '../integrations/llm/pii-mask';
 import { TenantContextService, type TenantDb } from '../tenant/tenant-context.service';
 import { asRecord, extractInboundDisplayFields } from '../whatsapp/inbound-mapper';
 import { heuristicSummarizeContact } from './heuristic-contact-summary';
+import { PatientChecklistService } from './patient-checklist.service';
 
 /** Modele giden yer tutucu; çıktıda kişinin adına geri çevrilir. */
 const SUBJECT_TOKEN = '[HASTA]';
@@ -85,6 +86,7 @@ export class ContactSummaryService {
 
 	constructor(
 		private readonly tenantContext: TenantContextService,
+		private readonly checklist: PatientChecklistService,
 		@Inject(LLM_CLIENT) private readonly llm: LlmClient
 	) {}
 
@@ -115,6 +117,25 @@ export class ContactSummaryService {
 			const isPatient =
 				contact.contactTypeName.trim().toLocaleLowerCase('tr') === PATIENT_TYPE_NAME;
 			const flow = isPatient ? await this.hastaAkisiOku(db) : null;
+			/*
+			 * EVRAK-01 — kontrol listesi HESAPLANIR (evrak türleri + vizit alanları).
+			 * Eksik listesi öncelikle buradan gelir; model yalnız hesabın karar
+			 * veremediği maddelerde konuşur ve hesabın "var" dediğini ezemez.
+			 */
+			const hesap = isPatient
+				? await this.checklist.computeWithDb(db, contactId, contact.contactTypeName)
+				: null;
+			const hesaplanan = (hesap?.visits ?? []).flatMap((v) =>
+				v.items
+					.filter((i) => i.status !== 'na')
+					.map((i) => ({
+						item_id: i.item_id,
+						visit_label: v.visit_label,
+						status: i.status as 'done' | 'missing',
+						label: i.label,
+						warning: i.warning
+					}))
+			);
 			const flowStamp = flow
 				? createHash('sha256')
 						.update(JSON.stringify({ narrative: flow.narrative, checklist: flow.checklist }))
@@ -130,6 +151,10 @@ export class ContactSummaryService {
 				)
 				// Şablon değişince özet bayatlasın — eksik listesi eski şablona göre kalmasın.
 				.update(`|pf:${flowStamp}`)
+				// EVRAK-01: yeni evrak gelince hesap değişir → özet bayatlasın.
+				.update(
+					`|cl:${hesaplanan.map((h) => `${h.item_id}:${h.visit_label}:${h.status}`).join(',')}`
+				)
 				.digest('hex');
 
 			const [existing] = await db
@@ -159,7 +184,15 @@ export class ContactSummaryService {
 			}));
 
 			const patientFlow: ContactSummaryPatientFlow | null = flow
-				? { narrative: flow.narrative, checklist: flow.checklist }
+				? {
+						narrative: flow.narrative,
+						checklist: flow.checklist,
+						computed: hesaplanan.map((h) => ({
+							item_id: h.item_id,
+							visit_label: h.visit_label,
+							status: h.status
+						}))
+					}
 				: null;
 
 			let result = await this.llm.summarizeContact({
@@ -171,7 +204,8 @@ export class ContactSummaryService {
 			let heuristic = result.heuristic;
 			if (result.sentences.length === 0) {
 				// Model yazamadı (hata / boş): kural tabanlı özet, ama "model" damgası yok.
-				// Kural tabanlı yol kontrol listesini okuyamaz; eksik listesi de boşalır.
+				// EVRAK-01 — eksik listesi ARTIK BOŞALMAZ: hesap modelden bağımsız,
+				// kural tabanlı yolda da doğru eksikleri yazabiliyoruz.
 				result = {
 					...result,
 					sentences: heuristicSummarizeContact({ items, subjectToken: SUBJECT_TOKEN }),
@@ -191,23 +225,44 @@ export class ContactSummaryService {
 					.filter((x): x is ContactSummarySource => x !== null)
 			}));
 
-			// Modelin bildirdiği eksikler şablondaki metinle zenginleşir: kart, ayarları
-			// okuma izni olmadan da uyarıyı gösterebilsin.
+			/*
+			 * EVRAK-01 — eksik listesinin birleştirilmesi, üç kural:
+			 *  1. Hesap `missing` dediyse LİSTEYE GİRER (model susmuş olsa bile).
+			 *  2. Hesap `done` dediyse ASLA girmez (model "yok" dese bile — hesap görüyor).
+			 *  3. Hesabın karar veremediği (`na`, ya da `auto` eşlemesi olmayan) maddede
+			 *     modelin sözü geçer; eski davranış orada aynen sürer.
+			 * Modelin notu, aynı maddeyi o da bildirdiyse gerekçe olarak eklenir.
+			 */
 			const byItemId = new Map((flow?.checklist ?? []).map((i) => [i.id, i]));
-			const missing: ContactSummaryMissing[] = result.missing
-				.slice(0, PATIENT_FLOW_MAX_MISSING)
-				.flatMap((m) => {
-					const item = byItemId.get(m.item_id);
-					if (!item) return [];
-					return [
-						{
-							item_id: item.id,
-							label: item.label,
-							warning: item.warning,
-							note: kirp(m.note, 300)
-						}
-					];
+			const modelNotu = new Map(result.missing.map((m) => [m.item_id, kirp(m.note, 300)]));
+			const hesapDurumu = new Map(hesaplanan.map((h) => [h.item_id, h.status]));
+
+			const missing: ContactSummaryMissing[] = [];
+			for (const h of hesaplanan) {
+				if (h.status !== 'missing') continue;
+				if (missing.length >= PATIENT_FLOW_MAX_MISSING) break;
+				missing.push({
+					item_id: h.item_id,
+					label: h.label,
+					warning: h.warning,
+					note: modelNotu.get(h.item_id) ?? '',
+					visit_label: h.visit_label
 				});
+			}
+			for (const m of result.missing) {
+				if (missing.length >= PATIENT_FLOW_MAX_MISSING) break;
+				// Hesabın karar verdiği maddeyi model ezemez.
+				if (hesapDurumu.has(m.item_id)) continue;
+				const item = byItemId.get(m.item_id);
+				if (!item) continue;
+				missing.push({
+					item_id: item.id,
+					label: item.label,
+					warning: item.warning,
+					note: kirp(m.note, 300),
+					visit_label: null
+				});
+			}
 
 			const now = new Date();
 			const values = {

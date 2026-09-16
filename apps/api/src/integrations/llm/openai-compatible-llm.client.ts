@@ -507,6 +507,26 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		 */
 		const checklist = ctx.patientFlow?.checklist ?? [];
 		const flowBlock = ctx.patientFlow ? framePatientFlowPrompt(ctx.patientFlow) : '';
+		/*
+		 * EVRAK-01 — sistemin hesapladığı madde durumu. Modelin en sık hatası
+		 * "kayıtlarda göremediğim şey yoktur" varsayımıydı: 80 mesajlık pencereye
+		 * girmeyen bir pasaport eki "eksik" oluyordu. Artık evrak sayılabilir veri;
+		 * hesap modele VERİ olarak veriliyor ve `done` olanı yazması yasak.
+		 */
+		const computed = ctx.patientFlow?.computed ?? [];
+		const computedBlock =
+			computed.length > 0
+				? [
+						'',
+						'SİSTEMDE HESAPLANMIŞ DURUM (kanıt sayılarak bulundu — tahmin değil):',
+						...computed.map(
+							(c) => `- ${c.item_id} · ${c.visit_label} · ${c.status === 'done' ? 'VAR' : 'YOK'}`
+						),
+						'Burada VAR yazan maddeyi "missing" listesine ASLA yazma.',
+						'Burada YOK yazan maddeyi sistem zaten bildiriyor; sen yalnız kısa gerekçe ekle.',
+						'Burada hiç geçmeyen maddeler hesaplanamadı — onlar için kendi yargını kullan.'
+					]
+				: [];
 		const system = [
 			'Sağlık turizmi operasyonunda çalışan bir asistansın. Sana BİR KİŞİYE ait kayıtlar verilecek:',
 			'[W…] WhatsApp grup mesajı, [R…] randevu, [P…] para işlemi, [N…] çalışan notu,',
@@ -523,6 +543,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 				? [
 						'',
 						flowBlock,
+						...computedBlock,
 						'',
 						'EK GÖREV: yukarıdaki kontrol listesinin hangi maddelerinin kayıtlarda karşılığı YOK,',
 						'onları "missing" dizisine yaz: {"item_id":"<listedeki id>","note":"<kısa Türkçe gerekçe>"}.',

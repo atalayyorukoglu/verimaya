@@ -25,6 +25,35 @@ export const PATIENT_FLOW_MAX_MISSING = 12;
 /** `tenant_settings.key` — tek kaynak; API ve servis aynı sabiti kullanır. */
 export const PATIENT_FLOW_SETTING_KEY = 'patient_flow';
 
+/**
+ * EVRAK-01 — maddenin **kendini işaretleme** kuralı. Madde metni insana, `auto`
+ * sisteme bakar: hangi kanıt sayılabilir veri olarak aranacak.
+ *
+ *  - `doc`         — kişinin WhatsApp eklerinde bu türlerden biri var mı
+ *                    (`inbound_message_media.doc_type`, `media-doc.ts` sözlüğü).
+ *  - `visit_field` — vizit kaydında bu alan dolu mu (`contact_visits` sütun adı).
+ *  - `transaction` — kişiye bağlı bu yönde para işlemi var mı.
+ *
+ * `auto` yoksa madde hesaplanmaz (`na`): metin kalır, sistem karar vermez.
+ */
+export const patientFlowAutoSchema = z.discriminatedUnion('kind', [
+	z.object({
+		kind: z.literal('doc'),
+		doc_types: z.array(z.string().trim().min(1).max(64)).min(1).max(12)
+	}),
+	z.object({
+		kind: z.literal('visit_field'),
+		field: z
+			.string()
+			.trim()
+			.min(1)
+			.max(64)
+			.regex(/^[a-z_]+$/, 'alan adı yalnız küçük harf ve _ içerebilir')
+	}),
+	z.object({ kind: z.literal('transaction'), direction: z.enum(['income', 'expense']) })
+]);
+export type PatientFlowAuto = z.infer<typeof patientFlowAutoSchema>;
+
 export const patientFlowChecklistItemSchema = z.object({
 	/** Kısa, kararlı kimlik (`p01`…). Model yalnız bu id'leri kullanabilir. */
 	id: z
@@ -42,7 +71,9 @@ export const patientFlowChecklistItemSchema = z.object({
 	/** Ne zaman zorunlu olur ("Bilet geldiğinde", "Bitimden ≤30 gün"). */
 	when: z.string().trim().max(200),
 	/** Eksikse özet kartında gösterilecek uyarı metni. */
-	warning: z.string().trim().min(1).max(200)
+	warning: z.string().trim().min(1).max(200),
+	/** EVRAK-01 — sistemin maddeyi kendi işaretlemesi için kanıt eşlemesi. */
+	auto: patientFlowAutoSchema.optional()
 });
 export type PatientFlowChecklistItem = z.infer<typeof patientFlowChecklistItemSchema>;
 
@@ -151,7 +182,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Geliş/dönüş tarih-saat, uçuş',
 		evidence: 'Bilet görseli veya "Geliş … Dönüş …" satırı',
 		when: 'Bilet geldiğinde',
-		warning: 'Uçuş saati yok'
+		warning: 'Uçuş saati yok',
+		auto: { kind: 'visit_field', field: 'arrival_at' }
 	},
 	{
 		id: 'p04',
@@ -159,7 +191,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Otel + kim karşılıyor + gece sayısı',
 		evidence: 'Rezervasyon grubunda otel adı ve kapsam notu',
 		when: 'Bilet geldiğinde',
-		warning: 'Otel belirsiz / extra hotel cost yazılmamış'
+		warning: 'Otel belirsiz / extra hotel cost yazılmamış',
+		auto: { kind: 'visit_field', field: 'hotel' }
 	},
 	{
 		id: 'p05',
@@ -175,7 +208,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Klinik + hekim + ilk randevu',
 		evidence: 'Klinik grubunda randevu onay saati',
 		when: 'Gelişten 1 gün önce',
-		warning: 'Klinik randevu onayı gelmedi'
+		warning: 'Klinik randevu onayı gelmedi',
+		auto: { kind: 'visit_field', field: 'clinic' }
 	},
 	{
 		id: 'p07',
@@ -215,7 +249,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Pasaport + giriş damgası',
 		evidence: 'Evrak grubunda "Ad Soyad pasaport / stamp" eki',
 		when: 'İlk klinik günü',
-		warning: 'Pasaport yüklenmedi'
+		warning: 'Pasaport yüklenmedi',
+		auto: { kind: 'doc', doc_types: ['passport', 'stamp'] }
 	},
 	{
 		id: 'p12',
@@ -223,7 +258,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Consent (vizit) + before x-ray',
 		evidence: 'Evrak grubunda consent ve ilk röntgen eki',
 		when: 'İlk klinik günü',
-		warning: 'Onam formu yok'
+		warning: 'Onam formu yok',
+		auto: { kind: 'doc', doc_types: ['consent_form', 'xray_before'] }
 	},
 	{
 		id: 'p13',
@@ -231,7 +267,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Ameliyat sonrası x-ray + graft notu',
 		evidence: 'Evrak grubunda ameliyat sonrası röntgen, graft/membran notu',
 		when: 'Cerrahi günü',
-		warning: 'Cerrahi kaydı yok'
+		warning: 'Cerrahi kaydı yok',
+		auto: { kind: 'doc', doc_types: ['xray_after_surgery'] }
 	},
 	{
 		id: 'p14',
@@ -239,7 +276,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Bu vizit tahsilatı (tutar, yöntem)',
 		evidence: 'Operasyon / Muhasebe grubunda tahsilat satırı',
 		when: 'Cerrahi günü',
-		warning: 'Tahsilat kaydı yok'
+		warning: 'Tahsilat kaydı yok',
+		auto: { kind: 'transaction', direction: 'income' }
 	},
 	{
 		id: 'p15',
@@ -247,7 +285,11 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Invoice + satisfaction + guidelines',
 		evidence: 'Evrak grubunda bitim evrak seti',
 		when: 'Bitim günü',
-		warning: 'Bitim evrakı eksik'
+		warning: 'Bitim evrakı eksik',
+		auto: {
+			kind: 'doc',
+			doc_types: ['invoice', 'satisfaction_form', 'after_care_guidelines']
+		}
 	},
 	{
 		id: 'p16',
@@ -255,7 +297,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Sertifika / implant passport',
 		evidence: 'Evrak grubunda certificate ve implant passport',
 		when: 'Final vizit',
-		warning: 'Sertifika verilmedi'
+		warning: 'Sertifika verilmedi',
+		auto: { kind: 'doc', doc_types: ['certificate'] }
 	},
 	{
 		id: 'p17',
@@ -263,7 +306,8 @@ export const DEFAULT_PATIENT_FLOW_CHECKLIST: PatientFlowChecklistItem[] = [
 		label: 'Hekim Onay pdf',
 		evidence: 'Evrak grubunda "Hekim Onay visit N" pdf',
 		when: 'Bitimden en geç 30 gün sonra',
-		warning: 'Hekim onayı bekleniyor'
+		warning: 'Hekim onayı bekleniyor',
+		auto: { kind: 'doc', doc_types: ['doctor_approval'] }
 	},
 	{
 		id: 'p18',

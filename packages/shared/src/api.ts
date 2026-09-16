@@ -68,6 +68,8 @@ export const apiPaths = {
 	contactFilePreview: (contactId: string, fileId: string) =>
 		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}/preview`,
 	contactCaseNotes: (id: string) => `${API_V1_PREFIX}/contacts/${id}/case-notes`,
+	contactMedia: (id: string) => `${API_V1_PREFIX}/contacts/${id}/media`,
+	contactChecklist: (id: string) => `${API_V1_PREFIX}/contacts/${id}/checklist`,
 	contactVisits: (id: string) => `${API_V1_PREFIX}/contacts/${id}/visits`,
 	contactVisit: (contactId: string, visitId: string) =>
 		`${API_V1_PREFIX}/contacts/${contactId}/visits/${visitId}`,
@@ -165,6 +167,8 @@ export const apiPaths = {
 	whatsappInboxProcess: `${API_V1_PREFIX}/whatsapp/inbox/process`,
 	whatsappInboxLinkContacts: `${API_V1_PREFIX}/whatsapp/inbox/link-contacts`,
 	whatsappInboxMedia: (id: string) => `${API_V1_PREFIX}/whatsapp/inbox/${id}/media`,
+	whatsappMedia: (id: string) => `${API_V1_PREFIX}/whatsapp/media/${id}`,
+	whatsappMediaReclassify: `${API_V1_PREFIX}/whatsapp/media/reclassify`,
 	whatsappInboxCreateContact: (id: string) =>
 		`${API_V1_PREFIX}/whatsapp/inbox/${id}/create-contact`,
 	whatsappInboxByContact: (contactId: string) =>
@@ -303,6 +307,13 @@ import {
 	organizationUpdateSchema
 } from './contact.js';
 import { contactSummarySchema } from './contact-summary.js';
+import {
+	contactMediaListSchema,
+	contactMediaSchema,
+	contactMediaUpdateSchema,
+	mediaReclassifyResultSchema
+} from './media-doc.js';
+import { patientChecklistSchema } from './patient-checklist.js';
 import { appointmentListPageSchema, appointmentSchema } from './appointment.js';
 import {
 	operationAlertCreateSchema,
@@ -626,6 +637,12 @@ export const apiContract = {
 	'DELETE /v1/contacts/:id/case-notes/:noteId': {
 		response: z.null()
 	},
+	'GET /v1/contacts/:id/media': {
+		response: contactMediaListSchema
+	},
+	'GET /v1/contacts/:id/checklist': {
+		response: patientChecklistSchema
+	},
 	'GET /v1/contacts/:id/visits': {
 		response: contactVisitListSchema
 	},
@@ -814,6 +831,13 @@ export const apiContract = {
 	},
 	'POST /v1/whatsapp/inbox/:id/ignore': {
 		response: inboundMessageActionResponseSchema
+	},
+	'PATCH /v1/whatsapp/media/:id': {
+		body: contactMediaUpdateSchema,
+		response: contactMediaSchema
+	},
+	'POST /v1/whatsapp/media/reclassify': {
+		response: mediaReclassifyResultSchema
 	},
 	'POST /v1/whatsapp/corrections': {
 		body: aiCorrectionCreateSchema,

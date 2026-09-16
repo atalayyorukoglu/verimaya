@@ -79,6 +79,7 @@ export function queryKeys(scope: QueryScope) {
 			files: (id: string) => k('contacts', id, 'files'),
 			caseNotes: (id: string) => k('contacts', id, 'case-notes'),
 			visits: (id: string) => k('contacts', id, 'visits'),
+			media: (id: string) => k('contacts', id, 'media'),
 			duplicateGroups: () => k('contacts', 'duplicate-groups')
 		},
 		settings: {

@@ -97,15 +97,26 @@ export function descriptionSlug(body: string | null, mimeType: string): string {
 	return slug || fallbackDescription(mimeType);
 }
 
+/**
+ * EVRAK-01 — belge türü biliniyorsa açıklama yerine TÜR ETİKETİ yazılır:
+ * `2026-09-14-1141-visit2-consent-form.jpg`. Neden serbest başlığı değil de
+ * türü: Drive klasöründe dosyalar ada göre sıralanır; tür etiketi aynı vizitin
+ * aynı tür belgelerini yan yana getirir, hasta adıyla başlayan serbest başlık
+ * ise zaten kişi klasöründe tekrar eden gürültüdür. Tür çıkarılamadıysa
+ * (`other`/boş) eski davranış sürer: mesaj metninin ilk 60 karakteri.
+ */
 export function driveFileNameFor(input: {
 	at: Date;
 	timezone: string;
 	body: string | null;
 	mimeType: string;
 	filename: string | null;
+	docTypeSlug?: string | null;
+	visitSlug?: string | null;
 }): string {
 	const stamp = tenantStamp(input.at, input.timezone);
-	const description = descriptionSlug(input.body, input.mimeType);
+	const tag = [input.visitSlug, input.docTypeSlug].filter(Boolean).join('-');
+	const description = tag || descriptionSlug(input.body, input.mimeType);
 	const ext = extensionFor(input.mimeType, input.filename);
 	return `${stamp}-${description}.${ext}`;
 }

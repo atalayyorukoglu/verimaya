@@ -44,7 +44,9 @@ import { WebhookSubscriptionsService } from '../webhook-subscriptions/webhook-su
 import { MAX_UPLOAD_BYTES } from '../storage/storage.types';
 import { ContactDataSubjectService } from './contact-data-subject.service';
 import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
+import { ContactMediaService } from './contact-media.service';
 import { ContactSummaryService } from './contact-summary.service';
+import { PatientChecklistService } from './patient-checklist.service';
 import { ContactVisitsService } from './contact-visits.service';
 import { ContactsService } from './contacts.service';
 
@@ -90,6 +92,8 @@ export class ContactsController {
 		private readonly contactDataSubject: ContactDataSubjectService,
 		private readonly contactSummary: ContactSummaryService,
 		private readonly contactVisits: ContactVisitsService,
+		private readonly contactMedia: ContactMediaService,
+		private readonly patientChecklist: PatientChecklistService,
 		private readonly idempotency: IdempotencyService,
 		private readonly webhookSubscriptions: WebhookSubscriptionsService,
 		private readonly driveMirror: DriveMirrorEnqueueService
@@ -169,6 +173,26 @@ export class ContactsController {
 	@RequireOrgPermission('contact', 'read')
 	listFiles(@Req() req: FastifyRequest, @Param('id') id: string) {
 		return this.contactsService.listFiles(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * EVRAK-01 — kişinin WhatsApp ekleri, tür ve vizit etiketleriyle.
+	 * `:id/files` elle yüklenen belgeler; bu uç WhatsApp'tan geleni verir.
+	 */
+	@Get(':id/media')
+	@RequireOrgPermission('contact', 'read')
+	listMedia(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.contactMedia.list(getActiveOrgId(req), id);
+	}
+
+	/**
+	 * EVRAK-01 — hasta akışı kontrol listesinin HESAPLANMIŞ durumu, vizit başına.
+	 * Model çağrısı yok: evrak türleri ve vizit alanları sayılır.
+	 */
+	@Get(':id/checklist')
+	@RequireOrgPermission('contact', 'read')
+	checklist(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.patientChecklist.get(getActiveOrgId(req), id);
 	}
 
 	@Get(':id/case-notes')

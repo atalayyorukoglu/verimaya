@@ -5,6 +5,7 @@ import { closeDb, getDb } from '../db/client';
 import { HeuristicLlmClient } from '../integrations/llm';
 import type { TenantContextService } from '../tenant/tenant-context.service';
 import { ContactSummaryService } from './contact-summary.service';
+import { PatientChecklistService } from './patient-checklist.service';
 import { purgeTenantFixtures } from '../test/purge-tenant-fixtures';
 
 const databaseUrl =
@@ -81,7 +82,11 @@ describe('contact_summaries', () => {
 				fn: (ctx: { tx: unknown; db: typeof db }) => Promise<T>
 			) => withTenantSession(tenantId, () => fn({ tx: sql, db }))
 		} as TenantContextService;
-		service = new ContactSummaryService(tenantContext, new HeuristicLlmClient());
+		service = new ContactSummaryService(
+			tenantContext,
+			new PatientChecklistService(tenantContext),
+			new HeuristicLlmClient()
+		);
 	});
 
 	afterAll(async () => {

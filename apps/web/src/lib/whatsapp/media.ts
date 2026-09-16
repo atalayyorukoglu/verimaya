@@ -10,18 +10,24 @@ import { apiPaths, resolveApiUrl } from '$lib/api';
  * yoktan iyi; kullanıcı "tıklıyorum, büyümüyor" demişti (2026-09-15).
  */
 export async function openInboundMedia(message: InboundMessage): Promise<void> {
-	let blob: Blob;
-	if (message.media) {
-		const res = await fetch(resolveApiUrl(apiPaths.whatsappInboxMedia(message.id)), {
-			credentials: 'include'
-		});
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		blob = await res.blob();
-	} else if (message.media_thumbnail) {
-		blob = await (await fetch(message.media_thumbnail)).blob();
-	} else {
-		return;
-	}
+	if (message.media) return openInboundMediaByMessageId(message.id);
+	if (!message.media_thumbnail) return;
+	acikSekmedeGoster(await (await fetch(message.media_thumbnail)).blob());
+}
+
+/**
+ * EVRAK-01: yalnız mesaj kimliği elde varken (Kişi › Dosyalar listesi `InboundMessage`
+ * nesnesi taşımıyor, yalnız ekin künyesini taşıyor).
+ */
+export async function openInboundMediaByMessageId(messageId: string): Promise<void> {
+	const res = await fetch(resolveApiUrl(apiPaths.whatsappInboxMedia(messageId)), {
+		credentials: 'include'
+	});
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	acikSekmedeGoster(await res.blob());
+}
+
+function acikSekmedeGoster(blob: Blob): void {
 	const url = URL.createObjectURL(blob);
 	window.open(url, '_blank', 'noopener');
 	setTimeout(() => URL.revokeObjectURL(url), 60_000);

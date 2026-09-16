@@ -7,7 +7,12 @@
 	 * Çalışan notlarından AYRI: notlar akışta kalır, burası yalnız türetilmiş özet.
 	 */
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
-	import { apiPaths, type ContactSummary, type ContactSummarySource } from '@verimaya/shared';
+	import {
+		apiPaths,
+		type ContactSummary,
+		type ContactSummaryMissing,
+		type ContactSummarySource
+	} from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatDate, formatRelativeTime } from '$lib/format';
@@ -59,6 +64,20 @@
 		// VIZIT-01 — vizit kaynağı randevu rengini paylaşır: ikisi de "geliş" olayı.
 		visit: 'bg-tl-appointment-soft text-tl-appointment'
 	};
+
+	/*
+	 * EVRAK-01 — eksikler VİZİTE göre gruplanır. Hesaplanan eksikler vizit adı
+	 * taşır ("2. vizit · 13 Eyl 2026 → …"); modelin kendi bildirdikleri taşımaz,
+	 * onlar başlıksız son grupta toplanır.
+	 */
+	const missingGroups = $derived.by(() => {
+		const groups = new Map<string, ContactSummaryMissing[]>();
+		for (const m of summaryQuery.data?.missing ?? []) {
+			const key = m.visit_label ?? '';
+			groups.set(key, [...(groups.get(key) ?? []), m]);
+		}
+		return [...groups.entries()].map(([label, items]) => ({ label, items }));
+	});
 
 	function sourceTitle(s: ContactSummarySource): string {
 		const kind = t(`contacts.summary.kind.${s.kind}`);
@@ -133,19 +152,24 @@
 		{#if s.missing.length > 0}
 			<div class="mt-3 border-t border-border pt-2">
 				<h3 class="text-xs font-semibold text-text-muted">{t('contacts.summary.missing.title')}</h3>
-				<ul class="mt-1 space-y-1">
-					{#each s.missing as m (m.item_id)}
-						<li class="flex items-start gap-1.5 text-sm leading-6 text-text">
-							<TriangleAlert class="mt-1.5 size-3.5 shrink-0 text-warning" aria-hidden="true" />
-							<span class="min-w-0">
-								<span class="font-medium">{m.warning}</span>
-								{#if m.note}
-									<span class="text-text-muted"> — {m.note}</span>
-								{/if}
-							</span>
-						</li>
-					{/each}
-				</ul>
+				{#each missingGroups as grup (grup.label)}
+					{#if grup.label}
+						<p class="mt-1.5 text-[11px] font-medium break-words text-text-faint">{grup.label}</p>
+					{/if}
+					<ul class="mt-1 space-y-1">
+						{#each grup.items as m (m.item_id + grup.label)}
+							<li class="flex items-start gap-1.5 text-sm leading-6 text-text">
+								<TriangleAlert class="mt-1.5 size-3.5 shrink-0 text-warning" aria-hidden="true" />
+								<span class="min-w-0">
+									<span class="font-medium">{m.warning}</span>
+									{#if m.note}
+										<span class="text-text-muted"> — {m.note}</span>
+									{/if}
+								</span>
+							</li>
+						{/each}
+					</ul>
+				{/each}
 			</div>
 		{/if}
 
