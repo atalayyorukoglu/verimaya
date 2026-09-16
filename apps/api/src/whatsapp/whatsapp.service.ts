@@ -6,6 +6,7 @@ import type {
 	ApproveDraftsResponse,
 	InboundMessage,
 	InboundMessageActionResponse,
+	InboundMessageParsePath,
 	InboundMessageProcessResponse,
 	InboundMessageCreateContactResponse,
 	InboundMessageStatus,
@@ -274,7 +275,8 @@ export class WhatsappService {
 			if (!display.body?.trim()) {
 				await this.savePayload(db, id, payload, {
 					parsed_records: null,
-					parse_error: PARSE_ERROR_NO_TEXT
+					parse_error: PARSE_ERROR_NO_TEXT,
+					parse_path: null
 				});
 				return { records: [] };
 			}
@@ -291,7 +293,8 @@ export class WhatsappService {
 			const records = await this.onDolumWithDb(db, row.id, display.body, result.records);
 			await this.savePayload(db, id, payload, {
 				parsed_records: records.length > 0 ? records : null,
-				parse_error: records.length === 0 ? PARSE_ERROR_NO_MATCH : null
+				parse_error: records.length === 0 ? PARSE_ERROR_NO_MATCH : null,
+				parse_path: result.usage.path
 			});
 			return { records };
 		});
@@ -568,7 +571,8 @@ export class WhatsappService {
 		if (!display.body?.trim()) {
 			await this.savePayload(db, row.id, payload, {
 				parsed_records: null,
-				parse_error: PARSE_ERROR_NO_TEXT
+				parse_error: PARSE_ERROR_NO_TEXT,
+				parse_path: null
 			});
 			return 'error';
 		}
@@ -586,7 +590,8 @@ export class WhatsappService {
 		const isError = records.length === 0;
 		await this.savePayload(db, row.id, payload, {
 			parsed_records: isError ? null : records,
-			parse_error: isError ? PARSE_ERROR_NO_MATCH : null
+			parse_error: isError ? PARSE_ERROR_NO_MATCH : null,
+			parse_path: result.usage.path
 		});
 		return isError ? 'error' : 'parsed';
 	}
@@ -701,6 +706,8 @@ export class WhatsappService {
 		patch: {
 			parsed_records: TransactionDraft[] | null;
 			parse_error: string | null;
+			/** Taslakları üreten yol; kartta "kural tabanlı" rozetini bu belirler. */
+			parse_path: InboundMessageParsePath | null;
 		}
 	) {
 		await db

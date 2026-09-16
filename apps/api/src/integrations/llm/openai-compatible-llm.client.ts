@@ -11,6 +11,7 @@ import {
 	mayaToolCallSchema,
 	PATIENT_FLOW_MAX_MISSING,
 	transactionDraftSchema,
+	transactionEvidenceFieldSchema,
 	toTenantDayKey,
 	type AppointmentLogisticsDraft,
 	type AppointmentRescheduleDraft,
@@ -76,6 +77,7 @@ type ChatCompletionResponse = {
 type CallModelOk = {
 	records: TransactionDraft[];
 	usage: Omit<LlmUsageLedger, 'path' | 'error'>;
+	counts: ParseGuardCounts;
 };
 
 /** Core extraction contract — always server-owned; tenant notes are appended only. */
@@ -132,6 +134,17 @@ export function buildWhatsappExtractionSystemPrompt(
 		'  Careful: the patient mentioned in a message is often NOT the counterparty.',
 		'',
 		'One message may contain SEVERAL transactions — return one record each.',
+		'',
+		'NEVER count the same money twice:',
+		'- TOTAL + PARTS: when the message states a total AND the parts that make it up',
+		'  ("2520 gbpsi nakit 1510 gbpsi kart olmak üzere toplamda 4030 gbp"), emit ONE RECORD',
+		'  PER PART (2520 cash, 1510 card) and DO NOT emit the total. The total is a sum of',
+		'  records you already returned; emitting it doubles the money.',
+		'- CONVERSION: when one amount is only the other currency equivalent of the same payment',
+		'  ("110 euro karşılığı 50 GBP ödendi", "110 euro karşılığı 50 Gbp + 50 euro"), emit the',
+		'  record(s) for the money ACTUALLY PAID, in the currency actually paid — never a second',
+		'  record for the equivalent. "X karşılığı" / "X karşılığında" marks a reference, not a payment.',
+		'',
 		'Message text may contain placeholders like [TELEFON]/[EPOSTA]/[HASTA] — ignore them for matching.',
 		'For every field you fill FROM THE MESSAGE, add an "evidence" object mapping the field name (amount|currency|kind|occurred_on|contact_id|contact_label|payment_method|category) to {"quote": exact substring copied verbatim from the message, "start": its character offset, "confidence": "high"|"medium"|"low"}; when you inferred a value without reading it, use confidence "low" and quote "".',
 		'',
@@ -331,7 +344,45 @@ function withDraftFallbacks(records: TransactionDraft[], message: string): Trans
 	}));
 }
 
-function parseDraftsPayload(raw: unknown): TransactionDraft[] {
+const EVIDENCE_FIELD_NAMES: ReadonlySet<string> = new Set(transactionEvidenceFieldSchema.options);
+
+/**
+ * Doğrulamadan ÖNCE modelin bilinen yanılgılarını düzeltir — kaydı düşürmeden.
+ *
+ * Canlı ölçüm (2026-09-16, `jobs` defteri): tek kaydın kusuru bütün ayrıştırmayı
+ * düşürüyordu. İki kusur baskın:
+ *  - `evidence` içinde beyaz listede olmayan alan adı ("title") → `invalid_enum_value`.
+ *    İz bir yan bilgidir; tanınmayan girdi yok sayılır, kayıt yaşar.
+ *  - `counterparty_amount` negatif → `too_small`. Negatif karşılık anlamsız; null'a çekilir.
+ */
+function sanitizeDraftItem(item: unknown): unknown {
+	if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
+	const record = { ...(item as Record<string, unknown>) };
+
+	if (typeof record.counterparty_amount === 'number' && record.counterparty_amount < 0) {
+		record.counterparty_amount = null;
+	}
+
+	const evidence = record.evidence;
+	if (evidence && typeof evidence === 'object' && !Array.isArray(evidence)) {
+		const kept: Record<string, unknown> = {};
+		for (const [field, entry] of Object.entries(evidence as Record<string, unknown>)) {
+			if (EVIDENCE_FIELD_NAMES.has(field)) kept[field] = entry;
+		}
+		record.evidence = kept;
+	}
+	return record;
+}
+
+/**
+ * Model çıktısındaki kayıtlar. **Tek kayıt doğrulamadan geçmezse yalnız o kayıt
+ * düşer**; geçenler kuyruğa girer. Eskiden ilk kusurlu kayıt `throw` ediyordu ve
+ * doğru okunmuş diğer kayıtlar da kural tabanlı yola düşüyordu.
+ *
+ * Gövdenin kendisi bozuksa (kök nesne değil, `records` dizi değil) yine fırlatılır:
+ * o durumda kurtarılacak bir kayıt yoktur.
+ */
+function parseDraftsPayload(raw: unknown): { records: TransactionDraft[]; dropped: number } {
 	if (!raw || typeof raw !== 'object') {
 		throw new Error('LLM JSON root must be an object');
 	}
@@ -341,14 +392,47 @@ function parseDraftsPayload(raw: unknown): TransactionDraft[] {
 	}
 
 	const out: TransactionDraft[] = [];
+	let dropped = 0;
 	for (const item of records) {
-		const parsed = transactionDraftSchema.safeParse(item);
+		const parsed = transactionDraftSchema.safeParse(sanitizeDraftItem(item));
 		if (!parsed.success) {
-			throw new Error(`LLM draft validation failed: ${parsed.error.message}`);
+			dropped++;
+			continue;
 		}
 		out.push(parsed.data);
 	}
-	return out;
+	return { records: out, dropped };
+}
+
+/**
+ * Bir ayrıştırma çağrısında kaç kayıt üretildi, kaçı hangi bekçide düştü.
+ * Yalnız SAYI tutulur — hasta verisi (metin, alıntı, tutar) defterde yer almaz.
+ */
+export type ParseGuardCounts = {
+	/** Modelin döndürdüğü ham kayıt sayısı (zod öncesi). */
+	model: number;
+	/** Zod doğrulamasından geçmeyip düşen kayıt. */
+	validation: number;
+	/** Tutar bekçisinde düşen kayıt (alıntı tarih/saat/kimlik çıktı). */
+	tutar: number;
+	/** İzi tamamen doğrulanamayan kayıt sayısı — kayıt düşmez, yalnız izi gider. */
+	evidence: number;
+	/** Bekçilerden sonra kalan kayıt. */
+	kept: number;
+};
+
+/**
+ * Boş sonucun nedenini ayrıştırır: model gerçekten `records: []` mi döndürdü,
+ * yoksa kayıtlar bekçilerde mi düştü? İkisi aynı `empty_llm_records` satırına
+ * yazıldığı sürece prompt mu bekçi mi düzeltilecek bilinemiyordu.
+ */
+export function bosSonucNedeni(counts: ParseGuardCounts): string {
+	if (counts.model === 0) return 'model_empty';
+	const parcalar: string[] = [];
+	if (counts.validation > 0) parcalar.push(`validation=${counts.validation}`);
+	if (counts.tutar > 0) parcalar.push(`tutar=${counts.tutar}`);
+	if (counts.evidence > 0) parcalar.push(`evidence=${counts.evidence}`);
+	return parcalar.length > 0 ? `dropped_by_guards:${parcalar.join(',')}` : 'empty_llm_records';
 }
 
 function providerLabel(baseUrl: string): string {
@@ -564,7 +648,9 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 					usage: { ...ok.usage, path: 'openai_compatible', error: null }
 				};
 			}
-			// Empty LLM result — still ledger the call, then heuristic for UX.
+			// Boş sonuç — çağrı yine deftere yazılır, UX için kural tabanlı yola düşülür.
+			// Defterdeki neden ayrıştırılmış: `model_empty` (model gerçekten boş döndü,
+			// prompt işi) vs `dropped_by_guards:…` (kayıt üretildi, bekçi düşürdü, kod işi).
 			const records = heuristicParseWhatsappMessage(
 				ctx.message,
 				ctx.patients,
@@ -576,7 +662,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 				usage: {
 					...ok.usage,
 					path: 'openai_compatible_fallback',
-					error: 'empty_llm_records'
+					error: bosSonucNedeni(ok.counts)
 				}
 			};
 		} catch (err) {
@@ -943,20 +1029,29 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		// Sunucu bekçileri: kategori kiracı listesine, ödeme yöntemi Finans listesine
 		// çekilir. Model listedışı ad yazdıysa alan null'a düşer — kartta "seçili
 		// görünmeyen ama dolu" sahte değer kalmasın.
+		// Bekçiler ayrı adımlarda çağrılır: hangi adımda kaç kayıt düştüğü sayılmadan
+		// "model boş döndü" ile "bekçi düşürdü" ayırt edilemiyordu (defterde ikisi de
+		// `empty_llm_records` görünüyordu). Sayılar defterde; metin/tutar değil.
+		const rawRecords = (parsedJson as { records?: unknown } | null)?.records;
+		const modelRecordCount = Array.isArray(rawRecords) ? rawRecords.length : 0;
+		const validated = parseDraftsPayload(parsedJson);
+		const verified = verifyDraftEvidence(validated.records, maskedUser.message, ctx.message);
+		const evidenceStripped = verified.filter(
+			(record, i) =>
+				Object.keys(validated.records[i]?.evidence ?? {}).length > 0 && record.evidence == null
+		).length;
+		const afterTutar = tutarlariDuzelt(stripPlaceholders(verified), ctx.message);
 		const records = kategorileriDuzelt(
-			odemeYontemleriniDuzelt(
-				withDraftFallbacks(
-					tutarlariDuzelt(
-						stripPlaceholders(
-							verifyDraftEvidence(parseDraftsPayload(parsedJson), maskedUser.message, ctx.message)
-						),
-						ctx.message
-					),
-					ctx.message
-				)
-			),
+			odemeYontemleriniDuzelt(withDraftFallbacks(afterTutar, ctx.message)),
 			ctx.categories ?? []
 		);
+		const counts: ParseGuardCounts = {
+			model: modelRecordCount,
+			validation: validated.dropped,
+			tutar: verified.length - afterTutar.length,
+			evidence: evidenceStripped,
+			kept: records.length
+		};
 
 		const promptTokens = json.usage?.prompt_tokens ?? null;
 		const completionTokens = json.usage?.completion_tokens ?? null;
@@ -970,6 +1065,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 
 		return {
 			records,
+			counts,
 			usage: {
 				provider: providerLabel(this.config.baseUrl),
 				model: actualModel,
@@ -977,7 +1073,9 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 				promptTokens,
 				completionTokens,
 				totalTokens,
-				estimatedCostUsdMicros: estimateCostUsdMicros(promptTokens, completionTokens)
+				estimatedCostUsdMicros: estimateCostUsdMicros(promptTokens, completionTokens),
+				modelRecords: counts.model,
+				keptRecords: counts.kept
 			}
 		};
 	}

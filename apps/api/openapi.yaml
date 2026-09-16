@@ -7596,6 +7596,13 @@ paths:
                           type: string
                           maxLength: 2000
                           nullable: true
+                        parse_path:
+                          type: string
+                          enum:
+                            - heuristic
+                            - openai_compatible
+                            - openai_compatible_fallback
+                          nullable: true
                         group_id:
                           type: string
                           format: uuid
@@ -8021,6 +8028,13 @@ paths:
                   parse_error:
                     type: string
                     maxLength: 2000
+                    nullable: true
+                  parse_path:
+                    type: string
+                    enum:
+                      - heuristic
+                      - openai_compatible
+                      - openai_compatible_fallback
                     nullable: true
                   group_id:
                     type: string
@@ -8651,6 +8665,13 @@ paths:
                         parse_error:
                           type: string
                           maxLength: 2000
+                          nullable: true
+                        parse_path:
+                          type: string
+                          enum:
+                            - heuristic
+                            - openai_compatible
+                            - openai_compatible_fallback
                           nullable: true
                         group_id:
                           type: string

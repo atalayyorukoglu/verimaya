@@ -23,7 +23,9 @@ export async function writeLlmParseLedger(
 			total_tokens: usage.totalTokens,
 			estimated_cost_usd_micros: usage.estimatedCostUsdMicros,
 			path: usage.path,
-			error: usage.error
+			error: usage.error,
+			model_records: usage.modelRecords ?? null,
+			kept_records: usage.keptRecords ?? null
 		},
 		status: 'completed',
 		attempts: 0,

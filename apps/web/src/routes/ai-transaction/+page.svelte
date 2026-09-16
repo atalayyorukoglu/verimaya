@@ -771,6 +771,14 @@
 						{#if item.group_id}
 							<StatusBadge label={t('finance.ai.pending.sameEvent')} tone="warning" />
 						{/if}
+						<!--
+							Taslağı model değil kural tabanlı yedek üretti: kategori ve kişi
+							alanları boş gelir. Kullanıcı "AI kategori bulmuyor" demeden önce
+							bunu görsün — eksiklik modelin değil, yolun sonucudur.
+						-->
+						{#if item.parse_path === 'openai_compatible_fallback'}
+							<StatusBadge label={t('finance.ai.pending.fallbackParse')} tone="neutral" />
+						{/if}
 						<!-- KISI-01: mesajın bahsettiği kişiler; tıklayınca kişi sayfası. -->
 						{#each item.contacts as c (c.id)}
 							<a

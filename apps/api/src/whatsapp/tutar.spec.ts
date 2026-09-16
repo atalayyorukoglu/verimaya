@@ -87,3 +87,84 @@ describe('tutarlariDuzelt — LLM çıktısının bekçisi', () => {
 		expect(tutarlariDuzelt([r], 'x')).toEqual([r]);
 	});
 });
+
+/**
+ * 2026-09-16 canlı bulgusu: analizlerin ~%70'i modele ulaşıp boş sonuçla kural
+ * tabanlı yola düşüyordu. Nedeni modelin susması değil, bekçinin kayıtları
+ * düşürmesiydi: `evidence.amount.start` MASKELİ metne göre gelir (KISI_1 adın
+ * yerini alır, metin kısalır), ham metne uygulanınca ofset kayar ve alıntı
+ * başka bir sayının — çoğu kez bir saatin — ortasını gösterir.
+ */
+describe('tutarlariDuzelt — maskeleme ofseti kayması (canlı hata)', () => {
+	const taslak = (amount: number, quote: string, start: number | null): TransactionDraft => ({
+		kind: 'income',
+		amount,
+		currency: 'GBP',
+		title: 't',
+		occurred_on: '2026-09-15',
+		evidence: { amount: { quote, start, confidence: 'high' } }
+	});
+
+	it('maskeli ofset saatin içine düşse bile kayıt düşmez', () => {
+		const ham = 'Jennifer Severino 12:00 de 2520 gbp nakit alindi.';
+		// "Jennifer Severino" (17) → "KISI_1" (6): model 11 karakter geride bir ofset yazar.
+		const maskeliOfset = ham.indexOf('2520') - 11;
+		expect(ham[maskeliOfset + '2520'.length]).toBe(':');
+
+		const [r] = tutarlariDuzelt([taslak(252_000, '2520', maskeliOfset)], ham);
+		expect(r).toBeDefined();
+		expect(r.amount).toBe(252_000);
+	});
+
+	it('alıntı ham metinde hiç geçmiyorsa ofsetsiz karar verilir — kayıt düşmez', () => {
+		const ham = 'KISI_1 olmayan bir metin, 1400 gbp odendi.';
+		const [r] = tutarlariDuzelt([taslak(140_000, '1.400 gbp', 999)], ham);
+		expect(r).toBeDefined();
+	});
+});
+
+/** Kullanıcının şikâyet ettiği üç gerçek mesaj — hiçbirinin kaydı düşmemeli. */
+describe('tutarlariDuzelt — canlı mesajlarda kayıt düşmüyor', () => {
+	const iz = (quote: string, start: number | null) => ({
+		amount: { quote, start, confidence: 'high' as const }
+	});
+	const taslak = (
+		amount: number,
+		currency: TransactionDraft['currency'],
+		quote: string,
+		start: number | null
+	): TransactionDraft => ({
+		kind: 'expense',
+		amount,
+		currency,
+		title: 't',
+		occurred_on: '2026-09-15',
+		evidence: iz(quote, start)
+	});
+
+	it('"110 euro karsiligi 50 Gbp + 50 euro"', () => {
+		const ham =
+			'Jennifer Severino \n3 vida \n1 multi abutment toplamda 110 euro karsiligi 50 Gbp + 50 euro odendi.';
+		const records = [taslak(5000, 'GBP', '50 Gbp', 60), taslak(5000, 'EUR', '50 euro', 69)];
+		expect(tutarlariDuzelt(records, ham)).toHaveLength(2);
+	});
+
+	it('"Sonu 3721 ile biten … 21.400 tl odendi"', () => {
+		const ham = 'Sonu 3721 ile biten Is Bankasi kredi kartina 21.400 tl odendi.';
+		const records = [taslak(2_140_000, 'TRY', '21.400', 33)];
+		const [r] = tutarlariDuzelt(records, ham);
+		expect(r).toBeDefined();
+		expect(r.amount).toBe(2_140_000);
+	});
+
+	it('"Toplamda 8260 Gbp … 2520 nakit 1510 kart … toplamda 4030 gbp"', () => {
+		const ham =
+			'Zaid Waldu 15.09.26 12:00\nToplamda 8260 Gbp tedavi bedeli. 2520 gbpsi nakit 1510 gbpsi kart olmak üzere toplamda 4030 gbp ödeme alindi.';
+		const records = [
+			taslak(252_000, 'GBP', '2520', 40),
+			taslak(151_000, 'GBP', '1510', 58),
+			taslak(826_000, 'GBP', '8260 Gbp', 20)
+		];
+		expect(tutarlariDuzelt(records, ham)).toHaveLength(3);
+	});
+});

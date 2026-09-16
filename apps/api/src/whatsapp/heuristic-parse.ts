@@ -131,6 +131,60 @@ function extractContactLabel(text: string): string | null {
 }
 
 /**
+ * "110 euro karşılığı 50 Gbp ödendi": ilk tutar **çeviri referansıdır**, ayrı bir
+ * ödeme değil. İkisi de kayıt olursa aynı para iki kez sayılır.
+ * Yazım serbest (karsiligi / karşiligi / karşılığı), o yüzden harfler geniş tutuldu.
+ */
+const KARSILIK_SONRASI = /^[\s,]*kar[sş][iı]l[iı][gğ][iı]/i;
+
+/** "Toplamda 4030 gbp" — parçaların toplamı ayrıca yazılmışsa bu kelime önünde durur. */
+const TOPLAM_ONCESI = /toplam/i;
+
+type TutarAdayi = { record: TransactionDraft; start: number; end: number };
+
+/** `hedef`, diğerlerinden en az ikisinin toplamına eşit mi? (alt küme toplamı) */
+function altKumeToplami(hedef: number, digerleri: number[]): boolean {
+	if (digerleri.length < 2 || digerleri.length > 12) return false;
+	for (let mask = 1; mask < 1 << digerleri.length; mask++) {
+		let adet = 0;
+		let toplam = 0;
+		for (let i = 0; i < digerleri.length; i++) {
+			if (mask & (1 << i)) {
+				adet++;
+				toplam += digerleri[i];
+			}
+		}
+		if (adet >= 2 && toplam === hedef) return true;
+	}
+	return false;
+}
+
+/**
+ * Toplam + parça mükerrerliğini giderir. İki kural, ikisi de metinden okunur:
+ *
+ * 1. "X karşılığı Y" → X çeviri referansıdır, düşer.
+ * 2. Önünde "toplam" geçen ve aynı para biriminden **diğer kayıtların toplamına**
+ *    eşit olan tutar, parçaların tekrarıdır — düşer ("2520 nakit + 1510 kart
+ *    olmak üzere toplamda 4030 gbp").
+ *
+ * Parçalar korunur, toplam atılır: kullanıcı satırları tek tek onaylıyor, toplam
+ * satırı onaylanırsa aynı para iki kez kayda girer.
+ */
+function mukerrerleriEle(adaylar: TutarAdayi[], text: string): TransactionDraft[] {
+	const kalan = adaylar.filter((a) => !KARSILIK_SONRASI.test(text.slice(a.end, a.end + 24)));
+
+	const dusen = new Set<TutarAdayi>();
+	for (const aday of kalan) {
+		if (!TOPLAM_ONCESI.test(text.slice(Math.max(0, aday.start - 25), aday.start))) continue;
+		const digerleri = kalan
+			.filter((o) => o !== aday && !dusen.has(o) && o.record.currency === aday.record.currency)
+			.map((o) => o.record.amount);
+		if (altKumeToplami(aday.record.amount, digerleri)) dusen.add(aday);
+	}
+	return kalan.filter((a) => !dusen.has(a)).map((a) => a.record);
+}
+
+/**
  * Heuristic WhatsApp message parser (used by HeuristicLlmClient / LLM fallback).
  * Output remains draft-only until human confirmation via POST /v1/transactions.
  * AGENTS ilke 6: AI extraction is draft — never written as final without approval.
@@ -200,7 +254,7 @@ export function heuristicParseWhatsappMessage(
 		];
 	}
 
-	const records: TransactionDraft[] = [];
+	const adaylar: TutarAdayi[] = [];
 	const { kind, hint: kindHint } = guessKind(text);
 	const contact = matchContact(text, contacts);
 	const payment = guessPaymentMethod(text);
@@ -224,21 +278,25 @@ export function heuristicParseWhatsappMessage(
 		if (contact) evidence.contact_id = contactEvidence(text, contact);
 		if (payment.value) evidence.payment_method = hintEvidence(payment.hint, 'medium');
 
-		records.push({
-			kind,
-			amount: Math.round(major * 100),
-			currency,
-			title: guessTitle(text, major, currency),
-			category: kategoriTahmin(text, kind, categories),
-			subcategory: null,
-			contact_id: contact?.id ?? null,
-			contact_display_name: contact?.display_name ?? null,
-			contact_label: extractContactLabel(text),
-			occurred_on: varsayilanTarih,
-			payment_method: payment.value,
-			description: aciklama(text),
-			evidence
+		adaylar.push({
+			record: {
+				kind,
+				amount: Math.round(major * 100),
+				currency,
+				title: guessTitle(text, major, currency),
+				category: kategoriTahmin(text, kind, categories),
+				subcategory: null,
+				contact_id: contact?.id ?? null,
+				contact_display_name: contact?.display_name ?? null,
+				contact_label: extractContactLabel(text),
+				occurred_on: varsayilanTarih,
+				payment_method: payment.value,
+				description: aciklama(text),
+				evidence
+			},
+			start: matchStart ?? 0,
+			end: (matchStart ?? 0) + m[0].length
 		});
 	}
-	return records;
+	return mukerrerleriEle(adaylar, text);
 }

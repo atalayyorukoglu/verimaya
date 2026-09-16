@@ -224,6 +224,21 @@ export type InboundMessageCreateContactResponse = z.infer<
 	typeof inboundMessageCreateContactResponseSchema
 >;
 
+/**
+ * Taslakları hangi yol üretti: model mi, kural tabanlı yedek mi?
+ *
+ * Kullanıcı "kategori ve kişi gelmiyor" dediğinde cevabın yarısı budur — kural
+ * tabanlı yol kategori/kişi üretemez. Kartta rozet olarak gösterilir.
+ * `heuristic`: LLM hiç yapılandırılmamış. `openai_compatible`: modelden geldi.
+ * `openai_compatible_fallback`: model çağrıldı ama kullanılabilir kayıt dönmedi.
+ */
+export const inboundMessageParsePathSchema = z.enum([
+	'heuristic',
+	'openai_compatible',
+	'openai_compatible_fallback'
+]);
+export type InboundMessageParsePath = z.infer<typeof inboundMessageParsePathSchema>;
+
 export const inboundMessageSchema = z.object({
 	id: uuid,
 	tenant_id: uuid,
@@ -237,6 +252,8 @@ export const inboundMessageSchema = z.object({
 	status: inboundMessageStatusSchema.default('new'),
 	parsed_records: z.array(transactionDraftSchema).nullable(),
 	parse_error: z.string().max(2000).nullable(),
+	/** Taslakları üreten yol; eski satırlarda yok (opsiyonel). */
+	parse_path: inboundMessageParsePathSchema.nullable().optional(),
 	/**
 	 * AI-13: aynı olayı anlatan mesajlar (aynı sohbet + 15 dk + aynı tutar) grubun
 	 * en eski mesajının id'sini taşır. Tek başına duran mesajda null.

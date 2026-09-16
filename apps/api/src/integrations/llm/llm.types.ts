@@ -54,6 +54,14 @@ export type LlmUsageLedger = {
 	estimatedCostUsdMicros: number | null;
 	path: LlmParsePath;
 	error: string | null;
+	/**
+	 * Modelin döndürdüğü ham kayıt sayısı (zod öncesi) ve bekçilerden sonra kalan.
+	 * "Model boş döndü" ile "bekçi düşürdü" ayrımı için; ikisi arasındaki fark
+	 * `error` alanında ayrıntılanır (`model_empty` / `dropped_by_guards:…`).
+	 * Yalnız SAYI — mesaj metni ya da tutar defterde tutulmaz. LLM dışı yollarda null.
+	 */
+	modelRecords?: number | null;
+	keptRecords?: number | null;
 };
 
 export type LlmParseResult = {

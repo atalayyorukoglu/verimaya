@@ -104,3 +104,39 @@ describe('heuristicParseWhatsappMessage — kategori ve ödeme yöntemi', () => 
 		expect(h.payment_method).toBe('Banka Havalesi/EFT');
 	});
 });
+
+/**
+ * Toplam + parça mükerrerliği (2026-09-16 kuyruğu). Kural tabanlı yol metindeki
+ * HER tutarı ayrı kayıt yapıyordu: kullanıcı satırları tek tek onayladığında aynı
+ * para iki kez kayda giriyordu.
+ */
+describe('heuristicParseWhatsappMessage — toplam + parça mükerrerliği', () => {
+	it('parçalar varsa toplam atılır ("2520 nakit + 1510 kart = toplamda 4030")', () => {
+		const records = heuristicParseWhatsappMessage(
+			'Zaid Waldu 2520 gbp nakit 1510 gbp kart olmak üzere toplamda 4030 gbp ödeme alindi.'
+		);
+		expect(records.map((r) => r.amount)).toEqual([252_000, 151_000]);
+	});
+
+	it('toplamı olan ama parçası olmayan tutar korunur', () => {
+		const records = heuristicParseWhatsappMessage(
+			'Toplamda 8260 Gbp tedavi bedeli. 2520 gbp nakit 1510 gbp kart olmak üzere toplamda 4030 gbp alindi.'
+		);
+		expect(records.map((r) => r.amount)).toEqual([826_000, 252_000, 151_000]);
+	});
+
+	it('"X karşılığı Y" tek ödemedir — çeviri referansı kayıt olmaz', () => {
+		const records = heuristicParseWhatsappMessage(
+			'3 vida 1 multi abutment toplamda 110 euro karsiligi 50 Gbp + 50 euro odendi.'
+		);
+		expect(records.map((r) => [r.amount, r.currency])).toEqual([
+			[5000, 'GBP'],
+			[5000, 'EUR']
+		]);
+	});
+
+	it('toplam kelimesi geçmeyen tutarlar dokunulmadan kalır', () => {
+		const records = heuristicParseWhatsappMessage('1000 tl ve 2500 tl ve 3500 tl odendi.');
+		expect(records.map((r) => r.amount)).toEqual([100_000, 250_000, 350_000]);
+	});
+});

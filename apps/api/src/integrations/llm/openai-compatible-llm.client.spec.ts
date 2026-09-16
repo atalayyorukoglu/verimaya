@@ -430,3 +430,139 @@ describe('stripPlaceholders (2026-08-23, gerçek muhasebe konuşmasıyla bulundu
 		expect(draft.title).toBe('tahsilatı');
 	});
 });
+
+/**
+ * 2026-09-16 canlı defteri: 116 satır `empty_llm_records` → kural tabanlı yol.
+ * "Model boş döndü" ile "bekçi düşürdü" aynı satıra yazıldığı sürece prompt mu
+ * kod mu düzeltilecek bilinemiyordu. Artık neden ayrıştırılmış geliyor.
+ */
+describe('boş sonucun nedeni defterde ayrıştırılır', () => {
+	const cevap = (records: unknown[]) =>
+		vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						model: 'mistral-medium-latest',
+						choices: [{ message: { content: JSON.stringify({ records }) } }],
+						usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 }
+					}),
+					{ status: 200, headers: { 'content-type': 'application/json' } }
+				)
+		);
+
+	const client = (fetchFn: ReturnType<typeof vi.fn>) =>
+		new OpenAiCompatibleLlmClient({
+			apiKey: 'sk-test',
+			baseUrl: 'https://api.mistral.ai/v1',
+			model: 'mistral-medium-latest',
+			fetchFn: fetchFn as unknown as typeof fetch
+		});
+
+	const gecerli = {
+		kind: 'expense',
+		amount: 140_000,
+		currency: 'GBP',
+		title: 'Ödeme',
+		occurred_on: '2026-09-15',
+		description: '1400 Gbp odendi'
+	};
+
+	it('model gerçekten boş döndüyse model_empty', async () => {
+		const result = await client(cevap([])).parseTransactionDrafts({
+			message: '1400 Gbp odendi.',
+			patients
+		});
+		expect(result.usage.path).toBe('openai_compatible_fallback');
+		expect(result.usage.error).toBe('model_empty');
+		expect(result.usage.modelRecords).toBe(0);
+		expect(result.usage.keptRecords).toBe(0);
+	});
+
+	it('kayıt üretildi ama bekçide düştüyse dropped_by_guards', async () => {
+		const result = await client(
+			cevap([
+				{
+					...gecerli,
+					amount: 1_509_260,
+					evidence: { amount: { quote: '15.09.26', start: 0, confidence: 'high' } }
+				}
+			])
+		).parseTransactionDrafts({ message: '15.09.26 12:00 randevu, 1400 Gbp odendi.', patients });
+		expect(result.usage.error).toBe('dropped_by_guards:tutar=1');
+		expect(result.usage.modelRecords).toBe(1);
+	});
+
+	it('zod düşürdüyse validation sayısı yazılır', async () => {
+		const result = await client(
+			cevap([{ kind: 'not-a-kind', amount: 'oops' }])
+		).parseTransactionDrafts({ message: '1400 Gbp odendi.', patients });
+		expect(result.usage.error).toBe('dropped_by_guards:validation=1');
+	});
+});
+
+/**
+ * Tek kusurlu kayıt bütün ayrıştırmayı düşürüyordu (canlı: 9 satır
+ * `too_small minimum 0`, 1 satır `invalid_enum_value received "title"`).
+ */
+describe('parseDraftsPayload — kusurlu kayıt bütün ayrıştırmayı düşürmez', () => {
+	const cagir = async (records: unknown[], message = 'Klinige 1400 Gbp odendi.') => {
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						model: 'mistral-medium-latest',
+						choices: [{ message: { content: JSON.stringify({ records }) } }],
+						usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 }
+					}),
+					{ status: 200, headers: { 'content-type': 'application/json' } }
+				)
+		);
+		const client = new OpenAiCompatibleLlmClient({
+			apiKey: 'sk-test',
+			baseUrl: 'https://api.mistral.ai/v1',
+			model: 'mistral-medium-latest',
+			fetchFn: fetchFn as unknown as typeof fetch
+		});
+		return client.parseTransactionDrafts({ message, patients });
+	};
+
+	const gecerli = {
+		kind: 'expense',
+		amount: 140_000,
+		currency: 'GBP',
+		title: 'Ödeme',
+		occurred_on: '2026-09-15',
+		description: '1400 Gbp odendi'
+	};
+
+	it('geçmeyen kayıt atılır, geçenler kalır (model yolu korunur)', async () => {
+		const result = await cagir([{ kind: 'expense', amount: 0 }, gecerli]);
+		expect(result.usage.path).toBe('openai_compatible');
+		expect(result.records).toHaveLength(1);
+		expect(result.records[0].amount).toBe(140_000);
+		expect(result.usage.modelRecords).toBe(2);
+		expect(result.usage.keptRecords).toBe(1);
+	});
+
+	it('evidence içindeki bilinmeyen alan adı yok sayılır, kayıt düşmez', async () => {
+		const result = await cagir([
+			{
+				...gecerli,
+				evidence: {
+					title: { quote: 'Klinige', start: 0, confidence: 'high' },
+					amount: { quote: '1400', start: 9, confidence: 'high' }
+				}
+			}
+		]);
+		expect(result.usage.path).toBe('openai_compatible');
+		expect(result.records).toHaveLength(1);
+		expect(result.records[0].evidence?.amount?.quote).toBe('1400');
+		expect((result.records[0].evidence as Record<string, unknown>).title).toBeUndefined();
+	});
+
+	it('negatif counterparty_amount null a çekilir', async () => {
+		const result = await cagir([{ ...gecerli, counterparty_amount: -5000 }]);
+		expect(result.usage.path).toBe('openai_compatible');
+		expect(result.records[0].counterparty_amount).toBeNull();
+	});
+});

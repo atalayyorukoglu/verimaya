@@ -1,4 +1,9 @@
-import type { InboundMessage, TransactionDraft } from '@verimaya/shared';
+import {
+	inboundMessageParsePathSchema,
+	type InboundMessage,
+	type InboundMessageParsePath,
+	type TransactionDraft
+} from '@verimaya/shared';
 import { turleriBul } from './mesaj-turu';
 import { kisiBilgisiCikar } from './kisi-bilgisi';
 
@@ -139,12 +144,27 @@ export function extractParseError(payload: Record<string, unknown>): string | nu
 	return typeof value === 'string' ? value : null;
 }
 
+/** Taslakları hangi yol üretti; eski satırlarda alan yok → null. */
+export function extractParsePath(payload: Record<string, unknown>): InboundMessageParsePath | null {
+	const parsed = inboundMessageParsePathSchema.safeParse(payload.parse_path);
+	return parsed.success ? parsed.data : null;
+}
+
 /** Merges parse results into the stored payload without touching the raw provider fields. */
 export function mergeParsedPayload(
 	payload: Record<string, unknown>,
-	patch: { parsed_records: TransactionDraft[] | null; parse_error: string | null }
+	patch: {
+		parsed_records: TransactionDraft[] | null;
+		parse_error: string | null;
+		parse_path?: InboundMessageParsePath | null;
+	}
 ): Record<string, unknown> {
-	return { ...payload, parsed_records: patch.parsed_records, parse_error: patch.parse_error };
+	return {
+		...payload,
+		parsed_records: patch.parsed_records,
+		parse_error: patch.parse_error,
+		parse_path: patch.parse_path ?? null
+	};
 }
 
 export function toInboundMessage(row: {
@@ -170,6 +190,8 @@ export function toInboundMessage(row: {
 		status: row.status as InboundMessage['status'],
 		parsed_records: extractParsedRecords(payload),
 		parse_error: extractParseError(payload),
+		// Kullanıcıya görünürlük: kural tabanlı yedekten gelen taslak kartta rozetlenir.
+		parse_path: extractParsePath(payload),
 		// Gruplama liste düzeyinde hesaplanır (groupInboundMessages); tek satır kendini bilemez.
 		group_id: null,
 		// Grubun görevi burada bilinmiyor (defter liste düzeyinde okunuyor); varsayılan

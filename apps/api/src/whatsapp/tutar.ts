@@ -82,11 +82,62 @@ export function paraBaglamiVar(text: string): boolean {
 	return PARA_BAGLAMI.test(text);
 }
 
+/** Alıntıdaki sayı adayları: "110 euro karsiligi 50 Gbp" → ["110", "50"]. */
+function alintiSayilari(quote: string): string[] {
+	return [...quote.matchAll(/\d[\d.,]*/g)].map((m) => m[0]);
+}
+
+/**
+ * Alıntı ham metinde nerede geçiyor?
+ *
+ * Modelin verdiği `start` **maskeli** metne göredir (`KISI_1` adların yerini alır,
+ * uzunluk değişir); ham metinde başka bir yeri gösterir ve "saat mi tutar mı"
+ * kararı yanlış çıkar. Bu yüzden ofset hiç kullanılmaz: alıntının kendisi ham
+ * metinde aranır (ilk eşleşme). Bulunamazsa null döner — o zaman bağlam kuralları
+ * hiç uygulanmaz (ofsetsiz karar).
+ */
+function hamMetindeBul(quote: string, num: string, rawText: string): number | null {
+	const q = rawText.indexOf(quote);
+	if (q >= 0) {
+		const inner = quote.indexOf(num);
+		return inner >= 0 ? q + inner : q;
+	}
+	const n = rawText.indexOf(num);
+	return n >= 0 ? n : null;
+}
+
+/**
+ * LLM alıntısı gerçekten "tutar değil" mi? {@link tutarDegil}'den farkı: ofset
+ * verilmez, alıntı ham metinde aranır. Yalnız **kesin** durumlarda true döner —
+ * tarih, saat, `@bahsetme` kimliği, 9+ haneli kimlik, çıplak yıl. Kararsız kalırsa
+ * false: kayıt düşürmek, yanlış tutarı düzeltmekten pahalıdır.
+ */
+export function alintiTutarDegil(quote: string, rawText: string): boolean {
+	const nums = alintiSayilari(quote);
+	const num = nums[0];
+	if (!num) return false;
+	// Bağlam gerektirmeyen kurallar.
+	if (TARIH.test(num)) return true;
+	if (/^\d{9,}$/.test(num.replace(/[.,]/g, ''))) return true;
+	// Çıplak yıl yalnız tek başına anlamlı: "2026 yılı 1500 tl" alıntısı tutar taşır.
+	if (nums.length === 1 && /^(19|20)\d{2}$/.test(num)) return true;
+
+	const at = hamMetindeBul(quote, num, rawText);
+	if (at == null) return false;
+	const before = rawText.slice(Math.max(0, at - 1), at);
+	const after = rawText.slice(at + num.length, at + num.length + 1);
+	return before === '@' || before === ':' || after === ':';
+}
+
 /**
  * LLM'den gelen taslakların tutarını alıntıya göre düzeltir. Model alıntıyı doğru
  * kopyalıyor ("18.200") ama sayıya çevirirken yanılıyor (182). Alıntı tutar gibi
  * değilse (tarih, bahsetme kimliği) taslak düşer — kaynağı gösteremeyen tutar
  * kuyruğa girmez.
+ *
+ * Alıntıda birden çok sayı varsa ("110 euro karsiligi 50 Gbp") hangisinin tutar
+ * olduğu belirsizdir: modelin yazdığı tutarla eşleşen varsa doğrulanmış sayılır,
+ * yoksa tahmin üretilmez — tutar olduğu gibi bırakılır.
  */
 export function tutarlariDuzelt(records: TransactionDraft[], rawText: string): TransactionDraft[] {
 	const out: TransactionDraft[] = [];
@@ -96,20 +147,22 @@ export function tutarlariDuzelt(records: TransactionDraft[], rawText: string): T
 			out.push(r);
 			continue;
 		}
-		// Alıntı "2.900 GBP" gibi gelebilir; sayı kısmını al.
-		const num = quote.match(/\d[\d.,]*/)?.[0];
-		if (!num) {
+		const nums = alintiSayilari(quote);
+		if (nums.length === 0) {
 			out.push(r);
 			continue;
 		}
-		if (tutarDegil(num, rawText, r.evidence?.amount?.start ?? null)) continue;
-		const major = parseTutar(num);
-		if (major == null || major <= 0) {
+		if (alintiTutarDegil(quote, rawText)) continue;
+
+		const minors = nums
+			.map((n) => parseTutar(n))
+			.filter((major): major is number => major != null && major > 0)
+			.map((major) => Math.round(major * 100));
+		if (minors.length === 0 || minors.includes(r.amount) || minors.length > 1) {
 			out.push(r);
 			continue;
 		}
-		const minor = Math.round(major * 100);
-		out.push(minor === r.amount ? r : { ...r, amount: minor });
+		out.push({ ...r, amount: minors[0] });
 	}
 	return out;
 }
