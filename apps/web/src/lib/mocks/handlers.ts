@@ -20,6 +20,10 @@ import {
 	contactFileCreateSchema,
 	contactFilePresignSchema,
 	contactCaseNoteCreateSchema,
+	contactVisitCreateFromDraft,
+	contactVisitCreateSchema,
+	contactVisitSuggestionApproveSchema,
+	contactVisitUpdateSchema,
 	contactTypeCreateSchema,
 	contactTypeUpdateSchema,
 	organizationCreateSchema,
@@ -104,6 +108,7 @@ import {
 	type Organization,
 	type ContactCaseNote,
 	type ContactFile,
+	type ContactVisit,
 	type ReportCohorts,
 	type SupportedCurrency,
 	type Tenant,
@@ -2707,6 +2712,138 @@ export const handlers = [
 		if (idx < 0) return notFound('Not bulunamadı');
 		store.caseNotes.splice(idx, 1);
 		return new HttpResponse(null, { status: 204 });
+	}),
+
+	/* VIZIT-01 — kişi vizitleri ve onay kuyruğu (mock kipi). */
+	http.get('/v1/contacts/:id/visits', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
+		const items = store.contactVisits
+			.filter((v) => v.contact_id === params.id)
+			.sort((a, b) => (a.arrival_at ?? '').localeCompare(b.arrival_at ?? ''));
+		return HttpResponse.json({ items });
+	}),
+
+	http.post('/v1/contacts/:id/visits', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const contact = store.contacts.find((c) => c.id === params.id);
+		if (!contact) return notFound('Kişi bulunamadı');
+		const parsed = contactVisitCreateSchema.safeParse(await request.json());
+		if (!parsed.success) return badRequest('Geçersiz vizit', parsed.error.flatten());
+		const visit: ContactVisit = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			contact_id: contact.id,
+			visit_type: parsed.data.visit_type,
+			sequence: parsed.data.sequence ?? null,
+			arrival_at: parsed.data.arrival_at ?? null,
+			arrival_time_known: parsed.data.arrival_time_known ?? true,
+			departure_at: parsed.data.departure_at ?? null,
+			departure_time_known: parsed.data.departure_time_known ?? true,
+			arrival_flight: parsed.data.arrival_flight ?? null,
+			departure_flight: parsed.data.departure_flight ?? null,
+			hotel: parsed.data.hotel ?? null,
+			hotel_covered_by: parsed.data.hotel_covered_by ?? 'unknown',
+			transfer_provider: parsed.data.transfer_provider ?? null,
+			clinic: parsed.data.clinic ?? null,
+			doctor: parsed.data.doctor ?? null,
+			treatment_plan: parsed.data.treatment_plan ?? null,
+			status: parsed.data.status ?? 'planned',
+			notes: parsed.data.notes ?? null,
+			source_inbound_message_id: parsed.data.source_inbound_message_id ?? null,
+			created_by: demoUser.display_name,
+			created_at: nowIso(),
+			updated_at: nowIso()
+		};
+		store.contactVisits.push(visit);
+		return HttpResponse.json(visit, { status: 201 });
+	}),
+
+	http.patch('/v1/contacts/:id/visits/:visitId', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const visit = store.contactVisits.find(
+			(v) => v.id === params.visitId && v.contact_id === params.id
+		);
+		if (!visit) return notFound('Vizit bulunamadı');
+		const parsed = contactVisitUpdateSchema.safeParse(await request.json());
+		if (!parsed.success) return badRequest('Geçersiz vizit', parsed.error.flatten());
+		Object.assign(visit, parsed.data, { updated_at: nowIso() });
+		return HttpResponse.json(visit);
+	}),
+
+	http.delete('/v1/contacts/:id/visits/:visitId', ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const idx = store.contactVisits.findIndex(
+			(v) => v.id === params.visitId && v.contact_id === params.id
+		);
+		if (idx < 0) return notFound('Vizit bulunamadı');
+		const [removed] = store.contactVisits.splice(idx, 1);
+		return HttpResponse.json({ id: removed!.id, deleted: true });
+	}),
+
+	http.get('/v1/contact-visit-suggestions', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const status = new URL(request.url).searchParams.get('status') ?? 'pending';
+		return HttpResponse.json({
+			items: store.contactVisitSuggestions.filter((s) => s.status === status)
+		});
+	}),
+
+	http.post('/v1/contact-visit-suggestions/:id/approve', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const suggestion = store.contactVisitSuggestions.find((s) => s.id === params.id);
+		if (!suggestion) return notFound('Öneri bulunamadı');
+		if (suggestion.status !== 'pending') return badRequest('Öneri zaten karara bağlandı', {});
+		const body = (await request.json().catch(() => ({}))) as { visit?: unknown };
+		const parsed = contactVisitSuggestionApproveSchema.safeParse(body ?? {});
+		if (!parsed.success) return badRequest('Geçersiz vizit', parsed.error.flatten());
+		const create = parsed.data.visit ?? contactVisitCreateFromDraft(suggestion.draft);
+		const visit: ContactVisit = {
+			id: crypto.randomUUID(),
+			tenant_id: DEMO_TENANT_ID,
+			contact_id: suggestion.contact_id,
+			visit_type: create.visit_type,
+			sequence: create.sequence ?? null,
+			arrival_at: create.arrival_at ?? null,
+			arrival_time_known: create.arrival_time_known ?? true,
+			departure_at: create.departure_at ?? null,
+			departure_time_known: create.departure_time_known ?? true,
+			arrival_flight: create.arrival_flight ?? null,
+			departure_flight: create.departure_flight ?? null,
+			hotel: create.hotel ?? null,
+			hotel_covered_by: create.hotel_covered_by ?? 'unknown',
+			transfer_provider: create.transfer_provider ?? null,
+			clinic: create.clinic ?? null,
+			doctor: create.doctor ?? null,
+			treatment_plan: create.treatment_plan ?? null,
+			status: create.status ?? 'planned',
+			notes: create.notes ?? null,
+			source_inbound_message_id: suggestion.inbound_message_id,
+			created_by: demoUser.display_name,
+			created_at: nowIso(),
+			updated_at: nowIso()
+		};
+		store.contactVisits.push(visit);
+		suggestion.status = 'approved';
+		suggestion.created_visit_id = visit.id;
+		suggestion.decided_at = nowIso();
+		suggestion.decided_by = demoUser.display_name;
+		suggestion.updated_at = nowIso();
+		return HttpResponse.json(suggestion);
+	}),
+
+	http.post('/v1/contact-visit-suggestions/:id/reject', async ({ params, request }) => {
+		const store = getStore(scenarioFrom(request));
+		const suggestion = store.contactVisitSuggestions.find((s) => s.id === params.id);
+		if (!suggestion) return notFound('Öneri bulunamadı');
+		const body = (await request.json().catch(() => ({}))) as { reason?: string };
+		suggestion.status = 'rejected';
+		suggestion.reject_reason = body?.reason?.trim() || null;
+		suggestion.decided_at = nowIso();
+		suggestion.decided_by = demoUser.display_name;
+		suggestion.updated_at = nowIso();
+		return HttpResponse.json(suggestion);
 	}),
 
 	http.post('/v1/contacts/:id/files/presign', async ({ params, request }) => {

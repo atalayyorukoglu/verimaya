@@ -48,13 +48,16 @@
 		whatsapp: 'W',
 		appointment: 'R',
 		transaction: 'P',
-		note: 'N'
+		note: 'N',
+		visit: 'V'
 	};
 	const KIND_STYLE: Record<ContactSummarySource['kind'], string> = {
 		whatsapp: 'bg-tl-whatsapp-soft text-tl-whatsapp',
 		appointment: 'bg-tl-appointment-soft text-tl-appointment',
 		transaction: 'bg-tl-transaction-soft text-tl-transaction',
-		note: 'bg-tl-note-soft text-tl-note'
+		note: 'bg-tl-note-soft text-tl-note',
+		// VIZIT-01 — vizit kaynağı randevu rengini paylaşır: ikisi de "geliş" olayı.
+		visit: 'bg-tl-appointment-soft text-tl-appointment'
 	};
 
 	function sourceTitle(s: ContactSummarySource): string {

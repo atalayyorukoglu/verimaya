@@ -49,6 +49,11 @@ export function queryKeys(scope: QueryScope) {
 			all: () => k('incidents'),
 			list: (params: Params = {}) => k('incidents', params)
 		},
+		/** VIZIT-01 — onay bekleyen vizit önerileri. */
+		contactVisitSuggestions: {
+			all: () => k('contact-visit-suggestions'),
+			list: (params: Params = {}) => k('contact-visit-suggestions', params)
+		},
 		recordUpdateSuggestions: {
 			all: () => k('record-suggestions'),
 			list: (params: Params = {}) => k('record-suggestions', params)
@@ -73,6 +78,7 @@ export function queryKeys(scope: QueryScope) {
 			summary: (id: string) => k('contacts', id, 'summary'),
 			files: (id: string) => k('contacts', id, 'files'),
 			caseNotes: (id: string) => k('contacts', id, 'case-notes'),
+			visits: (id: string) => k('contacts', id, 'visits'),
 			duplicateGroups: () => k('contacts', 'duplicate-groups')
 		},
 		settings: {

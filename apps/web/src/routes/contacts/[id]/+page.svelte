@@ -26,6 +26,7 @@
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import ContactTimeline from '$lib/components/ContactTimeline.svelte';
 	import ContactSummaryCard from '$lib/components/ContactSummaryCard.svelte';
+	import ContactVisitsPanel from '$lib/components/ContactVisitsPanel.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
 	import TransactionList from '$lib/components/TransactionList.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
@@ -58,8 +59,11 @@
 	let incidentFormError = $state<string | null>(null);
 	let incidentResolveError = $state<string | null>(null);
 
-	/** Kişi kartı sekmeleri; hasta açılınca akış karşılar. */
-	type ContactTab = 'flow' | 'finance' | 'info';
+	/**
+	 * Kişi kartı sekmeleri; hasta açılınca akış karşılar.
+	 * VIZIT-01 — "Vizitler" yalnız hasta türündeki kişilerde var (otelin viziti olmaz).
+	 */
+	type ContactTab = 'flow' | 'visits' | 'finance' | 'info';
 	let activeTab = $state<ContactTab>('flow');
 
 	let autoLinking = $state(false);
@@ -111,6 +115,17 @@
 	 */
 	const role = $derived(qs.meQuery.data?.role ?? DEFAULT_ROLE);
 	const canSeeTransactions = $derived(canAccessPath('/finance', role));
+
+	/*
+	 * VIZIT-01 — vizit kavramı hasta akışına ait. Kişi türü "Hasta" değilse sekme
+	 * hiç görünmez; seçiliyken tür değişirse akışa düşülür.
+	 */
+	const isPatient = $derived(
+		(contactQuery.data?.contact_type_name ?? '').trim().toLocaleLowerCase('tr') === 'hasta'
+	);
+	$effect(() => {
+		if (activeTab === 'visits' && !isPatient) activeTab = 'flow';
+	});
 
 	/*
 	 * Kişi kartındaki işlem listesi (kullanıcı, 2026-09-16: "finansa gitmek
@@ -418,7 +433,7 @@
 					role="tablist"
 					aria-label={t('contacts.detail.tabsAria')}
 				>
-					{#each [{ id: 'flow', label: t('contacts.detail.tabFlow') }, { id: 'finance', label: t('contacts.detail.tabFinance') }, { id: 'info', label: t('contacts.detail.tabInfo') }] as tab (tab.id)}
+					{#each [{ id: 'flow', label: t('contacts.detail.tabFlow') }, ...(isPatient ? [{ id: 'visits', label: t('contacts.detail.tabVisits') }] : []), { id: 'finance', label: t('contacts.detail.tabFinance') }, { id: 'info', label: t('contacts.detail.tabInfo') }] as tab (tab.id)}
 						<button
 							type="button"
 							role="tab"
@@ -456,6 +471,10 @@
 				{#if incidentResolveError}
 					<p class="tl-measure mt-2 text-sm text-danger">{incidentResolveError}</p>
 				{/if}
+			</div>
+		{:else if activeTab === 'visits'}
+			<div class="tl-measure mt-6 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">
+				<ContactVisitsPanel contactId={contact.id} />
 			</div>
 		{:else if activeTab === 'finance'}
 			<div class="tl-measure pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">

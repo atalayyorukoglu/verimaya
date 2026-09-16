@@ -2913,6 +2913,7 @@ paths:
                                   - appointment
                                   - transaction
                                   - note
+                                  - visit
                               id:
                                 type: string
                                 format: uuid
@@ -3021,6 +3022,7 @@ paths:
                                   - appointment
                                   - transaction
                                   - note
+                                  - visit
                               id:
                                 type: string
                                 format: uuid
@@ -3942,6 +3944,1146 @@ paths:
           required: true
           schema:
             type: string
+  /contacts/{id}/visits:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        visit_type:
+                          type: string
+                          enum:
+                            - consultation
+                            - visit_1
+                            - visit_2
+                            - visit_3
+                            - rpt
+                            - other
+                        sequence:
+                          type: integer
+                          minimum: 0
+                          maximum: 99
+                          nullable: true
+                        arrival_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        arrival_time_known:
+                          type: boolean
+                        departure_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        departure_time_known:
+                          type: boolean
+                        arrival_flight:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        departure_flight:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        hotel:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        hotel_covered_by:
+                          type: string
+                          enum:
+                            - company
+                            - patient
+                            - unknown
+                        transfer_provider:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        clinic:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        doctor:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        treatment_plan:
+                          type: string
+                          maxLength: 4000
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                            - planned
+                            - in_progress
+                            - completed
+                            - cancelled
+                        notes:
+                          type: string
+                          maxLength: 4000
+                          nullable: true
+                        source_inbound_message_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        created_by:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - visit_type
+                        - sequence
+                        - arrival_at
+                        - arrival_time_known
+                        - departure_at
+                        - departure_time_known
+                        - arrival_flight
+                        - departure_flight
+                        - hotel
+                        - hotel_covered_by
+                        - transfer_provider
+                        - clinic
+                        - doctor
+                        - treatment_plan
+                        - status
+                        - notes
+                        - source_inbound_message_id
+                        - created_by
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  visit_type:
+                    type: string
+                    enum:
+                      - consultation
+                      - visit_1
+                      - visit_2
+                      - visit_3
+                      - rpt
+                      - other
+                  sequence:
+                    type: integer
+                    minimum: 0
+                    maximum: 99
+                    nullable: true
+                  arrival_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  arrival_time_known:
+                    type: boolean
+                  departure_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  departure_time_known:
+                    type: boolean
+                  arrival_flight:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  departure_flight:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  hotel:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  hotel_covered_by:
+                    type: string
+                    enum:
+                      - company
+                      - patient
+                      - unknown
+                  transfer_provider:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  clinic:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  doctor:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  treatment_plan:
+                    type: string
+                    maxLength: 4000
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                      - planned
+                      - in_progress
+                      - completed
+                      - cancelled
+                  notes:
+                    type: string
+                    maxLength: 4000
+                    nullable: true
+                  source_inbound_message_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  created_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - visit_type
+                  - sequence
+                  - arrival_at
+                  - arrival_time_known
+                  - departure_at
+                  - departure_time_known
+                  - arrival_flight
+                  - departure_flight
+                  - hotel
+                  - hotel_covered_by
+                  - transfer_provider
+                  - clinic
+                  - doctor
+                  - treatment_plan
+                  - status
+                  - notes
+                  - source_inbound_message_id
+                  - created_by
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visit_type:
+                  type: string
+                  enum:
+                    - consultation
+                    - visit_1
+                    - visit_2
+                    - visit_3
+                    - rpt
+                    - other
+                sequence:
+                  type: integer
+                  minimum: 0
+                  maximum: 99
+                  nullable: true
+                arrival_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                arrival_time_known:
+                  type: boolean
+                departure_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                departure_time_known:
+                  type: boolean
+                arrival_flight:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                departure_flight:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                hotel:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                hotel_covered_by:
+                  type: string
+                  enum:
+                    - company
+                    - patient
+                    - unknown
+                transfer_provider:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                clinic:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                doctor:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                treatment_plan:
+                  type: string
+                  maxLength: 4000
+                  nullable: true
+                status:
+                  type: string
+                  enum:
+                    - planned
+                    - in_progress
+                    - completed
+                    - cancelled
+                notes:
+                  type: string
+                  maxLength: 4000
+                  nullable: true
+                source_inbound_message_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+              required:
+                - visit_type
+              additionalProperties: false
+  /contacts/{id}/visits/{visitId}:
+    patch:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  visit_type:
+                    type: string
+                    enum:
+                      - consultation
+                      - visit_1
+                      - visit_2
+                      - visit_3
+                      - rpt
+                      - other
+                  sequence:
+                    type: integer
+                    minimum: 0
+                    maximum: 99
+                    nullable: true
+                  arrival_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  arrival_time_known:
+                    type: boolean
+                  departure_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  departure_time_known:
+                    type: boolean
+                  arrival_flight:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  departure_flight:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  hotel:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  hotel_covered_by:
+                    type: string
+                    enum:
+                      - company
+                      - patient
+                      - unknown
+                  transfer_provider:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  clinic:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  doctor:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  treatment_plan:
+                    type: string
+                    maxLength: 4000
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                      - planned
+                      - in_progress
+                      - completed
+                      - cancelled
+                  notes:
+                    type: string
+                    maxLength: 4000
+                    nullable: true
+                  source_inbound_message_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  created_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - visit_type
+                  - sequence
+                  - arrival_at
+                  - arrival_time_known
+                  - departure_at
+                  - departure_time_known
+                  - arrival_flight
+                  - departure_flight
+                  - hotel
+                  - hotel_covered_by
+                  - transfer_provider
+                  - clinic
+                  - doctor
+                  - treatment_plan
+                  - status
+                  - notes
+                  - source_inbound_message_id
+                  - created_by
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: visitId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visit_type:
+                  type: string
+                  enum:
+                    - consultation
+                    - visit_1
+                    - visit_2
+                    - visit_3
+                    - rpt
+                    - other
+                sequence:
+                  type: integer
+                  minimum: 0
+                  maximum: 99
+                  nullable: true
+                arrival_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                arrival_time_known:
+                  type: boolean
+                departure_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                departure_time_known:
+                  type: boolean
+                arrival_flight:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                departure_flight:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                hotel:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                hotel_covered_by:
+                  type: string
+                  enum:
+                    - company
+                    - patient
+                    - unknown
+                transfer_provider:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                clinic:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                doctor:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+                treatment_plan:
+                  type: string
+                  maxLength: 4000
+                  nullable: true
+                status:
+                  type: string
+                  enum:
+                    - planned
+                    - in_progress
+                    - completed
+                    - cancelled
+                notes:
+                  type: string
+                  maxLength: 4000
+                  nullable: true
+              additionalProperties: false
+    delete:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  deleted:
+                    type: boolean
+                    enum:
+                      - true
+                required:
+                  - id
+                  - deleted
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: visitId
+          in: path
+          required: true
+          schema:
+            type: string
+  /contact-visit-suggestions:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tenant_id:
+                          type: string
+                          format: uuid
+                        contact_id:
+                          type: string
+                          format: uuid
+                        contact_display_name:
+                          type: string
+                          maxLength: 255
+                        inbound_message_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        draft:
+                          type: object
+                          properties:
+                            visit_type:
+                              type: string
+                              enum:
+                                - consultation
+                                - visit_1
+                                - visit_2
+                                - visit_3
+                                - rpt
+                                - other
+                            sequence:
+                              type: integer
+                              minimum: 0
+                              maximum: 99
+                              nullable: true
+                            arrival_at:
+                              type: string
+                              format: date-time
+                              nullable: true
+                            arrival_time_known:
+                              type: boolean
+                            departure_at:
+                              type: string
+                              format: date-time
+                              nullable: true
+                            departure_time_known:
+                              type: boolean
+                            hotel:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            clinic:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            doctor:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                            treatment_plan:
+                              type: string
+                              maxLength: 4000
+                              nullable: true
+                          required:
+                            - visit_type
+                            - sequence
+                            - arrival_at
+                            - arrival_time_known
+                            - departure_at
+                            - departure_time_known
+                            - hotel
+                            - clinic
+                            - doctor
+                            - treatment_plan
+                          additionalProperties: false
+                        source_text:
+                          type: string
+                          maxLength: 4000
+                        confidence:
+                          type: string
+                          enum:
+                            - high
+                            - medium
+                        status:
+                          type: string
+                          enum:
+                            - pending
+                            - approved
+                            - rejected
+                        created_visit_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        decided_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        decided_by:
+                          type: string
+                          maxLength: 255
+                          nullable: true
+                        reject_reason:
+                          type: string
+                          maxLength: 500
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                        - id
+                        - tenant_id
+                        - contact_id
+                        - contact_display_name
+                        - inbound_message_id
+                        - draft
+                        - source_text
+                        - confidence
+                        - status
+                        - created_visit_id
+                        - decided_at
+                        - decided_by
+                        - reject_reason
+                        - created_at
+                        - updated_at
+                      additionalProperties: false
+                required:
+                  - items
+                additionalProperties: false
+  /contact-visit-suggestions/{id}/approve:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                    maxLength: 255
+                  inbound_message_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  draft:
+                    type: object
+                    properties:
+                      visit_type:
+                        type: string
+                        enum:
+                          - consultation
+                          - visit_1
+                          - visit_2
+                          - visit_3
+                          - rpt
+                          - other
+                      sequence:
+                        type: integer
+                        minimum: 0
+                        maximum: 99
+                        nullable: true
+                      arrival_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      arrival_time_known:
+                        type: boolean
+                      departure_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      departure_time_known:
+                        type: boolean
+                      hotel:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      clinic:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      doctor:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      treatment_plan:
+                        type: string
+                        maxLength: 4000
+                        nullable: true
+                    required:
+                      - visit_type
+                      - sequence
+                      - arrival_at
+                      - arrival_time_known
+                      - departure_at
+                      - departure_time_known
+                      - hotel
+                      - clinic
+                      - doctor
+                      - treatment_plan
+                    additionalProperties: false
+                  source_text:
+                    type: string
+                    maxLength: 4000
+                  confidence:
+                    type: string
+                    enum:
+                      - high
+                      - medium
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - approved
+                      - rejected
+                  created_visit_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  decided_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  decided_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  reject_reason:
+                    type: string
+                    maxLength: 500
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - contact_display_name
+                  - inbound_message_id
+                  - draft
+                  - source_text
+                  - confidence
+                  - status
+                  - created_visit_id
+                  - decided_at
+                  - decided_by
+                  - reject_reason
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visit:
+                  type: object
+                  properties:
+                    visit_type:
+                      type: string
+                      enum:
+                        - consultation
+                        - visit_1
+                        - visit_2
+                        - visit_3
+                        - rpt
+                        - other
+                    sequence:
+                      type: integer
+                      minimum: 0
+                      maximum: 99
+                      nullable: true
+                    arrival_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    arrival_time_known:
+                      type: boolean
+                    departure_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    departure_time_known:
+                      type: boolean
+                    arrival_flight:
+                      type: string
+                      maxLength: 255
+                      nullable: true
+                    departure_flight:
+                      type: string
+                      maxLength: 255
+                      nullable: true
+                    hotel:
+                      type: string
+                      maxLength: 255
+                      nullable: true
+                    hotel_covered_by:
+                      type: string
+                      enum:
+                        - company
+                        - patient
+                        - unknown
+                    transfer_provider:
+                      type: string
+                      maxLength: 255
+                      nullable: true
+                    clinic:
+                      type: string
+                      maxLength: 255
+                      nullable: true
+                    doctor:
+                      type: string
+                      maxLength: 255
+                      nullable: true
+                    treatment_plan:
+                      type: string
+                      maxLength: 4000
+                      nullable: true
+                    status:
+                      type: string
+                      enum:
+                        - planned
+                        - in_progress
+                        - completed
+                        - cancelled
+                    notes:
+                      type: string
+                      maxLength: 4000
+                      nullable: true
+                    source_inbound_message_id:
+                      type: string
+                      format: uuid
+                      nullable: true
+                  required:
+                    - visit_type
+                  additionalProperties: false
+              additionalProperties: false
+  /contact-visit-suggestions/{id}/reject:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  contact_id:
+                    type: string
+                    format: uuid
+                  contact_display_name:
+                    type: string
+                    maxLength: 255
+                  inbound_message_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  draft:
+                    type: object
+                    properties:
+                      visit_type:
+                        type: string
+                        enum:
+                          - consultation
+                          - visit_1
+                          - visit_2
+                          - visit_3
+                          - rpt
+                          - other
+                      sequence:
+                        type: integer
+                        minimum: 0
+                        maximum: 99
+                        nullable: true
+                      arrival_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      arrival_time_known:
+                        type: boolean
+                      departure_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      departure_time_known:
+                        type: boolean
+                      hotel:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      clinic:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      doctor:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                      treatment_plan:
+                        type: string
+                        maxLength: 4000
+                        nullable: true
+                    required:
+                      - visit_type
+                      - sequence
+                      - arrival_at
+                      - arrival_time_known
+                      - departure_at
+                      - departure_time_known
+                      - hotel
+                      - clinic
+                      - doctor
+                      - treatment_plan
+                    additionalProperties: false
+                  source_text:
+                    type: string
+                    maxLength: 4000
+                  confidence:
+                    type: string
+                    enum:
+                      - high
+                      - medium
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - approved
+                      - rejected
+                  created_visit_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  decided_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  decided_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  reject_reason:
+                    type: string
+                    maxLength: 500
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                  - id
+                  - tenant_id
+                  - contact_id
+                  - contact_display_name
+                  - inbound_message_id
+                  - draft
+                  - source_text
+                  - confidence
+                  - status
+                  - created_visit_id
+                  - decided_at
+                  - decided_by
+                  - reject_reason
+                  - created_at
+                  - updated_at
+                additionalProperties: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+              additionalProperties: false
   /contacts/bulk-type:
     patch:
       responses:

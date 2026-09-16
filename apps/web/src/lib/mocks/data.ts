@@ -24,6 +24,8 @@ import type {
 	Organization,
 	ContactCaseNote,
 	ContactFile,
+	ContactVisit,
+	ContactVisitSuggestion,
 	PermissionOverride,
 	Tenant,
 	Transaction,
@@ -471,6 +473,9 @@ export type DemoStore = {
 	inboundMessages: InboundMessage[];
 	files: ContactFile[];
 	caseNotes: ContactCaseNote[];
+	/** VIZIT-01 — kişi vizitleri ve onay bekleyen vizit önerileri. */
+	contactVisits: ContactVisit[];
+	contactVisitSuggestions: ContactVisitSuggestion[];
 	contactTypes: ContactType[];
 	organizations: Organization[];
 	contacts: Contact[];
@@ -1546,6 +1551,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 			inboundMessages: [],
 			files: [],
 			caseNotes: [],
+			contactVisits: [],
+			contactVisitSuggestions: [],
 			contactTypes: [],
 			organizations: [],
 			contacts: [],
@@ -1827,6 +1834,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 
 	linkDirectoryRefs(contacts, appointments, transactions);
 
+	const contactVisitSeed = makeContactVisits();
+
 	return {
 		tenant: { ...demoTenant },
 		tenants,
@@ -1851,6 +1860,8 @@ function buildStore(scenario: MockScenario): DemoStore {
 				];
 			})
 		],
+		contactVisits: contactVisitSeed.visits,
+		contactVisitSuggestions: contactVisitSeed.suggestions,
 		contactTypes,
 		organizations,
 		contacts,
@@ -1875,6 +1886,99 @@ function buildStore(scenario: MockScenario): DemoStore {
 		permissionOverrides: [],
 		cspReports: makeCspReports()
 	};
+}
+
+/**
+ * VIZIT-01 — demo hasta için iki vizit + onay bekleyen bir vizit önerisi.
+ * Kuyruk kartı ve kişi kartındaki Vizitler sekmesi mock kipinde boş görünmesin.
+ */
+function makeContactVisits(): { visits: ContactVisit[]; suggestions: ContactVisitSuggestion[] } {
+	const visits: ContactVisit[] = [
+		{
+			id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01',
+			tenant_id: DEMO_TENANT_ID,
+			contact_id: ATALAY_CONTACT_ID,
+			visit_type: 'visit_1',
+			sequence: 1,
+			arrival_at: iso(daysAgo(220, 20)),
+			arrival_time_known: true,
+			departure_at: iso(daysAgo(215, 21)),
+			departure_time_known: true,
+			arrival_flight: null,
+			departure_flight: null,
+			hotel: 'Laren Seaside',
+			hotel_covered_by: 'company',
+			transfer_provider: 'AYD',
+			clinic: 'TNC',
+			doctor: 'Seher',
+			treatment_plan: 'All on 6 + çift çene plak',
+			status: 'completed',
+			notes: null,
+			source_inbound_message_id: null,
+			created_by: 'Gülçin',
+			created_at: iso(daysAgo(230, 10)),
+			updated_at: iso(daysAgo(214, 10))
+		},
+		{
+			id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee02',
+			tenant_id: DEMO_TENANT_ID,
+			contact_id: ATALAY_CONTACT_ID,
+			visit_type: 'visit_2',
+			sequence: 2,
+			arrival_at: iso(daysAgo(-14, 21)),
+			arrival_time_known: true,
+			departure_at: iso(daysAgo(-20, 22)),
+			departure_time_known: true,
+			arrival_flight: null,
+			departure_flight: null,
+			hotel: 'Cedrus',
+			hotel_covered_by: 'company',
+			transfer_provider: 'Ramazan Abi',
+			clinic: 'TNC',
+			doctor: null,
+			treatment_plan: 'Zirkon prova + bitim',
+			status: 'planned',
+			notes: null,
+			source_inbound_message_id: null,
+			created_by: 'Sude',
+			created_at: iso(daysAgo(6, 12)),
+			updated_at: iso(daysAgo(6, 12))
+		}
+	];
+
+	const suggestions: ContactVisitSuggestion[] = [
+		{
+			id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeee11',
+			tenant_id: DEMO_TENANT_ID,
+			contact_id: ATALAY_CONTACT_ID,
+			contact_display_name: 'Atalay Demir',
+			inbound_message_id: null,
+			draft: {
+				visit_type: 'rpt',
+				sequence: null,
+				arrival_at: iso(daysAgo(-40, 15)),
+				arrival_time_known: true,
+				departure_at: iso(daysAgo(-45, 22)),
+				departure_time_known: true,
+				hotel: 'Dumos',
+				clinic: 'Dentgroup',
+				doctor: null,
+				treatment_plan: null
+			},
+			source_text:
+				'Atalay Demir,rpt\n\nGeliş: … \nDönüş: …\n\nRandevusunun oluşturulmasını rica ederim',
+			confidence: 'high',
+			status: 'pending',
+			created_visit_id: null,
+			decided_at: null,
+			decided_by: null,
+			reject_reason: null,
+			created_at: iso(daysAgo(1, 11)),
+			updated_at: iso(daysAgo(1, 11))
+		}
+	];
+
+	return { visits, suggestions };
 }
 
 const cache = new Map<MockScenario, DemoStore>();

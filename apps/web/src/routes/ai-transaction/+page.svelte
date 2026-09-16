@@ -6,6 +6,9 @@
 		ApproveDraftsResponse,
 		Contact,
 		ContactType,
+		ContactVisitCreate,
+		ContactVisitSuggestion,
+		ContactVisitType,
 		FinanceCategory,
 		InboundMessage,
 		InboundMessageKind,
@@ -18,12 +21,14 @@
 	import {
 		apiPaths,
 		approveDraftItemSchema,
+		contactVisitTypeLabels,
+		contactVisitTypeSchema,
 		DEFAULT_TENANT_TIMEZONE,
 		inboundMessageStatusLabels,
 		toTenantDayKey
 	} from '@verimaya/shared';
 	import { resolve } from '$app/paths';
-	import { apiGet, apiSend, listUrl } from '$lib/api';
+	import { apiGet, apiSend, fieldClass, listUrl } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { fetchAllInbox } from '$lib/whatsapp/inbox';
 	import { openInboundMedia } from '$lib/whatsapp/media';
@@ -104,6 +109,126 @@
 		enabled: qs.ready
 	}));
 	const pendingSuggestionCount = $derived(suggestionsQuery.data?.items.length ?? 0);
+
+	/*
+	 * VIZIT-01 — onay bekleyen vizit önerileri. Kuyrukta duruyorlar çünkü mesajdan
+	 * çıkarılmış bir vizit KESİN KAYIT DEĞİL: kullanıcı alanları düzeltip onaylayana
+	 * kadar `contact_visits`'e hiçbir şey yazılmaz (AGENTS ilke 6).
+	 */
+	const visitSuggestionsQuery = createQuery(() => ({
+		queryKey: qs.keys.contactVisitSuggestions.list({ status: 'pending' }),
+		queryFn: () =>
+			apiGet<{ items: ContactVisitSuggestion[] }>(
+				`${apiPaths.contactVisitSuggestions}?status=pending&limit=50`
+			),
+		enabled: qs.ready
+	}));
+	const visitSuggestions = $derived(visitSuggestionsQuery.data?.items ?? []);
+
+	type VisitEdit = {
+		visit_type: ContactVisitType;
+		arrivalDate: string;
+		arrivalTime: string;
+		departureDate: string;
+		departureTime: string;
+		hotel: string;
+		clinic: string;
+		treatment_plan: string;
+	};
+	/** Kart başına düzenlenebilir kopya; onayda bu hâli gönderilir. */
+	let visitEdits = $state<Record<string, VisitEdit>>({});
+	let visitActingId = $state<string | null>(null);
+	let visitError = $state<string | null>(null);
+
+	const VISIT_TYPES = contactVisitTypeSchema.options;
+
+	function splitIso(iso: string | null, timeKnown: boolean): { date: string; time: string } {
+		if (!iso) return { date: '', time: '' };
+		const d = new Date(iso);
+		if (Number.isNaN(d.getTime())) return { date: '', time: '' };
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return {
+			date: `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`,
+			time: timeKnown ? `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}` : ''
+		};
+	}
+
+	function joinIso(date: string, time: string): { at: string | null; known: boolean } {
+		if (!date) return { at: null, known: false };
+		return { at: `${date}T${time || '00:00'}:00.000Z`, known: time.length > 0 };
+	}
+
+	// Yeni gelen öneriler için taslak kopyası kur; kullanıcının yazdığı ezilmesin.
+	$effect(() => {
+		for (const s of visitSuggestions) {
+			if (visitEdits[s.id]) continue;
+			const a = splitIso(s.draft.arrival_at, s.draft.arrival_time_known);
+			const d = splitIso(s.draft.departure_at, s.draft.departure_time_known);
+			visitEdits[s.id] = {
+				visit_type: s.draft.visit_type,
+				arrivalDate: a.date,
+				arrivalTime: a.time,
+				departureDate: d.date,
+				departureTime: d.time,
+				hotel: s.draft.hotel ?? '',
+				clinic: s.draft.clinic ?? '',
+				treatment_plan: s.draft.treatment_plan ?? ''
+			};
+		}
+	});
+
+	function visitPayload(edit: VisitEdit): ContactVisitCreate {
+		const a = joinIso(edit.arrivalDate, edit.arrivalTime);
+		const d = joinIso(edit.departureDate, edit.departureTime);
+		const bos = (x: string) => (x.trim().length > 0 ? x.trim() : null);
+		return {
+			visit_type: edit.visit_type,
+			arrival_at: a.at,
+			arrival_time_known: a.known,
+			departure_at: d.at,
+			departure_time_known: d.known,
+			hotel: bos(edit.hotel),
+			clinic: bos(edit.clinic),
+			treatment_plan: bos(edit.treatment_plan),
+			status: 'planned'
+		};
+	}
+
+	async function approveVisit(suggestion: ContactVisitSuggestion) {
+		const edit = visitEdits[suggestion.id];
+		if (!edit) return;
+		visitActingId = suggestion.id;
+		visitError = null;
+		try {
+			await apiSend(apiPaths.contactVisitSuggestionApprove(suggestion.id), 'POST', {
+				visit: visitPayload(edit)
+			});
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contactVisitSuggestions.all() });
+			await queryClient.invalidateQueries({
+				queryKey: qs.keys.contacts.visits(suggestion.contact_id)
+			});
+			await queryClient.invalidateQueries({
+				queryKey: qs.keys.contacts.summary(suggestion.contact_id)
+			});
+		} catch (err) {
+			visitError = err instanceof Error ? err.message : t('finance.ai.visit.approveFailed');
+		} finally {
+			visitActingId = null;
+		}
+	}
+
+	async function rejectVisit(suggestion: ContactVisitSuggestion) {
+		visitActingId = suggestion.id;
+		visitError = null;
+		try {
+			await apiSend(apiPaths.contactVisitSuggestionReject(suggestion.id), 'POST', {});
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contactVisitSuggestions.all() });
+		} catch (err) {
+			visitError = err instanceof Error ? err.message : t('finance.ai.visit.rejectFailed');
+		} finally {
+			visitActingId = null;
+		}
+	}
 
 	const bekleyenler = $derived(
 		(inboxQuery.data?.messages ?? []).filter((m) => m.status === 'new' || m.status === 'parsed')
@@ -650,6 +775,156 @@
 			{/if}
 		</div>
 	</section>
+
+	<!--
+		VIZIT-01 — vizit önerileri. Öneri yoksa bölüm hiç çizilmez: boş başlık
+		kuyruğu uzatmaktan başka bir şey yapmaz.
+	-->
+	{#if visitSuggestions.length > 0}
+		<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
+			<div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+				<h2 class="text-sm font-semibold text-text">
+					{t('finance.ai.visit.heading')}
+					<span class="font-normal text-text-muted">({visitSuggestions.length})</span>
+				</h2>
+			</div>
+			<p class="mb-3 text-xs text-text-muted">{t('finance.ai.visit.subtitle')}</p>
+
+			{#if visitError}
+				<p class="mb-3 text-sm text-danger">{visitError}</p>
+			{/if}
+
+			<ul class="space-y-3">
+				{#each visitSuggestions as s (s.id)}
+					{@const edit = visitEdits[s.id]}
+					<li class="rounded-lg border border-border bg-surface-2 p-3">
+						<div class="mb-2 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+							<a
+								href={`/contacts/${s.contact_id}`}
+								class="text-sm font-semibold text-text hover:underline"
+							>
+								{s.contact_display_name}
+							</a>
+							<span class="text-[11px] leading-4 text-text-faint">
+								{s.confidence === 'high'
+									? t('finance.ai.visit.confidence.high')
+									: t('finance.ai.visit.confidence.medium')}
+							</span>
+						</div>
+
+						{#if edit}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<label class="block">
+									<span class="mb-1 block text-[11px] leading-4 text-text-muted">
+										{t('contacts.visits.type')}
+									</span>
+									<select class={fieldClass} bind:value={edit.visit_type}>
+										{#each VISIT_TYPES as ty (ty)}
+											<option value={ty}>{contactVisitTypeLabels[ty]}</option>
+										{/each}
+									</select>
+								</label>
+								<label class="block">
+									<span class="mb-1 block text-[11px] leading-4 text-text-muted">
+										{t('contacts.visits.clinic')}
+									</span>
+									<input class={fieldClass} type="text" bind:value={edit.clinic} maxlength={255} />
+								</label>
+								<div>
+									<span class="mb-1 block text-[11px] leading-4 text-text-muted">
+										{t('contacts.visits.arrival')}
+									</span>
+									<div class="flex gap-2">
+										<input
+											class={fieldClass}
+											type="date"
+											bind:value={edit.arrivalDate}
+											aria-label={t('contacts.visits.arrival')}
+										/>
+										<input
+											class={fieldClass}
+											style="max-width: 7rem"
+											type="time"
+											bind:value={edit.arrivalTime}
+											aria-label={t('contacts.visits.arrival')}
+										/>
+									</div>
+								</div>
+								<div>
+									<span class="mb-1 block text-[11px] leading-4 text-text-muted">
+										{t('contacts.visits.departure')}
+									</span>
+									<div class="flex gap-2">
+										<input
+											class={fieldClass}
+											type="date"
+											bind:value={edit.departureDate}
+											aria-label={t('contacts.visits.departure')}
+										/>
+										<input
+											class={fieldClass}
+											style="max-width: 7rem"
+											type="time"
+											bind:value={edit.departureTime}
+											aria-label={t('contacts.visits.departure')}
+										/>
+									</div>
+								</div>
+								<label class="block">
+									<span class="mb-1 block text-[11px] leading-4 text-text-muted">
+										{t('contacts.visits.hotel')}
+									</span>
+									<input class={fieldClass} type="text" bind:value={edit.hotel} maxlength={255} />
+								</label>
+								<label class="block">
+									<span class="mb-1 block text-[11px] leading-4 text-text-muted">
+										{t('contacts.visits.treatmentPlan')}
+									</span>
+									<input
+										class={fieldClass}
+										type="text"
+										bind:value={edit.treatment_plan}
+										maxlength={300}
+									/>
+								</label>
+							</div>
+						{/if}
+
+						<details class="mt-2">
+							<summary class="cursor-pointer text-[11px] leading-4 text-text-faint">
+								{t('finance.ai.visit.source')}
+							</summary>
+							<p class="mt-1 text-xs break-words whitespace-pre-wrap text-text-muted">
+								{s.source_text}
+							</p>
+						</details>
+
+						<div class="mt-3 flex flex-wrap gap-2">
+							<Button
+								type="button"
+								size="sm"
+								disabled={visitActingId === s.id}
+								onclick={() => approveVisit(s)}
+							>
+								{visitActingId === s.id
+									? t('finance.ai.visit.approving')
+									: t('finance.ai.visit.approve')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="ghost"
+								disabled={visitActingId === s.id}
+								onclick={() => rejectVisit(s)}
+							>
+								{t('finance.ai.visit.reject')}
+							</Button>
+						</div>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
 
 	<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 		<div class="mb-3 flex flex-wrap items-center justify-between gap-2">

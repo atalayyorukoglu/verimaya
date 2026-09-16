@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { WhatsappChatPurpose } from '@verimaya/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
+import { ContactVisitSuggestionsService } from '../contacts/contact-visit-suggestions.service';
+import { contacts } from '../db/schema/contacts';
+import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
 import { inboundMessages } from '../db/schema/inbound-messages';
 import { jobs } from '../db/schema/queue';
 import { RecordSuggestionsService } from '../record-suggestions/record-suggestions.service';
@@ -11,10 +14,16 @@ import { turleriBul } from './mesaj-turu';
 import { kisiBilgisiCikar } from './kisi-bilgisi';
 import { WhatsappService } from './whatsapp.service';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
+import { vizitCikar } from './vizit-cikar';
 
 type InboundMessageJobPayload = {
 	inboundMessageId: string;
 };
+
+/** `contacts.contact_type_name` denormalize metin; karşılaştırma Türkçe küçük harfle. */
+const PATIENT_TYPE_NAME = 'hasta';
+/** Tek mesajdan en fazla bu kadar vizit önerisi — gerisi kuyruğu boğar. */
+const MAX_VISIT_SUGGESTIONS_PER_MESSAGE = 3;
 
 /**
  * BullMQ handler for `inbound_message.process` — delegates finans parse'ını {@link WhatsappService}'e
@@ -30,11 +39,12 @@ export class InboundMessageProcessor {
 		private readonly tenantContext: TenantContextService,
 		private readonly whatsappService: WhatsappService,
 		private readonly recordSuggestionsService: RecordSuggestionsService,
-		private readonly whatsappChats: WhatsappChatsService
+		private readonly whatsappChats: WhatsappChatsService,
+		private readonly visitSuggestions: ContactVisitSuggestionsService
 	) {}
 
 	async process(jobId: string, tenantId: string): Promise<void> {
-		const { inboundMessageId, messageBody, turler, okunmasin } =
+		const { inboundMessageId, messageBody, turler, okunmasin, chatName, messageDate } =
 			await this.tenantContext.withTenant(tenantId, async ({ db }) => {
 				const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
 				if (!job) {
@@ -56,7 +66,7 @@ export class InboundMessageProcessor {
 					.where(eq(jobs.id, jobId));
 
 				const [msg] = await db
-					.select({ payload: inboundMessages.payload })
+					.select({ payload: inboundMessages.payload, createdAt: inboundMessages.createdAt })
 					.from(inboundMessages)
 					.where(eq(inboundMessages.id, payload.inboundMessageId))
 					.limit(1);
@@ -70,7 +80,12 @@ export class InboundMessageProcessor {
 					inboundMessageId: payload.inboundMessageId,
 					messageBody: display.body,
 					turler: turleriBul(display.body, purpose ?? 'mixed').turler,
-					okunmasin: purpose === 'ignore'
+					okunmasin: purpose === 'ignore',
+					chatName:
+						(display.chat_id ? directory.get(display.chat_id)?.name : null) ??
+						display.chat_name ??
+						null,
+					messageDate: msg?.createdAt ?? null
 				};
 			});
 
@@ -117,6 +132,34 @@ export class InboundMessageProcessor {
 		}
 
 		/*
+		 * VIZIT-01 — aynı gövdeden vizit çıkarımı. Saf fonksiyon, LLM çağrısı yok:
+		 * "Geliş … Dönüş … randevusunun oluşturulmasını rica ederim" kalıbı ve
+		 * "2.ci vizit / rpt / konsültasyon" ipuçları. Çıkan şey ÖNERİDİR — kullanıcı
+		 * kuyrukta onaylayınca vizit olur (AGENTS ilke 6).
+		 *
+		 * Ayrı try/catch: vizit çıkarımının hatası ne para yolunu ne randevu ajanını
+		 * düşürür, job yine `completed` olur.
+		 */
+		let vizitOnerisi = 0;
+		if (outcome !== 'skipped' && messageBody?.trim()) {
+			try {
+				vizitOnerisi = await this.vizitOnerisiYaz(
+					tenantId,
+					inboundMessageId,
+					messageBody,
+					chatName,
+					messageDate
+				);
+			} catch (err) {
+				this.logger.warn(
+					`inbound_message.process job=${jobId} message=${inboundMessageId} visit-suggestion failed: ${
+						err instanceof Error ? err.message : String(err)
+					}`
+				);
+			}
+		}
+
+		/*
 		 * Kuyruk temizliği (2026-09-15, kullanıcı: "bunları tek tek yoksay mı diyeceğim?"):
 		 * para taslağı çıkmadı, randevu önerisi doğmadı, insanın yapacağı bir şey yok
 		 * (kişi bilgisi / randevu işareti de yok) → satır kuyruğa düşmez, `archived`.
@@ -126,11 +169,60 @@ export class InboundMessageProcessor {
 			turler.includes('appointment') ||
 			turler.includes('contact') ||
 			kisiBilgisiCikar(messageBody) !== null;
-		if (outcome === 'error' && oneriSayisi === 0 && !insanIsiVar) {
+		if (outcome === 'error' && oneriSayisi === 0 && vizitOnerisi === 0 && !insanIsiVar) {
 			await this.whatsappService.archiveInboxItem(tenantId, inboundMessageId);
 		}
 
 		await this.completeJob(tenantId, jobId);
+	}
+
+	/**
+	 * VIZIT-01 — mesajdan vizit taslağı çıkarıp bağlı HASTA kişiler için öneri açar.
+	 *
+	 * Yalnız hasta türündeki kişiler: aynı mesaja otel/klinik kişisi de bağlanmış
+	 * olabiliyor, onlara vizit önerilmez. İki hasta birden geçiyorsa ikisine de
+	 * açılır ("Beverly Ann Cherry ve Lacey Peters RPT" gerçek bir mesaj) ama en
+	 * fazla üç kişiye — daha fazlası kuyruk değil gürültü olur.
+	 */
+	private async vizitOnerisiYaz(
+		tenantId: string,
+		inboundMessageId: string,
+		messageBody: string,
+		chatName: string | null,
+		messageDate: Date | null
+	): Promise<number> {
+		const cikarim = vizitCikar({ text: messageBody, messageDate, chatName });
+		if (!cikarim) return 0;
+
+		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const bagli = await db
+				.select({ contactId: contacts.id, typeName: contacts.contactTypeName })
+				.from(inboundMessageContacts)
+				.innerJoin(contacts, eq(inboundMessageContacts.contactId, contacts.id))
+				.where(
+					and(
+						eq(inboundMessageContacts.inboundMessageId, inboundMessageId),
+						isNull(contacts.deletedAt)
+					)
+				);
+
+			const hastalar = bagli
+				.filter((r) => r.typeName.trim().toLocaleLowerCase('tr') === PATIENT_TYPE_NAME)
+				.slice(0, MAX_VISIT_SUGGESTIONS_PER_MESSAGE);
+
+			let yazilan = 0;
+			for (const hasta of hastalar) {
+				const row = await this.visitSuggestions.createFromMessageWithDb(db, tenantId, {
+					contactId: hasta.contactId,
+					inboundMessageId,
+					draft: cikarim.draft,
+					sourceText: messageBody,
+					confidence: cikarim.confidence
+				});
+				if (row) yazilan += 1;
+			}
+			return yazilan;
+		});
 	}
 
 	private async completeJob(tenantId: string, jobId: string): Promise<void> {

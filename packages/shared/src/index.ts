@@ -29,6 +29,7 @@ export * from './audit.js';
 export * from './data-subject.js';
 export * from './contact-data-subject.js';
 export * from './contact-summary.js';
+export * from './contact-visit.js';
 export * from './api.js';
 export * from './features.js';
 export * from './changelog.js';

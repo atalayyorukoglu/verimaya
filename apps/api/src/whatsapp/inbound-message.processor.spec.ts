@@ -5,6 +5,8 @@ import { closeDb, getDb } from '../db/client';
 import { DbService } from '../db/db.service';
 import { HeuristicLlmClient } from '../integrations/llm';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
+import { ContactVisitSuggestionsService } from '../contacts/contact-visit-suggestions.service';
+import { ContactVisitsService } from '../contacts/contact-visits.service';
 import { MessageContactsService } from './message-contacts.service';
 import { InboundMediaService } from './inbound-media.service';
 import { ContactsService } from '../contacts/contacts.service';
@@ -109,11 +111,13 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 			recordSuggestionsSettingsStub,
 			new HeuristicLlmClient()
 		);
+		const contactVisitsService = new ContactVisitsService(tenantContext);
 		processor = new InboundMessageProcessor(
 			tenantContext,
 			whatsappService,
 			recordSuggestionsService,
-			new WhatsappChatsService(tenantContext)
+			new WhatsappChatsService(tenantContext),
+			new ContactVisitSuggestionsService(tenantContext, contactVisitsService)
 		);
 		integrationEventProcessor = new IntegrationEventProcessor(tenantContext, {
 			processInboundEvent: async () => ({ kind: 'noop' })
@@ -211,6 +215,41 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 		});
 		return { messageId, jobId };
 	}
+
+	/**
+	 * VIZIT-01 — kuyruk işlemcisi gerçek bir "Geliş … Dönüş … randevusunun
+	 * oluşturulmasını rica ederim" mesajından vizit ÖNERİSİ açar; vizit değil.
+	 * Kişi bağı ad eşleşmesiyle kurulur (mesajda adı geçiyor).
+	 */
+	it('VIZIT-01: randevu talebi mesajı bekleyen vizit önerisi doğurur', async () => {
+		await createContactWithAppointment(
+			tenantId,
+			'Zaid Waldu',
+			new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
+		);
+		const { jobId } = await insertMessageAndJob(
+			'Zaid Waldu, ikinci vizit\n\nGeliş: 13.09.2027 21:35\nDönüş: 19.09.2027 22:15\n\nRandevusunun oluşturulmasını rica ederim'
+		);
+		await processor.process(jobId, tenantId);
+
+		const { sql } = getDb(databaseUrl);
+		const rows = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`select status, draft from contact_visit_suggestions where tenant_id = ${tenantId}::uuid`;
+		});
+		expect(rows.length).toBe(1);
+		expect(rows[0]!.status).toBe('pending');
+		const draft = rows[0]!.draft as { visit_type: string; arrival_at: string };
+		expect(draft.visit_type).toBe('visit_2');
+		expect(draft.arrival_at).toBe('2027-09-13T21:35:00.000Z');
+
+		// Onay olmadan kesin kayıt yok.
+		const visits = await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+			return tx`select id from contact_visits where tenant_id = ${tenantId}::uuid`;
+		});
+		expect(visits.length).toBe(0);
+	});
 
 	it('success path: parses message and completes job', async () => {
 		const { messageId, jobId } = await insertMessageAndJob('Sandra 2900 GBP ödeme alındı');

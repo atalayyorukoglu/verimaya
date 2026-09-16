@@ -8,11 +8,20 @@ import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
 import { ContactDataSubjectService } from './contact-data-subject.service';
 import { ContactSummaryService } from './contact-summary.service';
+import { ContactVisitSuggestionsController } from './contact-visit-suggestions.controller';
+import { ContactVisitSuggestionsService } from './contact-visit-suggestions.service';
+import { ContactVisitsService } from './contact-visits.service';
 
 @Module({
 	imports: [AuthModule, CommonModule, GoogleDriveModule, LlmModule, WebhookSubscriptionsModule],
-	controllers: [ContactsController],
-	providers: [ContactsService, ContactDataSubjectService, ContactSummaryService],
-	exports: [ContactsService]
+	controllers: [ContactsController, ContactVisitSuggestionsController],
+	providers: [
+		ContactsService,
+		ContactDataSubjectService,
+		ContactSummaryService,
+		ContactVisitsService,
+		ContactVisitSuggestionsService
+	],
+	exports: [ContactsService, ContactVisitsService, ContactVisitSuggestionsService]
 })
 export class ContactsModule {}

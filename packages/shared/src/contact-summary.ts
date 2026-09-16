@@ -12,7 +12,9 @@ export const contactSummarySourceKindSchema = z.enum([
 	'whatsapp',
 	'appointment',
 	'transaction',
-	'note'
+	'note',
+	/** VIZIT-01 — kişi viziti (konsültasyon / 1 / 2 / RPT). */
+	'visit'
 ]);
 export type ContactSummarySourceKind = z.infer<typeof contactSummarySourceKindSchema>;
 

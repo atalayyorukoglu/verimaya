@@ -29,6 +29,7 @@ export * from './inbound-messages';
 export * from './inbound-message-contacts';
 export * from './inbound-message-media';
 export * from './contact-summaries';
+export * from './contact-visits';
 export * from './webhook-subscriptions';
 export * from './ai-corrections';
 export * from './tenant-settings';

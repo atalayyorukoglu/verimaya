@@ -11,11 +11,15 @@ import type {
 import {
 	PATIENT_FLOW_MAX_MISSING,
 	PATIENT_FLOW_SETTING_KEY,
+	contactVisitDateRangeLabel,
+	contactVisitStatusLabels,
+	contactVisitTypeLabels,
 	defaultPatientFlow,
 	patientFlowSchema
 } from '@verimaya/shared';
 import { appointments } from '../db/schema/appointments';
 import { caseNotes } from '../db/schema/case-notes';
+import { contactVisits } from '../db/schema/contact-visits';
 import { contactSummaries } from '../db/schema/contact-summaries';
 import { contacts } from '../db/schema/contacts';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
@@ -39,7 +43,7 @@ import { heuristicSummarizeContact } from './heuristic-contact-summary';
 const SUBJECT_TOKEN = '[HASTA]';
 /** Bayat özet en erken bu kadar sonra kendiliğinden yenilenir (her açılışta LLM çağrısı olmasın). */
 const AUTO_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
-const LIMITS = { whatsapp: 80, appointments: 20, transactions: 40, notes: 30 } as const;
+const LIMITS = { whatsapp: 80, appointments: 20, transactions: 40, notes: 30, visits: 20 } as const;
 /**
  * KISI-02 — hasta akışı şablonu yalnız bu türdeki kişilerde devreye girer.
  * `contacts.contact_type_name` denormalize metindir; karşılaştırma Türkçe küçük harfle.
@@ -383,6 +387,46 @@ export class ContactSummaryService {
 				text: `Çalışan notu (${n.authorDisplayName}): ${kirp(n.body, 400)}`,
 				stamp: `n:${n.id}`,
 				quote: kirp(n.body, 200)
+			});
+		});
+
+		/*
+		 * VIZIT-01 — vizitler özete VERİ olarak girer. Model özeti vizit başına
+		 * yazabilsin diye (belgedeki 5.x biçimi): her satır tür + tarih aralığı +
+		 * otel + klinik + hekim + durum taşır. `at` geliş tarihi; tarihsiz vizit
+		 * oluşturulma anıyla sıralanır ki akıştan düşmesin.
+		 */
+		const visits = await db
+			.select()
+			.from(contactVisits)
+			.where(and(eq(contactVisits.contactId, contactId), isNull(contactVisits.deletedAt)))
+			.orderBy(desc(contactVisits.arrivalAt))
+			.limit(LIMITS.visits);
+		visits.reverse().forEach((v, i) => {
+			const aralik = contactVisitDateRangeLabel({
+				arrival_at: v.arrivalAt ? v.arrivalAt.toISOString() : null,
+				arrival_time_known: v.arrivalTimeKnown,
+				departure_at: v.departureAt ? v.departureAt.toISOString() : null,
+				departure_time_known: v.departureTimeKnown
+			});
+			const parts = [
+				`Vizit ${contactVisitTypeLabels[v.visitType as keyof typeof contactVisitTypeLabels] ?? v.visitType}`,
+				aralik || null,
+				v.hotel ? `otel ${v.hotel}` : null,
+				v.clinic ? `klinik ${v.clinic}` : null,
+				v.doctor ? `hekim ${v.doctor}` : null,
+				`durum ${contactVisitStatusLabels[v.status as keyof typeof contactVisitStatusLabels] ?? v.status}`,
+				kirp(v.treatmentPlan, 200) || null,
+				kirp(v.notes, 200) || null
+			].filter(Boolean);
+			out.push({
+				ref: `V${i + 1}`,
+				kind: 'visit',
+				id: v.id,
+				at: (v.arrivalAt ?? v.createdAt).toISOString(),
+				text: parts.join(' · '),
+				stamp: `v:${v.id}:${v.updatedAt.toISOString()}`,
+				quote: parts.slice(0, 4).join(' · ')
 			});
 		});
 

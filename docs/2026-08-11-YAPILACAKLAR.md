@@ -745,10 +745,54 @@ Türkçe binlik/ondalık, tarih/saat/kimlik dışlama, para kelimesi yoksa çıp
   **Hasta akışı**: anlatı için textarea, kontrol listesi için düzenlenebilir tablo
   (satır ekle/sil, mobilde yatay kayan kutu), "Varsayılana dön", Kaydet.
 
-**Kalan (sıradaki adımlar, belge Bölüm 6.2–6.4):** vizit kaydı (konsültasyon / 1 / 2 / RPT;
-evrak, tahsilat ve giderler vizite bağlansın) · evrak sınıflandırma (Evrak grubu başlığından
-tür + vizit çıkarımı, kontrol listesinin kendini işaretlemesi) · hasta başı para mutabakatı
-(Operasyon + Muhasebe çift kaydının tek işleme indirgenmesi, vizit bazlı kalan ve kâr).
+**Kalan (sıradaki adımlar, belge Bölüm 6.3–6.4):** evrak sınıflandırma (Evrak grubu
+başlığından tür + vizit çıkarımı, kontrol listesinin kendini işaretlemesi) · hasta başı para
+mutabakatı (Operasyon + Muhasebe çift kaydının tek işleme indirgenmesi, vizit bazlı kalan ve
+kâr). Vizit kaydının kendisi VIZIT-01'de yapıldı.
+
+---
+
+## VIZIT-01 — Vizit kaydı (2026-09-16, kullanıcı)
+
+> **Karar (kullanıcı):** akış vizit başına ilerliyor (konsültasyon / 1. / 2. / 3. vizit / RPT),
+> oysa her şey kişiye düz bağlıydı. Kaynak: `docs/2026-09-16-HASTA-AKISI.md` Bölüm 6.2.
+> Vizit önerisi WhatsApp'tan **otomatik** çıkar ama **insan onayı olmadan kayıt olmaz**
+> (AGENTS ilke 6).
+
+- [x] **Veri.** `contact_visits` (0078): tür, kaçıncı, geliş/dönüş tarih-saat + uçuş,
+  otel + kimin karşıladığı, transfer firması, klinik, hekim, tedavi planı, durum, not,
+  kaynak mesaj, `created_by`; soft-delete (`deleted_at` + durum `cancelled`). RLS + FORCE
+  RLS + policy + GRANT; journal elle. `arrival_time_known` / `departure_time_known`:
+  mesajlarda çoğu zaman yalnız gün yazıyor ("26 nisan gelis") — bayrak olmasa gece yarısı
+  uçuş saati gibi görünürdü. Şema `packages/shared/src/contact-visit.ts` (Türkçe etiketler:
+  Konsültasyon / 1. vizit / 2. vizit / 3. vizit / RPT / Diğer).
+- [x] **API.** `GET|POST /v1/contacts/:id/visits`, `PATCH|DELETE
+  /v1/contacts/:id/visits/:visitId` (okuma `contact:read`, yazma `contact:update`, hepsi
+  Idempotent). Kuyruk: `GET /v1/contact-visit-suggestions`,
+  `POST /v1/contact-visit-suggestions/:id/{approve,reject}`. Bekçi sayaçları güncellendi;
+  izolasyon spec'i `contact-visits.isolation.spec.ts` (A'nın viziti B'de yok).
+- [x] **Otomatik öneri.** Saf fonksiyon `apps/api/src/whatsapp/vizit-cikar.ts` — LLM YOK:
+  "Geliş … Dönüş … randevusunun oluşturulmasını rica ederim" kalıbı, "2.ci vizit / ikinci
+  vizit / visit 2 / rpt / konsültasyon" ipuçları, dört tarih biçimi (`13.09.2026 21:35`,
+  `13 Eylül 21:35`, `19 Ekim 20:35 2025`, `4 Ekim geliş 6 Ekim dönüş`), yıl yoksa mesaj
+  tarihine göre ileri yuvarlama. Testler arşivdeki gerçek mesajlarla (Zaid Waldu, Jennifer
+  Severino RPT, Dilyana Marinova, Lisa Gumersell, Haydn Wright, Jacek Wyszynski). Kuyruk
+  işlemcisi mesaja bağlı **hasta** kişiler için `contact_visit_suggestions` satırı açar
+  (mesaj başına en fazla 3); ayrı try/catch — hatası para ve randevu yolunu düşürmez.
+- [x] **Panel.** Kişi kartında hasta türünde **Vizitler** sekmesi (liste + satır düzenleme
+  dialog'u + "Yeni vizit"; hasta olmayan kişide sekme yok). Kuyruk sayfasında "Vizit
+  önerileri" kartı: tür/tarih/otel/klinik/plan düzenlenebilir, Onayla / Yoksay.
+- [x] **Özet.** Vizitler kişi özetine `[V…]` kaynağı olarak girer; istem "vizit başına yaz"
+  diyor (belgedeki 5.x biçimi), kural tabanlı özete "Vizitler: …" satırı eklendi.
+
+**Neden ayrı tablo:** `record_update_suggestions` `appointment_id NOT NULL` + tek alan/tek
+değer çifti üzerine kurulu. Vizit önerisi bir **kişiye** ait ve tek seferde sekiz alan
+taşıyor; oraya sığdırmak appointment_id'yi nullable yapmayı, kısmi tekillik kısıtını bozmayı
+ve mevcut onay yolunu dallandırmayı gerektirirdi.
+
+**Kalan:** evrak/tahsilat/gider henüz vizite bağlanmıyor (`files`, `transactions` tarafında
+`visit_id` yok) — belge Bölüm 6.3 ve 6.4 ile birlikte yapılacak. Vizit türü ipucu yoksa
+öneri `Diğer` ile gelir; tahmin edilmiyor.
 
 ---
 

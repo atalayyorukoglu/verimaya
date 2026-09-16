@@ -160,7 +160,7 @@ export type MayaToolSelectionResult = {
  */
 export type ContactSummaryItem = {
 	ref: string;
-	kind: 'whatsapp' | 'appointment' | 'transaction' | 'note';
+	kind: 'whatsapp' | 'appointment' | 'transaction' | 'note' | 'visit';
 	/** ISO tarih; sıralama ve "ne zaman" için. */
 	at: string;
 	text: string;

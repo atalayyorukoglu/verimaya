@@ -23,7 +23,9 @@ import {
 	contactFilePresignSchema,
 	contactListQuerySchema,
 	contactsBulkTypeSchema,
-	contactUpdateSchema
+	contactUpdateSchema,
+	contactVisitCreateSchema,
+	contactVisitUpdateSchema
 } from '@verimaya/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
@@ -43,6 +45,7 @@ import { MAX_UPLOAD_BYTES } from '../storage/storage.types';
 import { ContactDataSubjectService } from './contact-data-subject.service';
 import { DriveMirrorEnqueueService } from '../integrations/google-drive/drive-mirror-enqueue.service';
 import { ContactSummaryService } from './contact-summary.service';
+import { ContactVisitsService } from './contact-visits.service';
 import { ContactsService } from './contacts.service';
 
 type MultipartRequest = FastifyRequest & {
@@ -86,6 +89,7 @@ export class ContactsController {
 		private readonly contactsService: ContactsService,
 		private readonly contactDataSubject: ContactDataSubjectService,
 		private readonly contactSummary: ContactSummaryService,
+		private readonly contactVisits: ContactVisitsService,
 		private readonly idempotency: IdempotencyService,
 		private readonly webhookSubscriptions: WebhookSubscriptionsService,
 		private readonly driveMirror: DriveMirrorEnqueueService
@@ -220,6 +224,95 @@ export class ContactsController {
 				await this.contactsService.deleteCaseNoteWithDb(db, id, noteId);
 				return { statusCode: 204, body: null };
 			}
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	/*
+	 * VIZIT-01 — kişi vizitleri (docs/2026-09-16-HASTA-AKISI.md § 6.2). Case-note
+	 * ucuyla aynı izin kademesi: okuma `contact:read`, her yazma `contact:update`.
+	 * Silme YUMUŞAK: satır `deleted_at` alır ve durumu `cancelled` olur.
+	 */
+	@Get(':id/visits')
+	@RequireOrgPermission('contact', 'read')
+	listVisits(@Req() req: FastifyRequest, @Param('id') id: string) {
+		return this.contactVisits.list(getActiveOrgId(req), id);
+	}
+
+	@Post(':id/visits')
+	@RequireOrgPermission('contact', 'update')
+	@Idempotent()
+	async createVisit(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(contactVisitCreateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'POST',
+			'/v1/contacts/:id/visits',
+			async (db) => ({
+				statusCode: 201,
+				body: await this.contactVisits.createWithDb(db, tenantId, id, input, {
+					displayName: actor.actorDisplayName
+				})
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Patch(':id/visits/:visitId')
+	@RequireOrgPermission('contact', 'update')
+	@Idempotent()
+	async updateVisit(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('visitId') visitId: string,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(contactVisitUpdateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'PATCH',
+			'/v1/contacts/:id/visits/:visitId',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.contactVisits.updateWithDb(db, id, visitId, input)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
+	}
+
+	@Delete(':id/visits/:visitId')
+	@RequireOrgPermission('contact', 'update')
+	@Idempotent()
+	async deleteVisit(
+		@Req() req: FastifyRequest,
+		@Param('id') id: string,
+		@Param('visitId') visitId: string,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const tenantId = getActiveOrgId(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'DELETE',
+			'/v1/contacts/:id/visits/:visitId',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.contactVisits.softDeleteWithDb(db, id, visitId)
+			})
 		);
 		reply.status(result.statusCode);
 		return result.body;

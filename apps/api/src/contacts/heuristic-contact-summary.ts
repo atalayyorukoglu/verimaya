@@ -37,6 +37,29 @@ export function heuristicSummarizeContact(
 		refs: [ilk.ref, son.ref]
 	});
 
+	/*
+	 * VIZIT-01 — kural tabanlı özette vizitler tek satırda. Model yokken bile
+	 * "kaç vizit, hangi tarihler" görünsün; ayrıntı vizit listesinde duruyor.
+	 * Metin serviste kurulmuş hâliyle gelir ("Vizit 2. vizit · 13 Eyl 2026 → …");
+	 * burada yalnız ilk iki parçası alınır.
+	 */
+	const vizitler = items.filter((i) => i.kind === 'visit');
+	if (vizitler.length > 0) {
+		const ozet = vizitler
+			.map((v) =>
+				v.text
+					.replace(/^Vizit\s+/, '')
+					.split(' · ')
+					.slice(0, 2)
+					.join(' ')
+			)
+			.join('; ');
+		out.push({
+			text: `Vizitler: ${ozet}.`,
+			refs: vizitler.map((v) => v.ref)
+		});
+	}
+
 	const randevular = items.filter((i) => i.kind === 'appointment');
 	if (randevular.length > 0) {
 		const sonR = randevular[randevular.length - 1];

@@ -509,7 +509,10 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		const flowBlock = ctx.patientFlow ? framePatientFlowPrompt(ctx.patientFlow) : '';
 		const system = [
 			'Sağlık turizmi operasyonunda çalışan bir asistansın. Sana BİR KİŞİYE ait kayıtlar verilecek:',
-			'[W…] WhatsApp grup mesajı, [R…] randevu, [P…] para işlemi, [N…] çalışan notu. Kişi metinde',
+			'[W…] WhatsApp grup mesajı, [R…] randevu, [P…] para işlemi, [N…] çalışan notu,',
+			'[V…] VİZİT (kişinin bir gelişi: konsültasyon / 1. vizit / 2. vizit / RPT — tür, geliş-dönüş,',
+			'otel, klinik, hekim, durum). Vizit varsa özeti VİZİT BAŞINA yaz: her vizit için ne zaman',
+			'geldi, nerede kaldı, hangi klinikte ne yapıldı, o vizitte ne tahsil edildi. Kişi metinde',
 			`"${ctx.subjectToken}" olarak geçer; başka kişilerin adları da geçebilir, onlar özne değildir.`,
 			'',
 			'GÖREV: kişinin hikâyesini KRONOLOJİK, kısa, Türkçe özetle — ilk temas, gelişler, tedavi,',

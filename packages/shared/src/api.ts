@@ -68,6 +68,14 @@ export const apiPaths = {
 	contactFilePreview: (contactId: string, fileId: string) =>
 		`${API_V1_PREFIX}/contacts/${contactId}/files/${fileId}/preview`,
 	contactCaseNotes: (id: string) => `${API_V1_PREFIX}/contacts/${id}/case-notes`,
+	contactVisits: (id: string) => `${API_V1_PREFIX}/contacts/${id}/visits`,
+	contactVisit: (contactId: string, visitId: string) =>
+		`${API_V1_PREFIX}/contacts/${contactId}/visits/${visitId}`,
+	contactVisitSuggestions: `${API_V1_PREFIX}/contact-visit-suggestions`,
+	contactVisitSuggestionApprove: (id: string) =>
+		`${API_V1_PREFIX}/contact-visit-suggestions/${id}/approve`,
+	contactVisitSuggestionReject: (id: string) =>
+		`${API_V1_PREFIX}/contact-visit-suggestions/${id}/reject`,
 	contactsBulkType: `${API_V1_PREFIX}/contacts/bulk-type`,
 	contactsDuplicateGroups: `${API_V1_PREFIX}/contacts/duplicate-groups`,
 	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
@@ -360,6 +368,16 @@ import {
 } from './inbound-message.js';
 import { contactFileCreateSchema, contactFileSchema } from './file.js';
 import { contactCaseNoteCreateSchema, contactCaseNoteSchema } from './case-note.js';
+import {
+	contactVisitCreateSchema,
+	contactVisitListSchema,
+	contactVisitSchema,
+	contactVisitSuggestionApproveSchema,
+	contactVisitSuggestionListSchema,
+	contactVisitSuggestionRejectSchema,
+	contactVisitSuggestionSchema,
+	contactVisitUpdateSchema
+} from './contact-visit.js';
 import { contactDuplicateGroupsResponseSchema, mergeRecordsSchema } from './duplicate.js';
 import { financeCategorySchema, appointmentTypeSettingSchema } from './finance-category.js';
 import { settingsReorderResultSchema, settingsReorderSchema } from './settings-reorder.js';
@@ -607,6 +625,31 @@ export const apiContract = {
 	},
 	'DELETE /v1/contacts/:id/case-notes/:noteId': {
 		response: z.null()
+	},
+	'GET /v1/contacts/:id/visits': {
+		response: contactVisitListSchema
+	},
+	'POST /v1/contacts/:id/visits': {
+		body: contactVisitCreateSchema,
+		response: contactVisitSchema
+	},
+	'PATCH /v1/contacts/:id/visits/:visitId': {
+		body: contactVisitUpdateSchema,
+		response: contactVisitSchema
+	},
+	'DELETE /v1/contacts/:id/visits/:visitId': {
+		response: softDeleteResultSchema
+	},
+	'GET /v1/contact-visit-suggestions': {
+		response: contactVisitSuggestionListSchema
+	},
+	'POST /v1/contact-visit-suggestions/:id/approve': {
+		body: contactVisitSuggestionApproveSchema,
+		response: contactVisitSuggestionSchema
+	},
+	'POST /v1/contact-visit-suggestions/:id/reject': {
+		body: contactVisitSuggestionRejectSchema,
+		response: contactVisitSuggestionSchema
 	},
 	'PATCH /v1/contacts/bulk-type': {
 		body: contactsBulkTypeSchema,

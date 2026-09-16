@@ -547,6 +547,13 @@
       "when": 1757980000000,
       "tag": "0077_contact_summary_missing",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1757990000000,
+      "tag": "0078_contact_visits",
+      "breakpoints": true
     }
   ]
 }
