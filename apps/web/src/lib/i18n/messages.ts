@@ -401,6 +401,52 @@ const tr = {
 	'settings.ai.disclosure.loadError': 'Ayar yüklenemedi.',
 	'settings.ai.disclosure.note':
 		"Gerçek WhatsApp gönderimi henüz yok. Port + ifşa hook'u hazır; gönderim ayrı karardır.",
+	// KISI-02 — Hasta akışı şablonu
+	'settings.nav.patientFlow.title': 'Hasta akışı',
+	'settings.nav.patientFlow.description':
+		'Hasta kayıtlarında AI özetinin izleyeceği akış ve kontrol listesi.',
+	'settings.patientFlow.title': 'Hasta akışı',
+	'settings.patientFlow.description':
+		'Kişi türü Hasta olan kayıtların özeti bu şablona göre yazılır: anlatı modele bağlam olur, kontrol listesinde karşılığı bulunmayan maddeler özetin altında "Eksik" olarak çıkar.',
+	'settings.patientFlow.default': 'varsayılan',
+	'settings.patientFlow.narrative.heading': 'Akış anlatısı',
+	'settings.patientFlow.narrative.why':
+		'Firmanın hasta akışını kendi cümlelerinizle yazın; aşama aşama ne olur, nerede hangi bilgi tutulur.',
+	'settings.patientFlow.narrative.label': 'Anlatı',
+	'settings.patientFlow.narrative.placeholder':
+		'Örn. 1. Bilet geldiğinde Rezervasyon grubuna otel, pax ve kapsam yazılır…',
+	'settings.patientFlow.charCount': '{count} / {max}',
+	'settings.patientFlow.checklist.heading': 'Kontrol listesi',
+	'settings.patientFlow.checklist.why':
+		'Her satır bir alan: hangi aşamada, hangi kanıt sayılır, ne zaman zorunlu olur, eksikse ne yazılır.',
+	'settings.patientFlow.checklist.empty': 'Liste boş. Satır ekleyin ya da varsayılana dönün.',
+	'settings.patientFlow.col.stage': 'Aşama',
+	'settings.patientFlow.col.label': 'Alan',
+	'settings.patientFlow.col.evidence': 'Kanıt',
+	'settings.patientFlow.col.when': 'Ne zaman',
+	'settings.patientFlow.col.warning': 'Uyarı',
+	'settings.patientFlow.addRow': 'Satır ekle',
+	'settings.patientFlow.removeRow': 'Satırı sil',
+	'settings.patientFlow.rowCount': '{count} / {max} madde',
+	'settings.patientFlow.save': 'Kaydet',
+	'settings.patientFlow.saving': 'Kaydediliyor…',
+	'settings.patientFlow.saved': 'Kaydedildi.',
+	'settings.patientFlow.reset': 'Varsayılana dön',
+	'settings.patientFlow.invalidRows': '{count} satırda alan ya da uyarı metni boş.',
+	'settings.patientFlow.error': 'Kayıt başarısız.',
+	'settings.patientFlow.loadError': 'Hasta akışı yüklenemedi.',
+	'settings.patientFlow.updatedBy': 'son değiştiren: {name}',
+	'settings.patientFlow.habits.heading': 'Ekibe üç alışkanlık',
+	'settings.patientFlow.habits.why':
+		'WhatsApp gruplarına yazarken bu üçüne uyulursa özet ve uyarılar çok daha isabetli olur.',
+	'settings.patientFlow.habits.rpt':
+		'RPT açarken sebebi ve kimin karşıladığını (OGN / TNC / Dentgroup / DDS) her zaman yazın.',
+	'settings.patientFlow.habits.finish':
+		'Bitim günü tek satır: "2. vizit: ne yapılacak · tahmini ay · kalan X GBP · otel/transfer kimde".',
+	'settings.patientFlow.habits.docs':
+		'Evrak başlığında vizit her zaman yazılsın ("visit 2" ya da "rpt"); hasta adı tek yazımla kullanılsın.',
+	'settings.patientFlow.footnote':
+		'Şablon modele veri olarak gider, talimat olarak değil; özet yine yalnız kayıtlarda yazan bilgiyi taşır.',
 	'settings.ai.prompt.heading': 'İşlem çıkarım notu',
 	'settings.ai.prompt.why':
 		'Sunucu çekirdek prompt’u ve çıktı şemasını tutar. Bu metin ona eklenir; talimat olarak değil, yalnızca operasyon bağlamı olarak çerçevelenir. AI çıkarımı taslaktır — insan onayı olmadan kesin kayda yazılmaz.',
@@ -1920,6 +1966,10 @@ const tr = {
 	'contacts.finance.autoLinkSuccess': '{count} işlem bağlandı.',
 	'contacts.finance.autoLinkNone': 'Bağlanacak işlem bulunamadı.',
 	'contacts.finance.autoLinkFailed': 'İşlemler bağlanamadı.',
+	'contacts.finance.transactionsTitle': 'İşlemler',
+	'contacts.finance.transactionsNew': 'Yeni işlem',
+	'contacts.finance.transactionsEmpty': 'Henüz işlem yok.',
+	'contacts.finance.transactionsError': 'İşlemler yüklenemedi.',
 	'contacts.detail.documentTitle': '{name} · Verimaya',
 	'contacts.detail.fallbackName': 'Kişi',
 	'contacts.detail.back': '← Kişiler',
@@ -2080,8 +2130,7 @@ const tr = {
 	'contacts.summary.kind.appointment': 'Randevu',
 	'contacts.summary.kind.transaction': 'İşlem',
 	'contacts.summary.kind.note': 'Not',
-	'contacts.summary.showAll': 'Tümünü göster',
-	'contacts.summary.showLess': 'Daralt',
+	'contacts.summary.missing.title': 'Eksik',
 	'contacts.notes.sendFailed': 'Not gönderilemedi',
 	'contacts.notes.deleteFailed': 'Not silinemedi',
 	'contacts.notes.deleteConfirm': 'Bu notu silmek istediğinize emin misiniz?',
@@ -3520,6 +3569,52 @@ const en: Record<MessageKey, string> = {
 	'settings.ai.disclosure.loadError': 'Could not load setting.',
 	'settings.ai.disclosure.note':
 		'Real WhatsApp send is not available yet. Port + disclosure hook are ready; shipping send is a separate decision.',
+	// KISI-02 — patient flow template
+	'settings.nav.patientFlow.title': 'Patient flow',
+	'settings.patientFlow.updatedBy': 'last edited by {name}',
+	'settings.nav.patientFlow.description':
+		'The flow and checklist the AI summary follows on patient records.',
+	'settings.patientFlow.title': 'Patient flow',
+	'settings.patientFlow.description':
+		'Summaries for contacts of type Hasta follow this template: the narrative becomes model context, and checklist items with no evidence show up under the summary as "Missing".',
+	'settings.patientFlow.default': 'default',
+	'settings.patientFlow.narrative.heading': 'Flow narrative',
+	'settings.patientFlow.narrative.why':
+		'Describe your patient flow in your own words: what happens at each stage and where each piece of information is kept.',
+	'settings.patientFlow.narrative.label': 'Narrative',
+	'settings.patientFlow.narrative.placeholder':
+		'E.g. 1. When the ticket arrives, hotel, pax and scope are posted to the Reservation group…',
+	'settings.patientFlow.charCount': '{count} / {max}',
+	'settings.patientFlow.checklist.heading': 'Checklist',
+	'settings.patientFlow.checklist.why':
+		'Each row is one field: which stage, what counts as evidence, when it becomes required, and the warning shown when it is missing.',
+	'settings.patientFlow.checklist.empty': 'The list is empty. Add a row or restore the defaults.',
+	'settings.patientFlow.col.stage': 'Stage',
+	'settings.patientFlow.col.label': 'Field',
+	'settings.patientFlow.col.evidence': 'Evidence',
+	'settings.patientFlow.col.when': 'When',
+	'settings.patientFlow.col.warning': 'Warning',
+	'settings.patientFlow.addRow': 'Add row',
+	'settings.patientFlow.removeRow': 'Delete row',
+	'settings.patientFlow.rowCount': '{count} / {max} items',
+	'settings.patientFlow.save': 'Save',
+	'settings.patientFlow.saving': 'Saving…',
+	'settings.patientFlow.saved': 'Saved.',
+	'settings.patientFlow.reset': 'Restore defaults',
+	'settings.patientFlow.invalidRows': '{count} row(s) have an empty field or warning.',
+	'settings.patientFlow.error': 'Could not save.',
+	'settings.patientFlow.loadError': 'Could not load the patient flow.',
+	'settings.patientFlow.habits.heading': 'Three habits for the team',
+	'settings.patientFlow.habits.why':
+		'Following these three when writing in the WhatsApp groups makes summaries and warnings far more accurate.',
+	'settings.patientFlow.habits.rpt':
+		'When opening an RPT, always write the reason and who covers it (OGN / TNC / Dentgroup / DDS).',
+	'settings.patientFlow.habits.finish':
+		'On the finish day, one line: "Visit 2: what · estimated month · remaining X GBP · who covers hotel/transfer".',
+	'settings.patientFlow.habits.docs':
+		'Always put the visit in the document caption ("visit 2" or "rpt"); spell the patient name one way.',
+	'settings.patientFlow.footnote':
+		'The template reaches the model as data, not as instructions; the summary still carries only what the records state.',
 	'settings.ai.prompt.heading': 'Extraction note',
 	'settings.ai.prompt.why':
 		'The server keeps the core prompt and output schema. This text is appended only — framed as operational context, not instructions. AI extraction is draft; nothing is final without human approval.',
@@ -5000,6 +5095,10 @@ const en: Record<MessageKey, string> = {
 	'contacts.finance.autoLinkSuccess': '{count} transactions linked.',
 	'contacts.finance.autoLinkNone': 'No transactions to link.',
 	'contacts.finance.autoLinkFailed': 'Could not link transactions.',
+	'contacts.finance.transactionsTitle': 'Transactions',
+	'contacts.finance.transactionsNew': 'New transaction',
+	'contacts.finance.transactionsEmpty': 'No transactions yet.',
+	'contacts.finance.transactionsError': 'Could not load transactions.',
 	'contacts.detail.documentTitle': '{name} · Verimaya',
 	'contacts.detail.fallbackName': 'Contact',
 	'contacts.detail.back': '← Contacts',
@@ -5160,8 +5259,7 @@ const en: Record<MessageKey, string> = {
 	'contacts.summary.kind.appointment': 'Appointment',
 	'contacts.summary.kind.transaction': 'Transaction',
 	'contacts.summary.kind.note': 'Note',
-	'contacts.summary.showAll': 'Show all',
-	'contacts.summary.showLess': 'Show less',
+	'contacts.summary.missing.title': 'Missing',
 	'contacts.notes.sendFailed': 'Could not send note',
 	'contacts.notes.deleteFailed': 'Could not delete note',
 	'contacts.notes.deleteConfirm': 'Are you sure you want to delete this note?',

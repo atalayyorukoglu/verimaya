@@ -722,6 +722,36 @@ Türkçe binlik/ondalık, tarih/saat/kimlik dışlama, para kelimesi yoksa çıp
 
 ---
 
+## KISI-02 — Hasta akışı şablonu (2026-09-16, kullanıcı)
+
+> **Karar (kullanıcı):** hasta özetinin "kontrol edebilmesi" için tek serbest metin kutusu
+> yetmez; şablon iki parça olsun — **anlatı** (firma kendi cümleleriyle yazar) ve
+> **kontrol listesi** (aşama · alan · kanıt · ne zaman · uyarı). Kaynak:
+> `docs/2026-09-16-HASTA-AKISI.md` (8 WhatsApp grubu, 42 bin satır) Bölüm 3, 4 ve 6.1.
+
+- [x] **Tenant ayarı.** `tenant_settings.patient_flow` (jsonb; yeni tablo yok),
+  `GET /v1/settings/patient-flow` (settings:read) + `PUT` (settings:update, Idempotent).
+  Kaydedilmemişse gömülü varsayılan döner (`is_default: true`): belgedeki Bölüm 3'ün
+  sadeleştirilmiş anlatısı + Bölüm 4'teki 22 maddelik liste. Şema
+  `packages/shared/src/patient-flow.ts` (anlatı ≤ 20.000, liste ≤ 60 madde).
+- [x] **Özet üretimi.** Kişi türü **Hasta** ise anlatı + kontrol listesi özet istemine
+  çerçeveli **veri** olarak eklenir (talimat değil) ve modelden `missing` istenir; yalnız
+  listedeki id'ler kabul edilir, bilinmeyen id düşer, en fazla 12 madde. Hasta olmayan
+  kişide blok hiç yazılmaz; kural tabanlı yedek `missing: []` döner.
+  `contact_summaries.missing` (0077) + şablonun hash'i parmak izine girer — şablon
+  değişince özet bayatlar.
+- [x] **Panel.** Kişi kartında özet cümlelerinin altında "Eksik" bloğu (uyarı ikonu +
+  şablondaki uyarı metni + modelin notu; boşsa gösterilmez). Ayarlar › AI & kalite ›
+  **Hasta akışı**: anlatı için textarea, kontrol listesi için düzenlenebilir tablo
+  (satır ekle/sil, mobilde yatay kayan kutu), "Varsayılana dön", Kaydet.
+
+**Kalan (sıradaki adımlar, belge Bölüm 6.2–6.4):** vizit kaydı (konsültasyon / 1 / 2 / RPT;
+evrak, tahsilat ve giderler vizite bağlansın) · evrak sınıflandırma (Evrak grubu başlığından
+tür + vizit çıkarımı, kontrol listesinin kendini işaretlemesi) · hasta başı para mutabakatı
+(Operasyon + Muhasebe çift kaydının tek işleme indirgenmesi, vizit bazlı kalan ve kâr).
+
+---
+
 ## DRIVE-01 — WhatsApp belgeleri firmanın Google Drive'ına aynalansın (2026-09-15, kullanıcı)
 
 > **Karar (kullanıcı):** eski sistemdeki gibi firma kendi Google Workspace'ini bağlasın,

@@ -171,4 +171,32 @@ describe('transactions case_contact_id / responsible_contact_id type guards', ()
 		expect(listed.items.length).toBeGreaterThanOrEqual(1);
 		expect(listed.items.every((t) => t.case_contact_id === hastaId)).toBe(true);
 	});
+
+	/*
+	 * Kişi kartındaki işlem listesi bu süzgeçle besleniyor: kişi/firma, hasta ve
+	 * sorumlu rollerinden herhangi biri eşleşmeli. Üç rol ayrı ayrı doğrulanıyor,
+	 * yoksa `or` yerine yanlışlıkla `and` yazılması testten geçerdi.
+	 */
+	it('any_contact_id matches contact / case / responsible role FKs', async () => {
+		await withTenantSession(tenantId, (db) =>
+			service.createWithDb(
+				db,
+				tenantId,
+				{ ...baseInput, contact_id: klinikId, case_contact_id: null, responsible_contact_id: null },
+				testActor
+			)
+		);
+
+		const byContact = await service.list(tenantId, { limit: 50, any_contact_id: klinikId });
+		expect(byContact.items.length).toBeGreaterThanOrEqual(1);
+		expect(byContact.items.every((t) => t.contact_id === klinikId)).toBe(true);
+
+		const byCase = await service.list(tenantId, { limit: 50, any_contact_id: hastaId });
+		expect(byCase.items.length).toBeGreaterThanOrEqual(1);
+		expect(byCase.items.every((t) => t.case_contact_id === hastaId)).toBe(true);
+
+		const byResponsible = await service.list(tenantId, { limit: 50, any_contact_id: personelId });
+		expect(byResponsible.items.length).toBeGreaterThanOrEqual(1);
+		expect(byResponsible.items.every((t) => t.responsible_contact_id === personelId)).toBe(true);
+	});
 });

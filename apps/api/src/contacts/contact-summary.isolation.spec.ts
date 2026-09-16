@@ -111,6 +111,37 @@ describe('contact_summaries', () => {
 		expect(c.generated_at).not.toBe(a.generated_at);
 	});
 
+	it('kural tabanlı yolda eksik listesi üretilmez', async () => {
+		const s = await service.get(tenantA, claire, { refresh: true });
+		expect(s.missing).toEqual([]);
+	});
+
+	it('KISI-02: hasta akışı şablonu değişince özet bayatlar', async () => {
+		const before = await service.get(tenantA, claire, { refresh: true });
+		expect(before.stale).toBe(false);
+
+		const { sql } = getDb(databaseUrl);
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`
+				insert into tenant_settings (tenant_id, key, value)
+				values (${tenantA}, 'patient_flow', ${JSON.stringify({
+					narrative: 'Değişmiş akış',
+					checklist: [],
+					is_default: false,
+					updated_by: 'Test',
+					updated_at: new Date().toISOString()
+				})}::jsonb)
+				on conflict (tenant_id, key) do update set value = excluded.value
+			`;
+		});
+
+		// Şablonun hash'i parmak izine giriyor; soğuma süresi geçmediği için içerik
+		// hemen yeniden yazılmaz ama kart "kaynak değişti" der ve Yenile üretir.
+		const after = await service.get(tenantA, claire, { refresh: false });
+		expect(after.stale).toBe(true);
+	});
+
 	it("B, A'nın kişisinin özetini alamaz", async () => {
 		await expect(service.get(tenantB, claire, { refresh: false })).rejects.toBeInstanceOf(
 			NotFoundException

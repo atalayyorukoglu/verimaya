@@ -49,6 +49,15 @@ export const transactionListQuerySchema = cursorPageParams
 	.extend({
 		contact_id: uuid.optional(),
 		case_contact_id: uuid.optional(),
+		/**
+		 * Kişinin **taraf olduğu** işlemler: `contact_id` (kişi/firma),
+		 * `case_contact_id` (hasta) veya `responsible_contact_id` (sorumlu) alanlarından
+		 * herhangi biri bu kişiyi gösteriyorsa kayıt listeye girer. Randevulardaki
+		 * `contact_involves` ile aynı amaç — kişi kartı tek çağrıyla tüm işlemleri
+		 * gösterebilsin diye (rol başına ayrı istek atıp istemcide birleştirmek
+		 * sayfalamayı bozuyordu).
+		 */
+		any_contact_id: uuid.optional(),
 		from: isoDate.optional(),
 		to: isoDate.optional(),
 		kind: transactionKindSchema.optional(),

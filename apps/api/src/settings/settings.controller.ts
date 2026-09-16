@@ -35,6 +35,7 @@ import {
 	knowledgeUpdateSchema,
 	operationAlertSettingsUpdateSchema,
 	whatsappAiPromptUpdateSchema,
+	patientFlowUpdateSchema,
 	incentiveDeadlineSettingsUpdateSchema,
 	whatsappChatCreateSchema,
 	whatsappChatUpdateSchema
@@ -102,11 +103,7 @@ export class SettingsController {
 	@Patch('whatsapp-chats/:id')
 	@RequireOrgPermission('settings', 'update')
 	@IdempotencyExempt('PATCH tek satır günceller; tekrar aynı sonucu verir.')
-	updateWhatsappChat(
-		@Req() req: FastifyRequest,
-		@Param('id') id: string,
-		@Body() body: unknown
-	) {
+	updateWhatsappChat(@Req() req: FastifyRequest, @Param('id') id: string, @Body() body: unknown) {
 		const input = parseBody(whatsappChatUpdateSchema, body, req);
 		return this.whatsappChats.update(getActiveOrgId(req), id, input);
 	}
@@ -220,11 +217,7 @@ export class SettingsController {
 	@IdempotencyExempt(
 		'Sets absolute name to the caller-supplied value — repeat calls converge to the same state.'
 	)
-	updateContactType(
-		@Req() req: FastifyRequest,
-		@Param('id') id: string,
-		@Body() body: unknown
-	) {
+	updateContactType(@Req() req: FastifyRequest, @Param('id') id: string, @Body() body: unknown) {
 		const input = parseBody(contactTypeUpdateSchema, body, req);
 		return this.settingsService.updateContactType(getActiveOrgId(req), id, input);
 	}
@@ -284,11 +277,7 @@ export class SettingsController {
 	@IdempotencyExempt(
 		'Sets absolute name to the caller-supplied value — repeat calls converge to the same state.'
 	)
-	updateContactTitle(
-		@Req() req: FastifyRequest,
-		@Param('id') id: string,
-		@Body() body: unknown
-	) {
+	updateContactTitle(@Req() req: FastifyRequest, @Param('id') id: string, @Body() body: unknown) {
 		const input = parseBody(contactTitleUpdateSchema, body, req);
 		return this.settingsService.updateContactTitle(getActiveOrgId(req), id, input);
 	}
@@ -403,11 +392,7 @@ export class SettingsController {
 	@IdempotencyExempt(
 		'Sets absolute name to the caller-supplied value — repeat calls converge to the same state.'
 	)
-	updateOrganization(
-		@Req() req: FastifyRequest,
-		@Param('id') id: string,
-		@Body() body: unknown
-	) {
+	updateOrganization(@Req() req: FastifyRequest, @Param('id') id: string, @Body() body: unknown) {
 		const input = parseBody(organizationUpdateSchema, body, req);
 		return this.settingsService.updateOrganization(getActiveOrgId(req), id, input);
 	}
@@ -547,11 +532,7 @@ export class SettingsController {
 	)
 	putKnowledge(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const input = parseBody(knowledgeUpdateSchema, body, req);
-		return this.settingsService.saveKnowledge(
-			getActiveOrgId(req),
-			input,
-			getActorFromRequest(req)
-		);
+		return this.settingsService.saveKnowledge(getActiveOrgId(req), input, getActorFromRequest(req));
 	}
 
 	@Delete('knowledge')
@@ -597,11 +578,7 @@ export class SettingsController {
 	)
 	putAiPrompt(@Req() req: FastifyRequest, @Body() body: unknown) {
 		const input = parseBody(whatsappAiPromptUpdateSchema, body, req);
-		return this.settingsService.saveAiPrompt(
-			getActiveOrgId(req),
-			input,
-			getActorFromRequest(req)
-		);
+		return this.settingsService.saveAiPrompt(getActiveOrgId(req), input, getActorFromRequest(req));
 	}
 
 	@Delete('ai-prompt')
@@ -612,6 +589,41 @@ export class SettingsController {
 	@HttpCode(200)
 	resetAiPrompt(@Req() req: FastifyRequest) {
 		return this.settingsService.resetAiPrompt(getActiveOrgId(req), getActorFromRequest(req));
+	}
+
+	/**
+	 * KISI-02 — hasta akışı şablonu. Kaydedilmemişse gömülü varsayılan döner
+	 * (`is_default: true`); kullanıcı panelde onu düzenleyip kaydeder.
+	 */
+	@Get('patient-flow')
+	@RequireOrgPermission('settings', 'read')
+	getPatientFlow(@Req() req: FastifyRequest) {
+		return this.settingsService.getPatientFlow(getActiveOrgId(req));
+	}
+
+	@Put('patient-flow')
+	@RequireOrgPermission('settings', 'update')
+	@Idempotent()
+	async putPatientFlow(
+		@Req() req: FastifyRequest,
+		@Body() body: unknown,
+		@Res({ passthrough: true }) reply: FastifyReply
+	) {
+		const input = parseBody(patientFlowUpdateSchema, body, req);
+		const tenantId = getActiveOrgId(req);
+		const actor = getActorFromRequest(req);
+		const result = await this.idempotency.run(
+			tenantId,
+			getIdempotencyKey(req),
+			'PUT',
+			'/v1/settings/patient-flow',
+			async (db) => ({
+				statusCode: 200,
+				body: await this.settingsService.savePatientFlowWithDb(db, tenantId, input, actor)
+			})
+		);
+		reply.status(result.statusCode);
+		return result.body;
 	}
 
 	@Get('incentive-deadline')

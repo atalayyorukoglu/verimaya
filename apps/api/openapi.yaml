@@ -2949,6 +2949,29 @@ paths:
                   input_count:
                     type: integer
                     minimum: 0
+                  missing:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                          maxLength: 64
+                        label:
+                          type: string
+                          maxLength: 200
+                        warning:
+                          type: string
+                          maxLength: 200
+                        note:
+                          type: string
+                          maxLength: 300
+                      required:
+                        - item_id
+                        - label
+                        - warning
+                        - note
+                      additionalProperties: false
                 required:
                   - contact_id
                   - sentences
@@ -2957,6 +2980,7 @@ paths:
                   - heuristic
                   - model
                   - input_count
+                  - missing
                 additionalProperties: false
       parameters:
         - name: id
@@ -3033,6 +3057,29 @@ paths:
                   input_count:
                     type: integer
                     minimum: 0
+                  missing:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                          maxLength: 64
+                        label:
+                          type: string
+                          maxLength: 200
+                        warning:
+                          type: string
+                          maxLength: 200
+                        note:
+                          type: string
+                          maxLength: 300
+                      required:
+                        - item_id
+                        - label
+                        - warning
+                        - note
+                      additionalProperties: false
                 required:
                   - contact_id
                   - sentences
@@ -3041,6 +3088,7 @@ paths:
                   - heuristic
                   - model
                   - input_count
+                  - missing
                 additionalProperties: false
       parameters:
         - name: id
@@ -12112,6 +12160,187 @@ paths:
                   - updated_by
                   - updated_at
                 additionalProperties: false
+  /settings/patient-flow:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  narrative:
+                    type: string
+                    maxLength: 20000
+                  checklist:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          minLength: 1
+                          maxLength: 64
+                          pattern: ^[A-Za-z0-9_-]+$
+                        stage:
+                          type: string
+                          maxLength: 120
+                        label:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        evidence:
+                          type: string
+                          maxLength: 300
+                        when:
+                          type: string
+                          maxLength: 200
+                        warning:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                      required:
+                        - id
+                        - stage
+                        - label
+                        - evidence
+                        - when
+                        - warning
+                      additionalProperties: false
+                    maxItems: 60
+                  is_default:
+                    type: boolean
+                  updated_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                required:
+                  - narrative
+                  - checklist
+                  - is_default
+                  - updated_by
+                  - updated_at
+                additionalProperties: false
+    put:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  narrative:
+                    type: string
+                    maxLength: 20000
+                  checklist:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          minLength: 1
+                          maxLength: 64
+                          pattern: ^[A-Za-z0-9_-]+$
+                        stage:
+                          type: string
+                          maxLength: 120
+                        label:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        evidence:
+                          type: string
+                          maxLength: 300
+                        when:
+                          type: string
+                          maxLength: 200
+                        warning:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                      required:
+                        - id
+                        - stage
+                        - label
+                        - evidence
+                        - when
+                        - warning
+                      additionalProperties: false
+                    maxItems: 60
+                  is_default:
+                    type: boolean
+                  updated_by:
+                    type: string
+                    maxLength: 255
+                    nullable: true
+                  updated_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                required:
+                  - narrative
+                  - checklist
+                  - is_default
+                  - updated_by
+                  - updated_at
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                narrative:
+                  type: string
+                  maxLength: 20000
+                checklist:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        minLength: 1
+                        maxLength: 64
+                        pattern: ^[A-Za-z0-9_-]+$
+                      stage:
+                        type: string
+                        maxLength: 120
+                      label:
+                        type: string
+                        minLength: 1
+                        maxLength: 200
+                      evidence:
+                        type: string
+                        maxLength: 300
+                      when:
+                        type: string
+                        maxLength: 200
+                      warning:
+                        type: string
+                        minLength: 1
+                        maxLength: 200
+                    required:
+                      - id
+                      - stage
+                      - label
+                      - evidence
+                      - when
+                      - warning
+                    additionalProperties: false
+                  maxItems: 60
+              required:
+                - narrative
+                - checklist
+              additionalProperties: false
   /maya/ask:
     post:
       responses:

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { createInfiniteQuery, createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import type {
 		Appointment,
 		AppointmentCreate,
@@ -20,12 +20,14 @@
 	import { apiPaths, listUrl } from '@verimaya/shared';
 	import { apiGet, apiSend } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
+	import { canAccessPath, DEFAULT_ROLE } from '$lib/rbac';
 	import { USE_MSW } from '$lib/env';
 	import { formatDate, formatDateTime, formatMoney, formatTime } from '$lib/format';
 	import ContactFormDialog from '$lib/components/ContactFormDialog.svelte';
 	import ContactTimeline from '$lib/components/ContactTimeline.svelte';
 	import ContactSummaryCard from '$lib/components/ContactSummaryCard.svelte';
 	import TransactionFormDialog from '$lib/components/TransactionFormDialog.svelte';
+	import TransactionList from '$lib/components/TransactionList.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import IncidentFormDialog from '$lib/components/IncidentFormDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -102,9 +104,37 @@
 		enabled: !USE_MSW && qs.ready
 	}));
 
+	/*
+	 * İşlemleri görme izni Finans sayfasının izniyle aynı (kullanıcı rolü). İzin
+	 * yoksa liste hiç istenmez — `enabled: false` sorguyu da kapatır, yalnız
+	 * markup'ı gizlemek sunucuya yine de istek atardı.
+	 */
+	const role = $derived(qs.meQuery.data?.role ?? DEFAULT_ROLE);
+	const canSeeTransactions = $derived(canAccessPath('/finance', role));
+
+	/*
+	 * Kişi kartındaki işlem listesi (kullanıcı, 2026-09-16: "finansa gitmek
+	 * zorunda kalmayayım"). `any_contact_id` üç rolü birden kapsar: kişi/firma,
+	 * hasta (`case_contact_id`) ve sorumlu (`responsible_contact_id`). Yukarıdaki
+	 * `txQuery` akış sekmesi için yalnız `contact_id` ile sınırlı ve 20 kayıt —
+	 * bu liste ondan ayrı, sayfalanabilir.
+	 */
+	const contactTxQuery = createInfiniteQuery(() => ({
+		queryKey: qs.keys.transactions.list({ any_contact_id: id, limit: 50 }),
+		queryFn: ({ pageParam }: { pageParam: string | null }) =>
+			apiGet<PageOf<Transaction>>(
+				listUrl('transactions', { limit: 50, cursor: pageParam, any_contact_id: id })
+			),
+		initialPageParam: null as string | null,
+		getNextPageParam: (last: PageOf<Transaction>) => last.next_cursor,
+		// Yalnız Finans Özet sekmesi açıkken istenir; akış sekmesi zaten `txQuery`'yi çekiyor.
+		enabled: qs.ready && canSeeTransactions && activeTab === 'finance'
+	}));
+
 	const contact = $derived(contactQuery.data);
 	const transactions = $derived(txQuery.data?.items ?? []);
 	const appointments = $derived(apptQuery.data?.items ?? []);
+	const contactTransactions = $derived(contactTxQuery.data?.pages.flatMap((p) => p.items) ?? []);
 	const baseCurrency = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 
 	const relatedAppointments = $derived(
@@ -330,23 +360,15 @@
 </svelte:head>
 
 <!--
-	Tam yükseklikli sütun YALNIZ akış sekmesinde. Sebep: yazma alanının her zaman
-	ekranın dibinde durması için listenin `flex-1` ile kısılması, onun için de
-	sütunun KESİN bir yüksekliği olması gerekiyor (kullanıcı geri bildirimi,
-	2026-09-03); `min-h-full` yetmiyor, liste içeriği kadar uzayıp yazma alanını
-	aşağı itiyor.
-
-	Ama aynı `h-full`'ü her sekmeye vermek olmuyor: finans ve kişi bilgileri
-	sekmelerinin içeriği uzun ve esnek kutuda ezilip kaydırılamaz hale geliyordu
-	(1500px'lik deneme kutusu 171px'e iniyordu). O yüzden koşullu.
--->
-<!--
 	AppShell kişi detayında main padding'i kapatır (flush): kenarlık, zemin ve
 	kaydırma tam genişlikte kalsın diye. İçerik `tl-measure` sütununda ortalanır
 	(`layout.css`) — kaydırma çubuğu sayfanın sağ kenarında, metin ise okunur bir
 	ölçüde durur (kullanıcı referansı, 2026-09-03). Yatay iç boşluk da o sınıfta.
+
+	Sekmeler (akış dahil) normal akışta: sayfa/`main` kendi kaydırır, içeride ayrı
+	yükseklik kısıtı veya iç scroll yok (kullanıcı geri bildirimi, 2026-09-16).
 -->
-<div class={`min-w-0 ${activeTab === 'flow' ? 'flex h-full flex-col' : ''}`}>
+<div class="min-w-0">
 	{#if contactQuery.isPending}
 		<p class="tl-measure pt-4 text-sm text-text-muted">{t('common.loading')}</p>
 	{:else if contactQuery.isError || !contact}
@@ -360,18 +382,17 @@
 			Kişi kartı üç sekme: Akış / Finans Özet / Kişi Bilgileri (kullanıcı tasarımı,
 			2026-09-03). Hasta açılınca doğrudan akış karşılar.
 
-			Başlık + sekme çubuğu yapışkan (üstte), akış sekmesinde yazma alanı yapışkan
-			(altta). Masaüstünde kaydıran kap `<main>` (AppShell `md:overflow-y-auto`),
-			mobilde belgenin kendisi — `sticky` ikisinde de doğru kaba tutunur. Mobilde
-			alt menü `fixed` olduğu için yazma alanına onun yüksekliği kadar boşluk
-			verilir, üstüne binmesin.
+			Başlık + sekme çubuğu yapışkan (üstte). Masaüstünde kaydıran kap `<main>`
+			(AppShell `md:overflow-y-auto`), mobilde belgenin kendisi — `sticky` ikisinde
+			de doğru kaba tutunur. Yazma alanı akışın altında normal akışta durur, sayfa
+			dibine yapışık değil (kullanıcı geri bildirimi, 2026-09-16).
 		-->
 		<!--
 			Başlık sıkı (kullanıcı, 2026-09-04): üst/alt pay eşit (py-3), isim–sekme
 			arası küçük, sekme çubuğu `data-compact` — mobilde 44px dokunma tabanı
 			başlığı şişiriyordu.
 		-->
-		<div class="sticky top-0 z-20 shrink-0 border-b border-border bg-surface">
+		<div class="sticky top-0 z-20 border-b border-border bg-surface">
 			<div class="tl-measure py-3">
 				<div class="flex items-center gap-3 pb-2">
 					<h1 class="min-w-0 flex-1 truncate text-lg leading-7 font-semibold text-text">
@@ -417,9 +438,9 @@
 		</div>
 
 		{#if activeTab === 'flow'}
-			<div class="flex min-h-0 flex-1 flex-col">
+			<div>
 				<!-- KISI-01 adım 3: model özeti akışın üstünde; notlar akışta kalır. -->
-				<div class="tl-measure mt-4 shrink-0">
+				<div class="tl-measure mt-4">
 					<ContactSummaryCard contactId={contact.id} />
 				</div>
 				<ContactTimeline
@@ -600,6 +621,51 @@
 						{/if}
 					{/if}
 				</section>
+
+				<!--
+					Finans özet kartının hemen altında o kişiye ait işlemler (kullanıcı,
+					2026-09-16). Satıra tıklayınca üstteki `TransactionFormDialog` düzenleme
+					kipinde açılır; kayıt sonrası hem liste hem özet tazelenir
+					(`saveTransaction` ikisini de geçersiz kılıyor).
+				-->
+				{#if canSeeTransactions}
+					<section class="mb-4">
+						<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+							<h2 class="text-sm font-semibold text-text">
+								{t('contacts.finance.transactionsTitle')}
+							</h2>
+							<Button type="button" size="sm" variant="secondary" onclick={openCreateTx}>
+								{t('contacts.finance.transactionsNew')}
+							</Button>
+						</div>
+
+						{#if contactTxQuery.isPending}
+							<p class="text-sm text-text-muted">{t('contacts.finance.loading')}</p>
+						{:else if contactTxQuery.isError}
+							<p class="text-sm text-danger">{t('contacts.finance.transactionsError')}</p>
+						{:else if contactTransactions.length === 0}
+							<div class="rounded-lg border border-border bg-surface p-6 text-center">
+								<p class="text-sm text-text-muted">{t('contacts.finance.transactionsEmpty')}</p>
+							</div>
+						{:else}
+							<TransactionList items={contactTransactions} {baseCurrency} onselect={openEditTx} />
+							{#if contactTxQuery.hasNextPage}
+								<div class="mt-4 flex justify-center">
+									<Button
+										variant="outline"
+										type="button"
+										disabled={contactTxQuery.isFetchingNextPage}
+										onclick={() => contactTxQuery.fetchNextPage()}
+									>
+										{contactTxQuery.isFetchingNextPage
+											? t('finance.loadingMore')
+											: t('finance.loadMore')}
+									</Button>
+								</div>
+							{/if}
+						{/if}
+					</section>
+				{/if}
 			</div>
 		{:else}
 			<div class="tl-measure pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-6">

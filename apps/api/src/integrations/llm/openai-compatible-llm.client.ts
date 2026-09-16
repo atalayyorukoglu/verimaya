@@ -6,8 +6,10 @@ import {
 	buildMayaSystemPrompt,
 	buildMayaToolSelectionSystemPrompt,
 	frameKnowledgeContext,
+	framePatientFlowPrompt,
 	frameTenantAiPromptNote,
 	mayaToolCallSchema,
+	PATIENT_FLOW_MAX_MISSING,
 	transactionDraftSchema,
 	toTenantDayKey,
 	type AppointmentLogisticsDraft,
@@ -23,6 +25,7 @@ import { heuristicParseWhatsappMessage } from '../../whatsapp/heuristic-parse';
 import { tutarlariDuzelt } from '../../whatsapp/tutar';
 import type {
 	ContactSummaryContext,
+	ContactSummaryMissingDraft,
 	ContactSummaryResult,
 	ContactSummarySentenceDraft,
 	LlmClient,
@@ -359,6 +362,7 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 	async summarizeContact(ctx: ContactSummaryContext): Promise<ContactSummaryResult> {
 		const failed = (error: string | null): ContactSummaryResult => ({
 			sentences: [],
+			missing: [],
 			heuristic: false,
 			usage: {
 				provider: providerLabel(this.config.baseUrl),
@@ -375,6 +379,13 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 		if (ctx.items.length === 0) return failed('no_items');
 
 		const base = this.config.baseUrl.replace(/\/$/, '');
+		/**
+		 * KISI-02 — kişi türü Hasta ise tenant'ın akış şablonu isteme eklenir ve modelden
+		 * `missing` istenir. Şablon yoksa (Hasta olmayan kişi) blok hiç yazılmaz, çıktı
+		 * sözleşmesi de eskisi gibi kalır.
+		 */
+		const checklist = ctx.patientFlow?.checklist ?? [];
+		const flowBlock = ctx.patientFlow ? framePatientFlowPrompt(ctx.patientFlow) : '';
 		const system = [
 			'Sağlık turizmi operasyonunda çalışan bir asistansın. Sana BİR KİŞİYE ait kayıtlar verilecek:',
 			'[W…] WhatsApp grup mesajı, [R…] randevu, [P…] para işlemi, [N…] çalışan notu. Kişi metinde',
@@ -384,8 +395,20 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 			'ödemeler, açık konular. En fazla 8 cümle. Her cümle yalnız kayıtlarda AÇIKÇA yazan bilgiyi',
 			'taşısın; tahmin, tamamlama, yorum yok. Emin olmadığın şeyi yazma. Para tutarlarını',
 			"kayıttaki gibi yaz. Her cümleye dayandığı kayıt ref'lerini ekle (en az bir).",
-			'',
-			'Yalnız JSON dön: {"sentences":[{"text":"…","refs":["W12","P3"]}]}'
+			...(flowBlock
+				? [
+						'',
+						flowBlock,
+						'',
+						'EK GÖREV: yukarıdaki kontrol listesinin hangi maddelerinin kayıtlarda karşılığı YOK,',
+						'onları "missing" dizisine yaz: {"item_id":"<listedeki id>","note":"<kısa Türkçe gerekçe>"}.',
+						`Yalnız listedeki id'leri kullan, en fazla ${PATIENT_FLOW_MAX_MISSING} madde. Kayıtlarda`,
+						'karşılığını gördüğün maddeyi YAZMA; emin olamadığın maddeyi de yazma. Aşaması henüz',
+						'gelmemiş maddeyi (ör. hasta daha gelmediyse bitim evrakı) yazma.',
+						'',
+						'Yalnız JSON dön: {"sentences":[{"text":"…","refs":["W12","P3"]}],"missing":[{"item_id":"p02","note":"…"}]}'
+					]
+				: ['', 'Yalnız JSON dön: {"sentences":[{"text":"…","refs":["W12","P3"]}]}'])
 		].join('\n');
 		const user = ctx.items.map((i) => `[${i.ref}] ${i.at.slice(0, 10)} · ${i.text}`).join('\n');
 
@@ -441,10 +464,33 @@ export class OpenAiCompatibleLlmClient implements LlmClient {
 				}
 			}
 
+			const knownItems = new Set(checklist.map((i) => i.id));
+			const rawMissing = (parsed as { missing?: unknown }).missing;
+			const missing: ContactSummaryMissingDraft[] = [];
+			if (knownItems.size > 0 && Array.isArray(rawMissing)) {
+				const seen = new Set<string>();
+				for (const m of rawMissing) {
+					const itemId =
+						typeof (m as { item_id?: unknown }).item_id === 'string'
+							? (m as { item_id: string }).item_id.trim()
+							: '';
+					// Uydurulan id sessizce düşer — şablonda olmayan uyarı gösterilmez.
+					if (!knownItems.has(itemId) || seen.has(itemId)) continue;
+					const note =
+						typeof (m as { note?: unknown }).note === 'string'
+							? (m as { note: string }).note.trim().slice(0, 300)
+							: '';
+					seen.add(itemId);
+					missing.push({ item_id: itemId, note });
+					if (missing.length >= PATIENT_FLOW_MAX_MISSING) break;
+				}
+			}
+
 			const promptTokens = json.usage?.prompt_tokens ?? null;
 			const completionTokens = json.usage?.completion_tokens ?? null;
 			return {
 				sentences,
+				missing,
 				heuristic: false,
 				usage: {
 					provider: providerLabel(this.config.baseUrl),

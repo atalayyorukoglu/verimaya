@@ -43,6 +43,8 @@ export class HeuristicLlmClient implements LlmClient {
 	async summarizeContact(ctx: ContactSummaryContext): Promise<ContactSummaryResult> {
 		return {
 			sentences: heuristicSummarizeContact(ctx),
+			// Kural tabanlı yol kontrol listesini yorumlayamaz; eksik ÜRETİLMEZ (KISI-02).
+			missing: [],
 			heuristic: true,
 			usage: {
 				provider: 'heuristic',

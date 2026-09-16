@@ -540,6 +540,13 @@
       "when": 1757970000000,
       "tag": "0076_drive_mirror",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1757980000000,
+      "tag": "0077_contact_summary_missing",
+      "breakpoints": true
     }
   ]
 }

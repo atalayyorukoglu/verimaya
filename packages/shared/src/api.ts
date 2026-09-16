@@ -107,6 +107,7 @@ export const apiPaths = {
 	settingsAppointmentType: (id: string) => `${API_V1_PREFIX}/settings/appointment-types/${id}`,
 	settingsAiDisclosure: `${API_V1_PREFIX}/settings/ai-disclosure`,
 	settingsAiPrompt: `${API_V1_PREFIX}/settings/ai-prompt`,
+	settingsPatientFlow: `${API_V1_PREFIX}/settings/patient-flow`,
 	settingsKnowledge: `${API_V1_PREFIX}/settings/knowledge`,
 	settingsKnowledgeRevisions: `${API_V1_PREFIX}/settings/knowledge/revisions`,
 	settingsOperationAlerts: `${API_V1_PREFIX}/settings/operation-alerts`,
@@ -220,6 +221,8 @@ export type ListQueryParams = {
 	/** G-05r: appointment role-agnostic contact filter */
 	contact_involves?: string | null;
 	case_contact_id?: string | null;
+	/** Transactions: any-role contact filter (contact / case / responsible). */
+	any_contact_id?: string | null;
 	/** Commission entries: filter by beneficiary (clinic / referrer / sub-agency). */
 	beneficiary_contact_id?: string | null;
 	type_id?: string | null;
@@ -254,6 +257,7 @@ export function listUrl(resource: string, params?: ListQueryParams): string {
 	if (params?.contact_id) url.searchParams.set('contact_id', params.contact_id);
 	if (params?.contact_involves) url.searchParams.set('contact_involves', params.contact_involves);
 	if (params?.case_contact_id) url.searchParams.set('case_contact_id', params.case_contact_id);
+	if (params?.any_contact_id) url.searchParams.set('any_contact_id', params.any_contact_id);
 	if (params?.beneficiary_contact_id) {
 		url.searchParams.set('beneficiary_contact_id', params.beneficiary_contact_id);
 	}
@@ -418,6 +422,7 @@ import {
 	aiCorrectionsReportSchema
 } from './ai-correction.js';
 import { whatsappAiPromptSchema, whatsappAiPromptUpdateSchema } from './ai-prompt.js';
+import { patientFlowSchema, patientFlowUpdateSchema } from './patient-flow.js';
 import { permissionMatrixPatchSchema, permissionMatrixSchema } from './permission-matrix.js';
 import {
 	importBundleCommitResultSchema,
@@ -832,6 +837,13 @@ export const apiContract = {
 	'PUT /v1/settings/ai-prompt': {
 		body: whatsappAiPromptUpdateSchema,
 		response: whatsappAiPromptSchema
+	},
+	'GET /v1/settings/patient-flow': {
+		response: patientFlowSchema
+	},
+	'PUT /v1/settings/patient-flow': {
+		body: patientFlowUpdateSchema,
+		response: patientFlowSchema
 	},
 	'POST /v1/maya/ask': {
 		body: mayaAskSchema,

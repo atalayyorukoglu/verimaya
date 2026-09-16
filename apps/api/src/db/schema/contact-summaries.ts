@@ -1,4 +1,4 @@
-import type { ContactSummarySentence } from '@verimaya/shared';
+import type { ContactSummaryMissing, ContactSummarySentence } from '@verimaya/shared';
 import {
 	boolean,
 	integer,
@@ -27,6 +27,11 @@ export const contactSummaries = pgTable(
 			.notNull()
 			.references(() => contacts.id, { onDelete: 'cascade' }),
 		sentences: jsonb('sentences').$type<ContactSummarySentence[]>().notNull().default([]),
+		/**
+		 * KISI-02 — hasta akışı kontrol listesinde karşılığı bulunamayan maddeler.
+		 * Kişi türü Hasta değilse hep boş; şablon değişince parmak izi de değişir.
+		 */
+		missing: jsonb('missing').$type<ContactSummaryMissing[]>().notNull().default([]),
 		/** Özete giren kayıtların kimlik+güncelleme damgası; değişince özet bayatlar. */
 		inputFingerprint: text('input_fingerprint').notNull(),
 		inputCount: integer('input_count').notNull().default(0),

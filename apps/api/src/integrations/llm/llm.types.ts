@@ -4,6 +4,7 @@ import type {
 	Contact,
 	MayaContactRef,
 	MayaToolCall,
+	PatientFlowChecklistItem,
 	RecordUpdateSuggestionSkippedReason,
 	TransactionDraft
 } from '@verimaya/shared';
@@ -150,10 +151,21 @@ export type ContactSummaryItem = {
 	text: string;
 };
 
+/**
+ * KISI-02 — tenant'ın hasta akışı şablonu. Yalnız kişi türü **Hasta** olan özetlerde
+ * dolu gelir; başka türde `null`/`undefined` olur ve isteme hiçbir şey eklenmez.
+ * Şablon modele **veri** olarak, çerçeveli biçimde gider (bkz. `framePatientFlowPrompt`).
+ */
+export type ContactSummaryPatientFlow = {
+	narrative: string;
+	checklist: PatientFlowChecklistItem[];
+};
+
 export type ContactSummaryContext = {
 	items: ContactSummaryItem[];
 	/** Yer tutucu; çıktıda geri açılır. */
 	subjectToken: string;
+	patientFlow?: ContactSummaryPatientFlow | null;
 };
 
 export type ContactSummarySentenceDraft = {
@@ -161,8 +173,19 @@ export type ContactSummarySentenceDraft = {
 	refs: string[];
 };
 
+/** Modelden dönen eksik maddesi: yalnız şablondaki id + kısa gerekçe. */
+export type ContactSummaryMissingDraft = {
+	item_id: string;
+	note: string;
+};
+
 export type ContactSummaryResult = {
 	sentences: ContactSummarySentenceDraft[];
+	/**
+	 * Kontrol listesinde karşılığı bulunamayan maddeler. Şablon verilmediyse (Hasta
+	 * olmayan kişi) ve kural tabanlı yolda **her zaman** boş — tahmin üretilmez.
+	 */
+	missing: ContactSummaryMissingDraft[];
 	heuristic: boolean;
 	usage: LlmUsageLedger;
 };

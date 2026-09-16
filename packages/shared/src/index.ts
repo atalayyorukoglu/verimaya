@@ -49,6 +49,7 @@ export * from './ai-correction.js';
 export * from './ai-accuracy-report.js';
 export * from './ai-disclosure.js';
 export * from './ai-prompt.js';
+export * from './patient-flow.js';
 export * from './permission-matrix.js';
 export * from './import-export.js';
 export * from './data-delete.js';

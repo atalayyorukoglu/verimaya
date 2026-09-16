@@ -533,7 +533,7 @@
 	Kayıtlar güne göre gruplanır (Bugün / Dün / 2 Mayıs 2025), grup başlığı yapışkan.
 	En yeni üstte: hasta kartı açılınca son durum ilk görünür.
 -->
-<div class="flex min-h-0 flex-1 flex-col">
+<div>
 	{#if openIncidents.length > 0}
 		<!-- Açık olay uyarısı: sol kalın sarı kenar; mobilde "Çözüldü" tam genişlikte alta iner. -->
 		<div class="tl-measure mt-6">
@@ -579,15 +579,10 @@
 	{/if}
 
 	<!--
-		Kaydıran kap tam genişlikte: kaydırma çubuğu sayfanın sağ kenarına yaslanır
-		(Claude düzeni, kullanıcı referansı 2026-09-03). Ölçüyü içerideki sütun verir.
+		Ayrı iç scroll yok: liste sayfanın normal akışında, kaydırma sayfanın/`main`ın
+		kendisinde olur (kullanıcı geri bildirimi, 2026-09-16).
 	-->
-	<div
-		bind:this={listEl}
-		class="min-h-0 flex-1 overflow-y-auto"
-		role="log"
-		aria-label={t('contacts.timeline.aria')}
-	>
+	<div bind:this={listEl} role="log" aria-label={t('contacts.timeline.aria')}>
 		<div class="tl-measure pt-[var(--tl-list-top)] pb-[var(--tl-list-bottom)]">
 			{#if isPending}
 				<p class="text-sm text-text-faint">{t('contacts.notes.loading')}</p>
@@ -901,15 +896,9 @@
 
 	{#if canWrite}
 		<!--
-			Figma'da footer çerçevenin dibinde duruyor ve içeriği ÖRTMÜYOR: kayan şey
-			listenin kendisi. Burada da öyle — sütun kaydıran kabı dolduruyor, liste
-			`overflow-y-auto` ile kendi içinde kayıyor, yazma alanı onun altında
-			normal akışta duruyor.
-
-			Önceki `sticky` çözümü mobilde bozuluyordu: `main` yatayda gizli olduğu
-			için dikeyde de kaydıran kap oluyor, belgeyle birlikte iki katmanlı kaydırma
-			çıkıyordu; yapışkan alan `main` kutusunun dibine göre hizalanınca olay
-			satırı açıldığında giriş alt menünün altına iniyordu.
+			Yazma alanı akışın altında normal akışta duruyor, sayfa dibine yapışık
+			değil — liste ile birlikte sayfanın/`main`ın kendisi kayar (kullanıcı
+			geri bildirimi, 2026-09-16).
 		-->
 		<!--
 			Mobil alt menü payı yüzeyin DIŞINDA: `bg-surface` padding'inde tutmak
@@ -917,7 +906,7 @@
 			şeffaf spacer menü yüksekliği kadar (`h-14` + safe-area).
 		-->
 		<div
-			class="flex h-[var(--panel-chrome-height)] shrink-0 items-center border-t border-border-strong bg-surface"
+			class="flex h-[var(--panel-chrome-height)] items-center border-t border-border-strong bg-surface"
 		>
 			<div class="tl-measure flex w-full flex-col justify-center gap-1.5">
 				{#if asIncident}

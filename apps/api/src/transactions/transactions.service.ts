@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, lte, or, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import {
 	DEFAULT_CONTACT_TYPE_NAMES,
@@ -43,6 +43,21 @@ export class TransactionsService {
 			if (params.contact_id) baseFilters.push(eq(transactions.contactId, params.contact_id));
 			if (params.case_contact_id) {
 				baseFilters.push(eq(transactions.caseContactId, params.case_contact_id));
+			}
+			/*
+			 * Kişi kartı "kişinin taraf olduğu işlemler"i tek çağrıyla ister: kişi/firma,
+			 * hasta ve sorumlu alanlarından herhangi biri eşleşsin. Rol başına ayrı
+			 * istek atıp istemcide birleştirmek sayfalamayı ve toplam sayacı bozuyordu.
+			 */
+			if (params.any_contact_id) {
+				const anyId = params.any_contact_id;
+				baseFilters.push(
+					or(
+						eq(transactions.contactId, anyId),
+						eq(transactions.caseContactId, anyId),
+						eq(transactions.responsibleContactId, anyId)
+					)!
+				);
 			}
 			if (params.from) baseFilters.push(gte(transactions.occurredOn, params.from));
 			if (params.to) baseFilters.push(lte(transactions.occurredOn, params.to));

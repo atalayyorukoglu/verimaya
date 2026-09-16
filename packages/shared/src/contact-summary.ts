@@ -31,6 +31,21 @@ export const contactSummarySentenceSchema = z.object({
 });
 export type ContactSummarySentence = z.infer<typeof contactSummarySentenceSchema>;
 
+/**
+ * KISI-02 — hasta akışı kontrol listesinde karşılığı bulunamayan madde.
+ *
+ * `item_id` tenant şablonundaki maddedir; `label` ve `warning` şablondan kopyalanır
+ * (kart, ayarları okuma izni olmadan da uyarıyı gösterebilsin), `note` modelin kısa
+ * gerekçesidir. Yalnız kişi türü Hasta olan kayıtlarda dolar.
+ */
+export const contactSummaryMissingSchema = z.object({
+	item_id: z.string().max(64),
+	label: z.string().max(200),
+	warning: z.string().max(200),
+	note: z.string().max(300)
+});
+export type ContactSummaryMissing = z.infer<typeof contactSummaryMissingSchema>;
+
 export const contactSummarySchema = z.object({
 	contact_id: uuid,
 	sentences: z.array(contactSummarySentenceSchema),
@@ -42,6 +57,8 @@ export const contactSummarySchema = z.object({
 	heuristic: z.boolean(),
 	model: z.string().max(120).nullable(),
 	/** Özete giren kayıt sayısı (mesaj + randevu + işlem + not). */
-	input_count: z.number().int().nonnegative()
+	input_count: z.number().int().nonnegative(),
+	/** Hasta akışı şablonunda eksik kalan maddeler; Hasta olmayan kişide hep boş. */
+	missing: z.array(contactSummaryMissingSchema)
 });
 export type ContactSummary = z.infer<typeof contactSummarySchema>;

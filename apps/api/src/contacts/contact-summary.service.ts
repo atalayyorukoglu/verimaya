@@ -3,8 +3,16 @@ import { createHash } from 'node:crypto';
 import { and, desc, eq, isNull, or } from 'drizzle-orm';
 import type {
 	ContactSummary,
+	ContactSummaryMissing,
 	ContactSummarySentence,
-	ContactSummarySource
+	ContactSummarySource,
+	PatientFlow
+} from '@verimaya/shared';
+import {
+	PATIENT_FLOW_MAX_MISSING,
+	PATIENT_FLOW_SETTING_KEY,
+	defaultPatientFlow,
+	patientFlowSchema
 } from '@verimaya/shared';
 import { appointments } from '../db/schema/appointments';
 import { caseNotes } from '../db/schema/case-notes';
@@ -12,12 +20,14 @@ import { contactSummaries } from '../db/schema/contact-summaries';
 import { contacts } from '../db/schema/contacts';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
 import { inboundMessages } from '../db/schema/inbound-messages';
+import { tenantSettings } from '../db/schema/tenant-settings';
 import { transactions } from '../db/schema/transactions';
 import { whatsappChats } from '../db/schema/whatsapp-chats';
 import {
 	LLM_CLIENT,
 	writeLlmParseLedger,
 	type ContactSummaryItem,
+	type ContactSummaryPatientFlow,
 	type LlmClient
 } from '../integrations/llm';
 import { maskMessagePii } from '../integrations/llm/pii-mask';
@@ -30,6 +40,11 @@ const SUBJECT_TOKEN = '[HASTA]';
 /** Bayat özet en erken bu kadar sonra kendiliğinden yenilenir (her açılışta LLM çağrısı olmasın). */
 const AUTO_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
 const LIMITS = { whatsapp: 80, appointments: 20, transactions: 40, notes: 30 } as const;
+/**
+ * KISI-02 — hasta akışı şablonu yalnız bu türdeki kişilerde devreye girer.
+ * `contacts.contact_type_name` denormalize metindir; karşılaştırma Türkçe küçük harfle.
+ */
+const PATIENT_TYPE_NAME = 'hasta';
 
 type Kanit = ContactSummaryItem & {
 	id: string;
@@ -80,7 +95,8 @@ export class ContactSummaryService {
 					id: contacts.id,
 					displayName: contacts.displayName,
 					firstName: contacts.firstName,
-					lastName: contacts.lastName
+					lastName: contacts.lastName,
+					contactTypeName: contacts.contactTypeName
 				})
 				.from(contacts)
 				.where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
@@ -90,6 +106,17 @@ export class ContactSummaryService {
 			}
 
 			const kanitlar = await this.kanitlariTopla(db, contactId);
+
+			// Hasta değilse şablon hiç okunmaz: ne isteme girer, ne parmak izine.
+			const isPatient =
+				contact.contactTypeName.trim().toLocaleLowerCase('tr') === PATIENT_TYPE_NAME;
+			const flow = isPatient ? await this.hastaAkisiOku(db) : null;
+			const flowStamp = flow
+				? createHash('sha256')
+						.update(JSON.stringify({ narrative: flow.narrative, checklist: flow.checklist }))
+						.digest('hex')
+				: '';
+
 			const fingerprint = createHash('sha256')
 				.update(
 					kanitlar
@@ -97,6 +124,8 @@ export class ContactSummaryService {
 						.sort()
 						.join('|')
 				)
+				// Şablon değişince özet bayatlasın — eksik listesi eski şablona göre kalmasın.
+				.update(`|pf:${flowStamp}`)
 				.digest('hex');
 
 			const [existing] = await db
@@ -125,14 +154,24 @@ export class ContactSummaryService {
 				text: this.maskele(k.text, subjectNames)
 			}));
 
-			let result = await this.llm.summarizeContact({ items, subjectToken: SUBJECT_TOKEN });
+			const patientFlow: ContactSummaryPatientFlow | null = flow
+				? { narrative: flow.narrative, checklist: flow.checklist }
+				: null;
+
+			let result = await this.llm.summarizeContact({
+				items,
+				subjectToken: SUBJECT_TOKEN,
+				patientFlow
+			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
 			let heuristic = result.heuristic;
 			if (result.sentences.length === 0) {
 				// Model yazamadı (hata / boş): kural tabanlı özet, ama "model" damgası yok.
+				// Kural tabanlı yol kontrol listesini okuyamaz; eksik listesi de boşalır.
 				result = {
 					...result,
-					sentences: heuristicSummarizeContact({ items, subjectToken: SUBJECT_TOKEN })
+					sentences: heuristicSummarizeContact({ items, subjectToken: SUBJECT_TOKEN }),
+					missing: []
 				};
 				heuristic = true;
 			}
@@ -148,11 +187,30 @@ export class ContactSummaryService {
 					.filter((x): x is ContactSummarySource => x !== null)
 			}));
 
+			// Modelin bildirdiği eksikler şablondaki metinle zenginleşir: kart, ayarları
+			// okuma izni olmadan da uyarıyı gösterebilsin.
+			const byItemId = new Map((flow?.checklist ?? []).map((i) => [i.id, i]));
+			const missing: ContactSummaryMissing[] = result.missing
+				.slice(0, PATIENT_FLOW_MAX_MISSING)
+				.flatMap((m) => {
+					const item = byItemId.get(m.item_id);
+					if (!item) return [];
+					return [
+						{
+							item_id: item.id,
+							label: item.label,
+							warning: item.warning,
+							note: kirp(m.note, 300)
+						}
+					];
+				});
+
 			const now = new Date();
 			const values = {
 				tenantId,
 				contactId,
 				sentences,
+				missing,
 				inputFingerprint: fingerprint,
 				inputCount: kanitlar.length,
 				model: heuristic ? null : result.usage.model,
@@ -184,8 +242,25 @@ export class ContactSummaryService {
 			stale,
 			heuristic: row?.heuristic ?? false,
 			model: row?.model ?? null,
-			input_count: row?.inputCount ?? 0
+			input_count: row?.inputCount ?? 0,
+			missing: row?.missing ?? []
 		};
+	}
+
+	/**
+	 * KISI-02 — tenant'ın hasta akışı şablonu. Kaydedilmemişse gömülü varsayılan;
+	 * satır bozuksa yine varsayılan (özet üretimi şablon yüzünden durmasın).
+	 * `SettingsService.getPatientFlow` ile aynı sözleşme, ama açık işlem içinde okur.
+	 */
+	private async hastaAkisiOku(db: TenantDb): Promise<PatientFlow> {
+		const [row] = await db
+			.select({ value: tenantSettings.value })
+			.from(tenantSettings)
+			.where(eq(tenantSettings.key, PATIENT_FLOW_SETTING_KEY))
+			.limit(1);
+		if (row?.value == null) return defaultPatientFlow();
+		const parsed = patientFlowSchema.safeParse(row.value);
+		return parsed.success ? parsed.data : defaultPatientFlow();
 	}
 
 	/** Kişinin adı `[HASTA]`; telefon/e-posta/IBAN yer tutucu. Model isim görmez. */

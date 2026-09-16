@@ -22,6 +22,7 @@
 	import Webhook from '@lucide/svelte/icons/webhook';
 	import HardDrive from '@lucide/svelte/icons/hard-drive';
 	import ClipboardList from '@lucide/svelte/icons/clipboard-list';
+	import Stethoscope from '@lucide/svelte/icons/stethoscope';
 	import MessageSquare from '@lucide/svelte/icons/message-square';
 
 	type Card = {
@@ -173,6 +174,12 @@
 					title: t('settings.nav.ai.title'),
 					description: t('settings.nav.ai.description'),
 					icon: Bot
+				},
+				{
+					href: '/settings/patient-flow',
+					title: t('settings.nav.patientFlow.title'),
+					description: t('settings.nav.patientFlow.description'),
+					icon: Stethoscope
 				},
 				{
 					href: '/settings/ai-learning',

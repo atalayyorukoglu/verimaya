@@ -98,6 +98,14 @@ describe('transactionListQuerySchema (GAP-03)', () => {
 		});
 	});
 
+	it('accepts any_contact_id (kişinin taraf olduğu işlemler)', () => {
+		const parsed = transactionListQuerySchema.parse({
+			limit: 50,
+			any_contact_id: '00000000-0000-4000-8000-0000000000aa'
+		});
+		expect(parsed.any_contact_id).toBe('00000000-0000-4000-8000-0000000000aa');
+	});
+
 	it('rejects unknown query keys (.strict)', () => {
 		const result = transactionListQuerySchema.safeParse({
 			limit: 10,

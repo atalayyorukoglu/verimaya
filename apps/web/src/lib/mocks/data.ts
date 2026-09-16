@@ -2,6 +2,7 @@ import { faker } from '@faker-js/faker/locale/en';
 import {
 	DEFAULT_ENABLED_PRODUCT_MODULE_IDS,
 	DEFAULT_INCENTIVE_DOCUMENTS,
+	defaultPatientFlow,
 	defaultWhatsappAiPrompt,
 	emptyKnowledgeSections,
 	hoursUntil,
@@ -37,6 +38,7 @@ import type {
 	OperationAlertThresholds,
 	RecordUpdateSuggestion,
 	TrustScoreSettings,
+	PatientFlow,
 	WhatsappAiPrompt,
 	CspReport
 } from '@verimaya/shared';
@@ -499,6 +501,8 @@ export type DemoStore = {
 	trustScore: TrustScoreSettings;
 	/** G-26: tenant AI extraction note (MSW). */
 	aiPrompt: WhatsappAiPrompt;
+	/** KISI-02: hasta akışı şablonu (MSW). */
+	patientFlow: PatientFlow;
 	/** G-11: deny-only permission overrides (MSW). */
 	permissionOverrides: PermissionOverride[];
 	cspReports: CspReport[];
@@ -1562,6 +1566,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 			aiCorrections: [],
 			trustScore: { checks: [] },
 			aiPrompt: defaultWhatsappAiPrompt(),
+			patientFlow: defaultPatientFlow(),
 			permissionOverrides: [],
 			cspReports: []
 		};
@@ -1866,6 +1871,7 @@ function buildStore(scenario: MockScenario): DemoStore {
 		aiCorrections: makeAiCorrections(),
 		trustScore: { checks: [] },
 		aiPrompt: defaultWhatsappAiPrompt(),
+		patientFlow: defaultPatientFlow(),
 		permissionOverrides: [],
 		cspReports: makeCspReports()
 	};

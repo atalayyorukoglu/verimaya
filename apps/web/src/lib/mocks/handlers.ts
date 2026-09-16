@@ -43,7 +43,9 @@ import {
 	trustScoreSettings,
 	userUiPreferencesUpdateSchema,
 	whatsappAiPromptUpdateSchema,
+	patientFlowUpdateSchema,
 	defaultWhatsappAiPrompt,
+	defaultPatientFlow,
 	buildPermissionMatrixFromOverrides,
 	dataDeletePreviewBodySchema,
 	dataDeleteExecuteBodySchema,
@@ -1834,6 +1836,7 @@ export const handlers = [
 		const {
 			contact_id: contactId,
 			case_contact_id: caseContactId,
+			any_contact_id: anyContactId,
 			from,
 			to,
 			kind,
@@ -1843,6 +1846,14 @@ export const handlers = [
 		} = parsed.data;
 		if (contactId) items = items.filter((t) => t.contact_id === contactId);
 		if (caseContactId) items = items.filter((t) => t.case_contact_id === caseContactId);
+		if (anyContactId) {
+			items = items.filter(
+				(t) =>
+					t.contact_id === anyContactId ||
+					t.case_contact_id === anyContactId ||
+					t.responsible_contact_id === anyContactId
+			);
+		}
 		if (from) items = items.filter((t) => t.occurred_on >= from);
 		if (to) items = items.filter((t) => t.occurred_on <= to);
 		if (kind) items = items.filter((t) => t.kind === kind);
@@ -2259,7 +2270,8 @@ export const handlers = [
 			stale: false,
 			heuristic: true,
 			model: null,
-			input_count: 0
+			input_count: 0,
+			missing: []
 		});
 	}),
 	http.post('/v1/contacts/:id/summary/refresh', ({ params }) => {
@@ -2270,7 +2282,8 @@ export const handlers = [
 			stale: false,
 			heuristic: true,
 			model: null,
-			input_count: 0
+			input_count: 0,
+			missing: []
 		});
 	}),
 
@@ -3368,6 +3381,27 @@ export const handlers = [
 		const store = getStore(scenarioFrom(request));
 		store.aiPrompt = defaultWhatsappAiPrompt();
 		return HttpResponse.json(store.aiPrompt);
+	}),
+
+	// KISI-02: hasta akışı şablonu. Kaydedilmemişse gömülü varsayılan döner.
+	http.get('/v1/settings/patient-flow', ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		return HttpResponse.json(store.patientFlow ?? defaultPatientFlow());
+	}),
+
+	http.put('/v1/settings/patient-flow', async ({ request }) => {
+		const body = await request.json();
+		const parsed = patientFlowUpdateSchema.safeParse(body);
+		if (!parsed.success) return badRequest('Geçersiz hasta akışı', parsed.error.flatten());
+		const store = getStore(scenarioFrom(request));
+		store.patientFlow = {
+			narrative: parsed.data.narrative,
+			checklist: parsed.data.checklist,
+			is_default: false,
+			updated_by: 'Demo User',
+			updated_at: new Date().toISOString()
+		};
+		return HttpResponse.json(store.patientFlow);
 	}),
 
 	http.post('/v1/settings/data-delete/preview', async ({ request }) => {

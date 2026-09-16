@@ -1,6 +1,8 @@
 export type {
 	ContactSummaryContext,
 	ContactSummaryItem,
+	ContactSummaryMissingDraft,
+	ContactSummaryPatientFlow,
 	ContactSummaryResult,
 	ContactSummarySentenceDraft,
 	LlmClient,

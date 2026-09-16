@@ -85,6 +85,7 @@ export function queryKeys(scope: QueryScope) {
 			financeCategories: () => k('settings', 'finance-categories'),
 			aiDisclosure: () => k('settings', 'ai-disclosure'),
 			aiPrompt: () => k('settings', 'ai-prompt'),
+			patientFlow: () => k('settings', 'patient-flow'),
 			knowledge: () => k('settings', 'knowledge'),
 			knowledgeRevisions: () => k('settings', 'knowledge', 'revisions'),
 			operationAlerts: () => k('settings', 'operation-alerts'),

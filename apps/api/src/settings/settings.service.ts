@@ -27,6 +27,8 @@ import type {
 	OperationAlertSettingsUpdate,
 	OrganizationCreate,
 	OrganizationUpdate,
+	PatientFlow,
+	PatientFlowUpdate,
 	SettingsReorder,
 	TrustScoreSettings,
 	WhatsappAiDisclosure,
@@ -42,11 +44,13 @@ import {
 	DEFAULT_INCENTIVE_DEADLINE_DAYS,
 	DEFAULT_INCIDENT_TYPE_NAMES_CLINIC,
 	INCENTIVE_DEADLINE_DAYS_KEY,
+	PATIENT_FLOW_SETTING_KEY,
 	OPERATION_ALERT_THRESHOLDS_KEY,
 	DEFAULT_OPERATION_ALERT_THRESHOLDS,
 	cloneOperationAlertThresholds,
 	defaultIncentiveDeadlineSettings,
 	defaultOperationAlertThresholds,
+	defaultPatientFlow,
 	defaultWhatsappAiDisclosure,
 	defaultWhatsappAiPrompt,
 	incentiveDeadlineSettingsSchema,
@@ -56,6 +60,7 @@ import {
 	emptyKnowledgeSections,
 	findKnowledgePii,
 	knowledgeSectionsSchema,
+	patientFlowSchema,
 	trustScoreSettings,
 	whatsappAiDisclosureSchema,
 	whatsappAiPromptSchema
@@ -106,6 +111,7 @@ const REVISION_APPOINTMENT_TYPE_KEY = 'revision_appointment_type';
 const KNOWLEDGE_AUDIT_LABEL = 'knowledge';
 const OPERATION_ALERT_AUDIT_LABEL = 'operation_alert_thresholds';
 const AI_PROMPT_AUDIT_LABEL = 'whatsapp_ai_prompt';
+const PATIENT_FLOW_AUDIT_LABEL = 'patient_flow';
 
 /** Presence in tenant_settings ⇒ defaults were applied once; empty list must not re-seed. */
 const APPOINTMENT_TYPES_SEEDED_KEY = 'appointment_types_defaults_seeded';
@@ -205,11 +211,7 @@ export class SettingsService {
 	 * duplicate-named category. Split out so SettingsController can run it through
 	 * IdempotencyService.run() (same tenantContext.withTenant transaction, caller-supplied `db`).
 	 */
-	async createFinanceCategoryWithDb(
-		db: TenantDb,
-		tenantId: string,
-		input: FinanceCategoryCreate
-	) {
+	async createFinanceCategoryWithDb(db: TenantDb, tenantId: string, input: FinanceCategoryCreate) {
 		const siblings = await db
 			.select({ kind: financeCategories.kind, name: financeCategories.name })
 			.from(financeCategories);
@@ -331,11 +333,7 @@ export class SettingsService {
 			const siblings = await db
 				.select({ id: contactTypes.id, name: contactTypes.name })
 				.from(contactTypes);
-			if (
-				siblings.some(
-					(r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase()
-				)
-			) {
+			if (siblings.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())) {
 				throw this.duplicateTypeNameConflict('A contact type with this name already exists');
 			}
 
@@ -768,10 +766,7 @@ export class SettingsService {
 		}
 
 		try {
-			const [row] = await db
-				.insert(organizations)
-				.values({ tenantId, name })
-				.returning();
+			const [row] = await db.insert(organizations).values({ tenantId, name }).returning();
 
 			return toOrganization(row!);
 		} catch (err) {
@@ -801,9 +796,7 @@ export class SettingsService {
 				.select({ id: organizations.id, name: organizations.name })
 				.from(organizations)
 				.where(isNull(organizations.deletedAt));
-			if (
-				siblings.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())
-			) {
+			if (siblings.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())) {
 				throw this.duplicateTypeNameConflict('An organization with this name already exists');
 			}
 
@@ -865,10 +858,7 @@ export class SettingsService {
 				.from(appointmentTypes)
 				.orderBy(asc(appointmentTypes.sortOrder), asc(appointmentTypes.name));
 
-			if (
-				rows.length === 0 &&
-				!(await this.hasDefaultsSeeded(db, APPOINTMENT_TYPES_SEEDED_KEY))
-			) {
+			if (rows.length === 0 && !(await this.hasDefaultsSeeded(db, APPOINTMENT_TYPES_SEEDED_KEY))) {
 				await db
 					.insert(appointmentTypes)
 					.values(
@@ -1139,7 +1129,14 @@ export class SettingsService {
 	async listKnowledgeRevisions(
 		tenantId: string,
 		limit = 20
-	): Promise<Array<{ id: string; sections: KnowledgeSections; changed_by: string | null; created_at: string }>> {
+	): Promise<
+		Array<{
+			id: string;
+			sections: KnowledgeSections;
+			changed_by: string | null;
+			created_at: string;
+		}>
+	> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const rows = await db
 				.select()
@@ -1233,7 +1230,10 @@ export class SettingsService {
 		return parsed.success ? parsed.data : { checks: [] };
 	}
 
-	async saveTrustScore(tenantId: string, settings: TrustScoreSettings): Promise<TrustScoreSettings> {
+	async saveTrustScore(
+		tenantId: string,
+		settings: TrustScoreSettings
+	): Promise<TrustScoreSettings> {
 		await this.setTenantSetting(tenantId, TRUST_SCORE_KEY, settings);
 		return settings;
 	}
@@ -1273,14 +1273,7 @@ export class SettingsService {
 					}
 				});
 
-			await writeAuditLog(
-				db,
-				tenantId,
-				actor,
-				'update',
-				'tenant',
-				AI_DISCLOSURE_AUDIT_LABEL
-			);
+			await writeAuditLog(db, tenantId, actor, 'update', 'tenant', AI_DISCLOSURE_AUDIT_LABEL);
 		});
 
 		return value;
@@ -1339,6 +1332,59 @@ export class SettingsService {
 		});
 
 		return defaultWhatsappAiPrompt();
+	}
+
+	/**
+	 * KISI-02 — hasta akışı şablonu. Kaydedilmemişse (ya da satır bozulmuşsa) gömülü
+	 * varsayılan döner: `is_default: true`. Boş şablon diye bir durum yok; firma isterse
+	 * anlatıyı ve listeyi boşaltıp kaydedebilir, o zaman `is_default: false` kalır.
+	 */
+	async getPatientFlow(tenantId: string): Promise<PatientFlow> {
+		const raw = await this.getTenantSetting(tenantId, PATIENT_FLOW_SETTING_KEY);
+		if (raw == null) return defaultPatientFlow();
+		const parsed = patientFlowSchema.safeParse(raw);
+		return parsed.success ? parsed.data : defaultPatientFlow();
+	}
+
+	/**
+	 * IDEM-01: SettingsController bunu IdempotencyService.run() içinden çağırır — yazma
+	 * ile audit satırı aynı tenant işleminde olsun diye `db` dışarıdan gelir.
+	 */
+	async savePatientFlowWithDb(
+		db: TenantDb,
+		tenantId: string,
+		input: PatientFlowUpdate,
+		actor: AuditActor
+	): Promise<PatientFlow> {
+		const value: PatientFlow = {
+			narrative: input.narrative,
+			checklist: input.checklist,
+			is_default: false,
+			updated_by: actor.actorDisplayName,
+			updated_at: new Date().toISOString()
+		};
+
+		await db
+			.insert(tenantSettings)
+			.values({ tenantId, key: PATIENT_FLOW_SETTING_KEY, value })
+			.onConflictDoUpdate({
+				target: [tenantSettings.tenantId, tenantSettings.key],
+				set: { value, updatedAt: new Date() }
+			});
+
+		await writeAuditLog(db, tenantId, actor, 'update', 'tenant', PATIENT_FLOW_AUDIT_LABEL);
+		return value;
+	}
+
+	/** Idempotency dışı çağrılar (testler, iç kullanım) için kendi işlemini açan sarmalayıcı. */
+	async savePatientFlow(
+		tenantId: string,
+		input: PatientFlowUpdate,
+		actor: AuditActor
+	): Promise<PatientFlow> {
+		return this.tenantContext.withTenant(tenantId, ({ db }) =>
+			this.savePatientFlowWithDb(db, tenantId, input, actor)
+		);
 	}
 
 	/**
