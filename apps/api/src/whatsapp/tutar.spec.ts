@@ -39,6 +39,37 @@ describe('tutarDegil', () => {
 	});
 });
 
+/**
+ * KUCUK-01: "2000 TL" yıl sanılıyordu — çıplak `^(19|20)\d{2}$` kuralı bağlama
+ * hiç bakmıyordu. Ayraç: yıl ancak tarih deseninin parçasıysa yıldır.
+ */
+describe('tutarDegil — dört haneli sayı: yıl mı tutar mı', () => {
+	it('ardından para birimi geliyorsa tutardır', () => {
+		expect(tutarDegil('2000', '2000 tl ödendi')).toBe(false);
+		expect(tutarDegil('2000', 'Hastadan 2000 TL alındı')).toBe(false);
+		expect(tutarDegil('1950', '1950 gbp kalan bakiye')).toBe(false);
+		expect(tutarDegil('2025', 'toplam 2025 euro')).toBe(false);
+		expect(tutarDegil('2024', '2024₺ nakit')).toBe(false);
+		expect(tutarDegil('2000', '2000 bin tl')).toBe(false);
+	});
+
+	it('öncesinde ödeme bağlamı varsa tutardır', () => {
+		expect(tutarDegil('2020', 'toplam 2020 hastadan alindi')).toBe(false);
+		expect(tutarDegil('1980', 'ödendi 1980')).toBe(false);
+	});
+
+	it('tarih deseninin parçasıysa yıldır', () => {
+		expect(tutarDegil('2024', '2024 yılında acilmisti')).toBe(true);
+		expect(tutarDegil('2024', 'Mayıs 2024 raporu')).toBe(true);
+		expect(tutarDegil('2024', 'sozlesme 12.05.2024 tarihli')).toBe(true);
+		expect(tutarDegil('2026', 'Agustos 2026 Maas hakedisi')).toBe(true);
+	});
+
+	it('hiçbir işaret yoksa yine yıl sayılır (eski davranış)', () => {
+		expect(tutarDegil('2026', 'Evet 2026 olsun')).toBe(true);
+	});
+});
+
 describe('paraBaglamiVar', () => {
 	it('para kelimesi olan mesaj', () => {
 		expect(paraBaglamiVar('Sudenaz Karatas a 2600 prim verildi')).toBe(true);

@@ -6,6 +6,7 @@ import {
 } from '@verimaya/shared';
 import { turleriBul } from './mesaj-turu';
 import { kisiBilgisiCikar } from './kisi-bilgisi';
+import { randevuIpucuCikar } from './randevu-ipucu';
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
 	if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -205,6 +206,16 @@ export function toInboundMessage(row: {
 		media: null,
 		media_thumbnail: extractMediaThumbnail(payload),
 		contact_hint: kisiBilgisiCikar(display.body),
+		/*
+		 * KUCUK-01: randevu talebi ipucu. `contact_id` burada bilinemez (bağ tablosu
+		 * liste düzeyinde okunuyor); `decorateWithDb` mesajın ilk kişisiyle doldurur.
+		 * Grup adı da liste düzeyinde biliniyor — burada yalnız metindeki klinik okunur.
+		 */
+		appointment_hint: randevuIpucuCikar({
+			text: display.body,
+			messageDate: row.createdAt,
+			chatName: display.chat_name
+		}),
 		created_at: row.createdAt.toISOString()
 	};
 }

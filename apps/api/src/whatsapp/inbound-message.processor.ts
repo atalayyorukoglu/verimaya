@@ -10,11 +10,13 @@ import { RecordSuggestionsService } from '../record-suggestions/record-suggestio
 import { TenantContextService } from '../tenant/tenant-context.service';
 import { WhatsappChatsService } from '../settings/whatsapp-chats.service';
 import { asRecord, extractInboundDisplayFields } from './inbound-mapper';
-import { turleriBul } from './mesaj-turu';
+import { sohbetMi, turleriBul } from './mesaj-turu';
 import { kisiBilgisiCikar } from './kisi-bilgisi';
 import { WhatsappService } from './whatsapp.service';
 import { INBOUND_MESSAGE_PROCESS_JOB_TYPE } from '../queue/queue.constants';
 import { vizitCikar } from './vizit-cikar';
+import { randevuIpucuCikar } from './randevu-ipucu';
+import { evrakSinifla } from './evrak-sinifla';
 
 type InboundMessageJobPayload = {
 	inboundMessageId: string;
@@ -44,50 +46,65 @@ export class InboundMessageProcessor {
 	) {}
 
 	async process(jobId: string, tenantId: string): Promise<void> {
-		const { inboundMessageId, messageBody, turler, okunmasin, chatName, messageDate } =
-			await this.tenantContext.withTenant(tenantId, async ({ db }) => {
-				const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
-				if (!job) {
-					throw new Error(`Job ${jobId} not found`);
-				}
-				if (job.jobType !== INBOUND_MESSAGE_PROCESS_JOB_TYPE) {
-					throw new Error(`Job ${jobId} has unexpected type ${job.jobType}`);
-				}
+		const {
+			inboundMessageId,
+			messageBody,
+			turler,
+			turlerMetin,
+			okunmasin,
+			operasyonGrubu,
+			chatName,
+			messageDate
+		} = await this.tenantContext.withTenant(tenantId, async ({ db }) => {
+			const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
+			if (!job) {
+				throw new Error(`Job ${jobId} not found`);
+			}
+			if (job.jobType !== INBOUND_MESSAGE_PROCESS_JOB_TYPE) {
+				throw new Error(`Job ${jobId} has unexpected type ${job.jobType}`);
+			}
 
-				const payload = job.payload as InboundMessageJobPayload;
-				if (!payload?.inboundMessageId) {
-					throw new Error(`Job ${jobId} missing inboundMessageId`);
-				}
+			const payload = job.payload as InboundMessageJobPayload;
+			if (!payload?.inboundMessageId) {
+				throw new Error(`Job ${jobId} missing inboundMessageId`);
+			}
 
-				const now = new Date();
-				await db
-					.update(jobs)
-					.set({ status: 'processing', startedAt: now, updatedAt: now })
-					.where(eq(jobs.id, jobId));
+			const now = new Date();
+			await db
+				.update(jobs)
+				.set({ status: 'processing', startedAt: now, updatedAt: now })
+				.where(eq(jobs.id, jobId));
 
-				const [msg] = await db
-					.select({ payload: inboundMessages.payload, createdAt: inboundMessages.createdAt })
-					.from(inboundMessages)
-					.where(eq(inboundMessages.id, payload.inboundMessageId))
-					.limit(1);
-				const display = extractInboundDisplayFields(asRecord(msg?.payload) ?? {});
-				// Grubun görevi: `ignore` ise hiç işlenmez, diğerlerinde tür kararına girer.
-				const directory = await this.whatsappChats.directoryWithDb(db);
-				const purpose = (display.chat_id ? directory.get(display.chat_id)?.purpose : undefined) as
-					WhatsappChatPurpose | undefined;
+			const [msg] = await db
+				.select({ payload: inboundMessages.payload, createdAt: inboundMessages.createdAt })
+				.from(inboundMessages)
+				.where(eq(inboundMessages.id, payload.inboundMessageId))
+				.limit(1);
+			const display = extractInboundDisplayFields(asRecord(msg?.payload) ?? {});
+			// Grubun görevi: `ignore` ise hiç işlenmez, diğerlerinde tür kararına girer.
+			const directory = await this.whatsappChats.directoryWithDb(db);
+			const purpose = (display.chat_id ? directory.get(display.chat_id)?.purpose : undefined) as
+				WhatsappChatPurpose | undefined;
 
-				return {
-					inboundMessageId: payload.inboundMessageId,
-					messageBody: display.body,
-					turler: turleriBul(display.body, purpose ?? 'mixed').turler,
-					okunmasin: purpose === 'ignore',
-					chatName:
-						(display.chat_id ? directory.get(display.chat_id)?.name : null) ??
-						display.chat_name ??
-						null,
-					messageDate: msg?.createdAt ?? null
-				};
-			});
+			return {
+				inboundMessageId: payload.inboundMessageId,
+				messageBody: display.body,
+				turler: turleriBul(display.body, purpose ?? 'mixed').turler,
+				/*
+				 * Aynı metin, grubun varsayılanı UYGULANMADAN. Operasyon grubunda
+				 * işaretsiz her mesaj `contact` sayılıyor; arşivleme kararı bu
+				 * varsayılana bakarsa "Tamamdır 🙏🏻" da "insan işi" görünür.
+				 */
+				turlerMetin: turleriBul(display.body, 'mixed').turler,
+				okunmasin: purpose === 'ignore',
+				operasyonGrubu: purpose === 'operations',
+				chatName:
+					(display.chat_id ? directory.get(display.chat_id)?.name : null) ??
+					display.chat_name ??
+					null,
+				messageDate: msg?.createdAt ?? null
+			};
+		});
 
 		/*
 		 * "Okunmayacak grup": ne para ayrıştırıcısı ne randevu ajanı çalışır; satır
@@ -171,9 +188,47 @@ export class InboundMessageProcessor {
 			kisiBilgisiCikar(messageBody) !== null;
 		if (outcome === 'error' && oneriSayisi === 0 && vizitOnerisi === 0 && !insanIsiVar) {
 			await this.whatsappService.archiveInboxItem(tenantId, inboundMessageId);
+		} else if (
+			outcome !== 'skipped' &&
+			oneriSayisi === 0 &&
+			vizitOnerisi === 0 &&
+			this.sadeceSohbet(messageBody, turlerMetin, operasyonGrubu, chatName, messageDate)
+		) {
+			await this.whatsappService.archiveInboxItem(tenantId, inboundMessageId);
 		}
 
 		await this.completeJob(tenantId, jobId);
+	}
+
+	/**
+	 * KUCUK-01 — "Rezervasyon sohbetleri kuyruğa düşmesin".
+	 *
+	 * Amacı **Operasyon** olan gruplarda işaretsiz her mesaj `contact` sayılıyor
+	 * (grubun varsayılanı), bu yüzden "Tamamdır 🙏🏻", "Teşekkür ederim",
+	 * "Bakıyorum hemen", "////" satırları da kuyrukta kart açıyordu. Böyle bir
+	 * satırda insanın yapacağı hiçbir iş yok: doğrudan arşive.
+	 *
+	 * Kapılar (hepsi kapalı olmalı): metinde para/randevu/kişi işareti yok,
+	 * kişi bilgisi (mail/telefon) yok, evrak sınıfı tanınmıyor, randevu ipucu
+	 * üretilmiyor, vizit çıkarımı yok. Vizit önerisi ya da randevu ipucu üreten
+	 * mesaj KUYRUKTA KALIR — "Zaid Waldu … Geliş … Dönüş …" arşive gitmez.
+	 */
+	private sadeceSohbet(
+		messageBody: string | null,
+		turlerMetin: string[],
+		operasyonGrubu: boolean,
+		chatName: string | null,
+		messageDate: Date | null
+	): boolean {
+		if (!operasyonGrubu) return false;
+		if (!messageBody?.trim()) return false;
+		if (turlerMetin.length > 0) return false;
+		if (!sohbetMi(messageBody)) return false;
+		if (kisiBilgisiCikar(messageBody) !== null) return false;
+		if (evrakSinifla(messageBody).doc_type !== 'other') return false;
+		if (vizitCikar({ text: messageBody, messageDate, chatName })) return false;
+		if (randevuIpucuCikar({ text: messageBody, messageDate, chatName })) return false;
+		return true;
 	}
 
 	/**

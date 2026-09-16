@@ -303,7 +303,8 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		contacts: [],
 		media: null,
 		media_thumbnail: null,
-		contact_hint: null
+		contact_hint: null,
+		appointment_hint: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -321,7 +322,8 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		contacts: [],
 		media: null,
 		media_thumbnail: null,
-		contact_hint: null
+		contact_hint: null,
+		appointment_hint: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -339,7 +341,8 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		contacts: [],
 		media: null,
 		media_thumbnail: null,
-		contact_hint: null
+		contact_hint: null,
+		appointment_hint: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -357,7 +360,8 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		contacts: [],
 		media: null,
 		media_thumbnail: null,
-		contact_hint: null
+		contact_hint: null,
+		appointment_hint: null
 	},
 	{
 		chat_name: 'Fixrav Finans',
@@ -375,7 +379,8 @@ const INBOUND_SEEDS: Omit<InboundMessage, 'id' | 'tenant_id' | 'created_at'>[] =
 		contacts: [],
 		media: null,
 		media_thumbnail: null,
-		contact_hint: null
+		contact_hint: null,
+		appointment_hint: null
 	}
 ];
 

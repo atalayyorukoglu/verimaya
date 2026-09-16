@@ -751,6 +751,62 @@ sınıflandırma ve kontrol listesinin kendini işaretlemesi EVRAK-01'de yapıld
 
 ---
 
+## KUCUK-01 — Dört küçük iş: yakın ad eşleşmesi, mesajdan randevu, sohbet arşivi, "2000 TL" (2026-09-16, kullanıcı)
+
+> **Karar (kullanıcı):** dördü de kuyruğu kullanılabilir kılan küçük düzeltmeler. Hiçbiri
+> yeni uç ya da yeni izin getirmez; kural tabanlı, testli, geriye dönük.
+
+- [x] **1. İsim yazım toleransı (`fuzzy`).** Aynı hasta gruplarda üç yazımla geçiyor:
+  "Mccubbin / Mcgubbin / Mccgubbin", "Haydyn / Haydn", "Severino / Seberino",
+  "Waldu / waldhu". `kisi-eslestir.ts`: ad **ve** soyad tokenleri ikisi de yakın geçiyorsa
+  ve kayıttaki soyad **≥5 harf** ise Damerau-Levenshtein ≤1 (≥8 harfte ≤2) ile bağ kurulur,
+  yöntem `fuzzy` (0081 CHECK'e eklendi; 0074'teki desen). Kısa/yaygın soyadda (≤4 harf)
+  yalnız birebir. **Üç kapı** yanlış pozitifi kesiyor: (a) tek farkı **ünlü değişimi** olan
+  çiftler sayılmaz — "Jones" ↔ "Janes" iki ayrı hasta, "Severino → Seberino" (v↔b) ise aynı
+  kişi; (b) metindeki soyad kelimesini kural tabanlı bir bağ zaten tükettiyse yakın
+  sayılmaz ("Tracey Carver" kayıtlıysa "Carter"a bağlanmaz); (c) aynı kelimeye iki kişi aynı
+  uzaklıkta uyuyorsa **hiçbirine** bağlanmaz. `tekKisiBul` de yakın yazımı çözer (birebir
+  yoksa ve sonuç tekse). `relinkAll` fuzzy bağlarını da baştan kurar — kural bağları
+  türetilmiş veridir. Rozet başlığı "yakın eşleşme"
+  (`inboundMessageContactMethodLabels` + i18n, TR/EN).
+- [x] **2. Mesajdan "Yeni randevu oluştur".** `randevu-ipucu.ts` (saf, modelsiz):
+  mesaj klinik randevu talebi kalıbı taşıyor ("randevusunun oluşturulmasını rica ederim",
+  "randevu oluşturalım", "appointment") **ve** tarih okunabiliyorsa `appointment_hint
+  {contact_id, starts_at, clinic, note}` üretir. Başlangıç seçimi: mesajda geliş/dönüş
+  dışında **saatli** bir tarih varsa ("18 Eylül saat 10:00") o kazanır, yoksa `vizitCikar`
+  geliş tarihi. İptal/erteleme cümlesi ipucu üretmez. Alan **kayıtta tutulmaz**, okuma
+  anında türetilir (`contact_hint` ile aynı desen); `contact_id` liste düzeyinde mesajın
+  ilk bağlı kişisinden dolar. Kuyruk kartında "Yeni randevu oluştur" → mevcut
+  `AppointmentFormDialog` **ön dolu** açılır (kişi, tarih/saat, klinik, not = mesaj metni);
+  randevu türünü kullanıcı seçer. **Kesin kayıt yalnız kullanıcı kaydedince** (AGENTS ilke 6).
+- [x] **3. Rezervasyon sohbetleri kuyruğa düşmesin.** Amacı **Operasyon** olan grupta
+  işaretsiz her mesaj `contact` sayılıyordu (grubun varsayılanı), bu yüzden "Tamamdır 🙏🏻",
+  "Teşekkür ederim", "////" satırları da kart açıyordu. `mesaj-turu.ts` → `sohbetMi`:
+  yalnız emoji, ayraç satırı ("////"), ya da ≤3 kelimelik **rakamsız** cümle. Özel ad
+  satırı ("Dilyana Marinova" — iki+ kelimenin hepsi büyük harfle başlıyor) sohbet sayılmaz;
+  yeni hasta bu gruplarda böyle duyuruluyor. İşlemci ayrıca metinden türetilen türlere
+  (grubun varsayılanı **uygulanmadan**), kişi bilgisine, evrak sınıfına, vizit çıkarımına ve
+  randevu ipucuna bakar — biri varsa satır **kuyrukta kalır**. Test: dökümün on gerçek
+  sohbet satırı `archived`, "Zaid Waldu … Geliş … Dönüş …" kalıyor.
+- [x] **4. "2000 TL" yıl sanılıyordu.** `tutar.ts`: çıplak `^(19|20)\d{2}$` kuralı bağlama
+  hiç bakmıyordu, "2000 tl ödendi" satırı hiç kayda dönmüyordu. Artık yıl kararı
+  `yilMi()`: tarih deseninin parçasıysa yıl ("12.05.2024", "Mayıs 2024", "2024 yılı");
+  hemen ardından para birimi geliyorsa (tl/lira/gbp/pound/eur/euro/usd/dolar/₺/£/€/$/"bin")
+  ya da önünde "toplam/ödendi/alındı/ücret" varsa tutar. Hiçbir işaret yoksa yine yıl —
+  eski davranış. Aynı kural LLM alıntı bekçisinde de (`alintiTutarDegil`).
+
+**Prod'da tek seferlik adımlar:**
+1. Migration: `pnpm --filter @verimaya/api db:migrate` (0081).
+2. Gelen kutusu › **"Kişi bağlarını güncelle"** — yakın eşleşme bağları geçmişe de kurulsun.
+
+**Kalan / raporlanan:** `appointments` tablosunda `source_inbound_message_id` benzeri bir
+alan **yok** ve bağ tablosu da yok; talimat gereği oluşan randevu mesaja bağlanmadı (not
+alanına mesaj kimliği de yazılmadı). Bağ istenirse ayrı bir migration gerekir. Sohbet
+arşivleme kuralı yalnız **Operasyon** amaçlı gruplarda çalışır; `mixed`/`finance`
+gruplarında eski davranış sürüyor.
+
+---
+
 ## VIZIT-01 — Vizit kaydı (2026-09-16, kullanıcı)
 
 > **Karar (kullanıcı):** akış vizit başına ilerliyor (konsültasyon / 1. / 2. / 3. vizit / RPT),

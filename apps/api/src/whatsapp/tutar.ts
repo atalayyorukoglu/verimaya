@@ -55,6 +55,53 @@ export function parseTutar(raw: string): number | null {
 
 const TARIH = /^\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?$/;
 
+/** Çıplak dört haneli yıl adayı: 1900–2099. */
+const YIL = /^(19|20)\d{2}$/;
+
+/**
+ * Sayının HEMEN ardındaki para birimi. "2000 tl", "1500 GBP", "2.000₺", "2000 bin".
+ * "bin" de sayılır: ekip "2000 bin" diye yazıp 2.000.000 kastediyor — hangi
+ * durumda olursa olsun o satır paradır, yıl değildir.
+ */
+const YIL_SONRASI_PARA =
+	/^\s*(tl|try|lira|gbp|pound|sterlin|eur|euro|avro|usd|dolar|bin)\b|^\s*[₺£€$]/i;
+
+/** Sayıdan HEMEN önce gelen ödeme bağlamı: "toplam 2000", "ödendi 2000". */
+const YIL_ONCESI_PARA = /(toplam|odendi|ödendi|alindi|alındı|ucret|ücret|odeme|ödeme)\W{0,3}$/i;
+
+/** Yılın tarih deseninin parçası olduğunu söyleyen ay adları: "Mayıs 2024". */
+const YIL_ONCESI_AY =
+	/(ocak|subat|şubat|mart|nisan|mayis|mayıs|haziran|temmuz|agustos|ağustos|eylul|eylül|ekim|kasim|kasım|aralik|aralık)\s*$/i;
+
+/** "2024 yılı", "2024 senesi", "2024 yılında". */
+const YIL_SONRASI_TARIH = /^\s*(yil|yıl|sene)/i;
+
+/**
+ * Dört haneli sayı gerçekten YIL mı, yoksa tutar mı?
+ *
+ * Canlı ölçüm (2026-09-16, OrbisMed kuyruğu): "2000 tl ödendi" satırı hiç kayda
+ * dönmüyordu, çünkü çıplak `^(19|20)\d{2}$` kuralı 2000'i yıl sayıyordu. Tersi de
+ * doğru: "2024 yılında" bir tutar değil. Ayraç şu: yıl ancak TARİH DESENİNİN
+ * parçasıysa yıldır ("12.05.2024", "Mayıs 2024", "2024 yılı"); ardından para birimi
+ * geliyorsa ya da önünde ödeme bağlamı varsa tutardır.
+ *
+ * Kararsız kalırsa (bağlam okunamıyor, hiçbir işaret yok) YIL der — eski davranış.
+ * Çıplak "2026" satırını tutar sanmak, tutarı kaçırmaktan pahalıdır.
+ */
+function yilMi(token: string, context: string, at: number): boolean {
+	if (at < 0) return true;
+	const once = context.slice(Math.max(0, at - 24), at);
+	const sonra = context.slice(at + token.length, at + token.length + 16);
+	// 1) Tarih deseninin parçası → yıl. ("12.05.2024", "Mayıs 2024", "2024 yılı")
+	if (/[./-]\s*$/.test(once)) return true;
+	if (YIL_ONCESI_AY.test(once)) return true;
+	if (YIL_SONRASI_TARIH.test(sonra)) return true;
+	// 2) Para birimi / ödeme bağlamı → tutar.
+	if (YIL_SONRASI_PARA.test(sonra)) return false;
+	if (YIL_ONCESI_PARA.test(once)) return false;
+	return true;
+}
+
 /**
  * Bu sayı tutar OLAMAZ: tarih, saat, @bahsetme kimliği, telefon/kimlik gibi uzun
  * basamak dizisi, çıplak yıl. `context` metnin tamamı; token'ın önündeki karakter
@@ -64,8 +111,8 @@ export function tutarDegil(token: string, context: string, index: number | null 
 	const t = token.trim();
 	if (TARIH.test(t)) return true;
 	if (/^\d{9,}$/.test(t.replace(/[.,]/g, ''))) return true;
-	if (/^(19|20)\d{2}$/.test(t)) return true;
 	const at = index ?? context.indexOf(t);
+	if (YIL.test(t) && yilMi(t, context, at)) return true;
 	if (at >= 0) {
 		const before = context.slice(Math.max(0, at - 1), at);
 		const after = context.slice(at + t.length, at + t.length + 1);
@@ -119,10 +166,11 @@ export function alintiTutarDegil(quote: string, rawText: string): boolean {
 	// Bağlam gerektirmeyen kurallar.
 	if (TARIH.test(num)) return true;
 	if (/^\d{9,}$/.test(num.replace(/[.,]/g, ''))) return true;
-	// Çıplak yıl yalnız tek başına anlamlı: "2026 yılı 1500 tl" alıntısı tutar taşır.
-	if (nums.length === 1 && /^(19|20)\d{2}$/.test(num)) return true;
 
 	const at = hamMetindeBul(quote, num, rawText);
+	// Çıplak yıl yalnız tek başına anlamlı: "2026 yılı 1500 tl" alıntısı tutar taşır.
+	// Ham metinde ardından para birimi geliyorsa ("2000 tl") yıl değil tutardır.
+	if (nums.length === 1 && YIL.test(num) && yilMi(num, rawText, at ?? -1)) return true;
 	if (at == null) return false;
 	const before = rawText.slice(Math.max(0, at - 1), at);
 	const after = rawText.slice(at + num.length, at + num.length + 1);

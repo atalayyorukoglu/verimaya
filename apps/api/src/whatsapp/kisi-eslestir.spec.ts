@@ -147,3 +147,83 @@ describe('tekKisiBul — taslaktaki karşı taraf adı', () => {
 		expect(tekKisiBul(null, adaylar)).toBeNull();
 	});
 });
+
+/**
+ * KUCUK-01 — yakın eşleşme (`fuzzy`).
+ *
+ * Evrak/Rezervasyon gruplarında aynı hasta birden çok yazımla geçiyor. Örnekler
+ * `docs/whatsapp-01`'deki gerçek satırlardan: "Claire Mccubbin" ↔ "Mcgubbin" ↔
+ * "Mccgubbin", "Haydn Wright" ↔ "Haydyn", "Jennifer Severino" ↔ "Seberino",
+ * "Zaid Waldu" ↔ "waldhu".
+ */
+describe('kisiBul — yakın eşleşme (fuzzy)', () => {
+	const fz: KisiAdayi[] = [
+		hasta('mccubbin', 'Claire', 'Mccubbin'),
+		hasta('haydn', 'Haydn', 'Wright'),
+		hasta('severino', 'Jennifer', 'Severino'),
+		hasta('waldu', 'Zaid', 'Waldu'),
+		hasta('mcleod', 'Stephen', 'McLeod'),
+		hasta('jones', 'Paul', 'Jones'),
+		hasta('ali', 'Ali', 'Can')
+	];
+	const es = (body: string) => kisiBul(body, fz);
+
+	it('soyad yazımı kayınca bağlar, yöntem fuzzy olur', () => {
+		expect(es('Claire Mcgubbin RPT')).toEqual([
+			{ contactId: 'mccubbin', method: 'fuzzy', matchedText: 'claire mcgubbin' }
+		]);
+		expect(es('Claire Mccgubbin RPT')[0]).toMatchObject({
+			contactId: 'mccubbin',
+			method: 'fuzzy'
+		});
+		expect(es('Jennifer Seberino RPT Amber ile geliyor.')[0]).toMatchObject({
+			contactId: 'severino',
+			method: 'fuzzy'
+		});
+		expect(es('Zaid waldhu 2.ci vizit')[0]).toMatchObject({ contactId: 'waldu', method: 'fuzzy' });
+	});
+
+	it('ad yazımı kayınca da bağlar ("Haydyn" ↔ "Haydn")', () => {
+		expect(es('Haydyn Wright rezervasyon rica ederim')[0]).toMatchObject({
+			contactId: 'haydn',
+			method: 'fuzzy'
+		});
+	});
+
+	it('yalnız büyük/küçük harf farkı fuzzy değil, exact kalır ("Mcleod" = "McLeod")', () => {
+		expect(es('Stephen Mcleod dis tasi temizligi')[0]).toMatchObject({
+			contactId: 'mcleod',
+			method: 'exact'
+		});
+	});
+
+	it('ünlü değişimi bağlamaz ("Jones" ↔ "Janes" iki ayrı hasta)', () => {
+		expect(es('Paul Janes icin randevu')).toEqual([]);
+	});
+
+	it('kısa soyadda yalnız birebir ("Can" ↔ "Cen" bağlanmaz)', () => {
+		expect(es('Ali Cen geldi')).toEqual([]);
+	});
+
+	it('soyadın yalnız kendisi yakınsa bağlamaz — ad da geçmeli', () => {
+		expect(es('Mcgubbin borcumuzdan dusulecek')).toEqual([]);
+	});
+
+	it('birebir eşleşen kişi varsa aynı kelime ikinci kişiye yakın diye bağlanmaz', () => {
+		// "Carter" ↔ "Carver" 6 harf, uzaklık 1; ama Carver kayıtlı ve birebir geçiyor.
+		const iki = [...fz, hasta('carter', 'Tracey', 'Carter'), hasta('carver', 'Tracey', 'Carver')];
+		expect(kisiBul('Tracey Carver 9 kron yapilacak', iki)).toEqual([
+			{ contactId: 'carver', method: 'exact', matchedText: 'tracey carver' }
+		]);
+	});
+
+	it('iki aday aynı uzaklıkta ise hiçbirine bağlanmaz', () => {
+		const iki = [...fz, hasta('carter', 'Tracey', 'Carter'), hasta('carver', 'Tracey', 'Carver')];
+		expect(kisiBul('Tracey Carler geldi', iki)).toEqual([]);
+	});
+
+	it('tekKisiBul yakın yazımı da çözer', () => {
+		expect(tekKisiBul('Zaid Waldhu', fz)?.id).toBe('waldu');
+		expect(tekKisiBul('Paul Janes', fz)).toBeNull();
+	});
+});

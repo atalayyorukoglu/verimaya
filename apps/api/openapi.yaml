@@ -9264,6 +9264,7 @@ paths:
                                   - model
                                   - manual
                                   - context
+                                  - fuzzy
                             required:
                               - id
                               - display_name
@@ -9323,6 +9324,32 @@ paths:
                             - last_name
                             - email
                             - phone
+                          additionalProperties: false
+                          nullable: true
+                          default: null
+                        appointment_hint:
+                          type: object
+                          properties:
+                            contact_id:
+                              type: string
+                              format: uuid
+                              nullable: true
+                              default: null
+                            starts_at:
+                              type: string
+                              format: date-time
+                              nullable: true
+                              default: null
+                            clinic:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                              default: null
+                            note:
+                              type: string
+                              maxLength: 2000
+                          required:
+                            - note
                           additionalProperties: false
                           nullable: true
                           default: null
@@ -9697,6 +9724,7 @@ paths:
                             - model
                             - manual
                             - context
+                            - fuzzy
                       required:
                         - id
                         - display_name
@@ -9756,6 +9784,32 @@ paths:
                       - last_name
                       - email
                       - phone
+                    additionalProperties: false
+                    nullable: true
+                    default: null
+                  appointment_hint:
+                    type: object
+                    properties:
+                      contact_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        default: null
+                      starts_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        default: null
+                      clinic:
+                        type: string
+                        maxLength: 255
+                        nullable: true
+                        default: null
+                      note:
+                        type: string
+                        maxLength: 2000
+                    required:
+                      - note
                     additionalProperties: false
                     nullable: true
                     default: null
@@ -10334,6 +10388,7 @@ paths:
                                   - model
                                   - manual
                                   - context
+                                  - fuzzy
                             required:
                               - id
                               - display_name
@@ -10393,6 +10448,32 @@ paths:
                             - last_name
                             - email
                             - phone
+                          additionalProperties: false
+                          nullable: true
+                          default: null
+                        appointment_hint:
+                          type: object
+                          properties:
+                            contact_id:
+                              type: string
+                              format: uuid
+                              nullable: true
+                              default: null
+                            starts_at:
+                              type: string
+                              format: date-time
+                              nullable: true
+                              default: null
+                            clinic:
+                              type: string
+                              maxLength: 255
+                              nullable: true
+                              default: null
+                            note:
+                              type: string
+                              maxLength: 2000
+                          required:
+                            - note
                           additionalProperties: false
                           nullable: true
                           default: null

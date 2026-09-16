@@ -182,4 +182,36 @@ describe('inbound_message_contacts', () => {
 		);
 		expect(links.get(once)?.map((c) => c.method)).toEqual(['context']);
 	});
+	/**
+	 * KUCUK-01 — `relinkAll` yakın eşleşme bağlarını da kurar. Kural bağları
+	 * türetilmiş veridir: her koşuda silinip baştan yazılır, `fuzzy` de onlardan biri.
+	 */
+	it('relinkAll yakın yazımı da bağlar ("Zaid waldhu" → "Zaid Waldu")', async () => {
+		const { sql } = getDb(databaseUrl);
+		const zaid = randomUUID();
+		const msgFuzzy = randomUUID();
+		await sql.begin(async (tx) => {
+			await tx`select set_config('app.current_tenant_id', ${tenantA}, true)`;
+			await tx`
+				insert into contacts (id, tenant_id, contact_type_id, contact_type_name, first_name, last_name, display_name)
+				values (${zaid}, ${tenantA}, ${typeA}, 'Hasta', 'Zaid', 'Waldu', 'Zaid Waldu')
+			`;
+			await tx`
+				insert into inbound_messages (id, tenant_id, provider, external_id, payload, status)
+				values (
+					${msgFuzzy}, ${tenantA}, 'waha', ${`mc-fuzzy-${tenantA.slice(0, 8)}`},
+					${JSON.stringify({ payload: { from: '1@g.us', body: 'Zaid waldhu 2.ci vizit' } })}::jsonb,
+					'new'
+				)
+			`;
+		});
+
+		await service.relinkAll(tenantA);
+		const links = await tenantContext.withTenant(tenantA, ({ db }) =>
+			service.contactsForMessagesWithDb(db, [msgFuzzy])
+		);
+		expect(links.get(msgFuzzy)).toEqual([
+			{ id: zaid, display_name: 'Zaid Waldu', method: 'fuzzy' }
+		]);
+	});
 });

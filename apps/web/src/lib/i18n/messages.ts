@@ -1187,6 +1187,21 @@ const tr = {
 	'finance.ai.pending.sameEventHint':
 		'Bu mesaj aynı sohbetteki başka bir mesajla aynı tutarı taşıyor. İkisini de onaylarsan aynı kayıt iki kez oluşur.',
 	'finance.ai.pending.fallbackParse': 'Model yanıt vermedi — kural tabanlı taslak',
+	/** KISI-01/KUCUK-01: mesaj–kişi bağını hangi kural kurdu (rozet başlığı). */
+	'finance.ai.pending.contactMethod.exact': 'tam ad',
+	'finance.ai.pending.contactMethod.name': 'ad + soyad',
+	'finance.ai.pending.contactMethod.surname': 'soyad',
+	'finance.ai.pending.contactMethod.model': 'model',
+	'finance.ai.pending.contactMethod.manual': 'elle',
+	'finance.ai.pending.contactMethod.context': 'önceki mesaj',
+	'finance.ai.pending.contactMethod.fuzzy': 'yakın eşleşme',
+	'finance.ai.pending.newAppointment': 'Yeni randevu oluştur',
+	'finance.ai.pending.newAppointmentHint':
+		'Randevu formu mesajdan ön dolduruldu. Kayıt yalnız siz kaydedince oluşur.',
+	'finance.ai.pending.newAppointmentDone': '{name} için randevu oluşturuldu.',
+	'finance.ai.pending.newAppointmentFailed': 'Randevu oluşturulamadı.',
+	'finance.ai.pending.newAppointmentNoContact':
+		'Önce mesajı bir kişiye bağlayın; randevu kişisiz açılamaz.',
 	'finance.ai.drafts.heading': 'Taslaklar',
 	'finance.ai.drafts.approve': 'Onayla ve kaydet',
 	'finance.ai.drafts.approving': 'Onaylanıyor…',
@@ -4453,6 +4468,20 @@ const en: Record<MessageKey, string> = {
 	'finance.ai.pending.sameEventHint':
 		'This message carries the same amount as another message in the same chat. Approving both creates the same record twice.',
 	'finance.ai.pending.fallbackParse': 'Model did not answer — rule-based draft',
+	'finance.ai.pending.contactMethod.exact': 'full name',
+	'finance.ai.pending.contactMethod.name': 'first + last name',
+	'finance.ai.pending.contactMethod.surname': 'last name',
+	'finance.ai.pending.contactMethod.model': 'model',
+	'finance.ai.pending.contactMethod.manual': 'manual',
+	'finance.ai.pending.contactMethod.context': 'previous message',
+	'finance.ai.pending.contactMethod.fuzzy': 'close match',
+	'finance.ai.pending.newAppointment': 'Create appointment',
+	'finance.ai.pending.newAppointmentHint':
+		'The appointment form is prefilled from the message. Nothing is saved until you save it.',
+	'finance.ai.pending.newAppointmentDone': 'Appointment created for {name}.',
+	'finance.ai.pending.newAppointmentFailed': 'Could not create the appointment.',
+	'finance.ai.pending.newAppointmentNoContact':
+		'Link the message to a contact first; an appointment needs one.',
 	'finance.ai.drafts.heading': 'Drafts',
 	'finance.ai.drafts.approve': 'Approve and save',
 	'finance.ai.drafts.approving': 'Approving…',

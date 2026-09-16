@@ -167,7 +167,9 @@ export const inboundMessageContactMethodSchema = z.enum([
 	'model',
 	'manual',
 	/** Metinsiz (görsel/dosya) mesaj, aynı yazarın az önceki metinli mesajının kişilerine bağlandı. */
-	'context'
+	'context',
+	/** KUCUK-01: ad+soyad yakın yazımla eşleşti ("Mcgubbin" → "Mccubbin"). */
+	'fuzzy'
 ]);
 export type InboundMessageContactMethod = z.infer<typeof inboundMessageContactMethodSchema>;
 
@@ -223,6 +225,22 @@ export const inboundMessageContactHintSchema = z.object({
 	phone: z.string().max(64).nullable()
 });
 export type InboundMessageContactHint = z.infer<typeof inboundMessageContactHintSchema>;
+
+/**
+ * KUCUK-01: klinik randevu talebi taşıyan mesajdan çıkan ipucu — kuyruk kartındaki
+ * "Yeni randevu oluştur" düğmesini ve ön dolu formu besler. KAYIT AÇMAZ; randevu
+ * yalnız kullanıcı formu kaydedince oluşur.
+ */
+export const inboundMessageAppointmentHintSchema = z.object({
+	/** Mesaja bağlı ilk kişi; bağ yoksa null — kullanıcı formda seçer. */
+	contact_id: uuid.nullable().default(null),
+	/** Klinik saati varsa o, yoksa geliş tarihi. */
+	starts_at: isoDateTime.nullable().default(null),
+	clinic: z.string().max(255).nullable().default(null),
+	/** Formun not alanına düşen mesaj metni. */
+	note: z.string().max(2000)
+});
+export type InboundMessageAppointmentHint = z.infer<typeof inboundMessageAppointmentHintSchema>;
 
 export const inboundMessageCreateContactResponseSchema = z.object({
 	contact: contactSchema,
@@ -293,6 +311,12 @@ export const inboundMessageSchema = z.object({
 	media_thumbnail: z.string().max(200_000).nullable().default(null),
 	/** E-posta/telefon geçen mesajda kişi formu ipucu; yoksa null. */
 	contact_hint: inboundMessageContactHintSchema.nullable().default(null),
+	/**
+	 * KUCUK-01: klinik randevu talebi + çıkarılabilen tarih varsa randevu formu
+	 * ipucu; yoksa null. Kayıtta TUTULMAZ, okuma anında metinden türetilir —
+	 * kural düzelince eski satırlar da düzelir.
+	 */
+	appointment_hint: inboundMessageAppointmentHintSchema.nullable().default(null),
 	created_at: isoDateTime
 });
 

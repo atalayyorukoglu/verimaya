@@ -191,6 +191,9 @@ export class MessageContactsService {
 	 * Kural bağları TÜRETİLMİŞ veridir: önce silinir, sonra baştan kurulur — kural
 	 * sıkılaşınca eski yanlış bağlar da gitsin (ilk ölçümde 2.000 soyad bağının
 	 * çoğu yanlıştı). Elle kurulan (`manual`) bağa dokunulmaz. 500'lük sayfalar.
+	 *
+	 * KUCUK-01: yakın eşleşme (`fuzzy`) de kural bağıdır — burada baştan kurulur,
+	 * ayrı bir geri doldurma gerekmez.
 	 */
 	async relinkAll(tenantId: string): Promise<{ processed: number; linked: number }> {
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {

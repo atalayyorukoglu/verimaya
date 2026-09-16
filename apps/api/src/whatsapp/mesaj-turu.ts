@@ -145,6 +145,48 @@ const LOJISTIK_SOZU_TAM = tam(
 	'check-out'
 );
 
+/**
+ * Yalnız ayraç: ekip konuyu bitirince "////" atıyor (Rezervasyon grubunda 80+ kez).
+ */
+const AYRAC_SATIRI = /^[/\\|_\-=*.~•·\s]+$/;
+
+/** Emoji ve emoji değiştiricileri — "Tamamdır 🙏🏻" gibi satırları ayıklamak için. */
+const EMOJI = /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Emoji_Component}️‍]/gu;
+
+/** Bu kadar kelimeye kadar olan, rakamsız satırlar sohbet sayılır. */
+const SOHBET_KELIME_SINIRI = 3;
+
+/**
+ * Bu mesaj SOHBET mi — yani içinde insanın yapacağı hiçbir iş yok mu?
+ *
+ * Neden (2026-09-16, kullanıcı: "kuyruk sohbetle doluyor"): amacı Operasyon olan
+ * gruplarda `turleriBul` işaretsiz mesaja grubun varsayılanını veriyor, böylece
+ * "Tamamdır 🙏🏻", "Teşekkür ederim", "////" satırları da kuyrukta kart açıyordu.
+ * Bunlar arşive gider; kişi bağı ve Kişi Akışı etkilenmez.
+ *
+ * KURAL TABANLI ve DAR: yalnız yalın emoji, ayraç satırı ve ≤3 kelimelik rakamsız
+ * cümleler. Rakam görürse sohbet DEĞİL — tutar/tarih olabilir.
+ *
+ * Özel ad satırı ("Dilyana Marinova", "Paul Dragomir RPT") sohbet değildir: bu
+ * gruplarda yeni hasta çoğu zaman tek satırda adıyla duyuruluyor. Ayraç: iki ve
+ * daha çok kelimenin HEPSİ büyük harfle başlıyorsa ad satırıdır, sohbet değil.
+ */
+export function sohbetMi(govde: string | null | undefined): boolean {
+	const ham = (govde ?? '').trim();
+	if (!ham) return false; // Boş/medya-only mesaj başka kuralın işi.
+	if (AYRAC_SATIRI.test(ham)) return true;
+
+	const emojisiz = ham.replace(EMOJI, '').trim();
+	if (emojisiz.length === 0) return true; // yalnız emoji
+	if (/\d/.test(emojisiz)) return false;
+
+	const kelimeler = emojisiz.split(/\s+/).filter((k) => /\p{L}/u.test(k));
+	if (kelimeler.length === 0) return true;
+	if (kelimeler.length > SOHBET_KELIME_SINIRI) return false;
+	if (kelimeler.length >= 2 && kelimeler.every((k) => /^\p{Lu}/u.test(k))) return false;
+	return true;
+}
+
 export type TurSonucu = {
 	/** Bulunan türler; hiçbir işaret yoksa boş dizi ("ne olduğu anlaşılmadı"). */
 	turler: MesajTuru[];

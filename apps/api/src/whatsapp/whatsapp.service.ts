@@ -165,10 +165,16 @@ export class WhatsappService {
 		const links = await this.messageContacts.contactsForMessagesWithDb(db, ids);
 		const media = await this.inboundMedia.forMessagesWithDb(db, ids);
 		return rows.map((row) => {
+			const baglilar = links.get(row.id) ?? [];
+			const temel = toInboundMessage(row);
 			const message: InboundMessage = {
-				...toInboundMessage(row),
-				contacts: links.get(row.id) ?? [],
-				media: media.get(row.id) ?? null
+				...temel,
+				contacts: baglilar,
+				media: media.get(row.id) ?? null,
+				// KUCUK-01: randevu formu kişisiz açılamaz; mesajın ilk bağlı kişisi ön dolar.
+				appointment_hint: temel.appointment_hint
+					? { ...temel.appointment_hint, contact_id: baglilar[0]?.id ?? null }
+					: null
 			};
 			const entry = message.chat_id ? directory.get(message.chat_id) : undefined;
 			if (!entry) return message;

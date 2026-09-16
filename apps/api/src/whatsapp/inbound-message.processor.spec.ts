@@ -589,4 +589,94 @@ describe('InboundMessageProcessor (Adım 24a, AI-08)', () => {
 		});
 		expect(suggestionsB.length).toBe(0);
 	});
+	/**
+	 * KUCUK-01 — Operasyon grubunda sohbet satırları kuyruğa düşmesin.
+	 *
+	 * Grubun amacı `operations` olduğu için `turleriBul` işaretsiz mesaja `contact`
+	 * varsayılanını veriyordu; "Tamamdır 🙏🏻" da kart açıyordu. Artık arşive gider,
+	 * iş taşıyan satır ("Geliş … Dönüş …") kuyrukta kalır.
+	 */
+	describe('KUCUK-01: Operasyon grubu sohbet satırları', () => {
+		const chatId = `1203630999${Date.now()}@g.us`;
+
+		async function operasyonMesaji(body: string): Promise<{ messageId: string; jobId: string }> {
+			const messageId = randomUUID();
+			const jobId = randomUUID();
+			const { sql } = getDb(databaseUrl);
+			await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+				await tx`
+					insert into whatsapp_chats (tenant_id, chat_id, name, purpose)
+					values (${tenantId}::uuid, ${chatId}, 'Orbismed Rezervasyon', 'operations')
+					on conflict do nothing
+				`;
+				await tx`
+					insert into inbound_messages (id, tenant_id, provider, external_id, payload, status)
+					values (
+						${messageId}::uuid,
+						${tenantId}::uuid,
+						'waha',
+						${`ext-${messageId.slice(0, 8)}`},
+						${JSON.stringify({
+							event: 'message',
+							payload: { id: `ext-${messageId.slice(0, 8)}`, from: chatId, body }
+						})}::jsonb,
+						'new'
+					)
+				`;
+				await tx`
+					insert into jobs (id, tenant_id, queue, job_type, payload, status)
+					values (
+						${jobId}::uuid,
+						${tenantId}::uuid,
+						${DEFAULT_QUEUE_NAME},
+						${INBOUND_MESSAGE_PROCESS_JOB_TYPE},
+						${JSON.stringify({ inboundMessageId: messageId })}::jsonb,
+						'pending'
+					)
+				`;
+			});
+			return { messageId, jobId };
+		}
+
+		async function durum(messageId: string): Promise<string> {
+			const { sql } = getDb(databaseUrl);
+			const [msg] = await sql.begin(async (tx) => {
+				await tx`select set_config('app.current_tenant_id', ${tenantId}, true)`;
+				return tx`select status from inbound_messages where id = ${messageId}::uuid`;
+			});
+			return msg?.status as string;
+		}
+
+		/** `docs/whatsapp-01/Orbismed Rezervasyon …` dökümünden birebir on satır. */
+		const SOHBET = [
+			'Tamamdır 🙏🏻',
+			'Tamamdır',
+			'Tamamdır not aldım',
+			'Tamamdır hemen ilgileniyorum',
+			'Tamamdır Gülçin hanım 🙏🏻',
+			'Teşekkür ederim.',
+			'Elinize sağlık',
+			'Boş verin',
+			'Mecbur boşveriyoruz suanda.',
+			'//////'
+		];
+
+		it('on gerçek sohbet satırı arşivlenir', async () => {
+			expect(SOHBET.length).toBe(10);
+			for (const satir of SOHBET) {
+				const { messageId, jobId } = await operasyonMesaji(satir);
+				await processor.process(jobId, tenantId);
+				expect([satir, await durum(messageId)]).toEqual([satir, 'archived']);
+			}
+		});
+
+		it('"Zaid Waldu … Geliş … Dönüş …" kuyrukta kalır', async () => {
+			const { messageId, jobId } = await operasyonMesaji(
+				'Zaid Waldu, ikinci vizit\nGeliş: 11.11.2027 21:35\nDönüş: 19.11.2027 22:15'
+			);
+			await processor.process(jobId, tenantId);
+			expect(await durum(messageId)).not.toBe('archived');
+		});
+	});
 });

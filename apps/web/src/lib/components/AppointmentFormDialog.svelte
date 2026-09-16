@@ -28,6 +28,9 @@
 		appointment = null,
 		contacts = [],
 		defaultContactId = null,
+		defaultStartsAt = null,
+		defaultNotes = null,
+		defaultClinicName = null,
 		saving = false,
 		error = null,
 		onsubmit,
@@ -37,6 +40,14 @@
 		appointment?: Appointment | null;
 		contacts?: Contact[];
 		defaultContactId?: string | null;
+		/**
+		 * KUCUK-01: yeni randevu formu dışarıdan ön doldurulabilir — kuyruk kartındaki
+		 * "Yeni randevu oluştur" WhatsApp mesajından tarih/not/klinik taşır. Yalnız
+		 * YENİ kayıtta geçerli; düzenlemede kaydın kendi değerleri kazanır.
+		 */
+		defaultStartsAt?: string | null;
+		defaultNotes?: string | null;
+		defaultClinicName?: string | null;
 		saving?: boolean;
 		error?: string | null;
 		onsubmit: (data: AppointmentCreate | AppointmentUpdate) => void | Promise<void>;
@@ -138,6 +149,18 @@
 		);
 	}
 	const clinicContacts = $derived(byTypeOr(clinicQuery.data, 'Klinik'));
+
+	/**
+	 * Mesajdan okunan klinik adını ("TNC", "Dentgroup") dizindeki kişiye çevirir.
+	 * Bulunamazsa boş kalır — uydurma bir klinik seçmektense kullanıcı seçsin.
+	 */
+	function clinicIdByName(name: string): string | undefined {
+		const aday = name.trim();
+		if (!aday) return undefined;
+		return clinicContacts.find(
+			(c) => c.display_name.localeCompare(aday, 'tr', { sensitivity: 'base' }) === 0
+		)?.id;
+	}
 	const hotelContacts = $derived(byTypeOr(hotelQuery.data, 'Otel'));
 	const transferContacts = $derived(byTypeOr(transferQuery.data, 'Transfer'));
 
@@ -249,15 +272,22 @@
 		status = appointment?.status ?? 'scheduled';
 		startsLocal = appointment
 			? toLocalInput(appointment.starts_at)
-			: toLocalInput(new Date(Date.now() + 3600_000).toISOString());
+			: toLocalInput(defaultStartsAt ?? new Date(Date.now() + 3600_000).toISOString());
 		endsLocal = appointment?.ends_at
 			? toLocalInput(appointment.ends_at)
-			: toLocalInput(new Date(Date.now() + 5400_000).toISOString());
-		clinic_contact_id = appointment?.clinic_contact_id ?? '';
+			: toLocalInput(
+					new Date(
+						(defaultStartsAt ? new Date(defaultStartsAt).getTime() : Date.now() + 3600_000) +
+							1800_000
+					).toISOString()
+				);
+		clinic_contact_id =
+			appointment?.clinic_contact_id ??
+			(defaultClinicName ? (clinicIdByName(defaultClinicName) ?? '') : '');
 		hotel_contact_id = appointment?.hotel_contact_id ?? '';
 		transfer_contact_id = appointment?.transfer_contact_id ?? '';
 		doctor_contact_id = appointment?.doctor_contact_id ?? '';
-		notes = appointment?.notes ?? '';
+		notes = appointment?.notes ?? defaultNotes ?? '';
 		deletePhase = 'form';
 	});
 

@@ -2,6 +2,8 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { page } from '$app/state';
 	import type {
+		AppointmentCreate,
+		AppointmentUpdate,
 		ApproveDraftItem,
 		ApproveDraftsResponse,
 		Contact,
@@ -11,6 +13,7 @@
 		ContactVisitType,
 		FinanceCategory,
 		InboundMessage,
+		InboundMessageContactRef,
 		InboundMessageKind,
 		InboundMessageCreateContactResponse,
 		InboundMessageLinkContactsResponse,
@@ -37,6 +40,7 @@
 	import { t } from '$lib/i18n/locale.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
 	import TransactionDraftCard, {
 		type DraftApprovalState
 	} from '$lib/components/TransactionDraftCard.svelte';
@@ -561,6 +565,54 @@
 		}
 	}
 
+	/** KISI-01/KUCUK-01: bağı hangi kural kurdu — rozetin başlığı ("yakın eşleşme"). */
+	function contactMethodLabel(method: InboundMessageContactRef['method']): string {
+		return t(`finance.ai.pending.contactMethod.${method}`);
+	}
+
+	/*
+	 * KUCUK-01 — "Yeni randevu oluştur".
+	 *
+	 * Mesaj klinik randevu talebi taşıyor ve tarihi okunabiliyorsa sunucu
+	 * `appointment_hint` üretiyor (`randevu-ipucu.ts`). Düğme mevcut randevu
+	 * formunu ÖN DOLU açar: kişi mesajın bağlı kişisi, tarih/saat ipucundan, not
+	 * mesaj metni. Randevu türünü kullanıcı seçer. KESİN KAYIT yalnız kullanıcı
+	 * kaydedince oluşur — düğme hiçbir şey yazmaz (AGENTS ilke 6).
+	 */
+	let appointmentFor = $state<InboundMessage | null>(null);
+	let appointmentOpen = $state(false);
+	let appointmentSaving = $state(false);
+	let appointmentError = $state<string | null>(null);
+	let appointmentDone = $state<string | null>(null);
+
+	function openAppointment(item: InboundMessage) {
+		appointmentFor = item;
+		appointmentError = null;
+		appointmentDone = null;
+		appointmentOpen = true;
+	}
+
+	async function saveAppointment(data: AppointmentCreate | AppointmentUpdate) {
+		appointmentSaving = true;
+		appointmentError = null;
+		try {
+			await apiSend(apiPaths.appointments, 'POST', data);
+			appointmentDone = t('finance.ai.pending.newAppointmentDone', {
+				name:
+					appointmentFor?.contacts.find((c) => c.id === data.contact_id)?.display_name ??
+					t('finance.ai.pending.newAppointment')
+			});
+			appointmentOpen = false;
+			appointmentFor = null;
+			await queryClient.invalidateQueries({ queryKey: qs.keys.appointments.all() });
+		} catch (err) {
+			appointmentError =
+				err instanceof Error ? err.message : t('finance.ai.pending.newAppointmentFailed');
+		} finally {
+			appointmentSaving = false;
+		}
+	}
+
 	/**
 	 * Sunucu cevap verdi; listeyi yeniden çekmeyi beklemeden satırı düşür.
 	 * Yeniden çekme 5 sayfaya kadar istek atıyor, o sürede satır yerinde
@@ -973,6 +1025,9 @@
 		{#if linkResult}
 			<p class="mb-3 text-xs text-text-muted">{linkResult}</p>
 		{/if}
+		{#if appointmentDone}
+			<p class="mb-3 text-xs text-text-muted">{appointmentDone}</p>
+		{/if}
 		{#if newContactDone}
 			<p class="mb-3 text-xs text-text-muted">{newContactDone}</p>
 		{/if}
@@ -1067,7 +1122,7 @@
 							<a
 								href={resolve('/contacts/[id]', { id: c.id })}
 								class="rounded-full border border-brand/40 bg-brand-subtle px-2 py-0.5 text-xs text-text hover:underline"
-								title={c.method}
+								title={contactMethodLabel(c.method)}
 							>
 								{c.display_name}
 							</a>
@@ -1152,6 +1207,24 @@
 							>
 								{t('finance.ai.pending.createContact')}
 							</button>
+						{/if}
+					{/if}
+					<!--
+						KUCUK-01: mesaj klinik randevu talebi taşıyor ve tarihi okunuyor →
+						formu ön dolu aç. Düğme tek başına hiçbir kayıt yazmaz.
+					-->
+					{#if item.appointment_hint}
+						<button
+							type="button"
+							class="mt-1 block text-xs font-medium text-brand hover:underline"
+							onclick={() => openAppointment(item)}
+						>
+							{t('finance.ai.pending.newAppointment')}
+						</button>
+						{#if item.contacts.length === 0}
+							<p class="mt-1 text-xs text-text-muted">
+								{t('finance.ai.pending.newAppointmentNoContact')}
+							</p>
 						{/if}
 					{/if}
 					{#if item.group_id}
@@ -1292,3 +1365,22 @@
 		</section>
 	{/if}
 </div>
+
+<!--
+	KUCUK-01 — mesajdan randevu. Mevcut randevu formunun aynısı; farkı ön dolum:
+	kişi mesajın bağlı kişisi, tarih/saat `appointment_hint`, not mesaj metni.
+	Randevu türünü kullanıcı seçer, kayıt yalnız kaydedince oluşur.
+-->
+<AppointmentFormDialog
+	bind:open={appointmentOpen}
+	{contacts}
+	defaultContactId={appointmentFor?.appointment_hint?.contact_id ??
+		appointmentFor?.contacts[0]?.id ??
+		null}
+	defaultStartsAt={appointmentFor?.appointment_hint?.starts_at ?? null}
+	defaultNotes={appointmentFor?.appointment_hint?.note ?? null}
+	defaultClinicName={appointmentFor?.appointment_hint?.clinic ?? null}
+	saving={appointmentSaving}
+	error={appointmentError}
+	onsubmit={saveAppointment}
+/>

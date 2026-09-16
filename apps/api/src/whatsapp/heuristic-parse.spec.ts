@@ -140,3 +140,24 @@ describe('heuristicParseWhatsappMessage — toplam + parça mükerrerliği', () 
 		expect(records.map((r) => r.amount)).toEqual([100_000, 250_000, 350_000]);
 	});
 });
+
+/**
+ * KUCUK-01: "2000 tl ödendi" satırı hiç kayda dönmüyordu — 2000 yıl sanılıyordu.
+ * Yıl kararı artık bağlama bakıyor (`tutar.ts` → `yilMi`).
+ */
+describe('heuristicParseWhatsappMessage — dört haneli tutar yıl sanılmıyor', () => {
+	it('"2000 tl ödendi" kayıt üretir', () => {
+		const [r] = heuristicParseWhatsappMessage('2000 tl ödendi');
+		expect(r).toMatchObject({ amount: 200_000, currency: 'TRY' });
+	});
+
+	it('"2024 yılında" kayıt üretmez', () => {
+		expect(heuristicParseWhatsappMessage('2024 yılında acilmisti')).toEqual([]);
+	});
+
+	it('"Ocak 2025 ödemesi 1500 GBP" yalnız 1500 kaydı üretir', () => {
+		const records = heuristicParseWhatsappMessage('Ocak 2025 ödemesi 1500 GBP');
+		expect(records).toHaveLength(1);
+		expect(records[0]).toMatchObject({ amount: 150_000, currency: 'GBP' });
+	});
+});

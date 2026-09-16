@@ -1,7 +1,7 @@
 import type { ContactStatus } from './contact.js';
 import type { AppointmentStatus } from './appointment.js';
 import type { InvoiceStatus, TransactionKind, TransactionStatus } from './transaction.js';
-import type { InboundMessageStatus } from './inbound-message.js';
+import type { InboundMessageContactMethod, InboundMessageStatus } from './inbound-message.js';
 import type { FeatureStatus, FeatureStatusBucket } from './features.js';
 import type { AuditAction, AuditEntity } from './audit.js';
 import type { UserRole } from './user.js';
@@ -44,6 +44,20 @@ export const invoiceStatusLabels: Record<InvoiceStatus, string> = {
 	none: 'Yok',
 	issued: 'Kesildi',
 	not_issued: 'Kesilmedi'
+};
+
+/**
+ * KISI-01/KUCUK-01: bağı hangi kural kurdu — Kişi Akışı'ndaki rozetin başlığı.
+ * "Bunu neden bu kişiye bağladın?" sorusunun tek satırlık cevabı.
+ */
+export const inboundMessageContactMethodLabels: Record<InboundMessageContactMethod, string> = {
+	exact: 'tam ad',
+	name: 'ad + soyad',
+	surname: 'soyad',
+	model: 'model',
+	manual: 'elle',
+	context: 'önceki mesaj',
+	fuzzy: 'yakın eşleşme'
 };
 
 export const inboundMessageStatusLabels: Record<InboundMessageStatus, string> = {

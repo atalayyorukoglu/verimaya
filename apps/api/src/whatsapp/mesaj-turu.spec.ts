@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sadelestir, turleriBul } from './mesaj-turu';
+import { sadelestir, sohbetMi, turleriBul } from './mesaj-turu';
 
 /**
  * Örneklerin çoğu gerçek gruplardan: şapkasız, noktalama düzensiz, tek satır.
@@ -100,5 +100,60 @@ describe('turleriBul — grubun görevi', () => {
 	it('boş gövde hiçbir tür üretmez', () => {
 		expect(turleriBul(null, 'finance').turler).toEqual([]);
 		expect(turleriBul('   ', 'finance').turler).toEqual([]);
+	});
+});
+
+/**
+ * KUCUK-01 — Rezervasyon sohbetleri kuyruğa düşmesin.
+ *
+ * Aşağıdaki on satır `docs/whatsapp-01/Orbismed Rezervasyon …` dökümünden birebir
+ * alındı. Hiçbiri kuyrukta kart açmamalı; "Zaid Waldu … Geliş … Dönüş …" ise
+ * kalmalı — orada yapılacak iş var.
+ */
+describe('sohbetMi — kuyruğa düşmeyecek sohbet satırları', () => {
+	const sohbet = [
+		'Tamamdır 🙏🏻',
+		'Tamamdır',
+		'Tamamdır not aldım',
+		'Tamamdır hemen ilgileniyorum',
+		'Tamamdır Gülçin hanım 🙏🏻',
+		'Teşekkür ederim.',
+		'Elinize sağlık',
+		'Boş verin',
+		'Mecbur boşveriyoruz suanda.',
+		'Bakıyorum hemen',
+		'👍',
+		'👍👏👏👏',
+		'//////',
+		'////'
+	];
+
+	it('on gerçek sohbet satırı sohbet sayılır', () => {
+		expect(sohbet.length).toBeGreaterThanOrEqual(10);
+		for (const satir of sohbet) {
+			expect([satir, sohbetMi(satir)]).toEqual([satir, true]);
+		}
+	});
+
+	it('iş taşıyan satır sohbet değildir', () => {
+		expect(
+			sohbetMi('Zaid Waldu, ikinci vizit\nGeliş: 13.09.2026 21:35\nDönüş: 19.09.2026 22:15')
+		).toBe(false);
+		expect(sohbetMi('Zaid Waldu 2.ci vizit')).toBe(false);
+		expect(sohbetMi('7900 Gbp kart ile oderse.')).toBe(false);
+	});
+
+	it('özel ad satırı sohbet değildir — yeni hasta böyle duyuruluyor', () => {
+		expect(sohbetMi('Dilyana Marinova')).toBe(false);
+		expect(sohbetMi('Aynur Taşman')).toBe(false);
+	});
+
+	it('boş gövde sohbet sayılmaz (medya-only başka kuralın işi)', () => {
+		expect(sohbetMi('')).toBe(false);
+		expect(sohbetMi(null)).toBe(false);
+	});
+
+	it('dört kelimeden uzun cümle sohbet sayılmaz', () => {
+		expect(sohbetMi('Unutmayalim sehir ici transferleri artik taksi ile yapilacak')).toBe(false);
 	});
 });
