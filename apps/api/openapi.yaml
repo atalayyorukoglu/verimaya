@@ -5109,6 +5109,7 @@ paths:
                           enum:
                             - high
                             - medium
+                            - low
                         status:
                           type: string
                           enum:
@@ -5248,6 +5249,7 @@ paths:
                     enum:
                       - high
                       - medium
+                      - low
                   status:
                     type: string
                     enum:
@@ -5491,6 +5493,7 @@ paths:
                     enum:
                       - high
                       - medium
+                      - low
                   status:
                     type: string
                     enum:
@@ -5552,6 +5555,92 @@ paths:
                 reason:
                   type: string
                   maxLength: 500
+              additionalProperties: false
+  /contact-visit-suggestions/approve-all:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  approved:
+                    type: integer
+                    minimum: 0
+                  failed:
+                    type: integer
+                    minimum: 0
+                  skipped:
+                    type: integer
+                    minimum: 0
+                required:
+                  - approved
+                  - failed
+                  - skipped
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                min_confidence:
+                  type: string
+                  enum:
+                    - high
+                    - medium
+                    - low
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 500
+              required:
+                - min_confidence
+              additionalProperties: false
+  /contact-visit-suggestions/reject-all:
+    post:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rejected:
+                    type: integer
+                    minimum: 0
+                  failed:
+                    type: integer
+                    minimum: 0
+                required:
+                  - rejected
+                  - failed
+                additionalProperties: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                min_confidence:
+                  type: string
+                  enum:
+                    - high
+                    - medium
+                    - low
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 500
+              required:
+                - min_confidence
               additionalProperties: false
   /contacts/bulk-type:
     patch:

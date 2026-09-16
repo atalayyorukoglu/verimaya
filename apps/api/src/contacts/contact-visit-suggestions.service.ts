@@ -1,15 +1,22 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import type {
 	ContactVisitDraft,
 	ContactVisitSuggestion,
 	ContactVisitSuggestionApprove,
+	ContactVisitSuggestionApproveAllResult,
+	ContactVisitSuggestionBulkDecide,
 	ContactVisitSuggestionConfidence,
 	ContactVisitSuggestionListQuery,
 	ContactVisitSuggestionReject,
+	ContactVisitSuggestionRejectAllResult,
 	ContactVisitSuggestionStatus
 } from '@verimaya/shared';
-import { contactVisitCreateFromDraft } from '@verimaya/shared';
+import {
+	contactVisitCreateFromDraft,
+	contactVisitSuggestionDedupeKey,
+	contactVisitSuggestionMeetsConfidence
+} from '@verimaya/shared';
 import type { AuditActor } from '../common/audit-helper';
 import { contacts } from '../db/schema/contacts';
 import {
@@ -52,6 +59,8 @@ function toSuggestion(
  */
 @Injectable()
 export class ContactVisitSuggestionsService {
+	private readonly logger = new Logger(ContactVisitSuggestionsService.name);
+
 	constructor(
 		private readonly tenantContext: TenantContextService,
 		private readonly visits: ContactVisitsService
@@ -178,6 +187,135 @@ export class ContactVisitSuggestionsService {
 			.returning();
 
 		return toSuggestion(row!, await this.kisiAdi(db, existing.contactId));
+	}
+
+	/**
+	 * Toplu onay (VIZIT-01). Canlıda 408 bekleyen öneri birikti; tek tek onay
+	 * telefondan yapılabilir bir iş değil.
+	 *
+	 * Üç kural:
+	 * - **Öneri başına bir transaction.** Tek büyük transaction'da 400 vizit açmak,
+	 *   400'üncüde patlayınca 399'unu da geri alırdı; ayrıca RLS oturumunu dakikalarca
+	 *   açık tutardı. Biri hata verirse `failed` sayılır, sıradakine geçilir.
+	 * - **Tekil onay yolunun aynısı.** `approveWithDb` çağrılır — vizit oluşturma,
+	 *   `approved` damgası ve `created_visit_id` bağı tek yerde kalsın; toplu yol
+	 *   kendi kopyasını tutmaz, yoksa ikisi zamanla ayrışır.
+	 * - **Mükerrer vizit açılmaz.** Aynı kişide aynı tür + aynı geliş günü ikinci kez
+	 *   gelirse `skipped`; öneri `pending` kalır, kullanıcı isterse tek tek bakar.
+	 *
+	 * Eskiden yeniye işlenir: kuyruk geldiği sırayla boşalsın, `limit` tavanına
+	 * takılırsa en eski öneriler kurtulmuş olsun.
+	 *
+	 * `db` **yalnız aday listesini okumak** için: ucun idempotency transaction'ı.
+	 * Onaylar ondan bağımsız transaction'larda koşar — bu yüzden uç 2xx dönmeden
+	 * önce vizitler zaten kalıcıdır; idempotency satırı sonradan yazılır ve ikinci
+	 * tık yanıtı tekrar oynatır, işi ikinci kez yapmaz.
+	 */
+	async approveAllWithDb(
+		db: TenantDb,
+		tenantId: string,
+		actor: AuditActor,
+		input: ContactVisitSuggestionBulkDecide
+	): Promise<ContactVisitSuggestionApproveAllResult> {
+		const adaylar = await this.bekleyenAdaylar(db, input);
+
+		let approved = 0;
+		let failed = 0;
+		let skipped = 0;
+		const gorulen = new Set<string>();
+
+		for (const aday of adaylar) {
+			const anahtar = contactVisitSuggestionDedupeKey(aday.contactId, aday.draft);
+			if (gorulen.has(anahtar)) {
+				skipped += 1;
+				continue;
+			}
+			try {
+				await this.tenantContext.withTenant(tenantId, ({ db }) =>
+					this.approveWithDb(db, aday.id, actor, {})
+				);
+				// Anahtar yalnız onay tuttuysa işaretlenir: hata alan öneri, aynı
+				// gelişin ikinci önerisini de sessizce yutmasın.
+				gorulen.add(anahtar);
+				approved += 1;
+			} catch (err) {
+				failed += 1;
+				this.logger.warn(
+					`toplu onay atlandı (${aday.id}): ${err instanceof Error ? err.message : String(err)}`
+				);
+			}
+		}
+
+		return { approved, failed, skipped };
+	}
+
+	/**
+	 * Toplu yoksayma — eşiği karşılayan bekleyen önerileri `rejected` damgalar.
+	 * Vizit doğurmaz, satır silinmez: karar geri dönülebilir kalsın diye kuyruktan
+	 * düşer ama kayıt durur. Burada da öneri başına bir transaction.
+	 */
+	async rejectAllWithDb(
+		db: TenantDb,
+		tenantId: string,
+		actor: AuditActor,
+		input: ContactVisitSuggestionBulkDecide
+	): Promise<ContactVisitSuggestionRejectAllResult> {
+		const adaylar = await this.bekleyenAdaylar(db, input);
+
+		let rejected = 0;
+		let failed = 0;
+
+		for (const aday of adaylar) {
+			try {
+				await this.tenantContext.withTenant(tenantId, ({ db }) =>
+					this.rejectWithDb(db, aday.id, actor, {})
+				);
+				rejected += 1;
+			} catch (err) {
+				failed += 1;
+				this.logger.warn(
+					`toplu yoksayma atlandı (${aday.id}): ${err instanceof Error ? err.message : String(err)}`
+				);
+			}
+		}
+
+		return { rejected, failed };
+	}
+
+	/**
+	 * Eşiği karşılayan bekleyen öneriler, eskiden yeniye. Güven süzgeci JS tarafında:
+	 * `confidence` serbest metin bir sütun ve eşik sıralaması zaten paylaşılan
+	 * yardımcıda — SQL'e ikinci bir kopyasını yazmak iki kuralı ayrıştırırdı.
+	 */
+	private async bekleyenAdaylar(
+		db: TenantDb,
+		input: ContactVisitSuggestionBulkDecide
+	): Promise<Array<{ id: string; contactId: string; draft: ContactVisitDraft }>> {
+		const rows = await db
+			.select({
+				id: contactVisitSuggestions.id,
+				contactId: contactVisitSuggestions.contactId,
+				draft: contactVisitSuggestions.draft,
+				confidence: contactVisitSuggestions.confidence
+			})
+			.from(contactVisitSuggestions)
+			.where(
+				and(
+					eq(contactVisitSuggestions.status, 'pending'),
+					isNull(contactVisitSuggestions.deletedAt)
+				)
+			)
+			.orderBy(asc(contactVisitSuggestions.createdAt), asc(contactVisitSuggestions.id));
+
+		return rows
+			.filter((r) =>
+				contactVisitSuggestionMeetsConfidence(
+					r.confidence as ContactVisitSuggestionConfidence,
+					input.min_confidence
+				)
+			)
+			.slice(0, input.limit)
+			.map((r) => ({ id: r.id, contactId: r.contactId, draft: r.draft }));
 	}
 
 	private async bekleyenSatir(db: TenantDb, id: string): Promise<ContactVisitSuggestionRow> {

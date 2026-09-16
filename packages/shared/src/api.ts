@@ -79,6 +79,8 @@ export const apiPaths = {
 		`${API_V1_PREFIX}/contact-visit-suggestions/${id}/approve`,
 	contactVisitSuggestionReject: (id: string) =>
 		`${API_V1_PREFIX}/contact-visit-suggestions/${id}/reject`,
+	contactVisitSuggestionsApproveAll: `${API_V1_PREFIX}/contact-visit-suggestions/approve-all`,
+	contactVisitSuggestionsRejectAll: `${API_V1_PREFIX}/contact-visit-suggestions/reject-all`,
 	contactsBulkType: `${API_V1_PREFIX}/contacts/bulk-type`,
 	contactsDuplicateGroups: `${API_V1_PREFIX}/contacts/duplicate-groups`,
 	contactsMerge: `${API_V1_PREFIX}/contacts/merge`,
@@ -385,8 +387,11 @@ import {
 	contactVisitCreateSchema,
 	contactVisitListSchema,
 	contactVisitSchema,
+	contactVisitSuggestionApproveAllResultSchema,
 	contactVisitSuggestionApproveSchema,
+	contactVisitSuggestionBulkDecideSchema,
 	contactVisitSuggestionListSchema,
+	contactVisitSuggestionRejectAllResultSchema,
 	contactVisitSuggestionRejectSchema,
 	contactVisitSuggestionSchema,
 	contactVisitUpdateSchema,
@@ -674,6 +679,14 @@ export const apiContract = {
 	'POST /v1/contact-visit-suggestions/:id/reject': {
 		body: contactVisitSuggestionRejectSchema,
 		response: contactVisitSuggestionSchema
+	},
+	'POST /v1/contact-visit-suggestions/approve-all': {
+		body: contactVisitSuggestionBulkDecideSchema,
+		response: contactVisitSuggestionApproveAllResultSchema
+	},
+	'POST /v1/contact-visit-suggestions/reject-all': {
+		body: contactVisitSuggestionBulkDecideSchema,
+		response: contactVisitSuggestionRejectAllResultSchema
 	},
 	'PATCH /v1/contacts/bulk-type': {
 		body: contactsBulkTypeSchema,

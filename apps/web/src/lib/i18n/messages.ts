@@ -1273,6 +1273,24 @@ const tr = {
 	'finance.ai.visit.openContact': 'Kişiyi aç',
 	'finance.ai.visit.confidence.high': 'Yüksek güven',
 	'finance.ai.visit.confidence.medium': 'Orta güven',
+	'finance.ai.visit.confidence.low': 'Düşük güven',
+	// Toplu karar — kuyruk 400'ü aşınca tek tek onay telefondan yapılamaz hâle geldi.
+	'finance.ai.visit.bulk.approveHigh': 'Yüksek güvenli olanların hepsini onayla ({count})',
+	'finance.ai.visit.bulk.rejectRest': 'Kalanları yoksay ({count})',
+	'finance.ai.visit.bulk.working': 'İşleniyor…',
+	'finance.ai.visit.bulk.approveTitle': 'Yüksek güvenli önerileri onayla',
+	'finance.ai.visit.bulk.approveBody':
+		'{count} yüksek güvenli öneri vizit olarak kaydedilecek. Aynı hastada aynı tür ve aynı geliş günü ikinci kez geçen öneri atlanır, kuyrukta kalır.',
+	'finance.ai.visit.bulk.approveConfirm': 'Hepsini onayla',
+	'finance.ai.visit.bulk.rejectTitle': 'Kalan önerileri yoksay',
+	'finance.ai.visit.bulk.rejectBody':
+		'Kuyrukta bekleyen {count} öneri yoksayılacak — yüksek güvenli olanlar dahil. Kayıt silinmez, kuyruktan düşer.',
+	'finance.ai.visit.bulk.rejectConfirm': 'Hepsini yoksay',
+	'finance.ai.visit.bulk.cancel': 'Vazgeç',
+	'finance.ai.visit.bulk.approved':
+		'{approved} öneri onaylandı, {skipped} mükerrer atlandı, {failed} hata verdi.',
+	'finance.ai.visit.bulk.rejected': '{rejected} öneri yoksayıldı, {failed} hata verdi.',
+	'finance.ai.visit.bulk.failed': 'Toplu işlem tamamlanamadı.',
 	'finance.ai.parse.none': 'Mesajdan işlem çıkarılamadı.',
 	'finance.ai.parse.media': 'Medya mesajı — metin yok.',
 	'finance.ai.parse.failed': 'Analiz başarısız',
@@ -4552,6 +4570,23 @@ const en: Record<MessageKey, string> = {
 	'finance.ai.visit.openContact': 'Open contact',
 	'finance.ai.visit.confidence.high': 'High confidence',
 	'finance.ai.visit.confidence.medium': 'Medium confidence',
+	'finance.ai.visit.confidence.low': 'Low confidence',
+	'finance.ai.visit.bulk.approveHigh': 'Approve all high-confidence ({count})',
+	'finance.ai.visit.bulk.rejectRest': 'Dismiss the rest ({count})',
+	'finance.ai.visit.bulk.working': 'Working…',
+	'finance.ai.visit.bulk.approveTitle': 'Approve high-confidence suggestions',
+	'finance.ai.visit.bulk.approveBody':
+		'{count} high-confidence suggestions will be saved as visits. A suggestion repeating the same patient, type and arrival day is skipped and stays in the queue.',
+	'finance.ai.visit.bulk.approveConfirm': 'Approve all',
+	'finance.ai.visit.bulk.rejectTitle': 'Dismiss remaining suggestions',
+	'finance.ai.visit.bulk.rejectBody':
+		'{count} suggestions still in the queue will be dismissed — high-confidence ones included. Nothing is deleted; they just leave the queue.',
+	'finance.ai.visit.bulk.rejectConfirm': 'Dismiss all',
+	'finance.ai.visit.bulk.cancel': 'Cancel',
+	'finance.ai.visit.bulk.approved':
+		'{approved} approved, {skipped} duplicates skipped, {failed} failed.',
+	'finance.ai.visit.bulk.rejected': '{rejected} dismissed, {failed} failed.',
+	'finance.ai.visit.bulk.failed': 'The bulk action could not be completed.',
 	'finance.ai.parse.none': 'Could not extract transactions from message.',
 	'finance.ai.parse.media': 'Media message — no text.',
 	'finance.ai.parse.failed': 'Analysis failed',

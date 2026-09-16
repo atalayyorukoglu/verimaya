@@ -165,10 +165,30 @@ export type ContactVisitDraft = z.infer<typeof contactVisitDraftSchema>;
 export const contactVisitSuggestionStatusSchema = z.enum(['pending', 'approved', 'rejected']);
 export type ContactVisitSuggestionStatus = z.infer<typeof contactVisitSuggestionStatusSchema>;
 
-export const contactVisitSuggestionConfidenceSchema = z.enum(['high', 'medium']);
+/**
+ * Çıkarımın kendine güveni. `vizit-cikar.ts` bugün yalnız `high`/`medium` üretiyor;
+ * `low` toplu onayda **eşik** olarak anlamlı ("hepsi") ve ileride daha gevşek bir
+ * çıkarım eklenirse rozetin karşılığı hazır olsun diye burada.
+ */
+export const contactVisitSuggestionConfidenceSchema = z.enum(['high', 'medium', 'low']);
 export type ContactVisitSuggestionConfidence = z.infer<
 	typeof contactVisitSuggestionConfidenceSchema
 >;
+
+/** Büyük sayı = daha güvenli. Eşik karşılaştırması tek yerde dursun. */
+const guvenSirasi: Record<ContactVisitSuggestionConfidence, number> = {
+	high: 3,
+	medium: 2,
+	low: 1
+};
+
+/** Öneri, verilen alt eşiği karşılıyor mu? Sunucu ile arayüz aynı kuralı kullanır. */
+export function contactVisitSuggestionMeetsConfidence(
+	confidence: ContactVisitSuggestionConfidence,
+	min: ContactVisitSuggestionConfidence
+): boolean {
+	return guvenSirasi[confidence] >= guvenSirasi[min];
+}
 
 export const contactVisitSuggestionSchema = z.object({
 	id: uuid,
@@ -203,6 +223,60 @@ export const contactVisitSuggestionRejectSchema = z
 	.object({ reason: z.string().trim().max(500).optional() })
 	.strict();
 export type ContactVisitSuggestionReject = z.infer<typeof contactVisitSuggestionRejectSchema>;
+
+/**
+ * Toplu karar gövdesi (VIZIT-01 toplu onay).
+ *
+ * Canlıda kuyruk 400'ü aştı; tek tek onay telefondan yapılamaz hâle geldi. Eşik
+ * **zorunlu** çünkü "hepsini onayla" varsayılanı, orta güvenli çıkarımları da
+ * gözden geçirilmeden kesin kayda çevirirdi (AGENTS ilke 6'nın ruhu: insan neyi
+ * onayladığını bilmeli). `limit` bir turda açılacak vizit sayısına tavan koyar.
+ */
+export const contactVisitSuggestionBulkDecideSchema = z
+	.object({
+		min_confidence: contactVisitSuggestionConfidenceSchema,
+		limit: z.number().int().min(1).max(1000).default(500)
+	})
+	.strict();
+export type ContactVisitSuggestionBulkDecide = z.infer<
+	typeof contactVisitSuggestionBulkDecideSchema
+>;
+
+export const contactVisitSuggestionApproveAllResultSchema = z.object({
+	/** Vizit doğan öneri sayısı. */
+	approved: z.number().int().nonnegative(),
+	/** Hata alan öneri sayısı — diğerleri etkilenmez, öneri `pending` kalır. */
+	failed: z.number().int().nonnegative(),
+	/** Aynı turda aynı kişi + tür + geliş günü ikinci kez geldiği için atlanan. */
+	skipped: z.number().int().nonnegative()
+});
+export type ContactVisitSuggestionApproveAllResult = z.infer<
+	typeof contactVisitSuggestionApproveAllResultSchema
+>;
+
+export const contactVisitSuggestionRejectAllResultSchema = z.object({
+	rejected: z.number().int().nonnegative(),
+	failed: z.number().int().nonnegative()
+});
+export type ContactVisitSuggestionRejectAllResult = z.infer<
+	typeof contactVisitSuggestionRejectAllResultSchema
+>;
+
+/**
+ * Toplu onayda mükerrer vizit anahtarı: aynı kişide aynı tür + aynı **geliş günü**
+ * iki kez gelirse ikincisi açılmaz. Aynı geliş iki ayrı WhatsApp mesajında geçtiğinde
+ * (teyit mesajı, bilet paylaşımı) kuyrukta iki öneri doğuyor; tek tek onayda insan
+ * görüp atlıyordu, toplu onayda görmeyecek.
+ *
+ * Saat bilinmese de gün anahtarı UTC'den okunur — taslak zaten UTC gün olarak yazılıyor.
+ */
+export function contactVisitSuggestionDedupeKey(
+	contactId: string,
+	draft: Pick<ContactVisitDraft, 'visit_type' | 'arrival_at'>
+): string {
+	const gun = draft.arrival_at ? draft.arrival_at.slice(0, 10) : '';
+	return `${contactId}|${draft.visit_type}|${gun}`;
+}
 
 export const contactVisitSuggestionListQuerySchema = z.object({
 	status: contactVisitSuggestionStatusSchema.default('pending'),

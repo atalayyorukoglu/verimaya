@@ -10,6 +10,9 @@
 		ContactType,
 		ContactVisitCreate,
 		ContactVisitSuggestion,
+		ContactVisitSuggestionApproveAllResult,
+		ContactVisitSuggestionConfidence,
+		ContactVisitSuggestionRejectAllResult,
 		ContactVisitType,
 		FinanceCategory,
 		InboundMessage,
@@ -38,6 +41,7 @@
 	import { formatDateTime } from '$lib/format';
 	import { locateEvidenceQuote } from '$lib/finance/evidence-highlight';
 	import { t } from '$lib/i18n/locale.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import AppointmentFormDialog from '$lib/components/AppointmentFormDialog.svelte';
@@ -231,6 +235,76 @@
 			visitError = err instanceof Error ? err.message : t('finance.ai.visit.rejectFailed');
 		} finally {
 			visitActingId = null;
+		}
+	}
+
+	/*
+	 * Toplu karar. Canlıda kuyrukta 400'ün üzerinde öneri birikti; tek tek onay
+	 * telefondan yapılabilir bir iş değil. Onay iletişim kutusu `confirm()` değil
+	 * çünkü tarayıcı kutusu kaç öneriyi etkilediğini biçimli anlatamıyor ve
+	 * gömülü/WebView bağlamlarında sessizce yutulabiliyor.
+	 */
+	const visitConfidenceTone: Record<
+		ContactVisitSuggestionConfidence,
+		'success' | 'warning' | 'neutral'
+	> = { high: 'success', medium: 'warning', low: 'neutral' };
+
+	const highConfidenceCount = $derived(
+		visitSuggestions.filter((s) => s.confidence === 'high').length
+	);
+
+	let visitBulkKind = $state<'approve' | 'reject'>('approve');
+	/** Dialog kendi içinde kapanabiliyor (Esc / arka plan) — `bind:open` şart. */
+	let visitBulkOpen = $state(false);
+	let visitBulkBusy = $state(false);
+	let visitBulkResult = $state<string | null>(null);
+
+	function openVisitBulk(kind: 'approve' | 'reject') {
+		visitBulkKind = kind;
+		visitBulkResult = null;
+		visitBulkOpen = true;
+	}
+
+	async function runVisitBulk() {
+		const kind = visitBulkKind;
+		if (visitBulkBusy) return;
+		visitBulkBusy = true;
+		visitError = null;
+		visitBulkResult = null;
+		try {
+			if (kind === 'approve') {
+				const r = await apiSend<ContactVisitSuggestionApproveAllResult>(
+					apiPaths.contactVisitSuggestionsApproveAll,
+					'POST',
+					{ min_confidence: 'high', limit: 500 }
+				);
+				visitBulkResult = t('finance.ai.visit.bulk.approved', {
+					approved: String(r.approved),
+					skipped: String(r.skipped),
+					failed: String(r.failed)
+				});
+			} else {
+				// Eşik `low`: "kalanlar" kuyrukta bekleyen her şey. Kutudaki sayı da öyle.
+				const r = await apiSend<ContactVisitSuggestionRejectAllResult>(
+					apiPaths.contactVisitSuggestionsRejectAll,
+					'POST',
+					{ min_confidence: 'low', limit: 500 }
+				);
+				visitBulkResult = t('finance.ai.visit.bulk.rejected', {
+					rejected: String(r.rejected),
+					failed: String(r.failed)
+				});
+			}
+			visitBulkOpen = false;
+			// Toplu onay birçok kişinin vizitini/özetini değiştirir — kişi ağacının
+			// tamamı tazelenir, tek tek kimlik toplamaya değmez.
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contactVisitSuggestions.all() });
+			await queryClient.invalidateQueries({ queryKey: qs.keys.contacts.all() });
+		} catch (err) {
+			visitError = err instanceof Error ? err.message : t('finance.ai.visit.bulk.failed');
+			visitBulkOpen = false;
+		} finally {
+			visitBulkBusy = false;
 		}
 	}
 
@@ -840,7 +914,7 @@
 		VIZIT-01 — vizit önerileri. Öneri yoksa bölüm hiç çizilmez: boş başlık
 		kuyruğu uzatmaktan başka bir şey yapmaz.
 	-->
-	{#if visitSuggestions.length > 0}
+	{#if visitSuggestions.length > 0 || visitBulkResult}
 		<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">
 			<div class="mb-1 flex flex-wrap items-center justify-between gap-2">
 				<h2 class="text-sm font-semibold text-text">
@@ -848,7 +922,45 @@
 					<span class="font-normal text-text-muted">({visitSuggestions.length})</span>
 				</h2>
 			</div>
-			<p class="mb-3 text-xs text-text-muted">{t('finance.ai.visit.subtitle')}</p>
+			{#if visitSuggestions.length > 0}
+				<p class="mb-3 text-xs text-text-muted">{t('finance.ai.visit.subtitle')}</p>
+			{/if}
+
+			<!--
+				Toplu karar düğmeleri listenin ÜSTÜNDE: 400 öneride listenin sonuna
+				inmek mobilde dakikalar sürüyor.
+			-->
+			{#if visitSuggestions.length > 0}
+				<div class="mb-3 flex flex-wrap gap-2">
+					{#if highConfidenceCount > 0}
+						<Button
+							type="button"
+							size="sm"
+							disabled={visitBulkBusy}
+							onclick={() => openVisitBulk('approve')}
+						>
+							{visitBulkBusy && visitBulkKind === 'approve'
+								? t('finance.ai.visit.bulk.working')
+								: t('finance.ai.visit.bulk.approveHigh', { count: String(highConfidenceCount) })}
+						</Button>
+					{/if}
+					<Button
+						type="button"
+						size="sm"
+						variant="ghost"
+						disabled={visitBulkBusy}
+						onclick={() => openVisitBulk('reject')}
+					>
+						{visitBulkBusy && visitBulkKind === 'reject'
+							? t('finance.ai.visit.bulk.working')
+							: t('finance.ai.visit.bulk.rejectRest', { count: String(visitSuggestions.length) })}
+					</Button>
+				</div>
+			{/if}
+
+			{#if visitBulkResult}
+				<p class="mb-3 text-sm text-text-muted" role="status">{visitBulkResult}</p>
+			{/if}
 
 			{#if visitError}
 				<p class="mb-3 text-sm text-danger">{visitError}</p>
@@ -865,11 +977,14 @@
 							>
 								{s.contact_display_name}
 							</a>
-							<span class="text-[11px] leading-4 text-text-faint">
-								{s.confidence === 'high'
+							<StatusBadge
+								tone={visitConfidenceTone[s.confidence]}
+								label={s.confidence === 'high'
 									? t('finance.ai.visit.confidence.high')
-									: t('finance.ai.visit.confidence.medium')}
-							</span>
+									: s.confidence === 'medium'
+										? t('finance.ai.visit.confidence.medium')
+										: t('finance.ai.visit.confidence.low')}
+							/>
 						</div>
 
 						{#if edit}
@@ -984,6 +1099,36 @@
 				{/each}
 			</ul>
 		</section>
+
+		<Dialog
+			bind:open={visitBulkOpen}
+			title={visitBulkKind === 'reject'
+				? t('finance.ai.visit.bulk.rejectTitle')
+				: t('finance.ai.visit.bulk.approveTitle')}
+		>
+			<p class="text-sm text-text-muted">
+				{visitBulkKind === 'reject'
+					? t('finance.ai.visit.bulk.rejectBody', { count: String(visitSuggestions.length) })
+					: t('finance.ai.visit.bulk.approveBody', { count: String(highConfidenceCount) })}
+			</p>
+			{#snippet footer()}
+				<Button
+					type="button"
+					variant="ghost"
+					disabled={visitBulkBusy}
+					onclick={() => (visitBulkOpen = false)}
+				>
+					{t('finance.ai.visit.bulk.cancel')}
+				</Button>
+				<Button type="button" disabled={visitBulkBusy} onclick={runVisitBulk}>
+					{visitBulkBusy
+						? t('finance.ai.visit.bulk.working')
+						: visitBulkKind === 'reject'
+							? t('finance.ai.visit.bulk.rejectConfirm')
+							: t('finance.ai.visit.bulk.approveConfirm')}
+				</Button>
+			{/snippet}
+		</Dialog>
 	{/if}
 
 	<section class="mt-4 rounded-lg border border-border bg-surface p-4 sm:p-5">

@@ -23,6 +23,9 @@ import {
 	contactVisitCreateFromDraft,
 	contactVisitCreateSchema,
 	contactVisitSuggestionApproveSchema,
+	contactVisitSuggestionBulkDecideSchema,
+	contactVisitSuggestionDedupeKey,
+	contactVisitSuggestionMeetsConfidence,
 	contactVisitUpdateSchema,
 	contactTypeCreateSchema,
 	contactTypeUpdateSchema,
@@ -109,6 +112,8 @@ import {
 	type ContactCaseNote,
 	type ContactFile,
 	type ContactVisit,
+	type ContactVisitCreate,
+	type ContactVisitSuggestion,
 	type ReportCohorts,
 	type SupportedCurrency,
 	type Tenant,
@@ -1183,6 +1188,51 @@ function mswDriveStatus() {
 		last_run_skipped: mswDriveConnected ? 38 : 0,
 		last_run_failed: 0
 	};
+}
+
+/**
+ * VIZIT-01 — öneriden vizit doğurma. Tekil ve toplu onay yolları aynı gövdeyi
+ * üretsin diye tek yerde: gerçek sunucuda da tek bir `approveWithDb` var.
+ */
+function mswVizitOlustur(
+	store: ReturnType<typeof getStore>,
+	suggestion: ContactVisitSuggestion,
+	create: ContactVisitCreate
+): ContactVisit {
+	const visit: ContactVisit = {
+		id: crypto.randomUUID(),
+		tenant_id: DEMO_TENANT_ID,
+		contact_id: suggestion.contact_id,
+		visit_type: create.visit_type,
+		sequence: create.sequence ?? null,
+		arrival_at: create.arrival_at ?? null,
+		arrival_time_known: create.arrival_time_known ?? true,
+		departure_at: create.departure_at ?? null,
+		departure_time_known: create.departure_time_known ?? true,
+		arrival_flight: create.arrival_flight ?? null,
+		departure_flight: create.departure_flight ?? null,
+		hotel: create.hotel ?? null,
+		hotel_covered_by: create.hotel_covered_by ?? 'unknown',
+		transfer_provider: create.transfer_provider ?? null,
+		clinic: create.clinic ?? null,
+		doctor: create.doctor ?? null,
+		treatment_plan: create.treatment_plan ?? null,
+		quoted_total_minor: create.quoted_total_minor ?? null,
+		quoted_currency: create.quoted_currency ?? null,
+		status: create.status ?? 'planned',
+		notes: create.notes ?? null,
+		source_inbound_message_id: suggestion.inbound_message_id,
+		created_by: demoUser.display_name,
+		created_at: nowIso(),
+		updated_at: nowIso()
+	};
+	store.contactVisits.push(visit);
+	suggestion.status = 'approved';
+	suggestion.created_visit_id = visit.id;
+	suggestion.decided_at = nowIso();
+	suggestion.decided_by = demoUser.display_name;
+	suggestion.updated_at = nowIso();
+	return visit;
 }
 
 export const handlers = [
@@ -2801,40 +2851,62 @@ export const handlers = [
 		const parsed = contactVisitSuggestionApproveSchema.safeParse(body ?? {});
 		if (!parsed.success) return badRequest('Geçersiz vizit', parsed.error.flatten());
 		const create = parsed.data.visit ?? contactVisitCreateFromDraft(suggestion.draft);
-		const visit: ContactVisit = {
-			id: crypto.randomUUID(),
-			tenant_id: DEMO_TENANT_ID,
-			contact_id: suggestion.contact_id,
-			visit_type: create.visit_type,
-			sequence: create.sequence ?? null,
-			arrival_at: create.arrival_at ?? null,
-			arrival_time_known: create.arrival_time_known ?? true,
-			departure_at: create.departure_at ?? null,
-			departure_time_known: create.departure_time_known ?? true,
-			arrival_flight: create.arrival_flight ?? null,
-			departure_flight: create.departure_flight ?? null,
-			hotel: create.hotel ?? null,
-			hotel_covered_by: create.hotel_covered_by ?? 'unknown',
-			transfer_provider: create.transfer_provider ?? null,
-			clinic: create.clinic ?? null,
-			doctor: create.doctor ?? null,
-			treatment_plan: create.treatment_plan ?? null,
-			quoted_total_minor: create.quoted_total_minor ?? null,
-			quoted_currency: create.quoted_currency ?? null,
-			status: create.status ?? 'planned',
-			notes: create.notes ?? null,
-			source_inbound_message_id: suggestion.inbound_message_id,
-			created_by: demoUser.display_name,
-			created_at: nowIso(),
-			updated_at: nowIso()
-		};
-		store.contactVisits.push(visit);
-		suggestion.status = 'approved';
-		suggestion.created_visit_id = visit.id;
-		suggestion.decided_at = nowIso();
-		suggestion.decided_by = demoUser.display_name;
-		suggestion.updated_at = nowIso();
+		mswVizitOlustur(store, suggestion, create);
 		return HttpResponse.json(suggestion);
+	}),
+
+	http.post('/v1/contact-visit-suggestions/approve-all', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = await request.json().catch(() => ({}));
+		const parsed = contactVisitSuggestionBulkDecideSchema.safeParse(body ?? {});
+		if (!parsed.success) return badRequest('Geçersiz toplu onay', parsed.error.flatten());
+
+		const adaylar = store.contactVisitSuggestions
+			.filter(
+				(s) =>
+					s.status === 'pending' &&
+					contactVisitSuggestionMeetsConfidence(s.confidence, parsed.data.min_confidence)
+			)
+			.slice(0, parsed.data.limit);
+
+		let approved = 0;
+		let skipped = 0;
+		const gorulen = new Set<string>();
+		for (const suggestion of adaylar) {
+			const anahtar = contactVisitSuggestionDedupeKey(suggestion.contact_id, suggestion.draft);
+			if (gorulen.has(anahtar)) {
+				skipped += 1;
+				continue;
+			}
+			gorulen.add(anahtar);
+			mswVizitOlustur(store, suggestion, contactVisitCreateFromDraft(suggestion.draft));
+			approved += 1;
+		}
+		return HttpResponse.json({ approved, failed: 0, skipped });
+	}),
+
+	http.post('/v1/contact-visit-suggestions/reject-all', async ({ request }) => {
+		const store = getStore(scenarioFrom(request));
+		const body = await request.json().catch(() => ({}));
+		const parsed = contactVisitSuggestionBulkDecideSchema.safeParse(body ?? {});
+		if (!parsed.success) return badRequest('Geçersiz toplu yoksayma', parsed.error.flatten());
+
+		const adaylar = store.contactVisitSuggestions
+			.filter(
+				(s) =>
+					s.status === 'pending' &&
+					contactVisitSuggestionMeetsConfidence(s.confidence, parsed.data.min_confidence)
+			)
+			.slice(0, parsed.data.limit);
+
+		for (const suggestion of adaylar) {
+			suggestion.status = 'rejected';
+			suggestion.reject_reason = null;
+			suggestion.decided_at = nowIso();
+			suggestion.decided_by = demoUser.display_name;
+			suggestion.updated_at = nowIso();
+		}
+		return HttpResponse.json({ rejected: adaylar.length, failed: 0 });
 	}),
 
 	http.post('/v1/contact-visit-suggestions/:id/reject', async ({ params, request }) => {

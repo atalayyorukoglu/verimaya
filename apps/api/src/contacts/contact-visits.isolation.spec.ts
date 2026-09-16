@@ -213,4 +213,98 @@ describe('contact visits isolation', () => {
 		const bekleyen = await suggestions.list(tenantB, { status: 'pending', limit: 50 });
 		expect(bekleyen.items).toHaveLength(0);
 	});
+
+	/**
+	 * Toplu onay — canlıda kuyruk 408'e çıkınca eklendi. Üç şeyi birden tutuyor:
+	 * eşik (orta güvenli öneri yüksek turunda kalır), mükerrer koruması (aynı kişi +
+	 * tür + geliş günü ikinci kez vizit açmaz) ve kiracı yalıtımı (B'nin önerisi
+	 * A'nın toplu onayında kararlanmaz).
+	 */
+	describe('toplu onay', () => {
+		const taslak = (arrivalAt: string) => ({
+			visit_type: 'visit_3' as const,
+			sequence: 3,
+			arrival_at: arrivalAt,
+			arrival_time_known: true,
+			departure_at: '2026-11-09T08:00:00.000Z',
+			departure_time_known: true,
+			hotel: null,
+			clinic: 'TNC',
+			doctor: null,
+			treatment_plan: null
+		});
+
+		beforeAll(async () => {
+			// Aynı gelişin iki ayrı mesajdan çıkmış hâli: gün aynı, saat farklı.
+			for (const at of ['2026-11-02T08:00:00.000Z', '2026-11-02T14:00:00.000Z']) {
+				await withTenantSession(tenantA, (tdb) =>
+					suggestions.createFromMessageWithDb(tdb, tenantA, {
+						contactId: patientA,
+						inboundMessageId: null,
+						draft: taslak(at),
+						sourceText: `3. vizit ${at}`,
+						confidence: 'high'
+					})
+				);
+			}
+			// Orta güvenli: yüksek eşiğinde kuyrukta kalmalı.
+			await withTenantSession(tenantA, (tdb) =>
+				suggestions.createFromMessageWithDb(tdb, tenantA, {
+					contactId: patientA,
+					inboundMessageId: null,
+					draft: { ...taslak('2026-12-01T08:00:00.000Z'), visit_type: 'other' },
+					sourceText: 'belki aralikta gelir',
+					confidence: 'medium'
+				})
+			);
+			// B'nin önerisi — A'nın toplu kararından etkilenmemeli.
+			await withTenantSession(tenantB, (tdb) =>
+				suggestions.createFromMessageWithDb(tdb, tenantB, {
+					contactId: patientB,
+					inboundMessageId: null,
+					draft: taslak('2026-11-02T08:00:00.000Z'),
+					sourceText: "B'nin mesajı",
+					confidence: 'high'
+				})
+			);
+		});
+
+		it('yüksek eşiği: mükerrer atlanır, orta güvenli kuyrukta kalır', async () => {
+			const sonuc = await withTenantSession(tenantA, (tdb) =>
+				suggestions.approveAllWithDb(
+					tdb,
+					tenantA,
+					{ actorId: null, actorDisplayName: 'Sude' },
+					{ min_confidence: 'high', limit: 500 }
+				)
+			);
+			expect(sonuc).toEqual({ approved: 1, failed: 0, skipped: 1 });
+
+			// Mükerrer öneri için ikinci vizit açılmamalı.
+			const vizitler = await visits.list(tenantA, patientA);
+			expect(vizitler.items.filter((v) => v.visit_type === 'visit_3')).toHaveLength(1);
+
+			// Atlanan öneri silinmez: `pending` kalır ki insan tek tek bakabilsin.
+			const bekleyen = await suggestions.list(tenantA, { status: 'pending', limit: 50 });
+			expect(bekleyen.items.map((i) => i.confidence).sort()).toEqual(['high', 'medium']);
+		});
+
+		it('kalanları yoksayma kuyruğu boşaltır, B dokunulmaz kalır', async () => {
+			const sonuc = await withTenantSession(tenantA, (tdb) =>
+				suggestions.rejectAllWithDb(
+					tdb,
+					tenantA,
+					{ actorId: null, actorDisplayName: 'Sude' },
+					{ min_confidence: 'low', limit: 500 }
+				)
+			);
+			expect(sonuc).toEqual({ rejected: 2, failed: 0 });
+
+			const bekleyenA = await suggestions.list(tenantA, { status: 'pending', limit: 50 });
+			expect(bekleyenA.items).toHaveLength(0);
+
+			const bekleyenB = await suggestions.list(tenantB, { status: 'pending', limit: 50 });
+			expect(bekleyenB.items).toHaveLength(1);
+		});
+	});
 });
