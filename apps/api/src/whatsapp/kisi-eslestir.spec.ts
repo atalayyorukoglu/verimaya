@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kelimeler, kisiBul, type KisiAdayi } from './kisi-eslestir';
+import { kelimeler, kisiBul, tekKisiBul, type KisiAdayi } from './kisi-eslestir';
 
 /** Örnekler gerçek gruplardan; şapkasız, ekli, noktalaması düzensiz. */
 const hasta = (id: string, first: string, last: string): KisiAdayi => ({
@@ -133,5 +133,17 @@ describe('kisiBul — yanlış pozitif kapıları', () => {
 	it('boş ve medya-only mesajda boş döner', () => {
 		expect(kisiBul('', adaylar)).toEqual([]);
 		expect(kisiBul(null, adaylar)).toEqual([]);
+	});
+});
+
+describe('tekKisiBul — taslaktaki karşı taraf adı', () => {
+	it('tek ve kesin eşleşmede kişiyi döner ("Dumos Hotel")', () => {
+		expect(tekKisiBul('Dumos Hotel', adaylar)?.id).toBe('dumos');
+	});
+
+	it('belirsiz ya da bulunamayan adda null — yanlış kişiye bağlanmaz', () => {
+		expect(tekKisiBul('Bilinmeyen Firma', adaylar)).toBeNull();
+		expect(tekKisiBul('', adaylar)).toBeNull();
+		expect(tekKisiBul(null, adaylar)).toBeNull();
 	});
 });

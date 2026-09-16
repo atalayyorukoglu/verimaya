@@ -2,6 +2,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import type {
 		Contact,
+		ContactType,
 		FinanceCategory,
 		FxRateResponse,
 		InvoiceStatus,
@@ -29,6 +30,8 @@
 	import { apiGet, apiSend, fieldClass, labelClass, listUrl, textareaClass } from '$lib/api';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
+	import { contactToOption, contactTypeIdByName, searchContactOptions } from '$lib/contacts/search';
+	import { createContactLabelCache } from '$lib/contacts/label-cache.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -89,6 +92,13 @@
 		enabled: open && qs.ready
 	}));
 
+	/** Hasta kutusunun sunucu süzgeci (`type_id`) için tür kimliği. */
+	const contactTypesQuery = createQuery(() => ({
+		queryKey: qs.keys.settings.contactTypes(),
+		queryFn: () => apiGet<{ items: ContactType[] }>(apiPaths.settingsContactTypes),
+		enabled: open && qs.ready
+	}));
+
 	const tenantBase = $derived((tenantQuery.data?.base_currency ?? 'TRY') as SupportedCurrency);
 	const tenantTimezone = $derived(tenantQuery.data?.timezone ?? 'Europe/Istanbul');
 
@@ -125,31 +135,34 @@
 	const selectedCategory = $derived(categoryOptions.find((c) => c.name === category) ?? null);
 	const subtitleOptions = $derived(selectedCategory?.subcategories ?? []);
 	const needsFx = $derived(currency !== tenantBase);
-	const contactOptions = $derived(
-		(contactsQuery.data?.items ?? []).map((c) => ({
-			value: c.id,
-			label: c.display_name,
-			description: c.contact_type_name
-		}))
+	/*
+	 * Kutular sunucu taraflı arar. `contactsQuery` yalnız ilk sayfayı (100 kayıt)
+	 * getiriyor; 1000+ kişili kiracıda aranan kişi orada olmadığı için Combobox
+	 * "eşleşen yok" diyordu. İlk sayfa hâlâ "hiçbir şey yazmadan açınca" listesi.
+	 */
+	const HASTA_TURU = 'Hasta';
+	const loadedContacts = $derived(contactsQuery.data?.items ?? []);
+	const hastaTypeId = $derived(
+		contactTypeIdByName(contactTypesQuery.data?.items ?? [], HASTA_TURU)
 	);
+	const contactOptions = $derived(loadedContacts.map(contactToOption));
 	const caseContactOptions = $derived(
-		(contactsQuery.data?.items ?? [])
-			.filter((c) => c.contact_type_name === 'Hasta')
-			.map((c) => ({
-				value: c.id,
-				label: c.display_name,
-				description: c.contact_type_name
-			}))
+		loadedContacts.filter((c) => c.contact_type_name === HASTA_TURU).map(contactToOption)
 	);
 	// Sorumlu tip kısıtsız: Tracker'da da Personel dışı kişiler (Laboratuvar, Diğer,
 	// Transfer, Hasta) sorumlu olabiliyordu; filtre bu kayıtları düzenlemede düşürüyordu.
-	const responsibleContactOptions = $derived(
-		(contactsQuery.data?.items ?? []).map((c) => ({
-			value: c.id,
-			label: c.display_name,
-			description: c.contact_type_name
-		}))
-	);
+	const responsibleContactOptions = $derived(loadedContacts.map(contactToOption));
+
+	const searchAllContacts = (q: string) => searchContactOptions(q);
+	const searchPatients = (q: string) =>
+		searchContactOptions(q, { typeId: hastaTypeId, typeName: HASTA_TURU });
+
+	/** Düzenlenen kayıttaki kişi ilk sayfada olmayabilir; adı tek tek çözülür. */
+	const labels = createContactLabelCache(() => loadedContacts);
+	$effect(() => {
+		if (!open) return;
+		labels.ensure([contact_id, case_contact_id, responsible_contact_id]);
+	});
 	const paymentMethodOptions = $derived.by(() => {
 		const options: string[] = [...TRANSACTION_PAYMENT_METHODS];
 		if (payment_method && !options.includes(payment_method)) options.push(payment_method);
@@ -428,7 +441,8 @@
 			contact_id: contact_id || null,
 			contact_label: (() => {
 				if (contact_id) {
-					const name = contactsQuery.data?.items.find((c) => c.id === contact_id)?.display_name;
+					// Seçilen kişi ilk sayfada olmayabilir; adı etiket önbelleğinden okunur.
+					const name = labels.labelFor(contact_id);
 					return name ?? (contact_label.trim() || null);
 				}
 				return contact_label.trim() || null;
@@ -616,8 +630,11 @@
 						id="tx-contact"
 						bind:value={contact_id}
 						options={contactOptions}
+						onsearch={searchAllContacts}
+						selectedLabel={labels.labelFor(contact_id) ?? contact_label}
 						placeholder={t('finance.form.contactSearchPlaceholder')}
 						emptyText={t('finance.form.contactEmpty')}
+						searchingText={t('common.searching')}
 						clearLabel={t('finance.form.contactClear')}
 						onselect={selectContact}
 					/>
@@ -643,8 +660,11 @@
 						id="tx-case"
 						bind:value={case_contact_id}
 						options={caseContactOptions}
+						onsearch={searchPatients}
+						selectedLabel={labels.labelFor(case_contact_id)}
 						placeholder={t('finance.form.caseSearchPlaceholder')}
 						emptyText={t('finance.form.caseEmpty')}
+						searchingText={t('common.searching')}
 						clearLabel={t('finance.form.caseClear')}
 					/>
 				</div>
@@ -654,8 +674,11 @@
 						id="tx-responsible"
 						bind:value={responsible_contact_id}
 						options={responsibleContactOptions}
+						onsearch={searchAllContacts}
+						selectedLabel={labels.labelFor(responsible_contact_id)}
 						placeholder={t('finance.form.responsibleSearchPlaceholder')}
 						emptyText={t('finance.form.responsibleEmpty')}
+						searchingText={t('common.searching')}
 						clearLabel={t('finance.form.responsibleClear')}
 					/>
 				</div>

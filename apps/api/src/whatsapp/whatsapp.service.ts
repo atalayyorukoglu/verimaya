@@ -22,7 +22,9 @@ import { tenants } from '../db/schema/tenants';
 import { inboundMessageContacts } from '../db/schema/inbound-message-contacts';
 import { MessageContactsService } from './message-contacts.service';
 import { InboundMediaService } from './inbound-media.service';
-import type { KisiAdayi } from './kisi-eslestir';
+import { kisiBul, type KisiAdayi } from './kisi-eslestir';
+import { type TenantKategori } from './kategori';
+import { taslaklariOnDoldur } from './taslak-on-dolum';
 import { DEFAULT_TENANT_TIMEZONE, buildKnowledgeContext, toTenantDayKey } from '@verimaya/shared';
 import { type AuditActor } from '../common/audit-helper';
 import { LLM_CLIENT, writeLlmParseLedger, type LlmClient } from '../integrations/llm';
@@ -66,6 +68,14 @@ function toDraftSnapshot(item: ApproveDraftItem): TransactionDraftSnapshot {
 		contact_id: item.contact_id,
 		contact_display_name: item.contact_display_name,
 		contact_label: item.contact_label,
+		/*
+		 * Sıra şema sırasıyla aynı kalmalı: `original_parsed` zod'dan geçer, bu nesne
+		 * elle kurulur; JSON.stringify karşılaştırması anahtar sırasına duyarlı.
+		 * `null → undefined`: taslakta bu alanlar opsiyonel, onay isteğinde `default(null)`.
+		 * Doğrudan yazsaydık ön dolum yapılmamış her mesaj sahte "düzeltildi" sayılırdı.
+		 */
+		case_contact_id: item.case_contact_id ?? undefined,
+		responsible_contact_id: item.responsible_contact_id ?? undefined,
 		occurred_on: item.occurred_on,
 		payment_method: item.payment_method,
 		description: item.description
@@ -94,17 +104,25 @@ export class WhatsappService {
 		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		const knowledge = await this.resolveKnowledge(tenantId);
+		const categories = await this.resolveCategories(tenantId);
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const result = await this.llm.parseTransactionDrafts({
 				message,
 				patients,
 				tenantPromptNote,
 				knowledge,
+				categories,
 				// Yapıştırılan metnin mesaj tarihi yok; tenant saat diliminde bugün.
 				messageDate: toTenantDayKey(new Date(), await this.tenantTimezoneWithDb(db, tenantId))
 			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
-			return result.records;
+			// Yapıştırılan metnin kişi bağı yok; yalnız karşı taraf adı dizinde aranır.
+			const records = taslaklariOnDoldur(
+				result.records,
+				await this.messageContacts.directoryWithDb(db),
+				[]
+			);
+			return records;
 		});
 	}
 
@@ -246,6 +264,7 @@ export class WhatsappService {
 		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		const knowledge = await this.resolveKnowledge(tenantId);
+		const categories = await this.resolveCategories(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, id);
@@ -265,10 +284,11 @@ export class WhatsappService {
 				patients,
 				tenantPromptNote,
 				knowledge,
+				categories,
 				messageDate: await this.messageDayKeyWithDb(db, tenantId, row)
 			});
 			await writeLlmParseLedger(db, tenantId, result.usage);
-			const records = result.records;
+			const records = await this.onDolumWithDb(db, row.id, display.body, result.records);
 			await this.savePayload(db, id, payload, {
 				parsed_records: records.length > 0 ? records : null,
 				parse_error: records.length === 0 ? PARSE_ERROR_NO_MATCH : null
@@ -290,6 +310,7 @@ export class WhatsappService {
 		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		const knowledge = await this.resolveKnowledge(tenantId);
+		const categories = await this.resolveCategories(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const row = await this.findRow(db, inboundMessageId);
@@ -301,7 +322,8 @@ export class WhatsappService {
 				row,
 				patients,
 				tenantPromptNote,
-				knowledge
+				knowledge,
+				categories
 			);
 			// KISI-01: para ayrıştırması ne derse desin, mesaj bahsettiği kişilere bağlanır.
 			await this.linkContactsSafely(
@@ -321,6 +343,7 @@ export class WhatsappService {
 		});
 		const tenantPromptNote = await this.resolveTenantPromptNote(tenantId);
 		const knowledge = await this.resolveKnowledge(tenantId);
+		const categories = await this.resolveCategories(tenantId);
 
 		return this.tenantContext.withTenant(tenantId, async ({ db }) => {
 			const rows = await db.select().from(inboundMessages).where(eq(inboundMessages.status, 'new'));
@@ -342,7 +365,8 @@ export class WhatsappService {
 					row,
 					patients,
 					tenantPromptNote,
-					knowledge
+					knowledge,
+					categories
 				);
 				if (outcome === 'parsed') parsed++;
 				else if (outcome === 'error') error++;
@@ -535,7 +559,8 @@ export class WhatsappService {
 		row: InboundMessageRow,
 		patients: Contact[],
 		tenantPromptNote: string | null,
-		knowledge: string | null
+		knowledge: string | null,
+		categories: TenantKategori[]
 	): Promise<'parsed' | 'error'> {
 		const payload = asRecord(row.payload) ?? {};
 		const display = extractInboundDisplayFields(payload);
@@ -553,10 +578,11 @@ export class WhatsappService {
 			patients,
 			tenantPromptNote,
 			knowledge,
+			categories,
 			messageDate: await this.messageDayKeyWithDb(db, row.tenantId, row)
 		});
 		await writeLlmParseLedger(db, row.tenantId, result.usage);
-		const records = result.records;
+		const records = await this.onDolumWithDb(db, row.id, display.body, result.records);
 		const isError = records.length === 0;
 		await this.savePayload(db, row.id, payload, {
 			parsed_records: isError ? null : records,
@@ -590,6 +616,57 @@ export class WhatsappService {
 			.where(eq(tenants.id, tenantId))
 			.limit(1);
 		return row?.timezone ?? DEFAULT_TENANT_TIMEZONE;
+	}
+
+	/**
+	 * Kiracının finans kategorileri — prompt'a veri olarak gider, dönen değer de
+	 * bu listeye karşı doğrulanır (`kategori.ts`). Liste okunamazsa parse durmaz:
+	 * boş liste = kategori alanı eskisi gibi boş kalır.
+	 */
+	private async resolveCategories(tenantId: string): Promise<TenantKategori[]> {
+		try {
+			const { items } = await this.settings.listFinanceCategories(tenantId);
+			return items.map((c) => ({
+				kind: c.kind,
+				name: c.name,
+				subcategories: c.subcategories ?? []
+			}));
+		} catch (err) {
+			this.logger.warn(
+				`finance categories unavailable: ${err instanceof Error ? err.message : String(err)}`
+			);
+			return [];
+		}
+	}
+
+	/**
+	 * Taslak ön dolumu — hasta ve karşı taraf.
+	 *
+	 * Mesaj zaten kişilere bağlanıyor (KISI-01). Bağ tablosu bu aşamada henüz
+	 * yazılmamış olabilir (yeni mesajda bağlama parse'tan SONRA koşuyor), o yüzden
+	 * kayıtlı bağlar ile metinden türetilen bağlar birleştirilir — iki yol da aynı
+	 * kuralı (`kisiBul`) kullanır.
+	 */
+	private async onDolumWithDb(
+		db: TenantDb,
+		messageId: string,
+		body: string | null,
+		records: TransactionDraft[]
+	): Promise<TransactionDraft[]> {
+		if (records.length === 0) return records;
+		try {
+			const adaylar = await this.messageContacts.directoryWithDb(db);
+			const kayitli = await this.messageContacts.contactsForMessagesWithDb(db, [messageId]);
+			const idler = new Set((kayitli.get(messageId) ?? []).map((c) => c.id));
+			for (const e of kisiBul(body, adaylar)) idler.add(e.contactId);
+			return taslaklariOnDoldur(records, adaylar, [...idler]);
+		} catch (err) {
+			// Ön dolum kolaylıktır; hatası taslağı düşürmez.
+			this.logger.warn(
+				`draft prefill failed message=${messageId}: ${err instanceof Error ? err.message : String(err)}`
+			);
+			return records;
+		}
 	}
 
 	/** AI-01: dolu bölümlerden tek bağlam metni; bilgi bankası boşsa null (prompt'a hiçbir şey eklenmez). */

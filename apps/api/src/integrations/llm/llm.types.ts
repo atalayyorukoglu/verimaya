@@ -8,6 +8,7 @@ import type {
 	RecordUpdateSuggestionSkippedReason,
 	TransactionDraft
 } from '@verimaya/shared';
+import type { TenantKategori } from '../../whatsapp/kategori';
 
 export type LlmParseContext = {
 	message: string;
@@ -30,6 +31,12 @@ export type LlmParseContext = {
 	 * Yapıştırılan serbest metinde bilinmiyor; o zaman bugüne düşülür.
 	 */
 	messageDate?: string | null;
+	/**
+	 * Kiracının finans kategorileri (`{kind, name, subcategories[]}`). Prompt'a
+	 * **veri** olarak eklenir ve dönen `category`/`subcategory` buna karşı
+	 * doğrulanır. Boş/verilmemişse kategori alanı eskisi gibi serbest kalır.
+	 */
+	categories?: TenantKategori[];
 };
 
 /** Path taken for a single parse call — written to `jobs` ledger (Adım 25). */

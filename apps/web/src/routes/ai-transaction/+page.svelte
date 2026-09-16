@@ -194,9 +194,14 @@
 				paid_amount: null,
 				fx_rate: same ? 1 : null,
 				amount_base: same ? r.amount : (r.counterparty_amount ?? null),
-				contact_id: null,
-				case_contact_id: null,
-				responsible_contact_id: null,
+				/*
+				 * Sunucunun doldurduğu alanlar korunur. Eskiden üçü de körlemesine
+				 * null yazılıyordu: modelin bulduğu kişi ve sunucunun mesaj bağından
+				 * çıkardığı hasta önerisi kartta hiç görünmüyordu.
+				 */
+				contact_id: r.contact_id ?? null,
+				case_contact_id: r.case_contact_id ?? null,
+				responsible_contact_id: r.responsible_contact_id ?? null,
 				invoice_status: 'none' as const,
 				_status: 'idle' as const,
 				_error: null

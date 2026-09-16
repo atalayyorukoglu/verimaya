@@ -139,3 +139,25 @@ export function kisiBul(body: string | null | undefined, adaylar: KisiAdayi[]): 
 
 	return [...sonuc.values()].sort((x, y) => YONTEM_SIRASI[x.method] - YONTEM_SIRASI[y.method]);
 }
+
+/**
+ * Taslaktaki serbest karşı taraf adını ("Dumos Hotel") dizinde arar.
+ *
+ * `kisiBul` ile aynı kural; iki fark: girdi mesajın tamamı değil tek bir ad, ve
+ * yalnız TEK ve KESİN sonuç kabul edilir. Belirsizse (sıfır ya da birden fazla)
+ * null — taslak yanlış kişiye bağlanmaktansa boş kalır, kullanıcı seçer.
+ */
+export function tekKisiBul(
+	label: string | null | undefined,
+	adaylar: KisiAdayi[]
+): KisiAdayi | null {
+	const anahtar = kelimeler(label ?? '').join(' ');
+	if (!anahtar) return null;
+	// Önce birebir görünen ad; "Dumos Hotel" hem "Dumos"a hem "Dumos Hotel"e
+	// uyduğunda tam ad kazanır.
+	const tam = adaylar.filter((a) => kelimeler(a.displayName).join(' ') === anahtar);
+	if (tam.length > 0) return tam.length === 1 ? tam[0] : null;
+	const kesin = kisiBul(label, adaylar).filter((e) => e.method === 'exact');
+	if (kesin.length !== 1) return null;
+	return adaylar.find((a) => a.id === kesin[0].contactId) ?? null;
+}

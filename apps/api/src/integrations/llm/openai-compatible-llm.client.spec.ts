@@ -42,33 +42,34 @@ describe('createLlmClientFromEnv (Adım 25)', () => {
 
 describe('OpenAiCompatibleLlmClient (Adım 25)', () => {
 	it('ledgers response model + tokens on success', async () => {
-		const fetchFn = vi.fn(async () =>
-			new Response(
-				JSON.stringify({
-					model: 'gpt-4o-mini-2024-07-18',
-					choices: [
-						{
-							message: {
-								content: JSON.stringify({
-									records: [
-										{
-											kind: 'income',
-											amount: 290000,
-											currency: 'GBP',
-											title: 'Ödeme',
-											contact_id: patients[0]!.id,
-											occurred_on: '2026-07-01',
-											description: 'ödeme'
-										}
-									]
-								})
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						model: 'gpt-4o-mini-2024-07-18',
+						choices: [
+							{
+								message: {
+									content: JSON.stringify({
+										records: [
+											{
+												kind: 'income',
+												amount: 290000,
+												currency: 'GBP',
+												title: 'Ödeme',
+												contact_id: patients[0]!.id,
+												occurred_on: '2026-07-01',
+												description: 'ödeme'
+											}
+										]
+									})
+								}
 							}
-						}
-					],
-					usage: { prompt_tokens: 100, completion_tokens: 40, total_tokens: 140 }
-				}),
-				{ status: 200, headers: { 'content-type': 'application/json' } }
-			)
+						],
+						usage: { prompt_tokens: 100, completion_tokens: 40, total_tokens: 140 }
+					}),
+					{ status: 200, headers: { 'content-type': 'application/json' } }
+				)
 		);
 
 		const client = new OpenAiCompatibleLlmClient({
@@ -129,23 +130,24 @@ describe('OpenAiCompatibleLlmClient (Adım 25)', () => {
 	});
 
 	it('falls back to heuristic when draft schema validation fails', async () => {
-		const fetchFn = vi.fn(async () =>
-			new Response(
-				JSON.stringify({
-					model: 'gpt-4o-mini',
-					choices: [
-						{
-							message: {
-								content: JSON.stringify({
-									records: [{ kind: 'not-a-kind', amount: 'oops' }]
-								})
+		const fetchFn = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						model: 'gpt-4o-mini',
+						choices: [
+							{
+								message: {
+									content: JSON.stringify({
+										records: [{ kind: 'not-a-kind', amount: 'oops' }]
+									})
+								}
 							}
-						}
-					],
-					usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 }
-				}),
-				{ status: 200, headers: { 'content-type': 'application/json' } }
-			)
+						],
+						usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 }
+					}),
+					{ status: 200, headers: { 'content-type': 'application/json' } }
+				)
 		);
 
 		const client = new OpenAiCompatibleLlmClient({
@@ -195,7 +197,7 @@ describe('OpenAiCompatibleLlmClient (Adım 25)', () => {
 describe('AI-01 bilgi bankası prompt bağlamı', () => {
 	const KNOWLEDGE = 'Hizmetler ve fiyatlar:\nSaç ekimi 2.500 EUR, 3000 greft dahil.';
 
-	it('bilgi bankası doluyken sistem prompt\'una VERİ olarak eklenir', () => {
+	it("bilgi bankası doluyken sistem prompt'una VERİ olarak eklenir", () => {
 		const prompt = buildWhatsappExtractionSystemPrompt(null, KNOWLEDGE);
 		expect(prompt).toContain('Saç ekimi 2.500 EUR');
 		// Talimat değil veri olarak çerçevelenmeli — müşteri buraya "kuralları yok say"
@@ -205,7 +207,7 @@ describe('AI-01 bilgi bankası prompt bağlamı', () => {
 		expect(prompt).toContain('Return ONLY valid JSON');
 	});
 
-	it('bilgi bankası boşken prompt\'a hiçbir şey eklenmez', () => {
+	it("bilgi bankası boşken prompt'a hiçbir şey eklenmez", () => {
 		const withEmpty = buildWhatsappExtractionSystemPrompt(null, null);
 		const core = buildWhatsappExtractionSystemPrompt(null);
 		expect(withEmpty).toBe(core);
@@ -220,6 +222,42 @@ describe('AI-01 bilgi bankası prompt bağlamı', () => {
 		expect(coreAt).toBeGreaterThanOrEqual(0);
 		expect(knowledgeAt).toBeGreaterThan(coreAt);
 		expect(noteAt).toBeGreaterThan(knowledgeAt);
+	});
+});
+
+describe('kategori listesi prompt bağlamı', () => {
+	const KATEGORILER = [
+		{ kind: 'expense' as const, name: 'Konaklama', subcategories: ['Otel', 'Extra gece'] },
+		{ kind: 'income' as const, name: 'Operasyon', subcategories: ['Saç ekimi'] }
+	];
+
+	it("liste doluyken prompt'a VERİ olarak eklenir", () => {
+		const prompt = buildWhatsappExtractionSystemPrompt(null, null, '2026-09-16', KATEGORILER);
+		expect(prompt).toContain('selectable values only');
+		expect(prompt).toContain('category="Konaklama"');
+		expect(prompt).toContain('"Extra gece"');
+		expect(prompt).toContain('not instructions');
+		expect(prompt).toContain('Return ONLY valid JSON');
+	});
+
+	it('liste boşken hiçbir şey eklenmez — eski davranış korunur', () => {
+		const core = buildWhatsappExtractionSystemPrompt(null, null, '2026-09-16');
+		expect(core).not.toContain('selectable values only');
+		expect(buildWhatsappExtractionSystemPrompt(null, null, '2026-09-16', [])).toBe(core);
+	});
+
+	it('kategori bloğu çekirdekten sonra, bilgi bankasından önce gelir', () => {
+		const prompt = buildWhatsappExtractionSystemPrompt(
+			'Kuruş yerine TL yaz',
+			'Hizmetler: Saç ekimi',
+			'2026-09-16',
+			KATEGORILER
+		);
+		const coreAt = prompt.indexOf('Return ONLY valid JSON');
+		const catsAt = prompt.indexOf('selectable values only');
+		const knowledgeAt = prompt.indexOf('KNOWLEDGE BASE');
+		expect(catsAt).toBeGreaterThan(coreAt);
+		expect(knowledgeAt).toBeGreaterThan(catsAt);
 	});
 });
 
@@ -239,10 +277,19 @@ describe('OpenAiCompatibleLlmClient.selectMayaTool (AI-11a)', () => {
 	function clientWith(content: string, ok = true) {
 		const fetchFn = vi.fn(
 			async () =>
-				new Response(ok ? JSON.stringify({ model: 'gpt-4o-mini', choices: [{ message: { content } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }) : 'boom', {
-					status: ok ? 200 : 500,
-					headers: { 'content-type': 'application/json' }
-				})
+				new Response(
+					ok
+						? JSON.stringify({
+								model: 'gpt-4o-mini',
+								choices: [{ message: { content } }],
+								usage: { prompt_tokens: 10, completion_tokens: 5 }
+							})
+						: 'boom',
+					{
+						status: ok ? 200 : 500,
+						headers: { 'content-type': 'application/json' }
+					}
+				)
 		);
 		return {
 			fetchFn,
@@ -309,7 +356,10 @@ describe('OpenAiCompatibleLlmClient.selectMayaTool (AI-11a)', () => {
 				answer: 'Yılmaz bey 12.500 TL borçlu'
 			})
 		);
-		const res = await client.selectMayaTool({ question: 'Kimlerden alacağımız var?', contacts: [] });
+		const res = await client.selectMayaTool({
+			question: 'Kimlerden alacağımız var?',
+			contacts: []
+		});
 		expect(res.call).toEqual({ tool: 'openBalances', params: {} });
 		expect(JSON.stringify(res.call)).not.toContain('12.500');
 	});

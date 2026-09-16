@@ -6,6 +6,7 @@ import type {
 } from '@verimaya/shared';
 import { DEFAULT_TENANT_TIMEZONE, toTenantDayKey } from '@verimaya/shared';
 import { evidenceEntry } from './evidence';
+import { kategoriTahmin, type TenantKategori } from './kategori';
 import { paraBaglamiVar, parseTutar, tutarDegil } from './tutar';
 
 /**
@@ -59,9 +60,15 @@ function guessKind(text: string): { kind: 'income' | 'expense'; hint: RegExpMatc
 	return { kind: 'expense', hint: null };
 }
 
+/**
+ * Değerler Finans formundaki listeden (`TRANSACTION_PAYMENT_METHODS`) birebir
+ * alınır. Eskiden 'Kart' / 'Havale' yazılıyordu; o adlar listede yok, kayıt
+ * "listede olmayan yöntem" olarak kalıyordu.
+ */
 const PAYMENT_METHOD_HINTS: ReadonlyArray<{ re: RegExp; value: string }> = [
-	{ re: /kart|card/i, value: 'Kart' },
-	{ re: /havale|transfer/i, value: 'Havale' }
+	{ re: /nakit|cash|elden/i, value: 'Nakit' },
+	{ re: /kart|card|pos\b/i, value: 'Kredi Kartı' },
+	{ re: /havale|eft|transfer|iban/i, value: 'Banka Havalesi/EFT' }
 ];
 
 function guessPaymentMethod(text: string): { value: string | null; hint: RegExpMatchArray | null } {
@@ -136,7 +143,13 @@ export function heuristicParseWhatsappMessage(
 	 * Eskiden her zaman "bugün" yazılıyordu; kuyrukta bekleyen üç günlük mesaj
 	 * analiz edildiği güne kaydediliyordu.
 	 */
-	messageDate?: string | null
+	messageDate?: string | null,
+	/**
+	 * Kiracının finans kategorileri. Eskiden burada sabit 'Operasyon' / 'Konaklama'
+	 * / 'Pazarlama' yazılıyordu — kiracıda o adla kategori yoksa arayüzde boş
+	 * görünüyordu. Şimdi anahtar kelime kiracı listesine eşlenir; eşleşme yoksa null.
+	 */
+	categories: TenantKategori[] = []
 ): TransactionDraft[] {
 	const text = message.trim();
 	if (!text) return [];
@@ -175,7 +188,7 @@ export function heuristicParseWhatsappMessage(
 				amount,
 				currency: 'TRY',
 				title: guessTitle(text, amount / 100, 'TRY'),
-				category: kind === 'income' ? 'Operasyon' : 'Konaklama',
+				category: kategoriTahmin(text, kind, categories),
 				contact_id: contact?.id ?? null,
 				contact_display_name: contact?.display_name ?? null,
 				contact_label: null,
@@ -216,7 +229,7 @@ export function heuristicParseWhatsappMessage(
 			amount: Math.round(major * 100),
 			currency,
 			title: guessTitle(text, major, currency),
-			category: kind === 'income' ? 'Operasyon' : 'Pazarlama',
+			category: kategoriTahmin(text, kind, categories),
 			subcategory: null,
 			contact_id: contact?.id ?? null,
 			contact_display_name: contact?.display_name ?? null,

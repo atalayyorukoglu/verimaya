@@ -1,11 +1,14 @@
-<script lang="ts">
-	import { fieldClass } from '$lib/api';
-
-	type ComboboxOption = {
+<script lang="ts" module>
+	export type ComboboxOption = {
 		value: string;
 		label: string;
 		description?: string;
 	};
+</script>
+
+<script lang="ts">
+	import { fieldClass } from '$lib/api';
+	import { onDestroy } from 'svelte';
 
 	let {
 		id,
@@ -16,6 +19,9 @@
 		clearLabel,
 		disabled = false,
 		inputClass = fieldClass,
+		onsearch,
+		selectedLabel = null,
+		searchingText = null,
 		onselect
 	}: {
 		id: string;
@@ -27,18 +33,52 @@
 		disabled?: boolean;
 		/** Override default fieldClass (e.g. mobile 44px / 16px). */
 		inputClass?: string;
+		/**
+		 * Sunucu taraflı arama. Verildiğinde en az `MIN_CHARS` harf yazıldıktan
+		 * `DEBOUNCE_MS` sonra çağrılır ve liste dönen sonuçlardan kurulur.
+		 *
+		 * Neden: `options` çağıranın önceden yüklediği ilk sayfadır (100 kayıt).
+		 * 1000+ kişili kiracıda aranan kişi o sayfada olmadığı için "hasta
+		 * bulunamıyor" oluyordu; artık harfler sunucuya gidiyor.
+		 */
+		onsearch?: (query: string) => Promise<ComboboxOption[]>;
+		/**
+		 * Seçili değerin etiketi. Sunucu aramasında seçili kayıt listede olmayabilir
+		 * (arama sonucu değişince listeden düşer); etiket buradan okunur ki kutu
+		 * boşalmasın.
+		 */
+		selectedLabel?: string | null;
+		searchingText?: string | null;
 		onselect?: (option: ComboboxOption | null) => void;
 	} = $props();
+
+	const MIN_CHARS = 2;
+	const DEBOUNCE_MS = 250;
 
 	let open = $state(false);
 	let activeIndex = $state(0);
 	let query = $state('');
 	let editing = $state(false);
+	let remoteOptions = $state<ComboboxOption[]>([]);
+	let searching = $state(false);
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	/** Yarışan istekler: yalnız en son aramanın sonucu yazılır. */
+	let searchSeq = 0;
 
-	const selectedOption = $derived(options.find((option) => option.value === value) ?? null);
+	onDestroy(() => {
+		if (timer) clearTimeout(timer);
+	});
+
+	const selectedOption = $derived(
+		options.find((option) => option.value === value) ??
+			remoteOptions.find((option) => option.value === value) ??
+			(value && selectedLabel ? { value, label: selectedLabel } : null)
+	);
 	const inputValue = $derived(editing ? query : (selectedOption?.label ?? ''));
 	const normalizedQuery = $derived(inputValue.trim().toLocaleLowerCase());
+	const remoteMode = $derived(Boolean(onsearch) && normalizedQuery.length >= MIN_CHARS);
 	const filteredOptions = $derived.by(() => {
+		if (remoteMode) return remoteOptions;
 		if (!normalizedQuery || inputValue === selectedOption?.label) return options;
 		return options.filter((option) =>
 			`${option.label} ${option.description ?? ''}`.toLocaleLowerCase().includes(normalizedQuery)
@@ -48,6 +88,33 @@
 
 	function optionId(option: ComboboxOption): string {
 		return `${id}-option-${option.value}`;
+	}
+
+	function scheduleSearch(raw: string) {
+		if (!onsearch) return;
+		if (timer) clearTimeout(timer);
+		const term = raw.trim();
+		if (term.length < MIN_CHARS) {
+			searching = false;
+			remoteOptions = [];
+			return;
+		}
+		searching = true;
+		timer = setTimeout(() => {
+			const seq = ++searchSeq;
+			void onsearch(term)
+				.then((found) => {
+					if (seq !== searchSeq) return;
+					remoteOptions = found;
+				})
+				.catch(() => {
+					if (seq !== searchSeq) return;
+					remoteOptions = [];
+				})
+				.finally(() => {
+					if (seq === searchSeq) searching = false;
+				});
+		}, DEBOUNCE_MS);
 	}
 
 	function showOptions() {
@@ -71,9 +138,12 @@
 		}
 		open = true;
 		activeIndex = 0;
+		scheduleSearch(query);
 	}
 
 	function choose(option: ComboboxOption | null) {
+		if (timer) clearTimeout(timer);
+		searching = false;
 		value = option?.value ?? '';
 		query = option?.label ?? '';
 		editing = false;
@@ -141,6 +211,7 @@
 		class="{inputClass} min-w-0"
 		{placeholder}
 		{disabled}
+		aria-busy={searching}
 		value={inputValue}
 		onfocus={(event) => {
 			showOptions();
@@ -189,7 +260,9 @@
 					{/if}
 				</button>
 			{:else}
-				<div class="px-3 py-3 text-sm text-text-muted" aria-live="polite">{emptyText}</div>
+				<div class="px-3 py-3 text-sm text-text-muted" aria-live="polite">
+					{searching && searchingText ? searchingText : emptyText}
+				</div>
 			{/each}
 		</div>
 	{/if}

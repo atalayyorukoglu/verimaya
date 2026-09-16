@@ -37,6 +37,15 @@ export const transactionDraftSchema = z.object({
 	contact_id: uuid.nullable().optional(),
 	contact_display_name: z.string().max(255).nullable().optional(),
 	contact_label: z.string().max(255).nullable().optional(),
+	/**
+	 * Sunucu ön dolumu: mesaj zaten kişilere bağlı (`inbound_message_contacts`,
+	 * KISI-01). Bağlı kişilerden türü **Hasta** olan tek kişi varsa taslak onu
+	 * hasta alanında önerir; belirsizse (sıfır ya da birden fazla) boş kalır.
+	 * Model bu alanı üretmez — sunucu doldurur, kullanıcı değiştirebilir.
+	 */
+	case_contact_id: uuid.nullable().optional(),
+	/** Şimdilik yalnız kullanıcı doldurur; şemada duruyor ki onay isteğine kadar taşınabilsin. */
+	responsible_contact_id: uuid.nullable().optional(),
 	occurred_on: isoDate,
 	payment_method: z.string().max(64).nullable().optional(),
 	description: z.string().max(8000).nullable().optional(),

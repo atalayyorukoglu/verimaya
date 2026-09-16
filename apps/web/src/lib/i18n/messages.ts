@@ -1647,6 +1647,7 @@ const tr = {
 
 	// —— AUDIT-F09-10 common ——
 	'common.loading': 'Yükleniyor…',
+	'common.searching': 'Aranıyor…',
 	'common.cancel': 'İptal',
 	'common.close': 'Kapat',
 	'common.save': 'Kaydet',
@@ -4784,6 +4785,7 @@ const en: Record<MessageKey, string> = {
 
 	// —— AUDIT-F09-10 common ——
 	'common.loading': 'Loading…',
+	'common.searching': 'Searching…',
 	'common.cancel': 'Cancel',
 	'common.close': 'Close',
 	'common.save': 'Save',

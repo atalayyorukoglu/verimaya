@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { heuristicParseWhatsappMessage } from './heuristic-parse';
+import type { TenantKategori } from './kategori';
+
+const KATEGORILER: TenantKategori[] = [
+	{ kind: 'expense', name: 'Konaklama', subcategories: ['Otel'] },
+	{ kind: 'expense', name: 'Operasyon', subcategories: ['Saç ekimi'] }
+];
 
 /** Örnekler 2026-09-15 kuyruğundan; hepsi gerçek yanlış çıktıların tekrarı. */
 describe('heuristicParseWhatsappMessage — tutar bekçisi', () => {
@@ -73,5 +79,28 @@ describe('heuristicParseWhatsappMessage — tarih ve açıklama', () => {
 		const uzun = `1400 Gbp odendi. ${'a'.repeat(9000)}`;
 		const [u] = heuristicParseWhatsappMessage(uzun);
 		expect(u.description?.length).toBe(8000);
+	});
+});
+
+describe('heuristicParseWhatsappMessage — kategori ve ödeme yöntemi', () => {
+	it('kategori kiracı listesinden gelir; liste yoksa null (eski sabit ad yok)', () => {
+		const [r] = heuristicParseWhatsappMessage(
+			'Karen O Donnell Dumos Hotel konaklama faturasi 25.217,25 tl.',
+			[],
+			null,
+			KATEGORILER
+		);
+		expect(r.category).toBe('Konaklama');
+		const [bos] = heuristicParseWhatsappMessage(
+			'Karen O Donnell Dumos Hotel konaklama faturasi 25.217,25 tl.'
+		);
+		expect(bos.category).toBeNull();
+	});
+
+	it('ödeme yöntemi Finans listesindeki değerdir ("Kart" değil "Kredi Kartı")', () => {
+		const [k] = heuristicParseWhatsappMessage('1400 Gbp kart ile odendi.');
+		expect(k.payment_method).toBe('Kredi Kartı');
+		const [h] = heuristicParseWhatsappMessage('18.200 tl havale ile odendi.');
+		expect(h.payment_method).toBe('Banka Havalesi/EFT');
 	});
 });

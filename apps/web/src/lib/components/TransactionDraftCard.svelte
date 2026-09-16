@@ -20,6 +20,8 @@
 	} from '@verimaya/shared';
 	import { apiGet, fieldClass, labelClass, textareaClass } from '$lib/api';
 	import Combobox from '$lib/components/Combobox.svelte';
+	import { contactToOption, contactTypeIdByName, searchContactOptions } from '$lib/contacts/search';
+	import { createContactLabelCache } from '$lib/contacts/label-cache.svelte';
 	import { useQueryScope } from '$lib/query-scope.svelte';
 	import { formatMoney } from '$lib/format';
 	import { t } from '$lib/i18n/locale.svelte';
@@ -161,16 +163,37 @@
 			.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
 	);
 
-	// Finans formuyla aynı kural: hasta listesi "Hasta" tipiyle sınırlı, sorumlu
-	// listesi kısıtsız (Tracker'da personel dışı kişiler de sorumlu olabiliyor).
+	/*
+	 * Kişi kutuları sunucu taraflı arar. `contacts` yalnız ilk sayfadır (100 kayıt);
+	 * 1000+ kişili kiracıda aranan hasta / firma orada olmadığı için kutular boş
+	 * görünüyordu. İlk sayfa hâlâ "hiçbir şey yazmadan açınca" gösterilecek liste.
+	 *
+	 * Kural Finans formuyla aynı: hasta listesi "Hasta" tipiyle sınırlı, sorumlu
+	 * listesi kısıtsız (Tracker'da personel dışı kişiler de sorumlu olabiliyor).
+	 */
+	const HASTA_TURU = 'Hasta';
+	const hastaTypeId = $derived(contactTypeIdByName(contactTypes, HASTA_TURU));
+	const contactOptions = $derived(contacts.map(contactToOption));
 	const caseContactOptions = $derived(
-		contacts
-			.filter((c) => c.contact_type_name === 'Hasta')
-			.map((c) => ({ value: c.id, label: c.display_name, description: c.contact_type_name }))
+		contacts.filter((c) => c.contact_type_name === HASTA_TURU).map(contactToOption)
 	);
-	const responsibleContactOptions = $derived(
-		contacts.map((c) => ({ value: c.id, label: c.display_name, description: c.contact_type_name }))
-	);
+	const responsibleContactOptions = $derived(contacts.map(contactToOption));
+
+	const searchAllContacts = (q: string) => searchContactOptions(q);
+	const searchPatients = (q: string) =>
+		searchContactOptions(q, { typeId: hastaTypeId, typeName: HASTA_TURU });
+
+	/*
+	 * Seçili kişinin etiketi: sunucu araması listeyi değiştirdiğinde seçili kayıt
+	 * listede kalmayabilir, ayrıca sunucu ön dolumu ilk sayfada olmayan bir kişiyi
+	 * işaretlemiş olabilir. Bilinmeyen kimlikler tek tek çözülür.
+	 */
+	const labels = createContactLabelCache(() => contacts);
+	const contactLabelFor = (id: string | null | undefined) => labels.labelFor(id);
+
+	$effect(() => {
+		labels.ensure([draft.case_contact_id, draft.responsible_contact_id, draft.contact_id]);
+	});
 
 	let showNewContact = $state(false);
 	let showNewCategory = $state(false);
@@ -224,6 +247,24 @@
 		const n = Number.parseFloat(value.replace(',', '.'));
 		if (!Number.isFinite(n) || n < 0) return;
 		onchange({ amount_base: Math.round(n * 100) });
+	}
+
+	/**
+	 * Tür değişince kategori listesi de değişir. Eski kategori yeni türde yoksa
+	 * temizlenir; yoksa kutuda "listede olmayan" bir değer seçili görünüyor ve
+	 * onaydan sonra gelir satırına gider kategorisi yazılıyordu.
+	 */
+	function onKindChange(kind: TransactionDraft['kind']) {
+		const patch: Partial<DraftApprovalState> = { kind };
+		const yeniListe = categories.filter((c) => c.kind === kind);
+		const kalan = yeniListe.find((c) => c.name === draft.category) ?? null;
+		if (!kalan) {
+			patch.category = null;
+			patch.subcategory = null;
+		} else if (draft.subcategory && !kalan.subcategories.includes(draft.subcategory)) {
+			patch.subcategory = null;
+		}
+		onchange(patch);
 	}
 
 	function onStatusChange(status: TransactionStatus) {
@@ -340,7 +381,7 @@
 					class={fieldClass}
 					disabled={saved}
 					value={draft.kind}
-					onchange={(e) => onchange({ kind: e.currentTarget.value as TransactionDraft['kind'] })}
+					onchange={(e) => onKindChange(e.currentTarget.value as TransactionDraft['kind'])}
 				>
 					{#each kinds as k (k)}
 						<option value={k}>{transactionKindLabels[k]}</option>
@@ -601,37 +642,42 @@
 					<label class={labelClass} for={fieldId('contact')}>{t('finance.form.contact')}</label>
 					<EvidenceBadge entry={draft.evidence?.contact_id} onselect={onEvidence} />
 				</div>
-				<select
+				<!--
+					Düz select değil Combobox: kiracıda 1000+ kişi var, select'te ne arama
+					vardı ne de ilk 100'ün dışındaki kayıt ("Dumos Hotel" hiç görünmüyordu).
+					"Yeni kişi" artık listenin içinde bir seçenek değil, altındaki düğme —
+					aramayla karışmasın.
+				-->
+				<Combobox
 					id={fieldId('contact')}
-					class={fieldClass}
+					value={draft.contact_id ?? ''}
+					options={contactOptions}
+					onsearch={searchAllContacts}
+					selectedLabel={draft.contact_display_name ?? contactLabelFor(draft.contact_id)}
 					disabled={saved || creating}
-					value={showNewContact ? NEW : (draft.contact_id ?? '')}
-					onchange={(e) => {
-						const v = e.currentTarget.value;
-						if (v === NEW) {
+					placeholder={t('finance.form.contactSearchPlaceholder')}
+					emptyText={t('finance.form.contactEmpty')}
+					searchingText={t('common.searching')}
+					clearLabel={t('finance.ai.draft.contactNone')}
+					onselect={(option) =>
+						onchange({
+							contact_id: option?.value ?? null,
+							contact_display_name: option?.label ?? null
+						})}
+				/>
+				{#if !saved && !showNewContact}
+					<button
+						type="button"
+						class="mt-1 cursor-pointer text-xs font-medium text-brand underline-offset-2 hover:underline"
+						disabled={creating}
+						onclick={() => {
 							showNewContact = true;
 							createError = null;
-							return;
-						}
-						showNewContact = false;
-						if (!v) {
-							onchange({ contact_id: null, contact_display_name: null });
-							return;
-						}
-						const contact = contacts.find((c) => c.id === v);
-						onchange({
-							contact_id: v,
-							contact_display_name: contact?.display_name ?? draft.contact_display_name,
-							contact_label: contact?.display_name ?? draft.contact_label
-						});
-					}}
-				>
-					<option value="">{t('finance.ai.draft.contactNone')}</option>
-					{#each contacts as c (c.id)}
-						<option value={c.id}>{c.display_name}</option>
-					{/each}
-					<option value={NEW}>{t('finance.ai.draft.contactNew')}</option>
-				</select>
+						}}
+					>
+						{t('finance.ai.draft.contactNew')}
+					</button>
+				{/if}
 				{#if showNewContact}
 					<div class="mt-2 space-y-2 rounded-[6px] border border-border bg-surface-2 p-3">
 						<label class={labelClass} for={fieldId('new-contact-name')}
@@ -725,9 +771,12 @@
 					id={fieldId('case')}
 					value={draft.case_contact_id ?? ''}
 					options={caseContactOptions}
+					onsearch={searchPatients}
+					selectedLabel={contactLabelFor(draft.case_contact_id)}
 					disabled={saved}
 					placeholder={t('finance.form.caseSearchPlaceholder')}
 					emptyText={t('finance.form.caseEmpty')}
+					searchingText={t('common.searching')}
 					clearLabel={t('finance.form.caseClear')}
 					onselect={(option) => onchange({ case_contact_id: option?.value ?? null })}
 				/>
@@ -740,9 +789,12 @@
 					id={fieldId('responsible')}
 					value={draft.responsible_contact_id ?? ''}
 					options={responsibleContactOptions}
+					onsearch={searchAllContacts}
+					selectedLabel={contactLabelFor(draft.responsible_contact_id)}
 					disabled={saved}
 					placeholder={t('finance.form.responsibleSearchPlaceholder')}
 					emptyText={t('finance.form.responsibleEmpty')}
+					searchingText={t('common.searching')}
 					clearLabel={t('finance.form.responsibleClear')}
 					onselect={(option) => onchange({ responsible_contact_id: option?.value ?? null })}
 				/>
