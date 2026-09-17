@@ -1,5 +1,5 @@
 <script lang="ts">
-	import HubHomeV4 from '$lib/components/HubHomeV4.svelte';
+	import HomePageD from '$lib/components/HomePageD.svelte';
 
 	/**
 	 * Production hub source — hub lives at `/` on verimaya.com. Bu sayfa yalnızca prerender
@@ -9,4 +9,4 @@
 	 */
 </script>
 
-<HubHomeV4 />
+<HomePageD />

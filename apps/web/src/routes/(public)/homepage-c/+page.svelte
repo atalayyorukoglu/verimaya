@@ -1,9 +1,9 @@
 <script lang="ts">
-	import HubHomeV4 from '$lib/components/HubHomeV4.svelte';
+	import HomePageC from '$lib/components/HomePageC.svelte';
 </script>
 
 <svelte:head>
 	<meta name="robots" content="noindex,nofollow" />
 </svelte:head>
 
-<HubHomeV4 />
+<HomePageC />
